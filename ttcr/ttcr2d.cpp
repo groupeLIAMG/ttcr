@@ -471,7 +471,7 @@ int main(int argc, char * argv[]) {
     
 	string fname = parse_input(argc, argv, par);
 	if ( par.verbose ) {
-		cout << "\n*** Program spmrt2d ***\n\n"
+		cout << "\n*** Program ttcr2d ***\n\n"
         << "Raytracing in 2D media\n";
 	}
     

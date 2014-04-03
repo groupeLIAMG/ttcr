@@ -21,14 +21,10 @@ using namespace std;
 
 void print_usage (std::ostream& stream, char *progname, int exit_code)
 {
-    stream << "\n *** " << progname << " - Ray tracing in 3D ***\n\n";
+    stream << "\n *** " << progname << " - Ray tracing by grid methods ***\n\n";
     stream << "Usage: " << progname << " [options] -p paramters.in\n";
     stream << "  -h  print this message\n"
     << "  -p  Specify parameter file (mandatory)\n"
-	<< "  -r  Save Ray paths\n"
-    << "  -s  Do computation in single precision\n"
-    << "  -m  Use fast-marching method\n"
-    << "  -w  Use fast-sweeping method\n"
 	<< "  -k  Save model in VTK format\n"
     << "  -v  Verbose mode\n"
 	<< "  -t  Measure time to build grid and perform raytracing\n"
@@ -42,7 +38,7 @@ string parse_input(int argc, char * argv[], input_parameters &ip ) {
 	string param_file;
 	
 	int next_option;
-    const char* const short_options = "hksp:rvtmw";
+    const char* const short_options = "hk†p:vt";
     bool no_option = true;
     do {
         next_option = getopt (argc, argv, short_options);
@@ -60,20 +56,10 @@ string parse_input(int argc, char * argv[], input_parameters &ip ) {
                 ip.saveModelVTK = true;
                 break;
                 
-			case  's' :
-				no_option = false;
-                ip.singlePrecision = true;
-                break;
-                
             case  'p' :
                 // This option takes an argument, the name of the input file.
                 no_option = false;
                 param_file = optarg;
-                break;
-                
-			case  'r' :
-				no_option = false;
-                ip.saveRaypaths = true;
                 break;
                 
             case  'v' : // -v or --verbose
@@ -84,16 +70,6 @@ string parse_input(int argc, char * argv[], input_parameters &ip ) {
             case  't' :
                 no_option = false;
                 ip.time = true;
-                break;
-                
-            case  'm' :
-                no_option = false;
-                ip.method = FAST_MARCHING;
-                break;
-                
-            case  'w' :
-                no_option = false;
-                ip.method = FAST_SWEEPING;
                 break;
                 
             case  '?' : // The user specified an invalid option.
@@ -204,6 +180,27 @@ void get_params(const std::string &filename, input_parameters &ip) {
 			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
 			sin >> ip.processReflectors;
         }
+        else if (par.find("single precision") < 200 ) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+			sin >> ip.singlePrecision;
+        }
+        else if (par.find("saveRayPaths") < 200) {
+			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+			sin >> ip.saveRaypaths;
+        }
+        else if (par.find("fast marching") < 200) {
+			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            int test;
+			sin >> test;
+            if ( test == 1 ) ip.method = FAST_MARCHING;
+        }
+        else if (par.find("fast sweeping") < 200) {
+			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            int test;
+			sin >> test;
+            if ( test == 1 ) ip.method = FAST_SWEEPING;
+        }
+
 		fin.getline(parameter, 200);
 	}
 	fin.close();
