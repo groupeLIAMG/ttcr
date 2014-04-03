@@ -292,11 +292,20 @@ int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxz<T1> >& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
-		for ( T2 nt=0; nt<triangles.size(); ++nt ) {
-			if ( insideTriangle(pts[n], nt) ) {
+		// check first if point is on a node
+		for ( T2 nt=0; nt<nodes.size(); ++nt ) {
+			if ( nodes[nt] == pts[n]) {
 				found = true;
+				break;
 			}
 		}
+		if ( found == false ) {
+            for ( T2 nt=0; nt<triangles.size(); ++nt ) {
+                if ( insideTriangle(pts[n], nt) ) {
+                    found = true;
+                }
+            }
+        }
 		if ( found == false ) {
 			std::cerr << "Error: point no " << (n+1)
             << " outside the grid.\n";
