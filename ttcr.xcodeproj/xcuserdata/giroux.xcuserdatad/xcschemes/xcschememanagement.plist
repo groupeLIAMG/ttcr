@@ -4,7 +4,12 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>ttcr.xcscheme</key>
+		<key>ttcr2d.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>ttcr3d.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
@@ -13,6 +18,11 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>2BC708D218EDA599004DA2C9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2BC7090818EDAAA0004DA2C9</key>
 		<dict>
 			<key>primary</key>
 			<true/>
