@@ -19,13 +19,13 @@
 #include "Grid2Duc.h"
 #include "Node2Dcsp.h"
 
-template<typename T1, typename T2>
-class Grid2Ducsp : public Grid2Duc<T1,T2,Node2Dcsp<T1,T2>> {
+template<typename T1, typename T2, typename NODE>
+class Grid2Ducsp : public Grid2Duc<T1,T2,NODE> {
 public:
 	Grid2Ducsp(const std::vector<sxz<T1>>& no,
 			   const std::vector<triangleElem<T2> >& tri,
 			   const T2 ns, const size_t nt=1) :
-	Grid2Duc<T1,T2,Node2Dcsp<T1,T2>>(no, tri, nt)
+	Grid2Duc<T1,T2,NODE>(no, tri, nt)
 	{
 		buildGridNodes(no, ns, nt);
 		this->buildGridNeighbors();
@@ -68,17 +68,6 @@ public:
                  std::vector<std::vector<siv<T1> > >&,
 				 const size_t=0) const;
 	
-    
-//	int getTraveltimes(const std::vector<sxz<T1> >&,
-//					   std::vector<T1>&,
-//					   const size_t=0) const;
-//	
-//	int getTraveltimes(const std::vector<sxz<T1>>&,
-//					   const std::vector<sxz<T1>>&,
-//					   std::vector<T1>&,
-//					   std::vector<std::vector<sxz<T1>>>&,
-//					   const size_t=0) const;
-	
 private:
 	void buildGridNodes(const std::vector<sxz<T1>>&,
 						const int,
@@ -86,16 +75,16 @@ private:
 	
 	void initQueue(const std::vector<sxz<T1> >& Tx,
 				   const std::vector<T1>& t0,
-				   std::priority_queue<Node2Dcsp<T1,T2>*,
-				   std::vector<Node2Dcsp<T1,T2>*>,
+				   std::priority_queue<NODE*,
+				   std::vector<NODE*>,
 				   CompareNodePtr<T1> >& queue,
-				   std::vector<Node2Dcsp<T1,T2> >& txNodes,
+				   std::vector<NODE >& txNodes,
 				   std::vector<bool>& inQueue,
 				   std::vector<bool>& frozen,
 				   const size_t threadNo) const;
 	
-	void propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
-				   std::vector<Node2Dcsp<T1,T2>*>,
+	void propagate(std::priority_queue<NODE*,
+				   std::vector<NODE*>,
 				   CompareNodePtr<T1> >& queue,
 				   std::vector<bool>& inQueue,
 				   std::vector<bool>& frozen,
@@ -103,14 +92,14 @@ private:
 	
 };
 
-template<typename T1, typename T2>
-void Grid2Ducsp<T1,T2>::buildGridNodes(const std::vector<sxz<T1>>& no,
+template<typename T1, typename T2, typename NODE>
+void Grid2Ducsp<T1,T2,NODE>::buildGridNodes(const std::vector<sxz<T1>>& no,
 									   const int nsecondary,
 									   const size_t nt) {
 	
 	// primary nodes
 	for ( T2 n=0; n<no.size(); ++n ) {
-		this->nodes[n].setXZindex( no[n].x, no[n].z, n );
+		this->nodes[n].setXYZindex( no[n], n );
 	}
 	T2 nNodes = static_cast<T2>(this->nodes.size());
 	
@@ -122,7 +111,7 @@ void Grid2Ducsp<T1,T2>::buildGridNodes(const std::vector<sxz<T1>>& no,
 	this->nodes.reserve( nNodes + estLineNo*nsecondary );
 	
 	// edge nodes
-	Node2Dcsp<T1,T2> tmpNode(nt);
+	NODE tmpNode(nt);
 	for ( T2 ntri=0; ntri<this->triangles.size(); ++ntri ) {
 				
 		for ( size_t nl=0; nl<3; ++nl ) {
@@ -148,13 +137,11 @@ void Grid2Ducsp<T1,T2>::buildGridNodes(const std::vector<sxz<T1>>& no,
 					continue;
 				}
 				
-				sxz<T1> d = { (no[lineKey[1]].x-no[lineKey[0]].x)/(nsecondary+1),
-					          (no[lineKey[1]].z-no[lineKey[0]].z)/(nsecondary+1) };
+				sxz<T1> d = (no[lineKey[1]]-no[lineKey[0]])/static_cast<T1>(nsecondary+1);
 			
 				for ( size_t n2=0; n2<nsecondary; ++n2 ) {
-					tmpNode.setXZindex(no[lineKey[0]].x+(1+n2)*d.x,
-									   no[lineKey[0]].z+(1+n2)*d.z,
-									   nNodes );
+					tmpNode.setXYZindex(no[lineKey[0]]+static_cast<T1>(1+n2)*d,
+										nNodes );
 					lineMap[lineKey][n2] = nNodes++;
 					this->nodes.push_back( tmpNode );
 					this->nodes.back().pushOwner( ntri );
@@ -166,8 +153,8 @@ void Grid2Ducsp<T1,T2>::buildGridNodes(const std::vector<sxz<T1>>& no,
 	this->nodes.shrink_to_fit();
 }
 
-template<typename T1, typename T2>
-int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE>
+int Grid2Ducsp<T1,T2,NODE>::raytrace(const std::vector<sxz<T1> >& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<sxz<T1> >& Rx,
 								std::vector<T1>& traveltimes,
@@ -181,10 +168,10 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     }
     
     CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+    std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1> > queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<NODE > txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -202,8 +189,8 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE>
+int Grid2Ducsp<T1,T2,NODE>::raytrace(const std::vector<sxz<T1> >& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<sxz<T1>>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -218,10 +205,10 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     }
     
     CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+    std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1> > queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<NODE > txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -242,8 +229,8 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 	return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename NODE>
+int Grid2Ducsp<T1,T2,NODE>::raytrace(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<sxz<T1>>& Rx,
 								std::vector<T1>& traveltimes,
@@ -259,10 +246,10 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     }
     
     CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+    std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1> > queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<NODE > txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -292,8 +279,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
             if ( Rx[n] == Tx[ns] ) {
                 
                 r_data[n].resize( 1 );
-                r_data[n][0].x = Rx[n].x;
-                r_data[n][0].z = Rx[n].z;
+				r_data[n][0] = Rx[n];
                 
                 flag = true;
                 break;
@@ -302,7 +288,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
         if ( flag ) continue;
         
         // Rx are in nodes (not txNodes)
-        std::vector<Node2Dcsp<T1,T2> > *node_p;
+        std::vector<NODE > *node_p;
         node_p = &(this->nodes);
         
         std::vector<sxz<T1> > r_tmp;
@@ -310,8 +296,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
         sxz<T1> child;
 		
         // store the son's coord
-        child.x = Rx[n].x;
-        child.z = Rx[n].z;
+        child = Rx[n];
         while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                std::numeric_limits<T2>::max() ) {
  			
@@ -319,8 +304,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 						
 			// we now go up in time - parent becomes the child of grand'pa
 			iChild = iParent;
-			child.x = (*node_p)[iChild].getX();
-			child.z = (*node_p)[iChild].getZ();
+			child = (*node_p)[iChild];
             
 			// grand'pa is now papa
 			iParent = (*node_p)[iChild].getNodeParent(threadNo);
@@ -337,23 +321,21 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 		r_tmp.push_back( child );
 				
 		// finally, store Tx position
-		child.x = (*node_p)[iParent].getX();
-		child.z = (*node_p)[iParent].getZ();
+		child = (*node_p)[iParent];
 		r_tmp.push_back( child );
 		
         // the order should be from Tx to Rx, so we reorder...
         iParent = static_cast<T2>(r_tmp.size());
         r_data[n].resize( r_tmp.size() );
         for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
+            r_data[n][nn] = r_tmp[ iParent-1-nn ];
         }
     }
 	return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE>
+int Grid2Ducsp<T1,T2,NODE>::raytrace(const std::vector<sxz<T1> >& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<sxz<T1>>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -369,10 +351,10 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     }
     
     CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+    std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1> > queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<NODE > txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -409,8 +391,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
                 if ( (*Rx[nr])[n] == Tx[ns] ) {
                     
                     (*r_data[nr])[n].resize( 1 );
-                    (*r_data[nr])[n][0].x = (*Rx[nr])[n].x;
-                    (*r_data[nr])[n][0].z = (*Rx[nr])[n].z;
+                    (*r_data[nr])[n][0] = (*Rx[nr])[n];
                     
                     flag = true;
                     break;
@@ -419,7 +400,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
             if ( flag ) continue;
             
             // Rx are in nodes (not txNodes)
-            std::vector<Node2Dcsp<T1,T2> > *node_p;
+            std::vector<NODE > *node_p;
             node_p = &(this->nodes);
             
             std::vector<sxz<T1> > r_tmp;
@@ -427,8 +408,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
             sxz<T1> child;
             
             // store the son's coord
-            child.x = (*Rx[nr])[n].x;
-            child.z = (*Rx[nr])[n].z;
+            child = (*Rx[nr])[n];
             while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                    std::numeric_limits<T2>::max() ) {
                 
@@ -436,8 +416,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
                 
                 // we now go up in time - parent becomes the child of grand'pa
                 iChild = iParent;
-                child.x = (*node_p)[iChild].getX();
-                child.z = (*node_p)[iChild].getZ();
+                child = (*node_p)[iChild];
                 
                 // grand'pa is now papa
                 iParent = (*node_p)[iChild].getNodeParent(threadNo);
@@ -454,25 +433,22 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
             r_tmp.push_back( child );
             
             // finally, store Tx position
-            child.x = (*node_p)[iParent].getX();
-            child.z = (*node_p)[iParent].getZ();
+            child = (*node_p)[iParent];
             r_tmp.push_back( child );
             
             // the order should be from Tx to Rx, so we reorder...
             iParent = static_cast<T2>(r_tmp.size());
             (*r_data[nr])[n].resize( r_tmp.size() );
             for ( size_t nn=0; nn<(*r_data[nr])[n].size(); ++nn ) {
-                (*r_data[nr])[n][nn].x = r_tmp[ iParent-1-nn ].x;
-                (*r_data[nr])[n][nn].z = r_tmp[ iParent-1-nn ].z;
+                (*r_data[nr])[n][nn] = r_tmp[ iParent-1-nn ];
             }
-            
         }
     }
 	return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE>
+int Grid2Ducsp<T1,T2,NODE>::raytrace(const std::vector<sxz<T1> >& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<sxz<T1> >& Rx,
 								std::vector<T1>& traveltimes,
@@ -489,10 +465,10 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     }
     
 	CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+    std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1> > queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<NODE > txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -528,8 +504,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
             if ( Rx[n] == Tx[ns] ) {
                 
                 r_data[n].resize( 1 );
-                r_data[n][0].x = Rx[n].x;
-                r_data[n][0].z = Rx[n].z;
+                r_data[n][0] = Rx[n];
                 
                 // no need to update l_data: ray length is zero
                 
@@ -539,7 +514,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
         if ( flag ) continue;
 
         // Rx are in nodes (not txNodes)
-        std::vector<Node2Dcsp<T1,T2> > *node_p;
+        std::vector<NODE > *node_p;
         node_p = &(this->nodes);
         
         std::vector<sxz<T1> > r_tmp;
@@ -548,8 +523,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
         siv<T1> cell;
 		
         // store the son's coord
-        child.x = Rx[n].x;
-        child.z = Rx[n].z;
+        child = Rx[n];
         cell.i = cellParentRx;
         while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                std::numeric_limits<T2>::max() ) {
@@ -570,8 +544,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 			
 			// we now go up in time - parent becomes the child of grand'pa
 			iChild = iParent;
-			child.x = (*node_p)[iChild].getX();
-			child.z = (*node_p)[iChild].getZ();
+			child = (*node_p)[iChild];
             cell.i = (*node_p)[iChild].getCellParent(threadNo);
 			
 			// grand'pa is now papa
@@ -601,8 +574,7 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 		}
 		
 		// finally, store Tx position
-		child.x = (*node_p)[iParent].getX();
-		child.z = (*node_p)[iParent].getZ();
+		child = (*node_p)[iParent];
 		r_tmp.push_back( child );
 		
         //  must be sorted to build matrix L
@@ -612,134 +584,20 @@ int Grid2Ducsp<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
         iParent = static_cast<T2>(r_tmp.size());
         r_data[n].resize( r_tmp.size() );
         for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
+            r_data[n][nn] = r_tmp[ iParent-1-nn ];
         }
     }
 	return 0;
 }
 
 
-//template<typename T1, typename T2>
-//int Grid2Ducsp<T1,T2>::getTraveltimes(const std::vector<sxz<T1> >& Rx,
-//									std::vector<T1>& traveltimes,
-//									const size_t threadNo) const {
-//    
-//    if ( check_pts(Rx) == 1 ) return 1;
-//    
-//    if ( traveltimes.size() != Rx.size() ) {
-//        traveltimes.resize( Rx.size() );
-//    }
-//    
-//    for (size_t n=0; n<Rx.size(); ++n) {
-//        traveltimes[n] = getTraveltime(Rx[n], this->nodes, threadNo);
-//    }
-//    return 0;
-//}
-
-//template<typename T1, typename T2>
-//int Grid2Ducsp<T1,T2>::getTraveltimes(const std::vector<sxz<T1> >& Tx,
-//									  const std::vector<sxz<T1> >& Rx,
-//									  std::vector<T1>& traveltimes,
-//									  std::vector<std::vector<sxz<T1> > >& r_data,
-//									  const size_t threadNo) const {
-//    
-//    if ( check_pts(Rx) == 1 ) return 1;
-//	
-//    std::vector<Node2Dcsp<T1,T2> > txNodes;
-//	for (size_t n=0; n<Tx.size(); ++n) {
-//        bool found = false;
-//        for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
-//            if ( this->nodes[nn] == Tx[n] ) {
-//                found = true;
-//                break;
-//            }
-//        }
-//        if ( found==false ) {
-//            txNodes.push_back( Node2Dcsp<T1,T2>(0.0, Tx[n].x, Tx[n].z,
-//											  this->nThreads, threadNo) );
-//            // we belong to cell index no
-//            txNodes.back().pushOwner( getCellNo(Tx[n]) );
-//            txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+
-//                                                         txNodes.size())-1 );
-//        }
-//    }
-//    
-//    if ( traveltimes.size() != Rx.size() ) {
-//        traveltimes.resize( Rx.size() );
-//    }
-//    if ( r_data.size() != Rx.size() ) {
-//        r_data.resize( Rx.size() );
-//    }
-//    for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-//        r_data[ni].resize( 0 );
-//    }
-//    T2 nodeParentRx;
-//    T2 cellParentRx;
-//    
-//    for (size_t n=0; n<Rx.size(); ++n) {
-//        traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
-//									   threadNo);
-//        
-//        // Rx are in nodes (not txNodes)
-//        std::vector<Node2Dcsp<T1,T2> > *node_p;
-//        node_p = &(this->nodes);
-//        
-//        std::vector<sxz<T1> > r_tmp;
-//        T2 iChild, iParent = nodeParentRx;
-//        sxz<T1> child;
-//		
-//        // store the son's coord
-//        child.x = Rx[n].x;
-//        child.z = Rx[n].z;
-//        while ( (*node_p)[iParent].getNodeParent(threadNo) !=
-//               std::numeric_limits<T2>::max() ) {
-// 			
-//			r_tmp.push_back( child );
-//			
-//			// we now go up in time - parent becomes the child of grand'pa
-//			iChild = iParent;
-//			child.x = (*node_p)[iChild].getX();
-//			child.z = (*node_p)[iChild].getZ();
-//            
-//			// grand'pa is now papa
-//			iParent = (*node_p)[iChild].getNodeParent(threadNo);
-//            if ( iParent >= this->nodes.size() ) {
-//                node_p = &txNodes;
-//                iParent -= this->nodes.size();
-//            }
-//            else {
-//                node_p = &(this->nodes);
-//            }
-//		}
-//		
-//		// parent is now at Tx
-//		r_tmp.push_back( child );
-//		
-//		// finally, store Tx position
-//		child.x = (*node_p)[iParent].getX();
-//		child.z = (*node_p)[iParent].getZ();
-//		r_tmp.push_back( child );
-//		
-//        // the order should be from Tx to Rx, so we reorder...
-//        iParent = static_cast<T2>(r_tmp.size());
-//        r_data[n].resize( r_tmp.size() );
-//        for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-//            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-//            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
-//        }
-//    }
-//    return 0;
-//}
-
-
-template<typename T1, typename T2>
-void Grid2Ducsp<T1,T2>::initQueue(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE>
+void Grid2Ducsp<T1,T2,NODE>::initQueue(const std::vector<sxz<T1> >& Tx,
 								  const std::vector<T1>& t0,
-								  std::priority_queue<Node2Dcsp<T1,T2>*,
-								  std::vector<Node2Dcsp<T1,T2>*>,
+								  std::priority_queue<NODE*,
+								  std::vector<NODE*>,
 								  CompareNodePtr<T1> >& queue,
-								  std::vector<Node2Dcsp<T1,T2> >& txNodes,
+								  std::vector<NODE >& txNodes,
 								  std::vector<bool>& inQueue,
 								  std::vector<bool>& frozen,
 								  const size_t threadNo) const {
@@ -757,7 +615,7 @@ void Grid2Ducsp<T1,T2>::initQueue(const std::vector<sxz<T1> >& Tx,
             }
         }
         if ( found==false ) {
-            txNodes.push_back( Node2Dcsp<T1,T2>(t0[n], Tx[n].x, Tx[n].z, this->nThreads,
+            txNodes.push_back( NODE(t0[n], Tx[n], this->nThreads,
 												threadNo) );
             // we belong to cell index no
             txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
@@ -772,9 +630,9 @@ void Grid2Ducsp<T1,T2>::initQueue(const std::vector<sxz<T1> >& Tx,
 }
 
 
-template<typename T1, typename T2>
-void Grid2Ducsp<T1,T2>::propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
-								  std::vector<Node2Dcsp<T1,T2>*>,
+template<typename T1, typename T2, typename NODE>
+void Grid2Ducsp<T1,T2,NODE>::propagate(std::priority_queue<NODE*,
+								  std::vector<NODE*>,
 								  CompareNodePtr<T1> >& queue,
 								  std::vector<bool>& inQueue,
 								  std::vector<bool>& frozen,
@@ -782,15 +640,7 @@ void Grid2Ducsp<T1,T2>::propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
 //    size_t n=1;
     while ( !queue.empty() ) {
         
-        
-//        char filename[200];
-//        sprintf(filename, "/tmp/spm_tt_%06zd.xyz", n);
-//        saveTT(filename,1,threadNo);
-//        n++;
-        
-        
-        
-        const Node2Dcsp<T1,T2>* source = queue.top();
+        const NODE* source = queue.top();
         queue.pop();
         inQueue[ source->getGridIndex() ] = false;
         

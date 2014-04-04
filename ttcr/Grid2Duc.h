@@ -166,7 +166,8 @@ protected:
 		}
 	}
 	
-	T1 computeDt(const NODE& source, const sxz<T1>& node,
+	template<typename S>
+	T1 computeDt(const NODE& source, const S& node,
 				 const size_t cellNo) const {
 		return slowness[cellNo] * source.getDistance( node );
 	}
@@ -176,7 +177,8 @@ protected:
 		return slowness[cellNo] * source.getDistance( node );
 	}
 	
-	T2 getCellNo(const sxz<T1>& pt) const {
+	template<typename S>
+	T2 getCellNo(const S& pt) const {
 		for ( T2 n=0; n<triangles.size(); ++n ) {
 			if ( insideTriangle(pt, n) ) {
 				return n;
@@ -185,11 +187,13 @@ protected:
 		return -1;
 	}
 	
-	T1 getTraveltime(const sxz<T1>& Rx,
+	template<typename S>
+	T1 getTraveltime(const S& Rx,
 					 const std::vector<NODE>& nodes,
 					 const size_t threadNo) const;
 	
-	T1 getTraveltime(const sxz<T1>& Rx,
+	template<typename S>
+	T1 getTraveltime(const S& Rx,
                      const std::vector<NODE>& nodes,
 					 T2& nodeParentRx,
                      T2& cellParentRx,
@@ -197,8 +201,10 @@ protected:
 	
 	
 	int check_pts(const std::vector<sxz<T1> >&) const;
+	int check_pts(const std::vector<sxyz<T1> >&) const;
 	
 	bool insideTriangle(const sxz<T1>&, const T2) const;
+	bool insideTriangle(const sxyz<T1>&, const T2) const;
 
 	void processObtuse();
 	
@@ -226,8 +232,8 @@ protected:
 	void getNeighborNodes(const T2 cellNo, std::set<NODE*> &nnodes) const;
 };
 
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+template<typename T1, typename T2, typename NODE> template<typename S>
+T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const S& Rx,
 									   const std::vector<NODE>& nodes,
 									   const size_t threadNo) const {
     
@@ -253,8 +259,8 @@ T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
 }
 
 
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+template<typename T1, typename T2, typename NODE> template<typename S>
+T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const S& Rx,
 									const std::vector<NODE>& nodes,
 									T2& nodeParentRx, T2& cellParentRx,
 									const size_t threadNo) const {
@@ -315,6 +321,34 @@ int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxz<T1> >& pts) const {
     return 0;
 }
 
+template<typename T1, typename T2, typename NODE>
+int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1> >& pts) const {
+	
+    for (size_t n=0; n<pts.size(); ++n) {
+		bool found = false;
+		// check first if point is on a node
+		for ( T2 nt=0; nt<nodes.size(); ++nt ) {
+			if ( nodes[nt] == pts[n]) {
+				found = true;
+				break;
+			}
+		}
+		if ( found == false ) {
+            for ( T2 nt=0; nt<triangles.size(); ++nt ) {
+                if ( insideTriangle(pts[n], nt) ) {
+                    found = true;
+                }
+            }
+        }
+		if ( found == false ) {
+			std::cerr << "Error: point no " << (n+1)
+            << " outside the grid.\n";
+			return 1;
+		}
+    }
+    return 0;
+}
+
 
 template<typename T1, typename T2, typename NODE>
 bool Grid2Duc<T1,T2,NODE>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
@@ -335,10 +369,32 @@ bool Grid2Duc<T1,T2,NODE>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
 	return (a >= 0.) && (b >= 0.) && (a + b < 1.);
 }
 
+template<typename T1, typename T2, typename NODE>
+bool Grid2Duc<T1,T2,NODE>::insideTriangle(const sxyz<T1>& v, const T2 nt) const {
+	
+	
+	// from http://mathworld.wolfram.com/TriangleInterior.html
+	
+	sxz<T1> v0 = { nodes[ triangles[nt].i[0] ].getX(),
+		nodes[ triangles[nt].i[0] ].getY(),
+		nodes[ triangles[nt].i[0] ].getZ() };
+	sxz<T1> v1 = { nodes[ triangles[nt].i[1] ].getX()-v0.x,
+		nodes[ triangles[nt].i[1] ].getY()-v0.y,
+		nodes[ triangles[nt].i[1] ].getZ()-v0.z };
+	sxz<T1> v2 = { nodes[ triangles[nt].i[2] ].getX()-v0.x,
+		nodes[ triangles[nt].i[2] ].getY()-v0.y,
+		nodes[ triangles[nt].i[2] ].getZ()-v0.z };
+	
+	T1 invDenom = 1. / det(v1, v2);
+	T1 a = (det(v, v2) - det(v0, v2)) * invDenom;
+	T1 b = -(det(v, v1) - det(v0, v1)) * invDenom;
+	return (a >= 0.) && (b >= 0.) && (a + b < 1.);
+}
+
 
 template<typename T1, typename T2, typename NODE>
 void Grid2Duc<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
-							 const size_t nt, const bool vtkFormat) const {
+								  const size_t nt, const bool vtkFormat) const {
 	
 	if (vtkFormat) {
 #ifdef VTK
@@ -416,7 +472,7 @@ void Grid2Duc<T1,T2,NODE>::saveModelVTU(const std::string &fname,
     T2 nMax = nPrimary;  // only primary are saved
     for (size_t n=0; n<nMax; ++n) {
         xyz[0] = nodes[n].getX();
-        xyz[1] = 0.0;
+        xyz[1] = nodes[n].getY();
         xyz[2] = nodes[n].getZ();
         newPts->InsertPoint(n, xyz);
     }
@@ -596,13 +652,13 @@ void Grid2Duc<T1,T2,NODE>::processObtuse() {
 				vn.node2 = &(nodes[i3]);
 				
 				// distance between node 1 & 3 (opposite of node 0)
-				T1 a = nodes[i1].getDistance( nodes[i3]);
+				T1 a = nodes[i1].getDistance( nodes[i3] );
 				
 				// distance between node 0 & 3 (opposite of node 1)
-				T1 b = nodes[i0].getDistance( nodes[i3]);
+				T1 b = nodes[i0].getDistance( nodes[i3] );
 				
 				// distance between node 0 & 1 (opposite of node 3)
-				T1 c = nodes[i0].getDistance( nodes[i1]);
+				T1 c = nodes[i0].getDistance( nodes[i1] );
 				
 				// angle at node 0
 				T1 a0 = acos((b*b + c*c - a*a)/(2.*b*c));

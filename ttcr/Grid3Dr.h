@@ -107,17 +107,28 @@ protected:
         return ny*ncx + nz*(ncx*ncy) + nx;
     }
 	
-    T2 getCellNo(const Node3Dc<T1,T2>& node) const {
-        T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
-        T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
-        T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
-        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
-        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-        return ny*ncx + nz*(ncx*ncy) + nx;
-    }
+//    T2 getCellNo(const Node3Dc<T1,T2>& node) const {
+//        T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
+//        T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
+//        T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
+//        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
+//        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
+//        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+//        return ny*ncx + nz*(ncx*ncy) + nx;
+//    }
+//	
+//    T2 getCellNo(const Node3Di<T1,T2>& node) const {
+//        T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
+//        T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
+//        T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
+//        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
+//        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
+//        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+//        return ny*ncx + nz*(ncx*ncy) + nx;
+//    }
 	
-    T2 getCellNo(const Node3Di<T1,T2>& node) const {
+	template<typename NODE>
+	T2 getCellNo(const NODE& node) const {
         T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
         T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
         T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
@@ -126,6 +137,7 @@ protected:
         T2 nz = static_cast<T2>( small + (z-zmin)/dz );
         return ny*ncx + nz*(ncx*ncy) + nx;
     }
+
 
     int check_pts(const std::vector<sxyz<T1> >&) const;
 

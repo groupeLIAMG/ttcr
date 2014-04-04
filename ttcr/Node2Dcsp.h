@@ -80,6 +80,28 @@ public:
 		tt[i] = t;
 	}
 	
+	template<typename SXZ>
+	Node2Dcsp(const T1 t, const SXZ &s, const size_t nt, const size_t i) :
+	nThreads(nt),
+	x(s.x), z(s.z),
+	gridIndex(std::numeric_limits<T2>::max()),
+	tt(nullptr),
+	nodeParent(nullptr),
+	cellParent(nullptr),
+	owners(std::vector<T2>(0))
+	{
+		tt = new T1[nt];
+		nodeParent = new T2[nt];
+		cellParent = new T2[nt];
+		
+		for ( size_t n=0; n<nt; ++n ) {
+			tt[n] = std::numeric_limits<T1>::max();
+			nodeParent[n] = std::numeric_limits<T2>::max();
+			cellParent[n] = std::numeric_limits<T2>::max();
+		}
+		tt[i] = t;
+	}
+	
 	Node2Dcsp(const Node2Dcsp<T1,T2>& node) :
 	nThreads(node.nThreads),
 	x(node.x), z(node.z),
@@ -114,6 +136,10 @@ public:
 	
 	void setXZindex(const T1 xx, const T1 zz, const T2 index) {
 		x=xx; z=zz; gridIndex = index;  }
+	
+	template<typename SXZ>
+	void setXYZindex(const SXZ& s, const T2 index) {
+		x=s.x; z=s.z; gridIndex = index;  }
 	
     T1 getX() const {
 		return x;

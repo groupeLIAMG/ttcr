@@ -33,6 +33,7 @@
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
+#include "Node2Dcsp.h"
 #include "MSHReader.h"
 #ifdef VTK
 #include "VTUReader.h"
@@ -689,7 +690,7 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
 				cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducsp<T, uint32_t>(nodes, triangles, par.nn[0], nt);
+			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
 				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -858,7 +859,7 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
 				cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducsp<T, uint32_t>(nodes, triangles, par.nn[0], nt);
+			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
 				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()

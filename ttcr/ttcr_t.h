@@ -84,6 +84,21 @@ struct sxz {
 		return x==s.x && z==s.z;
     }
 	
+	sxz<T> & operator=(const sxz<T>& s) {
+		if (this != &s) { // protect against invalid self-assignment
+			x = s.x;
+			z = s.z;
+		}
+		return *this;
+	}
+	
+	template<typename NODE>
+	sxz<T> & operator=(const NODE& n) {
+		x = n.getX();
+		z = n.getZ();
+		return *this;
+	}
+	
 	bool operator<(const sxz<T>& s) const {
 		return x<s.x && z<s.z;
 	}
@@ -111,6 +126,31 @@ std::istream& operator>> (std::istream& is, struct sxz<T> &s) {
     return is;
 }
 
+template <typename T>
+sxz<T> operator+(const sxz<T>& lhs, const sxz<T>& rhs)
+{
+	return sxz<T>(lhs.x+rhs.x, lhs.z+rhs.z);
+}
+
+template <typename T>
+sxz<T> operator-(const sxz<T>& lhs, const sxz<T>& rhs)
+{
+	return sxz<T>(lhs.x-rhs.x, lhs.z-rhs.z);
+}
+
+template <typename T>
+sxz<T> operator*(const T& scalar, const sxz<T>& v)
+{
+	return sxz<T>(scalar*v.x, scalar*v.z);
+}
+
+template <typename T>
+sxz<T> operator/(const sxz<T>& v, const T& scalar)
+{
+	return sxz<T>(v.x/scalar, v.z/scalar);
+}
+
+
 
 template<typename T>
 struct sxyz {
@@ -125,6 +165,23 @@ struct sxyz {
 		//        return (fabs(x-a.x)<small && fabs(z-a.z)<small);
 		return x==s.x && y==s.y && z==s.z;
     }
+	
+	sxyz<T> & operator=(const sxyz<T>& s) {
+		if (this != &s) { // protect against invalid self-assignment
+			x = s.x;
+			y = s.y;
+			z = s.z;
+		}
+		return *this;
+	}
+	
+	template<typename NODE>
+	sxyz<T> & operator=(const NODE& n) {
+		x = n.getX();
+		y = n.getY();
+		z = n.getZ();
+		return *this;
+	}
 	
 	bool operator<(const sxyz<T>& s) const {
 		return x<s.x && y<s.y && z<s.z;
@@ -170,6 +227,12 @@ template <typename T>
 sxyz<T> operator*(const T& scalar, const sxyz<T>& v)
 {
 	return sxyz<T>(scalar*v.x, scalar*v.y, scalar*v.z);
+}
+
+template <typename T>
+sxyz<T> operator/(const sxyz<T>& v, const T& scalar)
+{
+	return sxyz<T>(v.x/scalar, v.y/scalar, v.z/scalar);
 }
 
 

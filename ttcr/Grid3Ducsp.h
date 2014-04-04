@@ -73,9 +73,6 @@ public:
 	
 private:
 	
-//	void buildGridNodesOld(const std::vector<sxyz<T1>>&,
-//                           const int, const size_t, const int);
-
 	void buildGridNodes(const std::vector<sxyz<T1>>&,
                         const int, const size_t, const int);
 
@@ -105,223 +102,6 @@ private:
 	
 };
 
-//template<typename T1, typename T2>
-//void Grid3Ducsp<T1,T2>::buildGridNodesOld(const std::vector<sxyz<T1>>& no,
-//                                          const int nsecondary,
-//                                          const size_t nt, const int verbose) {
-//	
-//	// primary nodes
-//	for ( T2 n=0; n<no.size(); ++n ) {
-//		this->nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
-//	}
-//	T2 nNodes = static_cast<T2>(this->nodes.size());
-//	
-//    size_t nFaceNodes = 0;
-//    for ( int n=1; n<=(nsecondary-1); ++n ) nFaceNodes += n;
-//    
-//	std::vector<std::array<T2,2>> lines;
-//	std::vector<std::vector<T2>> lineNodes;
-//	   
-//    size_t estLineNo = (this->tetrahedra.size()+this->tetrahedra.size()/10) * 6/2;
-//    size_t estFaceNo = (this->tetrahedra.size()+this->tetrahedra.size()/10) * 4/2;
-//    this->nodes.reserve( nNodes + estLineNo*nsecondary + estFaceNo*nFaceNodes );
-//    lines.reserve( estLineNo );
-//    lineNodes.reserve( estLineNo );
-//    
-//	
-//	T2 iNodes[4][3] = {
-//		{0,1,2},  // (relative) indices of nodes of 1st triangle
-//		{1,2,3},  // (relative) indices of nodes of 2nd triangle
-//		{0,2,3},  // (relative) indices of nodes of 3rd triangle
-//		{0,1,3}   // (relative) indices of nodes of 4th triangle
-//	};
-//	
-//	//
-//	//              1
-//	//            ,/|`\
-//	//          ,/  |  `\
-//	//        ,0    '.   `4
-//	//      ,/       1     `\
-//	//    ,/         |       `\
-//	//   0-----5-----'.--------3
-//	//    `\.         |      ,/
-//	//       `\.      |     3
-//	//          `2.   '. ,/
-//	//             `\. |/
-//	//                `2
-//	//
-//	//
-//	//  triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
-//	//               ---  ---  ---
-//	//  triangle 1:  1-2  2-3  3-1
-//	//                    ---  ---
-//	//  triangle 2:  0-2  2-3  3-0
-//	//                         ---
-//	//  triangle 3:  0-1  1-3  3-0
-//    
-//	if ( verbose>1 && nsecondary > 0 ) {
-//		std::cout << '\n';
-//	}
-//	
-//	// edge nodes
-//	Node3Dcsp<T1,T2> tmpNode(nt);
-//	for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-//		
-//		if ( verbose>1 && nsecondary > 0 ) {
-//			std::cout << "\r  Building edge nodes: " << (100*ntet)/this->tetrahedra.size() << "%";
-//			std::cout.flush();
-//		}
-//		
-//		// for each triangle
-//		for ( T2 ntri=0; ntri<4; ++ntri ) {
-//            
-//			// push owner for primary nodes
-//			this->nodes[ this->tetrahedra[ntet].i[ntri] ].pushOwner( ntet );
-//			
-//			if ( nsecondary > 0 ) {
-//				// start from ntri to avoid redundancy
-//				for ( size_t nl=ntri; nl<3; ++nl ) {
-//					
-//					T2 i1 = this->tetrahedra[ntet].i[ iNodes[ntri][nl] ];
-//					T2 i2 = this->tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ];
-//					if ( i1>i2 ) std::swap(i1,i2);
-//										
-//					bool inLines = false;
-//					size_t lineNo;
-//					
-//					for ( size_t n=0; n<lines.size(); ++n ) {
-//						inLines = ( lines[n][0]==i1 && lines[n][1]==i2 );// ||	( lines[n][0]==i2 && lines[n][1]==i1 );
-//						if (inLines) {
-//							lineNo = n;
-//							break;
-//						}
-//					}
-//					
-//					if (inLines) {
-//						// already entered
-//						for ( size_t n=0; n<lineNodes[lineNo].size(); ++n ) {
-//							// setting owners
-//							this->nodes[ lineNodes[lineNo][n] ].pushOwner( ntet );
-//						}
-//						continue;
-//					} else {
-//						lines.push_back( {i1, i2} );
-//						lineNodes.push_back(std::vector<T2>(nsecondary));
-//					}
-//					
-//					sxyz<T1> d = { (no[i2].x-no[i1].x)/(nsecondary+1),
-//						(no[i2].y-no[i1].y)/(nsecondary+1),
-//						(no[i2].z-no[i1].z)/(nsecondary+1) };
-//					
-//					for ( size_t n2=0; n2<nsecondary; ++n2 ) {
-//						tmpNode.setXYZindex(no[i1].x+(1+n2)*d.x,
-//											no[i1].y+(1+n2)*d.y,
-//											no[i1].z+(1+n2)*d.z,
-//											nNodes );
-//                        lineNodes.back()[n2] = nNodes++;
-//						this->nodes.push_back( tmpNode );
-//						this->nodes.back().pushOwner( ntet );
-//					}
-//				}
-//			}
-//		}
-//	}
-//    
-//	if ( verbose>1 && nsecondary > 0 ) {
-//		std::cout << "\r  Building edge nodes: 100%\n";
-//	}
-//    
-//	if ( nsecondary > 1 ) {
-//		std::vector<std::array<T2,3>> faces;
-//		std::vector<std::vector<T2>> faceNodes;
-//        faces.reserve( estFaceNo );
-//        faceNodes.reserve( estFaceNo );
-//        
-//		int ncut = nsecondary - 1;
-//		
-//		for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-//		
-//			if ( verbose>1 ) {
-//				std::cout << "\r  Building face nodes: " << (100*ntet)/this->tetrahedra.size() << "%";
-//				std::cout.flush();
-//			}
-//			
-//			// for each triangle
-//			for ( T2 ntri=0; ntri<4; ++ntri ) {
-//				
-//				T2 i0 = this->tetrahedra[ntet].i[ iNodes[ntri][0] ];
-//				T2 i1 = this->tetrahedra[ntet].i[ iNodes[ntri][1] ];
-//				T2 i2 = this->tetrahedra[ntet].i[ iNodes[ntri][2] ];
-//				if ( i0>i1 ) std::swap(i0,i1);
-//				if ( i0>i2 ) std::swap(i0,i2);
-//				if ( i1>i2 ) std::swap(i1,i2);
-//
-//				bool inFaces = false;
-//				size_t faceNo;
-//				
-//				for ( size_t n=0; n<faces.size(); ++n ) {
-//					inFaces = ( faces[n][0]==i0 && faces[n][1]==i1 && faces[n][2]==i2 );
-//					if (inFaces) {
-//						faceNo = n;
-//						break;
-//					}
-//				}
-//				
-//				if (inFaces) {
-//					// already entered
-//					for ( size_t n=0; n<faceNodes[faceNo].size(); ++n ) {
-//						// setting owners
-//						this->nodes[ faceNodes[faceNo][n] ].pushOwner( ntet );
-//					}
-//					
-//					continue;
-//				} else {
-//					faces.push_back( {i0, i1, i2} );
-//					faceNodes.push_back(std::vector<T2>(nFaceNodes));
-//				}
-//				
-//				sxyz<T1> d1 = { (no[i1].x-no[i0].x)/(nsecondary+1),
-//                    (no[i1].y-no[i0].y)/(nsecondary+1),
-//                    (no[i1].z-no[i0].z)/(nsecondary+1) };
-//				sxyz<T1> d2 = { (no[i1].x-no[i2].x)/(nsecondary+1),
-//                    (no[i1].y-no[i2].y)/(nsecondary+1),
-//                    (no[i1].z-no[i2].z)/(nsecondary+1) };
-//				
-//                size_t ifn = 0;
-//				for ( size_t n=0; n<ncut; ++n ) {
-//					
-//					sxyz<T1> pt1 = { no[i0].x+(1+n)*d1.x,
-//                        no[i0].y+(1+n)*d1.y,
-//                        no[i0].z+(1+n)*d1.z };
-//					sxyz<T1> pt2 = { no[i2].x+(1+n)*d2.x,
-//                        no[i2].y+(1+n)*d2.y,
-//                        no[i2].z+(1+n)*d2.z };
-//					
-//					size_t nseg = ncut+1-n;
-//					
-//					sxyz<T1> d = { (pt2.x-pt1.x)/nseg,
-//                        (pt2.y-pt1.y)/nseg,
-//                        (pt2.z-pt1.z)/nseg };
-//					
-//					for ( size_t n2=0; n2<nseg-1; ++n2 ) {
-//						tmpNode.setXYZindex(pt1.x+(1+n2)*d.x,
-//											pt1.y+(1+n2)*d.y,
-//											pt1.z+(1+n2)*d.z,
-//											nNodes );
-//						faceNodes.back()[ ifn++ ] = nNodes++;
-//						this->nodes.push_back( tmpNode );
-//						this->nodes.back().pushOwner( ntet );
-//					}
-//				}
-//			}
-//		}
-//	}
-//	if ( verbose>1 && nsecondary > 0 ) {
-//		std::cout << "\r  Building face nodes: 100%\n";
-//	}
-//	
-//	this->nodes.shrink_to_fit();
-//}
 
 template<typename T1, typename T2>
 void Grid3Ducsp<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
@@ -415,9 +195,7 @@ void Grid3Ducsp<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
 						continue;
 					}
 					
-					sxyz<T1> d = { (no[lineKey[1]].x-no[lineKey[0]].x)/(nsecondary+1),
-						(no[lineKey[1]].y-no[lineKey[0]].y)/(nsecondary+1),
-						(no[lineKey[1]].z-no[lineKey[0]].z)/(nsecondary+1) };
+					sxyz<T1> d = (no[lineKey[1]]-no[lineKey[0]])/static_cast<T1>(nsecondary+1);
 					
 					for ( size_t n2=0; n2<nsecondary; ++n2 ) {
 						tmpNode.setXYZindex(no[lineKey[0]].x+(1+n2)*d.x,
@@ -473,29 +251,18 @@ void Grid3Ducsp<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
 					continue;
 				}
 
-								
-				sxyz<T1> d1 = { (no[faceKey[1]].x-no[faceKey[0]].x)/(nsecondary+1),
-                    (no[faceKey[1]].y-no[faceKey[0]].y)/(nsecondary+1),
-                    (no[faceKey[1]].z-no[faceKey[0]].z)/(nsecondary+1) };
-				sxyz<T1> d2 = { (no[faceKey[1]].x-no[faceKey[2]].x)/(nsecondary+1),
-                    (no[faceKey[1]].y-no[faceKey[2]].y)/(nsecondary+1),
-                    (no[faceKey[1]].z-no[faceKey[2]].z)/(nsecondary+1) };
+				sxyz<T1> d1 = (no[faceKey[1]]-no[faceKey[0]])/static_cast<T1>(nsecondary+1);
+				sxyz<T1> d2 = (no[faceKey[1]]-no[faceKey[2]])/static_cast<T1>(nsecondary+1);
 				
                 size_t ifn = 0;
 				for ( size_t n=0; n<ncut; ++n ) {
 					
-					sxyz<T1> pt1 = { no[faceKey[0]].x+(1+n)*d1.x,
-                        no[faceKey[0]].y+(1+n)*d1.y,
-                        no[faceKey[0]].z+(1+n)*d1.z };
-					sxyz<T1> pt2 = { no[faceKey[2]].x+(1+n)*d2.x,
-                        no[faceKey[2]].y+(1+n)*d2.y,
-                        no[faceKey[2]].z+(1+n)*d2.z };
+					sxyz<T1> pt1 = no[faceKey[0]]+static_cast<T1>(1+n)*d1;
+					sxyz<T1> pt2 = no[faceKey[2]]+static_cast<T1>(1+n)*d2;
 					
 					size_t nseg = ncut+1-n;
 					
-					sxyz<T1> d = { (pt2.x-pt1.x)/nseg,
-                        (pt2.y-pt1.y)/nseg,
-                        (pt2.z-pt1.z)/nseg };
+					sxyz<T1> d = (pt2-pt1)/static_cast<T1>(nseg);
 					
 					for ( size_t n2=0; n2<nseg-1; ++n2 ) {
 						tmpNode.setXYZindex(pt1.x+(1+n2)*d.x,
@@ -645,9 +412,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 			if ( Rx[n] == Tx[ns] ) {
 				
 				r_data[n].resize( 1 );
-				r_data[n][0].x = Rx[n].x;
-				r_data[n][0].y = Rx[n].y;
-				r_data[n][0].z = Rx[n].z;
+				r_data[n][0] = Rx[n];
 				
 				flag = true;
 				break;
@@ -664,9 +429,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
         sxyz<T1> child;
 		
         // store the son's coord
-        child.x = Rx[n].x;
-        child.y = Rx[n].y;
-        child.z = Rx[n].z;
+        child = Rx[n];
         while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                std::numeric_limits<T2>::max() ) {
  			
@@ -674,9 +437,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 			
 			// we now go up in time - parent becomes the child of grand'pa
 			iChild = iParent;
-			child.x = (*node_p)[iChild].getX();
-			child.y = (*node_p)[iChild].getY();
-			child.z = (*node_p)[iChild].getZ();
+			child = (*node_p)[iChild];
             
 			// grand'pa is now papa
 			iParent = (*node_p)[iChild].getNodeParent(threadNo);
@@ -693,18 +454,14 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 		r_tmp.push_back( child );
 		
 		// finally, store Tx position
-		child.x = (*node_p)[iParent].getX();
-		child.y = (*node_p)[iParent].getY();
-		child.z = (*node_p)[iParent].getZ();
+		child = (*node_p)[iParent];
 		r_tmp.push_back( child );
 		
         // the order should be from Tx to Rx, so we reorder...
         iParent = static_cast<T2>(r_tmp.size());
         r_data[n].resize( r_tmp.size() );
         for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-            r_data[n][nn].y = r_tmp[ iParent-1-nn ].y;
-            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
+            r_data[n][nn] = r_tmp[ iParent-1-nn ];
         }
     }
 	return 0;
@@ -767,9 +524,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
                 if ( (*Rx[nr])[n] == Tx[ns] ) {
                     
                     (*r_data[nr])[n].resize( 1 );
-                    (*r_data[nr])[n][0].x = (*Rx[nr])[n].x;
-                    (*r_data[nr])[n][0].y = (*Rx[nr])[n].y;
-                    (*r_data[nr])[n][0].z = (*Rx[nr])[n].z;
+                    (*r_data[nr])[n][0] = (*Rx[nr])[n];
                     
                     flag = true;
                     break;
@@ -786,9 +541,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
             sxyz<T1> child;
             
             // store the son's coord
-            child.x = (*Rx[nr])[n].x;
-            child.y = (*Rx[nr])[n].y;
-            child.z = (*Rx[nr])[n].z;
+            child = (*Rx[nr])[n];
             while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                    std::numeric_limits<T2>::max() ) {
                 
@@ -796,9 +549,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
                 
                 // we now go up in time - parent becomes the child of grand'pa
                 iChild = iParent;
-                child.x = (*node_p)[iChild].getX();
-                child.y = (*node_p)[iChild].getY();
-                child.z = (*node_p)[iChild].getZ();
+                child = (*node_p)[iChild];
                 
                 // grand'pa is now papa
                 iParent = (*node_p)[iChild].getNodeParent(threadNo);
@@ -815,20 +566,15 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
             r_tmp.push_back( child );
             
             // finally, store Tx position
-            child.x = (*node_p)[iParent].getX();
-            child.y = (*node_p)[iParent].getY();
-            child.z = (*node_p)[iParent].getZ();
+            child = (*node_p)[iParent];
             r_tmp.push_back( child );
             
             // the order should be from Tx to Rx, so we reorder...
             iParent = static_cast<T2>(r_tmp.size());
             (*r_data[nr])[n].resize( r_tmp.size() );
             for ( size_t nn=0; nn<(*r_data[nr])[n].size(); ++nn ) {
-                (*r_data[nr])[n][nn].x = r_tmp[ iParent-1-nn ].x;
-                (*r_data[nr])[n][nn].y = r_tmp[ iParent-1-nn ].y;
-                (*r_data[nr])[n][nn].z = r_tmp[ iParent-1-nn ].z;
+                (*r_data[nr])[n][nn] = r_tmp[ iParent-1-nn ];
             }
-            
         }
     }
 	return 0;
@@ -886,6 +632,20 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
         traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
 									   threadNo);
         
+        bool flag=false;
+        for ( size_t ns=0; ns<Tx.size(); ++n ) {
+            if ( Rx[n] == Tx[ns] ) {
+                
+                r_data[n].resize( 1 );
+                r_data[n][0] = Rx[n];
+                
+                // no need to update l_data: ray length is zero
+                
+                flag = true;
+            }
+        }
+        if ( flag ) continue;
+
         // Rx are in nodes (not txNodes)
         std::vector<Node3Dcsp<T1,T2> > *node_p;
         node_p = &this->nodes;
@@ -896,9 +656,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
         siv<T1> cell;
 		
         // store the son's coord
-        child.x = Rx[n].x;
-        child.y = Rx[n].y;
-        child.z = Rx[n].z;
+        child = Rx[n];
         cell.i = cellParentRx;
         while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                std::numeric_limits<T2>::max() ) {
@@ -919,9 +677,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 			
 			// we now go up in time - parent becomes the child of grand'pa
 			iChild = iParent;
-			child.x = (*node_p)[iChild].getX();
-			child.y = (*node_p)[iChild].getY();
-			child.z = (*node_p)[iChild].getZ();
+			child = (*node_p)[iChild];
             cell.i = (*node_p)[iChild].getCellParent(threadNo);
 			
 			// grand'pa is now papa
@@ -951,9 +707,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 		}
 		
 		// finally, store Tx position
-		child.x = (*node_p)[iParent].getX();
-		child.y = (*node_p)[iParent].getY();
-		child.z = (*node_p)[iParent].getZ();
+		child = (*node_p)[iParent];
 		r_tmp.push_back( child );
 		
         //  must be sorted to build matrix L
@@ -963,9 +717,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
         iParent = static_cast<T2>(r_tmp.size());
         r_data[n].resize( r_tmp.size() );
         for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-            r_data[n][nn].y = r_tmp[ iParent-1-nn ].y;
-            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
+            r_data[n][nn] = r_tmp[ iParent-1-nn ];
         }
     }
     return 0;
