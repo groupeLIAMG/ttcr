@@ -13,21 +13,6 @@
 #include "Node3Di.h"
 #include "Node3Dc.h"
 
-//namespace Grid3D {
-//    size_t get_number_of_nodes3D_r(const size_t nx, const size_t ny,
-//								   const size_t nz, const size_t nnx,
-//								   const size_t nny, const size_t nnz) {
-//        return nx*nnx*((ny+1)*(nz+1)) + // // secondary nodes on the edges
-//        ny*nny*((nx+1)*(nz+1)) +
-//        nz*nnz*((nx+1)*(ny+1)) +
-//        // secondary nodes on the faces
-//        (nnx*nny)*(nx*ny*(nz+1))+
-//        (nnx*nnz)*(nx*nz*(ny+1))+
-//        (nny*nnz)*(ny*nz*(nx+1))+
-//        // primary nodes
-//        (nx+1) * (ny+1) * (nz+1);
-//    }
-//};
 
 template<typename T1, typename T2>
 class Grid3Dr : public Grid3D<T1,T2> {
@@ -94,38 +79,9 @@ protected:
         T2 nx = static_cast<T2>( small + (x-xmin)/dx );
         T2 ny = static_cast<T2>( small + (y-ymin)/dy );
         T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-//        T2 nn = ;
-//        if ( nn > ncx*ncy*ncz ) {
-//            std::cout << pt.x << ' ' << pt.y << ' ' << pt.z << '\n';
-//            std::cout << x << ' ' << y << ' ' << z << '\n';
-//            std::cout << xmax << ' ' << ymax << ' ' << zmax << '\n';
-//            std::cout << xmin << ' ' << ymin << ' ' << zmin << '\n';
-//            std::cout << dx << ' ' << dy << ' ' << dz << '\n';
-//            std::cout << nx << ' ' << ny << ' ' << nz << '\n';
-//            std::cout << ncx << ' ' << ncy << ' ' << ncz << '\n';
-//        }
         return ny*ncx + nz*(ncx*ncy) + nx;
     }
 	
-//    T2 getCellNo(const Node3Dc<T1,T2>& node) const {
-//        T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
-//        T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
-//        T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
-//        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-//        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
-//        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-//        return ny*ncx + nz*(ncx*ncy) + nx;
-//    }
-//	
-//    T2 getCellNo(const Node3Di<T1,T2>& node) const {
-//        T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
-//        T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
-//        T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
-//        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-//        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
-//        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-//        return ny*ncx + nz*(ncx*ncy) + nx;
-//    }
 	
 	template<typename NODE>
 	T2 getCellNo(const NODE& node) const {
@@ -139,12 +95,12 @@ protected:
     }
 
 
-    int check_pts(const std::vector<sxyz<T1> >&) const;
+    int check_pts(const std::vector<sxyz<T1>>&) const;
 
 };
 
 template<typename T1, typename T2>
-int Grid3Dr<T1,T2>::check_pts(const std::vector<sxyz<T1> >& pts) const {
+int Grid3Dr<T1,T2>::check_pts(const std::vector<sxyz<T1>>& pts) const {
     
     // Check if the points from a vector are in the grid
     for ( size_t n=0; n<pts.size(); ++n ) {

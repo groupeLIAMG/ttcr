@@ -48,7 +48,7 @@ public:
     }
     
     template<typename T>
-	void readNodes2D(std::vector<sxz<T> >& nodes) {
+	void readNodes2D(std::vector<sxz<T>>& nodes) {
         vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
         reader->SetFileName(filename.c_str());
@@ -64,7 +64,7 @@ public:
     }
     
     template<typename T>
-	void readNodes3D(std::vector<sxyz<T> >& nodes) {
+	void readNodes3D(std::vector<sxyz<T>>& nodes) {
         vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
         reader->SetFileName(filename.c_str());
@@ -81,7 +81,7 @@ public:
     }
     
     template<typename T>
-	void readTriangleElements(std::vector<triangleElem<T> >& tri) {
+	void readTriangleElements(std::vector<triangleElem<T>>& tri) {
         vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
         reader->SetFileName(filename.c_str());
@@ -102,7 +102,7 @@ public:
     }
     
     template<typename T>
-	void readTetrahedronElements(std::vector<tetrahedronElem<T> >& tet) {
+	void readTetrahedronElements(std::vector<tetrahedronElem<T>>& tet) {
         vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
         reader->SetFileName(filename.c_str());

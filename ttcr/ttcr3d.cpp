@@ -28,7 +28,7 @@ using namespace std;
 template<typename T>
 int body(const input_parameters &par) {
     
-	std::vector< Src<T> > src;
+	std::vector< Src<T>> src;
     for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
         src.push_back( Src<T>( par.srcfiles[n] ) );
 		string end = " ... ";
@@ -112,7 +112,7 @@ int body(const input_parameters &par) {
 	
     
 	chrono::high_resolution_clock::time_point begin, end;
-	std::vector<std::vector<std::vector<sxyz<T> > > > r_data(src.size());
+	std::vector<std::vector<std::vector<sxyz<T>>>> r_data(src.size());
     vector<vector<vector<vector<sxyz<T>>>>> rfl_r_data(reflectors.size());
 	for ( size_t n=0; n<reflectors.size(); ++n ) {
         rfl_r_data[n].resize( src.size() );

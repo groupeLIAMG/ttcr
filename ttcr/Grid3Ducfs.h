@@ -22,7 +22,7 @@ template<typename T1, typename T2>
 class Grid3Ducfs : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
 public:
 	Grid3Ducfs(const std::vector<sxyz<T1>>& no,
-			   const std::vector<tetrahedronElem<T2> >& tet,
+			   const std::vector<tetrahedronElem<T2>>& tet,
 			   const T1 eps, const int maxit, const size_t nt=1) :
     Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, nt),
 	epsilon(eps), nitermax(maxit), S()
@@ -48,11 +48,11 @@ public:
 				 std::vector<std::vector<T1>*>&,
 				 const size_t=0) const;
     
-	int raytrace(const std::vector<sxyz<T1> >&,
+	int raytrace(const std::vector<sxyz<T1>>&,
                  const std::vector<T1>& ,
-                 const std::vector<sxyz<T1> >&,
+                 const std::vector<sxyz<T1>>&,
                  std::vector<T1>&,
-                 std::vector<std::vector<sxyz<T1> > >&,
+                 std::vector<std::vector<sxyz<T1>>>&,
 				 const size_t=0) const;
     
     int raytrace(const std::vector<sxyz<T1>>&,
@@ -69,22 +69,22 @@ private:
 	
 	void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
 	
-	void initTx(const std::vector<sxyz<T1> >& Tx, const std::vector<T1>& t0,
+	void initTx(const std::vector<sxyz<T1>>& Tx, const std::vector<T1>& t0,
 				std::vector<bool>& frozen, const size_t threadNo) const;
 	
-	void initBand(const std::vector<sxyz<T1> >& Tx,
+	void initBand(const std::vector<sxyz<T1>>& Tx,
 				  const std::vector<T1>& t0,
 				  std::priority_queue<Node3Dc<T1,T2>*,
 				  std::vector<Node3Dc<T1,T2>*>,
-				  CompareNodePtr<T1> >&,
-				  std::vector<Node3Dc<T1,T2> >&,
+				  CompareNodePtr<T1>>&,
+				  std::vector<Node3Dc<T1,T2>>&,
 				  std::vector<bool>&,
 				  std::vector<bool>&,
 				  const size_t) const;
 	
 	void propagate(std::priority_queue<Node3Dc<T1,T2>*,
 				   std::vector<Node3Dc<T1,T2>*>,
-				   CompareNodePtr<T1> >&,
+				   CompareNodePtr<T1>>&,
 				   std::vector<bool>&,
 				   std::vector<bool>&,
 				   const size_t) const;
@@ -142,9 +142,9 @@ void Grid3Ducfs<T1,T2>::initOrdering(const std::vector<sxyz<T1>>& refPts,
 }
 
 template<typename T1, typename T2>
-int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								const std::vector<T1>& t0,
-								const std::vector<sxyz<T1> >& Rx,
+								const std::vector<sxyz<T1>>& Rx,
 								std::vector<T1>& traveltimes,
 								const size_t threadNo) const {
     
@@ -220,7 +220,7 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<sxyz<T1>>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -310,9 +310,9 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
-                                const std::vector<sxyz<T1> >& Rx,
+                                const std::vector<sxyz<T1>>& Rx,
                                 std::vector<T1>& traveltimes,
                                 std::vector<std::vector<sxyz<T1>>>& r_data,
                                 const size_t threadNo) const {
@@ -399,7 +399,7 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                 std::vector<std::vector<T1>*>& traveltimes,
@@ -501,7 +501,7 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-void Grid3Ducfs<T1,T2>::initTx(const std::vector<sxyz<T1> >& Tx,
+void Grid3Ducfs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
 							   const std::vector<T1>& t0,
 							   std::vector<bool>& frozen,
 							   const size_t threadNo) const {

@@ -37,12 +37,12 @@
 #include "Metric.h"
 
 template<typename T1, typename T2>
-class Grid2Ducfs : public Grid2Duc<T1,T2,Node2Dc<T1,T2>> {
+class Grid2Ducfs : public Grid2Duc<T1,T2,Node2Dc<T1,T2>,sxz<T1>> {
 public:
 	Grid2Ducfs(const std::vector<sxz<T1>>& no,
-				const std::vector<triangleElem<T2> >& tri,
+				const std::vector<triangleElem<T2>>& tri,
 				const T1 eps, const int maxit, const size_t nt=1) :
-	Grid2Duc<T1,T2,Node2Dc<T1,T2>>(no, tri, nt),
+	Grid2Duc<T1,T2,Node2Dc<T1,T2>,sxz<T1>>(no, tri, nt),
 	epsilon(eps), nitermax(maxit), S()
 	{
 		buildGridNodes(no, nt);
@@ -89,7 +89,7 @@ private:
 	void buildGridNodes(const std::vector<sxz<T1>>&,
 						const size_t);
 	
-	void initTx(const std::vector<sxz<T1> >& Tx, const std::vector<T1>& t0,
+	void initTx(const std::vector<sxz<T1>>& Tx, const std::vector<T1>& t0,
 				std::vector<bool>& frozen, const size_t threadNo) const;
 	
     
@@ -168,9 +168,9 @@ void Grid2Ducfs<T1,T2>::initOrdering(const std::vector<sxz<T1>>& refPts,
 
 
 template<typename T1, typename T2>
-int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  const std::vector<T1>& t0,
-							  const std::vector<sxz<T1> >& Rx,
+							  const std::vector<sxz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
 							  const size_t threadNo) const {
     
@@ -247,7 +247,7 @@ int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 								 const std::vector<T1>& t0,
 								 const std::vector<const std::vector<sxz<T1>>*>& Rx,
 								 std::vector<std::vector<T1>*>& traveltimes,
@@ -335,9 +335,9 @@ int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
-								const std::vector<sxz<T1> >& Rx,
+								const std::vector<sxz<T1>>& Rx,
 								std::vector<T1>& traveltimes,
 								std::vector<std::vector<sxz<T1>>>& r_data,
 								const size_t threadNo) const {
@@ -419,7 +419,7 @@ int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<sxz<T1>>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -520,7 +520,7 @@ int Grid2Ducfs<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-void Grid2Ducfs<T1,T2>::initTx(const std::vector<sxz<T1> >& Tx,
+void Grid2Ducfs<T1,T2>::initTx(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
                                 std::vector<bool>& frozen,
 								const size_t threadNo) const {

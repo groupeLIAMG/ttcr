@@ -98,22 +98,22 @@ public:
     
     size_t getNumberOfNodes() const { return nodes.size(); }
     
-    int raytrace(const std::vector<sxyz<T1> >& Tx,
+    int raytrace(const std::vector<sxyz<T1>>& Tx,
                  const std::vector<T1>& t0,
-                 const std::vector<sxyz<T1> >& Rx,
+                 const std::vector<sxyz<T1>>& Rx,
                  std::vector<T1>& traveltimes,
                  const size_t threadNo=0) const;
 	
-    int raytrace(const std::vector<sxyz<T1> >& Tx,
+    int raytrace(const std::vector<sxyz<T1>>& Tx,
                  const std::vector<T1>& t0,
-                 const std::vector<sxyz<T1> >& Rx,
+                 const std::vector<sxyz<T1>>& Rx,
                  std::vector<T1>& traveltimes,
-				 std::vector<std::vector<sxyz<T1> > >& r_data,
+				 std::vector<std::vector<sxyz<T1>>>& r_data,
                  const size_t threadNo=0) const;
 	
-	int raytrace2(const std::vector<sxyz<T1> >& Tx,
+	int raytrace2(const std::vector<sxyz<T1>>& Tx,
 				  const std::vector<T1>& t0,
-				  const std::vector<sxyz<T1> >& Rx,
+				  const std::vector<sxyz<T1>>& Rx,
 				  std::vector<T1>& traveltimes,
 				  const size_t threadNo=0) const;
 	
@@ -166,33 +166,33 @@ public:
 	
 private:
 	
-    mutable std::vector<Node3Dcsp<T1,T2> > nodes;
+    mutable std::vector<Node3Dcsp<T1,T2>> nodes;
     
     std::vector<T1> slowness;   // column-wise (z axis) slowness vector of the cells, NOT used by Grid3Dcinterp
-    std::vector<std::vector<T2> > neighbors;  // nodes common to a cell
+    std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
 	
     void buildGridNodes();
     void buildGridNeighbors();
 	
-    void initQueue(const std::vector<sxyz<T1> >& Tx,
+    void initQueue(const std::vector<sxyz<T1>>& Tx,
 				   const std::vector<T1>& t0,
 				   std::priority_queue<Node3Dcsp<T1,T2>*,
 				   std::vector<Node3Dcsp<T1,T2>*>,
-				   CompareNodePtr<T1> >& queue,
-				   std::vector<Node3Dcsp<T1,T2> >& txNodes,
+				   CompareNodePtr<T1>>& queue,
+				   std::vector<Node3Dcsp<T1,T2>>& txNodes,
 				   std::vector<bool>& inQueue,
 				   std::vector<bool>& frozen,
 				   const size_t threadNo) const;
     
     void propagate(std::priority_queue<Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-                   CompareNodePtr<T1> >& queue,
+                   CompareNodePtr<T1>>& queue,
                    std::vector<bool>& inQueue,
                    std::vector<bool>& frozen,
                    size_t threadNo) const;
 	
     void prepropagate(const Node3Dcsp<T1,T2>& node,
 					  std::priority_queue<Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-					  CompareNodePtr<T1> >& queue,
+					  CompareNodePtr<T1>>& queue,
 					  std::vector<bool>& inQueue,
 					  std::vector<bool>& frozen,
 					  size_t threadNo) const;
@@ -200,25 +200,25 @@ private:
 	
 	
 	
-    void initQueue2(const std::vector<sxyz<T1> >& Tx,
+    void initQueue2(const std::vector<sxyz<T1>>& Tx,
 					const std::vector<T1>& t0,
 					std::priority_queue<Node3Dcsp<T1,T2>*,
 					std::deque<Node3Dcsp<T1,T2>*>,
-					CompareNodePtr<T1> >& queue,
-					std::vector<Node3Dcsp<T1,T2> >& txNodes,
+					CompareNodePtr<T1>>& queue,
+					std::vector<Node3Dcsp<T1,T2>>& txNodes,
 					std::vector<bool>& inQueue,
 					std::vector<bool>& frozen,
 					const size_t threadNo) const;
     
     void propagate2(std::priority_queue<Node3Dcsp<T1,T2>*, std::deque<Node3Dcsp<T1,T2>*>,
-					CompareNodePtr<T1> >& queue,
+					CompareNodePtr<T1>>& queue,
 					std::vector<bool>& inQueue,
 					std::vector<bool>& frozen,
 					size_t threadNo) const;
 	
     void prepropagate2(const Node3Dcsp<T1,T2>& node,
 					   std::priority_queue<Node3Dcsp<T1,T2>*, std::deque<Node3Dcsp<T1,T2>*>,
-					   CompareNodePtr<T1> >& queue,
+					   CompareNodePtr<T1>>& queue,
 					   std::vector<bool>& inQueue,
 					   std::vector<bool>& frozen,
 					   size_t threadNo) const;
@@ -236,11 +236,11 @@ private:
 	}
     
     T1 getTraveltime(const sxyz<T1>& Rx,
-					 const std::vector<Node3Dcsp<T1,T2> >& nodes,
+					 const std::vector<Node3Dcsp<T1,T2>>& nodes,
 					 const size_t threadNo) const;
 	
     T1 getTraveltime(const sxyz<T1>& Rx,
-					 const std::vector<Node3Dcsp<T1,T2> >& nodes,
+					 const std::vector<Node3Dcsp<T1,T2>>& nodes,
 					 T2&, T2& , const size_t threadNo) const;
 	
     Grid3Drc() {}
@@ -264,7 +264,7 @@ private:
 							  const T2 nnx, const T2 nny, const T2 nnz,
 							  const size_t nt) :
 	Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nnx, nny, nnz, nt),
-	nodes(std::vector<Node3Dcsp<T1,T2> >(// secondary nodes on the edges
+	nodes(std::vector<Node3Dcsp<T1,T2>>(// secondary nodes on the edges
 									   nx*nnx*((ny+1)*(nz+1)) +
 									   ny*nny*((nx+1)*(nz+1)) +
 									   nz*nnz*((nx+1)*(ny+1)) +
@@ -276,7 +276,7 @@ private:
 									   (nx+1) * (ny+1) * (nz+1),
 									   Node3Dcsp<T1,T2>(nt) )),
 	slowness(std::vector<T1>(nx*ny*nz)),
-	neighbors(std::vector<std::vector<T2> >(nx*ny*nz))
+	neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
 	{
 		buildGridNodes();
 		buildGridNeighbors();
@@ -569,9 +569,9 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	int Grid3Drc<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+	int Grid3Drc<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								  const std::vector<T1>& t0,
-								  const std::vector<sxyz<T1> >& Rx,
+								  const std::vector<sxyz<T1>>& Rx,
 								  std::vector<T1>& traveltimes,
 								  const size_t threadNo) const {
 		
@@ -587,9 +587,9 @@ private:
 		
 		CompareNodePtr<T1> cmp(threadNo);
 		std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-		CompareNodePtr<T1> > queue(cmp);
+		CompareNodePtr<T1>> queue(cmp);
 		// txNodes: Extra nodes if the sources points are not on an existing node
-		std::vector<Node3Dcsp<T1,T2> > txNodes;
+		std::vector<Node3Dcsp<T1,T2>> txNodes;
 		// inQueue lists the nodes waiting in the queue
 		std::vector<bool> inQueue( nodes.size(), false );
 		// Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -610,11 +610,11 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	int Grid3Drc<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+	int Grid3Drc<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								  const std::vector<T1>& t0,
-								  const std::vector<sxyz<T1> >& Rx,
+								  const std::vector<sxyz<T1>>& Rx,
 								  std::vector<T1>& traveltimes,
-								  std::vector<std::vector<sxyz<T1> > >& r_data,
+								  std::vector<std::vector<sxyz<T1>>>& r_data,
 								  const size_t threadNo) const {
 		
 		// Primary function
@@ -629,9 +629,9 @@ private:
 		
 		CompareNodePtr<T1> cmp(threadNo);
 		std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-		CompareNodePtr<T1> > queue(cmp);
+		CompareNodePtr<T1>> queue(cmp);
 		// txNodes: Extra nodes if the sources points are not on an existing node
-		std::vector<Node3Dcsp<T1,T2> > txNodes;
+		std::vector<Node3Dcsp<T1,T2>> txNodes;
 		// inQueue lists the nodes waiting in the queue
 		std::vector<bool> inQueue( nodes.size(), false );
 		// Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -658,10 +658,10 @@ private:
 										   threadNo);
 			
 			// Rx are in nodes (not txNodes)
-			std::vector<Node3Dcsp<T1,T2> > *node_p;
+			std::vector<Node3Dcsp<T1,T2>> *node_p;
 			node_p = &nodes;
 			
-			std::vector<sxyz<T1> > r_tmp;
+			std::vector<sxyz<T1>> r_tmp;
 			T2 iChild, iParent = nodeParentRx;
 			sxyz<T1> child;
 			//        siv<T1> cell;
@@ -743,12 +743,12 @@ private:
 	
 	
 	template<typename T1, typename T2>
-	void Grid3Drc<T1,T2>::initQueue(const std::vector<sxyz<T1> >& Tx,
+	void Grid3Drc<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
 									const std::vector<T1>& t0,
 									std::priority_queue<Node3Dcsp<T1,T2>*,
 									std::vector<Node3Dcsp<T1,T2>*>,
-									CompareNodePtr<T1> >& queue,
-									std::vector<Node3Dcsp<T1,T2> >& txNodes,
+									CompareNodePtr<T1>>& queue,
+									std::vector<Node3Dcsp<T1,T2>>& txNodes,
 									std::vector<bool>& inQueue,
 									std::vector<bool>& frozen,
 									const size_t threadNo) const {
@@ -791,7 +791,7 @@ private:
 	template<typename T1, typename T2>
 	void Grid3Drc<T1,T2>::propagate( std::priority_queue<Node3Dcsp<T1,T2>*,
 									std::vector<Node3Dcsp<T1,T2>*>,
-									CompareNodePtr<T1> >& queue,
+									CompareNodePtr<T1>>& queue,
 									std::vector<bool>& inQueue,
 									std::vector<bool>& frozen,
 									size_t threadNo) const {
@@ -835,7 +835,7 @@ private:
 	void Grid3Drc<T1,T2>::prepropagate(const Node3Dcsp<T1,T2>& node,
 									   std::priority_queue<Node3Dcsp<T1,T2>*,
 									   std::vector<Node3Dcsp<T1,T2>*>,
-									   CompareNodePtr<T1> >& queue,
+									   CompareNodePtr<T1>>& queue,
 									   std::vector<bool>& inQueue,
 									   std::vector<bool>& frozen,
 									   size_t threadNo) const {
@@ -873,9 +873,9 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	int Grid3Drc<T1,T2>::raytrace2(const std::vector<sxyz<T1> >& Tx,
+	int Grid3Drc<T1,T2>::raytrace2(const std::vector<sxyz<T1>>& Tx,
 								   const std::vector<T1>& t0,
-								   const std::vector<sxyz<T1> >& Rx,
+								   const std::vector<sxyz<T1>>& Rx,
 								   std::vector<T1>& traveltimes,
 								   const size_t threadNo) const {
 		
@@ -891,9 +891,9 @@ private:
 		
 		CompareNodePtr<T1> cmp(threadNo);
 		std::priority_queue< Node3Dcsp<T1,T2>*, std::deque<Node3Dcsp<T1,T2>*>,
-		CompareNodePtr<T1> > queue(cmp);
+		CompareNodePtr<T1>> queue(cmp);
 		// txNodes: Extra nodes if the sources points are not on an existing node
-		std::vector<Node3Dcsp<T1,T2> > txNodes;
+		std::vector<Node3Dcsp<T1,T2>> txNodes;
 		// inQueue lists the nodes waiting in the queue
 		std::vector<bool> inQueue( nodes.size(), false );
 		// Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -914,12 +914,12 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	void Grid3Drc<T1,T2>::initQueue2(const std::vector<sxyz<T1> >& Tx,
+	void Grid3Drc<T1,T2>::initQueue2(const std::vector<sxyz<T1>>& Tx,
 									 const std::vector<T1>& t0,
 									 std::priority_queue<Node3Dcsp<T1,T2>*,
 									 std::deque<Node3Dcsp<T1,T2>*>,
-									 CompareNodePtr<T1> >& queue,
-									 std::vector<Node3Dcsp<T1,T2> >& txNodes,
+									 CompareNodePtr<T1>>& queue,
+									 std::vector<Node3Dcsp<T1,T2>>& txNodes,
 									 std::vector<bool>& inQueue,
 									 std::vector<bool>& frozen,
 									 const size_t threadNo) const {
@@ -960,7 +960,7 @@ private:
 	template<typename T1, typename T2>
 	void Grid3Drc<T1,T2>::propagate2( std::priority_queue<Node3Dcsp<T1,T2>*,
 									 std::deque<Node3Dcsp<T1,T2>*>,
-									 CompareNodePtr<T1> >& queue,
+									 CompareNodePtr<T1>>& queue,
 									 std::vector<bool>& inQueue,
 									 std::vector<bool>& frozen,
 									 size_t threadNo) const {
@@ -1004,7 +1004,7 @@ private:
 	void Grid3Drc<T1,T2>::prepropagate2(const Node3Dcsp<T1,T2>& node,
 										std::priority_queue<Node3Dcsp<T1,T2>*,
 										std::deque<Node3Dcsp<T1,T2>*>,
-										CompareNodePtr<T1> >& queue,
+										CompareNodePtr<T1>>& queue,
 										std::vector<bool>& inQueue,
 										std::vector<bool>& frozen,
 										size_t threadNo) const {
@@ -1044,7 +1044,7 @@ private:
 	
 	template<typename T1, typename T2>
 	T1 Grid3Drc<T1,T2>::getTraveltime(const sxyz<T1>& Rx,
-									  const std::vector<Node3Dcsp<T1,T2> >& nodes,
+									  const std::vector<Node3Dcsp<T1,T2>>& nodes,
 									  const size_t threadNo) const {
 		
 		// Calculate and return the traveltime for a Rx point.
@@ -1070,7 +1070,7 @@ private:
 	
 	template<typename T1, typename T2>
 	T1 Grid3Drc<T1,T2>::getTraveltime(const sxyz<T1>& Rx,
-									  const std::vector<Node3Dcsp<T1,T2> >& nodes,
+									  const std::vector<Node3Dcsp<T1,T2>>& nodes,
 									  T2& nodeParentRx, T2& cellParentRx,
 									  const size_t threadNo) const {
 		

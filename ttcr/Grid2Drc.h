@@ -109,23 +109,23 @@ public:
         return 0;
     }
     
-    int raytrace(const std::vector<sxz<T1> >& Tx,
+    int raytrace(const std::vector<sxz<T1>>& Tx,
                  const std::vector<T1>& t0, 
-                 const std::vector<sxz<T1> >& Rx,
+                 const std::vector<sxz<T1>>& Rx,
                  std::vector<T1>& traveltimes,
 				 const size_t threadNo=0) const;
     
-    int raytrace(const std::vector<sxz<T1> >&,
+    int raytrace(const std::vector<sxz<T1>>&,
                  const std::vector<T1>&,
                  const std::vector<const std::vector<sxz<T1>>*>&,
                  std::vector<std::vector<T1>*>&,
                  const size_t=0) const;
 	
-    int raytrace(const std::vector<sxz<T1> >& Tx,
+    int raytrace(const std::vector<sxz<T1>>& Tx,
                  const std::vector<T1>& t0,
-                 const std::vector<sxz<T1> >& Rx,
+                 const std::vector<sxz<T1>>& Rx,
                  std::vector<T1>& traveltimes,
-                 std::vector<std::vector<sxz<double> > >& r_data,
+                 std::vector<std::vector<sxz<double>>>& r_data,
 				 const size_t threadNo=0) const;
     
     int raytrace(const std::vector<sxz<T1>>&,
@@ -135,12 +135,12 @@ public:
                  std::vector<std::vector<std::vector<sxz<T1>>>*>&,
                  const size_t=0) const;
 	
-    int raytrace(const std::vector<sxz<T1> >& Tx,
+    int raytrace(const std::vector<sxz<T1>>& Tx,
                  const std::vector<T1>& t0, 
-                 const std::vector<sxz<T1> >& Rx,
+                 const std::vector<sxz<T1>>& Rx,
                  std::vector<T1>& traveltimes,
-                 std::vector<std::vector<sxz<double> > >& r_data,
-                 std::vector<std::vector<siv<double> > >& l_data,
+                 std::vector<std::vector<sxz<double>>>& r_data,
+                 std::vector<std::vector<siv<double>>>& l_data,
 				 const size_t threadNo=0) const;
 	
 	int fmm(const std::vector<sxz<T1>>& Tx,
@@ -149,7 +149,7 @@ public:
 			std::vector<T1>& traveltimes,
 			const size_t threadNo=0) const;
     
-    int fmm(const std::vector<sxz<T1> >&,
+    int fmm(const std::vector<sxz<T1>>&,
 			const std::vector<T1>&,
 			const std::vector<const std::vector<sxz<T1>>*>&,
 			std::vector<std::vector<T1>*>&,
@@ -195,24 +195,24 @@ protected:
     T2 nsgx;    // number of subgrid cells in x
     T2 nsgz;    // number of subgrid cells in z
     
-    mutable std::vector<Node2Dcsp<T1,T2> > nodes;
+    mutable std::vector<Node2Dcsp<T1,T2>> nodes;
     
     std::vector<T1> slowness;   // column-wise (z axis) slowness vector of the cells
-    std::vector<std::vector<T2> > neighbors;  // nodes common to a cell
+    std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
     
     void buildGridNodes();
     void buildGridNeighbors();
 	
     void propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
 				   std::vector<Node2Dcsp<T1,T2>*>,
-                   CompareNodePtr<T1> >& queue,
+                   CompareNodePtr<T1>>& queue,
                    std::vector<bool>& inQueue,
                    std::vector<bool>& frozen,
 				   const size_t threadNo) const;
 	
     void propagate_fmm(std::priority_queue<Node2Dcsp<T1,T2>*,
 					   std::vector<Node2Dcsp<T1,T2>*>,
-					   CompareNodePtr<T1> >&,
+					   CompareNodePtr<T1>>&,
 					   std::vector<bool>&,
 					   std::vector<bool>&,
 					   const size_t) const;
@@ -227,24 +227,24 @@ protected:
 		return slowness[cellNo] * source.getDistance( node );
 	}
     
-    int check_pts(const std::vector<sxz<T1> >&) const;
+    int check_pts(const std::vector<sxz<T1>>&) const;
     
-    void initQueue(const std::vector<sxz<T1> >& Tx,
+    void initQueue(const std::vector<sxz<T1>>& Tx,
                    const std::vector<T1>& t0, 
                    std::priority_queue<Node2Dcsp<T1,T2>*,
 				   std::vector<Node2Dcsp<T1,T2>*>,
-                   CompareNodePtr<T1> >& queue,
-                   std::vector<Node2Dcsp<T1,T2> >& txNodes,
+                   CompareNodePtr<T1>>& queue,
+                   std::vector<Node2Dcsp<T1,T2>>& txNodes,
                    std::vector<bool>& inQueue,
                    std::vector<bool>& frozen,
 				   const size_t threadNo) const;
     
-    void initBand(const std::vector<sxz<T1> >& Tx,
+    void initBand(const std::vector<sxz<T1>>& Tx,
 				  const std::vector<T1>& t0,
 				  std::priority_queue<Node2Dcsp<T1,T2>*,
 				  std::vector<Node2Dcsp<T1,T2>*>,
-				  CompareNodePtr<T1> >& queue,
-				  std::vector<Node2Dcsp<T1,T2> >& txNodes,
+				  CompareNodePtr<T1>>& queue,
+				  std::vector<Node2Dcsp<T1,T2>>& txNodes,
 				  std::vector<bool>& inQueue,
 				  std::vector<bool>& frozen,
 				  const size_t threadNo) const;
@@ -252,10 +252,10 @@ protected:
     
     bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
     
-    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Dcsp<T1,T2> >& nodes,
+    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
 					const size_t threadNo) const;
     
-    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Dcsp<T1,T2> >& nodes,
+    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
                     T2& nodeParentRx, T2& cellParentRx,
 					const size_t threadNo) const;
 
@@ -285,12 +285,12 @@ Grid2Drc<T1,T2>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
 				  const size_t nt) : nThreads(nt),
 dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
 nCellx(nx), nCellz(nz), nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0),
-nodes(std::vector<Node2Dcsp<T1,T2> >( // noeuds secondaires
+nodes(std::vector<Node2Dcsp<T1,T2>>( // noeuds secondaires
                               nCellx*nsnx*(nCellz+1) + nCellz*nsnz*(nCellx+1) +
                               // noeuds primaires
                               (nCellx+1) * (nCellz+1), Node2Dcsp<T1,T2>(nt) )),
 slowness(std::vector<T1>(nCellx*nCellz)),
-neighbors(std::vector<std::vector<T2> >(nCellx*nCellz))
+neighbors(std::vector<std::vector<T2>>(nCellx*nCellz))
 {
     buildGridNodes();
     buildGridNeighbors();
@@ -428,7 +428,7 @@ void Grid2Drc<T1,T2>::buildGridNeighbors() {
 
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::check_pts(const std::vector<sxz<T1> >& pts) const {
+int Grid2Drc<T1,T2>::check_pts(const std::vector<sxz<T1>>& pts) const {
     for (size_t n=0; n<pts.size(); ++n) {
         if ( pts[n].x < xmin || pts[n].x > xmax ||
             pts[n].z < zmin || pts[n].z > zmax ) {
@@ -442,12 +442,12 @@ int Grid2Drc<T1,T2>::check_pts(const std::vector<sxz<T1> >& pts) const {
 
 
 template<typename T1, typename T2>
-void Grid2Drc<T1,T2>::initQueue(const std::vector<sxz<T1> >& Tx,
+void Grid2Drc<T1,T2>::initQueue(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								std::priority_queue<Node2Dcsp<T1,T2>*,
 								std::vector<Node2Dcsp<T1,T2>*>,
-								CompareNodePtr<T1> >& queue,
-								std::vector<Node2Dcsp<T1,T2> >& txNodes,
+								CompareNodePtr<T1>>& queue,
+								std::vector<Node2Dcsp<T1,T2>>& txNodes,
 								std::vector<bool>& inQueue,
 								std::vector<bool>& frozen,
 								const size_t threadNo) const {
@@ -481,12 +481,12 @@ void Grid2Drc<T1,T2>::initQueue(const std::vector<sxz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-void Grid2Drc<T1,T2>::initBand(const std::vector<sxz<T1> >& Tx,
+void Grid2Drc<T1,T2>::initBand(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								std::priority_queue<Node2Dcsp<T1,T2>*,
 								std::vector<Node2Dcsp<T1,T2>*>,
-								CompareNodePtr<T1> >& narrow_band,
-								std::vector<Node2Dcsp<T1,T2> >& txNodes,
+								CompareNodePtr<T1>>& narrow_band,
+								std::vector<Node2Dcsp<T1,T2>>& txNodes,
 								std::vector<bool>& inBand,
 								std::vector<bool>& frozen,
 								const size_t threadNo) const {
@@ -551,9 +551,9 @@ void Grid2Drc<T1,T2>::initBand(const std::vector<sxz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                         const std::vector<T1>& t0, 
-                        const std::vector<sxz<T1> >& Rx,
+                        const std::vector<sxz<T1>>& Rx,
                         std::vector<T1>& traveltimes,
 						const size_t threadNo) const {
     
@@ -566,9 +566,9 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -587,7 +587,7 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<const std::vector<sxz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
@@ -602,9 +602,9 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -626,11 +626,11 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  const std::vector<T1>& t0,
-							  const std::vector<sxz<T1> >& Rx,
+							  const std::vector<sxz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
-							  std::vector<std::vector<sxz<double> > >& r_data,
+							  std::vector<std::vector<sxz<double>>>& r_data,
 							  const size_t threadNo) const {
     
     if ( check_pts(Tx) == 1 ) return 1;
@@ -642,8 +642,8 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    CompareNodePtr<T1>> queue( cmp );
+    std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -669,10 +669,10 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 									   threadNo);
         
         // Rx are in nodes (not txNodes)
-        std::vector<Node2Dcsp<T1,T2> > *node_p;
+        std::vector<Node2Dcsp<T1,T2>> *node_p;
         node_p = &nodes;
         
-        std::vector<sxz<double> > r_tmp;
+        std::vector<sxz<double>> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         sxz<double> child;
 		
@@ -719,7 +719,7 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<const std::vector<sxz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
@@ -736,9 +736,9 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -785,10 +785,10 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
             if ( flag ) continue;
             
             // Rx are in nodes (not txNodes)
-            std::vector<Node2Dcsp<T1,T2> > *node_p;
+            std::vector<Node2Dcsp<T1,T2>> *node_p;
             node_p = &nodes;
             
-            std::vector<sxz<T1> > r_tmp;
+            std::vector<sxz<T1>> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             sxz<T1> child;
             
@@ -839,12 +839,12 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  const std::vector<T1>& t0, 
-							  const std::vector<sxz<T1> >& Rx,
+							  const std::vector<sxz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
-							  std::vector<std::vector<sxz<double> > >& r_data,
-							  std::vector<std::vector<siv<double> > >& l_data,
+							  std::vector<std::vector<sxz<double>>>& r_data,
+							  std::vector<std::vector<siv<double>>>& l_data,
 							  const size_t threadNo) const {
     
     if ( check_pts(Tx) == 1 ) return 1;
@@ -856,8 +856,8 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    CompareNodePtr<T1>> queue( cmp );
+    std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -889,10 +889,10 @@ int Grid2Drc<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 									   threadNo);
         
         // Rx are in nodes (not txNodes)
-        std::vector<Node2Dcsp<T1,T2> > *node_p;
+        std::vector<Node2Dcsp<T1,T2>> *node_p;
         node_p = &nodes;
         
-        std::vector<sxz<double> > r_tmp;
+        std::vector<sxz<double>> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         sxz<double> child;
         siv<double> cell;
@@ -988,9 +988,9 @@ int Grid2Drc<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > narrow_band( cmp );
+    CompareNodePtr<T1>> narrow_band( cmp );
 
-	std::vector<Node2Dcsp<T1,T2> > txNodes;
+	std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inBand( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -1009,7 +1009,7 @@ int Grid2Drc<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Drc<T1,T2>::fmm(const std::vector<sxz<T1> >& Tx,
+int Grid2Drc<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
 						 const std::vector<T1>& t0,
 						 const std::vector<const std::vector<sxz<T1>>*>& Rx,
 						 std::vector<std::vector<T1>*>& traveltimes,
@@ -1029,9 +1029,9 @@ int Grid2Drc<T1,T2>::fmm(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > narrow_band( cmp );
+    CompareNodePtr<T1>> narrow_band( cmp );
     
-    std::vector<Node2Dcsp<T1,T2> > txNodes;
+    std::vector<Node2Dcsp<T1,T2>> txNodes;
     std::vector<bool> inBand( nodes.size(), false );
     std::vector<bool> frozen( nodes.size(), false );
     
@@ -1054,7 +1054,7 @@ int Grid2Drc<T1,T2>::fmm(const std::vector<sxz<T1> >& Tx,
 
 template<typename T1, typename T2>
 void Grid2Drc<T1,T2>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-                          CompareNodePtr<T1> >& queue,
+                          CompareNodePtr<T1>>& queue,
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
 						  const size_t threadNo) const {
@@ -1096,7 +1096,7 @@ void Grid2Drc<T1,T2>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::vec
 
 template<typename T1, typename T2>
 void Grid2Drc<T1,T2>::propagate_fmm( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-								CompareNodePtr<T1> >& narrow_band,
+								CompareNodePtr<T1>>& narrow_band,
 								std::vector<bool>& inNarrowBand,
 								std::vector<bool>& frozen,
 								const size_t threadNo) const {
@@ -1187,7 +1187,7 @@ bool Grid2Drc<T1,T2>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const si
 
 template<typename T1, typename T2>
 T1 Grid2Drc<T1,T2>::getTraveltime(const sxz<T1>& Rx,
-                           const std::vector<Node2Dcsp<T1,T2> >& nodes,
+                           const std::vector<Node2Dcsp<T1,T2>>& nodes,
 						   const size_t threadNo) const {
     
     for ( size_t nn=0; nn<nodes.size(); ++nn ) {
@@ -1214,7 +1214,7 @@ T1 Grid2Drc<T1,T2>::getTraveltime(const sxz<T1>& Rx,
 
 template<typename T1, typename T2>
 T1 Grid2Drc<T1,T2>::getTraveltime(const sxz<T1>& Rx,
-                           const std::vector<Node2Dcsp<T1,T2> >& nodes,
+                           const std::vector<Node2Dcsp<T1,T2>>& nodes,
                            T2& nodeParentRx, T2& cellParentRx,
 						   const size_t threadNo) const {
     

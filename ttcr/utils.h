@@ -149,7 +149,7 @@ void buildReflectors(const MSHReader &reader,
 
 template<typename T>
 void saveRayPaths(const std::string &fname,
-				  const std::vector<std::vector<sxyz<T> > > &r_data) {
+				  const std::vector<std::vector<sxyz<T>>> &r_data) {
 	
 #ifdef VTK
 	vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
@@ -189,7 +189,7 @@ void saveRayPaths(const std::string &fname,
 
 template<typename T>
 void saveRayPaths(const std::string &fname,
-				  const std::vector<std::vector<sxz<T> > > &r_data) {
+				  const std::vector<std::vector<sxz<T>>> &r_data) {
 	
 #ifdef VTK
 	vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();

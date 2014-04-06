@@ -35,12 +35,12 @@
 #include "Node2Dc.h"
 
 template<typename T1, typename T2>
-class Grid2Ducfm : public Grid2Duc<T1,T2,Node2Dc<T1,T2>> {
+class Grid2Ducfm : public Grid2Duc<T1,T2,Node2Dc<T1,T2>,sxz<T1>> {
 public:
 	Grid2Ducfm(const std::vector<sxz<T1>>& no,
-			   const std::vector<triangleElem<T2> >& tri,
+			   const std::vector<triangleElem<T2>>& tri,
 			   const size_t nt=1) :
-	Grid2Duc<T1, T2,Node2Dc<T1,T2>>(no, tri, nt)
+	Grid2Duc<T1, T2,Node2Dc<T1,T2>,sxz<T1>>(no, tri, nt)
 	{
 		buildGridNodes(no, nt);
 		this->buildGridNeighbors();
@@ -76,27 +76,22 @@ public:
                  std::vector<std::vector<std::vector<sxz<T1>>>*>&,
                  const size_t=0) const;
 	
-//	int getTraveltimes(const std::vector<sxz<T1> >&,
-//					   std::vector<T1>&,
-//					   const size_t=0) const;
-	
-	
 private:
 	void buildGridNodes(const std::vector<sxz<T1>>&, const size_t);
 	
-	void initBand(const std::vector<sxz<T1> >& Tx,
+	void initBand(const std::vector<sxz<T1>>& Tx,
 				  const std::vector<T1>& t0,
 				  std::priority_queue<Node2Dc<T1,T2>*,
 				  std::vector<Node2Dc<T1,T2>*>,
-				  CompareNodePtr<T1> >&,
-				  std::vector<Node2Dc<T1,T2> >&,
+				  CompareNodePtr<T1>>&,
+				  std::vector<Node2Dc<T1,T2>>&,
 				  std::vector<bool>&,
 				  std::vector<bool>&,
 				  const size_t) const;
 	
 	void propagate(std::priority_queue<Node2Dc<T1,T2>*,
 				   std::vector<Node2Dc<T1,T2>*>,
-				   CompareNodePtr<T1> >&,
+				   CompareNodePtr<T1>>&,
 				   std::vector<bool>&,
 				   std::vector<bool>&,
 				   const size_t) const;
@@ -159,9 +154,9 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dc<T1,T2>*, std::vector<Node2Dc<T1,T2>*>,
-    CompareNodePtr<T1> > narrow_band( cmp );
+    CompareNodePtr<T1>> narrow_band( cmp );
 	
-	std::vector<Node2Dc<T1,T2> > txNodes;
+	std::vector<Node2Dc<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -180,7 +175,7 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 								 const std::vector<T1>& t0,
 								 const std::vector<const std::vector<sxz<T1>>*>& Rx,
 								 std::vector<std::vector<T1>*>& traveltimes,
@@ -196,9 +191,9 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dc<T1,T2>*, std::vector<Node2Dc<T1,T2>*>,
-    CompareNodePtr<T1> > narrow_band( cmp );
+    CompareNodePtr<T1>> narrow_band( cmp );
     
-    std::vector<Node2Dc<T1,T2> > txNodes;
+    std::vector<Node2Dc<T1,T2>> txNodes;
     std::vector<bool> inBand( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -237,9 +232,9 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dc<T1,T2>*, std::vector<Node2Dc<T1,T2>*>,
-    CompareNodePtr<T1> > narrow_band( cmp );
+    CompareNodePtr<T1>> narrow_band( cmp );
 	
-	std::vector<Node2Dc<T1,T2> > txNodes;
+	std::vector<Node2Dc<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -262,7 +257,7 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
+int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<sxz<T1>>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -279,9 +274,9 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node2Dc<T1,T2>*, std::vector<Node2Dc<T1,T2>*>,
-    CompareNodePtr<T1> > narrow_band( cmp );
+    CompareNodePtr<T1>> narrow_band( cmp );
     
-    std::vector<Node2Dc<T1,T2> > txNodes;
+    std::vector<Node2Dc<T1,T2>> txNodes;
     std::vector<bool> inBand( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -314,31 +309,13 @@ int Grid2Ducfm<T1,T2>::raytrace(const std::vector<sxz<T1> >& Tx,
 }
 
 
-//template<typename T1, typename T2>
-//int Grid2Ducfm<T1,T2>::getTraveltimes(const std::vector<sxz<T1> >& Rx,
-//									std::vector<T1>& traveltimes,
-//									const size_t threadNo) const {
-//    
-//    if ( check_pts(Rx) == 1 ) return 1;
-//    
-//    if ( traveltimes.size() != Rx.size() ) {
-//        traveltimes.resize( Rx.size() );
-//    }
-//    
-//    for (size_t n=0; n<Rx.size(); ++n) {
-//        traveltimes[n] = getTraveltime(Rx[n], nodes, threadNo);
-//    }
-//    return 0;
-//}
-
-
 template<typename T1, typename T2>
-void Grid2Ducfm<T1,T2>::initBand(const std::vector<sxz<T1> >& Tx,
+void Grid2Ducfm<T1,T2>::initBand(const std::vector<sxz<T1>>& Tx,
 								  const std::vector<T1>& t0,
 								  std::priority_queue<Node2Dc<T1,T2>*,
 								  std::vector<Node2Dc<T1,T2>*>,
-								  CompareNodePtr<T1> >& narrow_band,
-								  std::vector<Node2Dc<T1,T2> >& txNodes,
+								  CompareNodePtr<T1>>& narrow_band,
+								  std::vector<Node2Dc<T1,T2>>& txNodes,
 								  std::vector<bool>& inBand,
 								  std::vector<bool>& frozen,
 								  const size_t threadNo) const {
@@ -365,8 +342,6 @@ void Grid2Ducfm<T1,T2>::initBand(const std::vector<sxz<T1> >& Tx,
 							
 							if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
 								this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-//								this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
-//								this->nodes[neibNo].setCellParent(cellNo, threadNo );
 								
 								if ( !inBand[neibNo] ) {
 									narrow_band.push( &(this->nodes[neibNo]) );
@@ -403,7 +378,7 @@ void Grid2Ducfm<T1,T2>::initBand(const std::vector<sxz<T1> >& Tx,
 template<typename T1, typename T2>
 void Grid2Ducfm<T1,T2>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
 								   std::vector<Node2Dc<T1,T2>*>,
-								   CompareNodePtr<T1> >& narrow_band,
+								   CompareNodePtr<T1>>& narrow_band,
 								   std::vector<bool>& inNarrowBand,
 								   std::vector<bool>& frozen,
 								   const size_t threadNo) const {
@@ -411,15 +386,6 @@ void Grid2Ducfm<T1,T2>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
 	//    size_t n=1;
     while ( !narrow_band.empty() ) {
 		
-        
-		//        char filename[200];
-		//        sprintf(filename, "/tmp/fmm_tt_%06zd.xyz", n);
-		//        saveTT(filename,1,threadNo);
-		//        n++;
-        
-        
-		
-        
         const Node2Dc<T1,T2>* source = narrow_band.top();
         narrow_band.pop();
         inNarrowBand[ source->getGridIndex() ] = false;

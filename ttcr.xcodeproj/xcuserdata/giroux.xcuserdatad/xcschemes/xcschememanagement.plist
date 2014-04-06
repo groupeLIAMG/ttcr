@@ -4,6 +4,11 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>ttcf2ds.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>ttcr2d.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -23,6 +28,11 @@
 			<true/>
 		</dict>
 		<key>2BC7090818EDAAA0004DA2C9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2BD0F4F318EED76000B3957F</key>
 		<dict>
 			<key>primary</key>
 			<true/>

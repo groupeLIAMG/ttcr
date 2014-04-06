@@ -20,20 +20,20 @@ public:
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1> >& Tx,
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
                          const std::vector<T1>& t0,
                          const std::vector<const std::vector<sxz<T1>>*>& Rx,
                          std::vector<std::vector<T1>*>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1> >& Tx,
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<sxz<T1> >& Rx,
+                         const std::vector<sxz<T1>>& Rx,
                          std::vector<T1>& traveltimes,
-                         std::vector<std::vector<sxz<T1> > >& r_data,
+                         std::vector<std::vector<sxz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1> >& Tx,
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
                          const std::vector<T1>& t0,
                          const std::vector<const std::vector<sxz<T1>>*>& Rx,
                          std::vector<std::vector<T1>*>& traveltimes,

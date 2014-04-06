@@ -21,8 +21,8 @@
 class MSHReader {
 public:
 	MSHReader(const char *fname) : filename(fname), valid(false),
-	physicalNames(std::vector<std::vector<std::string> >(4)),
-	physicalIndices(std::vector<std::vector<int> >(4)){
+	physicalNames(std::vector<std::vector<std::string>>(4)),
+	physicalIndices(std::vector<std::vector<int>>(4)){
 		valid = check_format();
 	}
 
@@ -38,7 +38,7 @@ public:
 	}
     
     bool is2D() const {
-        std::vector<sxyz<double> > nodes;
+        std::vector<sxyz<double>> nodes;
         readNodes3D(nodes);
         double ymin=0.0;
         double ymax=0.0;
@@ -111,7 +111,7 @@ public:
 
     
 	template<typename T>
-	void readNodes2D(std::vector<sxz<T> >& nodes) const {
+	void readNodes2D(std::vector<sxz<T>>& nodes) const {
 		std::ifstream fin(filename.c_str());
 		std::string line;
         size_t nNodes;
@@ -134,7 +134,7 @@ public:
 	}
 	
 	template<typename T>
-	void readNodes3D(std::vector<sxyz<T> >& nodes) const {
+	void readNodes3D(std::vector<sxyz<T>>& nodes) const {
 		std::ifstream fin(filename.c_str());
 		std::string line;
         size_t nNodes;
@@ -196,7 +196,7 @@ public:
 	}
     
 	template<typename T>
-	void readTriangleElements(std::vector<triangleElem<T> >& tri) const {
+	void readTriangleElements(std::vector<triangleElem<T>>& tri) const {
 		std::ifstream fin(filename.c_str());
 		std::string line;
         size_t nElements;
@@ -238,7 +238,7 @@ public:
 	}
 
 	template<typename T>
-	void readTetrahedronElements(std::vector<tetrahedronElem<T> >& tet) const {
+	void readTetrahedronElements(std::vector<tetrahedronElem<T>>& tet) const {
 		std::ifstream fin(filename.c_str());
 		std::string line;
         size_t nElements;
@@ -284,8 +284,8 @@ public:
 private:
 	std::string filename;
 	bool valid;
-	mutable std::vector<std::vector<std::string> > physicalNames;
-	mutable std::vector<std::vector<int> > physicalIndices;
+	mutable std::vector<std::vector<std::string>> physicalNames;
+	mutable std::vector<std::vector<int>> physicalIndices;
 
 	bool check_format() const {
 		std::ifstream fin(filename.c_str());

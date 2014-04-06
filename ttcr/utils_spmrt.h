@@ -242,8 +242,8 @@ Grid3D<T, uint32_t> *unstruct_vtu(const input_parameters &par, const size_t nt)
 		std::cout.flush();
 	}
 	
-    std::vector<sxyz<T> > nodes(reader.getNumberOfNodes());
-	std::vector<tetrahedronElem<uint32_t> > tetrahedra(reader.getNumberOfElements());
+    std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
+	std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfElements());
 	std::vector<T> slowness(reader.getNumberOfElements());
 	
 	reader.readNodes3D(nodes);
@@ -360,8 +360,8 @@ Grid3D<T, uint32_t> *unstruct(const input_parameters &par,
 		std::cout.flush();
 	}
 	
-    std::vector<sxyz<T> > nodes(reader.getNumberOfNodes());
-	std::vector<tetrahedronElem<uint32_t> > tetrahedra(reader.getNumberOfElements());
+    std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
+	std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfElements());
 	std::vector<T> slowness(reader.getNumberOfElements());
 	
 	reader.readNodes3D(nodes);
@@ -664,8 +664,8 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
 		cout.flush();
 	}
 	
-    std::vector<sxz<T> > nodes(reader.getNumberOfNodes());
-	std::vector<triangleElem<uint32_t> > triangles(reader.getNumberOfElements());
+    std::vector<sxz<T>> nodes(reader.getNumberOfNodes());
+	std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfElements());
 	std::vector<T> slowness(reader.getNumberOfElements());
 	
 	reader.readNodes2D(nodes);
@@ -690,7 +690,7 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
 				cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>>(nodes, triangles, par.nn[0], nt);
+			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
 				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -776,8 +776,8 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
 		std::cout.flush();
 	}
 	
-    std::vector<sxz<T> > nodes(reader.getNumberOfNodes());
-	std::vector<triangleElem<uint32_t> > triangles(reader.getNumberOfTriangles());
+    std::vector<sxz<T>> nodes(reader.getNumberOfNodes());
+	std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfTriangles());
 	std::vector<T> slowness(reader.getNumberOfTriangles());
 	
 	reader.readNodes2D(nodes);
@@ -859,7 +859,7 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
 				cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>>(nodes, triangles, par.nn[0], nt);
+			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
 				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -989,5 +989,190 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
     return g;
 }
 
+template<typename T>
+Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const size_t nt)
+{
+    VTUReader reader( par.modelfile.c_str() );
+    
+    if ( !reader.isValid() ) {
+        return nullptr;
+    }
+    
+	if ( par.verbose ) {
+		cout << "Reading model file " << par.modelfile << " ... ";
+		cout.flush();
+	}
+	
+    std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
+	std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfElements());
+	std::vector<T> slowness(reader.getNumberOfElements());
+	
+	reader.readNodes3D(nodes);
+	reader.readTriangleElements(triangles);
+    reader.readSlowness(slowness);
+    
+	
+    if ( par.verbose ) {
+        cout << "\n  Unstructured grid in file has"
+        << "\n    " << nodes.size() << " nodes"
+        << "\n    " << triangles.size() << " cells"
+        << std::endl;
+    }
+    
+	std::chrono::high_resolution_clock::time_point begin, end;
+    Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
+	
+	if ( par.verbose ) {
+		cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+		cout.flush();
+	}
+	if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+	g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+	if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+	if ( par.verbose ) {
+		cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+		<< "\n";
+		cout.flush();
+	}
+			
+	if ( par.time ) {
+		cout.precision(12);
+		cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+	}
+    cout.flush();
+	g->setSlowness(slowness);
+    return g;
+
+}
+
+
+template<typename T>
+Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds(const input_parameters &par,
+								const size_t nt, const size_t ns)
+{
+    
+    MSHReader reader( par.modelfile.c_str() );
+    
+    if ( !reader.isValid() ) {
+        return nullptr;
+    }
+    
+	if ( par.verbose ) {
+		std::cout << "Reading model file " << par.modelfile << " ... ";
+		std::cout.flush();
+	}
+	
+    std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
+	std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfTriangles());
+	std::vector<T> slowness(reader.getNumberOfTriangles());
+	
+	reader.readNodes3D(nodes);
+	reader.readTriangleElements(triangles);
+    if ( par.verbose ) std::cout << "done.\n";
+	std::map<std::string, double> slownesses;
+	
+    if ( !par.slofile.empty() ) {
+        
+        std::ifstream fin(par.slofile.c_str());
+        if ( !fin ) {
+            std::cout << "Error: cannot open file " << par.slofile << std::endl;
+            exit ( -1);
+        }
+        std::vector<T> tmp;
+        T dtmp;
+		fin >> dtmp;
+		while ( fin ) {
+			tmp.push_back( dtmp );
+			fin >> dtmp;
+		}
+        fin.close();
+        if ( tmp.size() != slowness.size() ) {
+            std::cerr << "Error: slowness file should contain " << slowness.size()
+            << " values.\nAborting." << std::endl;
+            abort();
+        }
+        for ( size_t n=0; n<slowness.size(); ++n ) {
+            slowness[n] = tmp[n];
+        }
+        
+    } else {
+        std::ifstream fin(par.velfile.c_str());
+        if ( !fin ) {
+            std::cerr << "Error: cannot open file " << par.velfile << std::endl;
+            exit ( -1);
+        }
+        std::string line;
+        while ( fin ) {
+            getline( fin, line );
+            if ( line.empty() ) continue;
+            size_t i1 = line.find('"');
+            size_t i2 = line.rfind('"');
+            std::string name = line.substr(i1+1, i2-i1-1);
+            std::istringstream sin( line.substr(i2+1, 100) );
+            double val;
+            sin >> val;
+            slownesses.insert( {name, 1./val} );
+        }
+        fin.close();
+		
+        if ( par.verbose ) {
+            for ( size_t n=0; n<reader.getPhysicalNames(2).size(); ++n ) {
+                std::cout << "  Velocity for " << reader.getPhysicalNames(2)[n] << " is "
+                << 1./slownesses[ reader.getPhysicalNames(2)[n] ] << '\n';
+            }
+        }
+		
+        for ( size_t n=0; n<slowness.size(); ++n ) {
+            slowness[n] = slownesses[ reader.getPhysicalNames(2)[triangles[n].physical_entity] ];
+        }
+    }
+	    
+    if ( par.verbose ) {
+        std::cout << "\n  Unstructured grid in file has"
+        << "\n    " << nodes.size() << " nodes"
+        << "\n    " << triangles.size() << " cells"
+        << std::endl;
+    }
+    
+	std::chrono::high_resolution_clock::time_point begin, end;
+    Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
+	
+	if ( par.verbose ) {
+		cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+		cout.flush();
+	}
+	if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+	g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+	if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+	if ( par.verbose ) {
+		cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+		<< "\n";
+		cout.flush();
+	}
+			
+	if ( par.time ) {
+		std::cout.precision(12);
+		std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+	}
+    std::cout.flush();
+	g->setSlowness(slowness);
+    
+	if ( par.saveModelVTK ) {
+#ifdef VTK
+		std::string filename = par.modelfile;
+		size_t i = filename.rfind(".msh");
+		filename.replace(i, 4, ".vtu");
+		
+		if ( par.verbose ) std::cout << "Saving model in " << filename << " ... ";
+		g->saveModelVTU(filename, false);
+		if ( par.verbose ) std::cout << "done.\n";
+#else
+		std::cerr << "Error: Program not compiled with VTK support" << std::endl;
+		return nullptr;
+#endif
+	}
+	
+    return g;
+}
 
 #endif

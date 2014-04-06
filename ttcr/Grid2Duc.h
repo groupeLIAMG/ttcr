@@ -34,19 +34,18 @@
 
 #include "Grid2D.h"
 #include "Grad.h"
-//#include "Node2Dc.h"
 
-template<typename T1, typename T2, typename NODE>
+template<typename T1, typename T2, typename NODE, typename S>
 class Grid2Duc : public Grid2D<T1,T2> {
 public:
-	Grid2Duc(const std::vector<sxz<T1>>& no,
-			   const std::vector<triangleElem<T2> >& tri,
+	Grid2Duc(const std::vector<S>& no,
+			   const std::vector<triangleElem<T2>>& tri,
 			   const size_t nt=1) :
 	nThreads(nt),
 	nPrimary(static_cast<T2>(no.size())),
 	nodes(std::vector<NODE>(no.size(), NODE(nt))),
 	slowness(std::vector<T1>(tri.size())),
-	neighbors(std::vector<std::vector<T2> >(tri.size())),
+	neighbors(std::vector<std::vector<T2>>(tri.size())),
 	triangles(), virtualNodes()
 	{
 		for (auto it=tri.begin(); it!=tri.end(); ++it) {
@@ -86,32 +85,32 @@ public:
 		nodes[nn].setTT(tt, nt);
 	}
 
-    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+    virtual int raytrace(const std::vector<S>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<sxz<T1>>& Rx,
+                         const std::vector<S>& Rx,
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1> >& Tx,
+    virtual int raytrace(const std::vector<S>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                         const std::vector<const std::vector<S>*>& Rx,
                          std::vector<std::vector<T1>*>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1> >& Tx,
+    virtual int raytrace(const std::vector<S>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<sxz<T1> >& Rx,
+                         const std::vector<S>& Rx,
                          std::vector<T1>& traveltimes,
-                         std::vector<std::vector<sxz<T1> > >& r_data,
+                         std::vector<std::vector<S>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1> >& Tx,
+    virtual int raytrace(const std::vector<S>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                         const std::vector<const std::vector<S>*>& Rx,
                          std::vector<std::vector<T1>*>& traveltimes,
-                         std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                         std::vector<std::vector<std::vector<S>>*>& r_data,
                          const size_t threadNo=0) const { return 0; }
-
+	
 	size_t getNumberOfNodes() const { return nodes.size(); }
 
 	T1 getXmin() const {
@@ -166,7 +165,6 @@ protected:
 		}
 	}
 	
-	template<typename S>
 	T1 computeDt(const NODE& source, const S& node,
 				 const size_t cellNo) const {
 		return slowness[cellNo] * source.getDistance( node );
@@ -177,7 +175,6 @@ protected:
 		return slowness[cellNo] * source.getDistance( node );
 	}
 	
-	template<typename S>
 	T2 getCellNo(const S& pt) const {
 		for ( T2 n=0; n<triangles.size(); ++n ) {
 			if ( insideTriangle(pt, n) ) {
@@ -187,12 +184,10 @@ protected:
 		return -1;
 	}
 	
-	template<typename S>
 	T1 getTraveltime(const S& Rx,
 					 const std::vector<NODE>& nodes,
 					 const size_t threadNo) const;
 	
-	template<typename S>
 	T1 getTraveltime(const S& Rx,
                      const std::vector<NODE>& nodes,
 					 T2& nodeParentRx,
@@ -200,8 +195,8 @@ protected:
 					 const size_t threadNo) const;
 	
 	
-	int check_pts(const std::vector<sxz<T1> >&) const;
-	int check_pts(const std::vector<sxyz<T1> >&) const;
+	int check_pts(const std::vector<sxz<T1>>&) const;
+	int check_pts(const std::vector<sxyz<T1>>&) const;
 	
 	bool insideTriangle(const sxz<T1>&, const T2) const;
 	bool insideTriangle(const sxyz<T1>&, const T2) const;
@@ -210,13 +205,13 @@ protected:
 	
 	void local_solver(NODE *vertexC, const size_t threadNo) const;
 	
-	void getRaypath(const std::vector<sxz<T1> >& Tx,
+	void getRaypath(const std::vector<sxz<T1>>& Tx,
                     const sxz<T1> &Rx,
                     const T1 tRx,
                     std::vector<sxz<T1>> &r_data,
                     const size_t threadNo) const;
 	
-	void getRaypath_ho(const std::vector<sxz<T1> >& Tx,
+	void getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					   const sxz<T1> &Rx,
 					   const T1 tRx,
 					   std::vector<sxz<T1>> &r_data,
@@ -232,8 +227,8 @@ protected:
 	void getNeighborNodes(const T2 cellNo, std::set<NODE*> &nnodes) const;
 };
 
-template<typename T1, typename T2, typename NODE> template<typename S>
-T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const S& Rx,
+template<typename T1, typename T2, typename NODE, typename S>
+T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
 									   const std::vector<NODE>& nodes,
 									   const size_t threadNo) const {
     
@@ -259,8 +254,8 @@ T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const S& Rx,
 }
 
 
-template<typename T1, typename T2, typename NODE> template<typename S>
-T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const S& Rx,
+template<typename T1, typename T2, typename NODE, typename S>
+T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
 									const std::vector<NODE>& nodes,
 									T2& nodeParentRx, T2& cellParentRx,
 									const size_t threadNo) const {
@@ -293,8 +288,8 @@ T1 Grid2Duc<T1,T2,NODE>::getTraveltime(const S& Rx,
 
 
 
-template<typename T1, typename T2, typename NODE>
-int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxz<T1> >& pts) const {
+template<typename T1, typename T2, typename NODE, typename S>
+int Grid2Duc<T1,T2,NODE,S>::check_pts(const std::vector<sxz<T1>>& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
@@ -321,8 +316,8 @@ int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxz<T1> >& pts) const {
     return 0;
 }
 
-template<typename T1, typename T2, typename NODE>
-int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1> >& pts) const {
+template<typename T1, typename T2, typename NODE, typename S>
+int Grid2Duc<T1,T2,NODE,S>::check_pts(const std::vector<sxyz<T1>>& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
@@ -350,8 +345,8 @@ int Grid2Duc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1> >& pts) const {
 }
 
 
-template<typename T1, typename T2, typename NODE>
-bool Grid2Duc<T1,T2,NODE>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
+template<typename T1, typename T2, typename NODE, typename S>
+bool Grid2Duc<T1,T2,NODE,S>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
 	
 	
 	// from http://mathworld.wolfram.com/TriangleInterior.html
@@ -369,31 +364,39 @@ bool Grid2Duc<T1,T2,NODE>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
 	return (a >= 0.) && (b >= 0.) && (a + b < 1.);
 }
 
-template<typename T1, typename T2, typename NODE>
-bool Grid2Duc<T1,T2,NODE>::insideTriangle(const sxyz<T1>& v, const T2 nt) const {
+template<typename T1, typename T2, typename NODE, typename S>
+bool Grid2Duc<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
 	
 	
-	// from http://mathworld.wolfram.com/TriangleInterior.html
-	
-	sxz<T1> v0 = { nodes[ triangles[nt].i[0] ].getX(),
+
+	sxyz<T1> a = { nodes[ triangles[nt].i[0] ].getX(),
 		nodes[ triangles[nt].i[0] ].getY(),
 		nodes[ triangles[nt].i[0] ].getZ() };
-	sxz<T1> v1 = { nodes[ triangles[nt].i[1] ].getX()-v0.x,
-		nodes[ triangles[nt].i[1] ].getY()-v0.y,
-		nodes[ triangles[nt].i[1] ].getZ()-v0.z };
-	sxz<T1> v2 = { nodes[ triangles[nt].i[2] ].getX()-v0.x,
-		nodes[ triangles[nt].i[2] ].getY()-v0.y,
-		nodes[ triangles[nt].i[2] ].getZ()-v0.z };
+	sxyz<T1> b = { nodes[ triangles[nt].i[1] ].getX(),
+		nodes[ triangles[nt].i[1] ].getY(),
+		nodes[ triangles[nt].i[1] ].getZ() };
+	sxyz<T1> c = { nodes[ triangles[nt].i[2] ].getX(),
+		nodes[ triangles[nt].i[2] ].getY(),
+		nodes[ triangles[nt].i[2] ].getZ() };
 	
-	T1 invDenom = 1. / det(v1, v2);
-	T1 a = (det(v, v2) - det(v0, v2)) * invDenom;
-	T1 b = -(det(v, v1) - det(v0, v1)) * invDenom;
-	return (a >= 0.) && (b >= 0.) && (a + b < 1.);
+	// Translate point and triangle so that point lies at origin
+	a -= p; b -= p; c -= p;
+	// Compute normal vectors for triangles pab and pbc
+	sxyz<T1> u = cross(b, c);
+	sxyz<T1> v = cross(c, a);
+	// Make sure they are both pointing in the same direction
+	if (dot(u, v) < static_cast<T1>(0.0)) return false;
+	// Compute normal vector for triangle pca
+	sxyz<T1> w = cross(a, b);
+	// Make sure it points in the same direction as the first two
+	if (dot(u, w) < static_cast<T1>(0.0)) return false;
+	// Otherwise P must be in (or on) the triangle
+	return true;
 }
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 								  const size_t nt, const bool vtkFormat) const {
 	
 	if (vtkFormat) {
@@ -458,8 +461,8 @@ void Grid2Duc<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
 
 #ifdef VTK
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::saveModelVTU(const std::string &fname,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
 								   const bool saveSlowness) const {
     
     vtkSmartPointer<vtkUnstructuredGrid> ugrid =
@@ -518,8 +521,8 @@ void Grid2Duc<T1,T2,NODE>::saveModelVTU(const std::string &fname,
 }
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::saveModelVTR(const std::string &fname,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::saveModelVTR(const std::string &fname,
 								   const double *d,
 								   const bool saveSlowness) const {
 	
@@ -605,8 +608,8 @@ void Grid2Duc<T1,T2,NODE>::saveModelVTR(const std::string &fname,
 #endif
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::processObtuse() {
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::processObtuse() {
 	
 	const double pi2 = pi / 2.;
 	
@@ -707,8 +710,8 @@ void Grid2Duc<T1,T2,NODE>::processObtuse() {
 
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::local_solver(NODE *vertexC,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::local_solver(NODE *vertexC,
 										const size_t threadNo) const {
 	
 	static const double pi2 = pi / 2.;
@@ -789,8 +792,8 @@ void Grid2Duc<T1,T2,NODE>::local_solver(NODE *vertexC,
 
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                  const sxz<T1> &Rx,
                                  const T1 tRx,
                                  std::vector<sxz<T1>> &r_data,
@@ -1170,8 +1173,8 @@ void Grid2Duc<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1> >& Tx,
 	}
 }
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::getRaypath_ho(const std::vector<sxz<T1> >& Tx,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 										 const sxz<T1> &Rx,
 										 const T1 tRx,
 										 std::vector<sxz<T1>> &r_data,
@@ -1556,8 +1559,8 @@ void Grid2Duc<T1,T2,NODE>::getRaypath_ho(const std::vector<sxz<T1> >& Tx,
 	}
 }
 
-template<typename T1, typename T2, typename NODE>
-bool Grid2Duc<T1,T2,NODE>::findIntersection(const T2 i0, const T2 i1,
+template<typename T1, typename T2, typename NODE, typename S>
+bool Grid2Duc<T1,T2,NODE,S>::findIntersection(const T2 i0, const T2 i1,
 											const sxz<T1> &g,
 											sxz<T1> &curr_pt) const {
 	
@@ -1626,8 +1629,8 @@ bool Grid2Duc<T1,T2,NODE>::findIntersection(const T2 i0, const T2 i1,
 	return false;
 }
 
-template<typename T1, typename T2, typename NODE>
-T2 Grid2Duc<T1,T2,NODE>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
+template<typename T1, typename T2, typename NODE, typename S>
+T2 Grid2Duc<T1,T2,NODE,S>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
 	std::vector<T2> cells;
 	for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
 		if ( std::find(nodes[i1].getOwners().begin(),
@@ -1650,8 +1653,8 @@ T2 Grid2Duc<T1,T2,NODE>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo
     return std::numeric_limits<T2>::max();
 }
 
-template<typename T1, typename T2, typename NODE>
-T2 Grid2Duc<T1,T2,NODE>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
+template<typename T1, typename T2, typename NODE, typename S>
+T2 Grid2Duc<T1,T2,NODE,S>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
 	std::vector<T2> cells;
 	for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
 		if ( std::find(nodes[i1].getOwners().begin(),
@@ -1672,8 +1675,8 @@ T2 Grid2Duc<T1,T2,NODE>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo
 	return std::numeric_limits<T2>::max();
 }
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Duc<T1,T2,NODE>::getNeighborNodes(const T2 cellNo,
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Duc<T1,T2,NODE,S>::getNeighborNodes(const T2 cellNo,
 											std::set<NODE*> &nnodes) const {
 	
 	for ( size_t n=0; n<3; ++n ) {

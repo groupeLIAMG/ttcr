@@ -43,13 +43,13 @@ template<typename T1, typename T2, typename NODE>
 class Grid3Duc : public Grid3D<T1,T2> {
 public:
     Grid3Duc(const std::vector<sxyz<T1>>& no,
-             const std::vector<tetrahedronElem<T2> >& tet,
+             const std::vector<tetrahedronElem<T2>>& tet,
              const size_t nt=1) :
 	nThreads(nt),
 	nPrimary(static_cast<T2>(no.size())),
 	nodes(std::vector<NODE>(no.size(), NODE(nt))),
 	slowness(std::vector<T1>(tet.size())),
-	neighbors(std::vector<std::vector<T2> >(tet.size())),
+	neighbors(std::vector<std::vector<T2>>(tet.size())),
 	tetrahedra(tet)
     {}
 
@@ -125,9 +125,9 @@ public:
 		return zmax;
 	}
 
-    virtual int raytrace(const std::vector<sxyz<T1> >& Tx,
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<sxyz<T1> >& Rx,
+                         const std::vector<sxyz<T1>>& Rx,
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
 	
@@ -137,11 +137,11 @@ public:
 						 std::vector<std::vector<T1>*>&,
 						 const size_t=0) const { return 0; }
 	
-    virtual int raytrace(const std::vector<sxyz<T1> >& Tx,
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                          const std::vector<T1>& t0,
-                         const std::vector<sxyz<T1> >& Rx,
+                         const std::vector<sxyz<T1>>& Rx,
                          std::vector<T1>& traveltimes,
-                         std::vector<std::vector<sxyz<T1> > >& r_data,
+                         std::vector<std::vector<sxyz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
     virtual int raytrace(const std::vector<sxyz<T1>>&,
@@ -170,8 +170,8 @@ protected:
 	T2 nPrimary;
 	mutable std::vector<NODE> nodes;
     std::vector<T1> slowness;
-    std::vector<std::vector<T2> > neighbors;  // nodes common to a cell
-	std::vector<tetrahedronElem<T2> > tetrahedra;
+    std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
+	std::vector<tetrahedronElem<T2>> tetrahedra;
 	
 	T1 computeDt(const NODE& source, const sxyz<T1>& node,
 				 const size_t cellNo) const {
@@ -193,7 +193,7 @@ protected:
                      T2& cellParentRx,
 					 const size_t threadNo) const;
 	
-	int check_pts(const std::vector<sxyz<T1> >&) const;
+	int check_pts(const std::vector<sxyz<T1>>&) const;
 
     bool insideTetrahedron(const sxyz<T1>&, const T2) const;
 
@@ -241,13 +241,13 @@ protected:
 	void barycentric(const NODE *a, const NODE *b, const NODE *c,
 					 const sxyz<T1> &p, T1 &u, T1 &v, T1 &w) const;
 	
-    void getRaypath(const std::vector<sxyz<T1> >& Tx,
+    void getRaypath(const std::vector<sxyz<T1>>& Tx,
                     const sxyz<T1> &Rx,
                     const T1 tRx,
                     std::vector<sxyz<T1>> &r_data,
                     const size_t threadNo) const;
 	
-    void getRaypath_ho(const std::vector<sxyz<T1> >& Tx,
+    void getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 					   const sxyz<T1> &Rx,
 					   const T1 tRx,
 					   std::vector<sxyz<T1>> &r_data,
@@ -332,7 +332,7 @@ T1 Grid3Duc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
 
 
 template<typename T1, typename T2, typename NODE>
-int Grid3Duc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1> >& pts) const {
+int Grid3Duc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1>>& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
@@ -1228,7 +1228,7 @@ int Grid3Duc<T1,T2,NODE>::solveEq23(const T1 a[], const T1 b[], T1 n[][3]) const
 
 
 template<typename T1, typename T2, typename NODE>
-void Grid3Duc<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1> >& Tx,
+void Grid3Duc<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                  const sxyz<T1> &Rx,
                                  const T1 tRx,
                                  std::vector<sxyz<T1>> &r_data,
@@ -1971,7 +1971,7 @@ void Grid3Duc<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2, typename NODE>
-void Grid3Duc<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1> >& Tx,
+void Grid3Duc<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 										 const sxyz<T1> &Rx,
 										 const T1 tRx,
 										 std::vector<sxyz<T1>> &r_data,

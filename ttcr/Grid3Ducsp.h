@@ -25,7 +25,7 @@ template<typename T1, typename T2>
 class Grid3Ducsp : public Grid3Duc<T1,T2,Node3Dcsp<T1,T2>> {
 public:
 	Grid3Ducsp(const std::vector<sxyz<T1>>& no,
-			 const std::vector<tetrahedronElem<T2> >& tet,
+			 const std::vector<tetrahedronElem<T2>>& tet,
 			 const int ns, const size_t nt=1, const int verbose=0) :
     Grid3Duc<T1,T2,Node3Dcsp<T1,T2>>(no, tet, nt)
 	{
@@ -36,9 +36,9 @@ public:
 	~Grid3Ducsp() {
 	}
 	
-	int raytrace(const std::vector<sxyz<T1> >&,
+	int raytrace(const std::vector<sxyz<T1>>&,
 				 const std::vector<T1>&,
-				 const std::vector<sxyz<T1> >&,
+				 const std::vector<sxyz<T1>>&,
 				 std::vector<T1>&,
 				 const size_t=0) const;
 	
@@ -48,11 +48,11 @@ public:
                  std::vector<std::vector<T1>*>&,
                  const size_t=0) const;
 	
-	int raytrace(const std::vector<sxyz<T1> >&,
+	int raytrace(const std::vector<sxyz<T1>>&,
                  const std::vector<T1>& ,
-                 const std::vector<sxyz<T1> >&,
+                 const std::vector<sxyz<T1>>&,
                  std::vector<T1>&,
-                 std::vector<std::vector<sxyz<T1> > >&,
+                 std::vector<std::vector<sxyz<T1>>>&,
 				 const size_t=0) const;
     
     int raytrace(const std::vector<sxyz<T1>>&,
@@ -62,12 +62,12 @@ public:
                  std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
                  const size_t=0) const;
 	
-	int raytrace(const std::vector<sxyz<T1> >&,
+	int raytrace(const std::vector<sxyz<T1>>&,
                  const std::vector<T1>& ,
-                 const std::vector<sxyz<T1> >&,
+                 const std::vector<sxyz<T1>>&,
                  std::vector<T1>&,
-                 std::vector<std::vector<sxyz<T1> > >&,
-                 std::vector<std::vector<siv<T1> > >&,
+                 std::vector<std::vector<sxyz<T1>>>&,
+                 std::vector<std::vector<siv<T1>>>&,
 				 const size_t=0) const;
     
 	
@@ -76,26 +76,26 @@ private:
 	void buildGridNodes(const std::vector<sxyz<T1>>&,
                         const int, const size_t, const int);
 
-	void initQueue(const std::vector<sxyz<T1> >& Tx,
+	void initQueue(const std::vector<sxyz<T1>>& Tx,
 				   const std::vector<T1>& t0,
 				   std::priority_queue<Node3Dcsp<T1,T2>*,
 				   std::vector<Node3Dcsp<T1,T2>*>,
-				   CompareNodePtr<T1> >& queue,
-				   std::vector<Node3Dcsp<T1,T2> >& txNodes,
+				   CompareNodePtr<T1>>& queue,
+				   std::vector<Node3Dcsp<T1,T2>>& txNodes,
 				   std::vector<bool>& inQueue,
 				   std::vector<bool>& frozen,
 				   const size_t threadNo) const;
 
     void prepropagate(const Node3Dcsp<T1,T2>& node,
 					  std::priority_queue<Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-					  CompareNodePtr<T1> >& queue,
+					  CompareNodePtr<T1>>& queue,
 					  std::vector<bool>& inQueue,
 					  std::vector<bool>& frozen,
 					  size_t threadNo) const;
 
 	void propagate(std::priority_queue<Node3Dcsp<T1,T2>*,
 				   std::vector<Node3Dcsp<T1,T2>*>,
-				   CompareNodePtr<T1> >& queue,
+				   CompareNodePtr<T1>>& queue,
 				   std::vector<bool>& inQueue,
 				   std::vector<bool>& frozen,
 				   const size_t threadNo) const;
@@ -287,9 +287,9 @@ void Grid3Ducsp<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
 
 
 template<typename T1, typename T2>
-int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 							    const std::vector<T1>& t0,
-                                const std::vector<sxyz<T1> >& Rx,
+                                const std::vector<sxyz<T1>>& Rx,
                                 std::vector<T1>& traveltimes,
                                 const size_t threadNo) const {
     
@@ -303,9 +303,9 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node3Dcsp<T1,T2> > txNodes;
+    std::vector<Node3Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -324,7 +324,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
@@ -340,9 +340,9 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node3Dcsp<T1,T2> > txNodes;
+    std::vector<Node3Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -364,11 +364,11 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 
 
 template<typename T1, typename T2>
-int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								const std::vector<T1>& t0,
-								const std::vector<sxyz<T1> >& Rx,
+								const std::vector<sxyz<T1>>& Rx,
 								std::vector<T1>& traveltimes,
-								std::vector<std::vector<sxyz<T1> > >& r_data,
+								std::vector<std::vector<sxyz<T1>>>& r_data,
 								const size_t threadNo) const {
     
     if ( this->check_pts(Tx) == 1 ) return 1;
@@ -380,9 +380,9 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node3Dcsp<T1,T2> > txNodes;
+    std::vector<Node3Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
 	
@@ -421,10 +421,10 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 		if ( flag ) continue;
 		
         // Rx are in nodes (not txNodes)
-        std::vector<Node3Dcsp<T1,T2> > *node_p;
+        std::vector<Node3Dcsp<T1,T2>> *node_p;
         node_p = &(this->nodes);
         
-        std::vector<sxyz<T1> > r_tmp;
+        std::vector<sxyz<T1>> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         sxyz<T1> child;
 		
@@ -468,7 +468,7 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
@@ -485,9 +485,9 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node3Dcsp<T1,T2> > txNodes;
+    std::vector<Node3Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -533,10 +533,10 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
             if ( flag ) continue;
             
             // Rx are in nodes (not txNodes)
-            std::vector<Node3Dcsp<T1,T2> > *node_p;
+            std::vector<Node3Dcsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
             
-            std::vector<sxyz<T1> > r_tmp;
+            std::vector<sxyz<T1>> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             sxyz<T1> child;
             
@@ -581,12 +581,12 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
+int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 							  const std::vector<T1>& t0,
-							  const std::vector<sxyz<T1> >& Rx,
+							  const std::vector<sxyz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
-							  std::vector<std::vector<sxyz<T1> > >& r_data,
-							  std::vector<std::vector<siv<T1> > >& l_data,
+							  std::vector<std::vector<sxyz<T1>>>& r_data,
+							  std::vector<std::vector<siv<T1>>>& l_data,
 							  const size_t threadNo) const {
     
 	//	std::cout << "   running in thread no " << threadNo << std::endl;
@@ -599,9 +599,9 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
     
     CompareNodePtr<T1> cmp(threadNo);
     std::priority_queue< Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
-    CompareNodePtr<T1> > queue( cmp );
+    CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<Node3Dcsp<T1,T2> > txNodes;
+    std::vector<Node3Dcsp<T1,T2>> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -647,10 +647,10 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
         if ( flag ) continue;
 
         // Rx are in nodes (not txNodes)
-        std::vector<Node3Dcsp<T1,T2> > *node_p;
+        std::vector<Node3Dcsp<T1,T2>> *node_p;
         node_p = &this->nodes;
         
-        std::vector<sxyz<T1> > r_tmp;
+        std::vector<sxyz<T1>> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         sxyz<T1> child;
         siv<T1> cell;
@@ -724,12 +724,12 @@ int Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1> >& Tx,
 }
 
 template<typename T1, typename T2>
-void Grid3Ducsp<T1,T2>::initQueue(const std::vector<sxyz<T1> >& Tx,
+void Grid3Ducsp<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
 								  const std::vector<T1>& t0,
 								  std::priority_queue<Node3Dcsp<T1,T2>*,
 								  std::vector<Node3Dcsp<T1,T2>*>,
-								  CompareNodePtr<T1> >& queue,
-								  std::vector<Node3Dcsp<T1,T2> >& txNodes,
+								  CompareNodePtr<T1>>& queue,
+								  std::vector<Node3Dcsp<T1,T2>>& txNodes,
 								  std::vector<bool>& inQueue,
 								  std::vector<bool>& frozen,
 								  const size_t threadNo) const {
@@ -769,7 +769,7 @@ template<typename T1, typename T2>
 void Grid3Ducsp<T1,T2>::prepropagate(const Node3Dcsp<T1,T2>& node,
                                    std::priority_queue<Node3Dcsp<T1,T2>*,
                                    std::vector<Node3Dcsp<T1,T2>*>,
-                                   CompareNodePtr<T1> >& queue,
+                                   CompareNodePtr<T1>>& queue,
                                    std::vector<bool>& inQueue,
                                    std::vector<bool>& frozen,
                                    size_t threadNo) const {
@@ -810,7 +810,7 @@ void Grid3Ducsp<T1,T2>::prepropagate(const Node3Dcsp<T1,T2>& node,
 template<typename T1, typename T2>
 void Grid3Ducsp<T1,T2>::propagate(std::priority_queue<Node3Dcsp<T1,T2>*,
 								std::vector<Node3Dcsp<T1,T2>*>,
-								CompareNodePtr<T1> >& queue,
+								CompareNodePtr<T1>>& queue,
 								std::vector<bool>& inQueue,
 								std::vector<bool>& frozen,
 								const size_t threadNo) const {

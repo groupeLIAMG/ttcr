@@ -28,7 +28,7 @@ using namespace std;
 template<typename T>
 int body(const input_parameters &par) {
     
-	vector< Src2D<T> > src;
+	vector< Src2D<T>> src;
     for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
         src.push_back( Src2D<T>( par.srcfiles[n] ) );
 		string end = " ... ";

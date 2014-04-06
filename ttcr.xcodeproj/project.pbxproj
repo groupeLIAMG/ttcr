@@ -11,6 +11,8 @@
 		2BC7090418EDA83B004DA2C9 /* spmrt_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* spmrt_io.cpp */; };
 		2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */; };
 		2BC7091218EDABD3004DA2C9 /* spmrt_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* spmrt_io.cpp */; };
+		2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */; };
+		2BD0F4FD18EED7E400B3957F /* spmrt_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* spmrt_io.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,6 +26,15 @@
 			runOnlyForDeploymentPostprocessing = 1;
 		};
 		2BC7090718EDAAA0004DA2C9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		2BD0F4F218EED76000B3957F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -76,6 +87,8 @@
 		2BC7090318EDA83B004DA2C9 /* utils_spmrt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils_spmrt.h; sourceTree = "<group>"; };
 		2BC7090918EDAAA0004DA2C9 /* ttcr2d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2d.cpp; sourceTree = "<group>"; };
+		2BD0F4F418EED76000B3957F /* ttcf2ds */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcf2ds; sourceTree = BUILT_PRODUCTS_DIR; };
+		2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2ds.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +100,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2BC7090618EDAAA0004DA2C9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BD0F4F118EED76000B3957F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -109,6 +129,7 @@
 			children = (
 				2BC708D318EDA599004DA2C9 /* ttcr3d */,
 				2BC7090918EDAAA0004DA2C9 /* ttcr2d */,
+				2BD0F4F418EED76000B3957F /* ttcf2ds */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +139,7 @@
 			children = (
 				2BC708FE18EDA83B004DA2C9 /* spmrt_io.cpp */,
 				2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */,
+				2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */,
 				2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */,
 				2BC708DF18EDA65F004DA2C9 /* Grad.h */,
 				2BC708E018EDA65F004DA2C9 /* Grid2D.h */,
@@ -196,6 +218,23 @@
 			productReference = 2BC7090918EDAAA0004DA2C9 /* ttcr2d */;
 			productType = "com.apple.product-type.tool";
 		};
+		2BD0F4F318EED76000B3957F /* ttcf2ds */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BD0F4FC18EED76000B3957F /* Build configuration list for PBXNativeTarget "ttcf2ds" */;
+			buildPhases = (
+				2BD0F4F018EED76000B3957F /* Sources */,
+				2BD0F4F118EED76000B3957F /* Frameworks */,
+				2BD0F4F218EED76000B3957F /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ttcf2ds;
+			productName = ttcf2ds;
+			productReference = 2BD0F4F418EED76000B3957F /* ttcf2ds */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -219,6 +258,7 @@
 			targets = (
 				2BC708D218EDA599004DA2C9 /* ttcr3d */,
 				2BC7090818EDAAA0004DA2C9 /* ttcr2d */,
+				2BD0F4F318EED76000B3957F /* ttcf2ds */,
 			);
 		};
 /* End PBXProject section */
@@ -242,6 +282,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BD0F4F018EED76000B3957F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BD0F4FD18EED7E400B3957F /* spmrt_io.cpp in Sources */,
+				2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -261,6 +310,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEPLOYMENT_LOCATION = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -284,6 +334,7 @@
 					"/opt/local/include/vtk-5.10",
 					/opt/local/include/eigen3,
 				);
+				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = "/opt/local/lib/vtk-5.10";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
@@ -313,6 +364,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEPLOYMENT_LOCATION = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -331,6 +383,7 @@
 					"/opt/local/include/vtk-5.10",
 					/opt/local/include/eigen3,
 				);
+				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = "/opt/local/lib/vtk-5.10";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_LDFLAGS = (
@@ -378,6 +431,30 @@
 			};
 			name = Release;
 		};
+		2BD0F4FA18EED76000B3957F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				DEPLOYMENT_LOCATION = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		2BD0F4FB18EED76000B3957F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				DEPLOYMENT_LOCATION = YES;
+				INSTALL_PATH = "$(HOME)/bin";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -397,6 +474,7 @@
 				2BC708DE18EDA599004DA2C9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		2BC7090F18EDAAA0004DA2C9 /* Build configuration list for PBXNativeTarget "ttcr2d" */ = {
 			isa = XCConfigurationList;
@@ -405,6 +483,16 @@
 				2BC7091118EDAAA0004DA2C9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2BD0F4FC18EED76000B3957F /* Build configuration list for PBXNativeTarget "ttcf2ds" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2BD0F4FA18EED76000B3957F /* Debug */,
+				2BD0F4FB18EED76000B3957F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

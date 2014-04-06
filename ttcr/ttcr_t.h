@@ -175,6 +175,13 @@ struct sxyz {
 		return *this;
 	}
 	
+	sxyz<T> & operator-=(const sxyz<T>& s) {
+		x -= s.x;
+		y -= s.y;
+		z -= s.z;
+		return *this;
+	}
+	
 	template<typename NODE>
 	sxyz<T> & operator=(const NODE& n) {
 		x = n.getX();
@@ -293,7 +300,7 @@ struct txPar {
 
 template<typename T>
 struct rxPar {
-    std::vector<sxz<T> > pts;
+    std::vector<sxz<T>> pts;
     std::vector<T> theta;
     std::vector<T> diam;
     std::vector<bool> inWater;

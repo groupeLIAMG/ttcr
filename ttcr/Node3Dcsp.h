@@ -80,6 +80,27 @@ public:
 		tt[i]=t;
 	}
 	
+	Node3Dcsp(const T1 t, const sxyz<T1> &s, const size_t nt, const size_t i) :
+	nThreads(nt),
+	x(s.x), y(s.y), z(s.z),
+	gridIndex(std::numeric_limits<T2>::max()),
+	tt(nullptr),
+	nodeParent(nullptr),
+	cellParent(nullptr),
+	owners(0)
+	{
+		tt = new T1[nt];
+		nodeParent = new T2[nt];
+		cellParent = new T2[nt];
+		
+		for ( size_t n=0; n<nt; ++n ) {
+			tt[n] = std::numeric_limits<T1>::max();
+			nodeParent[n] = std::numeric_limits<T2>::max();
+			cellParent[n] = std::numeric_limits<T2>::max();
+		}
+		tt[i]=t;
+	}
+	
 	Node3Dcsp(const Node3Dcsp<T1,T2>& node) :
 	nThreads(node.nThreads),
 	x(node.x), y(node.y), z(node.z),
@@ -120,6 +141,9 @@ public:
 	
 	void setXYZindex(const T1 xx, const T1 yy, const T1 zz, const T2 index) {
 		x=xx; y=yy; z=zz; gridIndex = index;  }
+	
+	void setXYZindex(const sxyz<T1> &s, const T2 index) {
+		x=s.x; y=s.y; z=s.z; gridIndex = index;  }
 	
     T1 getX() const { return x; }
     void setX(const T1 xx) { x = xx; }
