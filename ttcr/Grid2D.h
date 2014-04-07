@@ -44,7 +44,8 @@ public:
     
     virtual size_t getNumberOfNodes() const { return 0; }
     
-    virtual void saveTT(const std::string &, const int, const size_t nt=0) const {}
+    virtual void saveTT(const std::string &, const int, const size_t nt=0,
+                        const bool vtkFormat=0) const {}
 	
 	virtual T1 getXmin() const { return 0; }
 	virtual T1 getXmax() const { return 0; }

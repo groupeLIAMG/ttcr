@@ -297,6 +297,15 @@ int body(const input_parameters &par) {
         chrono::duration<double>(end-begin).count() << '\n';
 	}
 	
+    if ( par.saveGridTT ) {
+		//  will overwrite if nsrc>1
+		string filename = par.basename+"_all_tt.vtu";
+		g->saveTT(filename, 0, 0, true);
+        
+        //		string filename = par.basename+"_all_tt.dat";
+        //		g->saveTT(filename, 0);
+	}
+
     delete g;
     
     if ( src.size() == 1 ) {
