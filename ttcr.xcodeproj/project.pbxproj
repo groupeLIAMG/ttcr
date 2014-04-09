@@ -46,6 +46,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
 		2BC708D318EDA599004DA2C9 /* ttcr3d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr3d.cpp; sourceTree = "<group>"; };
 		2BC708DF18EDA65F004DA2C9 /* Grad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grad.h; sourceTree = "<group>"; };
@@ -80,11 +81,11 @@
 		2BC708FC18EDA83B004DA2C9 /* Rcv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rcv.h; sourceTree = "<group>"; };
 		2BC708FD18EDA83B004DA2C9 /* Rcv2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rcv2D.h; sourceTree = "<group>"; };
 		2BC708FE18EDA83B004DA2C9 /* spmrt_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = spmrt_io.cpp; sourceTree = "<group>"; };
-		2BC708FF18EDA83B004DA2C9 /* spmrt_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = spmrt_io.h; sourceTree = "<group>"; };
+		2BC708FF18EDA83B004DA2C9 /* ttcr_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ttcr_io.h; sourceTree = "<group>"; };
 		2BC7090018EDA83B004DA2C9 /* Src.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Src.h; sourceTree = "<group>"; };
 		2BC7090118EDA83B004DA2C9 /* Src2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Src2D.h; sourceTree = "<group>"; };
-		2BC7090218EDA83B004DA2C9 /* structs_spmrt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = structs_spmrt.h; sourceTree = "<group>"; };
-		2BC7090318EDA83B004DA2C9 /* utils_spmrt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils_spmrt.h; sourceTree = "<group>"; };
+		2BC7090218EDA83B004DA2C9 /* structs_ttcr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = structs_ttcr.h; sourceTree = "<group>"; };
+		2BC7090318EDA83B004DA2C9 /* utils_ttcr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils_ttcr.h; sourceTree = "<group>"; };
 		2BC7090918EDAAA0004DA2C9 /* ttcr2d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2d.cpp; sourceTree = "<group>"; };
 		2BD0F4F418EED76000B3957F /* ttcf2ds */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcf2ds; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -169,14 +170,15 @@
 				2BC708F818EDA67F004DA2C9 /* Node3Di.h */,
 				2BC708FC18EDA83B004DA2C9 /* Rcv.h */,
 				2BC708FD18EDA83B004DA2C9 /* Rcv2D.h */,
-				2BC708FF18EDA83B004DA2C9 /* spmrt_io.h */,
 				2BC7090018EDA83B004DA2C9 /* Src.h */,
 				2BC7090118EDA83B004DA2C9 /* Src2D.h */,
-				2BC7090218EDA83B004DA2C9 /* structs_spmrt.h */,
+				2BC7090218EDA83B004DA2C9 /* structs_ttcr.h */,
+				2BC708FF18EDA83B004DA2C9 /* ttcr_io.h */,
 				2BC708F918EDA67F004DA2C9 /* ttcr_t.h */,
 				2BC708FA18EDA67F004DA2C9 /* utils.h */,
-				2BC7090318EDA83B004DA2C9 /* utils_spmrt.h */,
+				2BC7090318EDA83B004DA2C9 /* utils_ttcr.h */,
 				2BC708FB18EDA67F004DA2C9 /* VTUReader.h */,
+				2B4CC10D18F5CDCC00D0B195 /* README.rtf */,
 			);
 			path = ttcr;
 			sourceTree = "<group>";

@@ -64,7 +64,7 @@ public:
                  const std::vector<T1>& ,
                  const std::vector<S>&,
                  std::vector<T1>&,
-                 std::vector<std::vector<S >>&,
+                 std::vector<std::vector<S>>&,
                  std::vector<std::vector<siv<T1>>>&,
 				 const size_t=0) const;
 	
@@ -78,7 +78,7 @@ private:
 				   std::priority_queue<NODE*,
 				   std::vector<NODE*>,
 				   CompareNodePtr<T1>>& queue,
-				   std::vector<NODE >& txNodes,
+				   std::vector<NODE>& txNodes,
 				   std::vector<bool>& inQueue,
 				   std::vector<bool>& frozen,
 				   const size_t threadNo) const;
@@ -154,9 +154,9 @@ void Grid2Ducsp<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
+int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 								const std::vector<T1>& t0,
-								const std::vector<S >& Rx,
+								const std::vector<S>& Rx,
 								std::vector<T1>& traveltimes,
 								const size_t threadNo) const {
     
@@ -171,7 +171,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
     std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<NODE > txNodes;
+    std::vector<NODE> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -190,7 +190,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
+int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<S>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -208,7 +208,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
     std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<NODE > txNodes;
+    std::vector<NODE> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -249,7 +249,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
     std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<NODE > txNodes;
+    std::vector<NODE> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -288,10 +288,10 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
         if ( flag ) continue;
         
         // Rx are in nodes (not txNodes)
-        std::vector<NODE > *node_p;
+        std::vector<NODE> *node_p;
         node_p = &(this->nodes);
         
-        std::vector<S > r_tmp;
+        std::vector<S> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         S child;
 		
@@ -335,7 +335,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
+int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 								const std::vector<T1>& t0,
 								const std::vector<const std::vector<S>*>& Rx,
 								std::vector<std::vector<T1>*>& traveltimes,
@@ -354,7 +354,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
     std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<NODE > txNodes;
+    std::vector<NODE> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -400,10 +400,10 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
             if ( flag ) continue;
             
             // Rx are in nodes (not txNodes)
-            std::vector<NODE > *node_p;
+            std::vector<NODE> *node_p;
             node_p = &(this->nodes);
             
-            std::vector<S > r_tmp;
+            std::vector<S> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             S child;
             
@@ -448,11 +448,11 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
+int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 								const std::vector<T1>& t0,
-								const std::vector<S >& Rx,
+								const std::vector<S>& Rx,
 								std::vector<T1>& traveltimes,
-								std::vector<std::vector<S >>& r_data,
+								std::vector<std::vector<S>>& r_data,
 								std::vector<std::vector<siv<T1>>>& l_data,
 								const size_t threadNo) const {
     
@@ -468,7 +468,7 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
     std::priority_queue< NODE*, std::vector<NODE*>,
     CompareNodePtr<T1>> queue( cmp );
     
-    std::vector<NODE > txNodes;
+    std::vector<NODE> txNodes;
     std::vector<bool> inQueue( this->nodes.size(), false );
     std::vector<bool> frozen( this->nodes.size(), false );
     
@@ -514,10 +514,10 @@ int Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S >& Tx,
         if ( flag ) continue;
 
         // Rx are in nodes (not txNodes)
-        std::vector<NODE > *node_p;
+        std::vector<NODE> *node_p;
         node_p = &(this->nodes);
         
-        std::vector<S > r_tmp;
+        std::vector<S> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         S child;
         siv<T1> cell;
@@ -597,7 +597,7 @@ void Grid2Ducsp<T1,T2,NODE,S>::initQueue(const std::vector<S>& Tx,
 								  std::priority_queue<NODE*,
 								  std::vector<NODE*>,
 								  CompareNodePtr<T1>>& queue,
-								  std::vector<NODE >& txNodes,
+								  std::vector<NODE>& txNodes,
 								  std::vector<bool>& inQueue,
 								  std::vector<bool>& frozen,
 								  const size_t threadNo) const {

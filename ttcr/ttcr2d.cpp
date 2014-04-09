@@ -17,9 +17,9 @@
 #include "Grid2Ducsp.h"
 #include "Rcv2D.h"
 #include "Src2D.h"
-#include "spmrt_io.h"
-#include "structs_spmrt.h"
-#include "utils_spmrt.h"
+#include "structs_ttcr.h"
+#include "ttcr_io.h"
+#include "utils_ttcr.h"
 
 using namespace std;
 
@@ -349,9 +349,9 @@ int body(const input_parameters &par) {
 			if ( reflectors.size() > 0 ) {
 				filename = par.basename+"_rp.bin";
 				ofstream fout;
-				fout.open(filename, ios::out | ios::binary);
-				fout << r_data.size();
-				fout.close();
+//				fout.open(filename, ios::out | ios::binary);
+//				fout << r_data.size();
+//				fout.close();
 				
 				// TODO complete this...
 			}

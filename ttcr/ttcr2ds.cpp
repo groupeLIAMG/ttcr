@@ -11,9 +11,9 @@
 
 #include "Grid2Duc.h"
 #include "Rcv.h"
-#include "spmrt_io.h"
 #include "Src.h"
-#include "utils_spmrt.h"
+#include "ttcr_io.h"
+#include "utils_ttcr.h"
 
 using namespace std;
 
@@ -246,8 +246,8 @@ int main(int argc, char * argv[])
     
 	string fname = parse_input(argc, argv, par);
 	if ( par.verbose ) {
-		cout << "\n*** Program ttcr2d ***\n\n"
-        << "Raytracing in 2D media\n";
+		cout << "\n*** Program ttcr2ds ***\n\n"
+        << "Raytracing on undulated surfaces\n";
 	}
     
     get_params(fname, par);

@@ -1,13 +1,13 @@
 //
-//  spmrt_utils.h
+//  utils_ttcr.h
 //  ttcr_u
 //
 //  Created by Bernard Giroux on 2014-01-23.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
 //
 
-#ifndef ttcr_u_spmrt_utils_h
-#define ttcr_u_spmrt_utils_h
+#ifndef ttcr_u_utils_ttcr_h
+#define ttcr_u_utils_ttcr_h
 
 #include <chrono>
 #include <set>

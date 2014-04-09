@@ -1,5 +1,5 @@
 //
-//  spmrt_io.cpp
+//  ttcr_io.cpp
 //  ttcr_u
 //
 //  Created by Bernard Giroux on 2012-11-19.
@@ -14,7 +14,7 @@ extern "C" {
 #include <unistd.h>         // for getopt
 }
 
-#include "spmrt_io.h"
+#include "ttcr_io.h"
 
 
 using namespace std;
@@ -168,7 +168,7 @@ void get_params(const std::string &filename, input_parameters &ip) {
 			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
 			sin >> ip.epsilon;
 		}
-		else if (par.find("max number if iteration") < 200) {
+		else if (par.find("max number of iteration") < 200) {
 			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
 			sin >> ip.nitermax;
 		}
