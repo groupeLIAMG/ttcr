@@ -170,7 +170,7 @@ sxz<T> Grad2D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
 	// solve Ax = b with least squares
 	x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
 	
-	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
+//	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 	
 	g.x = x[0];
 	g.z = x[1];
@@ -204,9 +204,9 @@ sxyz<T> Grad3D<T>::ls_grad(const Node<T> &n0,
 						   const Node<T> &n3,
 						   const size_t nt) {
 	
-	sxyz<T> cent = {0.25*(n0.getX()+n1.getX()+n2.getX()+n3.getX()),
-		            0.25*(n0.getY()+n1.getY()+n2.getY()+n3.getY()),
-		            0.25*(n0.getZ()+n1.getZ()+n2.getZ()+n3.getZ())};
+	sxyz<T> cent = {static_cast<T>(0.25)*(n0.getX()+n1.getX()+n2.getX()+n3.getX()),
+		            static_cast<T>(0.25)*(n0.getY()+n1.getY()+n2.getY()+n3.getY()),
+		            static_cast<T>(0.25)*(n0.getZ()+n1.getZ()+n2.getZ()+n3.getZ())};
 	
 	T w = 1./sqrt((n0.getX()-cent.x)*(n0.getX()-cent.x) +
 				  (n0.getY()-cent.y)*(n0.getY()-cent.y) +
@@ -338,7 +338,7 @@ sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
 	// solve Ax = b with least squares
 	x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
 	
-	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
+//	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
 	g.x = x[0];
 	g.y = x[1];
