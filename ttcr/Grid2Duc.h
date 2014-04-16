@@ -29,7 +29,6 @@
 #include "vtkXMLUnstructuredGridWriter.h"
 #endif
 
-#include <Eigen/Dense>
 #include <boost/math/special_functions/sign.hpp>
 
 #include "Grid2D.h"
@@ -727,7 +726,7 @@ void Grid2Duc<T1,T2,NODE,S>::local_solver(NODE *vertexC,
 			if ( vertexC->getGridIndex() == triangles[triangleNo].i[i0] ) break;
 		}
 		
-		if ( triangles[triangleNo].a[i0] > pi/2 ) {
+		if ( triangles[triangleNo].a[i0] > pi/2 && !virtualNodes.empty() ) {
 			
 			virtualNode<T1,NODE> vn = virtualNodes.at(triangleNo);
 			

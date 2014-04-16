@@ -28,6 +28,8 @@
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
+#include "Grid2Duifm.h"
+#include "Grid2Duifs.h"
 #include "Grid2Duisp.h"
 #include "Grid3Drc.h"
 #include "Grid3Dri.h"
@@ -718,7 +720,10 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const siz
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducfm<T, uint32_t>(nodes, triangles, nt);
+			if ( constCells )
+				g = new Grid2Ducfm<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+			else
+				g = new Grid2Duifm<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -734,8 +739,12 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const siz
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducfs<T, uint32_t>(nodes, triangles, par.epsilon,
-											par.nitermax, nt);
+			if ( constCells )
+				g = new Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+																			  par.nitermax, nt);
+			else
+				g = new Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+																			  par.nitermax, nt);
             T xmin = g->getXmin();
             T xmax = g->getXmax();
             T zmin = g->getZmin();
@@ -744,9 +753,12 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const siz
             std::vector<sxz<T>> ptsRef;
             ptsRef.push_back( {xmin, zmin} );
             ptsRef.push_back( {xmin, zmax} );
-            ptsRef.push_back( {xmax,  zmin} );
-            ptsRef.push_back( {xmax,  zmax} );
-            dynamic_cast<Grid2Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+            ptsRef.push_back( {xmax, zmin} );
+            ptsRef.push_back( {xmax, zmax} );
+			if ( constCells )
+				dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+			else
+				dynamic_cast<Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -899,7 +911,10 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducfm<T, uint32_t>(nodes, triangles, nt);
+			if ( constCells )
+				g = new Grid2Ducfm<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+			else
+				g = new Grid2Duifm<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -915,8 +930,13 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducfs<T, uint32_t>(nodes, triangles, par.epsilon,
-											par.nitermax, nt);
+			if ( constCells )
+				g = new Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+																			  par.nitermax, nt);
+			else
+				g = new Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+																			  par.nitermax, nt);
+
             T xmin = g->getXmin();
             T xmax = g->getXmax();
             T zmin = g->getZmin();
@@ -925,10 +945,13 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
             std::vector<sxz<T>> ptsRef;
             ptsRef.push_back( {xmin, zmin} );
             ptsRef.push_back( {xmin, zmax} );
-            ptsRef.push_back( {xmax,  zmin} );
-            ptsRef.push_back( {xmax,  zmax} );
-            dynamic_cast<Grid2Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
-            if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+            ptsRef.push_back( {xmax, zmin} );
+            ptsRef.push_back( {xmax, zmax} );
+			if ( constCells )
+				dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+			else
+				dynamic_cast<Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
                 std::cout << "Initiated ordering with " << ptsRef.size() << " reference points and l-"

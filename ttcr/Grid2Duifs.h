@@ -1,48 +1,28 @@
 //
-//  Grid2Ducfs.h
-//  ttcr_u
+//  Grid2Duifs.h
+//  ttcr
 //
-//  Created by Bernard Giroux on 2014-01-30.
+//  Created by Bernard Giroux on 2014-04-15.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
 //
 
-
-//
-//@ARTICLE{qian07,
-//	author = {Qian, Jianliang and Zhang, Yong-Tao and Zhao, Hong-Kai},
-//	title = {Fast Sweeping Methods for Eikonal Equations on Triangular Meshes},
-//	journal = {SIAM Journal on Numerical Analysis},
-//	year = {2007},
-//	volume = {45},
-//	pages = {83--107},
-//	number = {1},
-//	doi = {10.1137/050627083},
-//	issn = {00361429},
-//	publisher = {Society for Industrial and Applied Mathematics},
-//	url = {http://www.jstor.org/stable/40232919}
-//	}
-//
-
-
-
-
-#ifndef ttcr_u_Grid2Ducfs_h
-#define ttcr_u_Grid2Ducfs_h
+#ifndef ttcr_Grid2Duifs_h
+#define ttcr_Grid2Duifs_h
 
 #include <fstream>
 #include <queue>
 
-#include "Grid2Duc.h"
+#include "Grid2Dui.h"
 #include "Metric.h"
 
 template<typename T1, typename T2, typename NODE, typename S>
-class Grid2Ducfs : public Grid2Duc<T1,T2,NODE,S> {
+class Grid2Duifs : public Grid2Dui<T1,T2,NODE,S> {
 public:
-	Grid2Ducfs(const std::vector<S>& no,
+	Grid2Duifs(const std::vector<S>& no,
 			   const std::vector<triangleElem<T2>>& tri,
 			   const T1 eps, const int maxit, const size_t nt=1,
 			   const bool procObtuse=true) :
-	Grid2Duc<T1,T2,NODE,S>(no, tri, nt),
+	Grid2Dui<T1,T2,NODE,S>(no, tri, nt),
 	epsilon(eps), nitermax(maxit), sorted()
 	{
 		buildGridNodes(no, nt);
@@ -50,7 +30,7 @@ public:
 		if ( procObtuse ) this->processObtuse();
 	}
 	
-	~Grid2Ducfs() {
+	~Grid2Duifs() {
 	}
 	
 	void initOrdering(const std::vector<S>& refPts, const int order);
@@ -96,7 +76,7 @@ private:
 };
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Ducfs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+void Grid2Duifs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
 											  const size_t nt) {
 	
 	// primary nodes
@@ -138,7 +118,7 @@ void Grid2Ducfs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Ducfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
+void Grid2Duifs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
 											const int order) {
 	sorted.resize( refPts.size() );
 	
@@ -147,11 +127,11 @@ void Grid2Ducfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
 		m = new Metric1<T1>();
 	else
 		m = new Metric2<T1>();
-		
-	std::priority_queue<siv<T1>,std::vector<siv<T1>>,CompareSiv_vr<T1>> queue;
-
-	for ( size_t np=0; np<refPts.size(); ++np ) {
 	
+	std::priority_queue<siv<T1>,std::vector<siv<T1>>,CompareSiv_vr<T1>> queue;
+	
+	for ( size_t np=0; np<refPts.size(); ++np ) {
+		
 		for ( size_t n=0; n<this->nodes.size(); ++n ) {
 			queue.push( {n, m->l(this->nodes[n], refPts[np])} );
 		}
@@ -168,7 +148,7 @@ void Grid2Ducfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<S>& Rx,
 									   std::vector<T1>& traveltimes,
@@ -241,13 +221,13 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
     for (size_t n=0; n<Rx.size(); ++n) {
         traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
     }
-
+	
 	return 0;
 }
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<const std::vector<S>*>& Rx,
 									   std::vector<std::vector<T1>*>& traveltimes,
@@ -280,9 +260,9 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                     this->local_solver(*vertexC, threadNo);
 			}
 			
-//			char fname[200];
-//			sprintf(fname, "fsm%06d_%zd_a.dat",niter+1,i+1);
-//			saveTT(fname, threadNo);
+			//			char fname[200];
+			//			sprintf(fname, "fsm%06d_%zd_a.dat",niter+1,i+1);
+			//			saveTT(fname, threadNo);
 			
 			error = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -301,9 +281,9 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                 if ( !frozen[(*vertexC)->getGridIndex()] )
                     this->local_solver(*vertexC, threadNo);
 			}
-//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
-//			saveTT(fname, threadNo);
-
+			//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
+			//			saveTT(fname, threadNo);
+			
 			error = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
@@ -320,7 +300,7 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
         niter++;
 	}
     std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
-
+	
 	
     if ( traveltimes.size() != Rx.size() ) {
         traveltimes.resize( Rx.size() );
@@ -335,7 +315,7 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<S>& Rx,
 									   std::vector<T1>& traveltimes,
@@ -408,7 +388,7 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
-
+	
     for (size_t n=0; n<Rx.size(); ++n) {
         traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
@@ -419,7 +399,7 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<const std::vector<S>*>& Rx,
 									   std::vector<std::vector<T1>*>& traveltimes,
@@ -501,14 +481,14 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
-
+	
     for (size_t nr=0; nr<Rx.size(); ++nr) {
         traveltimes[nr]->resize( Rx[nr]->size() );
         r_data[nr]->resize( Rx[nr]->size() );
         for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
             (*r_data[nr])[ni].resize( 0 );
         }
-
+		
         for (size_t n=0; n<Rx[nr]->size(); ++n) {
             (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
 			
@@ -520,7 +500,7 @@ int Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Ducfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
+void Grid2Duifs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
 									  const std::vector<T1>& t0,
 									  std::vector<bool>& frozen,
 									  const size_t threadNo) const {
@@ -540,12 +520,12 @@ void Grid2Ducfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
                         if ( neibNo == nn ) continue;
-                        T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
-							
+                        T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo]);
+						
                         if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                             this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-//                            this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
-//                            this->nodes[neibNo].setCellParent(cellNo, threadNo );
+							//                            this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
+							//                            this->nodes[neibNo].setCellParent(cellNo, threadNo );
                             //frozen[neibNo] = true;
                         }
 					}
@@ -570,6 +550,7 @@ void Grid2Ducfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
 		}
     }
 }
+
 
 
 

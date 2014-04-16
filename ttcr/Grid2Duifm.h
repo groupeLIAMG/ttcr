@@ -1,52 +1,33 @@
 //
-//  Grid2Ducfm.h
-//  ttcr_u
+//  Grid2Duifm.h
+//  ttcr
 //
-//  Created by Bernard Giroux on 2014-02-11.
+//  Created by Bernard Giroux on 2014-04-15.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
 //
 
-//
-//@ARTICLE{lelievre11,
-//	author = {Leli\`evre, Peter G. and Farquharson, Colin G. and Hurich, Charles
-//		A.},
-//	title = {Computing first-arrival seismic traveltimes on unstructured 3-{D}
-//		tetrahedral grids using the Fast Marching Method},
-//	journal = gji,
-//	year = {2011},
-//	volume = {184},
-//	pages = {885-896},
-//	number = {2},
-//	doi = {10.1111/j.1365-246X.2010.04880.x},
-//	eprint = {http://gji.oxfordjournals.org/content/184/2/885.full.pdf+html},
-//	owner = {giroux},
-//	timestamp = {2014.01.28},
-//	url = {http://dx.doi.org/10.1111/j.1365-246X.2010.04880.x}
-//	}
-//
-
-#ifndef ttcr_u_Grid2Ducfm_h
-#define ttcr_u_Grid2Ducfm_h
+#ifndef ttcr_Grid2Duifm_h
+#define ttcr_Grid2Duifm_h
 
 #include <fstream>
 #include <queue>
 
-#include "Grid2Duc.h"
+#include "Grid2Dui.h"
 
 template<typename T1, typename T2, typename NODE, typename S>
-class Grid2Ducfm : public Grid2Duc<T1,T2,NODE,S> {
+class Grid2Duifm : public Grid2Dui<T1,T2,NODE,S> {
 public:
-	Grid2Ducfm(const std::vector<S>& no,
+	Grid2Duifm(const std::vector<S>& no,
 			   const std::vector<triangleElem<T2>>& tri,
 			   const size_t nt=1, const bool procObtuse=true) :
-	Grid2Duc<T1, T2,NODE,S>(no, tri, nt)
+	Grid2Dui<T1, T2,NODE,S>(no, tri, nt)
 	{
 		buildGridNodes(no, nt);
 		this->buildGridNeighbors();
 		if ( procObtuse ) this->processObtuse();
 	}
 	
-	~Grid2Ducfm() {
+	~Grid2Duifm() {
 	}
 	
 	int raytrace(const std::vector<S>& Tx,
@@ -98,14 +79,14 @@ private:
 };
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Ducfm<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+void Grid2Duifm<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
 											  const size_t nt) {
 	
 	// primary nodes
 	for ( T2 n=0; n<no.size(); ++n ) {
 		this->nodes[n].setXZindex( no[n].x, no[n].z, n );
 	}
-
+	
 	for ( T2 ntri=0; ntri<this->triangles.size(); ++ntri ) {
 		for ( size_t nl=0; nl<3; ++nl ) {
 			// push owner for primary nodes
@@ -119,7 +100,7 @@ void Grid2Ducfm<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
 			
 			// distance between node 0 & 1 (opposite of node 2]
 			T1 c = this->nodes[ this->triangles[ntri].i[0] ].getDistance( this->nodes[ this->triangles[ntri].i[1] ] );
-
+			
 			this->triangles[ntri].l[0] = a;
 			this->triangles[ntri].l[1] = b;
 			this->triangles[ntri].l[2] = c;
@@ -138,7 +119,7 @@ void Grid2Ducfm<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<S>& Rx,
 									   std::vector<T1>& traveltimes,
@@ -174,7 +155,7 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<const std::vector<S>*>& Rx,
 									   std::vector<std::vector<T1>*>& traveltimes,
@@ -215,7 +196,7 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<S>& Rx,
 									   std::vector<T1>& traveltimes,
@@ -247,7 +228,7 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
-
+	
     for (size_t n=0; n<Rx.size(); ++n) {
         traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
@@ -256,7 +237,7 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+int Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   const std::vector<T1>& t0,
 									   const std::vector<const std::vector<S>*>& Rx,
 									   std::vector<std::vector<T1>*>& traveltimes,
@@ -296,10 +277,10 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
         for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
             (*r_data[nr])[ni].resize( 0 );
         }
-
+		
         for (size_t n=0; n<Rx[nr]->size(); ++n) {
             (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-
+			
             this->getRaypath_ho(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
 		}
     }
@@ -309,7 +290,7 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Ducfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
+void Grid2Duifm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
 										const std::vector<T1>& t0,
 										std::priority_queue<NODE*,
 										std::vector<NODE*>,
@@ -337,7 +318,7 @@ void Grid2Ducfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
 						for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
 							T2 neibNo = this->neighbors[cellNo][k];
 							if ( neibNo == nn ) continue;
-							T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
+							T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo]);
 							
 							if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
 								this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
@@ -362,7 +343,7 @@ void Grid2Ducfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
                 T2 neibNo = this->neighbors[cellNo][k];
 				
 				// compute dt
-                T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], cellNo);
+                T1 dt = this->nodes[neibNo].getDistance(Tx[n])*this->nodes[neibNo].getNodeSlowness();
 				
 				this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                 narrow_band.push( &(this->nodes[neibNo]) );
@@ -375,7 +356,7 @@ void Grid2Ducfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Ducfm<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
+void Grid2Duifm<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
 										 std::vector<NODE*>,
 										 CompareNodePtr<T1>>& narrow_band,
 										 std::vector<bool>& inNarrowBand,
