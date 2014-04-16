@@ -9,7 +9,7 @@
 #ifndef ttcr_v2_Interpolator_h
 #define ttcr_v2_Interpolator_h
 
-#include "Node3Di.h"
+#include "Node3Disp.h"
 
 template<class T> class Interpolator
 {
@@ -110,9 +110,9 @@ public:
 //        return s[0]*w[0] + s[1]*w[1] + s[2]*w[2] + s[3]*w[3] + s[4]*w[4] + s[5]*w[5] + s[6]*w[6] + s[7]*w[7];
 //    }
 	
-	template<typename T2>
-    static T inverseDistance(const Node3Di<T,T2> &node,
-                             const std::vector<Node3Di<T,T2>*> &inodes) {
+	template<typename NODE>
+    static T inverseDistance(const NODE &node,
+                             const std::vector<NODE*> &inodes) {
         
         T num=0.;
         T den=0.;
@@ -127,9 +127,9 @@ public:
         return num/den;
     }
     
-	template<typename T2>
-    static T inverseDistance(const sxyz<T>& node,
-                             const std::vector<Node3Di<T,T2>*> &inodes) {
+	template<typename NODE, typename S>
+    static T inverseDistance(const S& node,
+                             const std::vector<NODE*> &inodes) {
         
         T num=0.;
         T den=0.;

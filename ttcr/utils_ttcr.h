@@ -28,12 +28,14 @@
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
+#include "Grid2Duisp.h"
 #include "Grid3Drc.h"
 #include "Grid3Dri.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
 #include "Node2Dcsp.h"
+#include "Node2Disp.h"
 #include "MSHReader.h"
 #ifdef VTK
 #include "VTUReader.h"
@@ -58,7 +60,7 @@ std::string to_string( const T & Value )
 
 #ifdef VTK
 template<typename T>
-Grid3Dr<T,uint32_t> *recti(const input_parameters &par, const size_t nt)
+Grid3Dr<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt)
 {
     Grid3Dr<T,uint32_t> *g = nullptr;
 	vtkRectilinearGrid *dataSet;
@@ -228,7 +230,7 @@ Grid3Dr<T,uint32_t> *recti(const input_parameters &par, const size_t nt)
 };
 
 template<typename T>
-Grid3D<T, uint32_t> *unstruct_vtu(const input_parameters &par, const size_t nt)
+Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt)
 {
 	
     VTUReader reader( par.modelfile.c_str() );
@@ -344,7 +346,7 @@ Grid3D<T, uint32_t> *unstruct_vtu(const input_parameters &par, const size_t nt)
 #endif
 
 template<typename T>
-Grid3D<T, uint32_t> *unstruct(const input_parameters &par,
+Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 								std::vector<Rcv<T>> &reflectors,
 								const size_t nt, const size_t ns)
 {
@@ -541,7 +543,7 @@ Grid3D<T, uint32_t> *unstruct(const input_parameters &par,
 
 #ifdef VTK
 template<typename T>
-Grid2Drc<T,uint32_t> *recti2D(const input_parameters &par, const size_t nt)
+Grid2Drc<T,uint32_t> *recti2Dc(const input_parameters &par, const size_t nt)
 {
     Grid2Drc<T,uint32_t> *g = nullptr;
 	vtkRectilinearGrid *dataSet;
@@ -651,7 +653,7 @@ Grid2Drc<T,uint32_t> *recti2D(const input_parameters &par, const size_t nt)
 };
 
 template<typename T>
-Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt)
+Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const size_t nt)
 {
     VTUReader reader( par.modelfile.c_str() );
     
@@ -666,11 +668,17 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
 	
     std::vector<sxz<T>> nodes(reader.getNumberOfNodes());
 	std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfElements());
-	std::vector<T> slowness(reader.getNumberOfElements());
+    bool constCells = reader.isConstCell();
+    
+	std::vector<T> slowness;
+    if ( constCells )
+        slowness.resize(reader.getNumberOfElements());
+    else
+        slowness.resize(reader.getNumberOfNodes());
 	
 	reader.readNodes2D(nodes);
 	reader.readTriangleElements(triangles);
-    reader.readSlowness(slowness);
+    reader.readSlowness(slowness, constCells);
     
     
     if ( par.verbose ) {
@@ -681,7 +689,7 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
-    Grid2D<T, uint32_t> *g=nullptr;
+    Grid2D<T, uint32_t,sxz<T>> *g=nullptr;
     switch (par.method) {
         case SHORTEST_PATH:
         {
@@ -690,7 +698,10 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
 				cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
+			if ( constCells )
+				g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
+			else
+				g = new Grid2Duisp<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
 				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -754,15 +765,18 @@ Grid2D<T, uint32_t> *unstruct2D_vtu(const input_parameters &par, const size_t nt
 		cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
 	}
     cout.flush();
-	g->setSlowness(slowness);
+	if ( 1 == (g->setSlowness(slowness)) ) {
+		delete g;
+		return nullptr;
+	}
     return g;
 }
 #endif
 
 template<typename T>
-Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
-								  std::vector<Rcv2D<T>> &reflectors,
-								  const size_t nt, const size_t ns)
+Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
+									  std::vector<Rcv2D<T>> &reflectors,
+									  const size_t nt, const size_t ns)
 {
     
     MSHReader reader( par.modelfile.c_str() );
@@ -785,6 +799,7 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
     if ( par.verbose ) std::cout << "done.\n";
 	std::map<std::string, double> slownesses;
 
+	bool constCells = true;
     if ( !par.slofile.empty() ) {
         
         std::ifstream fin(par.slofile.c_str());
@@ -801,9 +816,14 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
 		}
         fin.close();
         if ( tmp.size() != slowness.size() ) {
-            std::cerr << "Error: slowness file should contain " << slowness.size()
-            << " values.\nAborting." << std::endl;
-            abort();
+            if ( tmp.size() == nodes.size() ) {
+                slowness.resize( nodes.size() );
+                constCells = false;
+            } else {
+				std::cerr << "Error: slowness file should contain " << slowness.size()
+				<< " values.\nAborting." << std::endl;
+				abort();
+			}
         }
         for ( size_t n=0; n<slowness.size(); ++n ) {
             slowness[n] = tmp[n];
@@ -850,7 +870,7 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
-    Grid2D<T, uint32_t> *g=nullptr;
+    Grid2D<T,uint32_t,sxz<T>> *g=nullptr;
     switch (par.method) {
         case SHORTEST_PATH:
         {
@@ -859,7 +879,10 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
 				cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
+			if ( constCells )
+				g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
+			else
+				g = new Grid2Duisp<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
 				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -990,7 +1013,7 @@ Grid2D<T, uint32_t> *unstruct2D(const input_parameters &par,
 }
 
 template<typename T>
-Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const size_t nt)
+Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const size_t nt)
 {
     VTUReader reader( par.modelfile.c_str() );
     
@@ -1005,13 +1028,19 @@ Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds_vtu(const inp
 	
     std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
 	std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfElements());
-	std::vector<T> slowness(reader.getNumberOfElements());
-	
+    
+    bool constCells = reader.isConstCell();
+    
+	std::vector<T> slowness;
+    if ( constCells )
+        slowness.resize(reader.getNumberOfElements());
+    else
+        slowness.resize(reader.getNumberOfNodes());
+        
 	reader.readNodes3D(nodes);
 	reader.readTriangleElements(triangles);
-    reader.readSlowness(slowness);
-    
-	
+    reader.readSlowness(slowness, constCells);
+    	
     if ( par.verbose ) {
         cout << "\n  Unstructured grid in file has"
         << "\n    " << nodes.size() << " nodes"
@@ -1020,14 +1049,17 @@ Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds_vtu(const inp
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
-    Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
+    Grid2D<T, uint32_t, sxyz<T>> *g=nullptr;
 	
 	if ( par.verbose ) {
 		cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
 		cout.flush();
 	}
 	if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-	g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+    if ( constCells )
+        g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+    else
+        g = new Grid2Duisp<T, uint32_t, Node3Disp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
 	if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 	if ( par.verbose ) {
 		cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1040,15 +1072,19 @@ Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds_vtu(const inp
 		cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
 	}
     cout.flush();
-	g->setSlowness(slowness);
+	if ( 1 == (g->setSlowness(slowness)) ) {
+		delete g;
+		return nullptr;
+	}
     return g;
 
 }
 
 
+
 template<typename T>
-Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds(const input_parameters &par,
-								const size_t nt, const size_t ns)
+Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds(const input_parameters &par,
+                                          const size_t nt, const size_t ns)
 {
     
     MSHReader reader( par.modelfile.c_str() );
@@ -1071,6 +1107,7 @@ Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds(const input_p
     if ( par.verbose ) std::cout << "done.\n";
 	std::map<std::string, double> slownesses;
 	
+    bool constCells = true;
     if ( !par.slofile.empty() ) {
         
         std::ifstream fin(par.slofile.c_str());
@@ -1087,9 +1124,14 @@ Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds(const input_p
 		}
         fin.close();
         if ( tmp.size() != slowness.size() ) {
-            std::cerr << "Error: slowness file should contain " << slowness.size()
-            << " values.\nAborting." << std::endl;
-            abort();
+            if ( tmp.size() == nodes.size() ) {
+                slowness.resize( nodes.size() );
+                constCells = false;
+            } else {
+                std::cerr << "Error: slowness file should contain " << slowness.size()
+                << " values.\nAborting." << std::endl;
+                abort();
+            }
         }
         for ( size_t n=0; n<slowness.size(); ++n ) {
             slowness[n] = tmp[n];
@@ -1135,14 +1177,17 @@ Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *unstruct2Ds(const input_p
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
-    Grid2Duc<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
+    Grid2D<T, uint32_t, sxyz<T>> *g=nullptr;
 	
 	if ( par.verbose ) {
 		cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
 		cout.flush();
 	}
 	if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-	g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+    if ( constCells )
+        g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+    else
+        g = new Grid2Duisp<T, uint32_t, Node3Disp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
 	if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 	if ( par.verbose ) {
 		cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()

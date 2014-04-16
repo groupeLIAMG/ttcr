@@ -58,7 +58,7 @@
 #include "Node2Dcsp.h"
 
 template<typename T1, typename T2>
-class Grid2Drc : public Grid2D<T1,T2> {
+class Grid2Drc : public Grid2D<T1,T2,sxz<T1>> {
 public:
     Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
            const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,

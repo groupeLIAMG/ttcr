@@ -53,7 +53,8 @@ int body(const input_parameters &par) {
         extension = par.modelfile.substr(idx);
     }
     
-    Grid2Duc<T,uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
+//    Grid2Duc<T,uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
+    Grid2D<T,uint32_t,sxyz<T>> *g=nullptr;
     if (extension == ".vtu") {
 #ifdef VTK
         g = unstruct2Ds_vtu<T>(par, num_threads);
@@ -101,10 +102,8 @@ int body(const input_parameters &par) {
 	if ( par.saveRaypaths ) {
 		if ( num_threads == 1 ) {
 			for ( size_t n=0; n<src.size(); ++n ) {
-                
-				g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-							rcv.get_tt(n), r_data[n]);
-                
+                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                             rcv.get_tt(n), r_data[n]);
 			}
 		} else {
 			// threaded jobs
@@ -118,20 +117,16 @@ int body(const input_parameters &par) {
 				threads[i]=thread( [&g,&src,&rcv,&r_data,blk_start,blk_end,i]{
                     
 					for ( size_t n=blk_start; n<blk_end; ++n ) {
-                        
-						g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-									rcv.get_tt(n), r_data[n], i+1);
-						
+                        g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                      rcv.get_tt(n), r_data[n], i+1);
 					}
 				});
 				
 				blk_start = blk_end;
 			}
 			for ( size_t n=blk_start; n<nTx; ++n ) {
-                
                 g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                             rcv.get_tt(n), r_data[n], 0);
-                
 			}
 			
 			for_each(threads.begin(),threads.end(), mem_fn(&thread::join));
@@ -139,10 +134,8 @@ int body(const input_parameters &par) {
 	} else {
 		if ( num_threads == 1 ) {
 			for ( size_t n=0; n<src.size(); ++n ) {
-				
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
 							rcv.get_tt(n));
-                
 			}
 		} else {
 			// threaded jobs
@@ -156,20 +149,16 @@ int body(const input_parameters &par) {
 				threads[i]=thread( [&g,&src,&rcv,blk_start,blk_end,i]{
                     
 					for ( size_t n=blk_start; n<blk_end; ++n ) {
-						
 						g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
 									rcv.get_tt(n), i+1);
-						
 					}
 				});
 				
 				blk_start = blk_end;
 			}
 			for ( size_t n=blk_start; n<nTx; ++n ) {
-                
-				g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                             rcv.get_tt(n), 0);
-				
 			}
 			
 			for_each(threads.begin(),threads.end(), mem_fn(&thread::join));

@@ -109,74 +109,74 @@ public:
 private:
     
     bool inverseDistance;
-    mutable std::vector<Node3Di<T1,T2>> nodes;
+    mutable std::vector<Node3Disp<T1,T2>> nodes;
     std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
     
     void buildGridNodes();
     void buildGridNeighbors();
 	
-    void propagate(std::priority_queue<Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+    void propagate(std::priority_queue<Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
                    CompareNodePtr<T1>>& queue,
                    std::vector<bool>& inQueue,
                    std::vector<bool>& frozen,
                    size_t threadNo) const;
     
-    void prepropagate(const Node3Di<T1,T2>& node,
-                      std::priority_queue<Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+    void prepropagate(const Node3Disp<T1,T2>& node,
+                      std::priority_queue<Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
                       CompareNodePtr<T1>>& queue,
                       std::vector<bool>& inQueue,
                       std::vector<bool>& frozen,
                       size_t threadNo) const;
 	
-	T1 computeDt(const Node3Di<T1,T2>& source, const Node3Di<T1,T2>& node) const {
+	T1 computeDt(const Node3Disp<T1,T2>& source, const Node3Disp<T1,T2>& node) const {
 		return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
     
-	T1 computeDt(const Node3Di<T1,T2>& source, const sxyz<T1>& node, T1 slo) const {
+	T1 computeDt(const Node3Disp<T1,T2>& source, const sxyz<T1>& node, T1 slo) const {
 		return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
     
     void initQueue(const std::vector<sxyz<T1>>& Tx,
                    const std::vector<T1>& t0,
-                   std::priority_queue<Node3Di<T1,T2>*,
-                   std::vector<Node3Di<T1,T2>*>,
+                   std::priority_queue<Node3Disp<T1,T2>*,
+                   std::vector<Node3Disp<T1,T2>*>,
                    CompareNodePtr<T1>>& queue,
-                   std::vector<Node3Di<T1,T2>>& txNodes,
+                   std::vector<Node3Disp<T1,T2>>& txNodes,
                    std::vector<bool>& inQueue,
                    std::vector<bool>& frozen,
                    const size_t threadNo) const;
     
     T1 getTraveltime(const sxyz<T1>& Rx,
-					 const std::vector<Node3Di<T1,T2>>& nodes,
+					 const std::vector<Node3Disp<T1,T2>>& nodes,
 					 const size_t threadNo) const;
     
     T1 getTraveltime(const sxyz<T1>& Rx,
-					 const std::vector<Node3Di<T1,T2>>& nodes,
+					 const std::vector<Node3Disp<T1,T2>>& nodes,
 					 T2&, T2&, const size_t threadNo) const;
 	
     // Linear interpolation functions:
-    T1 linX(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2) const;
-    T1 linX(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
+    T1 linX(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2) const;
+    T1 linX(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
     T1 linX(const sxyz<T1>& node, const size_t C1, const size_t C2) const;
     T1 linX(const sxyz<T1>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
 	
-    T1 linY(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2) const;
-    T1 linY(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
+    T1 linY(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2) const;
+    T1 linY(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
     T1 linY(const sxyz<T1>& node, const size_t C1, const size_t C2) const;
     T1 linY(const sxyz<T1>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
 	
-    T1 linZ(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2) const;
-    T1 linZ(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
+    T1 linZ(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2) const;
+    T1 linZ(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
     T1 linZ(const sxyz<T1>& node, const size_t C1, const size_t C2) const;
     T1 linZ(const sxyz<T1>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const;
     
-    T1 linXY(const Node3Di<T1,T2>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
+    T1 linXY(const Node3Disp<T1,T2>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
     T1 linXY(const sxyz<T1>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
 	
-    T1 linXZ(const Node3Di<T1,T2>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
+    T1 linXZ(const Node3Disp<T1,T2>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
     T1 linXZ(const sxyz<T1>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
 	
-    T1 linYZ(const Node3Di<T1,T2>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
+    T1 linYZ(const Node3Disp<T1,T2>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
     T1 linYZ(const sxyz<T1>& node, const size_t N1, const size_t N2, const size_t N3, const size_t N4) const ;
 	
     T1 computeSlowness(const sxyz<T1>& Rx ) const;
@@ -207,7 +207,7 @@ private:
 							  const size_t nt, const bool invDist) :
 	Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nnx, nny, nnz, nt),
     inverseDistance(invDist),
-	nodes(std::vector<Node3Di<T1,T2>>(// secondary nodes on the edges
+	nodes(std::vector<Node3Disp<T1,T2>>(// secondary nodes on the edges
 									   nx*nnx*((ny+1)*(nz+1)) +
 									   ny*nny*((nx+1)*(nz+1)) +
 									   nz*nnz*((nx+1)*(ny+1)) +
@@ -217,7 +217,7 @@ private:
 									   (nny*nnz)*(ny*nz*(nx+1))+
 									   // primary nodes
 									   (nx+1) * (ny+1) * (nz+1),
-									   Node3Di<T1,T2>(nt) )),
+									   Node3Disp<T1,T2>(nt) )),
 	neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
 	{
 		buildGridNodes();
@@ -739,7 +739,7 @@ private:
         std::vector<size_t>::iterator it;
         std::vector<size_t> list;
         
-        std::vector<Node3Di<T1,T2>*> interpNodes;
+        std::vector<Node3Disp<T1,T2>*> interpNodes;
         interpNodes.reserve(18);
         
         //Interpolation for the secondary nodes
@@ -774,11 +774,11 @@ private:
 	
 	// Linear interpolation functions for each axis
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linX(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2) const {
+	T1 Grid3Dri<T1,T2>::linX(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2) const {
 		return nodes[C1].getNodeSlowness()+((node.getX()- nodes[C1].getX())/(nodes[C2].getX()- nodes[C1].getX()) )*(nodes[C2].getNodeSlowness()- nodes[C1].getNodeSlowness());
 	}
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linX(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const {
+	T1 Grid3Dri<T1,T2>::linX(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const {
 		return S1+((node.getX()- nodes[C1].getX())/(nodes[C2].getX()- nodes[C1].getX()) )*(S2-S1);
 	}
 	template<typename T1, typename T2>
@@ -791,11 +791,11 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linY(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2) const {
+	T1 Grid3Dri<T1,T2>::linY(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2) const {
 		return nodes[C1].getNodeSlowness()+((node.getY()- nodes[C1].getY())/(nodes[C2].getY()- nodes[C1].getY()) )*(nodes[C2].getNodeSlowness()- nodes[C1].getNodeSlowness() );
 	}
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linY(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const {
+	T1 Grid3Dri<T1,T2>::linY(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const {
 		return S1+((node.getY()- nodes[C1].getY())/(nodes[C2].getY()- nodes[C1].getY()) )*(S2-S1);
 	}
 	template<typename T1, typename T2>
@@ -808,11 +808,11 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linZ(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2) const {
+	T1 Grid3Dri<T1,T2>::linZ(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2) const {
 		return nodes[C1].getNodeSlowness()+((node.getZ()- nodes[C1].getZ())/(nodes[C2].getZ()- nodes[C1].getZ()) )*(nodes[C2].getNodeSlowness()- nodes[C1].getNodeSlowness() );
 	}
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linZ(const Node3Di<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const {
+	T1 Grid3Dri<T1,T2>::linZ(const Node3Disp<T1,T2>& node, const size_t C1, const size_t C2, const T1 S1, const T1 S2) const {
 		return S1+((node.getZ()- nodes[C1].getZ())/(nodes[C2].getZ()- nodes[C1].getZ()) )*(S2-S1);
 	}
 	template<typename T1, typename T2>
@@ -826,7 +826,7 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linXY(const Node3Di<T1,T2>& node, const size_t N1, const size_t N2,
+	T1 Grid3Dri<T1,T2>::linXY(const Node3Disp<T1,T2>& node, const size_t N1, const size_t N2,
 							  const size_t N3, const size_t N4) const {
 		T1 iA1 = 1./fabs((node.getX()-nodes[N1].getX())*(node.getY()-nodes[N1].getY()));
 		T1 iA2 = 1./fabs((node.getX()-nodes[N2].getX())*(node.getY()-nodes[N2].getY()));
@@ -851,7 +851,7 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linXZ(const Node3Di<T1,T2> &node, const size_t N1, const size_t N2,
+	T1 Grid3Dri<T1,T2>::linXZ(const Node3Disp<T1,T2> &node, const size_t N1, const size_t N2,
 							  const size_t N3, const size_t N4) const {
 		T1 iA1 = 1./fabs((node.getX()-nodes[N1].getX())*(node.getZ()-nodes[N1].getZ()));
 		T1 iA2 = 1./fabs((node.getX()-nodes[N2].getX())*(node.getZ()-nodes[N2].getZ()));
@@ -876,7 +876,7 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	T1 Grid3Dri<T1,T2>::linYZ(const Node3Di<T1,T2>& node, const size_t N1, const size_t N2,
+	T1 Grid3Dri<T1,T2>::linYZ(const Node3Disp<T1,T2>& node, const size_t N1, const size_t N2,
 							  const size_t N3, const size_t N4) const {
 		T1 iA1 = 1./fabs((node.getY()-nodes[N1].getY())*(node.getZ()-nodes[N1].getZ()));
 		T1 iA2 = 1./fabs((node.getY()-nodes[N2].getY())*(node.getZ()-nodes[N2].getZ()));
@@ -904,10 +904,10 @@ private:
 	template<typename T1, typename T2>
 	void Grid3Dri<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
 									const std::vector<T1>& t0,
-									std::priority_queue<Node3Di<T1,T2>*,
-									std::vector<Node3Di<T1,T2>*>,
+									std::priority_queue<Node3Disp<T1,T2>*,
+									std::vector<Node3Disp<T1,T2>*>,
 									CompareNodePtr<T1>>& queue,
-									std::vector<Node3Di<T1,T2>>& txNodes,
+									std::vector<Node3Disp<T1,T2>>& txNodes,
 									std::vector<bool>& inQueue,
 									std::vector<bool>& frozen,
 									const size_t threadNo) const {
@@ -931,7 +931,7 @@ private:
 			}
 			if ( found==false ) {
 				// If Tx[n] is not on a node, we create a new node and initialize the queue:
-				txNodes.push_back( Node3Di<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, Grid3Dr<T1,T2>::nThreads, threadNo));
+				txNodes.push_back( Node3Disp<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, Grid3Dr<T1,T2>::nThreads, threadNo));
 				txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
 				txNodes.back().setGridIndex( static_cast<T2>(nodes.size()+txNodes.size()-1) );
 				frozen.push_back( true );
@@ -965,10 +965,10 @@ private:
 		}
 		
 		CompareNodePtr<T1> cmp(threadNo);
-		std::priority_queue< Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+		std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
 		CompareNodePtr<T1>> queue(cmp);
 		// txNodes: Extra nodes if the sources points are not on an existing node
-		std::vector<Node3Di<T1,T2>> txNodes;
+		std::vector<Node3Disp<T1,T2>> txNodes;
 		// inQueue lists the nodes waiting in the queue
 		std::vector<bool> inQueue( nodes.size(), false );
 		// Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -1007,10 +1007,10 @@ private:
 		}
 		
 		CompareNodePtr<T1> cmp(threadNo);
-		std::priority_queue< Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+		std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
 		CompareNodePtr<T1>> queue(cmp);
 		// txNodes: Extra nodes if the sources points are not on an existing node
-		std::vector<Node3Di<T1,T2>> txNodes;
+		std::vector<Node3Disp<T1,T2>> txNodes;
 		// inQueue lists the nodes waiting in the queue
 		std::vector<bool> inQueue( nodes.size(), false );
 		// Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -1037,7 +1037,7 @@ private:
 										   threadNo);
 			
 			// Rx are in nodes (not txNodes)
-			std::vector<Node3Di<T1,T2>> *node_p;
+			std::vector<Node3Disp<T1,T2>> *node_p;
 			node_p = &nodes;
 			
 			std::vector<sxyz<T1>> r_tmp;
@@ -1122,15 +1122,15 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	void Grid3Dri<T1,T2>::propagate( std::priority_queue<Node3Di<T1,T2>*,
-									std::vector<Node3Di<T1,T2>*>,
+	void Grid3Dri<T1,T2>::propagate( std::priority_queue<Node3Disp<T1,T2>*,
+									std::vector<Node3Disp<T1,T2>*>,
 									CompareNodePtr<T1>>& queue,
 									std::vector<bool>& inQueue,
 									std::vector<bool>& frozen,
 									size_t threadNo) const {
 		
 		while ( !queue.empty() ) {
-			const Node3Di<T1,T2>* source = queue.top();
+			const Node3Disp<T1,T2>* source = queue.top();
 			queue.pop();
 			inQueue[ source->getGridIndex() ] = false;
 			for ( size_t no=0; no<source->getOwners().size(); ++no ) {
@@ -1164,9 +1164,9 @@ private:
 	}
 	
 	template<typename T1, typename T2>
-	void Grid3Dri<T1,T2>::prepropagate(const Node3Di<T1,T2>& node,
-									   std::priority_queue<Node3Di<T1,T2>*,
-									   std::vector<Node3Di<T1,T2>*>,
+	void Grid3Dri<T1,T2>::prepropagate(const Node3Disp<T1,T2>& node,
+									   std::priority_queue<Node3Disp<T1,T2>*,
+									   std::vector<Node3Disp<T1,T2>*>,
 									   CompareNodePtr<T1>>& queue,
 									   std::vector<bool>& inQueue,
 									   std::vector<bool>& frozen,
@@ -1206,7 +1206,7 @@ private:
 	
 	template<typename T1, typename T2>
 	T1 Grid3Dri<T1,T2>::getTraveltime(const sxyz<T1>& Rx,
-									  const std::vector<Node3Di<T1,T2>>& nodes,
+									  const std::vector<Node3Disp<T1,T2>>& nodes,
 									  const size_t threadNo) const {
 		
 		// Calculate and return the traveltime for a Rx point.
@@ -1237,7 +1237,7 @@ private:
 	
 	template<typename T1, typename T2>
 	T1 Grid3Dri<T1,T2>::getTraveltime(const sxyz<T1>& Rx,
-									  const std::vector<Node3Di<T1,T2>>& nodes,
+									  const std::vector<Node3Disp<T1,T2>>& nodes,
 									  T2& nodeParentRx, T2& cellParentRx,
 									  const size_t threadNo) const {
 		
@@ -1291,7 +1291,7 @@ private:
             
             std::vector<size_t>::iterator it;
             
-            std::vector<Node3Di<T1,T2>*> interpNodes;
+            std::vector<Node3Disp<T1,T2>*> interpNodes;
             
             for ( size_t nn=0; nn<list.size(); ++nn )
                 interpNodes.push_back( &(nodes[list[nn] ]) );

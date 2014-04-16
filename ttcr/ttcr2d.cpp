@@ -59,11 +59,11 @@ int body(const input_parameters &par) {
         extension = par.modelfile.substr(idx);
     }
     
-    Grid2D<T,uint32_t> *g=nullptr;
+    Grid2D<T,uint32_t,sxz<T>> *g=nullptr;
     vector<Rcv2D<T>> reflectors;
     if (extension == ".vtr") {
 #ifdef VTK
-        g = recti2D<T>(par, num_threads);
+        g = recti2Dc<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;

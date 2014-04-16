@@ -10,8 +10,6 @@
 #define __GRID3DR_H__
 
 #include "Grid3D.h"
-#include "Node3Di.h"
-#include "Node3Dc.h"
 
 
 template<typename T1, typename T2>

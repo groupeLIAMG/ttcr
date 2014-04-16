@@ -63,20 +63,20 @@ int body(const input_parameters &par) {
     vector<Rcv<T>> reflectors;
     if (extension == ".vtr") {
 #ifdef VTK
-        g = recti<T>(par, num_threads);
+        g = recti3D<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;
 #endif
     } else if (extension == ".vtu") {
 #ifdef VTK
-        g = unstruct_vtu<T>(par, num_threads);
+        g = unstruct3D_vtu<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;
 #endif
     } else if (extension == ".msh") {
-        g = unstruct<T>(par, reflectors, num_threads, src.size());
+        g = unstruct3D<T>(par, reflectors, num_threads, src.size());
     } else {
         cerr << par.modelfile << " Unknown extenstion: " << extension << endl;
         return 1;

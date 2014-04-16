@@ -36,7 +36,7 @@
 #include "Grad.h"
 
 template<typename T1, typename T2, typename NODE, typename S>
-class Grid2Duc : public Grid2D<T1,T2> {
+class Grid2Duc : public Grid2D<T1,T2,S> {
 public:
 	Grid2Duc(const std::vector<S>& no,
 			   const std::vector<triangleElem<T2>>& tri,

@@ -1,5 +1,5 @@
 //
-//  Node3Di.h
+//  Node3Disp.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 12-08-14.
@@ -33,9 +33,9 @@
 
 
 template<typename T1, typename T2>
-class Node3Di : public Node<T1> {
+class Node3Disp : public Node<T1> {
 public:
-    Node3Di(const size_t nt) :
+    Node3Disp(const size_t nt) :
 	nThreads(nt), 
     tt(new T1[nt]),
 	x(0.0f), y(0.0f), z(0.0f),
@@ -53,7 +53,7 @@ public:
 		}
 	}
 	
-    Node3Di(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
+    Node3Disp(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
 			const size_t i) :
 	nThreads(nt), 
     tt(new T1[nt]),
@@ -73,7 +73,27 @@ public:
         tt[i]=t;
     }
 	
-	Node3Di(const Node3Di<T1,T2>& node) :
+    Node3Disp(const T1 t, const sxyz<T1>& s, const size_t nt,
+			const size_t i) :
+	nThreads(nt),
+    tt(new T1[nt]),
+    x(s.x), y(s.y), z(s.z),
+    gridIndex(std::numeric_limits<T2>::max()),
+    nodeParent(new T2[nt]),
+    cellParent(new T2[nt]),
+    owners(std::vector<T2>(0)),
+    slowness(0),
+    primary(0)
+    {
+		for ( size_t n=0; n<nt; ++n ) {
+			tt[n] = std::numeric_limits<T1>::max();
+			nodeParent[n] = std::numeric_limits<T2>::max();
+			cellParent[n] = std::numeric_limits<T2>::max();
+		}
+        tt[i]=t;
+    }
+	
+	Node3Disp(const Node3Disp<T1,T2>& node) :
 	nThreads(node.nThreads), 
     tt(0),
 	x(node.x), y(node.y), z(node.z),
@@ -93,7 +113,7 @@ public:
 		}
 	}
 	
-	~Node3Di() {
+	~Node3Disp() {
 		delete [] tt;
 		delete [] nodeParent;
 		delete [] cellParent;
@@ -111,6 +131,8 @@ public:
 	
 	void setXYZindex(const T1 xx, const T1 yy, const T1 zz, const T2 index) {
 		x=xx; y=yy; z=zz; gridIndex = index;  }
+	void setXYZindex(const sxyz<T1>& s, const T2 index) {
+		x=s.x; y=s.y; z=s.z; gridIndex = index;  }
 
     T1 getX() const { return x; }
     void setX(const T1 xx) { x = xx; }
@@ -139,7 +161,7 @@ public:
     void pushOwner(const T2 o) { owners.push_back(o); }    
     const std::vector<T2>& getOwners() const { return owners; }
     
-    T1 getDistance( const Node3Di<T1,T2>& node ) const {
+    T1 getDistance( const Node3Disp<T1,T2>& node ) const {
         return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
     }
     

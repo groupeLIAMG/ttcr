@@ -124,53 +124,81 @@ public:
     }
     
     template<typename T>
-	int readSlowness(std::vector<T>& slowness) {
+	int readSlowness(std::vector<T>& slowness, const bool constCells=true) {
         vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
         reader->SetFileName(filename.c_str());
         reader->Update();
         
-        if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
-			reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {
-            std::cerr << "No Slowness data in file " << filename << std::endl;
-            return 0;
-        }
+        if ( constCells ) {
+            if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
+                reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {
+                std::cerr << "No Slowness data in file " << filename << std::endl;
+                return 0;
+            }
 
-		if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
+            if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
 			
-			vtkSmartPointer<vtkCellData> cd = vtkSmartPointer<vtkCellData>::New();
-			cd = reader->GetOutput()->GetCellData();
-			vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
-			slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
+                vtkSmartPointer<vtkCellData> cd = vtkSmartPointer<vtkCellData>::New();
+                cd = reader->GetOutput()->GetCellData();
+                vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
+                slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
 			
-			if ( slo->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
-				std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-				return 0;
-			}
+                if ( slo->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                    std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+                    return 0;
+                }
 			
-			slowness.resize( slo->GetSize() );
-			for ( size_t n=0; n<slo->GetSize(); ++n ) {
-				slowness[n] = slo->GetComponent(n, 0);
-			}
-		} else {
-			vtkSmartPointer<vtkCellData> cd = vtkSmartPointer<vtkCellData>::New();
-			cd = reader->GetOutput()->GetCellData();
-			vtkSmartPointer<vtkDoubleArray> vel = vtkSmartPointer<vtkDoubleArray>::New();
-			vel = vtkDoubleArray::SafeDownCast( cd->GetArray("Velocity") );
-			
-			if ( vel->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
-				std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-				return 0;
-			}
-			
-			slowness.resize( vel->GetSize() );
-			for ( size_t n=0; n<vel->GetSize(); ++n ) {
-				slowness[n] = 1./vel->GetComponent(n, 0);
-			}
-		}
+                slowness.resize( slo->GetSize() );
+                for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    slowness[n] = slo->GetComponent(n, 0);
+                }
+            } else {
+                vtkSmartPointer<vtkCellData> cd = vtkSmartPointer<vtkCellData>::New();
+                cd = reader->GetOutput()->GetCellData();
+                vtkSmartPointer<vtkDoubleArray> vel = vtkSmartPointer<vtkDoubleArray>::New();
+                vel = vtkDoubleArray::SafeDownCast( cd->GetArray("Velocity") );
+                
+                if ( vel->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                    std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+                    return 0;
+                }
+                
+                slowness.resize( vel->GetSize() );
+                for ( size_t n=0; n<vel->GetSize(); ++n ) {
+                    slowness[n] = 1./vel->GetComponent(n, 0);
+                }
+            }
+        } else {
+            if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 ) {
+                std::cerr << "No Slowness data in file " << filename << std::endl;
+                return 0;
+            }
+            
+            vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
+            pd = reader->GetOutput()->GetPointData();
+            vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
+            slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
+            
+            slowness.resize( slo->GetSize() );
+            for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                slowness[n] = slo->GetComponent(n, 0);
+            }
+
+        }
         
         return 1;
     }
+    
+    bool isConstCell() const {
+        vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+        vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+        reader->SetFileName(filename.c_str());
+        reader->Update();
+        return reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ||
+        reader->GetOutput()->GetCellData()->HasArray("Velocity") == 1;
+    }
+
     
 private:
     std::string filename;
@@ -178,7 +206,7 @@ private:
 	size_t nNodes;
 	size_t nElements;
 
-    bool check_format() const {
+    bool check_format(const bool constCells=true) const {
         vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
         reader->SetFileName(filename.c_str());
@@ -186,25 +214,37 @@ private:
         
         if ( reader->GetOutput() ) {
             
-            if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
-				reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {
-                std::cerr << "No Slowness data in file " << filename << std::endl;
-                return false;
+            if ( constCells ) { // slowness defined at cells
+                
+                if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
+                    reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {
+                    std::cerr << "No Slowness data in file " << filename << std::endl;
+                    return false;
+                }
+            
+                if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
+                    if ( reader->GetOutput()->GetCellData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                        std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+                        return false;
+                    }
+                } else {
+                    if ( reader->GetOutput()->GetCellData()->GetArray("Velocity")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                        std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+                        return false;
+                    }
+                }
+            
+                return true;
+                
+            } else {  // slowness defined at grid nodes
+                
+                if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 ) {
+                    std::cerr << "No Slowness data in file " << filename << std::endl;
+                    return false;
+                }
+                
+                return true;
             }
-            
-			if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
-				if ( reader->GetOutput()->GetCellData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
-					std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-					return false;
-				}
-			} else {
-				if ( reader->GetOutput()->GetCellData()->GetArray("Velocity")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
-					std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-					return false;
-				}
-			}
-            
-            return true;
         }
         return false;
     }
