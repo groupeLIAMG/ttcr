@@ -438,7 +438,7 @@ void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
 		writer->SetFileName( fname.c_str() );
-		writer->SetInput( ugrid );
+		writer->SetInputConnection( ugrid->GetProducerPort() );
 		writer->SetDataModeToBinary();
 		writer->Update();
 #else
@@ -500,7 +500,7 @@ void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
     vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInput( ugrid );
+    writer->SetInputConnection( ugrid->GetProducerPort() );
     writer->SetDataModeToBinary();
     writer->Update();
 }

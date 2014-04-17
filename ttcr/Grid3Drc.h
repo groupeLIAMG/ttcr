@@ -1287,7 +1287,7 @@ private:
 			vtkSmartPointer<vtkXMLRectilinearGridWriter> writer = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
 			
 			writer->SetFileName( filename );
-			writer->SetInput( rgrid );
+			writer->SetInputConnection( rgrid->GetProducerPort() );
 			writer->SetDataModeToBinary();
 			writer->Update();
 #else

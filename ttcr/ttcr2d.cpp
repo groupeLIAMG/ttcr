@@ -237,12 +237,6 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt);
                 
-                if ( par.saveGridTT ) {
-                    //  will overwrite if nsrc>1
-                    string filename = par.basename+"_all_tt.dat";
-                    g->saveTT(filename, 0);
-                }
-                
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					g->raytrace(reflectors[nr].get_coord(),
 								reflectors[nr].get_tt(n), rcv.get_coord(),
@@ -315,11 +309,11 @@ int body(const input_parameters &par) {
 	
     if ( par.saveGridTT ) {
 		//  will overwrite if nsrc>1
-		string filename = par.basename+"_all_tt.vtu";
-		g->saveTT(filename, 0, 0, true);
+//		string filename = par.basename+"_all_tt.vtu";
+//		g->saveTT(filename, 0, 0, true);
         
-        //		string filename = par.basename+"_all_tt.dat";
-        //		g->saveTT(filename, 0);
+		string filename = par.basename+"_all_tt.dat";
+		g->saveTT(filename, 0);
 	}
 
     delete g;

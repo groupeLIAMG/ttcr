@@ -255,9 +255,10 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
     reader.readSlowness(slowness);
     
     if ( par.verbose ) {
-        std::cout << "\n  Unstructured grid in file has"
+        std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
         << "\n    " << tetrahedra.size() << " cells"
+		<< "\n  Mesh has cells of constant slowness"
         << std::endl;
     }
 	
@@ -430,9 +431,10 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
     }
 	
     if ( par.verbose ) {
-        std::cout << "\n  Unstructured grid in file has"
+        std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
         << "\n    " << tetrahedra.size() << " cells"
+		<< "\n  Mesh has cells of constant slowness"
         << std::endl;
     }
 	
@@ -684,10 +686,14 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const siz
     
     
     if ( par.verbose ) {
-        cout << "\n  Unstructured grid in file has"
+        cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
-        << "\n    " << triangles.size() << " cells"
-        << std::endl;
+        << "\n    " << triangles.size() << " cells";
+		if ( constCells )
+			std::cout << "\n  Mesh has cells of constant slowness";
+		else
+			std::cout << "\n  Mesh has slowness defined at nodes";
+		std::cout << std::endl;
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
@@ -875,10 +881,14 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
 
     
     if ( par.verbose ) {
-        std::cout << "\n  Unstructured grid in file has"
+        std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
-        << "\n    " << triangles.size() << " cells"
-        << std::endl;
+        << "\n    " << triangles.size() << " cells";
+		if ( constCells )
+			std::cout << "\n  Mesh has cells of constant slowness";
+		else
+			std::cout << "\n  Mesh has slowness defined at nodes";
+		std::cout << std::endl;
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
@@ -1065,10 +1075,14 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const
     reader.readSlowness(slowness, constCells);
     	
     if ( par.verbose ) {
-        cout << "\n  Unstructured grid in file has"
+        cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
-        << "\n    " << triangles.size() << " cells"
-        << std::endl;
+        << "\n    " << triangles.size() << " cells";
+		if ( constCells )
+			std::cout << "\n  Mesh has cells of constant slowness";
+		else
+			std::cout << "\n  Mesh has slowness defined at nodes";
+		std::cout << std::endl;
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;
@@ -1193,10 +1207,14 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds(const input_parameters &par,
     }
 	    
     if ( par.verbose ) {
-        std::cout << "\n  Unstructured grid in file has"
+        std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
-        << "\n    " << triangles.size() << " cells"
-        << std::endl;
+        << "\n    " << triangles.size() << " cells";
+		if ( constCells )
+			std::cout << "\n  Mesh has cells of constant slowness";
+		else
+			std::cout << "\n  Mesh has slowness defined at nodes";
+		std::cout << std::endl;
     }
     
 	std::chrono::high_resolution_clock::time_point begin, end;

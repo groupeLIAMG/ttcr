@@ -452,7 +452,7 @@ void Grid3Duc<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
 		writer->SetFileName( fname.c_str() );
-		writer->SetInput( ugrid );
+		writer->SetInputConnection( ugrid->GetProducerPort() );
 		writer->SetDataModeToBinary();
 		writer->Update();
 #else
@@ -531,7 +531,7 @@ void Grid3Duc<T1,T2,NODE>::saveModelVTU(const std::string &fname,
     vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInput( ugrid );
+    writer->SetInputConnection( ugrid->GetProducerPort() );
     writer->SetDataModeToBinary();
     writer->Update();
     
@@ -634,7 +634,7 @@ void Grid3Duc<T1,T2,NODE>::saveModelVTR(const std::string &fname,
 	vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInput( rgrid );
+    writer->SetInputConnection( rgrid->GetProducerPort() );
     writer->SetDataModeToBinary();
     writer->Update();
     
