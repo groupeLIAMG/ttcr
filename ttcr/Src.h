@@ -1,3 +1,4 @@
+//  Defines a class Src that contains the position of each sources
 //
 //  Src.h
 //  ttcr_u
