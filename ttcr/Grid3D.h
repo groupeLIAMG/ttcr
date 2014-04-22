@@ -1,3 +1,5 @@
+// Grid3D is the class template of an object containing the 3D grid and the function
+// to perform raytracing
 //
 //  Grid.h
 //  ttcr_u

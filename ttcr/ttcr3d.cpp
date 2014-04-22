@@ -25,9 +25,14 @@
 using namespace std;
 
 
+// Creates a template to be able to call body() for two formats: short or long
 template<typename T>
+
+// body() is the principal function for raytracing called by main()
 int body(const input_parameters &par) {
+
     
+    // Create the src class containing the position of the sources
 	std::vector< Src<T> > src;
     for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
         src.push_back( Src<T>( par.srcfiles[n] ) );
@@ -38,6 +43,8 @@ int body(const input_parameters &par) {
     }
     if ( par.verbose ) cout << "done.\n";
 	
+    
+    // Calculate the number of threads to be used
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
 	if ( par.nt == 0 ) {
@@ -51,16 +58,24 @@ int body(const input_parameters &par) {
 	
     size_t const blk_size = (nTx%num_threads ? 1 : 0) + nTx/num_threads;
     
-	string::size_type idx;
     
+    
+    // ? Find the generic file name of the input model?
+	string::size_type idx;  // can hold a string of any length
     idx = par.modelfile.rfind('.');
     string extension = "";
     if(idx != string::npos) {
         extension = par.modelfile.substr(idx);
     }
     
+    
+    
+    // Intialize a Grid3D object containing the 3D grid and the functions to perform raytracing
     Grid3D<T,uint32_t> *g=nullptr;
+    // ? Initialize a Rcv object ?
     vector<Rcv<T>> reflectors;
+    
+    // Load the grid file into the GRID3D object g for different formats
     if (extension == ".vtr") {
 #ifdef VTK
         g = recti<T>(par, num_threads);
@@ -87,6 +102,8 @@ int body(const input_parameters &par) {
 		return 1;
     }
     
+    
+    // Load the receiver file into the Rcv object rcv
 	Rcv<T> rcv( par.rcvfile );
     if ( par.verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
     rcv.init( src.size() );
@@ -104,6 +121,7 @@ int body(const input_parameters &par) {
 		<< " threads with " << blk_size << " shots per threads.\n";
 	}
 	
+    
 	vector<const vector<sxyz<T>>*> all_rcv;
 	all_rcv.push_back( &(rcv.get_coord()) );
 	for ( size_t n=0; n<reflectors.size(); ++n ) {
@@ -122,7 +140,7 @@ int body(const input_parameters &par) {
         rfl2_r_data[n].resize( src.size() );
     }
 	
-    
+    // Computes the travel time
     if ( par.verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
 	if ( par.time ) { begin = chrono::high_resolution_clock::now(); }
 	if ( par.saveRaypaths ) {
@@ -305,7 +323,7 @@ int body(const input_parameters &par) {
 		g->saveTT(filename, 0);
 	}
     
-	
+	// Delete stuff and dump the results
     delete g;
     
     if ( src.size() == 1 ) {
