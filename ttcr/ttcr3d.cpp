@@ -7,11 +7,6 @@
 //
 
 
-
-//Commit test!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-// Test 222 Henry
-// Test 333 AIR
-
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -37,7 +32,8 @@ template<typename T>
 int body(const input_parameters &par) {
 
     
-	std::vector< Src<T>> src;
+    // Create the src class containing the position of the sources
+	std::vector< Src<T> > src;
     for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
         src.push_back( Src<T>( par.srcfiles[n] ) );
 		string end = " ... ";
