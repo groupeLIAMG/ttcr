@@ -36,6 +36,9 @@
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
+#include "Grid3Duifm.h"
+#include "Grid3Duifs.h"
+#include "Grid3Duisp.h"
 #include "Node2Dcsp.h"
 #include "Node2Disp.h"
 #include "MSHReader.h"
@@ -248,18 +251,27 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
 	
     std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
 	std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfElements());
-	std::vector<T> slowness(reader.getNumberOfElements());
+    bool constCells = reader.isConstCell();
+    
+	std::vector<T> slowness;
+    if ( constCells )
+        slowness.resize(reader.getNumberOfElements());
+    else
+        slowness.resize(reader.getNumberOfNodes());
 	
 	reader.readNodes3D(nodes);
 	reader.readTetrahedronElements(tetrahedra);
-    reader.readSlowness(slowness);
+    reader.readSlowness(slowness, constCells);
     
     if ( par.verbose ) {
         std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
-        << "\n    " << tetrahedra.size() << " cells"
-		<< "\n  Mesh has cells of constant slowness"
-        << std::endl;
+        << "\n    " << tetrahedra.size() << " cells";
+		if ( constCells )
+			std::cout << "\n  Mesh has cells of constant slowness";
+		else
+			std::cout << "\n  Mesh has slowness defined at nodes";
+		std::cout << std::endl;
     }
 	
 	std::chrono::high_resolution_clock::time_point begin, end;
@@ -272,8 +284,12 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-            g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
-                                            par.verbose);
+			if ( constCells )
+				g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+												par.verbose);
+			else
+				g = new Grid3Duisp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+												par.verbose);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -290,7 +306,10 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-            g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra, nt);
+			if ( constCells )
+				g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra, nt);
+			else
+				g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra, nt);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -306,8 +325,12 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-            g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
-                                            par.nitermax, nt);
+			if ( constCells )
+				g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+												par.nitermax, nt);
+			else
+				g = new Grid3Duifs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+												par.nitermax, nt);
             T xmin = g->getXmin();
             T xmax = g->getXmax();
             T ymin = g->getYmin();
@@ -324,7 +347,10 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
             ptsRef.push_back( {xmax, ymin, zmax} );
             ptsRef.push_back( {xmax, ymax, zmin} );
             ptsRef.push_back( {xmax, ymax, zmax} );
-            dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+			if ( constCells )
+				dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+			else
+				dynamic_cast<Grid3Duifs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -343,7 +369,23 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
 		std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
 	}
     std::cout.flush();
+	if ( par.verbose && par.method == SHORTEST_PATH ) {
+		std::cout << "Interpolating slowness at secondary nodes ... ";
+		std::cout.flush();
+	}
+	if ( par.time && par.method == SHORTEST_PATH ) {
+		begin = std::chrono::high_resolution_clock::now();
+	}
 	g->setSlowness(slowness);
+	if ( par.verbose && par.method == SHORTEST_PATH ) {
+		std::cout << "done.\n";
+		std::cout.flush();
+	}
+	if ( par.time && par.method == SHORTEST_PATH ) {
+		end = std::chrono::high_resolution_clock::now();
+		std::cout << "Time to interpolate slowness values: " << std::chrono::duration<double>(end-begin).count() << '\n';
+	}
+	
     return g;
 }
 #endif
@@ -374,6 +416,7 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
     if ( par.verbose ) std::cout << "done.\n";
 	std::map<std::string, double> slownesses;
 	
+    bool constCells = true;
     if ( !par.slofile.empty() ) {
         
         std::ifstream fin(par.slofile.c_str());
@@ -390,9 +433,14 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 		}
 		fin.close();
         if ( tmp.size() != slowness.size() ) {
-            std::cerr << "Error: slowness file should contain " << slowness.size()
-            << " values.\nAborting." << std::endl;
-            abort();
+			if ( tmp.size() == nodes.size() ) {
+                slowness.resize( nodes.size() );
+                constCells = false;
+            } else {
+				std::cerr << "Error: slowness file should contain " << slowness.size()
+				<< " values.\nAborting." << std::endl;
+				abort();
+			}
         }
         for ( size_t n=0; n<slowness.size(); ++n ) {
             slowness[n] = tmp[n];
@@ -433,9 +481,12 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
     if ( par.verbose ) {
         std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
-        << "\n    " << tetrahedra.size() << " cells"
-		<< "\n  Mesh has cells of constant slowness"
-        << std::endl;
+        << "\n    " << tetrahedra.size() << " cells";
+		if ( constCells )
+			std::cout << "\n  Mesh has cells of constant slowness";
+		else
+			std::cout << "\n  Mesh has slowness defined at nodes";
+		std::cout << std::endl;
     }
 	
 	std::chrono::high_resolution_clock::time_point begin, end;
@@ -448,8 +499,12 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-            g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
-                                            par.verbose);
+			if ( constCells )
+				g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+												par.verbose);
+			else
+				g = new Grid3Duisp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+												par.verbose);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -466,7 +521,10 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-            g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra, nt);
+			if ( constCells )
+				g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra, nt);
+			else
+				g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra, nt);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -482,8 +540,13 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
                 std::cout.flush();
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-            g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
-                                            par.nitermax, nt);
+			if ( constCells )
+				g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+												par.nitermax, nt);
+			else
+				g = new Grid3Duifs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+												par.nitermax, nt);
+				
             T xmin = g->getXmin();
             T xmax = g->getXmax();
             T ymin = g->getYmin();
@@ -500,7 +563,10 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
             ptsRef.push_back( {xmax, ymin, zmax} );
             ptsRef.push_back( {xmax, ymax, zmin} );
             ptsRef.push_back( {xmax, ymax, zmax} );
-            dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+			if ( constCells )
+				dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+			else
+				dynamic_cast<Grid3Duifs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -519,7 +585,22 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 		std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
 	}
     std::cout.flush();
+	if ( par.verbose && par.method == SHORTEST_PATH ) {
+		std::cout << "Interpolating slowness at secondary nodes ... ";
+		std::cout.flush();
+	}
+	if ( par.time && par.method == SHORTEST_PATH ) {
+		begin = std::chrono::high_resolution_clock::now();
+	}
 	g->setSlowness(slowness);
+	if ( par.verbose && par.method == SHORTEST_PATH ) {
+		std::cout << "done.\n";
+		std::cout.flush();
+	}
+	if ( par.time && par.method == SHORTEST_PATH ) {
+		end = std::chrono::high_resolution_clock::now();
+		std::cout << "Time to interpolate slowness values: " << std::chrono::duration<double>(end-begin).count() << '\n';
+	}
 	
 	if ( par.processReflectors ) {
 		buildReflectors(reader, nodes, ns, par.nn[0], reflectors);

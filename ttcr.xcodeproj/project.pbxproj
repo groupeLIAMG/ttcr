@@ -52,6 +52,10 @@
 		2B39B6A618F8808F003985D6 /* Grid2Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duisp.h; sourceTree = "<group>"; };
 		2B3CFD9E18FE137F005B4E1B /* Node2Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node2Di.h; sourceTree = "<group>"; };
 		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
+		2B90ECD019053EC60015748B /* Grid3Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Dui.h; sourceTree = "<group>"; };
+		2B90ECD1190545970015748B /* Node3Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node3Di.h; sourceTree = "<group>"; };
+		2B90ECD219054B400015748B /* Grid3Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifm.h; sourceTree = "<group>"; };
+		2B90ECD319054C3D0015748B /* Grid3Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifs.h; sourceTree = "<group>"; };
 		2BC708D318EDA599004DA2C9 /* ttcr3d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr3d.cpp; sourceTree = "<group>"; };
 		2BC708DF18EDA65F004DA2C9 /* Grad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grad.h; sourceTree = "<group>"; };
@@ -95,6 +99,7 @@
 		2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2d.cpp; sourceTree = "<group>"; };
 		2BD0F4F418EED76000B3957F /* ttcf2ds */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcf2ds; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2ds.cpp; sourceTree = "<group>"; };
+		2BF787831905A36200E80373 /* Grid3Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duisp.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -166,6 +171,10 @@
 				2BC708EB18EDA65F004DA2C9 /* Grid3Ducfm.h */,
 				2BC708EC18EDA65F004DA2C9 /* Grid3Ducfs.h */,
 				2BC708ED18EDA65F004DA2C9 /* Grid3Ducsp.h */,
+				2B90ECD019053EC60015748B /* Grid3Dui.h */,
+				2B90ECD219054B400015748B /* Grid3Duifm.h */,
+				2B90ECD319054C3D0015748B /* Grid3Duifs.h */,
+				2BF787831905A36200E80373 /* Grid3Duisp.h */,
 				2BC708EE18EDA65F004DA2C9 /* Interface.h */,
 				2BC708EF18EDA65F004DA2C9 /* Interpolator.h */,
 				2BC708F018EDA67F004DA2C9 /* Metric.h */,
@@ -177,6 +186,7 @@
 				2BC708F518EDA67F004DA2C9 /* Node2Disp.h */,
 				2BC708F618EDA67F004DA2C9 /* Node3Dc.h */,
 				2BC708F718EDA67F004DA2C9 /* Node3Dcsp.h */,
+				2B90ECD1190545970015748B /* Node3Di.h */,
 				2BC708F818EDA67F004DA2C9 /* Node3Disp.h */,
 				2BC708FC18EDA83B004DA2C9 /* Rcv.h */,
 				2BC708FD18EDA83B004DA2C9 /* Rcv2D.h */,

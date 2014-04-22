@@ -54,7 +54,7 @@ public:
 	x(node.x), z(node.z), slowness(node.slowness),
     gridIndex(node.gridIndex),
     owners(node.owners),
-    primary(0)
+    primary(node.primary)
     {
 		tt = new T1[nThreads];
 		

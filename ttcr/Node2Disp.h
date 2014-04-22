@@ -69,7 +69,7 @@ public:
     nodeParent(0),
     cellParent(0),
     owners(node.owners),
-    primary(0)
+    primary(node.primary)
     {
 		tt = new T1[nThreads];
 		nodeParent = new T2[nThreads];
