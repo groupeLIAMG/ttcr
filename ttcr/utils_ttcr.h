@@ -25,6 +25,7 @@
 #endif
 
 #include "Grid2Drc.h"
+#include "Grid2Dri.h"
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
@@ -628,9 +629,9 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 
 #ifdef VTK
 template<typename T>
-Grid2Drc<T,uint32_t> *recti2Dc(const input_parameters &par, const size_t nt)
+Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
 {
-    Grid2Drc<T,uint32_t> *g = nullptr;
+    Grid2D<T,uint32_t,sxz<T>> *g = nullptr;
 	vtkRectilinearGrid *dataSet;
     
     vtkSmartPointer<vtkXMLRectilinearGridReader> reader =
@@ -641,6 +642,7 @@ Grid2Drc<T,uint32_t> *recti2Dc(const input_parameters &par, const size_t nt)
     dataSet = reader->GetOutput();
     
     vtkIdType numberOfCells = dataSet->GetNumberOfCells();
+	vtkIdType numberOfPoints = dataSet->GetNumberOfPoints();
     int nnodes[3], ncells[3];
     dataSet->GetDimensions(nnodes);
     ncells[0] = nnodes[0]-1;
@@ -672,13 +674,72 @@ Grid2Drc<T,uint32_t> *recti2Dc(const input_parameters &par, const size_t nt)
         << "\n   Z\t" << zrange[0] << '\t' << zrange[1] << '\t' << d[2] << "\t\t" << par.nn[2]
         << std::endl;
     }
+	vtkPointData *pd = dataSet->GetPointData();
     vtkCellData *cd = dataSet->GetCellData();
     
 	std::chrono::high_resolution_clock::time_point begin, end;
 	
     bool foundSlowness = false;
 	std::vector<T> slowness;
-    if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
+	if ( pd->HasArray("P-wave velocity") ||
+		pd->HasArray("Velocity") ||
+		pd->HasArray("Slowness") ) {
+		
+		for (int na = 0; na < pd->GetNumberOfArrays(); ++na) {
+            if ( strcmp(pd->GetArrayName(na), "P-wave velocity")==0 ||
+				strcmp(pd->GetArrayName(na), "Velocity")==0 ) {
+                slowness.resize( numberOfPoints );
+                for ( size_t k=0,n=0; k<nnodes[2]; ++k ) {
+                    for ( size_t j=0; j<nnodes[1]; ++j ) {
+                        for ( size_t i=0; i<nnodes[0]; ++i,++n ) {
+                            slowness[n] = static_cast<T>(1./pd->GetArray(na)->GetTuple1(n));
+                        }
+                    }
+                }
+                foundSlowness = true;
+				break;
+			} else if ( strcmp(pd->GetArrayName(na), "Slowness")==0 ) {
+				
+				vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
+				slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
+				
+				if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
+					std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+					return 0;
+				}
+				
+				slowness.resize( slo->GetSize() );
+				for ( size_t n=0; n<slo->GetSize(); ++n ) {
+					slowness[n] = slo->GetComponent(n, 0);
+				}
+				foundSlowness = true;
+				break;
+			}
+		}
+		if ( foundSlowness ) {
+			if ( par.verbose ) { std::cout << "Building grid (Grid2Dri) ... "; std::cout.flush(); }
+			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+			g = new Grid2Dri<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+												xrange[0], zrange[0],
+												par.nn[0], par.nn[2],
+												nt);
+			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+			if ( par.verbose ) {
+                std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                << "\nAssigning slowness at grid nodes ... ";
+                std::cout.flush();
+            }
+			g->setSlowness( slowness );
+			if ( par.verbose ) std::cout << "done.\n";
+			if ( par.time ) {
+				std::cout.precision(12);
+				std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+			}
+        } else {
+			return 0;
+		}
+		
+	} else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
 		cd->HasArray("Slowness") ) {
         
         for (int na = 0; na < cd->GetNumberOfArrays(); na++) {

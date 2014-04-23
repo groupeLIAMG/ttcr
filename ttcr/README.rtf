@@ -114,9 +114,8 @@ Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/g
 \
  --- model2ds.geo ---\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\f1 \cf0 lc = 25;\
+\f1 lc = 25;\
 \
 Point(1) = \{    0,    0, 200, lc \};\
 Point(2) = \{    0, 1000, 250, lc \};\
@@ -166,6 +165,15 @@ Physical Surface("S3") = \{3\};
 \
 ------\
 \
+\ul Slowness defined at grid nodes\ulnone \
+\
+It is possible to define slowness at grid nodes rather that for mesh cells.  This improves accuracy for models where slowness gradients are present.  For VTK files, this is done by assigning slowness or velocity values at nodes.  For MSH files, this is done by using a 
+\f1 slofile
+\f0  with slowness values for each mesh node in the order found in the msh file (
+\f1 velfile
+\f0  cannot be used in this case).\
+\
+\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
 \b \cf0 Src and Rcv files
@@ -183,14 +191,12 @@ These are simple ascii file holding the coordinates of the source points and ini
 \f1 \cf0 2\
 0 0 0 0\
 1 0 0 0\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\f0 \cf0 ------\
+\f0 ------\
 \
 --- rcv.dat ---\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\f1 \cf0 10\
+\f1 10\
  10 0 0\
  20 0 0\
  30 0 0\
@@ -201,9 +207,8 @@ These are simple ascii file holding the coordinates of the source points and ini
  80 0 0\
  90 0 0\
 100 0 0\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\f0 \cf0 ------\
+\f0 ------\
 \
 Note that one "source" can have many points in space.  When raytracing is needed for many sources, simply add the files in the parameter file, as shown below.  In that case, setting 
 \f1 number of threads 
@@ -214,9 +219,8 @@ Note that one "source" can have many points in space.  When raytracing is needed
 \f0  to the number of cores, and raytracing will automatically be performed in "batches".\
 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\f1 \cf0 ttcr2ds        # basename,\
+\f1 ttcr2ds        # basename,\
 model2ds.msh   # modelfile,\
 model2ds.vel   # velfile,\
 src1.dat       # srcfile,\
@@ -227,19 +231,18 @@ rcv.dat        # rcvfile,\
 1              # saveGridTT,\
 5              # secondary nodes,\
 1              # saveRayPaths,\
+
+\f0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\f0 \cf0 \
-
-\b Compiling
+\b \cf0 Compiling
 \b0 \
 \
 The programs are coded in C++ and follow the C++11 standard.  You must have VTK installed on your system, as well as the eigen3 (http://eigen.tuxfamily.org) and boost (http://www.boost.org) libraries.  These codes were compiled and tested on macs running OSX Mavericks with the default compiler (clang).  They were also tested to some extent under linux with g++ version 4.8.\
 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\b \cf0 References
+\b References
 \b0 \
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural

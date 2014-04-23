@@ -56,6 +56,7 @@
 		2B90ECD1190545970015748B /* Node3Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node3Di.h; sourceTree = "<group>"; };
 		2B90ECD219054B400015748B /* Grid3Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifm.h; sourceTree = "<group>"; };
 		2B90ECD319054C3D0015748B /* Grid3Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifs.h; sourceTree = "<group>"; };
+		2B98A47519070C6D00816CF1 /* Grid2Dri.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dri.h; sourceTree = "<group>"; };
 		2BC708D318EDA599004DA2C9 /* ttcr3d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr3d.cpp; sourceTree = "<group>"; };
 		2BC708DF18EDA65F004DA2C9 /* Grad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grad.h; sourceTree = "<group>"; };
@@ -155,6 +156,7 @@
 				2BC708DF18EDA65F004DA2C9 /* Grad.h */,
 				2BC708E018EDA65F004DA2C9 /* Grid2D.h */,
 				2BC708E118EDA65F004DA2C9 /* Grid2Drc.h */,
+				2B98A47519070C6D00816CF1 /* Grid2Dri.h */,
 				2BC708E218EDA65F004DA2C9 /* Grid2Duc.h */,
 				2BC708E318EDA65F004DA2C9 /* Grid2Ducfm.h */,
 				2BC708E418EDA65F004DA2C9 /* Grid2Ducfs.h */,
@@ -440,7 +442,7 @@
 		2BC7091018EDAAA0004DA2C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -452,7 +454,7 @@
 		2BC7091118EDAAA0004DA2C9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -460,7 +462,7 @@
 		2BD0F4FA18EED76000B3957F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				DEPLOYMENT_LOCATION = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -474,7 +476,7 @@
 		2BD0F4FB18EED76000B3957F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				DEPLOYMENT_LOCATION = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -16,10 +16,10 @@ template<typename T1, typename T2>
 class Grid3Dr : public Grid3D<T1,T2> {
 public:
     Grid3Dr(const T2 nx, const T2 ny, const T2 nz,
-           const T1 ddx, const T1 ddy, const T1 ddz,
-           const T1 minx, const T1 miny, const T1 minz,
-           const T2 nnx, const T2 nny, const T2 nnz,
-           const size_t nt=1) :
+			const T1 ddx, const T1 ddy, const T1 ddz,
+			const T1 minx, const T1 miny, const T1 minz,
+			const T2 nnx, const T2 nny, const T2 nnz,
+			const size_t nt=1) :
     nThreads(nt),
     dx(ddx), dy(ddy), dz(ddz),
     xmin(minx), ymin(miny), zmin(minz),

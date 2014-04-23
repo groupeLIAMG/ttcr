@@ -39,7 +39,7 @@ public:
 	}
 	
     
-    Node2Disp(const T1 t, const sxz<T1>& s, const int nt, const size_t i) :
+    Node2Disp(const T1 t, const sxz<T1>& s, const size_t nt, const size_t i) :
 	nThreads(nt),
     tt(0),
 	x(s.x), z(s.z), slowness(0.0),
