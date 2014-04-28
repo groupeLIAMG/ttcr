@@ -1,0 +1,24 @@
+#!/bin/csh
+#
+#
+
+
+CXX = g++-mp-4.8
+#CXX = c++
+CXXOPTIONS = -O3 -DVTK -std=c++11
+#CXXOPTIONS = -DVTK -std=c++11
+CXXFLAGS = $(CXXOPTIONS) -I/opt/local/include/vtk-5.10 \
+-I/opt/local/include/eigen3 -I/opt/local/include -I./ttcr
+
+LFLAGS = -L/opt/local/lib/vtk-5.10
+
+LIBS = -lvtkCommon -lvtkFiltering -lvtkIO
+
+ttcr3d : ttcr/ttcr3d.cpp ttcr/ttcr_io.h ttcr/structs_ttcr.h ttcr/utils_ttcr.h ttcr/Rcv.h ttcr/Src.h ttcr_io.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) -Ittcr ttcr_io.o ttcr/ttcr3d.cpp -o ttcr3d
+
+ttcr_io.o : ttcr/ttcr_io.h ttcr/ttcr_io.cpp ttcr/structs_ttcr.h
+	$(CXX) $(CXXFLAGS) -c ttcr/ttcr_io.cpp
+
+ttcr2d : ttcr/ttcr2d.cpp ttcr/ttcr_io.h ttcr/structs_ttcr.h ttcr/utils_ttcr.h ttcr/Rcv2D.h ttcr/Src2D.h ttcr_io.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr/ttcr2d.cpp -o ttcr2d
