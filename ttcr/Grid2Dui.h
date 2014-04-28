@@ -9,8 +9,13 @@
 #ifndef ttcr_Grid2Dui_h
 #define ttcr_Grid2Dui_h
 
+#include <iostream>
+#include <map>
+#include <set>
+
 #include <boost/math/special_functions/sign.hpp>
 
+#include "Grad.h"
 #include "Grid2D.h"
 #include "Interpolator.h"
 
@@ -460,6 +465,7 @@ void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 	}
 }
 
+#ifdef VTK
 template<typename T1, typename T2, typename NODE, typename S>
 void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
                                           const bool saveSlowness) const {
@@ -504,6 +510,7 @@ void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
     writer->SetDataModeToBinary();
     writer->Update();
 }
+#endif
 
 template<typename T1, typename T2, typename NODE, typename S>
 void Grid2Dui<T1,T2,NODE,S>::processObtuse() {

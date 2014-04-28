@@ -30,8 +30,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "Node.h"
-
 const double small = 1.e-5;
 const double pi = 4.0*atan(1.0);
 

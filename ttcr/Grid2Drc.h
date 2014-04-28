@@ -44,9 +44,6 @@
 #ifndef __GRID2DR_H__
 #define __GRID2DR_H__
 
-
-
-
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -55,6 +52,7 @@
 #include <vector>
 
 #include "Grid2D.h"
+#include "Node.h"
 #include "Node2Dcsp.h"
 
 template<typename T1, typename T2>
