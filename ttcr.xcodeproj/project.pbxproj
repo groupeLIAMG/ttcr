@@ -159,8 +159,7 @@
 				2B6F87AE190F4016002AC9DF /* class_handle.hpp */,
 				2B6F87B1190F414D002AC9DF /* README.txt */,
 			);
-			name = ttcr_matlab;
-			path = grid2duisp;
+			path = ttcr_matlab;
 			sourceTree = "<group>";
 		};
 		2BC708CA18EDA599004DA2C9 = {
@@ -622,6 +621,7 @@
 				2B6F87AD190F3EDA002AC9DF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		2BC708CE18EDA599004DA2C9 /* Build configuration list for PBXProject "ttcr" */ = {
 			isa = XCConfigurationList;
