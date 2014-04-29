@@ -4,6 +4,11 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>grid2duisp.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>4</integer>
+		</dict>
 		<key>ttcf2ds.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -22,6 +27,16 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>2B6F8796190F399A002AC9DF</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B6F87A4190F3EDA002AC9DF</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>2BC708D218EDA599004DA2C9</key>
 		<dict>
 			<key>primary</key>
