@@ -65,8 +65,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			nodes[n].y = xyz[n+nXYZ];
 			nodes[n].z = xyz[n+2*nXYZ];
 		}
-//        cout << nodes[0].x << ' ' << nodes[0].y << ' ' << nodes[0].z << '\n';
-//        cout << nodes[5].x << ' ' << nodes[5].y << ' ' << nodes[5].z << '\n';
         
 		//
 		// Triangles
@@ -86,9 +84,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}
 		vector<triangleElem<uint32_t>> triangles(nTri);
 		for ( size_t n=0; n<nTri; ++n ) {
-			triangles[n].i[0] = static_cast<uint32_t>( ind[n] );
-			triangles[n].i[1] = static_cast<uint32_t>( ind[n+nTri] );
-			triangles[n].i[2] = static_cast<uint32_t>( ind[n+2*nTri] );
+			triangles[n].i[0] = static_cast<uint32_t>( ind[n]-1 );
+			triangles[n].i[1] = static_cast<uint32_t>( ind[n+nTri]-1 );
+			triangles[n].i[2] = static_cast<uint32_t>( ind[n+2*nTri]-1 );
 		}
         
 		//
@@ -304,7 +302,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				}
 			}
 			if ( !found ) {
-				vTx.push_back( vector<sxyz<double> >(1, sxyz_tmp) );
+				vTx.push_back( vector<sxyz<double>>(1, sxyz_tmp) );
 				t0.push_back( vector<double>(1, tTx[ntx]) );
 				iTx.push_back( vector<size_t>(1, ntx) );
 			}
@@ -319,11 +317,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
          Looping over all non redundant Tx
          */
 		
-		vector<sxyz<double> > vRx;
-		vector<vector<double> > tt( vTx.size() );
-		vector<vector<siv<double> > > L_data(nTx);
-		vector<vector<vector<siv<double> > > > l_data( vTx.size() );
-		vector<vector<vector<sxyz<double> > > > r_data( vTx.size() );
+		vector<sxyz<double>> vRx;
+		vector<vector<double>> tt( vTx.size() );
+		vector<vector<vector<sxyz<double>>>> r_data( vTx.size() );
         
 		for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 			
@@ -363,7 +359,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 						rays_p[np] = r_data[nv][ni][np].x;
 						rays_p[np+npts] = r_data[nv][ni][np].y;
 						rays_p[np+2*npts] = r_data[nv][ni][np].z;
-//                        cout << r_data[nv][ni][np].x << ' ' << r_data[nv][ni][np].y << ' ' << r_data[nv][ni][np].z << '\n';
 					}
 					mxSetCell( plhs[1], iTx[nv][ni], Rays[ iTx[nv][ni] ] );
 				}
