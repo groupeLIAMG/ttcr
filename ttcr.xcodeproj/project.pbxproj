@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2B6F87A8190F3EDA002AC9DF /* grid2duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */; };
-		2B6F87B0190F410D002AC9DF /* grid2duisp.m in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2duisp.m */; };
+		2BA2D8CB191D556500923EF6 /* grid2duisp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2duisp.m */; };
 		2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
 		2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */; };
@@ -20,12 +20,13 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		2B6F87A3190F3EDA002AC9DF /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
+			buildActionMask = 12;
+			dstPath = "$(HOME)/mfiles";
 			dstSubfolderSpec = 0;
 			files = (
+				2BA2D8CB191D556500923EF6 /* grid2duisp.m in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2BC708D118EDA599004DA2C9 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -355,7 +356,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */,
-				2B6F87B0190F410D002AC9DF /* grid2duisp.m in Sources */,
 				2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -399,11 +399,13 @@
 					/opt/local/include/eigen3,
 					/Applications/MATLAB_R2012a.app/extern/include,
 					/Applications/MATLAB_R2013a.app/extern/include,
+					/Applications/MATLAB_R2013b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
 					/Applications/MATLAB_R2012a.app/bin/maci64,
 					/Applications/MATLAB_R2013a.app/bin/maci64,
+					/Applications/MATLAB_R2013b.app/bin/maci64,
 				);
 				MACH_O_TYPE = mh_bundle;
 				OTHER_LDFLAGS = (
@@ -430,11 +432,13 @@
 					/opt/local/include/eigen3,
 					/Applications/MATLAB_R2012a.app/extern/include,
 					/Applications/MATLAB_R2013a.app/extern/include,
+					/Applications/MATLAB_R2013b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
 					/Applications/MATLAB_R2012a.app/bin/maci64,
 					/Applications/MATLAB_R2013a.app/bin/maci64,
+					/Applications/MATLAB_R2013b.app/bin/maci64,
 				);
 				MACH_O_TYPE = mh_bundle;
 				OTHER_LDFLAGS = (
@@ -484,11 +488,15 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
-					"/opt/local/include/vtk-5.10",
 					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-6.1.0",
+					"/opt/local/include/vtk-5.10",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = "/opt/local/lib/vtk-5.10";
+				LIBRARY_SEARCH_PATHS = (
+					/usr/local/VTK/lib,
+					"/opt/local/lib/vtk-5.10",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
@@ -534,11 +542,15 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
-					"/opt/local/include/vtk-5.10",
 					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-6.1.0",
+					"/opt/local/include/vtk-5.10",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = "/opt/local/lib/vtk-5.10";
+				LIBRARY_SEARCH_PATHS = (
+					/usr/local/VTK/lib,
+					"/opt/local/lib/vtk-5.10",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_LDFLAGS = (
 					"-lvtkCommon",

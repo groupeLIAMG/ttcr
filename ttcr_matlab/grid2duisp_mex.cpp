@@ -1,3 +1,19 @@
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "mex.h"
 #include "class_handle.hpp"
 
@@ -49,6 +65,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			nodes[n].y = xyz[n+nXYZ];
 			nodes[n].z = xyz[n+2*nXYZ];
 		}
+//        cout << nodes[0].x << ' ' << nodes[0].y << ' ' << nodes[0].z << '\n';
+//        cout << nodes[5].x << ' ' << nodes[5].y << ' ' << nodes[5].z << '\n';
         
 		//
 		// Triangles
@@ -345,6 +363,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 						rays_p[np] = r_data[nv][ni][np].x;
 						rays_p[np+npts] = r_data[nv][ni][np].y;
 						rays_p[np+2*npts] = r_data[nv][ni][np].z;
+//                        cout << r_data[nv][ni][np].x << ' ' << r_data[nv][ni][np].y << ' ' << r_data[nv][ni][np].z << '\n';
 					}
 					mxSetCell( plhs[1], iTx[nv][ni], Rays[ iTx[nv][ni] ] );
 				}
