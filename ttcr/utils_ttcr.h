@@ -824,8 +824,8 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const siz
     }
     
 	if ( par.verbose ) {
-		cout << "Reading model file " << par.modelfile << " ... ";
-		cout.flush();
+		std::cout << "Reading model file " << par.modelfile << " ... ";
+		std::cout.flush();
 	}
 	
     std::vector<sxz<T>> nodes(reader.getNumberOfNodes());
