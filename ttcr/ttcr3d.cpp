@@ -63,6 +63,7 @@ int body(const input_parameters &par) {
     // Calculate the number of threads to be used
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
+
 	if ( par.nt == 0 ) {
 		size_t const hardware_threads = std::thread::hardware_concurrency();
 		size_t const min_per_thread=5;
