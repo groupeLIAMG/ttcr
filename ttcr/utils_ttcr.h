@@ -1233,7 +1233,7 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const
     reader.readSlowness(slowness, constCells);
     	
     if ( par.verbose ) {
-        cout << "  Unstructured mesh in file has"
+        std::cout << "  Unstructured mesh in file has"
         << "\n    " << nodes.size() << " nodes"
         << "\n    " << triangles.size() << " cells";
 		if ( constCells )
@@ -1247,8 +1247,8 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const
     Grid2D<T, uint32_t, sxyz<T>> *g=nullptr;
 	
 	if ( par.verbose ) {
-		cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
-		cout.flush();
+		std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+		std::cout.flush();
 	}
 	if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
     if ( constCells )
@@ -1257,16 +1257,16 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const
         g = new Grid2Duisp<T, uint32_t, Node3Disp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
 	if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 	if ( par.verbose ) {
-		cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+		std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
 		<< "\n";
-		cout.flush();
+		std::cout.flush();
 	}
 			
 	if ( par.time ) {
-		cout.precision(12);
-		cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+		std::cout.precision(12);
+		std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
 	}
-    cout.flush();
+	std::cout.flush();
 	if ( 1 == (g->setSlowness(slowness)) ) {
 		delete g;
 		return nullptr;
@@ -1379,8 +1379,8 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds(const input_parameters &par,
     Grid2D<T, uint32_t, sxyz<T>> *g=nullptr;
 	
 	if ( par.verbose ) {
-		cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
-		cout.flush();
+		std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+		std::cout.flush();
 	}
 	if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
     if ( constCells )
@@ -1389,9 +1389,9 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds(const input_parameters &par,
         g = new Grid2Duisp<T, uint32_t, Node3Disp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
 	if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 	if ( par.verbose ) {
-		cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+		std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
 		<< "\n";
-		cout.flush();
+		std::cout.flush();
 	}
 			
 	if ( par.time ) {
