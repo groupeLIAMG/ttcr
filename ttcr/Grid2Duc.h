@@ -68,6 +68,8 @@ public:
 		}
 	}
 
+	virtual ~Grid2Duc() {}
+
 	void setSlowness(const T1 s) {
         for ( size_t n=0; n<slowness.size(); ++n ) {
             slowness[n] = s;

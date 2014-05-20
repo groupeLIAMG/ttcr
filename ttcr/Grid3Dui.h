@@ -67,7 +67,9 @@ public:
 	neighbors(std::vector<std::vector<T2>>(tet.size())),
 	tetrahedra(tet)
     {}
-	
+
+    virtual ~Grid3Dui() {}
+
     void setSlowness(const T1 s) {
         for ( size_t n=0; n<nodes.size(); ++n ) {
             nodes[n].setNodeSlowness( s[n] );

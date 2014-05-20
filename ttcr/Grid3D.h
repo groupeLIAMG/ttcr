@@ -32,6 +32,9 @@
 template<typename T1, typename T2>
 class Grid3D {
 public:
+
+	virtual ~Grid3D() {}
+
     virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                          const std::vector<T1>& t0,
                          const std::vector<sxyz<T1>>& Rx,

@@ -66,6 +66,7 @@ string parse_input(int argc, char * argv[], input_parameters &ip ) {
                 //   output, and exit with exit code zero (normal termination).
                 no_option = false;
                 print_usage (cout, argv[0], 0);
+                break;
 				
 			case  'k' :
 				no_option = false;
@@ -92,6 +93,7 @@ string parse_input(int argc, char * argv[], input_parameters &ip ) {
                 // Print usage information to standard error, and exit with exit
                 //code one (indicating abnormal termination).
                 print_usage (cerr, argv[0], 1);
+                break;
                 
             case -1: // Done with options.
                 break;

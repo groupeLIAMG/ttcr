@@ -52,6 +52,8 @@ public:
 			triangles.push_back( *it );
 		}
 	}
+
+	virtual ~Grid2Dui() {}
     
     void setSlowness(const T1 s) {
         for ( size_t n=0; n<nodes.size(); ++n ) {
@@ -826,7 +828,7 @@ void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 				cellNo = findNextCell1(nb[0], nb[1], nodeNo);
 				if ( cellNo == std::numeric_limits<T2>::max() ) {
 					std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
-					<< Rx.x << ' ' << Rx.z << std::endl;
+							<< Rx.x << ' ' << Rx.z << std::endl;
 					reachedTx = true;
 				}
 				break;
