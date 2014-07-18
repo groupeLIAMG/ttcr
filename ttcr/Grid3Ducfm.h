@@ -366,8 +366,6 @@ void Grid3Ducfm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
 							
 							if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
 								this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-//								this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
-//								this->nodes[neibNo].setCellParent(cellNo, threadNo );
 								
 								if ( !inBand[neibNo] ) {
 									narrow_band.push( &(this->nodes[neibNo]) );

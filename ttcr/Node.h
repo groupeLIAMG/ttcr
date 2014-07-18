@@ -29,7 +29,6 @@
 template<typename T>
 class Node {
 public:
-	virtual ~Node() = 0;
 	virtual T getTT(const size_t n) const = 0;
 	virtual int getDimension() const = 0;
 	virtual T getX() const = 0;

@@ -541,8 +541,6 @@ void Grid3Ducfs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
 						
                         if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                             this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-//                            this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
-//                            this->nodes[neibNo].setCellParent(cellNo, threadNo );
                             //frozen[neibNo] = true;
                         }
 					}
@@ -553,7 +551,7 @@ void Grid3Ducfs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
         }
         if ( found==false ) {
 			
-			T2 cellNo = this->getCellNo(Tx[n]);
+			T2 cellNo = this->getCellNo( Tx[n] );
 			for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                 T2 neibNo = this->neighbors[cellNo][k];
 				
