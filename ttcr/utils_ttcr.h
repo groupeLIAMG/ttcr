@@ -425,8 +425,8 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 	}
 	
     std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
-	std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfElements());
-	std::vector<T> slowness(reader.getNumberOfElements());
+	std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfTetra());
+	std::vector<T> slowness(reader.getNumberOfTetra());
 	
 	reader.readNodes3D(nodes);
 	reader.readTetrahedronElements(tetrahedra);
@@ -609,7 +609,9 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 	if ( par.time && par.method == SHORTEST_PATH ) {
 		begin = std::chrono::high_resolution_clock::now();
 	}
-	g->setSlowness(slowness);
+	if ( g->setSlowness(slowness) ) {
+		abort();
+	}
 	if ( par.verbose && par.method == SHORTEST_PATH ) {
 		std::cout << "done.\n";
 		std::cout.flush();

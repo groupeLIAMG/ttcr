@@ -1,4 +1,4 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf190
+{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;}
 {\colortbl;\red255\green255\blue255;}
 {\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{hyphen\}}{\leveltext\leveltemplateid1\'01\uc0\u8259 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
@@ -109,8 +109,7 @@ Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/g
 \f1 velfile
 \f0  .  The following give an example of a geometry file used by gmsh to generate the mesh, and the associated 
 \f1 velfile
-\f0 .\
-\
+\f0 . \
 \
  --- model2ds.geo ---\
 \
@@ -154,7 +153,11 @@ Physical Surface("S3") = \{3\};
 \f0 \
 \
 ------\
-\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+Note that it is possible to impose the creation of given points note related to geometrical entities (handy for isolated source points), by defining such points as "physical points" in the geometry file.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
 ---- model2ds.vel ---\
 \
 

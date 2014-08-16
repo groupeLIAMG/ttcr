@@ -81,7 +81,7 @@ int body(const input_parameters &par) {
 	string::size_type idx;  // can hold a string of any length
     idx = par.modelfile.rfind('.');
     string extension = "";
-    if(idx != string::npos) {
+    if (idx != string::npos) {
         extension = par.modelfile.substr(idx);
     }
     

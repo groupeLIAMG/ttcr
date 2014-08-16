@@ -13,14 +13,14 @@ You need:
 
 On my OS X machine, I use this command to compile from a terminal:
 
-MATLAB=/Applications/MATLAB_R2013b.app
+MATLAB=/Applications/MATLAB_R2014a.app
 
-$MATLAB/bin/mex CXXFLAGS='$CXXFLAGS -std=c++11' -largeArrayDims -v -I$HOME/src/ttcr/ttcr -I/opt/local/include -I/opt/local/include/eigen3 grid2duisp_mex.cpp
+$MATLAB/bin/mex -O CXXFLAGS='$CXXFLAGS -std=c++11 -stdlib=libc++' LDFLAGS='$LDFLAGS -std=c++11 -stdlib=libc++' -largeArrayDims -v -I$HOME/src/ttcr/ttcr -I/opt/local/include -I/opt/local/include/eigen3 grid2duisp_mex.cpp
 
 
 On a windows 8.1 machine with intel compiler installed, I could compile it from the matlab prompt with:
 
-mex COMPFLAGS='$COMPFLAGS /Qstd=c++11' -largeArrayDims -v -I../ttcr -I'C:\libraries\boost_1_55_0' -I'C:\Program Files (x86)\Eigen\include' grid2duisp_mex.cpp
+mex -O COMPFLAGS='$COMPFLAGS /Qstd=c++11' -largeArrayDims -v -I../ttcr -I'C:\libraries\boost_1_55_0' -I'C:\Program Files (x86)\Eigen\include' grid2duisp_mex.cpp
 
 I got windows binaries of the eigen library from http://pointclouds.org/downloads/windows.html
 
