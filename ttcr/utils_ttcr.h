@@ -258,7 +258,8 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
     VTUReader reader( par.modelfile.c_str() );
     
     if ( !reader.isValid() ) {
-        return 0;
+		std::cerr << "File par.modelfile not valid\n";
+        return nullptr;
     }
     
 	if ( par.verbose ) {
@@ -416,6 +417,7 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 	MSHReader reader( par.modelfile.c_str() );
     
     if ( !reader.isValid() ) {
+		std::cerr << "File par.modelfile not valid\n";
         return nullptr;
     }
     
@@ -547,7 +549,13 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
                 std::cout << "done.\n";
                 std::cout.flush();
             }
-            
+            if ( par.source_radius>0.0 ) {
+				if ( par.verbose ) {
+					std::cout << "Setting source radius to " << par.source_radius << '\n';
+				}
+				g->setSourceRadius( par.source_radius );
+			}
+			
             break;
         }
         case FAST_SWEEPING:
@@ -822,6 +830,7 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const siz
     VTUReader reader( par.modelfile.c_str() );
     
     if ( !reader.isValid() ) {
+		std::cerr << "File par.modelfile not valid\n";
         return nullptr;
     }
     
@@ -960,6 +969,7 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
     MSHReader reader( par.modelfile.c_str() );
     
     if ( !reader.isValid() ) {
+		std::cerr << "File par.modelfile not valid\n";
         return nullptr;
     }
     
@@ -1211,6 +1221,7 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const
     VTUReader reader( par.modelfile.c_str() );
     
     if ( !reader.isValid() ) {
+		std::cerr << "File par.modelfile not valid\n";
         return nullptr;
     }
     
@@ -1287,6 +1298,7 @@ Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds(const input_parameters &par,
     MSHReader reader( par.modelfile.c_str() );
     
     if ( !reader.isValid() ) {
+		std::cerr << "File par.modelfile not valid\n";
         return nullptr;
     }
     

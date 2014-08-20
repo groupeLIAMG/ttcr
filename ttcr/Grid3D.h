@@ -62,6 +62,8 @@ public:
 						 const size_t=0) const { return 0; }
 	
     virtual int setSlowness(const std::vector<T1>& s) { return 0; }
+	
+	virtual void setSourceRadius(const double) {}
     
     virtual size_t getNumberOfNodes() const { return 0; }
 	

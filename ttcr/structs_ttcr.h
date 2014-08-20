@@ -44,6 +44,7 @@ struct input_parameters {
 	bool time;
 	bool processReflectors;
 	double epsilon;
+	double source_radius;
     raytracing_method method;
 	std::string basename;
 	std::string modelfile;
@@ -55,7 +56,7 @@ struct input_parameters {
 	input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
     inverseDistance(false),	singlePrecision(false), saveRaypaths(false),
     saveModelVTK(false), saveGridTT(false), time(false), processReflectors(false),
-	epsilon(1.e-15), method(SHORTEST_PATH), basename(),
+	epsilon(1.e-15), source_radius(0.0), method(SHORTEST_PATH), basename(),
     modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
 
 };

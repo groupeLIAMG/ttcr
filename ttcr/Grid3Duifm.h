@@ -335,27 +335,61 @@ void Grid3Duifm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
                 frozen[nn] = true;
 				
 				if ( Tx.size()==1 ) {
-					// populate around Tx
-					for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
+					if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
+                        // populate around Tx
+                        for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
 						
-						T2 cellNo = this->nodes[nn].getOwners()[no];
-						for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
-							T2 neibNo = this->neighbors[cellNo][k];
-							if ( neibNo == nn ) continue;
-							T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo]);
+                            T2 cellNo = this->nodes[nn].getOwners()[no];
+                            for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                                T2 neibNo = this->neighbors[cellNo][k];
+                                if ( neibNo == nn ) continue;
+                                T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo]);
 							
-							if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
-								this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
+                                if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
+                                    this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
 								
-								if ( !inBand[neibNo] ) {
-									narrow_band.push( &(this->nodes[neibNo]) );
-									inBand[neibNo] = true;
-									frozen[neibNo] = true;
-								}
-							}
-						}
-					}
-				}
+                                    if ( !inBand[neibNo] ) {
+                                        narrow_band.push( &(this->nodes[neibNo]) );
+                                        inBand[neibNo] = true;
+                                        frozen[neibNo] = true;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                    
+                        // find nodes within source radius
+                        size_t nodes_added = 0;
+                        for ( size_t no=0; no<this->nodes.size(); ++no ) {
+                        
+                            if ( no == nn ) continue;
+                        
+                            T1 d = this->nodes[nn].getDistance( this->nodes[no] );
+                            if ( d <= Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius ) {
+                            
+                                T1 dt = this->computeDt(this->nodes[nn], this->nodes[no] );
+                            
+                                if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
+                                    this->nodes[no].setTT( t0[n]+dt, threadNo );
+                                    
+                                    if ( !inBand[no] ) {
+                                        narrow_band.push( &(this->nodes[no]) );
+                                        inBand[no] = true;
+                                        frozen[no] = true;
+                                        nodes_added++;
+                                    }
+                                }
+                            }
+                        }
+                        if ( nodes_added == 0 ) {
+                            std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
+                            abort();
+                        } else {
+                            std::cout << "Found " << nodes_added << " nodes\n";
+                        }
+                    }
+
+                }
 				
                 break;
             }
@@ -363,19 +397,50 @@ void Grid3Duifm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
         if ( found==false ) {
 			
 			T2 cellNo = this->getCellNo(Tx[n]);
-			for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
-                T2 neibNo = this->neighbors[cellNo][k];
+            if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
+                for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                    T2 neibNo = this->neighbors[cellNo][k];
 				
-				// compute dt
-				T1 dt = this->nodes[neibNo].getDistance(Tx[n])*this->nodes[neibNo].getNodeSlowness();
+                    // compute dt
+                    T1 dt = this->nodes[neibNo].getDistance(Tx[n])*this->nodes[neibNo].getNodeSlowness();
 				
-				this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                narrow_band.push( &(this->nodes[neibNo]) );
-                inBand[neibNo] = true;
-                frozen[neibNo] = true;
-				
-			}
-		}
+                    this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
+                    narrow_band.push( &(this->nodes[neibNo]) );
+                    inBand[neibNo] = true;
+                    frozen[neibNo] = true;
+                    
+                }
+            } else if ( Tx.size()==1 ) { // look into source radius only for point sources
+                
+                // find nodes within source radius
+				size_t nodes_added = 0;
+				for ( size_t no=0; no<this->nodes.size(); ++no ) {
+					
+					T1 d = this->nodes[no].getDistance( Tx[n] );
+					if ( d <= Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius ) {
+						
+						T1 dt = this->nodes[no].getDistance(Tx[n])*this->nodes[no].getNodeSlowness();
+						
+						if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
+							this->nodes[no].setTT( t0[n]+dt, threadNo );
+							
+							if ( !inBand[no] ) {
+								narrow_band.push( &(this->nodes[no]) );
+								inBand[no] = true;
+								frozen[no] = true;
+								nodes_added++;
+							}
+						}
+					}
+				}
+				if ( nodes_added == 0 ) {
+					std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
+					abort();
+				} else {
+					std::cout << "Found " << nodes_added << " nodes\n";
+				}
+            }
+        }
     }
 }
 

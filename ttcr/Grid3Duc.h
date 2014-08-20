@@ -63,6 +63,7 @@ public:
              const size_t nt=1) :
 	nThreads(nt),
 	nPrimary(static_cast<T2>(no.size())),
+	source_radius(0.0),
 	nodes(std::vector<NODE>(no.size(), NODE(nt))),
 	slowness(std::vector<T1>(tet.size())),
 	neighbors(std::vector<std::vector<T2>>(tet.size())),
@@ -99,7 +100,8 @@ public:
         return 0;
     }
 	
-	
+	void setSourceRadius(const double r) { source_radius = r; }
+
 	void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
 		nodes[nn].setTT(tt, nt);
 	}
@@ -186,6 +188,7 @@ public:
 protected:
     const size_t nThreads;
 	T2 nPrimary;
+	T1 source_radius;
 	mutable std::vector<NODE> nodes;
     std::vector<T1> slowness;
     std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
@@ -788,6 +791,7 @@ void Grid3Duc<T1,T2,NODE>::local_update3D(NODE *vertexD,
 		if ( vertexB->getTT(threadNo) != std::numeric_limits<T1>::max() &&
 			vertexC->getTT(threadNo) != std::numeric_limits<T1>::max() ) {
 		
+			// defined in text between eq 13 & eq 14
 			T1 u = vertexB->getTT(threadNo) - vertexA->getTT(threadNo);
 			T1 v = vertexC->getTT(threadNo) - vertexA->getTT(threadNo);
 
@@ -798,21 +802,20 @@ void Grid3Duc<T1,T2,NODE>::local_update3D(NODE *vertexD,
 				vertexB->getY() - vertexA->getY(),
 				vertexB->getZ() - vertexA->getZ() };
 		
-			sxyz<T1> v_n = cross(v_b, v_c);
-			
-			T1 a = vertexB->getDistance( *vertexC );
 			T1 b = norm( v_b );
 			T1 c = norm( v_c );
-			T1 d = sqrt( dot(v_b, v_c) );
+			T1 d2 = dot(v_b, v_c);  // eq 15
 			
-			T1 alpha = acos( (b*b + c*c - a*a)/(2.*b*c) );
+			T1 alpha = acos( d2 / (b*c) );
 			
-			T1 phi = c*b*sin(alpha);
+			T1 phi = c*b*sin(alpha);  // eq 23a
 			
 			T1 w_tilde = sqrt( slowness[tetNo]*slowness[tetNo]*phi*phi -
-			u*u*b*b - v*v*c*c + 2.*u*v*d*d );
+			u*u*b*b - v*v*c*c + 2.*u*v*d2 );  // eq 23b
 			
 			// project D on plane
+			
+			sxyz<T1> v_n = cross(v_b, v_c);
 			
 			T1 d_tmp = -vertexA->getX()*v_n.x - vertexA->getY()*v_n.y - vertexA->getZ()*v_n.z;
 			
@@ -824,23 +827,40 @@ void Grid3Duc<T1,T2,NODE>::local_update3D(NODE *vertexD,
 			pt.y = vertexD->getY() + k*v_n.y;
 			pt.z = vertexD->getZ() + k*v_n.z;
 			
-			sxyz<T1> v_pt = {pt.x-vertexA->getX(), pt.y-vertexA->getY(), pt.z-vertexA->getZ()};
-			
-			T1 xi0 = dot(v_b, v_pt)/b;
-			T1 zeta0 = dot(v_c, v_pt)/c;
-			
 			T1 rho0 = vertexD->getDistance( pt );
 			
-			T1 beta = u*b*b - v*d*d;
-			T1 gamma = v*c*c - u*d*d;
+			sxyz<T1> v_pt = {pt.x-vertexA->getX(), pt.y-vertexA->getY(), pt.z-vertexA->getZ()};
 			
-			T1 xi_tilde = -fabs(beta)*rho0/(phi*w_tilde);
-			T1 zeta_tilde = -fabs(gamma)*rho0/(phi*w_tilde);
+			// project point on AB
 			
-			T1 xi = xi_tilde + xi0;
-			T1 zeta = zeta_tilde - zeta0;
+			k = dot(v_pt,v_c)/dot(v_c,v_c);
+			pt.x = vertexA->getX() + k*v_c.x;
+			pt.y = vertexA->getY() + k*v_c.y;
+			pt.z = vertexA->getZ() + k*v_c.z;
+			
+			T1 xi0 = vertexA->getDistance( pt )/c;
+			
+			// project point on AC
+			
+			k = dot(v_pt,v_b)/dot(v_b,v_b);
+			pt.x = vertexA->getX() + k*v_b.x;
+			pt.y = vertexA->getY() + k*v_b.y;
+			pt.z = vertexA->getZ() + k*v_b.z;
+			
+			T1 zeta0 = vertexA->getDistance( pt )/b;
+
+			
+			T1 beta = u*b*b - v*d2;    // from eq 19
+			T1 gamma = v*c*c - u*d2;
+			
+			T1 xi_tilde = -fabs(beta)*rho0/(phi*w_tilde);      // eq 22a
+			T1 zeta_tilde = -fabs(gamma)*rho0/(phi*w_tilde);   // eq 22b
+			
+			T1 xi = xi_tilde + xi0;         // defined in text between eq 13 & eq 14
+			T1 zeta = zeta_tilde + zeta0;
 			
 			if ( 0.<xi && xi<1. && 0.<zeta && zeta<1. && 0.<(xi+zeta) && (xi+zeta)<1. ) {
+				// eq 25
 				tABC = vertexA->getTT(threadNo) + u*xi0 + v*zeta0 + w_tilde*rho0/phi;
 			}
 		}
@@ -891,14 +911,20 @@ T1 Grid3Duc<T1,T2,NODE>::local_update2D(const NODE *vertexA,
 	T1 c = norm( v_c );
 	
 	T1 w2 = slowness[tetNo]*slowness[tetNo]*c*c - u*u;
-	if ( w2 < 0.0 ) return std::numeric_limits<T1>::max();
+	if ( w2 < 0.0 ) {
+		return std::numeric_limits<T1>::max();
+	}
 	
 	T1 w = sqrt( w2 );
 	
-	T1 xi0 = dot(v_b, v_c)/c;
-	
-	sxyz<T1> v_rho = v_b - (dot(v_b,v_c)/dot(v_c,v_c))*v_c;
-	T1 rho0 = norm( v_rho );
+	T1 k = dot(v_b,v_c)/dot(v_c,v_c);
+	sxyz<T1> pt;
+	pt.x = vertexA->getX() + k*v_c.x;
+	pt.y = vertexA->getY() + k*v_c.y;
+	pt.z = vertexA->getZ() + k*v_c.z;
+
+	T1 rho0 = vertexC->getDistance( pt );
+	T1 xi0 = vertexA->getDistance( pt )/c;
 	
 	T1 xi = xi0 - u*rho0/(w*c);
 	

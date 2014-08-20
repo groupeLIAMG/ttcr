@@ -218,7 +218,10 @@ void get_params(const std::string &filename, input_parameters &ip) {
 			sin >> test;
             if ( test == 1 ) ip.method = FAST_SWEEPING;
         }
-
+        else if (par.find("source radius") < 200) {
+			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+			sin >> ip.source_radius;
+		}
 		fin.getline(parameter, 200);
 	}
 	fin.close();
