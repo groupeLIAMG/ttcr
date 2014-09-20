@@ -652,13 +652,42 @@ void Grid2Ducsp<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
 								  std::vector<bool>& inQueue,
 								  std::vector<bool>& frozen,
 								  const size_t threadNo) const {
-//    size_t n=1;
+	
+#ifdef DEBUG
+	std::string fname;
+    size_t n=1;
+#endif
+	
     while ( !queue.empty() ) {
         
         const NODE* source = queue.top();
         queue.pop();
         inQueue[ source->getGridIndex() ] = false;
-        
+		
+#ifdef DEBUG
+		char fname[80];
+		sprintf(fname, "src_node%04zd", n);
+		ofstream of(fname);
+		of << source->getGridIndex() << '\n';
+		of.close();
+		
+		sprintf(fname, "in_queue%04zd", n);
+		of.open(fname);
+		for ( size_t ni=0; ni<inQueue.size(); ++ni )
+			if ( inQueue[ni]==true ) of << ni << '\n';
+		of.close();
+		
+		sprintf(fname, "timed%04zd", n);
+		of.open(fname);
+		for ( size_t ni=0; ni<this->nodes.size(); ++ni )
+			if ( this->nodes[ni].getTT(threadNo)<std::numeric_limits<T1>::max() &&
+				inQueue[ni]==false &&
+				source->getGridIndex()!=ni ) of << ni << '\n';
+		of.close();
+		
+		sprintf(fname, "neighbors%04zd", n);
+		of.open(fname);
+#endif
         for ( size_t no=0; no<source->getOwners().size(); ++no ) {
             
             T2 cellNo = source->getOwners()[no];
@@ -668,7 +697,9 @@ void Grid2Ducsp<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
                 if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
                     continue;
                 }
-                
+#ifdef DEBUG
+				of << neibNo << '\n';
+#endif
                 // compute dt
                 T1 dt = this->computeDt(*source, this->nodes[neibNo], cellNo);
 				
@@ -684,6 +715,10 @@ void Grid2Ducsp<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
                 }
             }
         }
+#ifdef DEBUG
+		of.close();
+		n++;
+#endif
     }
 }
 

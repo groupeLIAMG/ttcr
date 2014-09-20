@@ -337,6 +337,10 @@ int body(const input_parameters &par) {
 		//g->saveTT(filename, 0, 0, true);
         
 		string filename = par.basename+"_all_tt.dat";
+		if ( par.verbose ) {
+			cout << "Saving travel time for last source over whole grid in "
+			<< filename << '\n';
+		}
 		g->saveTT(filename, 0);
 	}
     
