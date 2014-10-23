@@ -174,7 +174,8 @@ public:
 				const bool vtkFormat=0) const;
     
 #ifdef VTK
-    void saveModelVTU(const std::string &, const bool saveSlowness=true) const;
+	void saveModelVTU(const std::string &, const bool saveSlowness=true,
+					  const bool savePhysicalEntity=false) const;
 #endif
 	
 protected:
@@ -265,9 +266,10 @@ protected:
 							  sxyz<T1> &pt_i) const;
 	
 	bool areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const;
+    bool areCoplanar(const sxyz<T1> &pt, const T2 i0, const T2 i1, const T2 i2) const;
     
-    T2 findNextCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
-    T2 findNextCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
+    T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
+    T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
 	
 	void getNeighborNodes(const T2 cellNo, std::set<NODE*> &nnodes) const;
 	
@@ -428,7 +430,8 @@ void Grid3Dui<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
 		writer->SetFileName( fname.c_str() );
-		writer->SetInputConnection( ugrid->GetProducerPort() );
+//		writer->SetInputConnection( ugrid->GetProducerPort() );
+        writer->SetInputData( ugrid );
 		writer->SetDataModeToBinary();
 		writer->Update();
 #else
@@ -453,7 +456,8 @@ void Grid3Dui<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
 #ifdef VTK
 template<typename T1, typename T2, typename NODE>
 void Grid3Dui<T1,T2,NODE>::saveModelVTU(const std::string &fname,
-										const bool saveSlowness) const {
+										const bool saveSlowness,
+										const bool savePhysicalEntity) const {
     
     vtkSmartPointer<vtkUnstructuredGrid> ugrid =
     vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -502,11 +506,20 @@ void Grid3Dui<T1,T2,NODE>::saveModelVTU(const std::string &fname,
 		ugrid->InsertNextCell( tet->GetCellType(), tet->GetPointIds() );
 	}
     
+	vtkSmartPointer<vtkIntArray> data_pe = vtkSmartPointer<vtkIntArray>::New();
+	if ( savePhysicalEntity ) {
+		data_pe->SetName("Physical entity");
+		for (size_t n=0; n<tetrahedra.size(); ++n) {
+			data_pe->InsertNextValue(tetrahedra[n].physical_entity );
+		}
+		ugrid->GetCellData()->AddArray(data_pe);
+	}
+	
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
     vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInputConnection( ugrid->GetProducerPort() );
+    writer->SetInputData( ugrid );
     writer->SetDataModeToBinary();
     writer->Update();
     
@@ -1031,7 +1044,7 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 		}
 	}
 	
-	T2 cellNo, nodeNo, previousCell;
+	T2 cellNo, nodeNo;
     sxyz<T1> curr_pt( Rx );
 	
 	bool onNode = false;
@@ -1039,6 +1052,9 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 	bool onFace = false;
 	std::array<T2,2> edgeNodes;
 	std::array<T2,3> faceNodes;
+    Grad3D<T1,NODE> grad3d;
+    bool reachedTx = false;
+
 	for ( T2 nn=0; nn<nodes.size(); ++nn ) {
 		if ( nodes[nn] == curr_pt ) {
 			nodeNo = nn;
@@ -1066,18 +1082,47 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
             }
         }
 	}
-	
-	Grad3D<T1> grad3d;
-    
-    bool reachedTx = false;
-	
+    if ( !onNode && !onEdge ) {
+        std::array<T2,3> ind[4] = {
+            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
+            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
+            {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
+            {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+        for ( size_t n=0; n<4; ++n )
+            std::sort( ind[n].begin(), ind[n].end() );
+        
+        for ( size_t n=0; n<4; ++n ) {
+            if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                onFace = true;
+                faceNodes[0] = ind[n][0];
+                faceNodes[1] = ind[n][1];
+                faceNodes[2] = ind[n][2];
+                break;
+            }
+        }
+    }
+
     while ( reachedTx == false ) {
         
         if ( onNode ) {
 			
+            // find cells common to edge
+            std::vector<T2> cells;
+            for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                cells.push_back( *nc );
+            }
+            
+            // compute gradient with nodes from all common cells
+            std::set<NODE*> nnodes;
+            for (size_t n=0; n<cells.size(); ++n ) {
+                for ( size_t no=0; no<4; ++no ) {
+                    nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
+                }
+            }
+            sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+            
 			// find cell for which gradient intersect opposing face
             bool foundIntersection = false;
-			std::vector<sxyz<T1>> grads;
 			for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 				
 				std::array<T2,3> nb;
@@ -1089,13 +1134,8 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 }
 				std::sort(nb.begin(), nb.end());
 				
-				sxyz<T1> g = grad3d.ls_grad(nodes[ nodeNo ], nodes[ nb[0] ],
-											nodes[ nb[1] ], nodes[ nb[2] ],
-											threadNo);
-				
 				foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
 				if ( !foundIntersection ) {
-					grads.push_back( g );
 					continue;
 				}
 				
@@ -1103,7 +1143,7 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 
                 bool break_flag=false;
                 for ( n=0; n<3; ++n ) {
-                    if ( nodes[ nb[n] ]==curr_pt ) {
+                    if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
                         nodeNo = nb[n];
                         onNode = true;
                         onEdge = false;
@@ -1119,7 +1159,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 					if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
 						edgeNodes[0] = nb[n1];
 						edgeNodes[1] = nb[n2];
-						previousCell = *nc;
 						onNode = false;
 						onEdge = true;
 						onFace = false;
@@ -1136,94 +1175,22 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 				faceNodes = nb;
 				
 				// find next cell
-				cellNo = findNextCell1(faceNodes, nodeNo);
+				cellNo = findAdjacentCell1(faceNodes, nodeNo);
 				if ( cellNo == std::numeric_limits<T2>::max() ) {
 					std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
 					<< Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
 					reachedTx = true;
 				}
 				break;
 			}
             
             if ( foundIntersection == false ) {
-				
-				// compute average gradient
-				sxyz<T1> g = { 0., 0., 0. };
-				for ( size_t n=0; n<grads.size(); ++n ) {
-					g.x += grads[n].x;
-					g.y += grads[n].y;
-					g.z += grads[n].z;
-				}
-				g.x /= grads.size();
-				g.y /= grads.size();
-				g.z /= grads.size();
-                
-                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    
-                    std::array<T2,3> nb;
-                    size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
-                        if ( *nn != nodeNo ) {
-                            nb[n++] = *nn;
-                        }
-                    }
-                    std::sort(nb.begin(), nb.end());
-                    
-                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
-					
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-					
-                    r_data.push_back( curr_pt );
-                    
-                    bool break_flag=false;
-                    for ( n=0; n<3; ++n ) {
-                        if ( nodes[ nb[n] ]==curr_pt ) {
-                            nodeNo = nb[n];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    for ( size_t n1=0; n1<2; ++n1 ) {
-						size_t n2 = (n1+1)%3;
-						if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
-							edgeNodes[0] = nb[n1];
-							edgeNodes[1] = nb[n2];
-							previousCell = *nc;
-							onNode = false;
-							onEdge = true;
-							onFace = false;
-							break_flag = true;
-							break;
-						}
-                    }
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes = nb;
-                    
-                    // find next cell
-                    cellNo = findNextCell1(faceNodes, nodeNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-            }
-            if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
 			
@@ -1235,21 +1202,20 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() )
                     cells.push_back( *nc0 );
             }
-            bool foundIntersection=false;
-			std::vector<sxyz<T1>> grads;
-			
+            // compute gradient with nodes from all common cells
+            std::set<NODE*> nnodes;
             for (size_t n=0; n<cells.size(); ++n ) {
-				if ( cells[n] == previousCell ) continue;
+                for ( size_t no=0; no<4; ++no ) {
+                    nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
+                }
+            }
+            sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+            
+            bool foundIntersection=false;
+            for (size_t n=0; n<cells.size(); ++n ) {
 				
                 cellNo = cells[n];
                 
-                assert(neighbors[cellNo].size()==4);
-                sxyz<T1> g = grad3d.ls_grad(nodes[ neighbors[cellNo][0] ],
-                                            nodes[ neighbors[cellNo][1] ],
-											nodes[ neighbors[cellNo][2] ],
-                                            nodes[ neighbors[cellNo][3] ],
-											threadNo);
-				
                 // there are 2 faces that might be intersected
                 std::array<T2,2> edgeNodes2;
                 size_t n2=0;
@@ -1274,7 +1240,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                     itmpNode = edgeNodes[1];
                 }
                 if ( !foundIntersection ) {
-                    grads.push_back( g );
                     continue;
                 }
 				
@@ -1283,7 +1248,7 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 
                 bool break_flag = false;
                 for ( size_t n2=0; n2<4; ++n2 ) {
-                    if ( nodes[ neighbors[cellNo][n2] ]==curr_pt ) {
+                    if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
                         nodeNo = neighbors[cellNo][n2];
                         onNode = true;
                         onEdge = false;
@@ -1297,7 +1262,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 				if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
 					edgeNodes[0] = itmpNode;
 					edgeNodes[1] = edgeNodes2[0];
-					previousCell = cellNo;
 					onNode = false;
 					onEdge = true;
 					onFace = false;
@@ -1306,7 +1270,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 				} else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
 					edgeNodes[0] = itmpNode;
 					edgeNodes[1] = edgeNodes2[1];
-					previousCell = cellNo;
 					onNode = false;
 					onEdge = true;
 					onFace = false;
@@ -1315,7 +1278,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 				} else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
 					edgeNodes[0] = edgeNodes2[0];
 					edgeNodes[1] = edgeNodes2[1];
-					previousCell = cellNo;
 					onNode = false;
 					onEdge = true;
 					onFace = false;
@@ -1334,126 +1296,21 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 std::sort(faceNodes.begin(), faceNodes.end());
                 
                 // find next cell
-                cellNo = findNextCell2(faceNodes, cellNo);
+                cellNo = findAdjacentCell2(faceNodes, cellNo);
                 if ( cellNo == std::numeric_limits<T2>::max() ) {
                     std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
                     reachedTx = true;
                 }
                 break;
             }
             if ( foundIntersection == false ) {
-				// compute average gradient
-				sxyz<T1> g = { 0., 0., 0. };
-				for ( size_t n=0; n<grads.size(); ++n ) {
-					g.x += grads[n].x;
-					g.y += grads[n].y;
-					g.z += grads[n].z;
-				}
-				g.x /= grads.size();
-				g.y /= grads.size();
-				g.z /= grads.size();
-				
-                for (size_t n=0; n<cells.size(); ++n ) {
-					if ( cells[n] == previousCell ) continue;
-					
-                    cellNo = cells[n];
-					
-                    // there are 2 faces that might be intersected
-                    std::array<T2,2> edgeNodes2;
-                    size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
-                        if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
-                            edgeNodes2[n2++] = *nn;
-                        }
-                    }
-                    sxyz<T1> pt_i;
-                    T2 itmpNode;
-                    foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                             edgeNodes[0],
-                                                             edgeNodes2[0],
-                                                             edgeNodes2[1], pt_i);
-                    itmpNode = edgeNodes[0];
-                    if ( !foundIntersection ) {
-                        foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                                 edgeNodes[1],
-                                                                 edgeNodes2[0],
-                                                                 edgeNodes2[1], pt_i);
-                        itmpNode = edgeNodes[1];
-                    }
-					
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-					
-                    curr_pt = pt_i;
-                    r_data.push_back( curr_pt );
-					
-                    bool break_flag = false;
-                    for ( size_t n2=0; n2<4; ++n2 ) {
-                        if ( nodes[ neighbors[cellNo][n2] ]==curr_pt ) {
-                            nodeNo = neighbors[cellNo][n2];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-					if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
-						edgeNodes[0] = itmpNode;
-						edgeNodes[1] = edgeNodes2[0];
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-						break_flag = true;
-						break;
-					} else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
-						edgeNodes[0] = itmpNode;
-						edgeNodes[1] = edgeNodes2[1];
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-						break_flag = true;
-						break;
-					} else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
-						edgeNodes[0] = edgeNodes2[0];
-						edgeNodes[1] = edgeNodes2[1];
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-						break_flag = true;
-						break;
-					}
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes[0] = itmpNode;
-                    faceNodes[1] = edgeNodes2[0];
-                    faceNodes[2] = edgeNodes2[1];
-                    std::sort(faceNodes.begin(), faceNodes.end());
-					
-                    // find next cell
-                    cellNo = findNextCell2(faceNodes, cellNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-			}
-            if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
             
@@ -1492,7 +1349,7 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 				
                 bool break_flag = false;
                 for ( size_t n2=0; n2<3; ++n2 ) {
-                    if ( nodes[ ind[n][n2] ]==curr_pt ) {
+                    if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
                         nodeNo = ind[n][n2];
                         onNode = true;
                         onEdge = false;
@@ -1508,7 +1365,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
 					if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
 						edgeNodes[0] = ind[n][n1];
 						edgeNodes[1] = ind[n][n2];
-						previousCell = cellNo;
 						onNode = false;
 						onEdge = true;
 						onFace = false;
@@ -1525,10 +1381,12 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 faceNodes = ind[n];
                 
                 // find next cell
-                cellNo = findNextCell2(faceNodes, cellNo);
+                cellNo = findAdjacentCell2(faceNodes, cellNo);
                 if ( cellNo == std::numeric_limits<T2>::max() ) {
                     std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
                     reachedTx = true;
                 }
                 break;
@@ -1537,151 +1395,82 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
             if ( foundIntersection == false ) {
 				
 				// we must be on an face with gradient pointing slightly outward tetrahedron
-				
-				// project gradient on face
-				
-				T2 i0 = faceNodes[0];
-				T2 i1 = faceNodes[1];
-				T2 i2 = faceNodes[2];
-				
-				sxyz<T1> v1 = {nodes[i1].getX()-nodes[i0].getX(),
-					nodes[i1].getY()-nodes[i0].getY(),
-					nodes[i1].getZ()-nodes[i0].getZ()};
-				sxyz<T1> v2 = {nodes[i2].getX()-nodes[i0].getX(),
-					nodes[i2].getY()-nodes[i0].getY(),
-					nodes[i2].getZ()-nodes[i0].getZ()};
-				sxyz<T1> norm_vec = cross(v1, v2);
-				norm_vec.normalize();
-				
-				g = g - dot(g, norm_vec)*norm_vec;
-				
-				// http://mathworld.wolfram.com/Line-LineIntersection.html
-				// a = x_2-x_1
-				sxyz<T1> a = {nodes[i2].getX()-nodes[i1].getX(),
-					nodes[i2].getY()-nodes[i1].getY(),
-					nodes[i2].getZ()-nodes[i1].getZ()};
-				// b = x_4-x_3, x_3 is curr_pt
-				// b == g
-                sxyz<T1> b = { g.x, g.y, g.z };
-				// c = x_3-x_1
-				sxyz<T1> c = {curr_pt.x-nodes[i1].getX(),
-					curr_pt.y-nodes[i1].getY(),
-					curr_pt.z-nodes[i1].getZ()};
-				T1 s = dot( cross(c,b), cross(a,b) ) / norm2( cross(a,b) );
-				
-				sxyz<T1> pt_i = s*a;
-				pt_i.x += nodes[i1].getX();
-				pt_i.y += nodes[i1].getY();
-				pt_i.z += nodes[i1].getZ();
-				
-				if ( nodes[i1] == pt_i ) {
-					foundIntersection = true;
-					curr_pt = pt_i;
+                // return in other cell but keep gradient
+                cellNo = findAdjacentCell2(faceNodes, cellNo);
+                
+                ind[0] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]};
+                ind[1] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]};
+                ind[2] = {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]};
+                ind[3] = {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]};
+                
+                for ( size_t n=0; n<4; ++n )
+                    std::sort( ind[n].begin(), ind[n].end() );
+                
+                for ( size_t n=0; n<4; ++n ) {
+                    if ( ind[n] == faceNodes ) continue;
+                    
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                             ind[n][1], ind[n][2],
+                                                             pt_i);
+                    
+                    if ( !foundIntersection ) {
+                        continue;
+                    }
+                    curr_pt = pt_i;
                     r_data.push_back( curr_pt );
-                    nodeNo = i1;
-					onNode = true;
-					onEdge = false;
-					onFace = false;
-				} else if( nodes[i2] == pt_i ) {
-					foundIntersection = true;
-					curr_pt = pt_i;
-                    r_data.push_back( curr_pt );
-                    nodeNo = i2;
-					onNode = true;
-					onEdge = false;
-					onFace = false;
-				}
-				
-				if ( !foundIntersection ) {
-					v1 = { pt_i.x - nodes[i1].getX(), pt_i.y - nodes[i1].getY(), pt_i.z - nodes[i1].getZ() };
-                    v2 = { pt_i.x - curr_pt.x, pt_i.y - curr_pt.y, pt_i.z - curr_pt.z };
-					
-					if ( dot(v2, b)>0. && dot(v1, a)>0. && norm2(a)>norm2(v1) ) {
-						
-						foundIntersection = true;
-						curr_pt = pt_i;
-						r_data.push_back( curr_pt );
-						edgeNodes[0] = i1;
-						edgeNodes[1] = i2;
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-					}
-				}
-				
-				if ( !foundIntersection ) {
-					for ( size_t ns=1; ns<3; ++ns ) {
-						i0 = faceNodes[ns];
-						i1 = faceNodes[(ns+1)%3];
-						i2 = faceNodes[(ns+2)%3];
-						
-						v1 = {nodes[i1].getX()-nodes[i0].getX(),
-							nodes[i1].getY()-nodes[i0].getY(),
-							nodes[i1].getZ()-nodes[i0].getZ()};
-						v2 = {nodes[i2].getX()-nodes[i0].getX(),
-							nodes[i2].getY()-nodes[i0].getY(),
-							nodes[i2].getZ()-nodes[i0].getZ()};
-						
-						
-						// http://mathworld.wolfram.com/Line-LineIntersection.html
-						// a = x_2-x_1
-						a = {nodes[i2].getX()-nodes[i1].getX(),
-							nodes[i2].getY()-nodes[i1].getY(),
-							nodes[i2].getZ()-nodes[i1].getZ()};
-						// b = x_4-x_3, x_3 is curr_pt
-						// b == g
-                        b = { g.x, g.y, g.z };
-						// c = x_3-x_1
-						c = {curr_pt.x-nodes[i1].getX(),
-							curr_pt.y-nodes[i1].getY(),
-							curr_pt.z-nodes[i1].getZ()};
-						s = dot( cross(c,b), cross(a,b) ) / norm2( cross(a,b) );
-						
-						pt_i = s*a;
-						pt_i.x += nodes[i1].getX();
-						pt_i.y += nodes[i1].getY();
-						pt_i.z += nodes[i1].getZ();
-						
-						if ( nodes[i1] == pt_i ) {
-							foundIntersection = true;
-							curr_pt = pt_i;
-                            r_data.push_back( curr_pt );
-                            nodeNo = i1;
-							onNode = true;
-							onEdge = false;
-							onFace = false;
-							break;
-						} else if( nodes[i2] == pt_i ) {
-							foundIntersection = true;
-							curr_pt = pt_i;
-                            r_data.push_back( curr_pt );
-                            nodeNo = i2;
-							onNode = true;
-							onEdge = false;
-							onFace = false;
-							break;
-						}
-						
-						v1 = { pt_i.x - nodes[i1].getX(), pt_i.y - nodes[i1].getY(), pt_i.z - nodes[i1].getZ() };
-                        v2 = { pt_i.x - curr_pt.x, pt_i.y - curr_pt.y, pt_i.z - curr_pt.z };
-						
-						if ( dot(v2, b)>0. && dot(v1, a)>0. && norm2(a)>norm2(v1) ) {
-							foundIntersection = true;
-							curr_pt = pt_i;
-							r_data.push_back( curr_pt );
-							
-							edgeNodes[0] = i1;
-							edgeNodes[1] = i2;
-							previousCell = cellNo;
-							onNode = false;
-							onEdge = true;
-							onFace = false;
-							
-							break;
-						}
-					}
+                    
+                    bool break_flag = false;
+                    for ( size_t n2=0; n2<3; ++n2 ) {
+                        if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
+                            nodeNo = ind[n][n2];
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            break_flag = true;
+                            break;
+                        }
+                    }
+                    if ( break_flag ) break;
+                    
+                    for ( size_t n1=0; n1<3; ++n1 ) {
+                        size_t n2 = (n1+1)%3;
+                        if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
+                            edgeNodes[0] = ind[n][n1];
+                            edgeNodes[1] = ind[n][n2];
+                            onNode = false;
+                            onEdge = true;
+                            onFace = false;
+                            break_flag = true;
+                            break;
+                        }
+                    }
+                    if ( break_flag ) break;
+                    
+                    onNode = false;
+                    onEdge = false;
+                    onFace = true;
+                    
+                    faceNodes = ind[n];
+                    
+                    // find next cell
+                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
+                        reachedTx = true;
+                    }
+                    break;
                 }
+            }
+            if ( foundIntersection == false ) {
+                std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
+                reachedTx = true;
             }
         }
 		
@@ -1774,7 +1563,7 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 		}
 	}
 	
-	T2 cellNo, nodeNo, previousCell;
+	T2 cellNo, nodeNo;
     sxyz<T1> curr_pt( Rx );
 	
 	bool onNode = false;
@@ -1782,7 +1571,10 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 	bool onFace = false;
 	std::array<T2,2> edgeNodes;
 	std::array<T2,3> faceNodes;
-	for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+    Grad3D_ho<T1,NODE> grad3d;
+    bool reachedTx = false;
+
+    for ( T2 nn=0; nn<nodes.size(); ++nn ) {
 		if ( nodes[nn] == curr_pt ) {
 			nodeNo = nn;
 			onNode = true;
@@ -1809,18 +1601,41 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
             }
         }
 	}
-	
-	Grad3D_ho<T1,NODE> grad3d;
-    
-    bool reachedTx = false;
-	
+    if ( !onNode && !onEdge ) {
+        std::array<T2,3> ind[4] = {
+            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
+            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
+            {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
+            {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+        for ( size_t n=0; n<4; ++n )
+            std::sort( ind[n].begin(), ind[n].end() );
+        
+        for ( size_t n=0; n<4; ++n ) {
+            if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                onFace = true;
+                faceNodes[0] = ind[n][0];
+                faceNodes[1] = ind[n][1];
+                faceNodes[2] = ind[n][2];
+                break;
+            }
+        }
+    }
+
     while ( reachedTx == false ) {
         
         if ( onNode ) {
 			
+			// find cells common to edge
+			std::set<NODE*> nnodes;
+			for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+				getNeighborNodes(*nc, nnodes);
+			}
+			
+			// compute gradient with nodes from all common cells
+			sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+			
 			// find cell for which gradient intersect opposing face
             bool foundIntersection = false;
-			std::vector<sxyz<T1>> grads;
 			for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 				
 				std::array<T2,3> nb;
@@ -1832,34 +1647,16 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                 }
 				std::sort(nb.begin(), nb.end());
 				
-				std::set<NODE*> nnodes;
-				getNeighborNodes(*nc, nnodes);
-				
-				sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
-				
 				foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
 				if ( !foundIntersection ) {
-					grads.push_back( g );
 					continue;
 				}
-				
-                
-				//				g.normalize();
-				//				std::cout << "\nOn node - 1st try\n";
-				//				std::cout << "\nplot3("<<nodes[ nodeNo ].getX()<<","<<nodes[ nodeNo ].getY()<<","<<nodes[ nodeNo ].getZ()<<",'o'); hold on;\n";
-				//				std::cout << "plot3(["<<nodes[ nb[0] ].getX()<<' '<<nodes[ nb[1] ].getX()<<' '<<nodes[ nb[2] ].getX()<<' '<<nodes[ nb[0] ].getX()<<"],["
-				//				<<nodes[ nb[0] ].getY()<<' '<<nodes[ nb[1] ].getY()<<' '<<nodes[ nb[2] ].getY()<<' '<<nodes[ nb[0] ].getY()<<"],["
-				//				<<nodes[ nb[0] ].getZ()<<' '<<nodes[ nb[1] ].getZ()<<' '<<nodes[ nb[2] ].getZ()<<' '<<nodes[ nb[0] ].getZ()<<"])\n";
-				//				std::cout << "plot3(["<<nodes[ nodeNo ].getX()<< ' ' << nodes[ nodeNo ].getX()+g.x<<"],["
-				//				<<nodes[ nodeNo ].getY()<< ' ' << nodes[ nodeNo ].getY()+g.y<<"],["
-				//				<<nodes[ nodeNo ].getZ()<< ' ' << nodes[ nodeNo ].getZ()+g.z<<"],'r'); axis equal\n";
-				//                std::cout << "1a  plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
 				
 				r_data.push_back( curr_pt );
                 
                 bool break_flag=false;
                 for ( n=0; n<3; ++n ) {
-                    if ( nodes[ nb[n] ]==curr_pt ) {
+                    if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
                         nodeNo = nb[n];
                         onNode = true;
                         onEdge = false;
@@ -1875,7 +1672,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 					if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
 						edgeNodes[0] = nb[n1];
 						edgeNodes[1] = nb[n2];
-						previousCell = *nc;
 						onNode = false;
 						onEdge = true;
 						onFace = false;
@@ -1892,114 +1688,22 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 				faceNodes = nb;
 				
 				// find next cell
-				cellNo = findNextCell1(faceNodes, nodeNo);
+				cellNo = findAdjacentCell1(faceNodes, nodeNo);
 				if ( cellNo == std::numeric_limits<T2>::max() ) {
 					std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
 					<< Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
 					reachedTx = true;
 				}
 				break;
 			}
             
             if ( foundIntersection == false ) {
-				
-				// compute average gradient
-				sxyz<T1> g = { 0., 0., 0. };
-				for ( size_t n=0; n<grads.size(); ++n ) {
-					g.x += grads[n].x;
-					g.y += grads[n].y;
-					g.z += grads[n].z;
-				}
-				g.x /= grads.size();
-				g.y /= grads.size();
-				g.z /= grads.size();
-                
-				//                std::cout << "g_moy: " << g << "\n";
-				
-                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    
-                    std::array<T2,3> nb;
-                    size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
-                        if ( *nn != nodeNo ) {
-                            nb[n++] = *nn;
-                        }
-                    }
-                    std::sort(nb.begin(), nb.end());
-                    
-                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
-					
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-					
-					
-					
-					
-					
-					//					g.normalize();
-					//					std::cout << "\nOn node - 2nd try\n";
-					//					std::cout << "\nplot3("<<nodes[ nodeNo ].getX()<<","<<nodes[ nodeNo ].getY()<<","<<nodes[ nodeNo ].getZ()<<",'o'); hold on;\n";
-					//					std::cout << "plot3(["<<nodes[ nb[0] ].getX()<<' '<<nodes[ nb[1] ].getX()<<' '<<nodes[ nb[2] ].getX()<<' '<<nodes[ nb[0] ].getX()<<"],["
-					//					<<nodes[ nb[0] ].getY()<<' '<<nodes[ nb[1] ].getY()<<' '<<nodes[ nb[2] ].getY()<<' '<<nodes[ nb[0] ].getY()<<"],["
-					//					<<nodes[ nb[0] ].getZ()<<' '<<nodes[ nb[1] ].getZ()<<' '<<nodes[ nb[2] ].getZ()<<' '<<nodes[ nb[0] ].getZ()<<"])\n";
-					//					std::cout << "plot3(["<<nodes[ nodeNo ].getX()<< ' ' << nodes[ nodeNo ].getX()+g.x<<"],["
-					//					<<nodes[ nodeNo ].getY()<< ' ' << nodes[ nodeNo ].getY()+g.y<<"],["
-					//					<<nodes[ nodeNo ].getZ()<< ' ' << nodes[ nodeNo ].getZ()+g.z<<"],'r'); axis equal\n";
-					//					std::cout << "plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-					
-					
-					//                    std::cout << "1b  plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-					
-                    r_data.push_back( curr_pt );
-                    
-                    bool break_flag=false;
-                    for ( n=0; n<3; ++n ) {
-                        if ( nodes[ nb[n] ]==curr_pt ) {
-                            nodeNo = nb[n];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    for ( size_t n1=0; n1<2; ++n1 ) {
-						size_t n2 = (n1+1)%3;
-						if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
-							edgeNodes[0] = nb[n1];
-							edgeNodes[1] = nb[n2];
-							previousCell = *nc;
-							onNode = false;
-							onEdge = true;
-							onFace = false;
-							break_flag = true;
-							break;
-						}
-                    }
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes = nb;
-                    
-                    // find next cell
-                    cellNo = findNextCell1(faceNodes, nodeNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-            }
-            if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
 			
@@ -2007,28 +1711,20 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 			
             // find cells common to edge
             std::vector<T2> cells;
+            std::set<NODE*> nnodes;
             for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
-                if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() )
+                if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() ) {
                     cells.push_back( *nc0 );
+                    getNeighborNodes(*nc0, nnodes);
+                }
             }
+            sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+
             bool foundIntersection=false;
-			std::vector<sxyz<T1>> grads;
-			
-            for (size_t n=0; n<cells.size(); ++n ) {
-				if ( cells[n] == previousCell ) continue;
+			for (size_t n=0; n<cells.size(); ++n ) {
 				
                 cellNo = cells[n];
                 
-				std::set<NODE*> nnodes;
-				getNeighborNodes(cellNo, nnodes);
-				
-				sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
-				
-				//                g.normalize();
-				//                plotCell(cellNo, curr_pt, g);
-				
-				//                std::cout << "g: " << g << "\n";
-				
                 // there are 2 faces that might be intersected
                 std::array<T2,2> edgeNodes2;
                 size_t n2=0;
@@ -2053,17 +1749,15 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                     itmpNode = edgeNodes[1];
                 }
                 if ( !foundIntersection ) {
-                    grads.push_back( g );
                     continue;
                 }
 				
                 curr_pt = pt_i;
-				//                std::cout << "2a  plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
                 r_data.push_back( curr_pt );
                 
                 bool break_flag = false;
                 for ( size_t n2=0; n2<4; ++n2 ) {
-                    if ( nodes[ neighbors[cellNo][n2] ]==curr_pt ) {
+                    if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
                         nodeNo = neighbors[cellNo][n2];
                         onNode = true;
                         onEdge = false;
@@ -2077,7 +1771,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 				if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
 					edgeNodes[0] = itmpNode;
 					edgeNodes[1] = edgeNodes2[0];
-					previousCell = cellNo;
 					onNode = false;
 					onEdge = true;
 					onFace = false;
@@ -2086,7 +1779,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 				} else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
 					edgeNodes[0] = itmpNode;
 					edgeNodes[1] = edgeNodes2[1];
-					previousCell = cellNo;
 					onNode = false;
 					onEdge = true;
 					onFace = false;
@@ -2095,7 +1787,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 				} else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
 					edgeNodes[0] = edgeNodes2[0];
 					edgeNodes[1] = edgeNodes2[1];
-					previousCell = cellNo;
 					onNode = false;
 					onEdge = true;
 					onFace = false;
@@ -2114,157 +1805,21 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                 std::sort(faceNodes.begin(), faceNodes.end());
                 
                 // find next cell
-                cellNo = findNextCell2(faceNodes, cellNo);
+                cellNo = findAdjacentCell2(faceNodes, cellNo);
                 if ( cellNo == std::numeric_limits<T2>::max() ) {
                     std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
                     reachedTx = true;
                 }
                 break;
             }
             if ( foundIntersection == false ) {
-				// compute average gradient
-				sxyz<T1> g = { 0., 0., 0. };
-				for ( size_t n=0; n<grads.size(); ++n ) {
-					g.x += grads[n].x;
-					g.y += grads[n].y;
-					g.z += grads[n].z;
-				}
-				g.x /= grads.size();
-				g.y /= grads.size();
-				g.z /= grads.size();
-				
-				//                std::cout << "g_moy: " << g << "\n";
-				
-                for (size_t n=0; n<cells.size(); ++n ) {
-					if ( cells[n] == previousCell ) continue;
-					
-                    cellNo = cells[n];
-					
-					//					g.normalize();
-					//					plotCell(cellNo, curr_pt, g);
-					
-                    // there are 2 faces that might be intersected
-                    std::array<T2,2> edgeNodes2;
-                    size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
-                        if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
-                            edgeNodes2[n2++] = *nn;
-                        }
-                    }
-                    sxyz<T1> pt_i;
-                    T2 itmpNode;
-                    foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                             edgeNodes[0],
-                                                             edgeNodes2[0],
-                                                             edgeNodes2[1], pt_i);
-                    itmpNode = edgeNodes[0];
-                    if ( !foundIntersection ) {
-                        foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                                 edgeNodes[1],
-                                                                 edgeNodes2[0],
-                                                                 edgeNodes2[1], pt_i);
-                        itmpNode = edgeNodes[1];
-                    }
-					
-					
-					
-					
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-					
-                    
-					
-					//					T2 i0 = neighbors[cellNo][0];
-					//					T2 i1 = neighbors[cellNo][1];
-					//					T2 i2 = neighbors[cellNo][2];
-					//					T2 i3 = neighbors[cellNo][3];
-					//
-					//					g.normalize();
-					//					std::cout << "\nOn edge - 2nd try\n";
-					//					std::cout << "\nplot3(["<<nodes[ i0 ].getX()<<' ' << nodes[ i1 ].getX() <<"],["<<nodes[ i0 ].getY()<<' ' << nodes[ i1 ].getY() <<"],["<<nodes[ i0 ].getZ()<<' ' << nodes[ i1 ].getZ() <<"]); hold on;\n";
-					//					std::cout << "plot3(["<<nodes[ i0 ].getX()<<' ' << nodes[ i2 ].getX() <<"],["<<nodes[ i0 ].getY()<<' ' << nodes[ i2 ].getY() <<"],["<<nodes[ i0 ].getZ()<<' ' << nodes[ i2 ].getZ() <<"])\n";
-					//					std::cout << "plot3(["<<nodes[ i0 ].getX()<<' ' << nodes[ i3 ].getX() <<"],["<<nodes[ i0 ].getY()<<' ' << nodes[ i3 ].getY() <<"],["<<nodes[ i0 ].getZ()<<' ' << nodes[ i3 ].getZ() <<"])\n";
-					//					std::cout << "plot3(["<<nodes[ i1 ].getX()<<' '<<nodes[ i2 ].getX()<<' '<<nodes[ i3 ].getX()<<' '<<nodes[ i1 ].getX()<<"],["
-					//					<<nodes[ i1 ].getY()<<' '<<nodes[ i2 ].getY()<<' '<<nodes[ i3 ].getY()<<' '<<nodes[ i1 ].getY()<<"],["
-					//					<<nodes[ i1 ].getZ()<<' '<<nodes[ i2 ].getZ()<<' '<<nodes[ i3 ].getZ()<<' '<<nodes[ i1 ].getZ()<<"])\n";
-					//					std::cout << "plot3(["<<curr_pt.x<< ' ' << curr_pt.x+g.x<<"],["<<curr_pt.y<< ' ' << curr_pt.y+g.y<<"],["<<curr_pt.z<< ' ' << curr_pt.z+g.z<<"],'r')\n";
-					//					std::cout << "plot3(["<<nodes[ edgeNodes2[0] ].getX()<<' ' << nodes[ edgeNodes2[1] ].getX() <<"],["<<nodes[ edgeNodes2[0] ].getY()<<' ' << nodes[ edgeNodes2[1] ].getY() <<"],["<<nodes[ edgeNodes2[0] ].getZ()<<' ' << nodes[ edgeNodes2[1] ].getZ() <<"],'ko')\n";
-					//					std::cout << "plot3("<<pt_i.x<<","<<pt_i.y<<","<<pt_i.z<<",'go')\n";
-					
-					
-					
-					
-                    curr_pt = pt_i;
-					//                    std::cout << "2b  plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-                    r_data.push_back( curr_pt );
-					
-                    bool break_flag = false;
-                    for ( size_t n2=0; n2<4; ++n2 ) {
-                        if ( nodes[ neighbors[cellNo][n2] ]==curr_pt ) {
-                            nodeNo = neighbors[cellNo][n2];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-					if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
-						edgeNodes[0] = itmpNode;
-						edgeNodes[1] = edgeNodes2[0];
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-						break_flag = true;
-						break;
-					} else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
-						edgeNodes[0] = itmpNode;
-						edgeNodes[1] = edgeNodes2[1];
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-						break_flag = true;
-						break;
-					} else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
-						edgeNodes[0] = edgeNodes2[0];
-						edgeNodes[1] = edgeNodes2[1];
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-						break_flag = true;
-						break;
-					}
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes[0] = itmpNode;
-                    faceNodes[1] = edgeNodes2[0];
-                    faceNodes[2] = edgeNodes2[1];
-                    std::sort(faceNodes.begin(), faceNodes.end());
-					
-                    // find next cell
-                    cellNo = findNextCell2(faceNodes, cellNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-			}
-            if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
             
@@ -2275,8 +1830,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 			
 			sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
             
-			//            std::cout << "g: " << g << "\n";
-			
             std::array<T2,3> ind[4] = {
                 {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
                 {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
@@ -2286,9 +1839,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                 std::sort( ind[n].begin(), ind[n].end() );
             // there are 3 faces that might be intersected
 			
-			//            g.normalize();
-			//            plotCell(cellNo, curr_pt, g);
-            
             bool foundIntersection = false;
             for ( size_t n=0; n<4; ++n ) {
                 if ( ind[n] == faceNodes ) continue;
@@ -2301,15 +1851,12 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                 if ( !foundIntersection )
                     continue;
                 
-				
-				//				std::cout << "plot3("<<pt_i.x<<","<<pt_i.y<<","<<pt_i.z<<",'go')\n";
 				curr_pt = pt_i;
-				//                std::cout << "3a  plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
                 r_data.push_back( curr_pt );
 				
                 bool break_flag = false;
                 for ( size_t n2=0; n2<3; ++n2 ) {
-                    if ( nodes[ ind[n][n2] ]==curr_pt ) {
+                    if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
                         nodeNo = ind[n][n2];
                         onNode = true;
                         onEdge = false;
@@ -2325,7 +1872,6 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
 					if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
 						edgeNodes[0] = ind[n][n1];
 						edgeNodes[1] = ind[n][n2];
-						previousCell = cellNo;
 						onNode = false;
 						onEdge = true;
 						onFace = false;
@@ -2342,203 +1888,96 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                 faceNodes = ind[n];
                 
                 // find next cell
-                cellNo = findNextCell2(faceNodes, cellNo);
+                cellNo = findAdjacentCell2(faceNodes, cellNo);
                 if ( cellNo == std::numeric_limits<T2>::max() ) {
                     std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
                     reachedTx = true;
                 }
                 break;
             }
 			
             if ( foundIntersection == false ) {
-				
-				// we must be on an face with gradient pointing slightly outward tetrahedron
-				
-				// project gradient on face
-				
-				T2 i0 = faceNodes[0];
-				T2 i1 = faceNodes[1];
-				T2 i2 = faceNodes[2];
-				
-				sxyz<T1> v1 = {nodes[i1].getX()-nodes[i0].getX(),
-					nodes[i1].getY()-nodes[i0].getY(),
-					nodes[i1].getZ()-nodes[i0].getZ()};
-				sxyz<T1> v2 = {nodes[i2].getX()-nodes[i0].getX(),
-					nodes[i2].getY()-nodes[i0].getY(),
-					nodes[i2].getZ()-nodes[i0].getZ()};
-				sxyz<T1> norm_vec = cross(v1, v2);
-				norm_vec.normalize();
-				
-				//				std::cout << "plot3(["<<curr_pt.x<< ' ' << curr_pt.x+g.x<<"],["
-				//				<<curr_pt.y<< ' ' << curr_pt.y+g.y<<"],["
-				//				<<curr_pt.z<< ' ' << curr_pt.z+g.z<<"],'r'); hold on\n";
-				//				std::cout << "plot3(["<<curr_pt.x<< ' ' << curr_pt.x+norm_vec.x<<"],["
-				//				<<curr_pt.y<< ' ' << curr_pt.y+norm_vec.y<<"],["
-				//				<<curr_pt.z<< ' ' << curr_pt.z+norm_vec.z<<"],'k');\n";
-				
-				//				std::cout << "plot3(["<<curr_pt.x<< ' ' << curr_pt.x+g.x<<"],["
-				//				<<curr_pt.y<< ' ' << curr_pt.y+g.y<<"],["
-				//				<<curr_pt.z<< ' ' << curr_pt.z+g.z<<"],'k')\n";
-				
-				g = g - dot(g, norm_vec)*norm_vec;
-				
-				//				std::cout << "plot3(["<<curr_pt.x<< ' ' << curr_pt.x+g.x<<"],["
-				//				<<curr_pt.y<< ' ' << curr_pt.y+g.y<<"],["
-				//				<<curr_pt.z<< ' ' << curr_pt.z+g.z<<"]); axis equal\n";
-				
-				//                std::cout << "g_proj: " << g << "\n";
-				
-				//				g.normalize();
-				//				plotCell(cellNo, curr_pt, g);
-				
-				
-				// http://mathworld.wolfram.com/Line-LineIntersection.html
-				// a = x_2-x_1
-				sxyz<T1> a = {nodes[i2].getX()-nodes[i1].getX(),
-					nodes[i2].getY()-nodes[i1].getY(),
-					nodes[i2].getZ()-nodes[i1].getZ()};
-				// b = x_4-x_3, x_3 is curr_pt
-				// b == g
-                sxyz<T1> b = { g.x, g.y, g.z };
-				// c = x_3-x_1
-				sxyz<T1> c = {curr_pt.x-nodes[i1].getX(),
-					curr_pt.y-nodes[i1].getY(),
-					curr_pt.z-nodes[i1].getZ()};
-				T1 s = dot( cross(c,b), cross(a,b) ) / norm2( cross(a,b) );
-				
-				sxyz<T1> pt_i = s*a;
-				pt_i.x += nodes[i1].getX();
-				pt_i.y += nodes[i1].getY();
-				pt_i.z += nodes[i1].getZ();
-				
-				if ( nodes[i1] == pt_i ) {
-					foundIntersection = true;
-					curr_pt = pt_i;
-					//                    std::cout << "3b1 plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-                    r_data.push_back( curr_pt );
-                    nodeNo = i1;
-					onNode = true;
-					onEdge = false;
-					onFace = false;
-				} else if( nodes[i2] == pt_i ) {
-					foundIntersection = true;
-					curr_pt = pt_i;
-					//                    std::cout << "3b2 plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-                    r_data.push_back( curr_pt );
-                    nodeNo = i2;
-					onNode = true;
-					onEdge = false;
-					onFace = false;
-				}
-				
-				if ( !foundIntersection ) {
-					v1 = { pt_i.x - nodes[i1].getX(), pt_i.y - nodes[i1].getY(), pt_i.z - nodes[i1].getZ() };
-					v2 = { pt_i.x - curr_pt.x, pt_i.y - curr_pt.y, pt_i.z - curr_pt.z };
+                
+                // we must be on an face with gradient pointing slightly outward tetrahedron
+                // return in other cell but keep gradient
+                cellNo = findAdjacentCell2(faceNodes, cellNo);
+                
+                ind[0] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]};
+                ind[1] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]};
+                ind[2] = {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]};
+                ind[3] = {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]};
+                
+                for ( size_t n=0; n<4; ++n )
+                    std::sort( ind[n].begin(), ind[n].end() );
+                
+                for ( size_t n=0; n<4; ++n ) {
+                    if ( ind[n] == faceNodes ) continue;
                     
-					if ( dot(v2, b)>0. && dot(v1, a)>0. && norm2(a)>norm2(v1) ) {
-						
-						foundIntersection = true;
-						curr_pt = pt_i;
-						//                        std::cout << "3b3 plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-						r_data.push_back( curr_pt );
-						edgeNodes[0] = i1;
-						edgeNodes[1] = i2;
-						previousCell = cellNo;
-						onNode = false;
-						onEdge = true;
-						onFace = false;
-					}
-				}
-				
-				if ( !foundIntersection ) {
-					for ( size_t ns=1; ns<3; ++ns ) {
-						i0 = faceNodes[ns];
-						i1 = faceNodes[(ns+1)%3];
-						i2 = faceNodes[(ns+2)%3];
-						
-						v1 = {nodes[i1].getX()-nodes[i0].getX(),
-							nodes[i1].getY()-nodes[i0].getY(),
-							nodes[i1].getZ()-nodes[i0].getZ()};
-						v2 = {nodes[i2].getX()-nodes[i0].getX(),
-							nodes[i2].getY()-nodes[i0].getY(),
-							nodes[i2].getZ()-nodes[i0].getZ()};
-						
-						
-						// http://mathworld.wolfram.com/Line-LineIntersection.html
-						// a = x_2-x_1
-						a = {nodes[i2].getX()-nodes[i1].getX(),
-							nodes[i2].getY()-nodes[i1].getY(),
-							nodes[i2].getZ()-nodes[i1].getZ()};
-						// b = x_4-x_3, x_3 is curr_pt
-                        // b == g
-                        b = { g.x, g.y, g.z };
-						// c = x_3-x_1
-						c = {curr_pt.x-nodes[i1].getX(),
-							curr_pt.y-nodes[i1].getY(),
-							curr_pt.z-nodes[i1].getZ()};
-						s = dot( cross(c,b), cross(a,b) ) / norm2( cross(a,b) );
-						
-						pt_i = s*a;
-						pt_i.x += nodes[i1].getX();
-						pt_i.y += nodes[i1].getY();
-						pt_i.z += nodes[i1].getZ();
-                        
-						//                        std::cout << "plot3(["<<curr_pt.x<< ' ' << curr_pt.x+b.x<<"],["
-						//                        <<curr_pt.y<< ' ' << curr_pt.y+b.y<<"],["
-						//                        <<curr_pt.z<< ' ' << curr_pt.z+b.z<<"],'r'); hold on\n";
-						//                        std::cout << "plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-						//                        std::cout << "plot3("<<nodes[i0].getX()<<","<<nodes[i0].getY()<<","<<nodes[i0].getZ()<<",'ko')\n";
-						//                        std::cout << "plot3("<<nodes[i1].getX()<<","<<nodes[i1].getY()<<","<<nodes[i1].getZ()<<",'ks')\n";
-						//                        std::cout << "plot3("<<nodes[i2].getX()<<","<<nodes[i2].getY()<<","<<nodes[i2].getZ()<<",'kv')\n";
-						//                        std::cout << "plot3("<<pt_i.x<<","<<pt_i.y<<","<<pt_i.z<<",'o')\n";
-                        
-						
-						if ( nodes[i1] == pt_i ) {
-							foundIntersection = true;
-							curr_pt = pt_i;
-							//                            std::cout << "3b4 plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-                            r_data.push_back( curr_pt );
-                            nodeNo = i1;
-							onNode = true;
-							onEdge = false;
-							onFace = false;
-							break;
-						} else if( nodes[i2] == pt_i ) {
-							foundIntersection = true;
-							curr_pt = pt_i;
-							//                            std::cout << "3b5 plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-                            r_data.push_back( curr_pt );
-                            nodeNo = i2;
-							onNode = true;
-							onEdge = false;
-							onFace = false;
-							break;
-						}
-						
-						v1 = { pt_i.x - nodes[i1].getX(), pt_i.y - nodes[i1].getY(), pt_i.z - nodes[i1].getZ() };
-						v2 = { pt_i.x - curr_pt.x, pt_i.y - curr_pt.y, pt_i.z - curr_pt.z };
-                        
-						if ( dot(v2, b)>0. && dot(v1, a)>0. && norm2(a)>norm2(v1) ) {
-							foundIntersection = true;
-							curr_pt = pt_i;
-							//                            std::cout << "3b6 plot3("<<curr_pt.x<<","<<curr_pt.y<<","<<curr_pt.z<<",'go')\n";
-							r_data.push_back( curr_pt );
-							
-							edgeNodes[0] = i1;
-							edgeNodes[1] = i2;
-							previousCell = cellNo;
-							onNode = false;
-							onEdge = true;
-							onFace = false;
-							
-							break;
-						}
-					}
-					
-					//					std::cout << "plot3("<<pt_i.x<<","<<pt_i.y<<","<<pt_i.z<<",'go')\n";
-					
-				}
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                             ind[n][1], ind[n][2],
+                                                             pt_i);
+                    
+                    if ( !foundIntersection ) {
+                        continue;
+                    }
+                    curr_pt = pt_i;
+                    r_data.push_back( curr_pt );
+                    
+                    bool break_flag = false;
+                    for ( size_t n2=0; n2<3; ++n2 ) {
+                        if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
+                            nodeNo = ind[n][n2];
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            break_flag = true;
+                            break;
+                        }
+                    }
+                    if ( break_flag ) break;
+                    
+                    for ( size_t n1=0; n1<3; ++n1 ) {
+                        size_t n2 = (n1+1)%3;
+                        if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
+                            edgeNodes[0] = ind[n][n1];
+                            edgeNodes[1] = ind[n][n2];
+                            onNode = false;
+                            onEdge = true;
+                            onFace = false;
+                            break_flag = true;
+                            break;
+                        }
+                    }
+                    if ( break_flag ) break;
+                    
+                    onNode = false;
+                    onEdge = false;
+                    onFace = true;
+                    
+                    faceNodes = ind[n];
+                    
+                    // find next cell
+                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
+                        reachedTx = true;
+                    }
+                    break;
+                }
+            }
+            if ( foundIntersection == false ) {
+                std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
+                reachedTx = true;
             }
         }
 		
@@ -2672,7 +2111,19 @@ bool Grid3Dui<T1,T2,NODE>::areCollinear(const sxyz<T1> &pt, const T2 i0, const T
 }
 
 template<typename T1, typename T2, typename NODE>
-T2 Grid3Dui<T1,T2,NODE>::findNextCell1(const std::array<T2,3> &faceNodes,
+bool Grid3Dui<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const T2 i0, const T2 i1, const T2 i2) const {
+    
+    // http://mathworld.wolfram.com/Coplanar.html
+    //
+    sxyz<T1> x2 = {nodes[i0].getX(), nodes[i0].getY(), nodes[i0].getZ()};
+    sxyz<T1> x3 = {nodes[i1].getX(), nodes[i1].getY(), nodes[i1].getZ()};
+    sxyz<T1> x4 = {nodes[i2].getX(), nodes[i2].getY(), nodes[i2].getZ()};
+    
+    return fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small;
+}
+
+template<typename T1, typename T2, typename NODE>
+T2 Grid3Dui<T1,T2,NODE>::findAdjacentCell1(const std::array<T2,3> &faceNodes,
                                        const T2 nodeNo) const {
     
     std::vector<T2> cells;
@@ -2695,7 +2146,7 @@ T2 Grid3Dui<T1,T2,NODE>::findNextCell1(const std::array<T2,3> &faceNodes,
 }
 
 template<typename T1, typename T2, typename NODE>
-T2 Grid3Dui<T1,T2,NODE>::findNextCell2(const std::array<T2,3> &faceNodes,
+T2 Grid3Dui<T1,T2,NODE>::findAdjacentCell2(const std::array<T2,3> &faceNodes,
                                        const T2 cellNo) const {
     
     std::vector<T2> cells;

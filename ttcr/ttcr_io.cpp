@@ -206,6 +206,10 @@ void get_params(const std::string &filename, input_parameters &ip) {
 			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
 			sin >> ip.saveRaypaths;
         }
+        else if (par.find("raypath high order") < 200) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            sin >> ip.raypath_high_order;
+        }
         else if (par.find("fast marching") < 200) {
 			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
             int test;

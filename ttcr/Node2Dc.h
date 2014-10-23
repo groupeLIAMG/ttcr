@@ -31,6 +31,7 @@
 #include <limits>
 
 #include "ttcr_t.h"
+#include "Node.h"
 
 template<typename T1, typename T2>
 class Node2Dc : public Node<T1> {

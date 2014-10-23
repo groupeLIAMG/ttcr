@@ -38,8 +38,8 @@ class Grid3Duifm : public Grid3Dui<T1,T2,Node3Di<T1,T2>> {
 public:
 	Grid3Duifm(const std::vector<sxyz<T1>>& no,
 			   const std::vector<tetrahedronElem<T2>>& tet,
-			   const size_t nt=1) :
-    Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt)
+			   const bool rp=false, const size_t nt=1) :
+    Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt), rp_ho(rp)
 	{
 		buildGridNodes(no, nt);
 		this->buildGridNeighbors();
@@ -75,7 +75,9 @@ public:
                  const size_t=0) const;
 	
 private:
-	void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
+    bool rp_ho;
+
+    void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
 	
 	void initBand(const std::vector<sxyz<T1>>& Tx,
 				  const std::vector<T1>& t0,
@@ -248,11 +250,16 @@ int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
         r_data[ni].resize( 0 );
     }
     
-    for (size_t n=0; n<Rx.size(); ++n) {
-        traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-        
-        this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
-        
+    if ( rp_ho ) {
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
+        }
+    } else {
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            this->getRaypath(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
+        }
     }
     
     return 0;
@@ -305,10 +312,16 @@ int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
             (*r_data[nr])[ni].resize( 0 );
         }
         
-        for (size_t n=0; n<Rx[nr]->size(); ++n) {
-            (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-            
-            this->getRaypath_ho(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+        if ( rp_ho ) {
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                this->getRaypath_ho(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                this->getRaypath(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+            }
         }
     }
     return 0;
@@ -385,7 +398,7 @@ void Grid3Duifm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
                             std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
                             abort();
                         } else {
-                            std::cout << "Found " << nodes_added << " nodes\n";
+                            std::cout << "(found " << nodes_added << " nodes around Tx point)\n";
                         }
                     }
 
@@ -437,7 +450,7 @@ void Grid3Duifm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
 					std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
 					abort();
 				} else {
-					std::cout << "Found " << nodes_added << " nodes\n";
+					std::cout << "(found " << nodes_added << " nodes around Tx point)\n";
 				}
             }
         }

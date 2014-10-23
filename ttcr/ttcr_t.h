@@ -332,6 +332,7 @@ struct triangleElemAngle : triangleElem<T2>{
 		this->i[0] = t.i[0];
 		this->i[1] = t.i[1];
 		this->i[2] = t.i[2];
+		this->physical_entity = t.physical_entity;
 	}
 };
 

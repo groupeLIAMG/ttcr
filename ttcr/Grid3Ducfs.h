@@ -39,9 +39,10 @@ class Grid3Ducfs : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
 public:
 	Grid3Ducfs(const std::vector<sxyz<T1>>& no,
 			   const std::vector<tetrahedronElem<T2>>& tet,
-			   const T1 eps, const int maxit, const size_t nt=1) :
+			   const T1 eps, const int maxit, const bool rp=false,
+               const size_t nt=1) :
     Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, nt),
-	epsilon(eps), nitermax(maxit), S()
+	rp_ho(rp), epsilon(eps), nitermax(maxit), S()
 	{
 		buildGridNodes(no, nt);
 		this->buildGridNeighbors();
@@ -79,6 +80,7 @@ public:
                  const size_t=0) const;
 
 private:
+    bool rp_ho;
 	T1 epsilon;
 	int nitermax;
 	std::vector<std::vector<Node3Dc<T1,T2>*>> S;
@@ -404,11 +406,16 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
         r_data[ni].resize( 0 );
     }
     
-    for (size_t n=0; n<Rx.size(); ++n) {
-        traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-        
-        this->getRaypath(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
-        
+    if ( rp_ho ) {
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
+        }
+    } else {
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            this->getRaypath(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
+        }
     }
 	
 	return 0;
@@ -506,10 +513,16 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
             (*r_data[nr])[ni].resize( 0 );
         }
 
-        for (size_t n=0; n<Rx[nr]->size(); ++n) {
-            (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-            
-            this->getRaypath(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+        if ( rp_ho ) {
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                this->getRaypath_ho(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                this->getRaypath(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+            }
         }
     }
 	return 0;
@@ -530,21 +543,53 @@ void Grid3Ducfs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
                 this->nodes[nn].setTT( t0[n], threadNo );
                 frozen[nn] = true;
 				
-                // populate around Tx
-                for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
+                if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius == 0.0 ) {
+                    // populate around Tx
+                    for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
                     
-                    T2 cellNo = this->nodes[nn].getOwners()[no];
-                    for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
-                        T2 neibNo = this->neighbors[cellNo][k];
-                        if ( neibNo == nn ) continue;
-                        T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
-						
-                        if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
-                            this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                            //frozen[neibNo] = true;
+                        T2 cellNo = this->nodes[nn].getOwners()[no];
+                        for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                            T2 neibNo = this->neighbors[cellNo][k];
+                            if ( neibNo == nn ) continue;
+                            T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
+                            
+                            if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
+                                this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
+                                //frozen[neibNo] = true;
+                            }
                         }
-					}
-				}
+                    }
+                } else {
+                    // find nodes within source radius
+                    size_t nodes_added = 0;
+                    for ( size_t no=0; no<this->nodes.size(); ++no ) {
+                        
+                        if ( no == nn ) continue;
+                        
+                        T1 d = this->nodes[nn].getDistance( this->nodes[no] );
+                        if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius ) {
+                            
+                            // compute average slowness with cells touching the source node
+                            T1 slown = 0.0;
+                            for ( size_t nc=0; nc<this->nodes[nn].getOwners().size(); ++nc ) {
+                                slown += Grid3Duc<T1,T2,Node3Dc<T1,T2>>::slowness[this->nodes[nn].getOwners()[nc]];
+                            }
+                            slown /= this->nodes[nn].getOwners().size();
+                            T1 dt = d * slown;
+                            
+                            if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
+                                if ( this->nodes[no].getTT(threadNo) == std::numeric_limits<T1>::max() ) nodes_added++;
+                                this->nodes[no].setTT( t0[n]+dt, threadNo );
+                            }
+                        }
+                    }
+                    if ( nodes_added == 0 ) {
+                        std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
+                        abort();
+                    } else {
+                        std::cout << "(found " << nodes_added << " nodes arounf Tx point)\n";
+                    }
+                }
 				
                 break;
             }
@@ -552,16 +597,42 @@ void Grid3Ducfs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
         if ( found==false ) {
 			
 			T2 cellNo = this->getCellNo( Tx[n] );
-			for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
-                T2 neibNo = this->neighbors[cellNo][k];
+            if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius == 0.0 ) {
+                for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                    T2 neibNo = this->neighbors[cellNo][k];
 				
-				// compute dt
-                T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], cellNo);
+                    // compute dt
+                    T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], cellNo);
 				
-				this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                frozen[neibNo] = true;
+                    this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
+                    frozen[neibNo] = true;
 				
-			}
+                }
+            } else if ( Tx.size()==1 ) {  // look into source radius only for point sources
+                
+                // find nodes within source radius
+                size_t nodes_added = 0;
+                for ( size_t no=0; no<this->nodes.size(); ++no ) {
+                    
+                    T1 d = this->nodes[no].getDistance( Tx[n] );
+                    if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius ) {
+                        
+                        T1 dt = d * Grid3Duc<T1,T2,Node3Dc<T1,T2>>::slowness[cellNo];
+                        
+                        if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
+                            if ( this->nodes[no].getTT(threadNo) == std::numeric_limits<T1>::max() ) nodes_added++;
+                            this->nodes[no].setTT( t0[n]+dt, threadNo );
+                            
+                        }
+                    }
+                }
+                if ( nodes_added == 0 ) {
+                    std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
+                    abort();
+                } else {
+                    std::cout << "(found " << nodes_added << " nodes around Tx point)\n";
+                }
+            }
 		}
     }
 }

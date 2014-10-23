@@ -144,9 +144,12 @@ public:
                 const bool vtkFormat=0) const;
 	
 #ifdef VTK
-    void saveModelVTU(const std::string &, const bool saveSlowness=true) const;
+	void saveModelVTU(const std::string &, const bool saveSlowness=true,
+					  const bool savePhysicalEntity=false) const;
     void saveModelVTR(const std::string &, const double*,
-					  const bool saveSlowness=true) const;
+					  const bool saveSlowness=true) const {
+		std::cerr << "saveModelVTR not yet implemented, doing nothing...\n";
+	}
 #endif
 	
 protected:
@@ -461,7 +464,8 @@ void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
 		writer->SetFileName( fname.c_str() );
-		writer->SetInputConnection( ugrid->GetProducerPort() );
+//		writer->SetInputConnection( ugrid->GetProducerPort() );
+        writer->SetInputData( ugrid );
 		writer->SetDataModeToBinary();
 		writer->Update();
 #else
@@ -486,8 +490,9 @@ void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 #ifdef VTK
 template<typename T1, typename T2, typename NODE, typename S>
 void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
-                                          const bool saveSlowness) const {
-    
+										  const bool saveSlowness,
+										  const bool savePhysicalEntity) const {
+	
     vtkSmartPointer<vtkUnstructuredGrid> ugrid =
     vtkSmartPointer<vtkUnstructuredGrid>::New();
     
@@ -496,22 +501,33 @@ void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
     vtkSmartPointer<vtkDoubleArray> newScalars =
     vtkSmartPointer<vtkDoubleArray>::New();
     
-    newScalars->SetName("Slowness");
+	double xyz[3];
+	T2 nMax = nPrimary;  // only primary are saved
 
-    double xyz[3];
-    T2 nMax = nPrimary;  // only primary are saved
-    for (size_t n=0; n<nMax; ++n) {
-        xyz[0] = nodes[n].getX();
-        xyz[1] = nodes[n].getY();
-        xyz[2] = nodes[n].getZ();
-        newPts->InsertPoint(n, xyz);
-        newScalars->InsertValue(n, nodes[n].getNodeSlowness() );
-    }
-    
+	if ( saveSlowness ) {
+		newScalars->SetName("Slowness");
+		for (size_t n=0; n<nMax; ++n) {
+			xyz[0] = nodes[n].getX();
+			xyz[1] = nodes[n].getY();
+			xyz[2] = nodes[n].getZ();
+			newPts->InsertPoint(n, xyz);
+			newScalars->InsertValue(n, nodes[n].getNodeSlowness() );
+		}
+	} else {
+		newScalars->SetName("Velocity");
+		for (size_t n=0; n<nMax; ++n) {
+			xyz[0] = nodes[n].getX();
+			xyz[1] = nodes[n].getY();
+			xyz[2] = nodes[n].getZ();
+			newPts->InsertPoint(n, xyz);
+			newScalars->InsertValue(n, 1./nodes[n].getNodeSlowness() );
+		}
+	}
+	
     ugrid->SetPoints(newPts);
     ugrid->GetPointData()->SetScalars(newScalars);
-        
-    vtkSmartPointer<vtkTriangle> tri =
+	
+	vtkSmartPointer<vtkTriangle> tri =
     vtkSmartPointer<vtkTriangle>::New();
     for (size_t n=0; n<triangles.size(); ++n) {
         tri->GetPointIds()->SetId(0, triangles[n].i[0] );
@@ -520,11 +536,21 @@ void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
         
         ugrid->InsertNextCell( tri->GetCellType(), tri->GetPointIds() );
     }
-    vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
+	
+	vtkSmartPointer<vtkIntArray> data_pe = vtkSmartPointer<vtkIntArray>::New();
+	if ( savePhysicalEntity ) {
+		data_pe->SetName("Physical entity");
+		for (size_t n=0; n<triangles.size(); ++n) {
+			data_pe->InsertNextValue(triangles[n].physical_entity );
+		}
+		ugrid->GetCellData()->AddArray(data_pe);
+	}
+
+	vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
     vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInputConnection( ugrid->GetProducerPort() );
+    writer->SetInputData( ugrid );
     writer->SetDataModeToBinary();
     writer->Update();
 }
@@ -829,6 +855,8 @@ void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 				if ( cellNo == std::numeric_limits<T2>::max() ) {
 					std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 							<< Rx.x << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
 					reachedTx = true;
 				}
 				break;
@@ -893,6 +921,8 @@ void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					if ( cellNo == std::numeric_limits<T2>::max() ) {
 						std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 						<< Rx.x << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
 						reachedTx = true;
 					}
 					break;
@@ -901,6 +931,8 @@ void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 			if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
 			
@@ -1005,6 +1037,8 @@ void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					if ( cellNo == std::numeric_limits<T2>::max() ) {
 						std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 						<< Rx.x << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
 						reachedTx = true;
 					}
 					break;

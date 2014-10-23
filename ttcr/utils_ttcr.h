@@ -325,9 +325,11 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 			if ( constCells )
-				g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra, nt);
+				g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra,
+                                                par.raypath_high_order, nt);
 			else
-				g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra, nt);
+				g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra,
+                                                par.raypath_high_order, nt);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -345,10 +347,12 @@ Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 			if ( constCells )
 				g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
-												par.nitermax, nt);
+												par.nitermax,
+                                                par.raypath_high_order, nt);
 			else
 				g = new Grid3Duifs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
-												par.nitermax, nt);
+												par.nitermax,
+                                                par.raypath_high_order, nt);
             T xmin = g->getXmin();
             T xmax = g->getXmax();
             T ymin = g->getYmin();
@@ -541,9 +545,11 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 			if ( constCells )
-				g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra, nt);
+				g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra,
+												par.raypath_high_order, nt);
 			else
-				g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra, nt);
+				g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra,
+												par.raypath_high_order, nt);
             if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
             if ( par.verbose ) {
                 std::cout << "done.\n";
@@ -567,11 +573,13 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 			if ( constCells )
 				g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
-												par.nitermax, nt);
+												par.nitermax,
+												par.raypath_high_order, nt);
 			else
 				g = new Grid3Duifs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
-												par.nitermax, nt);
-				
+												par.nitermax,
+												par.raypath_high_order, nt);
+			
             T xmin = g->getXmin();
             T xmax = g->getXmax();
             T ymin = g->getYmin();
@@ -1067,8 +1075,8 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
         case SHORTEST_PATH:
         {
 			if ( par.verbose ) {
-				cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
-				cout.flush();
+				std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+				std::cout.flush();
 			}
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 			if ( constCells )
@@ -1077,9 +1085,9 @@ Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
 				g = new Grid2Duisp<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
-				cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+				std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
 				<< "\n";
-				cout.flush();
+				std::cout.flush();
 			}
 			
             break;

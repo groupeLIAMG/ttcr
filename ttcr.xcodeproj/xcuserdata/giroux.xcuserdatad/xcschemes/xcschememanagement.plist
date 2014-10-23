@@ -7,17 +7,22 @@
 		<key>grid2duisp.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>4</integer>
+			<integer>3</integer>
 		</dict>
-		<key>ttcf2ds.xcscheme</key>
+		<key>msh2vtk.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>4</integer>
 		</dict>
 		<key>ttcr2d.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>1</integer>
+		</dict>
+		<key>ttcr2ds.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
 		</dict>
 		<key>ttcr3d.xcscheme</key>
 		<dict>
@@ -27,6 +32,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>2B46D14419F2B78C00E7ADFC</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>2B6F8796190F399A002AC9DF</key>
 		<dict>
 			<key>primary</key>

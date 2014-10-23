@@ -1287,7 +1287,8 @@ void Grid3Drc<T1,T2>::savePrimary(const char filename[], const size_t nt,
 		vtkSmartPointer<vtkXMLRectilinearGridWriter> writer = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
 		
 		writer->SetFileName( filename );
-		writer->SetInputConnection( rgrid->GetProducerPort() );
+//		writer->SetInputConnection( rgrid->GetProducerPort() );
+        writer->SetInputData( rgrid );
 		writer->SetDataModeToBinary();
 		writer->Update();
 #else

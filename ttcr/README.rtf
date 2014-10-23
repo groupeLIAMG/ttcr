@@ -71,6 +71,7 @@ The keywords are :\
 {\listtext	\uc0\u8259 	}fast sweeping : use fast sweeping method if value == 1 (implemented on 2D & 3D unstructured meshes only)\
 {\listtext	\uc0\u8259 	}process reflectors : \
 {\listtext	\uc0\u8259 	}saveRayPaths : \
+{\listtext	\uc0\u8259 	}raypath high order : conpute traveltime gradient with high order least-squares (default is 0)\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 \cf0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
@@ -153,11 +154,9 @@ Physical Surface("S3") = \{3\};
 \f0 \
 \
 ------\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
-\cf0 \
-Note that it is possible to impose the creation of given points note related to geometrical entities (handy for isolated source points), by defining such points as "physical points" in the geometry file.\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
-\cf0 \
+\
+Note that it is possible to impose the creation of given point nodes related to geometrical entities (handy for isolated source points), by defining such points as "physical points" in the geometry file.\
+\
 ---- model2ds.vel ---\
 \
 

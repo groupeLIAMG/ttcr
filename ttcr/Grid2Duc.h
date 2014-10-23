@@ -33,6 +33,7 @@
 #ifdef VTK
 #include "vtkCellData.h"
 #include "vtkDoubleArray.h"
+#include "vtkIntArray.h"
 #include "vtkPointData.h"
 #include "vtkPoints.h"
 #include "vtkPolyData.h"
@@ -54,8 +55,8 @@ template<typename T1, typename T2, typename NODE, typename S>
 class Grid2Duc : public Grid2D<T1,T2,S> {
 public:
 	Grid2Duc(const std::vector<S>& no,
-			   const std::vector<triangleElem<T2>>& tri,
-			   const size_t nt=1) :
+			 const std::vector<triangleElem<T2>>& tri,
+			 const size_t nt=1) :
 	nThreads(nt),
 	nPrimary(static_cast<T2>(no.size())),
 	nodes(std::vector<NODE>(no.size(), NODE(nt))),
@@ -159,7 +160,8 @@ public:
                 const bool vtkFormat=0) const;
 	
 #ifdef VTK
-    void saveModelVTU(const std::string &, const bool saveSlowness=true) const;
+	void saveModelVTU(const std::string &, const bool saveSlowness=true,
+					  const bool savePhysicalEntity=false) const;
     void saveModelVTR(const std::string &, const double*,
 					  const bool saveSlowness=true) const;
 #endif
@@ -454,7 +456,8 @@ void Grid2Duc<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
 		writer->SetFileName( fname.c_str() );
-		writer->SetInputConnection( ugrid->GetProducerPort() );
+//		writer->SetInputConnection( ugrid->GetProducerPort() );
+        writer->SetInputData( ugrid );
 		writer->SetDataModeToBinary();
 		writer->Update();
 #else
@@ -480,7 +483,8 @@ void Grid2Duc<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 
 template<typename T1, typename T2, typename NODE, typename S>
 void Grid2Duc<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
-								   const bool saveSlowness) const {
+										  const bool saveSlowness,
+										  const bool savePhysicalEntity) const {
     
     vtkSmartPointer<vtkUnstructuredGrid> ugrid =
     vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -527,12 +531,21 @@ void Grid2Duc<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
 	}
     
     ugrid->GetCellData()->SetScalars(data);
-    
+
+	vtkSmartPointer<vtkIntArray> data_pe = vtkSmartPointer<vtkIntArray>::New();
+	if ( savePhysicalEntity ) {
+		data_pe->SetName("Physical entity");
+		for (size_t n=0; n<triangles.size(); ++n) {
+			data_pe->InsertNextValue(triangles[n].physical_entity );
+		}
+		ugrid->GetCellData()->AddArray(data_pe);
+	}
+	
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
     vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInputConnection( ugrid->GetProducerPort() );
+    writer->SetInputData( ugrid );
     writer->SetDataModeToBinary();
     writer->Update();
 }
@@ -617,7 +630,7 @@ void Grid2Duc<T1,T2,NODE,S>::saveModelVTR(const std::string &fname,
 	vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
     
     writer->SetFileName( fname.c_str() );
-    writer->SetInputConnection( rgrid->GetProducerPort() );
+    writer->SetInputData( rgrid );
     writer->SetDataModeToBinary();
     writer->Update();
 	
@@ -934,6 +947,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
 				if ( cellNo == std::numeric_limits<T2>::max() ) {
 					std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 					<< Rx.x << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
 					reachedTx = true;
 				}
 				break;
@@ -998,6 +1013,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
 					if ( cellNo == std::numeric_limits<T2>::max() ) {
 						std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 						<< Rx.x << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
 						reachedTx = true;
 					}
 					break;
@@ -1006,6 +1023,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
 			if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
 
@@ -1122,6 +1141,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
 					if ( cellNo == std::numeric_limits<T2>::max() ) {
 						std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 						<< Rx.x << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
 						reachedTx = true;
 					}
 					break;
@@ -1318,6 +1339,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 				if ( cellNo == std::numeric_limits<T2>::max() ) {
 					std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 					<< Rx.x << ' ' << Rx.z << std::endl;
+					r_data.resize(1);
+					r_data[0] = Rx;
 					reachedTx = true;
 				}
 				break;
@@ -1382,6 +1405,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					if ( cellNo == std::numeric_limits<T2>::max() ) {
 						std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 						<< Rx.x << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
 						reachedTx = true;
 					}
 					break;
@@ -1390,6 +1415,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 			if ( foundIntersection == false ) {
 				std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 				<< Rx.x << ' ' << Rx.z << std::endl;
+				r_data.resize(1);
+				r_data[0] = Rx;
 				reachedTx = true;
 			}
 			
@@ -1508,6 +1535,8 @@ void Grid2Duc<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					if ( cellNo == std::numeric_limits<T2>::max() ) {
 						std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
 						<< Rx.x << ' ' << Rx.z << std::endl;
+						r_data.resize(1);
+						r_data[0] = Rx;
 						reachedTx = true;
 					}
 					break;

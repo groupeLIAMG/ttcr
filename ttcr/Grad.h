@@ -25,6 +25,7 @@
 #ifndef ttcr_u_Grad_h
 #define ttcr_u_Grad_h
 
+#include <cmath>
 #include <set>
 
 #include <Eigen/Dense>
@@ -195,30 +196,34 @@ sxz<T> Grad2D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
 }
 
 
-template <typename T>
+template <typename T, typename NODE>
 class Grad3D {
 public:
 	Grad3D() {}
 	
-	sxyz<T> ls_grad(const Node<T> &n0,
-					const Node<T> &n1,
-					const Node<T> &n2,
-					const Node<T> &n3,
+	sxyz<T> ls_grad(const NODE &n0,
+					const NODE &n1,
+					const NODE &n2,
+					const NODE &n3,
 					const size_t nt);
 	
+	sxyz<T> ls_grad(const std::set<NODE*> &nodes,
+					const size_t nt);
+
 private:
 	sxyz<T> g;
-	Eigen::Matrix<T, 4, 3> A;
-    Eigen::Matrix<T, 3, 1> x;
-    Eigen::Matrix<T, 4, 1> b;
+
+	Eigen::Matrix<T, Eigen::Dynamic, 3> A;
+	Eigen::Matrix<T, 3, 1> x;
+	Eigen::Matrix<T, Eigen::Dynamic, 1> b;
 };
 
-template <typename T>
-sxyz<T> Grad3D<T>::ls_grad(const Node<T> &n0,
-						   const Node<T> &n1,
-						   const Node<T> &n2,
-						   const Node<T> &n3,
-						   const size_t nt) {
+template <typename T, typename NODE>
+sxyz<T> Grad3D<T,NODE>::ls_grad(const NODE &n0,
+								const NODE &n1,
+								const NODE &n2,
+								const NODE &n3,
+								const size_t nt) {
 	
 	sxyz<T> cent = {static_cast<T>(0.25)*(n0.getX()+n1.getX()+n2.getX()+n3.getX()),
 		            static_cast<T>(0.25)*(n0.getY()+n1.getY()+n2.getY()+n3.getY()),
@@ -249,6 +254,9 @@ sxyz<T> Grad3D<T>::ls_grad(const Node<T> &n0,
 	den += w;
 	
 	t /= den;
+
+	A.resize( 4, 3 );
+	b.resize( 4, 1 );
 
 	A(0,0) = n0.getX() - cent.x;
 	A(0,1) = n0.getY() - cent.y;
@@ -281,6 +289,82 @@ sxyz<T> Grad3D<T>::ls_grad(const Node<T> &n0,
 
 	return g;
 }
+
+
+template <typename T, typename NODE>
+sxyz<T> Grad3D<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
+								const size_t nt) {
+	
+	assert(nodes.size()>=4);
+	
+	sxyz<T> cent = { 0.0, 0.0, 0.0 };
+	for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+		cent.x += (*n)->getX();
+		cent.y += (*n)->getY();
+		cent.z += (*n)->getZ();
+	}
+	T den = 1./nodes.size();
+	cent.x *= den;
+	cent.y *= den;
+	cent.z *= den;
+	
+	T t = 0.0;
+	den = 0.0;
+	
+	int remove = 0;
+	std::vector<T> d( nodes.size() );
+	size_t nn=0;
+	for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+		d[nn] = sqrt(((*n)->getX()-cent.x)*((*n)->getX()-cent.x) +
+					 ((*n)->getY()-cent.y)*((*n)->getY()-cent.y) +
+					 ((*n)->getZ()-cent.z)*((*n)->getZ()-cent.z) );
+		if ( d[nn] == 0.0 ) {
+			remove++;
+			nn++;
+			continue;
+		}
+		T w = 1./d[nn];
+		t += w*(*n)->getTT(nt);
+		den += w;
+		nn++;
+	}
+	t /= den;
+	
+	A.resize( nodes.size()-remove, 3 );
+	b.resize( nodes.size()-remove, 1 );
+
+	size_t i=0;
+	nn=0;
+	for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+		if ( d[nn] == 0.0 ) {
+			nn++;
+			continue;
+		}
+		A(i,0) = (*n)->getX()-cent.x;
+		A(i,1) = (*n)->getY()-cent.y;
+		A(i,2) = (*n)->getZ()-cent.z;
+		
+		b(i,0) = t - (*n)->getTT(nt);
+		i++;
+		nn++;
+	}
+	
+	// solve Ax = b with least squares
+	x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+	
+	//	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
+	
+//	if ( isnan(x[0]) || isnan(x[1]) || isnan(x[2]) ) {
+//		g.x = g.y = g.z = 0;
+//	}
+
+	g.x = x[0];
+	g.y = x[1];
+	g.z = x[2];
+	
+	return g;
+}
+
 
 // high order
 template <typename T, typename NODE>
@@ -319,20 +403,35 @@ sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
 	T t = 0.0;
 	den = 0.0;
 	
+	int remove = 0;
+	std::vector<T> d( nodes.size() );
+	size_t nn=0;
 	for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-		T w = 1./sqrt(((*n)->getX()-cent.x)*((*n)->getX()-cent.x) +
-				((*n)->getY()-cent.y)*((*n)->getY()-cent.y) +
-				((*n)->getZ()-cent.z)*((*n)->getZ()-cent.z) );
+		d[nn] = sqrt(((*n)->getX()-cent.x)*((*n)->getX()-cent.x) +
+					 ((*n)->getY()-cent.y)*((*n)->getY()-cent.y) +
+					 ((*n)->getZ()-cent.z)*((*n)->getZ()-cent.z) );
+		if ( d[nn] == 0.0 ) {
+			remove++;
+			nn++;
+			continue;
+		}
+		T w = 1./d[nn];
 		t += w*(*n)->getTT(nt);
 		den += w;
+		nn++;
 	}
 	t /= den;
 
-	A.resize( nodes.size(), 9 );
-	b.resize( nodes.size(), 1 );
+	A.resize( nodes.size()-remove, 9 );
+	b.resize( nodes.size()-remove, 1 );
 	
 	size_t i=0;
+	nn=0;
 	for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+		if ( d[nn] == 0.0 ) {
+			nn++;
+			continue;
+		}
 		T dx = (*n)->getX()-cent.x;
 		T dy = (*n)->getY()-cent.y;
 		T dz = (*n)->getZ()-cent.z;
@@ -349,6 +448,7 @@ sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
 		
 		b(i,0) = t - (*n)->getTT(nt);
 		i++;
+		nn++;
 	}
 	
 	// solve Ax = b with least squares

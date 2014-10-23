@@ -119,6 +119,7 @@ int body(const input_parameters &par) {
 		return 1;
     }
     
+    if ( par.source_radius != 0.0 ) g->setSourceRadius( par.source_radius );
     
     // Load the receiver file into the Rcv object rcv
 	Rcv<T> rcv( par.rcvfile );
