@@ -65,6 +65,21 @@ public:
         return 0;
     }
 	
+
+    int setSlowness(const T1 *s, const size_t ns) {
+        if ( this->nPrimary != ns ) {
+            std::cerr << "Error: slowness vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<this->nPrimary; ++n ) {
+            this->nodes[n].setNodeSlowness( s[n] );
+        }
+        if ( nsecondary>0 ) interpSlownessSecondary();
+        return 0;
+    }
+    
+
+    
 	int raytrace(const std::vector<sxyz<T1>>&,
 				 const std::vector<T1>&,
 				 const std::vector<sxyz<T1>>&,

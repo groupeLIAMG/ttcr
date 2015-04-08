@@ -41,7 +41,7 @@
 using namespace std;
 
 
-// Creates a template to be able to call body() for two formats: short or long
+// Creates a template to be able to call body() for two formats: float or double
 template<typename T>
 
 // body() is the principal function for raytracing called by main()
@@ -89,7 +89,7 @@ int body(const input_parameters &par) {
     
     // Intialize a Grid3D object containing the 3D grid and the functions to perform raytracing
     Grid3D<T,uint32_t> *g=nullptr;
-    // ? Initialize a Rcv object ?
+
     vector<Rcv<T>> reflectors;
     
     // Load the grid file into the GRID3D object g for different formats

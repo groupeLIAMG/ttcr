@@ -47,6 +47,19 @@ public:
 		buildGridNodes(no, nt);
 		this->buildGridNeighbors();
 	}
+    Grid3Duifs(const std::vector<sxyz<T1>>& no,
+               const std::vector<tetrahedronElem<T2>>& tet,
+               const T1 eps, const int maxit,
+               const std::vector<sxyz<T1>>& refPts, const int order,
+               const bool rp=false,
+               const size_t nt=1) :
+    Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt),
+    rp_ho(rp), epsilon(eps), nitermax(maxit), S()
+    {
+        buildGridNodes(no, nt);
+        this->buildGridNeighbors();
+        this->initOrdering(refPts, order);
+    }
 	
 	~Grid3Duifs() {
 	}

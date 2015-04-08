@@ -4,15 +4,30 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>debug_grid3duifs.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>6</integer>
+		</dict>
 		<key>grid2duisp.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>3</integer>
+			<integer>4</integer>
+		</dict>
+		<key>grid3duifs_mex.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
+		<key>grid3duisp_mex.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>7</integer>
 		</dict>
 		<key>msh2vtk.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>4</integer>
+			<integer>3</integer>
 		</dict>
 		<key>ttcr2d.xcscheme</key>
 		<dict>
@@ -32,6 +47,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>2B04DD761AA75F6E000231E6</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>2B46D14419F2B78C00E7ADFC</key>
 		<dict>
 			<key>primary</key>
@@ -43,6 +63,11 @@
 			<true/>
 		</dict>
 		<key>2B6F87A4190F3EDA002AC9DF</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B8FC2511AB0D2B000EF9265</key>
 		<dict>
 			<key>primary</key>
 			<true/>

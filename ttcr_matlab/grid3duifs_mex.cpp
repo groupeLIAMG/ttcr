@@ -1,28 +1,19 @@
-/*
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+//
+//  grid3duifm_mex.cpp
+//  ttcr
+//
+//  Created by Bernard Giroux on 2015-03-04.
+//  Copyright (c) 2015 Bernard Giroux. All rights reserved.
+//
 
 #include "mex.h"
 #include "class_handle.hpp"
 
-#include "Grid2Duisp.h"
-#include "Node3Disp.h"
+#include "Grid3Duifs.h"
 
 using namespace std;
 
-typedef Grid2Duisp<double,uint32_t,Node3Disp<double,uint32_t>,sxyz<double>> grid;
+typedef Grid3Duifs<double,uint32_t> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -38,8 +29,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if (nlhs != 1) {
             mexErrMsgTxt("New: One output expected.");
         }
-        if (nrhs != 3 && nrhs != 4) {
-            mexErrMsgTxt("New: 2 or 3 input arguments needed.");
+        if (nrhs != 3) {
+            mexErrMsgTxt("New: 2 input arguments needed.");
         }
         // Return a handle to a new C++ instance
         
@@ -67,43 +58,56 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         
         //
-        // Triangles
+        // Tetrahedra
         //
         if (!(mxIsDouble(prhs[2]))) {
-            mexErrMsgTxt("Triangle node indices must be double precision.");
+            mexErrMsgTxt("Tetrahedra node indices must be double precision.");
         }
         double *ind = static_cast<double*>( mxGetPr(prhs[2]) );
         number_of_dims = mxGetNumberOfDimensions(prhs[2]);
         if ( number_of_dims != 2 ) {
-            mexErrMsgTxt("Triangle node indices coordiates must be a matrix (nTriangles by 3).");
+            mexErrMsgTxt("Tetrahedra node indices coordiates must be a matrix (nTetrahedra by 4).");
         }
         dim_array = mxGetDimensions(prhs[2]);
-        size_t nTri = static_cast<size_t>( dim_array[0] );
-        if ( dim_array[1] != 3 ) {
-            mexErrMsgTxt("Triangle node indices coordiates must be a matrix (nTriangles by 3).");
+        size_t nTet = static_cast<size_t>( dim_array[0] );
+        if ( dim_array[1] != 4 ) {
+            mexErrMsgTxt("Tetrahedra node indices coordiates must be a matrix (nTetrahedra by 4).");
         }
-        vector<triangleElem<uint32_t>> triangles(nTri);
-        for ( size_t n=0; n<nTri; ++n ) {
-            triangles[n].i[0] = static_cast<uint32_t>( ind[n]-1 );
-            triangles[n].i[1] = static_cast<uint32_t>( ind[n+nTri]-1 );
-            triangles[n].i[2] = static_cast<uint32_t>( ind[n+2*nTri]-1 );
-        }
-        
-        //
-        // Number of secondary nodes
-        //
-        uint32_t nSecondary = 5;
-        if ( nrhs == 4 ) {
-            if (!(mxIsDouble(prhs[3]))) {
-                mexErrMsgTxt("Number of secondary nodes must be double precision.");
-            }
-            if ( mxGetNumberOfElements(prhs[3]) != 1 ) {
-                mexErrMsgTxt("Number of secondary nodes must be a scalar.");
-            }
-            nSecondary = static_cast<uint32_t>( mxGetScalar(prhs[3]) );
+        vector<tetrahedronElem<uint32_t>> tetrahedra(nTet);
+        for ( size_t n=0; n<nTet; ++n ) {
+            tetrahedra[n].i[0] = static_cast<uint32_t>( ind[n]-1 );
+            tetrahedra[n].i[1] = static_cast<uint32_t>( ind[n+nTet]-1 );
+            tetrahedra[n].i[2] = static_cast<uint32_t>( ind[n+2*nTet]-1 );
+            tetrahedra[n].i[3] = static_cast<uint32_t>( ind[n+3*nTet]-1 );
         }
         
-        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, triangles, nSecondary));
+        int order=2; // use order 2 for metric
+        double xmin = nodes[0].x;
+        double xmax = nodes[0].x;
+        double ymin = nodes[0].y;
+        double ymax = nodes[0].y;
+        double zmin = nodes[0].z;
+        double zmax = nodes[0].z;
+        for (size_t n=1; n<nodes.size(); ++n) {
+            xmin = (xmin<nodes[n].x) ? xmin : nodes[n].x;
+            xmax = (xmax>nodes[n].x) ? xmax : nodes[n].x;
+            ymin = (ymin<nodes[n].y) ? ymin : nodes[n].y;
+            ymax = (ymax>nodes[n].y) ? ymax : nodes[n].y;
+            zmin = (zmin<nodes[n].z) ? zmin : nodes[n].z;
+            zmax = (zmax>nodes[n].z) ? zmax : nodes[n].z;
+        }
+        
+        std::vector<sxyz<double>> ptsRef;
+        ptsRef.push_back( {xmin, ymin, zmin} );
+        ptsRef.push_back( {xmin, ymin, zmax} );
+        ptsRef.push_back( {xmin, ymax, zmin} );
+        ptsRef.push_back( {xmin, ymax, zmax} );
+        ptsRef.push_back( {xmax, ymin, zmin} );
+        ptsRef.push_back( {xmax, ymin, zmax} );
+        ptsRef.push_back( {xmax, ymax, zmin} );
+        ptsRef.push_back( {xmax, ymax, zmax} );
+        
+        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, 1.e-15, 20, ptsRef, order, true));
         return;
     }
     
@@ -265,11 +269,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
          ------------------------------------------------------ */
         
         mxArray **Rays;
-        if ( nlhs == 2 ) {
-            // 2rd arg: rays.
-            plhs[1] = mxCreateCellMatrix(nRx, 1);
-            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
-        }
         
         /*
          Looking for redundants Tx pts
@@ -348,6 +347,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         
         if ( nlhs == 2 ) {
+            // 2rd arg: rays.
+            plhs[1] = mxCreateCellMatrix(nRx, 1);
+            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
+
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     size_t npts = r_data[nv][ni].size();

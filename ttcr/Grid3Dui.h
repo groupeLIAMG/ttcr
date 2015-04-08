@@ -52,6 +52,7 @@
 
 #include "Grad.h"
 #include "Grid3D.h"
+#include "Interpolator.h"
 #include "utils.h"
 
 
@@ -1081,26 +1082,26 @@ void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                 break;
             }
         }
-	}
-    if ( !onNode && !onEdge ) {
-        std::array<T2,3> ind[4] = {
-            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-            {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-            {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
-        for ( size_t n=0; n<4; ++n )
-            std::sort( ind[n].begin(), ind[n].end() );
-        
-        for ( size_t n=0; n<4; ++n ) {
-            if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
-                onFace = true;
-                faceNodes[0] = ind[n][0];
-                faceNodes[1] = ind[n][1];
-                faceNodes[2] = ind[n][2];
-                break;
+        if ( !onEdge ) {
+            std::array<T2,3> ind[4] = {
+                {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
+                {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
+                {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
+                {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+            for ( size_t n=0; n<4; ++n )
+                std::sort( ind[n].begin(), ind[n].end() );
+            
+            for ( size_t n=0; n<4; ++n ) {
+                if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                    onFace = true;
+                    faceNodes[0] = ind[n][0];
+                    faceNodes[1] = ind[n][1];
+                    faceNodes[2] = ind[n][2];
+                    break;
+                }
             }
         }
-    }
+	}
 
     while ( reachedTx == false ) {
         
@@ -1600,26 +1601,26 @@ void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                 break;
             }
         }
-	}
-    if ( !onNode && !onEdge ) {
-        std::array<T2,3> ind[4] = {
-            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-            {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-            {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-            {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
-        for ( size_t n=0; n<4; ++n )
-            std::sort( ind[n].begin(), ind[n].end() );
-        
-        for ( size_t n=0; n<4; ++n ) {
-            if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
-                onFace = true;
-                faceNodes[0] = ind[n][0];
-                faceNodes[1] = ind[n][1];
-                faceNodes[2] = ind[n][2];
-                break;
+        if ( !onEdge ) {
+            std::array<T2,3> ind[4] = {
+                {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
+                {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
+                {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
+                {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+            for ( size_t n=0; n<4; ++n )
+                std::sort( ind[n].begin(), ind[n].end() );
+            
+            for ( size_t n=0; n<4; ++n ) {
+                if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                    onFace = true;
+                    faceNodes[0] = ind[n][0];
+                    faceNodes[1] = ind[n][1];
+                    faceNodes[2] = ind[n][2];
+                    break;
+                }
             }
         }
-    }
+	}
 
     while ( reachedTx == false ) {
         
