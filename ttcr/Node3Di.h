@@ -40,8 +40,7 @@ public:
 	x(0.0f), y(0.0f), z(0.0f),
     gridIndex(std::numeric_limits<T2>::max()),
     owners(std::vector<T2>(0)),
-    slowness(0),
-    primary(0)
+    slowness(0)
     {
 		for ( size_t n=0; n<nt; ++n ) {
 			tt[n] = std::numeric_limits<T1>::max();
@@ -55,8 +54,7 @@ public:
     x(xx), y(yy), z(zz),
     gridIndex(std::numeric_limits<T2>::max()),
     owners(std::vector<T2>(0)),
-    slowness(0),
-    primary(0)
+    slowness(0)
     {
 		for ( size_t n=0; n<nt; ++n ) {
 			tt[n] = std::numeric_limits<T1>::max();
@@ -71,8 +69,7 @@ public:
     x(s.x), y(s.y), z(s.z),
     gridIndex(std::numeric_limits<T2>::max()),
     owners(std::vector<T2>(0)),
-    slowness(0),
-    primary(0)
+    slowness(0)
     {
 		for ( size_t n=0; n<nt; ++n ) {
 			tt[n] = std::numeric_limits<T1>::max();
@@ -86,8 +83,7 @@ public:
 	x(node.x), y(node.y), z(node.z),
     gridIndex(node.gridIndex),
     owners(node.owners),
-    slowness(node.slowness),
-    primary(node.primary)
+    slowness(node.slowness)
     {
 		tt = new T1[nThreads];
 		
@@ -122,12 +118,11 @@ public:
     T1 getZ() const { return z; }
     void setZ(const T1 zz) { z = zz; }
     
+    int getPrimary() const { return 5; } // all nodes must be primary
+    
     T2 getGridIndex() const { return gridIndex; }
     void setGridIndex(const T2 index) { gridIndex = index; }
     
-    int getPrimary() const { return primary; };
-    void setPrimary( const int o ) { primary = o; }
-	
     T1 getNodeSlowness() const { return slowness; }
     void setNodeSlowness(const T1 s) { slowness = s; }
 	
@@ -162,11 +157,7 @@ private:
     T1 z;                           // z coordinate [km]
     T2 gridIndex;                   // index of this node in the list of the grid
     std::vector<T2> owners;         // indices of cells touching the node
-    T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp
-    int primary;					// indicate the order of the node: 5= primary,
-	//  (25:48)= secondary on edges,
-	//  (50:71)= secondary on faces, only used by Grid3Dinterp
-    
+    T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp    
 };
 
 

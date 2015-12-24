@@ -334,7 +334,7 @@ int body(const input_parameters &par) {
 	
 	if ( par.saveGridTT ) {
 		//  will overwrite if nsrc>1
-		//string filename = par.basename+"_all_tt.vtu";
+		//string filename = par.basename+"_all_tt";
 		//g->saveTT(filename, 0, 0, true);
         
 		string filename = par.basename+"_all_tt.dat";

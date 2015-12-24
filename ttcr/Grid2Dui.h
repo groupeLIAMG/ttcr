@@ -211,7 +211,6 @@ protected:
 	
 	void getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					   const sxz<T1> &Rx,
-					   const T1 tRx,
 					   std::vector<sxz<T1>> &r_data,
 					   const size_t threadNo) const;
 	
@@ -428,6 +427,8 @@ void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 	
 	if (vtkFormat) {
 #ifdef VTK
+        std::string filename = fname+".vtu";
+        
 		vtkSmartPointer<vtkUnstructuredGrid> ugrid =
 		vtkSmartPointer<vtkUnstructuredGrid>::New();
 		
@@ -463,7 +464,7 @@ void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
-		writer->SetFileName( fname.c_str() );
+		writer->SetFileName( filename.c_str() );
 //		writer->SetInputConnection( ugrid->GetProducerPort() );
         writer->SetInputData( ugrid );
 		writer->SetDataModeToBinary();
@@ -742,7 +743,6 @@ void Grid2Dui<T1,T2,NODE,S>::local_solver(NODE *vertexC,
 template<typename T1, typename T2, typename NODE, typename S>
 void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 										   const sxz<T1> &Rx,
-										   const T1 tRx,
 										   std::vector<sxz<T1>> &r_data,
 										   const size_t threadNo) const {
     

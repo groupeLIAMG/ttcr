@@ -25,8 +25,6 @@
 #ifndef ttcr_Grid2Dri_h
 #define ttcr_Grid2Dri_h
 
-
-
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -34,15 +32,20 @@
 #include <queue>
 #include <vector>
 
-#include "Grid2D.h"
-#include "Node2Disp.h"
+#ifdef VTK
+#include "vtkDoubleArray.h"
+#include "vtkRectilinearGrid.h"
+#include "vtkSmartPointer.h"
+#include "vtkXMLRectilinearGridWriter.h"
+#endif
 
-template<typename T1, typename T2>
+#include "Grid2D.h"
+
+template<typename T1, typename T2, typename NODE>
 class Grid2Dri : public Grid2D<T1,T2,sxz<T1>> {
 public:
     Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-			 const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
-			 const size_t nt=1);
+			 const T1 minx, const T1 minz, const size_t nt=1);
     
     virtual ~Grid2Dri() {
     }
@@ -55,12 +58,6 @@ public:
     T1 getZmax() const { return zmax; }
     T2 getNcellx() const { return nCellx; }
     T2 getNcellz() const { return nCellz; }
-    T2 getNsnx() const { return nsnx; }
-    T2 getNsnz() const { return nsnz; }
-    
-	T1 getSlowness(const size_t n) const {
-		return nodes[n].getNodeSlowness();
-	}
     
     void setSlowness(const T1 s) {
         for ( size_t n=0; n<nodes.size(); ++n ) {
@@ -68,54 +65,43 @@ public:
         }
     }
     
-    int setSlowness(const std::vector<T1>& s) {
-        if ( nPrimary != s.size() ) {
+    virtual int setSlowness(const std::vector<T1>& s) {
+        if ( nodes.size() != s.size() ) {
             std::cerr << "Error: slowness vectors of incompatible size.";
             return 1;
         }
-		size_t nn=0;
         for ( size_t n=0; n<nodes.size(); ++n ) {
-			if ( nodes[n].getPrimary() == 5 )
-				nodes[n].setNodeSlowness( s[nn++] );
+            nodes[n].setNodeSlowness( s[n] );
         }
-		interpSlownessSecondary();
         return 0;
     }
     
-    int raytrace(const std::vector<sxz<T1>>& Tx,
-                 const std::vector<T1>& t0,
-                 const std::vector<sxz<T1>>& Rx,
-                 std::vector<T1>& traveltimes,
-				 const size_t threadNo=0) const;
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<sxz<T1>>& Rx,
+                         std::vector<T1>& traveltimes,
+                         const size_t threadNo=0) const { return 0; }
     
-    int raytrace(const std::vector<sxz<T1>>&,
-                 const std::vector<T1>&,
-                 const std::vector<const std::vector<sxz<T1>>*>&,
-                 std::vector<std::vector<T1>*>&,
-                 const size_t=0) const;
-	
-    int raytrace(const std::vector<sxz<T1>>& Tx,
-                 const std::vector<T1>& t0,
-                 const std::vector<sxz<T1>>& Rx,
-                 std::vector<T1>& traveltimes,
-                 std::vector<std::vector<sxz<double>>>& r_data,
-				 const size_t threadNo=0) const;
+    virtual int raytrace(const std::vector<sxz<T1>>&,
+                         const std::vector<T1>&,
+                         const std::vector<const std::vector<sxz<T1>>*>&,
+                         std::vector<std::vector<T1>*>&,
+                         const size_t=0) const { return 0; }
     
-    int raytrace(const std::vector<sxz<T1>>&,
-                 const std::vector<T1>&,
-                 const std::vector<const std::vector<sxz<T1>>*>&,
-                 std::vector<std::vector<T1>*>&,
-                 std::vector<std::vector<std::vector<sxz<T1>>>*>&,
-                 const size_t=0) const;
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<sxz<T1>>& Rx,
+                         std::vector<T1>& traveltimes,
+                         std::vector<std::vector<sxz<T1>>>& r_data,
+                         const size_t threadNo=0) const { return 0; }
+    
+    virtual int raytrace(const std::vector<sxz<T1>>&,
+                         const std::vector<T1>&,
+                         const std::vector<const std::vector<sxz<T1>>*>&,
+                         std::vector<std::vector<T1>*>&,
+                         std::vector<std::vector<std::vector<sxz<T1>>>*>&,
+                         const size_t=0) const { return 0; }
 	
-    int raytrace(const std::vector<sxz<T1>>& Tx,
-                 const std::vector<T1>& t0,
-                 const std::vector<sxz<T1>>& Rx,
-                 std::vector<T1>& traveltimes,
-                 std::vector<std::vector<sxz<double>>>& r_data,
-                 std::vector<std::vector<siv<double>>>& l_data,
-				 const size_t threadNo=0) const;
-		
     size_t getNumberOfNodes() const { return nodes.size(); }
     
     void saveSlownessXYZ(const char filename[]) const {
@@ -136,6 +122,18 @@ public:
         return nx*nCellz + nz;
     }
     
+    void getIJ(const sxz<T1>& pt, T2& i, T2& j) const {
+        i = static_cast<T2>( small + (pt.x-xmin)/dx );
+        j = static_cast<T2>( small + (pt.z-zmin)/dz );
+    }
+    
+    void getIJ(const sxz<T1>& pt, long long& i, long long& j) const {
+        i = static_cast<long long>( small + (pt.x-xmin)/dx );
+        j = static_cast<long long>( small + (pt.z-zmin)/dz );
+    }
+    
+    void saveTT(const std::string &, const int, const size_t nt=0,
+                const bool vtkFormat=0) const;
     
 protected:
 	size_t nThreads;
@@ -145,211 +143,58 @@ protected:
     T1 zmin;         // z origin of the grid
     T1 xmax;         // x end of the grid
     T1 zmax;         // z end of the grid
-    T2 nCellx;  // number of cells in x
-    T2 nCellz;  // number of cells in x
-    T2 nsnx;    // number of secondary nodes in x
-    T2 nsnz;    // number of secondary nodes in z
-    T2 nsgx;    // number of subgrid cells in x
-    T2 nsgz;    // number of subgrid cells in z
-	T2 nPrimary;
+    T2 nCellx;       // number of cells in x
+    T2 nCellz;       // number of cells in x
     
-    mutable std::vector<Node2Disp<T1,T2>> nodes;
+    mutable std::vector<NODE> nodes;
     
     std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
-    
-    void buildGridNodes();
     void buildGridNeighbors();
 	
-	void interpSlownessSecondary();
-
-    void propagate(std::priority_queue<Node2Disp<T1,T2>*,
-				   std::vector<Node2Disp<T1,T2>*>,
-                   CompareNodePtr<T1>>& queue,
-                   std::vector<bool>& inQueue,
-                   std::vector<bool>& frozen,
-				   const size_t threadNo) const;
-
-	T1 computeDt(const Node2Disp<T1,T2>& source, const Node2Disp<T1,T2>& node) const {
+	T1 computeDt(const NODE& source, const NODE& node) const {
 		return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
     
-	T1 computeDt(const Node2Disp<T1,T2>& source, const sxz<T1>& node, T1 slo) const {
+	T1 computeDt(const NODE& source, const sxz<T1>& node, T1 slo) const {
 		return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
-
     
     int check_pts(const std::vector<sxz<T1>>&) const;
     
-    void initQueue(const std::vector<sxz<T1>>& Tx,
-                   const std::vector<T1>& t0,
-                   std::priority_queue<Node2Disp<T1,T2>*,
-				   std::vector<Node2Disp<T1,T2>*>,
-                   CompareNodePtr<T1>>& queue,
-                   std::vector<Node2Disp<T1,T2>>& txNodes,
-                   std::vector<bool>& inQueue,
-                   std::vector<bool>& frozen,
-				   const size_t threadNo) const;
-    
     bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
     
-    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Disp<T1,T2>>& nodes,
+    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
 					 const size_t threadNo) const;
     
-    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Disp<T1,T2>>& nodes,
+    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
 					 T2& nodeParentRx, T2& cellParentRx,
 					 const size_t threadNo) const;
 	
-//    void save(const char filename[]) const;
+    void grad(sxz<T1> &g, const size_t i, const size_t j, const size_t nt=0) const;
     
-	
+    void getRaypath(const std::vector<sxz<T1>>& Tx,
+                    const sxz<T1> &Rx,
+                    std::vector<sxz<T1>> &r_data,
+                    const size_t threadNo=0) const;
+    
 private:
     Grid2Dri() {}
-    Grid2Dri(const Grid2Dri<T1,T2>& g) {}
-    Grid2Dri<T1,T2>& operator=(const Grid2Dri<T1,T2>& g) {}
+    Grid2Dri(const Grid2Dri<T1,T2,NODE>& g) {}
+    Grid2Dri<T1,T2,NODE>& operator=(const Grid2Dri<T1,T2,NODE>& g) {}
     
 };
 
-template<typename T1, typename T2>
-Grid2Dri<T1,T2>::Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-						  const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
-						  const size_t nt) : nThreads(nt),
+template<typename T1, typename T2, typename NODE>
+Grid2Dri<T1,T2,NODE>::Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+						  const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
 dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
-nCellx(nx), nCellz(nz), nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0),
-nPrimary((nCellx+1) * (nCellz+1)),
-nodes(std::vector<Node2Disp<T1,T2>>( // noeuds secondaires
-									nCellx*nsnx*(nCellz+1) + nCellz*nsnz*(nCellx+1) +
-									// noeuds primaires
-									(nCellx+1) * (nCellz+1), Node2Disp<T1,T2>(nt) )),
+nCellx(nx), nCellz(nz),
+nodes(std::vector<NODE>( (nCellx+1) * (nCellz+1), NODE(nt) )),
 neighbors(std::vector<std::vector<T2>>(nCellx*nCellz))
-{
-    buildGridNodes();
-    buildGridNeighbors();
-}
+{ }
 
-template<typename T1, typename T2>
-void Grid2Dri<T1,T2>::buildGridNodes() {
-    T1 dxs = dx/(nsnx+1);
-    T1 dzs = dz/(nsnz+1);
-    
-    T2 cell_upLeft = std::numeric_limits<T2>::max();
-    T2 cell_upRight = std::numeric_limits<T2>::max();
-    T2 cell_downLeft = 0;
-    T2 cell_downRight = 0;
-    
-    for ( T2 n=0, nc=0; nc<=nCellx; ++nc ) {
-        
-        double x = xmin + nc*dx;
-        
-        for ( T2 nr=0; nr<=nCellz; ++nr ) {
-            
-            double z = zmin + nr*dz;
-            
-            if ( nr < nCellz && nc < nCellx ) {
-                cell_downRight = nc*nCellz + nr;
-            }
-            else {
-                cell_downRight = std::numeric_limits<T2>::max();
-            }
-            
-            if ( nr > 0 && nc < nCellx ) {
-                cell_upRight = nc*nCellz + nr - 1;
-            }
-            else {
-                cell_upRight = std::numeric_limits<T2>::max();
-            }
-            
-            if ( nr < nCellz && nc > 0 ) {
-                cell_downLeft = (nc-1)*nCellz + nr;
-            }
-            else {
-                cell_downLeft = std::numeric_limits<T2>::max();
-            }
-            
-            if ( nr > 0 && nc > 0 ) {
-                cell_upLeft = (nc-1)*nCellz + nr - 1;
-            }
-            else {
-                cell_upLeft = std::numeric_limits<T2>::max();
-            }
-            
-            // primary nodes
-            //            std::cout << n << "\t p\t-\t" << x << '\t' << z
-            //            << "\t-\t" << cell_upLeft
-            //            << '\t' << cell_downLeft
-            //            << '\t' << cell_upRight
-            //            << '\t' << cell_downRight << '\n';
-            
-            if ( cell_upLeft != std::numeric_limits<T2>::max() ) {
-                nodes[n].pushOwner( cell_upLeft );
-            }
-            if ( cell_downLeft != std::numeric_limits<T2>::max() ) {
-                nodes[n].pushOwner( cell_downLeft );
-            }
-            if ( cell_upRight != std::numeric_limits<T2>::max() ) {
-                nodes[n].pushOwner( cell_upRight );
-            }
-            if ( cell_downRight != std::numeric_limits<T2>::max() ) {
-                nodes[n].pushOwner( cell_downRight );
-            }
-            
-            nodes[n].setX( x );
-            nodes[n].setZ( z );
-            nodes[n].setGridIndex( n );
-			nodes[n].setPrimary(5);
-            
-            ++n;
-            
-            // secondary nodes on the vertical
-            if ( nr < nCellz ) {
-                for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
-                    
-                    double zsv = zmin + nr*dz + (ns+1)*dzs;
-                    
-                    //                    std::cout << n << "\tsv\t-\t" << x << '\t' << zsv << "\t-\t"
-                    //                    << cell_downLeft << '\t' << cell_downRight << '\n';
-                    
-                    if ( cell_downLeft != std::numeric_limits<T2>::max() ) {
-                        nodes[n].pushOwner( cell_downLeft );
-                    }
-                    if ( cell_downRight != std::numeric_limits<T2>::max() ) {
-                        nodes[n].pushOwner( cell_downRight );
-                    }
-                    
-                    nodes[n].setX( x );
-                    nodes[n].setZ( zsv );
-                    nodes[n].setGridIndex( n );
-                }
-            }
-            
-            // secondary nodes on the horizontal
-            if ( nc < nCellx ) {
-                for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
-                    
-                    double xsh = xmin + nc*dx + (ns+1)*dxs;
-                    
-                    //                    std::cout << n << "\tsh\t-\t" << xsh << '\t' << z << "\t-\t"
-                    //                    << cell_upRight << '\t' << cell_downRight << '\n';
-                    
-                    if ( cell_upRight != std::numeric_limits<T2>::max() ) {
-                        nodes[n].pushOwner( cell_upRight );
-                    }
-                    if ( cell_downRight != std::numeric_limits<T2>::max() ) {
-                        nodes[n].pushOwner( cell_downRight );
-                    }
-                    
-                    nodes[n].setX( xsh );
-                    nodes[n].setZ( z );
-                    nodes[n].setGridIndex( n );
-                }
-            }
-            //            std::cout << '\n';
-        }
-        //        std::cout << '\n';
-    }
-}
-
-template<typename T1, typename T2>
-void Grid2Dri<T1,T2>::buildGridNeighbors() {
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::buildGridNeighbors() {
     for ( T2 n=0; n<nodes.size(); ++n ) {
         for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
             neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
@@ -357,49 +202,8 @@ void Grid2Dri<T1,T2>::buildGridNeighbors() {
     }
 }
 
-template<typename T1, typename T2>
-void Grid2Dri<T1,T2>::interpSlownessSecondary() {  // TODO : test this
-	
-	T1 dxs = dx/(nsnx+1);
-    T1 dzs = dz/(nsnz+1);
-    
-    for ( T2 n=0, nc=0; nc<=nCellx; ++nc ) {
-        
-        for ( T2 nr=0; nr<=nCellz; ++nr ) {
-            
-			T2 np1 = n;
-			T2 np2v = np1 + nsnx+nsnz;
-			T2 np2h = np1 + nCellz*nsnx + (nCellz-1)*nsnz;
-            
-            ++n;
-			
-            // secondary nodes on the vertical
-            if ( nr < nCellz ) {
-				T1 slope = (nodes[np2v].getNodeSlowness()-nodes[np1].getNodeSlowness())/dz;
-                for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
-                    
-                    T1 s = nodes[np1].getNodeSlowness() + slope * (ns+1)*dzs;
-                    
-                    nodes[n].setNodeSlowness( s );
-                }
-            }
-			
-            // secondary nodes on the horizontal
-            if ( nc < nCellx ) {
-				T1 slope = (nodes[np2h].getNodeSlowness()-nodes[np1].getNodeSlowness())/dx;
-                for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
-                    
-                    T1 s = nodes[np1].getNodeSlowness() + slope * (ns+1)*dxs;
-                    
-                    nodes[n].setNodeSlowness( s );
-                }
-            }
-        }
-    }
-}
-
-template<typename T1, typename T2>
-int Grid2Dri<T1,T2>::check_pts(const std::vector<sxz<T1>>& pts) const {
+template<typename T1, typename T2, typename NODE>
+int Grid2Dri<T1,T2,NODE>::check_pts(const std::vector<sxz<T1>>& pts) const {
     for (size_t n=0; n<pts.size(); ++n) {
         if ( pts[n].x < xmin || pts[n].x > xmax ||
             pts[n].z < zmin || pts[n].z > zmax ) {
@@ -412,510 +216,9 @@ int Grid2Dri<T1,T2>::check_pts(const std::vector<sxz<T1>>& pts) const {
 }
 
 
-template<typename T1, typename T2>
-void Grid2Dri<T1,T2>::initQueue(const std::vector<sxz<T1>>& Tx,
-								const std::vector<T1>& t0,
-								std::priority_queue<Node2Disp<T1,T2>*,
-								std::vector<Node2Disp<T1,T2>*>,
-								CompareNodePtr<T1>>& queue,
-								std::vector<Node2Disp<T1,T2>>& txNodes,
-								std::vector<bool>& inQueue,
-								std::vector<bool>& frozen,
-								const size_t threadNo) const {
-    
-    for (size_t n=0; n<Tx.size(); ++n) {
-        bool found = false;
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Tx[n] ) {
-                found = true;
-                nodes[nn].setTT( t0[n], threadNo );
-                queue.push( &(nodes[nn]) );
-                inQueue[nn] = true;
-                frozen[nn] = true;
-                break;
-            }
-        }
-        if ( found==false ) {
-            txNodes.push_back( Node2Disp<T1,T2>(t0[n], Tx[n], nThreads,
-												threadNo) );
-            // we belong to cell index no
-            txNodes.back().pushOwner( getCellNo(Tx[n]) );
-            txNodes.back().setGridIndex( static_cast<T2>(nodes.size()+
-														 txNodes.size()-1) );
-            
-            queue.push( &(txNodes.back()) );
-            inQueue.push_back( true );
-            frozen.push_back( true );
-        }
-    }
-}
 
-
-template<typename T1, typename T2>
-int Grid2Dri<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-							  const std::vector<T1>& t0,
-							  const std::vector<sxz<T1>>& Rx,
-							  std::vector<T1>& traveltimes,
-							  const size_t threadNo) const {
-    
-    if ( check_pts(Tx) == 1 ) return 1;
-    if ( check_pts(Rx) == 1 ) return 1;
-    
-    for ( size_t n=0; n<nodes.size(); ++n ) {
-        nodes[n].reinit( threadNo );
-    }
-    
-    CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Disp<T1,T2>*, std::vector<Node2Disp<T1,T2>*>,
-    CompareNodePtr<T1>> queue( cmp );
-    
-    std::vector<Node2Disp<T1,T2>> txNodes;
-    std::vector<bool> inQueue( nodes.size(), false );
-    std::vector<bool> frozen( nodes.size(), false );
-    
-    initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-    
-    propagate(queue, inQueue, frozen, threadNo);
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
-    
-    for (size_t n=0; n<Rx.size(); ++n) {
-        traveltimes[n] = getTraveltime(Rx[n], nodes, threadNo);
-    }
-    return 0;
-}
-
-template<typename T1, typename T2>
-int Grid2Dri<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-                              const std::vector<T1>& t0,
-                              const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                              std::vector<std::vector<T1>*>& traveltimes,
-                              const size_t threadNo) const {
-    if ( check_pts(Tx) == 1 ) return 1;
-    for ( size_t n=0; n<Rx.size(); ++n )
-        if ( check_pts(*Rx[n]) == 1 ) return 1;
-    
-    for ( size_t n=0; n<nodes.size(); ++n ) {
-        nodes[n].reinit( threadNo );
-    }
-    
-    CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Disp<T1,T2>*, std::vector<Node2Disp<T1,T2>*>,
-    CompareNodePtr<T1>> queue( cmp );
-    
-    std::vector<Node2Disp<T1,T2>> txNodes;
-    std::vector<bool> inQueue( nodes.size(), false );
-    std::vector<bool> frozen( nodes.size(), false );
-    
-    initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-    
-    propagate(queue, inQueue, frozen, threadNo);
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
-    
-    for (size_t nr=0; nr<Rx.size(); ++nr) {
-        traveltimes[nr]->resize( Rx[nr]->size() );
-        for (size_t n=0; n<Rx[nr]->size(); ++n)
-            (*traveltimes[nr])[n] = getTraveltime((*Rx[nr])[n], nodes, threadNo);
-    }
-    return 0;
-	
-}
-
-template<typename T1, typename T2>
-int Grid2Dri<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-							  const std::vector<T1>& t0,
-							  const std::vector<sxz<T1>>& Rx,
-							  std::vector<T1>& traveltimes,
-							  std::vector<std::vector<sxz<double>>>& r_data,
-							  const size_t threadNo) const {
-    
-    if ( check_pts(Tx) == 1 ) return 1;
-    if ( check_pts(Rx) == 1 ) return 1;
-    
-    for ( size_t n=0; n<nodes.size(); ++n ) {
-        nodes[n].reinit( threadNo );
-    }
-    
-    CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Disp<T1,T2>*, std::vector<Node2Disp<T1,T2>*>,
-    CompareNodePtr<T1>> queue( cmp );
-    std::vector<Node2Disp<T1,T2>> txNodes;
-    std::vector<bool> inQueue( nodes.size(), false );
-    std::vector<bool> frozen( nodes.size(), false );
-    
-    initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-    
-    propagate(queue, inQueue, frozen, threadNo);
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
-    if ( r_data.size() != Rx.size() ) {
-        r_data.resize( Rx.size() );
-    }
-    for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-        r_data[ni].resize( 0 );
-    }
-    T2 nodeParentRx;
-    T2 cellParentRx;
-    
-    for (size_t n=0; n<Rx.size(); ++n) {
-        
-        traveltimes[n] = getTraveltime(Rx[n], nodes, nodeParentRx, cellParentRx,
-									   threadNo);
-        
-        // Rx are in nodes (not txNodes)
-        std::vector<Node2Disp<T1,T2>> *node_p;
-        node_p = &nodes;
-        
-        std::vector<sxz<double>> r_tmp;
-        T2 iChild, iParent = nodeParentRx;
-        sxz<double> child;
-		
-        // store the son's coord
-        child.x = Rx[n].x;
-        child.z = Rx[n].z;
-        while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
- 			
-			r_tmp.push_back( child );
-			
-			// we now go up in time - parent becomes the child of grand'pa
-			iChild = iParent;
-			child.x = (*node_p)[iChild].getX();
-			child.z = (*node_p)[iChild].getZ();
-			
-			// grand'pa is now papa
-			iParent = (*node_p)[iChild].getNodeParent(threadNo);
-            if ( iParent >= nodes.size() ) {
-                node_p = &txNodes;
-                iParent -= nodes.size();
-            }
-            else {
-                node_p = &nodes;
-            }
-		}
-		
-		// parent is now at Tx
-		r_tmp.push_back( child );
-		
-		// finally, store Tx position
-		child.x = (*node_p)[iParent].getX();
-		child.z = (*node_p)[iParent].getZ();
-		r_tmp.push_back( child );
-		
-        // the order should be from Tx to Rx, so we reorder...
-        iParent = static_cast<T2>(r_tmp.size());
-        r_data[n].resize( r_tmp.size() );
-        for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
-        }
-    }
-    return 0;
-}
-
-template<typename T1, typename T2>
-int Grid2Dri<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-                              const std::vector<T1>& t0,
-                              const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                              std::vector<std::vector<T1>*>& traveltimes,
-                              std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
-                              const size_t threadNo) const {
-    
-    if ( check_pts(Tx) == 1 ) return 1;
-    for ( size_t n=0; n<Rx.size(); ++n )
-        if ( check_pts(*Rx[n]) == 1 ) return 1;
-    
-    for ( size_t n=0; n<nodes.size(); ++n ) {
-        nodes[n].reinit( threadNo );
-    }
-    
-    CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Disp<T1,T2>*, std::vector<Node2Disp<T1,T2>*>,
-    CompareNodePtr<T1>> queue( cmp );
-    
-    std::vector<Node2Disp<T1,T2>> txNodes;
-    std::vector<bool> inQueue( nodes.size(), false );
-    std::vector<bool> frozen( nodes.size(), false );
-    
-    initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-    
-    propagate(queue, inQueue, frozen, threadNo);
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
-    if ( r_data.size() != Rx.size() ) {
-        r_data.resize( Rx.size() );
-    }
-    
-    for (size_t nr=0; nr<Rx.size(); ++nr) {
-        
-        traveltimes[nr]->resize( Rx[nr]->size() );
-        r_data[nr]->resize( Rx[nr]->size() );
-        for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
-            (*r_data[nr])[ni].resize( 0 );
-        }
-        
-        T2 nodeParentRx;
-        T2 cellParentRx;
-        
-        for (size_t n=0; n<Rx[nr]->size(); ++n) {
-            
-            (*traveltimes[nr])[n] = getTraveltime((*Rx[nr])[n], nodes,
-                                                  nodeParentRx, cellParentRx,
-                                                  threadNo);
-            
-            bool flag=false;
-            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-                if ( (*Rx[nr])[n] == Tx[ns] ) {
-                    
-                    (*r_data[nr])[n].resize( 1 );
-                    (*r_data[nr])[n][0].x = (*Rx[nr])[n].x;
-                    (*r_data[nr])[n][0].z = (*Rx[nr])[n].z;
-                    
-                    flag = true;
-                    break;
-                }
-            }
-            if ( flag ) continue;
-            
-            // Rx are in nodes (not txNodes)
-            std::vector<Node2Disp<T1,T2>> *node_p;
-            node_p = &nodes;
-            
-            std::vector<sxz<T1>> r_tmp;
-            T2 iChild, iParent = nodeParentRx;
-            sxz<T1> child;
-            
-            // store the son's coord
-            child.x = (*Rx[nr])[n].x;
-            child.z = (*Rx[nr])[n].z;
-            while ( (*node_p)[iParent].getNodeParent(threadNo) !=
-                   std::numeric_limits<T2>::max() ) {
-                
-                r_tmp.push_back( child );
-                
-                // we now go up in time - parent becomes the child of grand'pa
-                iChild = iParent;
-                child.x = (*node_p)[iChild].getX();
-                child.z = (*node_p)[iChild].getZ();
-                
-                // grand'pa is now papa
-                iParent = (*node_p)[iChild].getNodeParent(threadNo);
-                if ( iParent >= nodes.size() ) {
-                    node_p = &txNodes;
-                    iParent -= nodes.size();
-                }
-                else {
-                    node_p = &nodes;
-                }
-            }
-            
-            // parent is now at Tx
-            r_tmp.push_back( child );
-            
-            // finally, store Tx position
-            child.x = (*node_p)[iParent].getX();
-            child.z = (*node_p)[iParent].getZ();
-            r_tmp.push_back( child );
-            
-            // the order should be from Tx to Rx, so we reorder...
-            iParent = static_cast<T2>(r_tmp.size());
-            (*r_data[nr])[n].resize( r_tmp.size() );
-            for ( size_t nn=0; nn<(*r_data[nr])[n].size(); ++nn ) {
-                (*r_data[nr])[n][nn].x = r_tmp[ iParent-1-nn ].x;
-                (*r_data[nr])[n][nn].z = r_tmp[ iParent-1-nn ].z;
-            }
-            
-        }
-    }
-    return 0;
-    
-}
-
-template<typename T1, typename T2>
-int Grid2Dri<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-							  const std::vector<T1>& t0,
-							  const std::vector<sxz<T1>>& Rx,
-							  std::vector<T1>& traveltimes,
-							  std::vector<std::vector<sxz<double>>>& r_data,
-							  std::vector<std::vector<siv<double>>>& l_data,
-							  const size_t threadNo) const {
-    
-    if ( check_pts(Tx) == 1 ) return 1;
-    if ( check_pts(Rx) == 1 ) return 1;
-    
-    for ( size_t n=0; n<nodes.size(); ++n ) {
-        nodes[n].reinit( threadNo );
-    }
-    
-    CompareNodePtr<T1> cmp(threadNo);
-    std::priority_queue< Node2Disp<T1,T2>*, std::vector<Node2Disp<T1,T2>*>,
-    CompareNodePtr<T1>> queue( cmp );
-    std::vector<Node2Disp<T1,T2>> txNodes;
-    std::vector<bool> inQueue( nodes.size(), false );
-    std::vector<bool> frozen( nodes.size(), false );
-    
-    initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-    
-    propagate(queue, inQueue, frozen, threadNo);
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
-    if ( l_data.size() != Rx.size() ) {
-        l_data.resize( Rx.size() );
-    }
-    for ( size_t ni=0; ni<l_data.size(); ++ni ) {
-        l_data[ni].resize( 0 );
-    }
-    if ( r_data.size() != Rx.size() ) {
-        r_data.resize( Rx.size() );
-    }
-    for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-        r_data[ni].resize( 0 );
-    }
-    T2 nodeParentRx;
-    T2 cellParentRx;
-    
-    for (size_t n=0; n<Rx.size(); ++n) {
-        
-        traveltimes[n] = getTraveltime(Rx[n], nodes, nodeParentRx, cellParentRx,
-									   threadNo);
-        
-        // Rx are in nodes (not txNodes)
-        std::vector<Node2Disp<T1,T2>> *node_p;
-        node_p = &nodes;
-        
-        std::vector<sxz<double>> r_tmp;
-        T2 iChild, iParent = nodeParentRx;
-        sxz<double> child;
-        siv<double> cell;
-		
-        // store the son's coord
-        child.x = Rx[n].x;
-        child.z = Rx[n].z;
-        cell.i = cellParentRx;
-        while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
- 			
-			r_tmp.push_back( child );
-			
-			cell.v = (*node_p)[iParent].getDistance( child );
-			bool found=false;
-			for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-				if ( l_data[n][nc].i == cell.i ) {
-					l_data[n][nc].v += cell.v;
-					found = true;
-				}
-			}
-			if ( found == false ) {
-				l_data[n].push_back( cell );
-			}
-			
-			// we now go up in time - parent becomes the child of grand'pa
-			iChild = iParent;
-			child.x = (*node_p)[iChild].getX();
-			child.z = (*node_p)[iChild].getZ();
-            cell.i = (*node_p)[iChild].getCellParent(threadNo);
-			
-			// grand'pa is now papa
-			iParent = (*node_p)[iChild].getNodeParent(threadNo);
-            if ( iParent >= nodes.size() ) {
-                node_p = &txNodes;
-                iParent -= nodes.size();
-            }
-            else {
-                node_p = &nodes;
-            }
-		}
-		
-		// parent is now at Tx
-		r_tmp.push_back( child );
-		
-		cell.v = (*node_p)[iParent].getDistance( child );
-		bool found=false;
-		for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-			if ( l_data[n][nc].i == cell.i ) {
-				l_data[n][nc].v += cell.v;
-				found = true;
-			}
-		}
-		if ( found == false ) {
-			l_data[n].push_back( cell );
-		}
-		
-		// finally, store Tx position
-		child.x = (*node_p)[iParent].getX();
-		child.z = (*node_p)[iParent].getZ();
-		r_tmp.push_back( child );
-		
-        //  must be sorted to build matrix L
-        sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
-        
-        // the order should be from Tx to Rx, so we reorder...
-        iParent = r_tmp.size();
-        r_data[n].resize( r_tmp.size() );
-        for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
-        }
-    }
-    return 0;
-}
-
-
-template<typename T1, typename T2>
-void Grid2Dri<T1,T2>::propagate( std::priority_queue<Node2Disp<T1,T2>*, std::vector<Node2Disp<T1,T2>*>,
-								CompareNodePtr<T1>>& queue,
-								std::vector<bool>& inQueue,
-								std::vector<bool>& frozen,
-								const size_t threadNo) const {
-    
-    while ( !queue.empty() ) {
-        const Node2Disp<T1,T2>* source = queue.top();
-        queue.pop();
-        inQueue[ source->getGridIndex() ] = false;
-        
-        for ( size_t no=0; no<source->getOwners().size(); ++no ) {
-            
-            T2 cellNo = source->getOwners()[no];
-            
-            for ( size_t k=0; k< neighbors[cellNo].size(); ++k ) {
-                T2 neibNo = neighbors[cellNo][k];
-                if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
-                    continue;
-                }
-                
-                // compute dt
-                T1 dt = computeDt(*source, nodes[neibNo]);
-				
-                if ( source->getTT(threadNo)+dt < nodes[neibNo].getTT(threadNo) ) {
-                    nodes[neibNo].setTT( source->getTT(threadNo)+dt, threadNo );
-                    nodes[neibNo].setnodeParent( source->getGridIndex(), threadNo );
-                    nodes[neibNo].setCellParent( cellNo, threadNo );
-                    
-                    if ( !inQueue[neibNo] ) {
-                        queue.push( &(nodes[neibNo]) );
-                        inQueue[neibNo] = true;
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-
-
-
-template<typename T1, typename T2>
-bool Grid2Dri<T1,T2>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
+template<typename T1, typename T2, typename NODE>
+bool Grid2Dri<T1,T2,NODE>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
     bool c = false;
     for (size_t i = 0, j = N-1; i < N; j = i++) {
         if ((((poly[i].z <= p.z) && (p.z < poly[j].z)) ||
@@ -927,9 +230,9 @@ bool Grid2Dri<T1,T2>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const si
 }
 
 
-template<typename T1, typename T2>
-T1 Grid2Dri<T1,T2>::getTraveltime(const sxz<T1>& Rx,
-								  const std::vector<Node2Disp<T1,T2>>& nodes,
+template<typename T1, typename T2, typename NODE>
+T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+								  const std::vector<NODE>& nodes,
 								  const size_t threadNo) const {
     
     for ( size_t nn=0; nn<nodes.size(); ++nn ) {
@@ -954,9 +257,9 @@ T1 Grid2Dri<T1,T2>::getTraveltime(const sxz<T1>& Rx,
 }
 
 
-template<typename T1, typename T2>
-T1 Grid2Dri<T1,T2>::getTraveltime(const sxz<T1>& Rx,
-								  const std::vector<Node2Disp<T1,T2>>& nodes,
+template<typename T1, typename T2, typename NODE>
+T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+								  const std::vector<NODE>& nodes,
 								  T2& nodeParentRx, T2& cellParentRx,
 								  const size_t threadNo) const {
     
@@ -986,18 +289,588 @@ T1 Grid2Dri<T1,T2>::getTraveltime(const sxz<T1>& Rx,
     return traveltime;
 }
 
-//template<typename T1, typename T2>
-//void Grid2Dri<T1,T2>::save(const char filename[]) const {
-//	std::ofstream fout( filename );
-//	
-//	fout << dx << ' ' << dz << ' ' << xmin << ' ' << zmin << ' ' << xmax << ' ' << zmax << '\n';
-//	fout << nCellx << ' ' << nCellz << ' ' << nsnx << ' ' << nsnz << ' ' << nsgx << ' ' << nsgz << '\n';
-//	fout << nodes.size() << '\n';
-//	for ( size_t n=0; n < nodes.size(); ++n ) {
-//		fout << nodes[n].getNodeSlowness() << '\n';
-//	}
-//	fout.close();
-//}
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
+                                  const size_t nt,
+                                  const bool vtkFormat) const {
+    
+    if (vtkFormat) {
+#ifdef VTK
 
+        std::string filename = fname+".vtr";
+        int nn[3] = {static_cast<int>(nCellx+1), 1, static_cast<int>(nCellz+1)};
+        
+        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[0]; ++n)
+            xCoords->InsertNextValue( xmin + n*dx );
+        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        yCoords->InsertNextValue( 0.0 );
+        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[2]; ++n)
+            zCoords->InsertNextValue( zmin + n*dz );
+        
+        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
+        rgrid->SetDimensions( nn );
+        rgrid->SetXCoordinates(xCoords);
+        rgrid->SetYCoordinates(yCoords);
+        rgrid->SetZCoordinates(zCoords);
+
+        
+        vtkSmartPointer<vtkDoubleArray> newScalars =
+        vtkSmartPointer<vtkDoubleArray>::New();
+        
+        newScalars->SetName("Travel time");
+        newScalars->SetNumberOfComponents(1);
+        newScalars->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
+        
+        
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+                vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
+                newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+        }
+        rgrid->GetPointData()->SetScalars(newScalars);
+        
+        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
+        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+        
+        writer->SetFileName( filename.c_str() );
+        writer->SetInputData( rgrid );
+        writer->SetDataModeToBinary();
+        writer->Update();
+#else
+        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
+#endif
+    } else {
+        std::ofstream fout(fname.c_str());
+        fout.precision(12);
+        for ( T2 n=0; n<nodes.size(); ++n ) {
+            fout << nodes[n].getX() << '\t'
+            << nodes[n].getZ() << '\t'
+            << nodes[n].getTT(nt) << '\n';
+        }
+        fout.close();
+    }
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::grad(sxz<T1>& g, const size_t i, const size_t j,
+                                const size_t nt) const {
+    // compute average gradient for cell (i,j)
+    
+    static const size_t nnz = nCellz+1;
+    
+    g.x = 0.5*(( nodes[(i+1)*nnz+j].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
+               ( nodes[    i*nnz+j].getTT(nt)+nodes[    i*nnz+j+1].getTT(nt) ))/dx;
+    g.z = 0.5*(( nodes[i*nnz+j+1].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
+               ( nodes[i*nnz+j  ].getTT(nt)+nodes[(i+1)*nnz+j  ].getTT(nt) ))/dz;
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
+                                      const sxz<T1> &Rx,
+                                      std::vector<sxz<T1>> &r_data,
+                                      const size_t threadNo) const {
+    
+    r_data.push_back( Rx );
+    
+    for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+        if ( Rx == Tx[ns] ) {
+            return;
+        }
+    }
+    
+    std::vector<bool> txOnNode( Tx.size(), false );
+    std::vector<T2> txNode( Tx.size() );
+    std::vector<T2> txCell( Tx.size() );
+    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == Tx[nt] ) {
+                txOnNode[nt] = true;
+                txNode[nt] = nn;
+                break;
+            }
+        }
+    }
+    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+        if ( !txOnNode[nt] ) {
+            txCell[nt] = getCellNo( Tx[nt] );
+        }
+    }
+
+	long long int iIn, jIn, iOut, jOut; // iOut, jOut for cell we are exiting; iIn, jIn for cell we are entering
+    sxz<T1> curr_pt( Rx );
+    sxz<T1> gOut;
+    
+    // distance between opposite nodes of a cell
+    static const T1 maxDist = sqrt( dx*dx + dz*dz );
+    
+    bool onNode=false;
+    if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+        onNode = true;
+    }
+
+    if ( !onNode ) {
+		
+		// go to first edge
+		T2 i, j;
+		getIJ(curr_pt, i, j);
+		iOut = i;
+		jOut = j;
+		grad( gOut, iOut, jOut, threadNo );
+        gOut *= -1.0;
+        
+		T1 theta = atan2( gOut.z, gOut.x );
+		
+		if ( theta > pi/2. ) {
+			T1 x1 = xmin+iOut*dx;
+			T1 ddx = curr_pt.x - x1;
+            if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; } // we are on the rightmost edge
+			T1 ddz = ddx*gOut.z/gOut.x;    // ratio is negative
+			T1 z1 = curr_pt.z - ddz;
+			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+
+			T1 z2 = zmin+(jOut+1)*dz;
+			ddz = z2 - curr_pt.z;
+            if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; }
+			ddx = ddz*gOut.x/gOut.z;
+			T1 x2 = curr_pt.x + ddx;
+			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+
+			if ( d1 <= d2 ) {
+				curr_pt.x = x1;
+				curr_pt.z = z1;
+				iIn = iOut-1;
+				jIn = jOut;
+			} else {
+				curr_pt.x = x2;
+				curr_pt.z = z2;
+				iIn = iOut;
+				jIn = jOut+1;
+			}
+		} else if ( theta > 0. ) {
+			T1 x1 = xmin+(iOut+1)*dx;
+			T1 ddx = x1 - curr_pt.x;
+            if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; }
+			T1 ddz = ddx*gOut.z/gOut.x;
+			T1 z1 = curr_pt.z + ddz;
+			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+			
+			T1 z2 = zmin+(jOut+1)*dz;
+			ddz = z2 - curr_pt.z;
+            if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; }
+			ddx = ddz*gOut.x/gOut.z;
+			T1 x2 = curr_pt.x + ddx;
+			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+			
+			if ( d1 <= d2 ) {
+				curr_pt.x = x1;
+				curr_pt.z = z1;
+				iIn = iOut+1;
+				jIn = jOut;
+			} else {
+				curr_pt.x = x2;
+				curr_pt.z = z2;
+				iIn = iOut;
+				jIn = jOut+1;
+			}
+		} else if ( theta > -pi/2. ) {
+			T1 x1 = xmin+(iOut+1)*dx;
+			T1 ddx = x1 - curr_pt.x;
+            if ( ddx == 0.0 ) { x1 += dx; ddx = x1 = curr_pt.x; }
+			T1 ddz = ddx*gOut.z/gOut.x;  // ratio is negative
+			T1 z1 = curr_pt.z + ddz;
+			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+			
+			T1 z2 = zmin+jOut*dz;
+			ddz = curr_pt.z - z2;
+            if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; }
+			ddx = ddz*gOut.x/gOut.z;
+			T1 x2 = curr_pt.x - ddx;
+			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+			
+			if ( d1 <= d2 ) {
+				curr_pt.x = x1;
+				curr_pt.z = z1;
+				iIn = iOut+1;
+				jIn = jOut;
+			} else {
+				curr_pt.x = x2;
+				curr_pt.z = z2;
+				iIn = iOut;
+				jIn = jOut-1;
+			}
+
+		} else {
+			T1 x1 = xmin+iOut*dx;
+			T1 ddx = curr_pt.x - x1;
+            if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; }
+			T1 ddz = ddx*gOut.z/gOut.x;
+			T1 z1 = curr_pt.z - ddz;
+			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+
+			T1 z2 = zmin+jOut*dz;
+			ddz = curr_pt.z - z2;
+            if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; }
+			ddx = ddz*gOut.x/gOut.z;
+			T1 x2 = curr_pt.x - ddx;
+			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+			
+			if ( d1 <= d2 ) {
+				curr_pt.x = x1;
+				curr_pt.z = z1;
+				iIn = iOut-1;
+				jIn = jOut;
+			} else {
+				curr_pt.x = x2;
+				curr_pt.z = z2;
+				iIn = iOut;
+				jIn = jOut-1;
+			}
+		}
+		
+		if ( iIn<0 || iIn>nCellx || jIn<0 || jIn>nCellz ) {
+			//  we are going oustide the grid!
+			std::cerr << "Error while computing raypaths: going outside grid!\n"
+			<< "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+			return;
+		}
+		
+		r_data.push_back( curr_pt );
+        
+        // are we close enough to one the of Tx nodes ?
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                r_data.push_back( Tx[ns] );
+                return;
+            }
+        }
+        
+		onNode = false;
+        if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+            onNode = true;
+        }
+		
+    }
+	
+    bool reachedTx = false;
+    while ( reachedTx == false ) {
+        
+        if ( onNode ) {
+            
+            // compute average gradient
+            T2 i, j;
+            getIJ(curr_pt, i, j);
+            std::vector<sij<T2>> cells;
+            
+            // find cells touching node
+            if ( i<=nCellx && j<=nCellz )
+                cells.push_back( {i, j} );
+            if ( i>0 && j<=nCellz )
+                cells.push_back( {i-1, j} );
+            if ( i<=nCellx && j>0 )
+                cells.push_back( {i, j-1} );
+            if ( i>0 && j>0 )
+                cells.push_back( {i-1, j-1} );
+            
+            gOut = static_cast<T1>(0.0);
+            sxz<T1> g;
+            T2 nc;
+            for ( nc=0; nc<cells.size(); ++nc ) {
+                grad( g, cells[nc].i, cells[nc].j, threadNo );
+                g *= -1.0;
+                gOut += g;
+            }
+            gOut /= nc;  // ag holds average grad
+            
+            
+            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==nCellx+1) ||
+                (gOut.z<0.0 && j==0) || (gOut.z>0.0 && j==nCellz+1)) {
+                //  we are going oustide the grid!
+                std::cerr << "Error while computing raypaths: going outside grid!\n"
+                          << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                return;
+            }
+            
+            
+            T1 theta = atan2( gOut.z, gOut.x );
+            
+            if ( gOut.z==0.0 && gOut.x<0.0 ) {          // toward node i-1, j
+                curr_pt.x -= dx;
+                r_data.push_back( curr_pt );
+                onNode = true;
+                
+            } else if ( theta>pi/2.0 ) {                // toward cell i-1, j
+				iOut = i-1;
+				jOut = j;
+                if ( gOut.z/gOut.x > -dz/dx ) {  // ratio is negative
+                    curr_pt.x -= dx;
+                    curr_pt.z += dx*sin(pi-theta);
+                    r_data.push_back( curr_pt );
+					iIn = iOut - 1;
+					jIn = jOut;
+                    onNode = false;
+                } else if ( gOut.z/gOut.x < -dz/dx ) {
+                    curr_pt.x -= dz*sin(theta-pi/2.0);
+                    curr_pt.z += dz;
+					iIn = iOut;
+					jIn = jOut + 1;
+                    onNode = false;
+                } else { // gOut.z/gOut.x == dz/dx   ->    toward node i-1, j+1
+                    curr_pt.x -= dx;
+                    curr_pt.z += dz;
+                    r_data.push_back( curr_pt );
+                    onNode = true;
+                }
+                
+            } else if ( gOut.z>0.0 && gOut.x==0.0 ) {   // toward node i, j+1
+                curr_pt.z += dz;
+                r_data.push_back( curr_pt );
+                onNode = true;
+                
+            } else if ( theta>0.0 ) {                   // toward cell i, j
+				iOut = i;
+				jOut = j;
+				if ( gOut.z/gOut.x < dz/dx ) {  // ratio is positive
+					curr_pt.x += dx;
+					curr_pt.z += dx*sin(theta);
+					r_data.push_back( curr_pt );
+					iIn = iOut + 1;
+					jIn = jOut;
+					onNode = false;
+				} else if ( gOut.z/gOut.x > dz/dx ) {
+					curr_pt.x += dz*sin(pi/2.-theta);
+					curr_pt.z += dz;
+					r_data.push_back( curr_pt );
+					iIn = iOut;
+					jIn = jOut + 1;
+					onNode = false;
+				} else { // gOut.z/gOut.x == dz/dx   ->    toward node i+1, j+1
+					curr_pt.x += dx;
+					curr_pt.z += dz;
+					r_data.push_back( curr_pt );
+					onNode = true;
+				}
+				
+            } else if ( gOut.z==0.0 && gOut.x>0.0 ) {   // toward node i+1, j
+                curr_pt.x += dx;
+                r_data.push_back( curr_pt );
+                onNode = true;
+                
+            } else if ( theta>-pi/2.0 ) {               // toward cell i, j-1
+				iOut = i;
+				jOut = j-1;
+				if ( gOut.z/gOut.x > -dz/dx ) {  // ratio is negative
+					curr_pt.x += dx;
+					curr_pt.z -= dx*sin(-theta);
+					r_data.push_back( curr_pt );
+					iIn = iOut + 1;
+					jIn = jOut;
+					onNode = false;
+				} else if ( gOut.z/gOut.x < -dz/dx ) {
+					curr_pt.x += dz*sin(pi/2.+theta);
+					curr_pt.z -= dz;
+					r_data.push_back( curr_pt );
+					iIn = iOut;
+					jIn = jOut - 1;
+					onNode = false;
+				} else { // gOut.z/gOut.x == dz/dx   ->    toward node i+1, j-1
+					curr_pt.x += dx;
+					curr_pt.z -= dz;
+					r_data.push_back( curr_pt );
+					onNode = true;
+				}
+                
+            } else if ( gOut.z<0.0 && gOut.x==0.0 ) {   // toward node i, j-1
+                curr_pt.z -= dz;
+                r_data.push_back( curr_pt );
+                onNode = true;
+                
+            } else {                                    // toward cell i-1, j-1
+				iOut = i-1;
+				jOut = j-1;
+				if ( gOut.z/gOut.x < dz/dx ) {  // ratio is positive
+					curr_pt.x -= dx;
+					curr_pt.z -= dx*sin(pi+theta);
+					r_data.push_back( curr_pt );
+					iIn = iOut - 1;
+					jIn = jOut;
+					onNode = false;
+				} else if ( gOut.z/gOut.x > dz/dx ) {
+					curr_pt.x -= dz*sin(-pi/2.0-theta);
+					curr_pt.z -= dz;
+					r_data.push_back( curr_pt );
+					iIn = iOut;
+					jIn = jOut - 1;
+					onNode = false;
+				} else { // gOut.z/gOut.x == dz/dx   ->    toward node i-1, j-1
+					curr_pt.x -= dx;
+					curr_pt.z -= dz;
+					r_data.push_back( curr_pt );
+					onNode = true;
+				}
+            }
+            
+		} else { // not on node, must be on an edge
+            
+            sxz<T1> gIn;
+            grad( gIn, iIn, jIn, threadNo );
+            gIn *= -1.0;
+            T1 theta = atan2( gIn.z, gIn.x );
+
+            if ( iIn == iOut && jIn == jOut ) {
+                // ray is returning to cell it was exiting
+                // we might be at grazing incidence
+                // check if gIn is significantly different from gOut
+                
+                T1 thetaOut = atan2( gOut.z, gOut.x );
+                if ( fabs(theta-thetaOut) < pi/180. ) {
+                    // less that 1 degree difference, OK
+                    gOut = gIn;
+                } else {
+                    std::cerr << "Error while computing raypaths: raypath not converging!\n"
+                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                    return;
+                }
+            }
+            
+            if ( theta > pi/2.0 ) {
+                T1 x1 = xmin+iIn*dx;
+                T1 ddx = curr_pt.x - x1;
+                if ( ddx == 0 ) { x1 -= dx; ddx = curr_pt.x - x1; iIn--; }
+                T1 ddz = ddx*gIn.z/gIn.x;    // ratio is negative
+                T1 z1 = curr_pt.z - ddz;
+                T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                
+                T1 z2 = zmin+(jIn+1)*dz;
+                ddz = z2 - curr_pt.z;
+                if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; jIn++; }
+                ddx = ddz*gIn.x/gIn.z;
+                T1 x2 = curr_pt.x + ddx;
+                T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                
+                if ( d1 <= d2 ) {
+                    curr_pt.x = x1;
+                    curr_pt.z = z1;
+                    iOut = iIn;
+                    jOut = jIn;
+                    iIn--;
+                } else {
+                    curr_pt.x = x2;
+                    curr_pt.z = z2;
+                    iOut = iIn;
+                    jOut = jIn;
+                    jIn++;
+                }
+
+            } else if ( theta > 0. ) {
+                T1 x1 = xmin+(iIn+1)*dx;
+                T1 ddx = x1 - curr_pt.x;
+                if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; iIn++; }
+                T1 ddz = ddx*gIn.z/gIn.x;
+                T1 z1 = curr_pt.z + ddz;
+                T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                
+                T1 z2 = zmin+(jIn+1)*dz;
+                ddz = z2 - curr_pt.z;
+                if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; jIn++; }
+                ddx = ddz*gIn.x/gIn.z;
+                T1 x2 = curr_pt.x + ddx;
+                T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                
+                if ( d1 <= d2 ) {
+                    curr_pt.x = x1;
+                    curr_pt.z = z1;
+                    iOut = iIn;
+                    jOut = jIn;
+                    iIn++;
+                } else {
+                    curr_pt.x = x2;
+                    curr_pt.z = z2;
+                    iOut = iIn;
+                    jOut = jIn;
+                    jIn++;
+                }
+                
+            } else if ( theta > -pi/2. ) {
+                T1 x1 = xmin+(iIn+1)*dx;
+                T1 ddx = x1 - curr_pt.x;
+                if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; iIn++; }
+                T1 ddz = ddx*gIn.z/gIn.x;  // ratio is negative
+                T1 z1 = curr_pt.z + ddz;
+                T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                
+                T1 z2 = zmin+jIn*dz;
+                ddz = curr_pt.z - z2;
+                if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; jIn--; }
+                ddx = ddz*gIn.x/gIn.z;
+                T1 x2 = curr_pt.x - ddx;
+                T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                
+                if ( d1 <= d2 ) {
+                    curr_pt.x = x1;
+                    curr_pt.z = z1;
+                    iOut = iIn;
+                    jOut = jIn;
+                    iIn++;
+                } else {
+                    curr_pt.x = x2;
+                    curr_pt.z = z2;
+                    iOut = iIn;
+                    jOut = jIn;
+                    jIn--;
+                }
+                
+            } else {
+                T1 x1 = xmin+iIn*dx;
+                T1 ddx = curr_pt.x - x1;
+                if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; iIn--; }
+                T1 ddz = ddx*gIn.z/gIn.x;
+                T1 z1 = curr_pt.z - ddz;
+                T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                
+                T1 z2 = zmin+jIn*dz;
+                ddz = curr_pt.z - z2;
+                if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; jIn--; }
+                ddx = ddz*gIn.x/gIn.z;
+                T1 x2 = curr_pt.x - ddx;
+                T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                
+                if ( d1 <= d2 ) {
+                    curr_pt.x = x1;
+                    curr_pt.z = z1;
+                    iOut = iIn;
+                    jOut = jIn;
+                    iIn--;
+                } else {
+                    curr_pt.x = x2;
+                    curr_pt.z = z2;
+                    iOut = iIn;
+                    jOut = jIn;
+                    jIn--;
+                }
+            }
+            
+            onNode = false;
+            if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+                    onNode = true;
+            }
+            
+            gOut = gIn;
+            
+        }
+        
+        r_data.push_back( curr_pt );
+        
+//        std::cout << curr_pt.x << '\t' << curr_pt.z << '\t' << iIn << '\t' << jIn << '\t' << iOut << '\t' << jOut << '\n';
+        
+        // are we close enough to one the of Tx nodes ?
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                r_data.push_back( Tx[ns] );
+                reachedTx = true;
+            }
+        }
+    }
+}
 
 #endif

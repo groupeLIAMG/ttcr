@@ -40,16 +40,18 @@
 #include <vtkXMLRectilinearGridReader.h>
 #endif
 
-#include "Grid2Drc.h"
-#include "Grid2Dri.h"
+#include "Grid2Drcfs.h"
+#include "Grid2Drcsp.h"
+#include "Grid2Drifs.h"
+#include "Grid2Drisp.h"
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
 #include "Grid2Duifm.h"
 #include "Grid2Duifs.h"
 #include "Grid2Duisp.h"
-#include "Grid3Drc.h"
-#include "Grid3Dri.h"
+#include "Grid3Drcsp.h"
+#include "Grid3Drisp.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
@@ -166,9 +168,9 @@ Grid3Dr<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt)
 			
 		}
 		if ( foundSlowness ) {
-			if ( par.verbose ) { std::cout << "Building grid (Grid3Dri) ... "; std::cout.flush(); }
+			if ( par.verbose ) { std::cout << "Building grid (Grid3Drisp) ... "; std::cout.flush(); }
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid3Dri<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+			g = new Grid3Drisp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
 										  d[0], d[1], d[2],
 										  xrange[0], yrange[0], zrange[0],
 										  par.nn[0], par.nn[1], par.nn[2],
@@ -226,12 +228,12 @@ Grid3Dr<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt)
 			}
 		}
 		if ( foundSlowness ) {
-			if ( par.verbose ) { std::cout << "Building grid (Grid3Drc) ... "; std::cout.flush(); }
+			if ( par.verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
 			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid3Drc<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-										  d[0], d[1], d[2],
-										  xrange[0], yrange[0], zrange[0],
-										  par.nn[0], par.nn[1], par.nn[2], nt);
+			g = new Grid3Drcsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2], nt);
 			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
 			if ( par.verbose ) {
                 std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -660,10 +662,223 @@ Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
 
 }
 
+template<typename T>
+Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
+{
+    
+    ifstream fin;
+    fin.open( par.modelfile.c_str() );
+    
+    if ( !fin.is_open() ) {
+        std::cerr << "Cannot open " << par.modelfile << std::endl;
+        exit(1);
+    }
+    
+    char value[100];
+    char parameter[200];
+    std::string param;
+    std::istringstream sin( value );
+    
+    int ncells[3], nnodes[3];
+    double d[3], min[3], max[3];
+
+    while (!fin.eof()) {
+        fin.get(value, 100, '#');
+        if (strlen(value) == 0) {
+            fin.clear();
+            fin.getline(parameter, 200);
+            continue;
+        }
+        fin.get(parameter, 200, ',');
+        param = parameter;
+        
+        if (param.find("number of cells") < 200) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            int val;
+            size_t n=0;
+            while ( sin >> val && n<3 ) {
+                ncells[n++] = val;
+            }
+            if ( n == 1 ) ncells[1] = ncells[2] = ncells[0];
+        }
+        
+        else if (param.find("size of cells") < 200) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            double val;
+            size_t n=0;
+            while ( sin >> val && n<3 ) {
+                d[n++] = val;
+            }
+            if ( n == 1 ) d[1] = d[2] = d[0];
+        }
+        
+        else if (param.find("origin of grid") < 200) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            double val;
+            size_t n=0;
+            while ( sin >> val && n<3 ) {
+                min[n++] = val;
+            }
+            if ( n == 1 ) min[1] = min[2] = min[0];
+        }
+        
+        fin.getline(parameter, 200);
+    }
+    fin.close();
+    
+    if ( ncells[1]>0 ) {
+        std::cerr << "Error - model is not 2D\n";
+        abort();
+    }
+    nnodes[0] = ncells[0]+1;
+    nnodes[1] = ncells[1]+1;
+    nnodes[2] = ncells[2]+1;
+    
+    max[0] = min[0] + ncells[0]*d[0];
+    max[1] = min[1] + ncells[1]*d[1];
+    max[2] = min[2] + ncells[2]*d[2];
+    
+    size_t nNodes = nnodes[0] * nnodes[2];
+    std::vector<T> slowness( ncells[0]*ncells[2] );
+    
+    bool constCells = true;
+    if ( !par.slofile.empty() ) {
+        
+        std::ifstream fin(par.slofile.c_str());
+        if ( !fin ) {
+            std::cout << "Error: cannot open file " << par.slofile << std::endl;
+            exit ( -1);
+        }
+        std::vector<T> tmp;
+        T dtmp;
+        fin >> dtmp;
+        while ( fin ) {
+            tmp.push_back( dtmp );
+            fin >> dtmp;
+        }
+        fin.close();
+        if ( tmp.size() != slowness.size() ) {
+            if ( tmp.size() == nNodes ) {
+                slowness.resize( nNodes );
+                constCells = false;
+            } else {
+                std::cerr << "Error: slowness file should contain " << slowness.size()
+                << " values.\nAborting." << std::endl;
+                abort();
+            }
+        }
+        for ( size_t n=0; n<slowness.size(); ++n ) {
+            slowness[n] = tmp[n];
+        }
+        
+    } else {
+        std::cerr << "Error: slowness file should be defined.\nAborting." << std::endl;
+        abort();
+    }
+    
+    
+    if ( par.verbose ) {
+        
+        std::cout << "Reading model file " << par.modelfile
+        << "\n  Rectilinear grid in file has"
+        << "\n    " << nnodes[0]*nnodes[2] << " nodes"
+        << "\n    " << ncells[0]*ncells[2] << " cells"
+        << "\n    (size: " << nnodes[0] << " x " << nnodes[1] << " x " << nnodes[2] << ')'
+        << "\n  Dim\tmin\tmax\tinc.\t N. sec nodes"
+        << "\n   X\t" << min[0] << '\t' << max[0] << '\t' << d[0] << "\t\t" << par.nn[0]
+        << "\n   Y\t" << min[1] << '\t' << max[1] << '\t' << d[1] << "\t\t" << par.nn[1]
+        << "\n   Z\t" << min[2] << '\t' << max[2] << '\t' << d[2] << "\t\t" << par.nn[2]
+        << std::endl;
+
+        if ( constCells )
+            std::cout << "\n  Grid has cells of constant slowness";
+        else
+            std::cout << "\n  Grid has slowness defined at nodes";
+        std::cout << std::endl;
+    }
+    
+    std::chrono::high_resolution_clock::time_point begin, end;
+    Grid2D<T,uint32_t,sxz<T>> *g=nullptr;
+    switch (par.method) {
+        case SHORTEST_PATH:
+        {
+            if ( par.verbose ) {
+                std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                std::cout.flush();
+            }
+            if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+            if ( constCells )
+                g = new Grid2Drcsp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                                              min[0], min[0],
+                                              par.nn[0], par.nn[2],
+                                              nt);
+            else
+                g = new Grid2Drisp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                                                min[0], min[0],
+                                                par.nn[0], par.nn[2],
+                                                nt);
+            if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+            if ( par.verbose ) {
+                std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                << "\n";
+                std::cout.flush();
+            }
+            
+            break;
+        }
+        case FAST_MARCHING:
+        {
+            std::cerr << "Error: fast marching method not yet implemented for 2D rectilinear grids\n";
+            std::cerr.flush();
+            return nullptr;
+            break;
+        }
+        case FAST_SWEEPING:
+        {
+            if ( par.verbose ) {
+                std::cout << "Creating grid ... ";
+                std::cout.flush();
+            }
+            if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+            if ( constCells ) {
+                g = new Grid2Drcfs<T, uint32_t>(ncells[0], ncells[2], d[0],
+                                                min[0], min[0], par.epsilon,
+                                                par.nitermax, nt);
+            }
+            else
+                g = new Grid2Drifs<T, uint32_t>(ncells[0], ncells[2], d[0],
+                                                min[0], min[0], par.epsilon,
+                                                par.nitermax, nt);
+            
+            if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+            if ( par.verbose ) {
+                std::cout << "done.\n";
+                std::cout.flush();
+            }
+            
+            break;
+        }
+        default:
+            break;
+    }
+    if ( par.time ) {
+        std::cout.precision(12);
+        std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+    }
+    std::cout.flush();
+    
+    if ( 1 == (g->setSlowness(slowness)) ) {
+        delete g;
+        return nullptr;
+    }
+    
+    return g;
+}
+
 
 #ifdef VTK
 template<typename T>
-Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
+Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t nt)
 {
     Grid2D<T,uint32_t,sxz<T>> *g = nullptr;
 	vtkRectilinearGrid *dataSet;
@@ -751,28 +966,69 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
 			}
 		}
 		if ( foundSlowness ) {
-			if ( par.verbose ) { std::cout << "Building grid (Grid2Dri) ... "; std::cout.flush(); }
-			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Dri<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
-												xrange[0], zrange[0],
-												par.nn[0], par.nn[2],
-												nt);
-			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-			if ( par.verbose ) {
-                std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
-                << "\nAssigning slowness at grid nodes ... ";
-                std::cout.flush();
+            switch ( par.method ) {
+                case SHORTEST_PATH:
+                {
+                    if ( par.verbose ) { std::cout << "Building grid (Grid2Drisp) ... "; std::cout.flush(); }
+                    if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                    g = new Grid2Drisp<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                                                   xrange[0], zrange[0],
+                                                   par.nn[0], par.nn[2],
+                                                   nt);
+                    if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                    if ( par.verbose ) {
+                        std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                        << "\nAssigning slowness at grid nodes ... ";
+                        std::cout.flush();
+                    }
+                    g->setSlowness( slowness );
+                    if ( par.verbose ) std::cout << "done.\n";
+                    if ( par.time ) {
+                        std::cout.precision(12);
+                        std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                    }
+                }
+                case FAST_SWEEPING:
+                {
+                    if ( d[0] != d[2] ) {
+                        std::cerr << "Error: fast sweeping method requires square cells\n";
+                        std::cerr.flush();
+                        return nullptr;
+                    }
+                    
+                    if ( par.verbose ) { std::cout << "Building grid (Grid2Drifs) ... "; std::cout.flush(); }
+                    if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                    g = new Grid2Drifs<T,uint32_t>(ncells[0], ncells[2], d[0],
+                                                   xrange[0], zrange[0], par.epsilon,
+                                                   par.nitermax, nt);
+                    if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                    if ( par.verbose ) {
+                        std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                        << "\nAssigning slowness at grid nodes ... ";
+                        std::cout.flush();
+                    }
+                    g->setSlowness( slowness );
+                    if ( par.verbose ) std::cout << "done.\n";
+                    if ( par.time ) {
+                        std::cout.precision(12);
+                        std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                    }
+
+                }
+                case FAST_MARCHING:
+                {
+                    std::cerr << "Error: fast marching method not yet implemented for 2D rectilinear grids\n";
+                    std::cerr.flush();
+                    return nullptr;
+                }
+                    
+                default:
+                    break;
             }
-			g->setSlowness( slowness );
-			if ( par.verbose ) std::cout << "done.\n";
-			if ( par.time ) {
-				std::cout.precision(12);
-				std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
-			}
         } else {
-			return 0;
-		}
-		
+            return nullptr;
+        }
+        
 	} else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
 		cd->HasArray("Slowness") ) {
         
@@ -808,25 +1064,68 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
 			}
 		}
 		if ( foundSlowness ) {
-			if ( par.verbose ) { cout << "Building grid (Grid2Drc) ... "; cout.flush(); }
-			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid2Drc<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
-										  xrange[0], zrange[0],
-                                          par.nn[0], par.nn[2], nt);
-			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-			if ( par.verbose ) {
-                cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
-                << "\nAssigning slowness at grid cells ... ";
+            switch ( par.method ) {
+                case SHORTEST_PATH:
+                {
+                    if ( par.verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
+                    if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                    g = new Grid2Drcsp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                                                  xrange[0], zrange[0],
+                                                  par.nn[0], par.nn[2], nt);
+                    if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                    if ( par.verbose ) {
+                        cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                        << "\nAssigning slowness at grid cells ... ";
+                    }
+                    g->setSlowness( slowness );
+                    if ( par.verbose ) cout << "done.\n";
+                    if ( par.time ) {
+                        std::cout.precision(12);
+                        std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                    }
+                    break;
+                }
+                case FAST_SWEEPING:
+                {
+
+                    if ( d[0] != d[2] ) {
+                        std::cerr << "Error: fast sweeping method requires square cells\n";
+                        std::cerr.flush();
+                        return nullptr;
+                    }
+                    
+                    if ( par.verbose ) { std::cout << "Building grid (Grid2Drcfs) ... "; std::cout.flush(); }
+                    if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                    g = new Grid2Drcfs<T,uint32_t>(ncells[0], ncells[2], d[0],
+                                                   xrange[0], zrange[0], par.epsilon,
+                                                   par.nitermax, nt);
+                    if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                    if ( par.verbose ) {
+                        std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                        << "\nAssigning slowness at grid nodes ... ";
+                        std::cout.flush();
+                    }
+                    g->setSlowness( slowness );
+                    if ( par.verbose ) std::cout << "done.\n";
+                    if ( par.time ) {
+                        std::cout.precision(12);
+                        std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                    }
+
+                }
+                case FAST_MARCHING:
+                {
+                    std::cerr << "Error: fast marching method not yet implemented for 2D rectilinear grids\n";
+                    std::cerr.flush();
+                    return nullptr;
+                }
+                    
+                default:
+                    break;
             }
-			g->setSlowness( slowness );
-			if ( par.verbose ) cout << "done.\n";
-			if ( par.time ) {
-				std::cout.precision(12);
-				std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
-			}
-		} else {
-			return nullptr;
-		}
+        } else {
+            return nullptr;
+        }
     }
     dataSet->Delete();
     return g;

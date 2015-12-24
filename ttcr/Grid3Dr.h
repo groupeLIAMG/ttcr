@@ -34,7 +34,7 @@ public:
     Grid3Dr(const T2 nx, const T2 ny, const T2 nz,
 			const T1 ddx, const T1 ddy, const T1 ddz,
 			const T1 minx, const T1 miny, const T1 minz,
-			const T2 nnx, const T2 nny, const T2 nnz,
+			const T2 nnx=1, const T2 nny=1, const T2 nnz=1,
 			const size_t nt=1) :
     nThreads(nt),
     dx(ddx), dy(ddy), dz(ddz),
@@ -68,6 +68,33 @@ public:
 	virtual void setSlowness(const T1 s) {}
     virtual int setSlowness(const std::vector<T1>&) { return 0; }
     
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<sxyz<T1>>& Rx,
+                         std::vector<T1>& traveltimes,
+                         const size_t threadNo=0) const { return 0; }
+    
+    virtual int raytrace(const std::vector<sxyz<T1>>&,
+                         const std::vector<T1>&,
+                         const std::vector<const std::vector<sxyz<T1>>*>&,
+                         std::vector<std::vector<T1>*>&,
+                         const size_t=0) const { return 0; }
+    
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<sxyz<T1>>& Rx,
+                         std::vector<T1>& traveltimes,
+                         std::vector<std::vector<sxyz<T1>>>& r_data,
+                         const size_t threadNo=0) const { return 0; }
+    
+    virtual int raytrace(const std::vector<sxyz<T1>>&,
+                         const std::vector<T1>&,
+                         const std::vector<const std::vector<sxyz<T1>>*>&,
+                         std::vector<std::vector<T1>*>&,
+                         std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
+                         const size_t=0) const { return 0; }
+    
+
 protected:
     size_t nThreads;	     // number of threads
     T1 dx;                   // cell size in x

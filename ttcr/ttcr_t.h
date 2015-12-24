@@ -82,7 +82,32 @@ struct sxz {
 		return x==s.x && z==s.z;
     }
 	
-	sxz<T> & operator=(const sxz<T>& s) {
+    sxz<T>& operator+=(const sxz<T>& s)
+    {
+        x += s.x;
+        z += s.z;
+        return *this;
+    }
+    
+    sxz<T> & operator-=(const sxz<T>& s) {
+        x -= s.x;
+        z -= s.z;
+        return *this;
+    }
+    
+    sxz<T> & operator/=(const T s) {
+        x /= s;
+        z /= s;
+        return *this;
+    }
+    
+    sxz<T> & operator=(const T s) {
+        x = s;
+        z = s;
+        return *this;
+    }
+
+    sxz<T> & operator=(const sxz<T>& s) {
 		if (this != &s) { // protect against invalid self-assignment
 			x = s.x;
 			z = s.z;
@@ -91,11 +116,17 @@ struct sxz {
 	}
 	
 	template<typename NODE>
-	sxz<T> & operator=(const NODE& n) {
+	sxz<T>& operator=(const NODE& n) {
 		x = n.getX();
 		z = n.getZ();
 		return *this;
 	}
+    
+    sxz<T>& operator *=(const T value) {
+        x *= value;
+        z *= value;
+        return *this;
+    }
 	
 	bool operator<(const sxz<T>& s) const {
 		return x<s.x && z<s.z;
@@ -173,21 +204,43 @@ struct sxyz {
 		return *this;
 	}
 	
-	sxyz<T> & operator-=(const sxyz<T>& s) {
+    sxyz<T>& operator+=(const sxyz<T>& s)
+    {
+        x += s.x;
+        y += s.y;
+        z += s.z;
+        return *this;
+    }
+    
+    sxyz<T>& operator-=(const sxyz<T>& s) {
 		x -= s.x;
 		y -= s.y;
 		z -= s.z;
 		return *this;
 	}
 	
+    sxyz<T>& operator=(const T s) {
+        x = s;
+        y = s;
+        z = s;
+        return *this;
+    }
+    
 	template<typename NODE>
-	sxyz<T> & operator=(const NODE& n) {
+	sxyz<T>& operator=(const NODE& n) {
 		x = n.getX();
 		y = n.getY();
 		z = n.getZ();
 		return *this;
 	}
 	
+    sxyz<T>& operator *=(const T value) {
+        x *= value;
+        y *= value;
+        z *= value;
+        return *this;
+    }
+    
 	bool operator<(const sxyz<T>& s) const {
 		return x<s.x && y<s.y && z<s.z;
 	}
@@ -240,6 +293,14 @@ sxyz<T> operator/(const sxyz<T>& v, const T& scalar)
 	return sxyz<T>(v.x/scalar, v.y/scalar, v.z/scalar);
 }
 
+template<typename T>
+struct sij {
+    T i;
+    T j;
+    
+    sij() : i(0), j(0) {}
+    sij(const T i_, const T j_) : i(i_), j(j_) {}
+};
 
 template<typename T>
 struct siv {

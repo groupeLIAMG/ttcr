@@ -154,7 +154,7 @@ public:
     T2 getCellParent(const size_t n) const { return cellParent[n]; }
     void setCellParent(const T2 index, const size_t n) { cellParent[n] = index; }
     
-    int getPrimary() const { return primary; };
+    int getPrimary() const { return primary; }
     void setPrimary( const int o ) { primary = o; }
 	
     T1 getNodeSlowness() const { return slowness; }

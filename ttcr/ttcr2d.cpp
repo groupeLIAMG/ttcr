@@ -29,8 +29,7 @@
 #include <iostream>
 #include <thread>
 
-#include "Grid2Drc.h"
-#include "Grid2Ducsp.h"
+#include "Grid2D.h"
 #include "Rcv2D.h"
 #include "Src2D.h"
 #include "structs_ttcr.h"
@@ -77,9 +76,11 @@ int body(const input_parameters &par) {
     
     Grid2D<T,uint32_t,sxz<T>> *g=nullptr;
     vector<Rcv2D<T>> reflectors;
-    if (extension == ".vtr") {
-#ifdef VTK
+    if (extension == ".grd") {
         g = recti2D<T>(par, num_threads);
+    } else if (extension == ".vtr") {
+#ifdef VTK
+        g = recti2D_vtr<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;
@@ -157,6 +158,11 @@ int body(const input_parameters &par) {
 				
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt, all_r_data);
+                
+                if ( par.saveGridTT ) {
+                    string filename = par.basename+"_src"+std::to_string(n+1)+"_all_tt";
+                    g->saveTT(filename, 0, 0, true);
+                }
                 
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					g->raytrace(reflectors[nr].get_coord(),
@@ -237,6 +243,11 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt);
                 
+                if ( par.saveGridTT ) {
+                    string filename = par.basename+"_src"+std::to_string(n+1)+"_all_tt";
+                    g->saveTT(filename, 0, 0, true);
+                }
+                
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					g->raytrace(reflectors[nr].get_coord(),
 								reflectors[nr].get_tt(n), rcv.get_coord(),
@@ -307,14 +318,14 @@ int body(const input_parameters &par) {
         chrono::duration<double>(end-begin).count() << '\n';
 	}
 	
-    if ( par.saveGridTT ) {
-		//  will overwrite if nsrc>1
-//		string filename = par.basename+"_all_tt.vtu";
+//    if ( par.saveGridTT ) {
+//		//  will overwrite if nsrc>1
+//		string filename = par.basename+"_all_tt";
 //		g->saveTT(filename, 0, 0, true);
-        
-		string filename = par.basename+"_all_tt.dat";
-		g->saveTT(filename, 0);
-	}
+//        
+//		string fname = par.basename+"_all_tt.dat";
+//		g->saveTT(fname, 0);
+//	}
 
     delete g;
     

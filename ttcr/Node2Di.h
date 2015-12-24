@@ -38,8 +38,7 @@ public:
     tt(0),
 	x(0.0), z(0.0), slowness(0.0),
     gridIndex(std::numeric_limits<T2>::max()),
-    owners(0),
-    primary(0)
+    owners(0)
     {
 		tt = new T1[nt];
 		
@@ -53,8 +52,7 @@ public:
     tt(0),
 	x(s.x), z(s.z), slowness(0.0),
     gridIndex(std::numeric_limits<T2>::max()),
-    owners(std::vector<T2>(0)),
-    primary(0)
+    owners(std::vector<T2>(0))
     {
 		tt = new T1[nt];
 		
@@ -69,8 +67,7 @@ public:
     tt(0),
 	x(node.x), z(node.z), slowness(node.slowness),
     gridIndex(node.gridIndex),
-    owners(node.owners),
-    primary(node.primary)
+    owners(node.owners)
     {
 		tt = new T1[nThreads];
 		
@@ -114,9 +111,6 @@ public:
     T2 getGridIndex() const { return gridIndex; }
     void setGridIndex(const T2 index) { gridIndex = index; }
     
-    int getPrimary() const { return primary; };
-    void setPrimary( const int o ) { primary = o; }
-	
     void pushOwner(const T2 o) { owners.push_back(o); }
     const std::vector<T2>& getOwners() const { return owners; }
     
@@ -151,8 +145,6 @@ private:
 	T1 slowness;
     T2 gridIndex;                  // index of this node in the list of the grid
     std::vector<T2> owners;        // indices of cells touching the node
-	int primary;				   // indicate the order of the node: 5= primary,
-	
 };
 
 

@@ -394,6 +394,8 @@ void Grid3Dui<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
 	
 	if (vtkFormat) {
 #ifdef VTK
+        std::string filename = fname+".vtu";
+        
 		vtkSmartPointer<vtkUnstructuredGrid> ugrid =
 		vtkSmartPointer<vtkUnstructuredGrid>::New();
 		
@@ -430,7 +432,7 @@ void Grid3Dui<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
 		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 		
-		writer->SetFileName( fname.c_str() );
+		writer->SetFileName( filename.c_str() );
 //		writer->SetInputConnection( ugrid->GetProducerPort() );
         writer->SetInputData( ugrid );
 		writer->SetDataModeToBinary();
