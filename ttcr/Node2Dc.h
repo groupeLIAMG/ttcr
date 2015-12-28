@@ -152,6 +152,8 @@ public:
 	
 	int getDimension() const { return 2; }
 
+    const bool isPrimary() const { return true; }
+
 private:
 	size_t nThreads;
     T1 x;                          // x coordinate

@@ -61,7 +61,8 @@ public:
                const T1 minx, const T1 miny, const T1 minz,
                const T2 nnx, const T2 nny, const T2 nnz,
                const size_t nt) :
-    Grid3Drc<T1,T2,Node3Dcsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nnx, nny, nnz, nt)
+    Grid3Drc<T1,T2,Node3Dcsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
+    nsnx(nnx), nsny(nny), nsnz(nnz)
     {
         buildGridNodes();
         this->buildGridNeighbors();
@@ -104,8 +105,14 @@ public:
                   std::vector<T1>& traveltimes,
                   const size_t threadNo=0) const;
     
-    
+    T2 getNsnx() const { return nsnx; }
+    T2 getNsny() const { return nsny; }
+    T2 getNsnz() const { return nsnz; }
+
 private:
+    T2 nsnx;                 // number of secondary nodes in x
+    T2 nsny;                 // number of secondary nodes in y
+    T2 nsnz;                 // number of secondary nodes in z
     
     void buildGridNodes();
     
@@ -163,6 +170,19 @@ private:
 
 template<typename T1, typename T2>
 void Grid3Drcsp<T1,T2>::buildGridNodes() {
+    
+    
+    this->nodes.resize(// secondary nodes on the edges
+                       this->ncx*nsnx*((this->ncy+1)*(this->ncz+1)) +
+                       this->ncy*nsny*((this->ncx+1)*(this->ncz+1)) +
+                       this->ncz*nsnz*((this->ncx+1)*(this->ncy+1)) +
+                       // secondary nodes on the faces
+                       (nsnx*nsny)*(this->ncx*this->ncy*(this->ncz+1))+
+                       (nsnx*nsnz)*(this->ncx*this->ncz*(this->ncy+1))+
+                       (nsny*nsnz)*(this->ncy*this->ncz*(this->ncx+1))+
+                       // primary nodes
+                       (this->ncx+1) * (this->ncy+1) * (this->ncz+1),
+                       Node3Dcsp<T1,T2>(this->nThreads));
     
     // Create the grid, assign a number for each node and find the owners
     // Nodes and cells are first indexed in z, then y, and x.
@@ -283,6 +303,7 @@ void Grid3Drcsp<T1,T2>::buildGridNodes() {
                 }
                 
                 this->nodes[n].setXYZindex( x, y, z, n );
+                this->nodes[n].setPrimary(true);
                 
                 ++n;
                 

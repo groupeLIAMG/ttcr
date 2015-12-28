@@ -33,7 +33,8 @@ public:
                const T1 minx, const T1 miny, const T1 minz,
                const T2 nnx, const T2 nny, const T2 nnz,
                const size_t nt=1, const bool invDist=false) :
-    Grid3Dri<T1,T2,Node3Disp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nnx, nny, nnz, nt),
+    Grid3Dri<T1,T2,Node3Disp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
+    nsnx(nnx), nsny(nny), nsnz(nnz),
     inverseDistance(invDist)
     {
         buildGridNodes();
@@ -79,7 +80,15 @@ public:
     void savePrimary(const char filename[], const size_t nt=0,
                      const bool vtkFormat=0) const;
     
+    T2 getNsnx() const { return nsnx; }
+    T2 getNsny() const { return nsny; }
+    T2 getNsnz() const { return nsnz; }
+
 private:
+    T2 nsnx;                 // number of secondary nodes in x
+    T2 nsny;                 // number of secondary nodes in y
+    T2 nsnz;                 // number of secondary nodes in z
+
     bool inverseDistance;
 
     void buildGridNodes();
@@ -123,6 +132,18 @@ private:
 
 template<typename T1, typename T2>
 void Grid3Drisp<T1,T2>::buildGridNodes() {
+    
+    this->nodes.resize(// secondary nodes on the edges
+                       this->ncx*nsnx*((this->ncy+1)*(this->ncz+1)) +
+                       this->ncy*nsny*((this->ncx+1)*(this->ncz+1)) +
+                       this->ncz*nsnz*((this->ncx+1)*(this->ncy+1)) +
+                       // secondary nodes on the faces
+                       (nsnx*nsny)*(this->ncx*this->ncy*(this->ncz+1))+
+                       (nsnx*nsnz)*(this->ncx*this->ncz*(this->ncy+1))+
+                       (nsny*nsnz)*(this->ncy*this->ncz*(this->ncx+1))+
+                       // primary nodes
+                       (this->ncx+1) * (this->ncy+1) * (this->ncz+1),
+                       Node3Disp<T1,T2>(this->nThreads));
     
     // Create the grid, assign a number for each node, determine the type of the node and find the owners
     // Nodes and cells are first indexed in z, then y, and x.

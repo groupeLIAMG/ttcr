@@ -172,6 +172,8 @@ public:
 	
 	int getDimension() const { return 2; }
 	
+    const bool isPrimary() const { return primary == 5; }
+
 private:
 	size_t nThreads;
 	T1 *tt;                        // travel time
@@ -182,7 +184,7 @@ private:
     T2 *nodeParent;                // index of parent node of the ray
     T2 *cellParent;                // index of cell traversed by the ray
     std::vector<T2> owners;        // indices of cells touching the node
-	int primary;					// indicate the order of the node: 5= primary,
+	int primary;				   // indicate the order of the node: 5= primary,
 
 };
 

@@ -40,7 +40,8 @@ public:
     tt(nullptr),
     nodeParent(nullptr),
     cellParent(nullptr),
-    owners(0)
+    owners(0),
+    primary(false)
     {
 		tt = new T1[nt];
 		nodeParent = new T2[nt];
@@ -61,7 +62,8 @@ public:
     tt(nullptr),
     nodeParent(nullptr),
     cellParent(nullptr),
-    owners(0)
+    owners(0),
+    primary(false)
     {
 		tt = new T1[nt];
 		nodeParent = new T2[nt];
@@ -82,7 +84,8 @@ public:
 	tt(nullptr),
 	nodeParent(nullptr),
 	cellParent(nullptr),
-	owners(0)
+    owners(0),
+    primary(false)
 	{
 		tt = new T1[nt];
 		nodeParent = new T2[nt];
@@ -103,7 +106,8 @@ public:
 	tt(nullptr),
 	nodeParent(nullptr),
 	cellParent(nullptr),
-	owners(0)
+    owners(0),
+    primary(false)
 	{
 		tt = new T1[nt];
 		nodeParent = new T2[nt];
@@ -124,7 +128,8 @@ public:
 	tt(nullptr),
 	nodeParent(nullptr),
 	cellParent(nullptr),
-	owners(node.owners)
+    owners(node.owners),
+    primary(false)
 	{
 		tt = new T1[nThreads];
 		nodeParent = new T2[nThreads];
@@ -201,7 +206,10 @@ public:
     }
 	
 	int getDimension() const { return 3; }
-	
+
+    void setPrimary(const bool p) { primary = p; }
+    const bool isPrimary() const { return primary; }
+
 private:
 	size_t nThreads;
     T1 x;                       // x coordinate [km]
@@ -212,6 +220,7 @@ private:
     T2 *nodeParent;             // index of parent node of the ray for each thread
     T2 *cellParent;             // index of cell traversed by the ray for each thread
     std::vector<T2> owners;     // indices of cells touching the node
+    bool primary;
 	
 };
 

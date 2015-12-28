@@ -34,6 +34,7 @@ public:
 	virtual T getX() const = 0;
 	virtual T getY() const = 0;
 	virtual T getZ() const = 0;
+    virtual const bool isPrimary() const = 0;
 };
 
 

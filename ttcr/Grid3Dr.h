@@ -34,14 +34,12 @@ public:
     Grid3Dr(const T2 nx, const T2 ny, const T2 nz,
 			const T1 ddx, const T1 ddy, const T1 ddz,
 			const T1 minx, const T1 miny, const T1 minz,
-			const T2 nnx=1, const T2 nny=1, const T2 nnz=1,
 			const size_t nt=1) :
     nThreads(nt),
     dx(ddx), dy(ddy), dz(ddz),
     xmin(minx), ymin(miny), zmin(minz),
     xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
-    ncx(nx), ncy(ny), ncz(nz),
-    nsnx(nnx), nsny(nny), nsnz(nnz)
+    ncx(nx), ncy(ny), ncz(nz)
     { }
     
     virtual ~Grid3Dr() {}
@@ -58,9 +56,6 @@ public:
     T2 getNcellx() const { return ncx; }
     T2 getNcelly() const { return ncy; }
     T2 getNcellz() const { return ncz; }
-    T2 getNsnx() const { return nsnx; }
-    T2 getNsny() const { return nsny; }
-    T2 getNsnz() const { return nsnz; }
 
     T2 getNumberOfCells() const { return ncx*ncy*ncz; }
     size_t getNumberOfNodes() const { return 0; }
@@ -109,9 +104,6 @@ protected:
     T2 ncx;                  // number of cells in x
     T2 ncy;                  // number of cells in y
     T2 ncz;                  // number of cells in z
-    T2 nsnx;                 // number of secondary nodes in x
-    T2 nsny;                 // number of secondary nodes in y
-    T2 nsnz;                 // number of secondary nodes in z
     
     T2 getCellNo(const sxyz<T1>& pt) const {
         T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;

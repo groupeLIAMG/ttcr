@@ -148,6 +148,8 @@ public:
     }
     
 	int getDimension() const { return 3; }
+    
+    const bool isPrimary() const { return true; }
 	
 private:
 	size_t nThreads;

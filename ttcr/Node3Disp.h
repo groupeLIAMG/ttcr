@@ -183,6 +183,8 @@ public:
     
 	int getDimension() const { return 3; }
 	
+    bool const isPrimary() const { return primary == 5; }
+
 private:
 	size_t nThreads;
     T1 *tt;                         // travel time for the multiple source points

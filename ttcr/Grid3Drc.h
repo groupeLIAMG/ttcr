@@ -62,20 +62,9 @@ public:
     Grid3Drc(const T2 nx, const T2 ny, const T2 nz,
              const T1 ddx, const T1 ddy, const T1 ddz,
              const T1 minx, const T1 miny, const T1 minz,
-             const T2 nnx, const T2 nny, const T2 nnz,
              const size_t nt=1) :
-    Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nnx, nny, nnz, nt),
-    nodes(std::vector<NODE>(// secondary nodes on the edges
-                            nx*nnx*((ny+1)*(nz+1)) +
-                            ny*nny*((nx+1)*(nz+1)) +
-                            nz*nnz*((nx+1)*(ny+1)) +
-                            // secondary nodes on the faces
-                            (nnx*nny)*(nx*ny*(nz+1))+
-                            (nnx*nnz)*(nx*nz*(ny+1))+
-                            (nny*nnz)*(ny*nz*(nx+1))+
-                            // primary nodes
-                            (nx+1) * (ny+1) * (nz+1),
-                            NODE(nt) )),
+    Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
+    nodes(std::vector<NODE>()),
     slowness(std::vector<T1>(nx*ny*nz)),
     neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
     { }
@@ -449,45 +438,51 @@ void Grid3Drc<T1,T2,NODE>::savePrimary(const char filename[], const size_t nt,
         
         vtkSmartPointer<vtkDoubleArray> data = vtkSmartPointer<vtkDoubleArray>::New();
         data->SetName("Travel time");
-        size_t n=0;
-        for ( size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
-            for ( size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
-                for ( size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni ) {
-                    
-                    data->InsertNextValue( nodes[n++].getTT(nt) );
-                    
-                    // Secondary nodes on x edge
-                    if ( ni < Grid3Dr<T1,T2>::ncx ) {
-                        n += Grid3Dr<T1,T2>::nsnx;
-                    }
-                    
-                    // Secondary nodes on y edge
-                    if ( nj < Grid3Dr<T1,T2>::ncy ) {
-                        n += Grid3Dr<T1,T2>::nsny;
-                    }
-                    
-                    // Secondary nodes on z edge
-                    if ( nk < Grid3Dr<T1,T2>::ncz ) {
-                        n += Grid3Dr<T1,T2>::nsnz;
-                    }
-                    
-                    // Secondary nodes on the xy0 planes
-                    if ( ni < Grid3Dr<T1,T2>::ncx && nj < Grid3Dr<T1,T2>::ncy ) {
-                        n += Grid3Dr<T1,T2>::nsny*Grid3Dr<T1,T2>::nsnx;
-                    }
-                    
-                    // Secondary nodes on the x0z planes
-                    if ( ni < Grid3Dr<T1,T2>::ncx && nk < Grid3Dr<T1,T2>::ncz ) {
-                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsnx;
-                    }
-                    
-                    // Secondary nodes on the 0yz planes
-                    if ( nj < Grid3Dr<T1,T2>::ncy && nk < Grid3Dr<T1,T2>::ncz ) {
-                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsny;
-                    }
-                }
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+            if ( nodes[n].isPrimary() ) {
+                data->InsertNextValue( nodes[n].getTT(nt) );
             }
         }
+        
+//        size_t n=0;
+//        for ( size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
+//            for ( size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
+//                for ( size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni ) {
+//                    
+//                    data->InsertNextValue( nodes[n++].getTT(nt) );
+//                    
+//                    // Secondary nodes on x edge
+//                    if ( ni < Grid3Dr<T1,T2>::ncx ) {
+//                        n += Grid3Dr<T1,T2>::nsnx;
+//                    }
+//                    
+//                    // Secondary nodes on y edge
+//                    if ( nj < Grid3Dr<T1,T2>::ncy ) {
+//                        n += Grid3Dr<T1,T2>::nsny;
+//                    }
+//                    
+//                    // Secondary nodes on z edge
+//                    if ( nk < Grid3Dr<T1,T2>::ncz ) {
+//                        n += Grid3Dr<T1,T2>::nsnz;
+//                    }
+//                    
+//                    // Secondary nodes on the xy0 planes
+//                    if ( ni < Grid3Dr<T1,T2>::ncx && nj < Grid3Dr<T1,T2>::ncy ) {
+//                        n += Grid3Dr<T1,T2>::nsny*Grid3Dr<T1,T2>::nsnx;
+//                    }
+//                    
+//                    // Secondary nodes on the x0z planes
+//                    if ( ni < Grid3Dr<T1,T2>::ncx && nk < Grid3Dr<T1,T2>::ncz ) {
+//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsnx;
+//                    }
+//                    
+//                    // Secondary nodes on the 0yz planes
+//                    if ( nj < Grid3Dr<T1,T2>::ncy && nk < Grid3Dr<T1,T2>::ncz ) {
+//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsny;
+//                    }
+//                }
+//            }
+//        }
         rgrid->GetPointData()->SetScalars( data );
         
         vtkSmartPointer<vtkXMLRectilinearGridWriter> writer = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
@@ -503,48 +498,54 @@ void Grid3Drc<T1,T2,NODE>::savePrimary(const char filename[], const size_t nt,
     } else {
         std::ofstream fout( filename );
         fout.precision(9);
-        
-        size_t n=0;
-        for ( size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
-            
-            for ( size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
-                
-                for ( size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni ) {
-                    
-                    fout << nodes[n++].getTT(nt) << '\n';
-                    
-                    // Secondary nodes on x edge
-                    if ( ni < Grid3Dr<T1,T2>::ncx ) {
-                        n += Grid3Dr<T1,T2>::nsnx;
-                    }
-                    
-                    // Secondary nodes on y edge
-                    if ( nj < Grid3Dr<T1,T2>::ncy ) {
-                        n += Grid3Dr<T1,T2>::nsny;
-                    }
-                    
-                    // Secondary nodes on z edge
-                    if ( nk < Grid3Dr<T1,T2>::ncz ) {
-                        n += Grid3Dr<T1,T2>::nsnz;
-                    }
-                    
-                    // Secondary nodes on the xy0 planes
-                    if ( ni < Grid3Dr<T1,T2>::ncx && nj < Grid3Dr<T1,T2>::ncy ) {
-                        n += Grid3Dr<T1,T2>::nsny*Grid3Dr<T1,T2>::nsnx;
-                    }
-                    
-                    // Secondary nodes on the x0z planes
-                    if ( ni < Grid3Dr<T1,T2>::ncx && nk < Grid3Dr<T1,T2>::ncz ) {
-                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsnx;
-                    }
-                    
-                    // Secondary nodes on the 0yz planes
-                    if ( nj < Grid3Dr<T1,T2>::ncy && nk < Grid3Dr<T1,T2>::ncz ) {
-                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsny;
-                    }
-                }
+
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+            if ( nodes[n].isPrimary() ) {
+                fout << nodes[n].getTT(nt) << '\n';
             }
         }
+        
+//        size_t n=0;
+//        for ( size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
+//            
+//            for ( size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
+//                
+//                for ( size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni ) {
+//                    
+//                    fout << nodes[n++].getTT(nt) << '\n';
+//                    
+//                    // Secondary nodes on x edge
+//                    if ( ni < Grid3Dr<T1,T2>::ncx ) {
+//                        n += Grid3Dr<T1,T2>::nsnx;
+//                    }
+//                    
+//                    // Secondary nodes on y edge
+//                    if ( nj < Grid3Dr<T1,T2>::ncy ) {
+//                        n += Grid3Dr<T1,T2>::nsny;
+//                    }
+//                    
+//                    // Secondary nodes on z edge
+//                    if ( nk < Grid3Dr<T1,T2>::ncz ) {
+//                        n += Grid3Dr<T1,T2>::nsnz;
+//                    }
+//                    
+//                    // Secondary nodes on the xy0 planes
+//                    if ( ni < Grid3Dr<T1,T2>::ncx && nj < Grid3Dr<T1,T2>::ncy ) {
+//                        n += Grid3Dr<T1,T2>::nsny*Grid3Dr<T1,T2>::nsnx;
+//                    }
+//                    
+//                    // Secondary nodes on the x0z planes
+//                    if ( ni < Grid3Dr<T1,T2>::ncx && nk < Grid3Dr<T1,T2>::ncz ) {
+//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsnx;
+//                    }
+//                    
+//                    // Secondary nodes on the 0yz planes
+//                    if ( nj < Grid3Dr<T1,T2>::ncy && nk < Grid3Dr<T1,T2>::ncz ) {
+//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsny;
+//                    }
+//                }
+//            }
+//        }
         fout.close();
     }
 }

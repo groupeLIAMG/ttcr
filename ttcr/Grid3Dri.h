@@ -57,20 +57,9 @@ public:
     Grid3Dri(const T2 nx, const T2 ny, const T2 nz,
              const T1 ddx, const T1 ddy, const T1 ddz,
              const T1 minx, const T1 miny, const T1 minz,
-             const T2 nnx, const T2 nny, const T2 nnz,
              const size_t nt=1) :
-    Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nnx, nny, nnz, nt),
-    nodes(std::vector<NODE>(// secondary nodes on the edges
-                            nx*nnx*((ny+1)*(nz+1)) +
-                            ny*nny*((nx+1)*(nz+1)) +
-                            nz*nnz*((nx+1)*(ny+1)) +
-                            // secondary nodes on the faces
-                            (nnx*nny)*(nx*ny*(nz+1))+
-                            (nnx*nnz)*(nx*nz*(ny+1))+
-                            (nny*nnz)*(ny*nz*(nx+1))+
-                            // primary nodes
-                            (nx+1) * (ny+1) * (nz+1),
-                            NODE(nt) )),
+    Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
+    nodes(std::vector<NODE>()),
     neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
     {    }
     
