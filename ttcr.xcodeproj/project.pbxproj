@@ -153,8 +153,6 @@
 		2B90ECD219054B400015748B /* Grid3Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifm.h; sourceTree = "<group>"; };
 		2B90ECD319054C3D0015748B /* Grid3Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifs.h; sourceTree = "<group>"; };
 		2B98A47519070C6D00816CF1 /* Grid2Dri.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dri.h; sourceTree = "<group>"; };
-		2BB862941B46D95300A483ED /* Grid3Drisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Grid3Drisp.h; path = ../Grid3Drisp.h; sourceTree = "<group>"; };
-		2BB862951B46D99300A483ED /* Grid3Drcsp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Grid3Drcsp.h; path = ../Grid3Drcsp.h; sourceTree = "<group>"; };
 		2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOXML-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOXML-7.0.1.dylib"; sourceTree = "<group>"; };
 		2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOGeometry-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOGeometry-7.0.1.dylib"; sourceTree = "<group>"; };
 		2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOXMLParser-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOXMLParser-7.0.1.dylib"; sourceTree = "<group>"; };
@@ -208,6 +206,7 @@
 		2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2ds.cpp; sourceTree = "<group>"; };
 		2BDE233B19DBA63F0001FC4D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drisp.h; sourceTree = "<group>"; };
+		2BDE5D621C3EB2D800223E26 /* Grid3Drcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drcsp.h; sourceTree = "<group>"; };
 		2BF787831905A36200E80373 /* Grid3Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duisp.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -361,9 +360,8 @@
 				2BC708E618EDA65F004DA2C9 /* Grid3D.h */,
 				2BC708E718EDA65F004DA2C9 /* Grid3Dr.h */,
 				2BC708E818EDA65F004DA2C9 /* Grid3Drc.h */,
-				2BB862951B46D99300A483ED /* Grid3Drcsp.h */,
 				2BC708E918EDA65F004DA2C9 /* Grid3Dri.h */,
-				2BB862941B46D95300A483ED /* Grid3Drisp.h */,
+				2BDE5D621C3EB2D800223E26 /* Grid3Drcsp.h */,
 				2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */,
 				2B0CC4051C30C0DC001BC581 /* Grid3Drifs.h */,
 				2BC708EA18EDA65F004DA2C9 /* Grid3Duc.h */,
