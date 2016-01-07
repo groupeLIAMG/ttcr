@@ -160,8 +160,20 @@ int body(const input_parameters &par) {
 							all_tt, all_r_data);
                 
                 if ( par.saveGridTT ) {
-                    string filename = par.basename+"_src"+std::to_string(n+1)+"_all_tt";
+                    
+                    string srcname = par.srcfiles[n];
+                    size_t pos = srcname.rfind("/");
+                    srcname.erase(0, pos+1);
+                    pos = srcname.rfind(".");
+                    size_t len = srcname.length()-pos;
+                    srcname.erase(pos, len);
+                    
+                    string filename = par.basename+"_"+srcname+"_all_tt";
                     g->saveTT(filename, 0, 0, true);
+//                    filename = par.basename+"_"+srcname+"_tt_grad";
+//                    g->saveTTgrad(filename, 0, true);
+//                    filename = par.basename+"_"+srcname+"_tt_grad";
+//                    g->saveTTgrad2(filename, 0, true);
                 }
                 
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
@@ -244,8 +256,20 @@ int body(const input_parameters &par) {
 							all_tt);
                 
                 if ( par.saveGridTT ) {
-                    string filename = par.basename+"_src"+std::to_string(n+1)+"_all_tt";
+                    
+                    string srcname = par.srcfiles[n];
+                    size_t pos = srcname.rfind("/");
+                    srcname.erase(0, pos+1);
+                    pos = srcname.rfind(".");
+                    size_t len = srcname.length()-pos;
+                    srcname.erase(pos, len);
+                    
+                    string filename = par.basename+"_"+srcname+"_all_tt";
                     g->saveTT(filename, 0, 0, true);
+//                    filename = par.basename+"_"+srcname+"_tt_grad";
+//                    g->saveTTgrad(filename, 0, true);
+//                    filename = par.basename+"_"+srcname+"_tt_grad";
+//                    g->saveTTgrad2(filename, 0, true);
                 }
                 
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
@@ -318,15 +342,6 @@ int body(const input_parameters &par) {
         chrono::duration<double>(end-begin).count() << '\n';
 	}
 	
-//    if ( par.saveGridTT ) {
-//		//  will overwrite if nsrc>1
-//		string filename = par.basename+"_all_tt";
-//		g->saveTT(filename, 0, 0, true);
-//        
-//		string fname = par.basename+"_all_tt.dat";
-//		g->saveTT(fname, 0);
-//	}
-
     delete g;
     
     if ( src.size() == 1 ) {

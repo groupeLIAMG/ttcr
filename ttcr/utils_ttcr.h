@@ -52,6 +52,7 @@
 #include "Grid2Duisp.h"
 #include "Grid3Drcsp.h"
 #include "Grid3Drisp.h"
+#include "Grid3Drifs.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
@@ -167,28 +168,59 @@ Grid3Dr<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt)
 			
 			
 		}
-		if ( foundSlowness ) {
-			if ( par.verbose ) { std::cout << "Building grid (Grid3Drisp) ... "; std::cout.flush(); }
-			if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-			g = new Grid3Drisp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-										  d[0], d[1], d[2],
-										  xrange[0], yrange[0], zrange[0],
-										  par.nn[0], par.nn[1], par.nn[2],
-										  nt, par.inverseDistance);
-			if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-			if ( par.verbose ) {
-                std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
-                << "\nAssigning slowness at grid nodes ... ";
-                std::cout.flush();
+        if ( foundSlowness ) {
+            switch (par.method) {
+                case SHORTEST_PATH:
+                    
+                    if ( par.verbose ) { std::cout << "Building grid (Grid3Drisp) ... "; std::cout.flush(); }
+                    if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                    g = new Grid3Drisp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                    d[0], d[1], d[2],
+                                                    xrange[0], yrange[0], zrange[0],
+                                                    par.nn[0], par.nn[1], par.nn[2],
+                                                    nt, par.inverseDistance);
+                    if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                    if ( par.verbose ) {
+                        std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                        << "\nAssigning slowness at grid nodes ... ";
+                        std::cout.flush();
+                    }
+                    g->setSlowness( slowness );
+                    if ( par.verbose ) std::cout << "done.\n";
+                    if ( par.verbose && par.inverseDistance )
+                        std::cout << "  Inverse distance interpolation was used.\n";
+                    break;
+                case FAST_SWEEPING:
+
+                    if ( par.verbose ) { std::cout << "Building grid (Grid3Drifs) ... "; std::cout.flush(); }
+                    if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                    g = new Grid3Drifs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                    d[0], d[1], d[2],
+                                                    xrange[0], yrange[0], zrange[0],
+                                                    par.epsilon, par.nitermax, nt);
+                    if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                    if ( par.verbose ) {
+                        std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                        << "\nAssigning slowness at grid nodes ... ";
+                        std::cout.flush();
+                    }
+                    g->setSlowness( slowness );
+                    if ( par.verbose ) std::cout << "done.\n";
+
+                case FAST_MARCHING:
+                    std::cerr << "Error: fast marching method not yet implemented for 3D rectilinear grids\n";
+                    std::cerr.flush();
+                    return nullptr;
+                    break;
+
+                default:
+                    break;
             }
-			g->setSlowness( slowness );
-			if ( par.verbose ) std::cout << "done.\n";
-			if ( par.verbose && par.inverseDistance )
-				std::cout << "  Inverse distance interpolation was used.\n";
-			if ( par.time ) {
-				std::cout.precision(12);
-				std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
-			}
+            if ( par.time ) {
+                std::cout.precision(12);
+                std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+            }
+
         } else {
 			return 0;
 		}

@@ -69,10 +69,10 @@ public:
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxyz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxyz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
                          const size_t=0) const { return 0; }
     
     virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
@@ -82,11 +82,11 @@ public:
                          std::vector<std::vector<sxyz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxyz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxyz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
-                         std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                          const size_t=0) const { return 0; }
     
 
@@ -127,6 +127,17 @@ protected:
         return ny*ncx + nz*(ncx*ncy) + nx;
     }
 
+    void getIJK(const sxyz<T1>& pt, T2& i, T2& j, T2& k) const {
+        i = static_cast<T2>( small + (pt.x-xmin)/dx );
+        j = static_cast<T2>( small + (pt.y-ymin)/dy );
+        k = static_cast<T2>( small + (pt.z-zmin)/dz );
+    }
+    
+    void getIJK(const sxyz<T1>& pt, long long& i, long long& j, long long& k) const {
+        i = static_cast<long long>( small + (pt.x-xmin)/dx );
+        j = static_cast<long long>( small + (pt.y-ymin)/dy );
+        k = static_cast<long long>( small + (pt.z-zmin)/dz );
+    }
 
     int check_pts(const std::vector<sxyz<T1>>&) const;
 

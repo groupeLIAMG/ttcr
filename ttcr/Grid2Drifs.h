@@ -69,33 +69,33 @@ public:
     virtual ~Grid2Drifs() {
     }
     
-     int raytrace(const std::vector<sxz<T1>>& Tx,
-                  const std::vector<T1>& t0,
-                  const std::vector<sxz<T1>>& Rx,
-                  std::vector<T1>& traveltimes,
-                  const size_t threadNo=0) const;
+    int raytrace(const std::vector<sxz<T1>>& Tx,
+                 const std::vector<T1>& t0,
+                 const std::vector<sxz<T1>>& Rx,
+                 std::vector<T1>& traveltimes,
+                 const size_t threadNo=0) const;
     
-     int raytrace(const std::vector<sxz<T1>>&,
-                  const std::vector<T1>&,
-                  const std::vector<const std::vector<sxz<T1>>*>&,
-                  std::vector<std::vector<T1>*>&,
-                  const size_t=0) const;
+    int raytrace(const std::vector<sxz<T1>>& Tx,
+                 const std::vector<T1>& t0,
+                 const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                 std::vector<std::vector<T1>*>& traveltimes,
+                 const size_t threadNo=0) const;
     
-     int raytrace(const std::vector<sxz<T1>>& Tx,
-                  const std::vector<T1>& t0,
-                  const std::vector<sxz<T1>>& Rx,
-                  std::vector<T1>& traveltimes,
-                  std::vector<std::vector<sxz<T1>>>& r_data,
-                  const size_t threadNo=0) const;
+    int raytrace(const std::vector<sxz<T1>>& Tx,
+                 const std::vector<T1>& t0,
+                 const std::vector<sxz<T1>>& Rx,
+                 std::vector<T1>& traveltimes,
+                 std::vector<std::vector<sxz<T1>>>& r_data,
+                 const size_t threadNo=0) const;
     
-     int raytrace(const std::vector<sxz<T1>>&,
-                  const std::vector<T1>&,
-                  const std::vector<const std::vector<sxz<T1>>*>&,
-                  std::vector<std::vector<T1>*>&,
-                  std::vector<std::vector<std::vector<sxz<T1>>>*>&,
-                  const size_t=0) const;
-
-
+    int raytrace(const std::vector<sxz<T1>>& Tx,
+                 const std::vector<T1>& t0,
+                 const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                 std::vector<std::vector<T1>*>& traveltimes,
+                 std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                 const size_t threadNo=0) const;
+    
+    
 protected:
     T1 epsilon;
     int nitermax;

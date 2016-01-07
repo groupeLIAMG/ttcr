@@ -124,6 +124,7 @@
 		2B04DD751AA75CC5000231E6 /* grid3duifs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid3duifs.m; sourceTree = "<group>"; };
 		2B04DD801AA75F6E000231E6 /* grid3duifs_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duifs_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B04DD821AA75FFD000231E6 /* grid3duifs_mex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = grid3duifs_mex.cpp; sourceTree = "<group>"; };
+		2B0CC4051C30C0DC001BC581 /* Grid3Drifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drifs.h; sourceTree = "<group>"; };
 		2B11D19318FE1FD30075EAAC /* Grid2Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duifm.h; sourceTree = "<group>"; };
 		2B11D19418FE25940075EAAC /* Grid2Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duifs.h; sourceTree = "<group>"; };
 		2B150F0F1BB1E7D500475F01 /* Grid2Drisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drisp.h; sourceTree = "<group>"; };
@@ -206,6 +207,7 @@
 		2BD0F4F418EED76000B3957F /* ttcr2ds */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2ds; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2ds.cpp; sourceTree = "<group>"; };
 		2BDE233B19DBA63F0001FC4D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drisp.h; sourceTree = "<group>"; };
 		2BF787831905A36200E80373 /* Grid3Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duisp.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -362,6 +364,8 @@
 				2BB862951B46D99300A483ED /* Grid3Drcsp.h */,
 				2BC708E918EDA65F004DA2C9 /* Grid3Dri.h */,
 				2BB862941B46D95300A483ED /* Grid3Drisp.h */,
+				2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */,
+				2B0CC4051C30C0DC001BC581 /* Grid3Drifs.h */,
 				2BC708EA18EDA65F004DA2C9 /* Grid3Duc.h */,
 				2BC708EB18EDA65F004DA2C9 /* Grid3Ducfm.h */,
 				2BC708EC18EDA65F004DA2C9 /* Grid3Ducfs.h */,
@@ -763,8 +767,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
+					/usr/local/VTK/lib,
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -781,8 +784,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
+					/usr/local/VTK/lib,
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1072,10 +1074,8 @@
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
 				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
+					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1088,10 +1088,8 @@
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
 				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
+					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1115,8 +1113,6 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1136,8 +1132,6 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1154,10 +1148,8 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
+					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1170,10 +1162,8 @@
 				DEPLOYMENT_LOCATION = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
+					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1237,10 +1227,8 @@
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
 				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
+					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1264,8 +1252,6 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1282,10 +1268,8 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
+					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1341,8 +1325,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK-6.1.0/build/lib",
-					"/usr/local/VTK-7.0.0.rc1/lib",
+					/usr/local/VTK/lib,
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

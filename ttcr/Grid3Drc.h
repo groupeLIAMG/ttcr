@@ -64,7 +64,7 @@ public:
              const T1 minx, const T1 miny, const T1 minz,
              const size_t nt=1) :
     Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
-    nodes(std::vector<NODE>()),
+    nodes(std::vector<NODE>(nx*ny*nz, NODE(nt))),
     slowness(std::vector<T1>(nx*ny*nz)),
     neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
     { }
@@ -109,10 +109,10 @@ public:
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxyz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxyz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
                          const size_t=0) const { return 0; }
     
     virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
@@ -122,19 +122,12 @@ public:
                          std::vector<std::vector<sxyz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxyz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxyz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
-                         std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                          const size_t=0) const { return 0; }
-    
-    virtual int raytrace2(const std::vector<sxyz<T1>>& Tx,
-                          const std::vector<T1>& t0,
-                          const std::vector<sxyz<T1>>& Rx,
-                          std::vector<T1>& traveltimes,
-                          const size_t threadNo=0) const { return 0; }
-    
     
     void saveSlownessXYZ(const char filename[]) const {
         std::ofstream fout( filename );

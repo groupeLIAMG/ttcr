@@ -236,7 +236,6 @@ void saveRayPaths(const std::string &fname,
     
 	vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
 	writer->SetFileName( fname.c_str() );
-//	writer->SetInputConnection( polydata->GetProducerPort() );
     writer->SetInputData( polydata );
     writer->SetDataModeToBinary();
     writer->Update();

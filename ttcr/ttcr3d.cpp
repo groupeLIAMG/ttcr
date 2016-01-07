@@ -22,7 +22,6 @@
  *
  */
 
-
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -30,7 +29,6 @@
 #include <iostream>
 #include <thread>
 
-#include "Grid3Drc.h"
 #include "Grid3D.h"
 #include "Rcv.h"
 #include "Src.h"
@@ -177,6 +175,19 @@ int body(const input_parameters &par) {
 				
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt, all_r_data);
+                
+                if ( par.saveGridTT ) {
+                    
+                    string srcname = par.srcfiles[n];
+                    size_t pos = srcname.rfind("/");
+                    srcname.erase(0, pos+1);
+                    pos = srcname.rfind(".");
+                    size_t len = srcname.length()-pos;
+                    srcname.erase(pos, len);
+                    
+                    string filename = par.basename+"_"+srcname+"_all_tt";
+                    g->saveTT(filename, 0, 0, true);
+                }
 				
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					g->raytrace(reflectors[nr].get_coord(),
@@ -258,12 +269,19 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt);
 				
-                //				if ( par.saveGridTT ) {
-                //                    //  will overwrite if nsrc>1
-                //                    string filename = par.basename+"_all_tt.dat";
-                //                    g->saveTT(filename, 0);
-                //                }
-				
+                if ( par.saveGridTT ) {
+                    
+                    string srcname = par.srcfiles[n];
+                    size_t pos = srcname.rfind("/");
+                    srcname.erase(0, pos+1);
+                    pos = srcname.rfind(".");
+                    size_t len = srcname.length()-pos;
+                    srcname.erase(pos, len);
+                    
+                    string filename = par.basename+"_"+srcname+"_all_tt";
+                    g->saveTT(filename, 0, 0, true);
+                }
+
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					g->raytrace(reflectors[nr].get_coord(),
 								reflectors[nr].get_tt(n), rcv.get_coord(),
@@ -331,20 +349,7 @@ int body(const input_parameters &par) {
 		cout << "Time to perform raytracing: "
 		<< chrono::duration<double>(end-begin).count() << '\n';
 	}
-	
-	if ( par.saveGridTT ) {
-		//  will overwrite if nsrc>1
-		//string filename = par.basename+"_all_tt";
-		//g->saveTT(filename, 0, 0, true);
-        
-		string filename = par.basename+"_all_tt.dat";
-		if ( par.verbose ) {
-			cout << "Saving travel time for last source over whole grid in "
-			<< filename << '\n';
-		}
-		g->saveTT(filename, 0);
-	}
-    
+	    
 	// Delete stuff and dump the results
     delete g;
     

@@ -149,13 +149,13 @@ public:
                          const std::vector<sxyz<T1>>& Rx,
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
-	
-	virtual int raytrace(const std::vector<sxyz<T1>>&,
-						 const std::vector<T1>&,
-						 const std::vector<const std::vector<sxyz<T1>>*>&,
-						 std::vector<std::vector<T1>*>&,
-						 const size_t=0) const { return 0; }
-	
+    
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         const size_t=0) const { return 0; }
+    
     virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                          const std::vector<T1>& t0,
                          const std::vector<sxyz<T1>>& Rx,
@@ -163,12 +163,12 @@ public:
                          std::vector<std::vector<sxyz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxyz<T1>>&,
-						 const std::vector<T1>&,
-						 const std::vector<const std::vector<sxyz<T1>>*>&,
-						 std::vector<std::vector<T1>*>&,
-						 std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
-						 const size_t=0) const { return 0; }
+    virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
+                         const size_t=0) const { return 0; }
 	
 	void saveTT(const std::string &, const int, const size_t nt=0,
 				const bool vtkFormat=0) const;

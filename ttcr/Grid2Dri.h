@@ -34,10 +34,14 @@
 
 #ifdef VTK
 #include "vtkDoubleArray.h"
+#include "vtkPolyData.h"
 #include "vtkRectilinearGrid.h"
 #include "vtkSmartPointer.h"
+#include "vtkXMLPolyDataWriter.h"
 #include "vtkXMLRectilinearGridWriter.h"
 #endif
+
+#include <boost/math/special_functions/sign.hpp>
 
 #include "Grid2D.h"
 
@@ -82,11 +86,11 @@ public:
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
-                         const size_t=0) const { return 0; }
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         const size_t threadNo=0) const { return 0; }
     
     virtual int raytrace(const std::vector<sxz<T1>>& Tx,
                          const std::vector<T1>& t0,
@@ -95,12 +99,12 @@ public:
                          std::vector<std::vector<sxz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
-                         std::vector<std::vector<std::vector<sxz<T1>>>*>&,
-                         const size_t=0) const { return 0; }
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                         const size_t threadNo=0) const { return 0; }
 	
     size_t getNumberOfNodes() const { return nodes.size(); }
     
@@ -114,27 +118,15 @@ public:
         fout.close();
     }
     
-    T2 getCellNo(const sxz<T1>& pt) const {
-        T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
-        T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
-        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-        return nx*nCellz + nz;
-    }
-    
-    void getIJ(const sxz<T1>& pt, T2& i, T2& j) const {
-        i = static_cast<T2>( small + (pt.x-xmin)/dx );
-        j = static_cast<T2>( small + (pt.z-zmin)/dz );
-    }
-    
-    void getIJ(const sxz<T1>& pt, long long& i, long long& j) const {
-        i = static_cast<long long>( small + (pt.x-xmin)/dx );
-        j = static_cast<long long>( small + (pt.z-zmin)/dz );
-    }
-    
     void saveTT(const std::string &, const int, const size_t nt=0,
                 const bool vtkFormat=0) const;
-    
+
+    void saveTTgrad(const std::string &, const size_t nt=0,
+                    const bool vtkFormat=0) const;
+
+//    void saveTTgrad2(const std::string &, const size_t nt=0,
+//                     const bool vtkFormat=0) const;
+
 protected:
 	size_t nThreads;
     T1 dx;           // cell size in x
@@ -172,11 +164,41 @@ protected:
 	
     void grad(sxz<T1> &g, const size_t i, const size_t j, const size_t nt=0) const;
     
+    void grad(sxz<T1> &g, const sxz<T1> &pt, const size_t nt=0) const;
+    
+    T1 interpTT(const sxz<T1> &pt, const size_t nt=0) const;
+    
     void getRaypath(const std::vector<sxz<T1>>& Tx,
                     const sxz<T1> &Rx,
                     std::vector<sxz<T1>> &r_data,
                     const size_t threadNo=0) const;
+    void getRaypath_old(const std::vector<sxz<T1>>& Tx,
+                        const sxz<T1> &Rx,
+                        std::vector<sxz<T1>> &r_data,
+                        const size_t threadNo=0) const;
+    void getRaypath_old2(const std::vector<sxz<T1>>& Tx,
+                         const sxz<T1> &Rx,
+                         std::vector<sxz<T1>> &r_data,
+                         const size_t threadNo=0) const;
     
+    T2 getCellNo(const sxz<T1>& pt) const {
+        T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
+        T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
+        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
+        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+        return nx*nCellz + nz;
+    }
+    
+    void getIJ(const sxz<T1>& pt, T2& i, T2& j) const {
+        i = static_cast<T2>( small + (pt.x-xmin)/dx );
+        j = static_cast<T2>( small + (pt.z-zmin)/dz );
+    }
+    
+    void getIJ(const sxz<T1>& pt, long long& i, long long& j) const {
+        i = static_cast<long long>( small + (pt.x-xmin)/dx );
+        j = static_cast<long long>( small + (pt.z-zmin)/dz );
+    }
+
 private:
     Grid2Dri() {}
     Grid2Dri(const Grid2Dri<T1,T2,NODE>& g) {}
@@ -259,9 +281,9 @@ T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
 
 template<typename T1, typename T2, typename NODE>
 T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-								  const std::vector<NODE>& nodes,
-								  T2& nodeParentRx, T2& cellParentRx,
-								  const size_t threadNo) const {
+                                       const std::vector<NODE>& nodes,
+                                       T2& nodeParentRx, T2& cellParentRx,
+                                       const size_t threadNo) const {
     
     for ( size_t nn=0; nn<nodes.size(); ++nn ) {
         if ( nodes[nn] == Rx ) {
@@ -353,8 +375,234 @@ void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
 }
 
 template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
+                                      const size_t nt,
+                                      const bool vtkFormat) const {
+    
+    if (vtkFormat) {
+#ifdef VTK
+        
+        std::string filename = fname+".vtr";
+        int nn[3] = {static_cast<int>(nCellx), 1, static_cast<int>(nCellz)};
+        
+        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[0]; ++n)
+            xCoords->InsertNextValue( xmin + (0.5+n)*dx );
+        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        yCoords->InsertNextValue( 0.0 );
+        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[2]; ++n)
+            zCoords->InsertNextValue( zmin + (0.5+n)*dz );
+        
+        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
+        rgrid->SetDimensions( nn );
+        rgrid->SetXCoordinates(xCoords);
+        rgrid->SetYCoordinates(yCoords);
+        rgrid->SetZCoordinates(zCoords);
+        
+        
+        vtkSmartPointer<vtkDoubleArray> grad_tt =
+        vtkSmartPointer<vtkDoubleArray>::New();
+        
+        grad_tt->SetName("grad tt");
+        grad_tt->SetNumberOfComponents(3);
+        grad_tt->SetComponentName(0, "x");
+        grad_tt->SetComponentName(1, "y");
+        grad_tt->SetComponentName(2, "z");
+        grad_tt->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
+        
+        
+        double x[3];
+        x[1] = 0.0;
+        for ( size_t i=0; i<nCellx; ++i ) {
+            for ( size_t j=0; j<nCellz; ++j ) {
+                sxz<T1> g;
+                grad(g, i, j, nt);
+                
+                x[0] = xmin + (i+0.5)*dx;
+                x[2] = zmin + (j+0.5)*dz;
+                
+                vtkIdType id = rgrid->FindPoint(x);
+                grad_tt->SetTuple3(id, g.x, 0.0, g.z );
+            }
+        }
+        rgrid->GetPointData()->SetVectors( grad_tt );
+        
+        
+        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
+        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+        
+        writer->SetFileName( filename.c_str() );
+        writer->SetInputData( rgrid );
+        writer->SetDataModeToBinary();
+        writer->Update();
+#else
+        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
+#endif
+    } else {
+        std::ofstream fout(fname.c_str());
+        fout.precision(12);
+        for ( size_t i=0; i<nCellx; ++i ) {
+            for ( size_t j=0; j<nCellz; ++j ) {
+                sxz<T1> g;
+                grad(g, i, j, nt);
+                
+                T1 x = xmin + (i+0.5)*dx;
+                T1 z = zmin + (j+0.5)*dz;
+                
+                fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
+            }
+        }
+        fout.close();
+    }
+}
+
+
+//template<typename T1, typename T2, typename NODE>
+//void Grid2Dri<T1,T2,NODE>::saveTTgrad2(const std::string& fname,
+//                                      const size_t nt,
+//                                      const bool vtkFormat) const {
+//    
+//    if (vtkFormat) {
+//#ifdef VTK
+//        
+//        std::string filename = fname+".vtp";
+//        
+//        
+//        
+//        vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
+//        vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
+//        vtkSmartPointer<vtkDoubleArray> grad_tt =
+//        vtkSmartPointer<vtkDoubleArray>::New();
+//        
+//        grad_tt->SetName("grad tt");
+//        grad_tt->SetNumberOfComponents(3);
+//        grad_tt->SetComponentName(0, "x");
+//        grad_tt->SetComponentName(1, "y");
+//        grad_tt->SetComponentName(2, "z");
+//        
+//        size_t npts=12;
+//        pts->SetNumberOfPoints(npts);
+//        grad_tt->SetNumberOfTuples( npts );
+//
+//        sxz<T1> g, pt;
+//        
+//        pt.x = 50.23;
+//        pt.z = 100.1;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 49.23;
+//        pt.z = 100.1;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.23;
+//        pt.z = 99.9;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//
+//        pt.x = 50.23;
+//        pt.z = 100.9;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//
+//        pt.x = 49.23;
+//        pt.z = 99.9;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.7;
+//        pt.z = 99.8;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.0;
+//        pt.z = 100.0;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.0;
+//        pt.z = 100.2;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.3;
+//        pt.z = 100.0;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.7;
+//        pt.z = 100.7;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 50.7;
+//        pt.z = 100.7;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 49.7;
+//        pt.z = 98.0;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//        pt.x = 49.2;
+//        pt.z = 98.0;
+//        grad(g, pt, nt);
+//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+//        
+//
+//        
+//        polydata->SetPoints(pts);
+//        polydata->GetPointData()->SetVectors(grad_tt);
+//        
+//        vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+//        writer->SetFileName( filename.c_str() );
+//        writer->SetInputData( polydata );
+//        writer->SetDataModeToBinary();
+//        writer->Update();
+//
+//        
+//        #else
+//        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
+//#endif
+//    } else {
+//        std::ofstream fout(fname.c_str());
+//        fout.precision(12);
+//        for ( size_t i=0; i<nCellx; ++i ) {
+//            for ( size_t j=0; j<nCellz; ++j ) {
+//                sxz<T1> g;
+//                grad(g, i, j, nt);
+//                
+//                T1 x = xmin + (i+0.5)*dx;
+//                T1 z = zmin + (j+0.5)*dz;
+//                
+//                fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
+//            }
+//        }
+//        fout.close();
+//    }
+//}
+
+
+template<typename T1, typename T2, typename NODE>
 void Grid2Dri<T1,T2,NODE>::grad(sxz<T1>& g, const size_t i, const size_t j,
                                 const size_t nt) const {
+    
     // compute average gradient for cell (i,j)
     
     static const size_t nnz = nCellz+1;
@@ -366,10 +614,155 @@ void Grid2Dri<T1,T2,NODE>::grad(sxz<T1>& g, const size_t i, const size_t j,
 }
 
 template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::grad(sxz<T1> &g, const sxz<T1> &pt,
+                                const size_t nt) const {
+    
+    // compute travel time gradient at point pt
+    
+    T1 p1 = pt.x - dx/2.0;
+    T1 p2 = p1 + dx;
+    g.x = (interpTT({p2, pt.z}, nt) - interpTT({p1, pt.z}, nt)) / dx;
+    
+    p1 = pt.z - dz/2.0;
+    p2 = p1 + dz;
+    g.z = (interpTT({pt.x, p2}, nt) - interpTT({pt.x, p1}, nt)) / dz;
+}
+
+template<typename T1, typename T2, typename NODE>
+T1 Grid2Dri<T1,T2,NODE>::interpTT(const sxz<T1> &pt, const size_t nt) const {
+    
+    // bilinear interpolation if not on node
+    
+    T1 tt;
+    T2 i, j;
+    
+    getIJ(pt, i, j);
+    
+    if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+        // on node
+        return nodes[i*(nCellz+1)+j].getTT(nt);
+    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        
+        // on edge
+        T1 t1 = nodes[i*(nCellz+1)+j].getTT(nt);
+        T1 t2 = nodes[i*(nCellz+1)+j+1].getTT(nt);
+        
+        T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
+		T1 w2 = (pt.z - (zmin+j*dz))/dz;
+		
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+        
+        // on edge
+        T1 t1 = nodes[i*(nCellz+1)+j].getTT(nt);
+        T1 t2 = nodes[(i+1)*(nCellz+1)+j].getTT(nt);
+		
+        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+		T1 w2 = (pt.x - (xmin+i*dx))/dx;
+		
+        tt = t1*w1 + t2*w2;
+        
+    } else {
+        
+        T1 t1 = nodes[    i*(nCellz+1)+j  ].getTT(nt);
+        T1 t2 = nodes[(i+1)*(nCellz+1)+j  ].getTT(nt);
+        T1 t3 = nodes[    i*(nCellz+1)+j+1].getTT(nt);
+        T1 t4 = nodes[(i+1)*(nCellz+1)+j+1].getTT(nt);
+
+		T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+		T1 w2 = (pt.x - (xmin+i*dx))/dx;
+
+		t1 = t1*w1 + t2*w2;
+		t2 = t3*w1 + t4*w2;
+
+		w1 = (zmin+(j+1)*dz - pt.z)/dz;
+		w2 = (pt.z - (zmin+j*dz))/dz;
+		
+		tt = t1*w1 + t2*w2;
+    }
+	
+    return tt;
+}
+
+template<typename T1, typename T2, typename NODE>
 void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                       const sxz<T1> &Rx,
                                       std::vector<sxz<T1>> &r_data,
                                       const size_t threadNo) const {
+
+    r_data.push_back( Rx );
+    
+    for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+        if ( Rx == Tx[ns] ) {
+            return;
+        }
+    }
+    
+    sxz<T1> curr_pt( Rx );
+    // distance between opposite nodes of a voxel
+    static const T1 maxDist = sqrt( this->dx*this->dx + this->dz*this->dz );
+    sxz<T1> g;
+    
+    bool reachedTx = false;
+    while ( reachedTx == false ) {
+
+        grad(g, curr_pt, threadNo);
+        g *= -1.0;
+        
+        long long i, k;
+        getIJ(curr_pt, i, k);
+        
+        // planes we will intersect
+        T1 xp = this->xmin + this->dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+        T1 zp = this->zmin + this->dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+        
+        if ( fabs(xp-curr_pt.x)<small) {
+            xp += dx*boost::math::sign(g.x);
+        }
+        if ( fabs(zp-curr_pt.z)<small) {
+            zp += dz*boost::math::sign(g.z);
+        }
+        
+        // dist to planes
+        T1 tx = (xp - curr_pt.x)/g.x;
+        T1 tz = (zp - curr_pt.z)/g.z;
+        
+        if ( tx<tz ) { // closer to xp
+            curr_pt += tx*g;
+            curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+        } else {
+            curr_pt += tz*g;
+            curr_pt.z = zp;
+        }
+        
+        if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+            curr_pt.z < zmin || curr_pt.z > zmax ) {
+            //  we are going oustide the grid!
+            std::cerr << "Error while computing raypaths: going outside grid!\n"
+            << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+            return;
+            
+        }
+
+        r_data.push_back( curr_pt );
+        
+        // are we close enough to one the Tx nodes ?
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                r_data.push_back( Tx[ns] );
+                reachedTx = true;
+            }
+        }
+
+    }
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
+                                          const sxz<T1> &Rx,
+                                          std::vector<sxz<T1>> &r_data,
+                                          const size_t threadNo) const {
     
     r_data.push_back( Rx );
     
@@ -379,24 +772,174 @@ void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
         }
     }
     
-    std::vector<bool> txOnNode( Tx.size(), false );
-    std::vector<T2> txNode( Tx.size() );
-    std::vector<T2> txCell( Tx.size() );
-    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Tx[nt] ) {
-                txOnNode[nt] = true;
-                txNode[nt] = nn;
-                break;
+    
+    long long int iIn, kIn, iOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
+    sxz<T1> curr_pt( Rx );
+    sxz<T1> gOut = {0.0, 0.0};
+    
+    // distance between opposite nodes of a voxel
+    static const T1 maxDist = sqrt( this->dx*this->dx + this->dz*this->dz );
+    
+    this->getIJ(curr_pt, iIn, kIn);
+    
+    bool reachedTx = false;
+    while ( reachedTx == false ) {
+        
+        bool onNode=false;
+        
+        if ( fabs(remainder(curr_pt.x,this->dx))<small &&
+            fabs(remainder(curr_pt.z,this->dz))<small ) {
+            onNode = true;
+        }
+        
+        if ( onNode ) {
+            
+            T2 i, k;
+            this->getIJ(curr_pt, i, k);
+            std::vector<sij<T2>> cells;
+            
+            // find voxels touching node
+            if ( i<=nCellx && k<=nCellz )
+                cells.push_back( {i,k} );
+            if ( i<=nCellx && k>0 )
+                cells.push_back( {i,k-1} );
+            if ( i>0 && k<=nCellz )
+                cells.push_back( {i-1,k} );
+            if ( i>0 && k>0 )
+                cells.push_back( {i-1,k-1} );
+            
+            gOut = static_cast<T1>(0.0);
+            sxz<T1> g;
+            T2 nc;
+            for ( nc=0; nc<cells.size(); ++nc ) {
+                grad( g, cells[nc].i, cells[nc].j, threadNo );
+                g *= -1.0;
+                gOut += g;
+            }
+            gOut /= nc;  // gOut holds average grad
+            
+            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==nCellx+1) ||
+                (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==nCellz+1)) {
+                //  we are going oustide the grid!
+                std::cerr << "Error while computing raypaths: going outside grid!\n"
+                << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                return;
+            }
+            
+            iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
+            kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
+            
+            // planes we will intersect
+            T1 xp = this->xmin + this->dx*(i + boost::math::sign(gOut.x));
+            T1 zp = this->zmin + this->dz*(k + boost::math::sign(gOut.z));
+            
+            
+            // dist to planes
+            T1 tx = (xp - curr_pt.x)/gOut.x;
+            T1 tz = (zp - curr_pt.z)/gOut.z;
+            
+            if ( tx<tz ) { // closer to xp
+                curr_pt += tx*gOut;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                iIn = iOut + boost::math::sign(gOut.x);
+                kIn = kOut;
+            } else {
+                curr_pt += tz*gOut;
+                curr_pt.z = zp;
+                iIn = iOut;
+                kIn = kOut + boost::math::sign(gOut.z);
+            }
+            
+        } else {
+            
+            sxz<T1> gIn;
+            grad( gIn, iIn, kIn, threadNo );
+            gIn *= -1.0;
+            
+            if ( iIn == iOut && kIn == kOut) {
+                // ray is returning to cell it was exiting
+                // we might be at grazing incidence
+                // check if gIn is significantly different from gOut
+                
+                sxz<T1> diff = normalize(gOut)-normalize(gIn);
+                if ( norm(diff) > small ) {
+                    std::cerr << "Error while computing raypaths: raypath not converging!\n"
+                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                    return;
+                }
+            }
+            
+            gOut = gIn;
+            iOut = iIn;
+            kOut = kIn;
+            
+            if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==nCellx+1) ||
+                (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==nCellz+1)) {
+                //  we are going oustide the grid!
+                std::cerr << "Error while computing raypaths: going outside grid!\n"
+                << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                return;
+            }
+            
+            // planes we will intersect
+            T1 xp = this->xmin + this->dx*(iIn + (boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0));
+            T1 zp = this->zmin + this->dz*(kIn + (boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0));
+            
+            if ( fabs(xp-curr_pt.x)<small) {
+                xp += dx*boost::math::sign(gOut.x);
+                iOut += boost::math::sign(gOut.x);
+            }
+            if ( fabs(zp-curr_pt.z)<small) {
+                zp += dz*boost::math::sign(gOut.z);
+                kOut += boost::math::sign(gOut.z);
+            }
+            
+            // dist to planes
+            T1 tx = (xp - curr_pt.x)/gOut.x;
+            T1 tz = (zp - curr_pt.z)/gOut.z;
+            
+            if ( tx<tz ) { // closer to xp
+                curr_pt += tx*gOut;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                iIn = iOut + boost::math::sign(gOut.x);
+                kIn = kOut;
+            } else {
+                curr_pt += tz*gOut;
+                curr_pt.z = zp;
+                iIn = iOut;
+                kIn = kOut + boost::math::sign(gOut.z);
+            }
+            
+        }
+        
+        
+        r_data.push_back( curr_pt );
+        
+        // are we close enough to one the of Tx nodes ?
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                r_data.push_back( Tx[ns] );
+                reachedTx = true;
             }
         }
     }
-    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-        if ( !txOnNode[nt] ) {
-            txCell[nt] = getCellNo( Tx[nt] );
+
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
+                                           const sxz<T1> &Rx,
+                                           std::vector<sxz<T1>> &r_data,
+                                           const size_t threadNo) const {
+    
+    r_data.push_back( Rx );
+    
+    for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+        if ( Rx == Tx[ns] ) {
+            return;
         }
     }
-
+    
 	long long int iIn, jIn, iOut, jOut; // iOut, jOut for cell we are exiting; iIn, jIn for cell we are entering
     sxz<T1> curr_pt( Rx );
     sxz<T1> gOut;
@@ -580,7 +1123,7 @@ void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                 g *= -1.0;
                 gOut += g;
             }
-            gOut /= nc;  // ag holds average grad
+            gOut /= nc;  // gOut holds average grad
             
             
             if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==nCellx+1) ||

@@ -82,11 +82,11 @@ public:
                          std::vector<T1>& traveltimes,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
-                         const size_t=0) const { return 0; }
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         const size_t threadNo=0) const { return 0; }
     
     virtual int raytrace(const std::vector<sxz<T1>>& Tx,
                          const std::vector<T1>& t0,
@@ -95,12 +95,12 @@ public:
                          std::vector<std::vector<sxz<T1>>>& r_data,
                          const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1>>&,
-                         const std::vector<T1>&,
-                         const std::vector<const std::vector<sxz<T1>>*>&,
-                         std::vector<std::vector<T1>*>&,
-                         std::vector<std::vector<std::vector<sxz<T1>>>*>&,
-                         const size_t=0) const { return 0; }
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                         std::vector<std::vector<T1>*>& traveltimes,
+                         std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                         const size_t threadNo=0) const { return 0; }
 
     size_t getNumberOfNodes() const { return nodes.size(); }
     
@@ -129,6 +129,8 @@ public:
     void saveTT(const std::string &, const int, const size_t nt=0,
                 const bool vtkFormat=0) const;
     
+    void saveTTgrad(const std::string &, const size_t nt=0,
+                    const bool vtkFormat=0) const {}
 
 
 protected:
@@ -247,6 +249,7 @@ void Grid2Drc<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
         fout.close();
     }
 }
+
 
 template<typename T1, typename T2, typename NODE>
 int Grid2Drc<T1,T2,NODE>::check_pts(const std::vector<sxz<T1>>& pts) const {

@@ -89,19 +89,19 @@ struct sxz {
         return *this;
     }
     
-    sxz<T> & operator-=(const sxz<T>& s) {
+    sxz<T>& operator-=(const sxz<T>& s) {
         x -= s.x;
         z -= s.z;
         return *this;
     }
     
-    sxz<T> & operator/=(const T s) {
+    sxz<T>& operator/=(const T s) {
         x /= s;
         z /= s;
         return *this;
     }
     
-    sxz<T> & operator=(const T s) {
+    sxz<T>& operator=(const T s) {
         x = s;
         z = s;
         return *this;
@@ -179,6 +179,13 @@ sxz<T> operator/(const sxz<T>& v, const T& scalar)
 	return sxz<T>(v.x/scalar, v.z/scalar);
 }
 
+template<typename T>
+sxz<T> normalize(const sxz<T>& s) {
+    sxz<T> s2 = s;
+    s2.normalize();
+    return s2;
+}
+
 
 
 template<typename T>
@@ -195,7 +202,7 @@ struct sxyz {
 		return x==s.x && y==s.y && z==s.z;
     }
 	
-	sxyz<T> & operator=(const sxyz<T>& s) {
+	sxyz<T>& operator=(const sxyz<T>& s) {
 		if (this != &s) { // protect against invalid self-assignment
 			x = s.x;
 			y = s.y;
@@ -223,6 +230,13 @@ struct sxyz {
         x = s;
         y = s;
         z = s;
+        return *this;
+    }
+    
+    sxyz<T>& operator/=(const T s) {
+        x /= s;
+        y /= s;
+        z /= s;
         return *this;
     }
     
@@ -255,6 +269,7 @@ struct sxyz {
         y /= n;
         z /= n;
     }
+    
 };
 
 template<typename T>
@@ -294,12 +309,33 @@ sxyz<T> operator/(const sxyz<T>& v, const T& scalar)
 }
 
 template<typename T>
+sxyz<T> normalize(const sxyz<T>& s) {
+    sxyz<T> s2 = s;
+    s2.normalize();
+    return s2;
+}
+
+
+
+
+
+template<typename T>
 struct sij {
     T i;
     T j;
     
     sij() : i(0), j(0) {}
     sij(const T i_, const T j_) : i(i_), j(j_) {}
+};
+
+template<typename T>
+struct sijk {
+    T i;
+    T j;
+    T k;
+    
+    sijk() : i(0), j(0), k(0) {}
+    sijk(const T i_, const T j_, const T k_) : i(i_), j(j_), k(k_) {}
 };
 
 template<typename T>
@@ -471,6 +507,11 @@ sxyz<T> cross(const sxyz<T>& v1, const sxyz<T>& v2) {
 	return v3;
 }
 
+
+template<typename T>
+T norm(const sxz<T>& v) {
+    return sqrt( v.x*v.x + v.z*v.z );
+}
 
 template<typename T>
 T norm(const sxyz<T>& v) {
