@@ -226,6 +226,18 @@ void get_params(const std::string &filename, input_parameters &ip) {
 			sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
 			sin >> ip.source_radius;
 		}
+        else if (par.find("rotated template") < 200) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            int test;
+            sin >> test;
+            if ( test == 1 ) ip.rotated_template = true;
+        }
+        else if (par.find("fsm high order") < 200) {
+            sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+            int test;
+            sin >> test;
+            if ( test == 1 ) ip.weno3 = true;
+        }
 		fin.getline(parameter, 200);
 	}
 	fin.close();

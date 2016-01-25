@@ -189,10 +189,10 @@ template<typename T1, typename T2>
 void Grid2Drcsp<T1,T2>::buildGridNodes() {
     
     this->nodes.resize( // noeuds secondaires
-                       this->nCellx*nsnx*(this->nCellz+1) +
-                       this->nCellz*nsnz*(this->nCellx+1) +
+                       this->ncx*nsnx*(this->ncz+1) +
+                       this->ncz*nsnz*(this->ncx+1) +
                        // noeuds primaires
-                       (this->nCellx+1) * (this->nCellz+1));
+                       (this->ncx+1) * (this->ncz+1));
     
     T1 dxs = this->dx/(nsnx+1);
     T1 dzs = this->dz/(nsnz+1);
@@ -202,37 +202,37 @@ void Grid2Drcsp<T1,T2>::buildGridNodes() {
     T2 cell_downLeft = 0;
     T2 cell_downRight = 0;
     
-    for ( T2 n=0, nc=0; nc<=this->nCellx; ++nc ) {
+    for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
         
         double x = this->xmin + nc*this->dx;
         
-        for ( T2 nr=0; nr<=this->nCellz; ++nr ) {
+        for ( T2 nr=0; nr<=this->ncz; ++nr ) {
             
             double z = this->zmin + nr*this->dz;
             
-            if ( nr < this->nCellz && nc < this->nCellx ) {
-                cell_downRight = nc*this->nCellz + nr;
+            if ( nr < this->ncz && nc < this->ncx ) {
+                cell_downRight = nc*this->ncz + nr;
             }
             else {
                 cell_downRight = std::numeric_limits<T2>::max();
             }
             
-            if ( nr > 0 && nc < this->nCellx ) {
-                cell_upRight = nc*this->nCellz + nr - 1;
+            if ( nr > 0 && nc < this->ncx ) {
+                cell_upRight = nc*this->ncz + nr - 1;
             }
             else {
                 cell_upRight = std::numeric_limits<T2>::max();
             }
             
-            if ( nr < this->nCellz && nc > 0 ) {
-                cell_downLeft = (nc-1)*this->nCellz + nr;
+            if ( nr < this->ncz && nc > 0 ) {
+                cell_downLeft = (nc-1)*this->ncz + nr;
             }
             else {
                 cell_downLeft = std::numeric_limits<T2>::max();
             }
             
             if ( nr > 0 && nc > 0 ) {
-                cell_upLeft = (nc-1)*this->nCellz + nr - 1;
+                cell_upLeft = (nc-1)*this->ncz + nr - 1;
             }
             else {
                 cell_upLeft = std::numeric_limits<T2>::max();
@@ -266,7 +266,7 @@ void Grid2Drcsp<T1,T2>::buildGridNodes() {
             ++n;
             
             // secondary nodes on the vertical
-            if ( nr < this->nCellz ) {
+            if ( nr < this->ncz ) {
                 for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
                     
                     double zsv = this->zmin + nr*this->dz + (ns+1)*dzs;
@@ -288,7 +288,7 @@ void Grid2Drcsp<T1,T2>::buildGridNodes() {
             }
             
             // secondary nodes on the horizontal
-            if ( nc < this->nCellx ) {
+            if ( nc < this->ncx ) {
                 for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
                     
                     double xsh = this->xmin + nc*this->dx + (ns+1)*dxs;
@@ -995,31 +995,31 @@ void Grid2Drcsp<T1,T2>::propagate_fmm( std::priority_queue<Node2Dcsp<T1,T2>*, st
                 }
                 
 				// find i,j indices of node
-				T2 i = source->getGridIndex() / (this->nCellz+1);
-				T2 j = source->getGridIndex() - i*(this->nCellz+1);
+				T2 i = source->getGridIndex() / (this->ncz+1);
+				T2 j = source->getGridIndex() - i*(this->ncz+1);
 				
 				T1 t1, t2, t=this->nodes[neibNo].getTT(threadNo);
 				T1 s = this->slowness[cellNo];
 				if (i==0) {
-					t1 = this->nodes[j].getTT(threadNo) < this->nodes[(this->nCellz+1)+j].getTT(threadNo) ?
-					this->nodes[j].getTT(threadNo) : this->nodes[(this->nCellz+1)+j].getTT(threadNo);
-				} else if (i==this->nCellx) {
-					t1 = this->nodes[(i-1)*(this->nCellz+1)+j].getTT(threadNo) < this->nodes[this->nCellx*(this->nCellz+1)+j].getTT(threadNo) ?
-					this->nodes[(i-1)*(this->nCellz+1)+j].getTT(threadNo) : this->nodes[this->nCellx*(this->nCellz+1)+j].getTT(threadNo);
+					t1 = this->nodes[j].getTT(threadNo) < this->nodes[(this->ncz+1)+j].getTT(threadNo) ?
+					this->nodes[j].getTT(threadNo) : this->nodes[(this->ncz+1)+j].getTT(threadNo);
+				} else if (i==this->ncx) {
+					t1 = this->nodes[(i-1)*(this->ncz+1)+j].getTT(threadNo) < this->nodes[this->ncx*(this->ncz+1)+j].getTT(threadNo) ?
+					this->nodes[(i-1)*(this->ncz+1)+j].getTT(threadNo) : this->nodes[this->ncx*(this->ncz+1)+j].getTT(threadNo);
 				} else {
-					t1 = this->nodes[(i-1)*(this->nCellz+1)+j].getTT(threadNo) < this->nodes[(i+1)*(this->nCellz+1)+j].getTT(threadNo) ?
-					this->nodes[(i-1)*(this->nCellz+1)+j].getTT(threadNo) : this->nodes[(i+1)*(this->nCellz+1)+j].getTT(threadNo);
+					t1 = this->nodes[(i-1)*(this->ncz+1)+j].getTT(threadNo) < this->nodes[(i+1)*(this->ncz+1)+j].getTT(threadNo) ?
+					this->nodes[(i-1)*(this->ncz+1)+j].getTT(threadNo) : this->nodes[(i+1)*(this->ncz+1)+j].getTT(threadNo);
 				}
 				
 				if (j==0) {
-					t2 = this->nodes[i*(this->nCellz+1)].getTT(threadNo) < this->nodes[i*(this->nCellz+1)+1].getTT(threadNo) ?
-					this->nodes[i*(this->nCellz+1)].getTT(threadNo) : this->nodes[i*(this->nCellz+1)+1].getTT(threadNo);
-				} else if (j==this->nCellz) {
-					t2 = this->nodes[i*(this->nCellz+1)+j-1].getTT(threadNo) < this->nodes[i*(this->nCellz+1)+this->nCellz].getTT(threadNo) ?
-					this->nodes[i*(this->nCellz+1)+j-1].getTT(threadNo) : this->nodes[i*(this->nCellz+1)+this->nCellz].getTT(threadNo);
+					t2 = this->nodes[i*(this->ncz+1)].getTT(threadNo) < this->nodes[i*(this->ncz+1)+1].getTT(threadNo) ?
+					this->nodes[i*(this->ncz+1)].getTT(threadNo) : this->nodes[i*(this->ncz+1)+1].getTT(threadNo);
+				} else if (j==this->ncz) {
+					t2 = this->nodes[i*(this->ncz+1)+j-1].getTT(threadNo) < this->nodes[i*(this->ncz+1)+this->ncz].getTT(threadNo) ?
+					this->nodes[i*(this->ncz+1)+j-1].getTT(threadNo) : this->nodes[i*(this->ncz+1)+this->ncz].getTT(threadNo);
 				} else {
-					t2 = this->nodes[i*(this->nCellz+1)+j-1].getTT(threadNo) < this->nodes[i*(this->nCellz+1)+j+1].getTT(threadNo) ?
-					this->nodes[i*(this->nCellz+1)+j-1].getTT(threadNo) : this->nodes[i*(this->nCellz+1)+j+1].getTT(threadNo);
+					t2 = this->nodes[i*(this->ncz+1)+j-1].getTT(threadNo) < this->nodes[i*(this->ncz+1)+j+1].getTT(threadNo) ?
+					this->nodes[i*(this->ncz+1)+j-1].getTT(threadNo) : this->nodes[i*(this->ncz+1)+j+1].getTT(threadNo);
 				}
                 
 				

@@ -1,23 +1,21 @@
 //
-//  Grid3Drifs.h
+//  Grid3Drcfs.h
 //  ttcr
 //
-//  Created by Bernard Giroux on 15-12-27.ncz
-//  Copyright © 2015 Bernard Giroux. All rights reserved.
+//  Created by Bernard Giroux on 16-01-07.
+//  Copyright © 2016 Bernard Giroux. All rights reserved.
 //
 
-#ifndef Grid3Drifs_h
-#define Grid3Drifs_h
-
-#include <utility>
+#ifndef Grid3Drcfs_h
+#define Grid3Drcfs_h
 
 #include "Grid3Dri.h"
 #include "Node3Di.h"
 
 template<typename T1, typename T2>
-class Grid3Drifs : public Grid3Dri<T1,T2,Node3Di<T1,T2>> {
+class Grid3Drcfs : public Grid3Dri<T1,T2,Node3Di<T1,T2>> {
 public:
-    Grid3Drifs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
+    Grid3Drcfs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                const T1 minx, const T1 miny, const T1 minz,
                const T1 eps, const int maxit, const bool w,
                const size_t nt=1) :
@@ -28,9 +26,10 @@ public:
         this->buildGridNeighbors();
     }
     
-    ~Grid3Drifs() {
-        
+    virtual ~Grid3Drcfs() {
     }
+
+    int setSlowness(const std::vector<T1>& s);
     
     int raytrace(const std::vector<sxyz<T1>>& Tx,
                  const std::vector<T1>& t0,
@@ -65,16 +64,106 @@ protected:
     bool weno3;
     
     void buildGridNodes();
-
-private:
-    Grid3Drifs() {}
-    Grid3Drifs(const Grid3Drifs<T1,T2>& g) {}
-    Grid3Drifs<T1,T2>& operator=(const Grid3Drifs<T1,T2>& g) {}
     
+private:
+    Grid3Drcfs() {}
+    Grid3Drcfs(const Grid3Drcfs<T1,T2>& g) {}
+    Grid3Drcfs<T1,T2>& operator=(const Grid3Drcfs<T1,T2>& g) {}
+
 };
 
+
 template<typename T1, typename T2>
-void Grid3Drifs<T1,T2>::buildGridNodes() {
+int Grid3Drcfs<T1,T2>::setSlowness(const std::vector<T1>& s) {
+    
+    if ( this->ncx*this->ncy*this->ncz != s.size() ) {
+        std::cerr << "Error: slowness vectors of incompatible size.";
+        return 1;
+    }
+    
+    // interpolate slowness at grid nodes
+
+    const size_t nx = this->ncx;
+    const size_t ny = this->ncy;
+    const size_t nz = this->ncz;
+
+    // corners
+    this->nodes[                       0].setNodeSlowness( s[                       0] );
+    this->nodes[                      nx].setNodeSlowness( s[                    nx-1] );
+    this->nodes[           ny *(nx+1)   ].setNodeSlowness( s[          (ny-1)*nx     ] );
+    this->nodes[           ny *(nx+1)+nx].setNodeSlowness( s[          (ny-1)*nx+nx-1] );
+    this->nodes[(nz*(ny+1)   )*(nx+1)   ].setNodeSlowness( s[((nz-1)*ny     )*nx     ] );
+    this->nodes[(nz*(ny+1)   )*(nx+1)+nx].setNodeSlowness( s[((nz-1)*ny     )*nx+nx-1] );
+    this->nodes[(nz*(ny+1)+ny)*(nx+1)   ].setNodeSlowness( s[((nz-1)*ny+ny-1)*nx     ] );
+    this->nodes[(nz*(ny+1)+ny)*(nx+1)+nx].setNodeSlowness( s[((nz-1)*ny+ny-1)*nx+nx-1] );
+
+    // edges
+    for ( size_t i=1; i<nx; ++i ) {
+        this->nodes[                      i].setNodeSlowness( 0.5*(s[                    i]+s[                    i-1]) );
+        this->nodes[           ny *(nx+1)+i].setNodeSlowness( 0.5*(s[          (ny-1)*nx+i]+s[          (ny-1)*nx+i-1]) );
+        this->nodes[(nz*(ny+1)   )*(nx+1)+i].setNodeSlowness( 0.5*(s[((nz-1)*ny     )*nx+i]+s[((nz-1)*ny     )*nx+i-1]) );
+        this->nodes[(nz*(ny+1)+ny)*(nx+1)+i].setNodeSlowness( 0.5*(s[((nz-1)*ny+ny-1)*nx+i]+s[((nz-1)*ny+ny-1)*nx+i-1]) );
+    }
+    for ( size_t j=1; j<ny; ++j ) {
+        this->nodes[           j *(nx+1)   ].setNodeSlowness( 0.5*(s[            j*nx     ]+s[          (j-1)*nx     ]) );
+        this->nodes[           j *(nx+1)+nx].setNodeSlowness( 0.5*(s[            j*nx+nx-1]+s[          (j-1)*nx+nx-1]) );
+        this->nodes[(nz*(ny+1)+j)*(nx+1)   ].setNodeSlowness( 0.5*(s[((nz-1)*ny+j)*nx     ]+s[((nz-1)*ny+j-1)*nx     ]) );
+        this->nodes[(nz*(ny+1)+j)*(nx+1)+nx].setNodeSlowness( 0.5*(s[((nz-1)*ny+j)*nx+nx-1]+s[((nz-1)*ny+j-1)*nx+nx-1]) );
+    }
+    for ( size_t k=1; k<nz; ++k ) {
+        this->nodes[(k*(ny+1)   )*(nx+1)   ].setNodeSlowness( 0.5*(s[(k*ny     )*nx     ]+s[((k-1)*ny     )*nx     ]) );
+        this->nodes[(k*(ny+1)   )*(nx+1)+nx].setNodeSlowness( 0.5*(s[(k*ny     )*nx+nx-1]+s[((k-1)*ny     )*nx+nx-1]) );
+        this->nodes[(k*(ny+1)+ny)*(nx+1)   ].setNodeSlowness( 0.5*(s[(k*ny+ny-1)*nx     ]+s[((k-1)*ny+ny-1)*nx     ]) );
+        this->nodes[(k*(ny+1)+ny)*(nx+1)+nx].setNodeSlowness( 0.5*(s[(k*ny+ny-1)*nx+nx-1]+s[((k-1)*ny+ny-1)*nx+nx-1]) );
+    }
+
+    // faces
+    for ( size_t i=1; i<nx; ++i ) {
+        for ( size_t j=1; j<ny; ++j ) {
+            this->nodes[           j *(nx+1)+i].setNodeSlowness( 0.25*(s[             j *nx+i]+s[             j *nx+i-1]+
+                                                                       s[          (j-1)*nx+i]+s[          (j-1)*nx+i-1]) );
+            this->nodes[(nz*(ny+1)+j)*(nx+1)+i].setNodeSlowness( 0.25*(s[((nz-1)*ny+  j)*nx+i]+s[((nz-1)*ny+  j)*nx+i-1]+
+                                                                       s[((nz-1)*ny+j-1)*nx+i]+s[((nz-1)*ny+j-1)*nx+i-1]) );
+        }
+    }
+    for ( size_t i=1; i<nx; ++i ) {
+        for ( size_t k=1; k<nz; ++k ) {
+            this->nodes[(k*(ny+1)   )*(nx+1)+i].setNodeSlowness( 0.25*(s[(   k *ny     )*nx+i]+s[(   k *ny     )*nx+i-1]+
+                                                                       s[((k-1)*ny     )*nx+i]+s[((k-1)*ny     )*nx+i-1]) );
+            this->nodes[(k*(ny+1)+ny)*(nx+1)+i].setNodeSlowness( 0.25*(s[(   k *ny+ny-1)*nx+i]+s[(   k *ny+ny-1)*nx+i-1]+
+                                                                       s[((k-1)*ny+ny-1)*nx+i]+s[((k-1)*ny+ny-1)*nx+i-1]) );
+        }
+    }
+    for ( size_t j=1; j<ny; ++j ) {
+        for ( size_t k=1; k<nz; ++k ) {
+            this->nodes[(k*(ny+1)+j)*(nx+1)   ].setNodeSlowness( 0.25*(s[(k*ny+  j)*nx     ]+s[((k-1)*ny+  j)*nx     ]+
+                                                                       s[(k*ny+j-1)*nx     ]+s[((k-1)*ny+j-1)*nx     ]) );
+            this->nodes[(k*(ny+1)+j)*(nx+1)+nx].setNodeSlowness( 0.25*(s[(k*ny+  j)*nx+nx-1]+s[((k-1)*ny+  j)*nx+nx-1]+
+                                                                       s[(k*ny+j-1)*nx+nx-1]+s[((k-1)*ny+j-1)*nx+nx-1]) );
+        }
+    }
+    
+    // interior
+    for ( size_t i=1; i<nx; ++i ) {
+        for ( size_t j=1; j<ny; ++j ) {
+            for ( size_t k=1; k<nz; ++k ) {
+                this->nodes[(k*(ny+1)+j)*(nx+1)+i].setNodeSlowness( 0.125*(s[(    k*ny+j  )*nx+i  ]+
+                                                                           s[(    k*ny+j  )*nx+i-1]+
+                                                                           s[(    k*ny+j-1)*nx+i  ]+
+                                                                           s[(    k*ny+j-1)*nx+i-1]+
+                                                                           s[((k-1)*ny+j  )*nx+i  ]+
+                                                                           s[((k-1)*ny+j  )*nx+i-1]+
+                                                                           s[((k-1)*ny+j-1)*nx+i  ]+
+                                                                           s[((k-1)*ny+j-1)*nx+i-1]) );
+            }
+        }
+    }
+    return 0;
+}
+
+
+template<typename T1, typename T2>
+void Grid3Drcfs<T1,T2>::buildGridNodes() {
     
     T2 cell_XmYmZm; 	// cell in the (x-,y-,z-) direction from the node
     T2 cell_XpYmZm; 	// cell in the (x+,y-,z-) direction from the node
@@ -195,7 +284,7 @@ void Grid3Drifs<T1,T2>::buildGridNodes() {
 
 
 template<typename T1, typename T2>
-int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+int Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const std::vector<sxyz<T1>>& Rx,
                                 std::vector<T1>& traveltimes,
@@ -278,7 +367,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+int Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                 std::vector<std::vector<T1>*>& traveltimes,
@@ -364,7 +453,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+int Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const std::vector<sxyz<T1>>& Rx,
                                 std::vector<T1>& traveltimes,
@@ -452,7 +541,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 }
 
 template<typename T1, typename T2>
-int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+int Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                 std::vector<std::vector<T1>*>& traveltimes,
@@ -556,4 +645,4 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 
 
 
-#endif /* Grid3Drifs_h */
+#endif /* Grid3Drcfs_h */

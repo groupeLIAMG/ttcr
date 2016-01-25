@@ -44,6 +44,8 @@ struct input_parameters {
 	bool time;
 	bool processReflectors;
     bool raypath_high_order;
+    bool rotated_template;
+    bool weno3;
 	double epsilon;
 	double source_radius;
     raytracing_method method;
@@ -57,9 +59,9 @@ struct input_parameters {
 	input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
     inverseDistance(false),	singlePrecision(false), saveRaypaths(false),
     saveModelVTK(false), saveGridTT(false), time(false), processReflectors(false),
-    raypath_high_order(false), epsilon(1.e-15), source_radius(0.0),
-    method(SHORTEST_PATH), basename(), modelfile(), velfile(), slofile(),
-    rcvfile(), srcfiles() {}
+    raypath_high_order(false), rotated_template(false), weno3(false),
+    epsilon(1.e-15), source_radius(0.0), method(SHORTEST_PATH), basename(),
+    modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
 
 };
 

@@ -35,16 +35,6 @@ public:
     virtual ~Grid2Drc() {
     }
 
-    
-    T1 getDx() const { return dx; }
-    T1 getDz() const { return dz; }
-    T1 getXmin() const { return xmin; }
-    T1 getXmax() const { return xmax; }
-    T1 getZmin() const { return zmin; }
-    T1 getZmax() const { return zmax; }
-    T2 getNcellx() const { return nCellx; }
-    T2 getNcellz() const { return nCellz; }
-
     T2 getNumberOfCells() const { return slowness.size(); }
     virtual T1 getSlowness(const size_t n) const { return slowness[n]; }
     
@@ -109,15 +99,15 @@ public:
         T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
         T2 nx = static_cast<T2>( small + (x-xmin)/dx );
         T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-        return nx*nCellz + nz;
+        return nx*ncz + nz;
     }
     
     void saveSlownessXYZ(const char filename[]) const {
         std::ofstream fout( filename );
         
-        for ( T2 j=0, n=0; j<nCellx; ++j ) {
+        for ( T2 j=0, n=0; j<ncx; ++j ) {
             T1 x = xmin + (0.5+j)*dx;
-            for ( T2 i=0; i<nCellz; ++i, ++n ) {
+            for ( T2 i=0; i<ncz; ++i, ++n ) {
                 T1 z = zmin + (0.5+i)*dz;
                 fout << x << "   " << z << "   " << slowness[n] << '\n';
             }
@@ -141,8 +131,8 @@ protected:
     T1 zmin;         // z origin of the grid
     T1 xmax;         // x end of the grid
     T1 zmax;         // z end of the grid
-    T2 nCellx;  // number of cells in x
-    T2 nCellz;  // number of cells in x
+    T2 ncx;          // number of cells in x
+    T2 ncz;          // number of cells in z
 
     mutable std::vector<NODE> nodes;
     
@@ -172,10 +162,10 @@ template<typename T1, typename T2, typename NODE>
 Grid2Drc<T1,T2,NODE>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                                const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
 dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
-nCellx(nx), nCellz(nz),
-nodes(std::vector<NODE>( (nCellx+1) * (nCellz+1), NODE(nt) )),
-slowness(std::vector<T1>(nCellx*nCellz)),
-neighbors(std::vector<std::vector<T2>>(nCellx*nCellz))
+ncx(nx), ncz(nz),
+nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
+slowness(std::vector<T1>(ncx*ncz)),
+neighbors(std::vector<std::vector<T2>>(ncx*ncz))
 { }
 
 template<typename T1, typename T2, typename NODE>
@@ -196,7 +186,7 @@ void Grid2Drc<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
 #ifdef VTK
         
         std::string filename = fname+".vtr";
-        int nn[3] = {static_cast<int>(nCellx+1), 1, static_cast<int>(nCellz+1)};
+        int nn[3] = {static_cast<int>(ncx+1), 1, static_cast<int>(ncz+1)};
         
         vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
         for (size_t n=0; n<nn[0]; ++n)

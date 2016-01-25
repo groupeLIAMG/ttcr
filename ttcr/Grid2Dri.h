@@ -54,15 +54,6 @@ public:
     virtual ~Grid2Dri() {
     }
     
-    T1 getDx() const { return dx; }
-    T1 getDz() const { return dz; }
-    T1 getXmin() const { return xmin; }
-    T1 getXmax() const { return xmax; }
-    T1 getZmin() const { return zmin; }
-    T1 getZmax() const { return zmax; }
-    T2 getNcellx() const { return nCellx; }
-    T2 getNcellz() const { return nCellz; }
-    
     void setSlowness(const T1 s) {
         for ( size_t n=0; n<nodes.size(); ++n ) {
         	nodes[n].setNodeSlowness( s );
@@ -135,8 +126,8 @@ protected:
     T1 zmin;         // z origin of the grid
     T1 xmax;         // x end of the grid
     T1 zmax;         // z end of the grid
-    T2 nCellx;       // number of cells in x
-    T2 nCellz;       // number of cells in x
+    T2 ncx;       // number of cells in x
+    T2 ncz;       // number of cells in x
     
     mutable std::vector<NODE> nodes;
     
@@ -186,7 +177,7 @@ protected:
         T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
         T2 nx = static_cast<T2>( small + (x-xmin)/dx );
         T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-        return nx*nCellz + nz;
+        return nx*ncz + nz;
     }
     
     void getIJ(const sxz<T1>& pt, T2& i, T2& j) const {
@@ -199,6 +190,26 @@ protected:
         j = static_cast<long long>( small + (pt.z-zmin)/dz );
     }
 
+    void sweep(const std::vector<bool>& frozen,
+               const size_t threadNo) const;
+    void sweep45(const std::vector<bool>& frozen,
+                 const size_t threadNo) const;
+    void sweep_xz(const std::vector<bool>& frozen,
+                  const size_t threadNo) const;
+    void sweep_weno3(const std::vector<bool>& frozen,
+                     const size_t threadNo) const;
+    void sweep_weno3_xz(const std::vector<bool>& frozen,
+                        const size_t threadNo) const;
+    
+    void update_node(const size_t, const size_t, const size_t=0) const;
+    void update_node45(const size_t, const size_t, const size_t=0) const;
+    void update_node_xz(const size_t, const size_t, const size_t=0) const;
+    void update_node_weno3(const size_t, const size_t, const size_t=0) const;
+    void update_node_weno3_xz(const size_t, const size_t, const size_t=0) const;
+
+    void initFSM(const std::vector<sxz<T1>>& Tx,
+                 const std::vector<T1>& t0, std::vector<bool>& frozen,
+                 const int npts, const size_t threadNo) const;
 private:
     Grid2Dri() {}
     Grid2Dri(const Grid2Dri<T1,T2,NODE>& g) {}
@@ -210,9 +221,9 @@ template<typename T1, typename T2, typename NODE>
 Grid2Dri<T1,T2,NODE>::Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
 						  const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
 dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
-nCellx(nx), nCellz(nz),
-nodes(std::vector<NODE>( (nCellx+1) * (nCellz+1), NODE(nt) )),
-neighbors(std::vector<std::vector<T2>>(nCellx*nCellz))
+ncx(nx), ncz(nz),
+nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
+neighbors(std::vector<std::vector<T2>>(ncx*ncz))
 { }
 
 template<typename T1, typename T2, typename NODE>
@@ -320,7 +331,7 @@ void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
 #ifdef VTK
 
         std::string filename = fname+".vtr";
-        int nn[3] = {static_cast<int>(nCellx+1), 1, static_cast<int>(nCellz+1)};
+        int nn[3] = {static_cast<int>(ncx+1), 1, static_cast<int>(ncz+1)};
         
         vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
         for (size_t n=0; n<nn[0]; ++n)
@@ -347,8 +358,10 @@ void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
         
         
         for ( size_t n=0; n<nodes.size(); ++n ) {
+            if ( nodes[n].isPrimary() == true ) {
                 vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
                 newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+            }
         }
         rgrid->GetPointData()->SetScalars(newScalars);
         
@@ -366,9 +379,12 @@ void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
         std::ofstream fout(fname.c_str());
         fout.precision(12);
         for ( T2 n=0; n<nodes.size(); ++n ) {
-            fout << nodes[n].getX() << '\t'
-            << nodes[n].getZ() << '\t'
-            << nodes[n].getTT(nt) << '\n';
+            if ( nodes[n].isPrimary() == true || all==1 ) {
+
+                fout << nodes[n].getX() << '\t'
+                << nodes[n].getZ() << '\t'
+                << nodes[n].getTT(nt) << '\n';
+            }
         }
         fout.close();
     }
@@ -383,7 +399,7 @@ void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
 #ifdef VTK
         
         std::string filename = fname+".vtr";
-        int nn[3] = {static_cast<int>(nCellx), 1, static_cast<int>(nCellz)};
+        int nn[3] = {static_cast<int>(ncx), 1, static_cast<int>(ncz)};
         
         vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
         for (size_t n=0; n<nn[0]; ++n)
@@ -414,8 +430,8 @@ void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
         
         double x[3];
         x[1] = 0.0;
-        for ( size_t i=0; i<nCellx; ++i ) {
-            for ( size_t j=0; j<nCellz; ++j ) {
+        for ( size_t i=0; i<ncx; ++i ) {
+            for ( size_t j=0; j<ncz; ++j ) {
                 sxz<T1> g;
                 grad(g, i, j, nt);
                 
@@ -442,8 +458,8 @@ void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
     } else {
         std::ofstream fout(fname.c_str());
         fout.precision(12);
-        for ( size_t i=0; i<nCellx; ++i ) {
-            for ( size_t j=0; j<nCellz; ++j ) {
+        for ( size_t i=0; i<ncx; ++i ) {
+            for ( size_t j=0; j<ncz; ++j ) {
                 sxz<T1> g;
                 grad(g, i, j, nt);
                 
@@ -583,8 +599,8 @@ void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
 //    } else {
 //        std::ofstream fout(fname.c_str());
 //        fout.precision(12);
-//        for ( size_t i=0; i<nCellx; ++i ) {
-//            for ( size_t j=0; j<nCellz; ++j ) {
+//        for ( size_t i=0; i<ncx; ++i ) {
+//            for ( size_t j=0; j<ncz; ++j ) {
 //                sxz<T1> g;
 //                grad(g, i, j, nt);
 //                
@@ -605,7 +621,7 @@ void Grid2Dri<T1,T2,NODE>::grad(sxz<T1>& g, const size_t i, const size_t j,
     
     // compute average gradient for cell (i,j)
     
-    static const size_t nnz = nCellz+1;
+    static const size_t nnz = ncz+1;
     
     g.x = 0.5*(( nodes[(i+1)*nnz+j].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
                ( nodes[    i*nnz+j].getTT(nt)+nodes[    i*nnz+j+1].getTT(nt) ))/dx;
@@ -640,12 +656,12 @@ T1 Grid2Dri<T1,T2,NODE>::interpTT(const sxz<T1> &pt, const size_t nt) const {
     
     if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
         // on node
-        return nodes[i*(nCellz+1)+j].getTT(nt);
+        return nodes[i*(ncz+1)+j].getTT(nt);
     } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
         
         // on edge
-        T1 t1 = nodes[i*(nCellz+1)+j].getTT(nt);
-        T1 t2 = nodes[i*(nCellz+1)+j+1].getTT(nt);
+        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
+        T1 t2 = nodes[i*(ncz+1)+j+1].getTT(nt);
         
         T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
 		T1 w2 = (pt.z - (zmin+j*dz))/dz;
@@ -655,8 +671,8 @@ T1 Grid2Dri<T1,T2,NODE>::interpTT(const sxz<T1> &pt, const size_t nt) const {
     } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
         
         // on edge
-        T1 t1 = nodes[i*(nCellz+1)+j].getTT(nt);
-        T1 t2 = nodes[(i+1)*(nCellz+1)+j].getTT(nt);
+        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
+        T1 t2 = nodes[(i+1)*(ncz+1)+j].getTT(nt);
 		
         T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
 		T1 w2 = (pt.x - (xmin+i*dx))/dx;
@@ -665,10 +681,10 @@ T1 Grid2Dri<T1,T2,NODE>::interpTT(const sxz<T1> &pt, const size_t nt) const {
         
     } else {
         
-        T1 t1 = nodes[    i*(nCellz+1)+j  ].getTT(nt);
-        T1 t2 = nodes[(i+1)*(nCellz+1)+j  ].getTT(nt);
-        T1 t3 = nodes[    i*(nCellz+1)+j+1].getTT(nt);
-        T1 t4 = nodes[(i+1)*(nCellz+1)+j+1].getTT(nt);
+        T1 t1 = nodes[    i*(ncz+1)+j  ].getTT(nt);
+        T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getTT(nt);
+        T1 t3 = nodes[    i*(ncz+1)+j+1].getTT(nt);
+        T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getTT(nt);
 
 		T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
 		T1 w2 = (pt.x - (xmin+i*dx))/dx;
@@ -701,7 +717,7 @@ void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
     
     sxz<T1> curr_pt( Rx );
     // distance between opposite nodes of a voxel
-    static const T1 maxDist = sqrt( this->dx*this->dx + this->dz*this->dz );
+    static const T1 maxDist = sqrt( dx*dx + dz*dz );
     sxz<T1> g;
     
     bool reachedTx = false;
@@ -714,8 +730,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
         getIJ(curr_pt, i, k);
         
         // planes we will intersect
-        T1 xp = this->xmin + this->dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
-        T1 zp = this->zmin + this->dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+        T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+        T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
         
         if ( fabs(xp-curr_pt.x)<small) {
             xp += dx*boost::math::sign(g.x);
@@ -778,32 +794,32 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
     sxz<T1> gOut = {0.0, 0.0};
     
     // distance between opposite nodes of a voxel
-    static const T1 maxDist = sqrt( this->dx*this->dx + this->dz*this->dz );
+    static const T1 maxDist = sqrt( dx*dx + dz*dz );
     
-    this->getIJ(curr_pt, iIn, kIn);
+    getIJ(curr_pt, iIn, kIn);
     
     bool reachedTx = false;
     while ( reachedTx == false ) {
         
         bool onNode=false;
         
-        if ( fabs(remainder(curr_pt.x,this->dx))<small &&
-            fabs(remainder(curr_pt.z,this->dz))<small ) {
+        if ( fabs(remainder(curr_pt.x,dx))<small &&
+            fabs(remainder(curr_pt.z,dz))<small ) {
             onNode = true;
         }
         
         if ( onNode ) {
             
             T2 i, k;
-            this->getIJ(curr_pt, i, k);
+            getIJ(curr_pt, i, k);
             std::vector<sij<T2>> cells;
             
             // find voxels touching node
-            if ( i<=nCellx && k<=nCellz )
+            if ( i<=ncx && k<=ncz )
                 cells.push_back( {i,k} );
-            if ( i<=nCellx && k>0 )
+            if ( i<=ncx && k>0 )
                 cells.push_back( {i,k-1} );
-            if ( i>0 && k<=nCellz )
+            if ( i>0 && k<=ncz )
                 cells.push_back( {i-1,k} );
             if ( i>0 && k>0 )
                 cells.push_back( {i-1,k-1} );
@@ -818,8 +834,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
             }
             gOut /= nc;  // gOut holds average grad
             
-            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==nCellx+1) ||
-                (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==nCellz+1)) {
+            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
+                (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                 //  we are going oustide the grid!
                 std::cerr << "Error while computing raypaths: going outside grid!\n"
                 << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
@@ -830,8 +846,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
             kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
             
             // planes we will intersect
-            T1 xp = this->xmin + this->dx*(i + boost::math::sign(gOut.x));
-            T1 zp = this->zmin + this->dz*(k + boost::math::sign(gOut.z));
+            T1 xp = xmin + dx*(i + boost::math::sign(gOut.x));
+            T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
             
             
             // dist to planes
@@ -873,8 +889,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
             iOut = iIn;
             kOut = kIn;
             
-            if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==nCellx+1) ||
-                (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==nCellz+1)) {
+            if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==ncx+1) ||
+                (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
                 //  we are going oustide the grid!
                 std::cerr << "Error while computing raypaths: going outside grid!\n"
                 << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
@@ -882,8 +898,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
             }
             
             // planes we will intersect
-            T1 xp = this->xmin + this->dx*(iIn + (boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0));
-            T1 zp = this->zmin + this->dz*(kIn + (boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0));
+            T1 xp = xmin + dx*(iIn + (boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(kIn + (boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0));
             
             if ( fabs(xp-curr_pt.x)<small) {
                 xp += dx*boost::math::sign(gOut.x);
@@ -1071,7 +1087,7 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
 			}
 		}
 		
-		if ( iIn<0 || iIn>nCellx || jIn<0 || jIn>nCellz ) {
+		if ( iIn<0 || iIn>ncx || jIn<0 || jIn>ncz ) {
 			//  we are going oustide the grid!
 			std::cerr << "Error while computing raypaths: going outside grid!\n"
 			<< "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
@@ -1106,11 +1122,11 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
             std::vector<sij<T2>> cells;
             
             // find cells touching node
-            if ( i<=nCellx && j<=nCellz )
+            if ( i<=ncx && j<=ncz )
                 cells.push_back( {i, j} );
-            if ( i>0 && j<=nCellz )
+            if ( i>0 && j<=ncz )
                 cells.push_back( {i-1, j} );
-            if ( i<=nCellx && j>0 )
+            if ( i<=ncx && j>0 )
                 cells.push_back( {i, j-1} );
             if ( i>0 && j>0 )
                 cells.push_back( {i-1, j-1} );
@@ -1126,8 +1142,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
             gOut /= nc;  // gOut holds average grad
             
             
-            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==nCellx+1) ||
-                (gOut.z<0.0 && j==0) || (gOut.z>0.0 && j==nCellz+1)) {
+            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
+                (gOut.z<0.0 && j==0) || (gOut.z>0.0 && j==ncz+1)) {
                 //  we are going oustide the grid!
                 std::cerr << "Error while computing raypaths: going outside grid!\n"
                           << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
@@ -1415,5 +1431,748 @@ void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
         }
     }
 }
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,
+                                 const size_t threadNo) const {
+    
+    //    std::cout << '\n';
+    //    for ( int j=ncz; j>=0; --j ) {
+    //        for ( size_t i=0; i<=ncx; ++i ) {
+    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+    //        }
+    //        std::cout << '\n';
+    //    }
+    
+    // sweep first direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node(i, j, threadNo);
+            }
+        }
+    }
+    //    std::cout << '\n';
+    //    for ( int j=ncz; j>=0; --j ) {
+    //        for ( size_t i=0; i<=ncx; ++i ) {
+    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+    //        }
+    //        std::cout << '\n';
+    //    }
+    
+    // sweep second direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node(i, j, threadNo);
+            }
+        }
+    }
+    //    std::cout << '\n';
+    //    for ( int j=ncz; j>=0; --j ) {
+    //        for ( size_t i=0; i<=ncx; ++i ) {
+    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+    //        }
+    //        std::cout << '\n';
+    //    }
+    
+    // sweep third direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node(i, j, threadNo);
+            }
+        }
+    }
+    //    std::cout << '\n';
+    //    for ( int j=ncz; j>=0; --j ) {
+    //        for ( size_t i=0; i<=ncx; ++i ) {
+    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+    //        }
+    //        std::cout << '\n';
+    //    }
+    
+    // sweep fourth direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node(i, j, threadNo);
+            }
+        }
+    }
+    //    std::cout << '\n';
+    //    for ( int j=ncz; j>=0; --j ) {
+    //        for ( size_t i=0; i<=ncx; ++i ) {
+    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+    //        }
+    //        std::cout << '\n';
+    //    }
+}
+
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::sweep45(const std::vector<bool>& frozen,
+                                   const size_t threadNo) const {
+    
+    // sweep first direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node45(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep second direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node45(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep third direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node45(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep fourth direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node45(i, j, threadNo);
+            }
+        }
+    }
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::sweep_xz(const std::vector<bool>& frozen,
+                                    const size_t threadNo) const {
+    
+    // sweep first direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_xz(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep second direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_xz(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep third direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_xz(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep fourth direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_xz(i, j, threadNo);
+            }
+        }
+    }
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
+                                    const size_t threadNo) const {
+    
+    // sweep first direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep second direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep third direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep fourth direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3(i, j, threadNo);
+            }
+        }
+    }
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::sweep_weno3_xz(const std::vector<bool>& frozen,
+                                       const size_t threadNo) const {
+    
+    // sweep first direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3_xz(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep second direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( size_t j=0; j<=ncz; ++j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3_xz(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep third direction
+    for ( long int i=ncx; i>=0; --i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3_xz(i, j, threadNo);
+            }
+        }
+    }
+    
+    // sweep fourth direction
+    for ( size_t i=0; i<=ncx; ++i ) {
+        for ( long int j=ncz; j>=0; --j ) {
+            if ( !frozen[ i*(ncz+1)+j ] ) {
+                update_node_weno3_xz(i, j, threadNo);
+            }
+        }
+    }
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::update_node(const size_t i, const size_t j,
+                                      const size_t threadNo) const {
+    
+    T1 a, b, t;
+    if (i==0)
+        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+    else if (i==ncx)
+        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+    else {
+        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+        a = a<t ? a : t;
+    }
+    
+    if (j==0)
+        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+    else if (j==ncz)
+        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+    else {
+        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+        b = b<t ? b : t;
+    }
+        
+    T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
+    
+    if ( fabs(a-b) >= fh )
+        t = (a<b ? a : b) + fh;
+    else
+        t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+    
+    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+        nodes[i*(ncz+1)+j].setTT(t,threadNo);
+    
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::update_node45(const size_t i, const size_t j,
+                                        const size_t threadNo) const {
+    // stencil rotated pi/4
+    
+    T1 a, b, t;
+    if (i==0) {
+        if (j!=ncz)
+            a = nodes[ (i+1)*(ncz+1)+j+1 ].getTT(threadNo);
+        else
+            a = std::numeric_limits<T1>::max();
+    } else if (i==ncx) {
+        if (j!=0)
+            a = nodes[ (i-1)*(ncz+1)+j-1 ].getTT(threadNo);
+        else
+            a = std::numeric_limits<T1>::max();
+    } else {
+        if (j!=ncz)
+            a = nodes[ (i+1)*(ncz+1)+j+1 ].getTT(threadNo);
+        else
+            a = std::numeric_limits<T1>::max();
+        if (j!=0)
+            t = nodes[ (i-1)*(ncz+1)+j-1 ].getTT(threadNo);
+        else
+            t = std::numeric_limits<T1>::max();
+        a = a<t ? a : t;
+    }
+    
+    if (i==0) {
+        if (j!=0)
+            b = nodes[ (i+1)*(ncz+1)+j-1 ].getTT(threadNo);
+        else
+            b = std::numeric_limits<T1>::max();
+    } else if (i==ncx) {
+        if (j!=ncz)
+            b = nodes[ (i-1)*(ncz+1)+j+1 ].getTT(threadNo);
+        else
+            b = std::numeric_limits<T1>::max();
+    } else {
+        if (j!=0)
+            b = nodes[ (i+1)*(ncz+1)+j-1 ].getTT(threadNo);
+        else
+            b = std::numeric_limits<T1>::max();
+        if (j!=ncz)
+            t = nodes[ (i-1)*(ncz+1)+j+1 ].getTT(threadNo);
+        else
+            t = std::numeric_limits<T1>::max();
+        b = b<t ? b : t;
+    }
+    
+    T1 fh = 1.414213562373095 * nodes[i*(ncz+1)+j].getNodeSlowness() *
+    dx;
+    if ( fabs(a-b) >= fh )
+        t = (a<b ? a : b) + fh;
+    else
+        t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+    
+    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+        nodes[i*(ncz+1)+j].setTT(t,threadNo);
+}
+
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::update_node_xz(const size_t i, const size_t j,
+                                          const size_t threadNo) const {
+    
+    T1 a, b, t;
+    if (i==0)
+        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+    else if (i==ncx)
+        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+    else {
+        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+        a = a<t ? a : t;
+    }
+    
+    if (j==0)
+        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+    else if (j==ncz)
+        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+    else {
+        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+        b = b<t ? b : t;
+    }
+    
+    if ( a<b && ((b-a)/dx)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+        t = a + nodes[i*(ncz+1)+j].getNodeSlowness()*dx;
+    } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+        t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
+    } else {
+        T1 dx2 = dx*dx;
+        T1 dz2 = dz*dz;
+        T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
+        t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
+                                                b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
+                                                dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+    }
+    
+    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+        nodes[i*(ncz+1)+j].setTT(t,threadNo);
+}
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::update_node_weno3(const size_t i, const size_t j,
+                                             const size_t threadNo) const {
+
+    // not valid if dx != dz
+    
+//    @Article{zhang06,
+//        Title                    = {High Order Fast Sweeping Methods for Static {H}amilton–{J}acobi Equations},
+//        Author                   = {Yong-Tao Zhang and Hong-Kai Zhao and Jianliang Qian},
+//        Journal                  = {Journal of Scientific Computing},
+//        Year                     = {2006},
+//        Number                   = {1},
+//        Pages                    = {25--56},
+//        Volume                   = {29},
+//        DOI                      = {10.1007/s10915-005-9014-3},
+//        URL                      = {http://dx.doi.org/10.1007/s10915-005-9014-3}
+//        }
+
+    
+    T1 a, b, t;
+    if (i==0) {
+        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);  // fist order
+    } else if (i==1) {
+        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        
+        t = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo); // first order for left
+        a = a<t ? a : t;
+        
+    } else if (i==ncx) {
+        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+    } else if (i==ncx-1) {
+        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am;
+        
+        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo); // first order for right
+        a = a<t ? a : t;
+        
+    } else {
+        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        w = 1./(1.+2.*r*r);
+        
+        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap ?
+        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        
+    }
+
+    if (j==0) {
+        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+    } else if (j==1) {
+        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp;
+        
+        t = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        b = b<t ? b : t;
+        
+    } else if (j==ncz) {
+        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+    } else if (j==ncz-1) {
+        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dx);
+        
+        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm;
+        
+        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo); // first order for right
+        b = b<t ? b : t;
+        
+    } else {
+        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+        num *= num;
+        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        w = 1./(1.+2.*r*r);
+        
+        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dx);
+
+        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp ?
+        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp;
+        
+    }
+    
+    T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
+    
+    if ( fabs(a-b) >= fh )
+        t = (a<b ? a : b) + fh;
+    else
+        t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+    
+    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+        nodes[i*(ncz+1)+j].setTT(t,threadNo);
+    
+    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+        nodes[i*(ncz+1)+j].setTT(t,threadNo);
+
+}
+
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::update_node_weno3_xz(const size_t i, const size_t j,
+                                                const size_t threadNo) const {
+    
+    T1 a, b, t;
+    if (i==0) {
+        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);  // fist order
+    } else if (i==1) {
+        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        
+        t = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo); // first order for left
+        a = a<t ? a : t;
+        
+    } else if (i==ncx) {
+        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+    } else if (i==ncx-1) {
+        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am;
+        
+        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo); // first order for right
+        a = a<t ? a : t;
+        
+    } else {
+        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        w = 1./(1.+2.*r*r);
+        
+        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        
+        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap ?
+        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        
+    }
+    
+    if (j==0) {
+        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+    } else if (j==1) {
+        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dz);
+        
+        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp;
+        
+        t = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        b = b<t ? b : t;
+        
+    } else if (j==ncz) {
+        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+    } else if (j==ncz-1) {
+        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dz);
+        
+        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm;
+        
+        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo); // first order for right
+        b = b<t ? b : t;
+        
+    } else {
+        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+        num *= num;
+        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        den *= den;
+        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        T1 w = 1./(1.+2.*r*r);
+        
+        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dz);
+        
+        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+        num *= num;
+        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+        w = 1./(1.+2.*r*r);
+        
+        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dz);
+        
+        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp ?
+        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp;
+        
+    }
+
+    if ( a<b && ((b-a)/dx)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+        t = a + nodes[i*(ncz+1)+j].getNodeSlowness()*dx;
+    } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+        t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
+    } else {
+        T1 dx2 = dx*dx;
+        T1 dz2 = dz*dz;
+        T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
+        t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
+                                                b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
+                                                dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+    }
+    
+    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+        nodes[i*(ncz+1)+j].setTT(t,threadNo);
+}
+
+
+template<typename T1, typename T2, typename NODE>
+void Grid2Dri<T1,T2,NODE>::initFSM(const std::vector<sxz<T1>>& Tx,
+                                   const std::vector<T1>& t0,
+                                   std::vector<bool>& frozen, const int npts,
+                                   const size_t threadNo) const {
+    
+    for (size_t n=0; n<Tx.size(); ++n) {
+        bool found = false;
+        for ( long long nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == Tx[n] ) {
+                found = true;
+                nodes[nn].setTT( t0[n], threadNo );
+                frozen[nn] = true;
+                
+                long long i = nn/(ncz+1);
+                long long j = nn - i*(ncz+1);
+                
+                for ( long long ii=i-npts; ii<=i+npts; ++ii ) {
+                    if ( ii>=0 && ii<=ncx ) {
+                        for ( long long jj=j-npts; jj<=j+npts; ++jj ) {
+                            if ( jj>=0 && jj<=ncz && !(ii==i && jj==j) ) {
+                                
+                                size_t nnn = ii*(ncz+1) + jj;
+                                
+                                T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * 0.5*(nodes[nnn].getNodeSlowness() + nodes[nn].getNodeSlowness());
+                                nodes[nnn].setTT( tt, threadNo );
+                                frozen[nnn] = true;
+                            }
+                        }
+                    }
+                }
+                
+                break;
+            }
+        }
+        if ( found==false ) {
+            
+            // find cell where Tx resides
+            long long cellNo = getCellNo(Tx[n]);
+            
+            long long i = cellNo/ncz;
+            long long j = cellNo - i*ncz;
+            
+            for ( long long ii=i-(npts-1); ii<=i+npts; ++ii ) {
+                if ( ii>=0 && ii<=ncx ) {
+                    for ( long long jj=j-(npts-1); jj<=j+npts; ++jj ) {
+                        if ( jj>=0 && jj<=ncz ) {
+                            size_t nnn = ii*(ncz+1) + jj;
+                            
+                            T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
+                            nodes[nnn].setTT( tt, threadNo );
+                            frozen[nnn] = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 #endif

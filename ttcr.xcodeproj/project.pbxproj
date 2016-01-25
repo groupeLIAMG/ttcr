@@ -145,6 +145,7 @@
 		2B6F87AF190F410D002AC9DF /* grid2duisp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = grid2duisp.m; sourceTree = "<group>"; };
 		2B6F87B1190F414D002AC9DF /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
 		2B76D8911BB2351D00F2D81F /* Grid2Drifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drifs.h; sourceTree = "<group>"; };
+		2B8AAD8A1C3F51DB00C38269 /* Grid3Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drcfs.h; sourceTree = "<group>"; };
 		2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid3duisp_mex.cpp; sourceTree = "<group>"; };
 		2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duisp_mex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B8FC25C1AB0D3AE00EF9265 /* grid3duisp.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid3duisp.m; sourceTree = "<group>"; };
@@ -171,7 +172,6 @@
 		2BC708E418EDA65F004DA2C9 /* Grid2Ducfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid2Ducfs.h; sourceTree = "<group>"; };
 		2BC708E518EDA65F004DA2C9 /* Grid2Ducsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid2Ducsp.h; sourceTree = "<group>"; };
 		2BC708E618EDA65F004DA2C9 /* Grid3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3D.h; sourceTree = "<group>"; };
-		2BC708E718EDA65F004DA2C9 /* Grid3Dr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Dr.h; sourceTree = "<group>"; };
 		2BC708E818EDA65F004DA2C9 /* Grid3Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drc.h; sourceTree = "<group>"; };
 		2BC708E918EDA65F004DA2C9 /* Grid3Dri.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Dri.h; sourceTree = "<group>"; };
 		2BC708EA18EDA65F004DA2C9 /* Grid3Duc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Duc.h; sourceTree = "<group>"; };
@@ -358,10 +358,10 @@
 				2B11D19418FE25940075EAAC /* Grid2Duifs.h */,
 				2B39B6A618F8808F003985D6 /* Grid2Duisp.h */,
 				2BC708E618EDA65F004DA2C9 /* Grid3D.h */,
-				2BC708E718EDA65F004DA2C9 /* Grid3Dr.h */,
 				2BC708E818EDA65F004DA2C9 /* Grid3Drc.h */,
-				2BC708E918EDA65F004DA2C9 /* Grid3Dri.h */,
 				2BDE5D621C3EB2D800223E26 /* Grid3Drcsp.h */,
+				2B8AAD8A1C3F51DB00C38269 /* Grid3Drcfs.h */,
+				2BC708E918EDA65F004DA2C9 /* Grid3Dri.h */,
 				2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */,
 				2B0CC4051C30C0DC001BC581 /* Grid3Drifs.h */,
 				2BC708EA18EDA65F004DA2C9 /* Grid3Duc.h */,

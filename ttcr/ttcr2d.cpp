@@ -105,9 +105,11 @@ int body(const input_parameters &par) {
     }
     
 	Rcv2D<T> rcv( par.rcvfile );
-    if ( par.verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
-    rcv.init( src.size(), reflectors.size() );
-    if ( par.verbose ) cout << "done.\n";
+    if ( par.rcvfile != "" ) {
+        if ( par.verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
+        rcv.init( src.size(), reflectors.size() );
+        if ( par.verbose ) cout << "done.\n";
+    }
     
     if ( par.verbose ) {
         if ( par.singlePrecision ) {
@@ -122,7 +124,8 @@ int body(const input_parameters &par) {
 	}
     
 	vector<const vector<sxz<T>>*> all_rcv;
-	all_rcv.push_back( &(rcv.get_coord()) );
+    if ( par.rcvfile != "" )
+        all_rcv.push_back( &(rcv.get_coord()) );
 	for ( size_t n=0; n<reflectors.size(); ++n ) {
 		all_rcv.push_back( &(reflectors[n].get_coord()) );
 	}
@@ -142,7 +145,7 @@ int body(const input_parameters &par) {
     
     if ( par.verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
 	if ( par.time ) { begin = chrono::high_resolution_clock::now(); }
-	if ( par.saveRaypaths ) {
+	if ( par.saveRaypaths && par.rcvfile != "" ) {
 		if ( num_threads == 1 ) {
 			for ( size_t n=0; n<src.size(); ++n ) {
                 
@@ -247,7 +250,8 @@ int body(const input_parameters &par) {
 			for ( size_t n=0; n<src.size(); ++n ) {
 				
 				vector<vector<T>*> all_tt;
-				all_tt.push_back( &(rcv.get_tt(n)) );
+                if ( par.rcvfile != "" )
+                    all_tt.push_back( &(rcv.get_tt(n)) );
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					all_tt.push_back( &(reflectors[nr].get_tt(n)) );
 				}
@@ -287,13 +291,14 @@ int body(const input_parameters &par) {
 				
 				size_t blk_end = blk_start + blk_size;
                 
-				threads[i]=thread( [&g,&src,&rcv,&all_rcv,&reflectors,blk_start,
+				threads[i]=thread( [&par,&g,&src,&rcv,&all_rcv,&reflectors,blk_start,
                                     blk_end,i]{
                     
 					for ( size_t n=blk_start; n<blk_end; ++n ) {
 						
 						vector<vector<T>*> all_tt;
-						all_tt.push_back( &(rcv.get_tt(n)) );
+						if ( par.rcvfile != "" )
+                            all_tt.push_back( &(rcv.get_tt(n)) );
 						for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 							all_tt.push_back( &(reflectors[nr].get_tt(n)) );
 						}
@@ -315,7 +320,8 @@ int body(const input_parameters &par) {
 			for ( size_t n=blk_start; n<nTx; ++n ) {
                 
 				vector<vector<T>*> all_tt;
-				all_tt.push_back( &(rcv.get_tt(n)) );
+				if ( par.rcvfile != "" )
+                    all_tt.push_back( &(rcv.get_tt(n)) );
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					all_tt.push_back( &(reflectors[nr].get_tt(n)) );
 				}
@@ -347,11 +353,13 @@ int body(const input_parameters &par) {
     if ( src.size() == 1 ) {
 		string filename = par.basename+"_tt.dat";
 		
-		if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
-		rcv.save_tt(filename, 0);
-		if ( par.verbose ) cout << "done.\n";
+        if ( par.rcvfile != "" ) {
+            if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
+            rcv.save_tt(filename, 0);
+            if ( par.verbose ) cout << "done.\n";
+        }
 		
-		if ( par.saveRaypaths ) {
+		if ( par.saveRaypaths && par.rcvfile != "" ) {
 			filename = par.basename+"_rp.vtp";
 			if ( par.verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
 			saveRayPaths(filename, r_data[0]);
@@ -403,12 +411,13 @@ int body(const input_parameters &par) {
             srcname.erase(pos, len);
             
             string filename = par.basename+"_"+srcname+"_tt.dat";
+            if ( par.rcvfile != "" ) {
+                if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
+                rcv.save_tt(filename, ns);
+                if ( par.verbose ) cout << "done.\n";
+            }
 			
-            if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
-            rcv.save_tt(filename, ns);
-            if ( par.verbose ) cout << "done.\n";
-			
-            if ( par.saveRaypaths ) {
+            if ( par.saveRaypaths && par.rcvfile != "" ) {
                 filename = par.basename+"_"+srcname+"_rp.vtp";
                 if ( par.verbose ) cout << "Saving raypaths of direct waves in " << filename <<  " ... ";
                 saveRayPaths(filename, r_data[ns]);

@@ -1,10 +1,10 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1344\cocoasubrtf720
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf340
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;}
 {\colortbl;\red255\green255\blue255;}
 {\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{hyphen\}}{\leveltext\leveltemplateid1\'01\uc0\u8259 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
 {\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
 \margl1440\margr1440\vieww9000\viewh8400\viewkind0
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
 \f0\fs24 \cf0 \
 
@@ -30,28 +30,28 @@ There are three programs:\
 \
 Each program is invoked from the command line, with the same following options:\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f1 \cf0 -p  Specify parameter file (mandatory)\
 -h  print short help message\
 -k  Save model in VTK format\
 -v  Verbose mode\
 -t  Measure time to build grid and perform raytracing\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0 \cf0 \
 \
 The parameter file is used to specify the raytracing parameters.  It is a plain ascii file and each line has the following format:\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f1 \cf0 value          # keyword,\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0 \cf0 \
 The keywords are :\
 \
-\pard\tx220\tx720\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li720\fi-720\pardirnatural
+\pard\tx220\tx720\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li720\fi-720\pardirnatural\partightenfactor0
 \ls1\ilvl0
 \f1 \cf0 {\listtext	\uc0\u8259 	}basename : each output file will start with this basename\
 {\listtext	\uc0\u8259 	}modelfile : name of file holding grid definition, currently VTK and gmsh formats are accepted (see below)\
@@ -68,18 +68,18 @@ The keywords are :\
 {\listtext	\uc0\u8259 	}saveGridTT : save traveltime over whole grid in VTK format.  This will currently save only the last source.\
 {\listtext	\uc0\u8259 	}single precision : work with float rather than double\
 {\listtext	\uc0\u8259 	}fast marching : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)\
-{\listtext	\uc0\u8259 	}fast sweeping : use fast sweeping method if value == 1 (implemented on 2D & 3D unstructured meshes only)\
+{\listtext	\uc0\u8259 	}fast sweeping : use fast sweeping method if value == 1\
 {\listtext	\uc0\u8259 	}process reflectors : \
 {\listtext	\uc0\u8259 	}saveRayPaths : \
-{\listtext	\uc0\u8259 	}raypath high order : compute traveltime gradient with high order least-squares (default is 0)\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+{\listtext	\uc0\u8259 	}raypath high order : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0 \cf0 \
 An example is shown below\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f1 \cf0 ttcr2ds        # basename,\
 model2ds.msh   # modelfile,\
@@ -91,18 +91,105 @@ rcv.dat        # rcvfile,\
 5              # secondary nodes,\
 1              # saveRayPaths,\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0 \cf0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 
-\b \cf0 Model files
+\b Model files
 \b0 \
 \
-Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/gmsh/) files.  2D and 3D rectilinear grids are currently imported in VTK format only.  \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 1- \ul Rectilinear grids\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ulc0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ulnone Models can be defined in VTK format or custom GRD format.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 VTK files\ulnone : These files must hold the slowness data, which can be defined either in terms of slowness or velocity, as cell data for grid with cells of constant slowness or as point data for slowness defined at grid nodes.\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
-\cf0 \ul \ulc0 VTK files\ulnone : These files must hold the slowness data, which can be defined either in terms of slowness or velocity (see routines in files utils_ttcr.h and VTUReader.h for details).\
+\ul \ulc0 GRD files\ulnone : For this format, the grid dimensions are given in a file with a .grd extension.  The format is the following, where values are given for x, y and z in that order (2D grids should have 0 cells in y):\
+\
+--- example.grd ---\
+\
+
+\f1 100 0 200 # number of cells,\
+1 1 1 # size of cells,\
+0 0 0 # origin of grid, \
+
+\f0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 ------\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+Slowness values should be provided separately in a 
+\f1 slofile
+\f0 .  Slowness values can be assigned to nodes or cells, depending on the total number of slowness values given in the file: if the number is equal to the number of nodes, then the values are assigned to nodes and if the number is equal to the number of cells then the values are assinged to the cells.\
+\
+** Important **\
+\
+In 2D, the values are ordered for z incremented first, then x, while in 3D the order is x first, then y and finally z, i.e.\
+\
+In 2D, ordering should correspond to coordinates\
+\
+xmin			zmin\
+xmin			zmin+dz\
+xmin			zmin+2dz\
+  :			  :\
+xmin			zmax\
+xmin+dx		zmin\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 xmin+dx		zmin+dz\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0   :			  :\
+xmax		zmax\
+\
+In 3D, ordering should correspond to coordinates\
+\
+xmin			ymin			zmin\
+xmin+dx		ymin			zmin\
+xmin+2dx		ymin			zmin\
+  :			  :			  :\
+xmax		ymin			zmin\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 xmin			ymin+dy		zmin\
+xmin+dx		ymin+dy		zmin\
+xmin+2dx		ymin+dy		zmin\
+  :			  :			  :\
+xmax		ymin+dy		zmin\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0   :			  :			  :\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 xmax		ymax		zmin\
+xmin			ymin			zmin+dz\
+xmin+dx		ymin			zmin+dz\
+  :			  :			  :\
+xmax		ymin			zmin+dz\
+xmin			ymin+dy		zmin+dz\
+  :			  :			  :\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+etc\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 Note regarding the fast sweeping method on rectilinear grids\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ulnone \
+The 2D and 3D implementations require that the cells must be square or cubic respectively .  Only the first value for the size of cell is used when building the grids.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 2- \ul Unstructured meshes\ulnone \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/gmsh/) files. \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 VTK files\ulnone : As for rectilinear grids, these files must hold the slowness data, which can be defined either in terms of slowness or velocity (see routines in files utils_ttcr.h and VTUReader.h for details).\
 \
 \ul MSH files\ulnone : gmsh file format version 2.2 is supported.  This format does not allow storing cell attributes, so slowness data must be stored in other files.  There are two options: the first is to have a file holding the slowness values for each cell, in the same cell order than found in the msh file.  This type of file corresponds to the 
 \f1 slofile
@@ -167,7 +254,10 @@ Note that it is possible to impose the creation of given point nodes related to 
 \
 ------\
 \
-\ul Slowness defined at grid nodes\ulnone \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\i \cf0 Slowness defined at grid nodes for unstructured meshes
+\i0 \
 \
 It is possible to define slowness at grid nodes rather than for mesh cells.  This improves accuracy for models where slowness gradients are present.  For VTK files, this is done by assigning slowness or velocity values at nodes.  For MSH files, this is done by using a 
 \f1 slofile
@@ -176,7 +266,7 @@ It is possible to define slowness at grid nodes rather than for mesh cells.  Thi
 \f0  cannot be used in this case).\
 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \b \cf0 Src and Rcv files
 \b0 \
@@ -188,7 +278,7 @@ These are simple ascii file holding the coordinates of the source points and ini
 \f0 .  \
 \
 --- src1.dat ---\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f1 \cf0 2\
 0 0 0 0\
@@ -235,7 +325,7 @@ rcv.dat        # rcvfile,\
 1              # saveRayPaths,\
 
 \f0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \b \cf0 Compiling
 \b0 \
@@ -247,7 +337,7 @@ The programs are coded in C++ and follow the C++11 standard.  You must have VTK 
 \b References
 \b0 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f1 \cf0 @ARTICLE\{giroux13,\
   author = \{Bernard Giroux and Beno\\^\{\\i\}t Larouche\},\

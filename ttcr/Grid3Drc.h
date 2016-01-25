@@ -51,20 +51,23 @@
 #include "vtkXMLRectilinearGridWriter.h"
 #endif
 
-#include "Grid3Dr.h"
-//#include "Node3Dcsp.h"
+#include "Grid3D.h"
 
 
 template<typename T1, typename T2, typename NODE>
-class Grid3Drc : public Grid3Dr<T1,T2> {
+class Grid3Drc : public Grid3D<T1,T2> {
 public:
     
     Grid3Drc(const T2 nx, const T2 ny, const T2 nz,
              const T1 ddx, const T1 ddy, const T1 ddz,
              const T1 minx, const T1 miny, const T1 minz,
              const size_t nt=1) :
-    Grid3Dr<T1,T2>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
-    nodes(std::vector<NODE>(nx*ny*nz, NODE(nt))),
+    nThreads(nt),
+    dx(ddx), dy(ddy), dz(ddz),
+    xmin(minx), ymin(miny), zmin(minz),
+    xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
+    ncx(nx), ncy(ny), ncz(nz),
+    nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt))),
     slowness(std::vector<T1>(nx*ny*nz)),
     neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
     { }
@@ -132,12 +135,12 @@ public:
     void saveSlownessXYZ(const char filename[]) const {
         std::ofstream fout( filename );
         
-        for ( T2 nk=0, n=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
-            T1 z = Grid3Dr<T1,T2>::zmin + nk*Grid3Dr<T1,T2>::dz;
-            for ( T2 nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
-                T1 y = Grid3Dr<T1,T2>::ymin + nj*Grid3Dr<T1,T2>::dy;
-                for (T2 ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni, ++n ){
-                    T1 x = Grid3Dr<T1,T2>::xmin + ni*Grid3Dr<T1,T2>::dx;
+        for ( T2 nk=0, n=0; nk<=ncz; ++nk ) {
+            T1 z = zmin + nk*dz;
+            for ( T2 nj=0; nj<=ncy; ++nj ) {
+                T1 y = ymin + nj*dy;
+                for (T2 ni=0; ni<=ncx; ++ni, ++n ){
+                    T1 x = xmin + ni*dx;
                     fout << x << "   " << y << "   " << z << "   "
                     << slowness[n] << '\n';
                 }
@@ -145,12 +148,6 @@ public:
         }
         fout.close();
     }
-    
-    void save(const char filename[]) const;
-    void dsave(const char filename[]) const;
-    void savefast(const char filename[]) const;
-    void savePrimary(const char filename[], const size_t nt=0,
-                     const bool vtkFormat=0) const;
     
     void saveTT(const std::string &, const int, const size_t nt=0,
                 const bool vtkFormat=0) const;
@@ -176,16 +173,62 @@ public:
     }
     
 protected:
+    size_t nThreads;	     // number of threads
+    T1 dx;                   // cell size in x
+    T1 dy;			         // cell size in y
+    T1 dz;                   // cell size in z
+    T1 xmin;                 // x origin of the grid
+    T1 ymin;                 // y origin of the grid
+    T1 zmin;                 // z origin of the grid
+    T1 xmax;                 // x end of the grid
+    T1 ymax;                 // y end of the grid
+    T1 zmax;                 // z end of the grid
+    T2 ncx;                  // number of cells in x
+    T2 ncy;                  // number of cells in y
+    T2 ncz;                  // number of cells in z
     
     mutable std::vector<NODE> nodes;
     
     std::vector<T1> slowness;   // column-wise (z axis) slowness vector of the cells, NOT used by Grid3Dcinterp
     std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
+
+    
+    T2 getCellNo(const sxyz<T1>& pt) const {
+        T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
+        T1 y = ymax-pt.y < small ? ymax-.5*dy : pt.y;
+        T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
+        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
+        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
+        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+        return ny*ncx + nz*(ncx*ncy) + nx;
+    }
+    
+    
+    T2 getCellNo(const NODE& node) const {
+        T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
+        T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
+        T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
+        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
+        T2 ny = static_cast<T2>( small + (y-ymin)/dy );
+        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+        return ny*ncx + nz*(ncx*ncy) + nx;
+    }
+    
+    void getIJK(const sxyz<T1>& pt, T2& i, T2& j, T2& k) const {
+        i = static_cast<T2>( small + (pt.x-xmin)/dx );
+        j = static_cast<T2>( small + (pt.y-ymin)/dy );
+        k = static_cast<T2>( small + (pt.z-zmin)/dz );
+    }
+    
+    void getIJK(const sxyz<T1>& pt, long long& i, long long& j, long long& k) const {
+        i = static_cast<long long>( small + (pt.x-xmin)/dx );
+        j = static_cast<long long>( small + (pt.y-ymin)/dy );
+        k = static_cast<long long>( small + (pt.z-zmin)/dz );
+    }
+    
+    int check_pts(const std::vector<sxyz<T1>>&) const;
     
     void buildGridNeighbors();
-    
-    
-    
     
     T1 computeDt(const NODE& source, const sxyz<T1>& node,
                  const size_t cellNo) const {
@@ -205,6 +248,7 @@ protected:
                      const std::vector<NODE>& nodes,
                      T2&, T2& , const size_t threadNo) const;
     
+private:
     Grid3Drc() {}
     Grid3Drc(const Grid3Drc<T1,T2,NODE>& g) {}
     Grid3Drc<T1,T2,NODE>& operator=(const Grid3Drc<T1,T2,NODE>& g) { return *this; }
@@ -225,6 +269,21 @@ void Grid3Drc<T1,T2,NODE>::buildGridNeighbors() {
     }
 }
 
+template<typename T1, typename T2, typename NODE>
+int Grid3Drc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1>>& pts) const {
+    
+    // Check if the points from a vector are in the grid
+    for ( size_t n=0; n<pts.size(); ++n ) {
+        if ( pts[n].x < xmin || pts[n].x > xmax ||
+            pts[n].y < ymin || pts[n].y > ymax ||
+            pts[n].z < zmin || pts[n].z > zmax ) {
+            std::cerr << "Error: point no " << (n+1)
+            << " outside the grid.\n";
+            return 1;
+        }
+    }
+    return 0;
+}
 
 
 template<typename T1, typename T2, typename NODE>
@@ -238,7 +297,7 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
             return nodes[nn].getTT(threadNo);
         }
     }
-    size_t cellNo = this->getCellNo( Rx );
+    size_t cellNo = getCellNo( Rx );
     size_t neibNo = neighbors[cellNo][0];
     T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
     
@@ -267,7 +326,7 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
             return nodes[nn].getTT(threadNo);
         }
     }
-    T2 cellNo = this->getCellNo( Rx );
+    T2 cellNo = getCellNo( Rx );
     T2 neibNo = neighbors[cellNo][0];
     T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
     
@@ -285,263 +344,7 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     return traveltime;
 }
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Drc<T1,T2,NODE>::save(const char filename[]) const {
-    std::ofstream fout( filename );
-    
-    fout << Grid3Dr<T1,T2>::dx << ' ' << Grid3Dr<T1,T2>::dy << ' ' << Grid3Dr<T1,T2>::dz << ' ' << Grid3Dr<T1,T2>::xmin << ' ' << Grid3Dr<T1,T2>::ymin << ' '
-    << Grid3Dr<T1,T2>::zmin << ' ' << Grid3Dr<T1,T2>::xmax << ' ' << Grid3Dr<T1,T2>::ymax << ' '<< Grid3Dr<T1,T2>::zmax << '\n';
-    fout << Grid3Dr<T1,T2>::ncx << ' ' << Grid3Dr<T1,T2>::ncy << ' ' << Grid3Dr<T1,T2>::ncz << ' '
-    << Grid3Dr<T1,T2>::nsnx << ' ' << Grid3Dr<T1,T2>::nsny << ' ' << Grid3Dr<T1,T2>::nsnz << ' ' << '\n';
-    
-    fout << nodes.size() << '\n';
-    for ( size_t n=0; n < nodes.size(); ++n ) {
-        fout << nodes[n].getsize() ;
-        for (size_t nt=0; nt< nodes[n].getsize(); nt++){
-            fout << " " << nodes[n].getTT(nt) << " "
-            << nodes[n].getNodeParent(nt) << ' '<< nodes[n].getCellParent(nt);
-        }
-        fout << ' ' << nodes[n].getX() << ' ' << nodes[n].getY()
-        << ' ' << nodes[n].getZ() << ' '
-        << ' ' << nodes[n].getGridIndex();
-        for (size_t no=0; no < nodes[n].getOwners().size(); ++no ) {
-            fout << ' ' << nodes[n].getOwners()[no];
-        }
-        fout << '\n';
-    }
-    /*
-     fout << slowness.size() << '\n';
-     for ( size_t n=0; n < slowness.size(); ++n ) {
-     fout << slowness[n] << '\n';
-     }
-     fout << neighbors.size() << '\n';
-     for ( size_t n=0; n < neighbors.size(); ++n ) {
-     fout << neighbors[n].size();
-     for ( size_t nn=0; nn < neighbors[n].size(); ++nn ) {
-     fout << ' ' << neighbors[n][nn];
-     }
-     fout << '\n';
-     }
-     */
-    fout.close();
-}
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Drc<T1,T2,NODE>::dsave(const char filename[]) const {
-    //Similar to 'save', with text information
-    std::ofstream fout( filename );
-    
-    fout << "dx "<< Grid3Dr<T1,T2>::dx << "\t dy " << Grid3Dr<T1,T2>::dy << "\t dz " << Grid3Dr<T1,T2>::dz
-    << "\t xmin " << Grid3Dr<T1,T2>::xmin << "\t ymin " << Grid3Dr<T1,T2>::ymin << "\t zmin "	<< Grid3Dr<T1,T2>::zmin
-    << "\t xmax " << Grid3Dr<T1,T2>::xmax<< "\t ymax " << Grid3Dr<T1,T2>::ymax << "\t zmax "<< Grid3Dr<T1,T2>::zmax
-    << '\n';
-    fout << "nCx " << Grid3Dr<T1,T2>::ncx << "\t nCy " << Grid3Dr<T1,T2>::ncy << "\t nCz " << Grid3Dr<T1,T2>::ncz
-    << "\t nsnx " << Grid3Dr<T1,T2>::nsnx << "\t nsny " << Grid3Dr<T1,T2>::nsny << "\t nsnz " << Grid3Dr<T1,T2>::nsnz
-    << '\n';
-    
-    fout << "nb. nodes " << nodes.size() << '\n';
-    for ( size_t n=0; n < nodes.size(); ++n ) {
-        fout << "node " << nodes[n].getGridIndex() << "\t TT \t ";
-        for ( size_t nt=0; nt< nodes[n].getsize(); nt++ ) {
-            fout << nodes[n].getTT(nt) << "\t";
-        }
-        fout << " X " << nodes[n].getX() << "\t Y " << nodes[n].getY()
-        << "\t Z " << nodes[n].getZ() << "\t Ray Parent \t";
-        for ( size_t nt=0; nt< nodes[n].getsize(); nt++ ) {
-            fout << nodes[n].getNodeParent(nt) << '\t';
-        }
-        fout<< "Cell Parent \t";
-        for ( size_t nt=0; nt< nodes[n].getsize(); nt++ ) {
-            fout << nodes[n].getCellParent(nt) << '\t';
-        }
-        fout << "Owners: ";
-        for ( size_t no=0; no < nodes[n].getOwners().size(); ++no ) {
-            fout << '\t' << nodes[n].getOwners()[no];
-        }
-        fout << '\n';
-    }
-    /*
-     fout << "slowness size " << slowness.size() << '\n';
-     for ( size_t n=0; n < slowness.size(); ++n ) {
-     fout << slowness[n] << '\n';
-     }
-     
-     fout << "neighbors size " << neighbors.size() << '\n';
-     for ( size_t n=0; n < neighbors.size(); ++n ) {
-     fout << "neighbors[" << n << "] size " << neighbors[n].size() << " :";
-     for ( size_t nn=0; nn < neighbors[n].size(); ++nn ) {
-     fout << '\t' << neighbors[n][nn];
-     }
-     fout << '\n';
-     }
-     */
-    fout.close();
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid3Drc<T1,T2,NODE>::savefast(const char filename[]) const {
-    
-    std::ofstream fout( filename );
-    
-    for ( size_t n=0; n < nodes.size(); ++n ) {
-        if ( floor((nodes[n].getX())/Grid3Dr<T1,T2>::dx)==(nodes[n].getX())/Grid3Dr<T1,T2>::dx &&
-            floor((nodes[n].getZ())/Grid3Dr<T1,T2>::dz) == (nodes[n].getZ())/Grid3Dr<T1,T2>::dz &&
-            floor((nodes[n].getY())/Grid3Dr<T1,T2>::dy) == (nodes[n].getY())/Grid3Dr<T1,T2>::dy )
-        {
-            //		fout <<  ((nodes[n].getX())/dx)+1 << '\t' << ((nodes[n].getY())/dy)+1
-            //	    << '\t' << ((nodes[n].getZ())/dz)+1 ;
-            for ( size_t nt=0; nt< nodes[n].getsize(); nt++ ) {
-                fout.precision(9);
-                fout //<< '\t'
-                << nodes[n].getTT(nt);
-            }
-            fout << '\n';
-        }
-    }
-    
-    fout.close();
-}
-
-
-template<typename T1, typename T2, typename NODE>
-void Grid3Drc<T1,T2,NODE>::savePrimary(const char filename[], const size_t nt,
-                                       const bool vtkFormat) const {
-    
-    if ( vtkFormat ) {
-        
-#ifdef VTK
-        
-        std::string fname = std::string(filename)+".vtr";
-        
-        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni)
-            xCoords->InsertNextValue(Grid3Dr<T1,T2>::xmin + ni*Grid3Dr<T1,T2>::dx);
-        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj)
-            yCoords->InsertNextValue(Grid3Dr<T1,T2>::ymin + nj*Grid3Dr<T1,T2>::dy);
-        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk)
-            zCoords->InsertNextValue(Grid3Dr<T1,T2>::zmin + nk*Grid3Dr<T1,T2>::dz);
-        
-        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-        rgrid->SetDimensions(Grid3Dr<T1,T2>::ncx, Grid3Dr<T1,T2>::ncy, Grid3Dr<T1,T2>::ncz);
-        rgrid->SetXCoordinates(xCoords);
-        rgrid->SetYCoordinates(yCoords);
-        rgrid->SetZCoordinates(zCoords);
-        
-        vtkSmartPointer<vtkDoubleArray> data = vtkSmartPointer<vtkDoubleArray>::New();
-        data->SetName("Travel time");
-        for ( size_t n=0; n<nodes.size(); ++n ) {
-            if ( nodes[n].isPrimary() ) {
-                data->InsertNextValue( nodes[n].getTT(nt) );
-            }
-        }
-        
-//        size_t n=0;
-//        for ( size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
-//            for ( size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
-//                for ( size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni ) {
-//                    
-//                    data->InsertNextValue( nodes[n++].getTT(nt) );
-//                    
-//                    // Secondary nodes on x edge
-//                    if ( ni < Grid3Dr<T1,T2>::ncx ) {
-//                        n += Grid3Dr<T1,T2>::nsnx;
-//                    }
-//                    
-//                    // Secondary nodes on y edge
-//                    if ( nj < Grid3Dr<T1,T2>::ncy ) {
-//                        n += Grid3Dr<T1,T2>::nsny;
-//                    }
-//                    
-//                    // Secondary nodes on z edge
-//                    if ( nk < Grid3Dr<T1,T2>::ncz ) {
-//                        n += Grid3Dr<T1,T2>::nsnz;
-//                    }
-//                    
-//                    // Secondary nodes on the xy0 planes
-//                    if ( ni < Grid3Dr<T1,T2>::ncx && nj < Grid3Dr<T1,T2>::ncy ) {
-//                        n += Grid3Dr<T1,T2>::nsny*Grid3Dr<T1,T2>::nsnx;
-//                    }
-//                    
-//                    // Secondary nodes on the x0z planes
-//                    if ( ni < Grid3Dr<T1,T2>::ncx && nk < Grid3Dr<T1,T2>::ncz ) {
-//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsnx;
-//                    }
-//                    
-//                    // Secondary nodes on the 0yz planes
-//                    if ( nj < Grid3Dr<T1,T2>::ncy && nk < Grid3Dr<T1,T2>::ncz ) {
-//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsny;
-//                    }
-//                }
-//            }
-//        }
-        rgrid->GetPointData()->SetScalars( data );
-        
-        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
-        
-        writer->SetFileName( fname.c_str() );
-        //		writer->SetInputConnection( rgrid->GetProducerPort() );
-        writer->SetInputData( rgrid );
-        writer->SetDataModeToBinary();
-        writer->Update();
-#else
-        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
-#endif
-    } else {
-        std::ofstream fout( filename );
-        fout.precision(9);
-
-        for ( size_t n=0; n<nodes.size(); ++n ) {
-            if ( nodes[n].isPrimary() ) {
-                fout << nodes[n].getTT(nt) << '\n';
-            }
-        }
-        
-//        size_t n=0;
-//        for ( size_t nk=0; nk<=Grid3Dr<T1,T2>::ncz; ++nk ) {
-//            
-//            for ( size_t nj=0; nj<=Grid3Dr<T1,T2>::ncy; ++nj ) {
-//                
-//                for ( size_t ni=0; ni<=Grid3Dr<T1,T2>::ncx; ++ni ) {
-//                    
-//                    fout << nodes[n++].getTT(nt) << '\n';
-//                    
-//                    // Secondary nodes on x edge
-//                    if ( ni < Grid3Dr<T1,T2>::ncx ) {
-//                        n += Grid3Dr<T1,T2>::nsnx;
-//                    }
-//                    
-//                    // Secondary nodes on y edge
-//                    if ( nj < Grid3Dr<T1,T2>::ncy ) {
-//                        n += Grid3Dr<T1,T2>::nsny;
-//                    }
-//                    
-//                    // Secondary nodes on z edge
-//                    if ( nk < Grid3Dr<T1,T2>::ncz ) {
-//                        n += Grid3Dr<T1,T2>::nsnz;
-//                    }
-//                    
-//                    // Secondary nodes on the xy0 planes
-//                    if ( ni < Grid3Dr<T1,T2>::ncx && nj < Grid3Dr<T1,T2>::ncy ) {
-//                        n += Grid3Dr<T1,T2>::nsny*Grid3Dr<T1,T2>::nsnx;
-//                    }
-//                    
-//                    // Secondary nodes on the x0z planes
-//                    if ( ni < Grid3Dr<T1,T2>::ncx && nk < Grid3Dr<T1,T2>::ncz ) {
-//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsnx;
-//                    }
-//                    
-//                    // Secondary nodes on the 0yz planes
-//                    if ( nj < Grid3Dr<T1,T2>::ncy && nk < Grid3Dr<T1,T2>::ncz ) {
-//                        n += Grid3Dr<T1,T2>::nsnz*Grid3Dr<T1,T2>::nsny;
-//                    }
-//                }
-//            }
-//        }
-        fout.close();
-    }
-}
 
 
 template<typename T1, typename T2, typename NODE>
@@ -550,25 +353,63 @@ void Grid3Drc<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
     
     if (vtkFormat) {
 #ifdef VTK
-        if ( all == 1 )
-            std::cout << "Warning, only primary nodes are save in VTK format\n";
-        savePrimary(fname.c_str(), nt, vtkFormat);
+        
+        std::string filename = fname+".vtr";
+        int nn[3] = {static_cast<int>(ncx+1), static_cast<int>(ncy+1), static_cast<int>(ncz+1)};
+        
+        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[0]; ++n)
+            xCoords->InsertNextValue( xmin + n*dx );
+        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[1]; ++n)
+            yCoords->InsertNextValue( ymin + n*dy );
+        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[2]; ++n)
+            zCoords->InsertNextValue( zmin + n*dz );
+        
+        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
+        rgrid->SetDimensions( nn );
+        rgrid->SetXCoordinates(xCoords);
+        rgrid->SetYCoordinates(yCoords);
+        rgrid->SetZCoordinates(zCoords);
+        
+        vtkSmartPointer<vtkDoubleArray> newScalars =
+        vtkSmartPointer<vtkDoubleArray>::New();
+        
+        newScalars->SetName("Travel time");
+        newScalars->SetNumberOfComponents(1);
+        newScalars->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
+        
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+            if ( nodes[n].isPrimary() == true ) {
+                vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+            }
+        }
+        rgrid->GetPointData()->SetScalars(newScalars);
+        
+        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
+        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+        
+        writer->SetFileName( filename.c_str() );
+        writer->SetInputData( rgrid );
+        writer->SetDataModeToBinary();
+        writer->Update();
 #else
         std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
     } else {
-        if ( all == 0 ) {
-            savePrimary(fname.c_str(), nt, vtkFormat);
-        } else {
-            std::ofstream fout(fname.c_str());
-            for ( T2 n=0; n<nodes.size(); ++n ) {
+        std::ofstream fout(fname.c_str());
+        fout.precision(12);
+        for ( T2 n=0; n<nodes.size(); ++n ) {
+            if ( nodes[n].isPrimary() == true || all==1 ) {
                 fout << nodes[n].getX() << '\t'
                 << nodes[n].getY() << '\t'
                 << nodes[n].getZ() << '\t'
                 << nodes[n].getTT(nt) << '\n';
             }
-            fout.close();
         }
+        fout.close();
     }
 }
 

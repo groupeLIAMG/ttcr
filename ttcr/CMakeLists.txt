@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.7)
 project( ttcr )
 
-set( VTK_DIR /home/giroux/tmp/VTK-6.1.0/build )
+set( VTK_DIR /usr/local/VTK/lib/cmake/vtk-7.0 )
 set( EIGEN3_INCLUDE_DIR /usr/local/eigen/include/eigen3 )
 set( BOOST_ROOT /usr/local/boost )
 
@@ -9,12 +9,12 @@ add_definitions(-DVTK)
 
 FIND_LIBRARY(C++_LIBRARY stdc++ /usr/local/gcc/lib)
 
-find_package(VTK 6.1 REQUIRED NO_MODULE)
+find_package(VTK 7.0 REQUIRED NO_MODULE)
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost 1.56.0 REQUIRED)
+find_package(Boost 1.60.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 IF( NOT EIGEN3_INCLUDE_DIR )

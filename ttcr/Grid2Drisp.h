@@ -122,10 +122,10 @@ template<typename T1, typename T2>
 void Grid2Drisp<T1,T2>::buildGridNodes() {
     
     this->nodes.resize( // noeuds secondaires
-                       this->nCellx*nsnx*(this->nCellz+1) +
-                       this->nCellz*nsnz*(this->nCellx+1) +
+                       this->ncx*nsnx*(this->ncz+1) +
+                       this->ncz*nsnz*(this->ncx+1) +
                        // noeuds primaires
-                       (this->nCellx+1) * (this->nCellz+1),
+                       (this->ncx+1) * (this->ncz+1),
                        Node2Disp<T1,T2>(this->nThreads));
 
     
@@ -137,37 +137,37 @@ void Grid2Drisp<T1,T2>::buildGridNodes() {
     T2 cell_downLeft = 0;
     T2 cell_downRight = 0;
     
-    for ( T2 n=0, nc=0; nc<=this->nCellx; ++nc ) {
+    for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
         
         double x = this->xmin + nc*this->dx;
         
-        for ( T2 nr=0; nr<=this->nCellz; ++nr ) {
+        for ( T2 nr=0; nr<=this->ncz; ++nr ) {
             
             double z = this->zmin + nr*this->dz;
             
-            if ( nr < this->nCellz && nc < this->nCellx ) {
-                cell_downRight = nc*this->nCellz + nr;
+            if ( nr < this->ncz && nc < this->ncx ) {
+                cell_downRight = nc*this->ncz + nr;
             }
             else {
                 cell_downRight = std::numeric_limits<T2>::max();
             }
             
-            if ( nr > 0 && nc < this->nCellx ) {
-                cell_upRight = nc*this->nCellz + nr - 1;
+            if ( nr > 0 && nc < this->ncx ) {
+                cell_upRight = nc*this->ncz + nr - 1;
             }
             else {
                 cell_upRight = std::numeric_limits<T2>::max();
             }
             
-            if ( nr < this->nCellz && nc > 0 ) {
-                cell_downLeft = (nc-1)*this->nCellz + nr;
+            if ( nr < this->ncz && nc > 0 ) {
+                cell_downLeft = (nc-1)*this->ncz + nr;
             }
             else {
                 cell_downLeft = std::numeric_limits<T2>::max();
             }
             
             if ( nr > 0 && nc > 0 ) {
-                cell_upLeft = (nc-1)*this->nCellz + nr - 1;
+                cell_upLeft = (nc-1)*this->ncz + nr - 1;
             }
             else {
                 cell_upLeft = std::numeric_limits<T2>::max();
@@ -201,7 +201,7 @@ void Grid2Drisp<T1,T2>::buildGridNodes() {
             ++n;
             
             // secondary nodes on the vertical
-            if ( nr < this->nCellz ) {
+            if ( nr < this->ncz ) {
                 for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
                     
                     double zsv = this->zmin + nr*this->dz + (ns+1)*dzs;
@@ -223,7 +223,7 @@ void Grid2Drisp<T1,T2>::buildGridNodes() {
             }
             
             // secondary nodes on the horizontal
-            if ( nc < this->nCellx ) {
+            if ( nc < this->ncx ) {
                 for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
                     
                     double xsh = this->xmin + nc*this->dx + (ns+1)*dxs;
@@ -255,24 +255,24 @@ void Grid2Drisp<T1,T2>::interpSlownessSecondary() {  // TODO : test this
     T1 dxs = this->dx/(nsnx+1);
     T1 dzs = this->dz/(nsnz+1);
     
-    for ( T2 n=0, nc=0; nc<=this->nCellx; ++nc ) {
+    for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
         
-        for ( T2 nr=0; nr<=this->nCellz; ++nr ) {
+        for ( T2 nr=0; nr<=this->ncz; ++nr ) {
             
             T2 np1 = n;
             T2 np2v = np1 + nsnx+nsnz + 1;
-            if ( nc == this->nCellx ) {
+            if ( nc == this->ncx ) {
                 np2v -= nsnx;
             }
-            T2 np2h = np1 + (this->nCellz+1)*nsnx + this->nCellz*nsnz + this->nCellz+1;
-            if ( nc == this->nCellx -1 ) {
+            T2 np2h = np1 + (this->ncz+1)*nsnx + this->ncz*nsnz + this->ncz+1;
+            if ( nc == this->ncx -1 ) {
                 np2h -= nr*nsnx;
             }
             
             ++n;
             
             // secondary nodes on the vertical
-            if ( nr < this->nCellz ) {
+            if ( nr < this->ncz ) {
                 T1 slope = (this->nodes[np2v].getNodeSlowness()-this->nodes[np1].getNodeSlowness())/this->dz;
                 for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
                     
@@ -283,7 +283,7 @@ void Grid2Drisp<T1,T2>::interpSlownessSecondary() {  // TODO : test this
             }
             
             // secondary nodes on the horizontal
-            if ( nc < this->nCellx ) {
+            if ( nc < this->ncx ) {
                 T1 slope = (this->nodes[np2h].getNodeSlowness()-this->nodes[np1].getNodeSlowness())/this->dx;
                 for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
                     

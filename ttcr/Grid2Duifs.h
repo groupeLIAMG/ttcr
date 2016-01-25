@@ -180,13 +180,13 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	std::vector<bool> frozen( this->nodes.size(), false );
 	initTx(Tx, t0, frozen, threadNo);
 	
-	T1 error = std::numeric_limits<T1>::max();
 	std::vector<T1> times( this->nodes.size() );
 	for ( size_t n=0; n<this->nodes.size(); ++n )
 		times[n] = this->nodes[n].getTT( threadNo );
 	
 	int niter=0;
-	while ( error >= epsilon && niter<nitermax ) {
+    T1 change = std::numeric_limits<T1>::max();
+	while ( change >= epsilon && niter<nitermax ) {
 		
 		for ( size_t i=0; i<sorted.size(); ++i ) {
 			
@@ -196,14 +196,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                     this->local_solver(*vertexC, threadNo);
 			}
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
 				niter++;
                 break;
             }
@@ -214,14 +214,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                     this->local_solver(*vertexC, threadNo);
 			}
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
                 niter++;
 				break;
             }
@@ -260,13 +260,13 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	std::vector<bool> frozen( this->nodes.size(), false );
 	initTx(Tx, t0, frozen, threadNo);
     
-	T1 error = std::numeric_limits<T1>::max();
 	std::vector<T1> times( this->nodes.size() );
 	for ( size_t n=0; n<this->nodes.size(); ++n )
 		times[n] = this->nodes[n].getTT( threadNo );
 	
     int niter=0;
-	while ( error >= epsilon && niter<nitermax ) {
+    T1 change = std::numeric_limits<T1>::max();
+	while ( change >= epsilon && niter<nitermax ) {
 		
 		for ( size_t i=0; i<sorted.size(); ++i ) {
 			
@@ -280,14 +280,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			//			sprintf(fname, "fsm%06d_%zd_a.dat",niter+1,i+1);
 			//			saveTT(fname, threadNo);
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
 				niter++;
                 break;
             }
@@ -300,14 +300,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
 			//			saveTT(fname, threadNo);
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
                 niter++;
 				break;
             }
@@ -348,13 +348,13 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	std::vector<bool> frozen( this->nodes.size(), false );
 	initTx(Tx, t0, frozen, threadNo);
 	
-	T1 error = std::numeric_limits<T1>::max();
 	std::vector<T1> times( this->nodes.size() );
 	for ( size_t n=0; n<this->nodes.size(); ++n )
 		times[n] = this->nodes[n].getTT( threadNo );
 	
 	int niter=0;
-	while ( error >= epsilon && niter<nitermax ) {
+    T1 change = std::numeric_limits<T1>::max();
+	while ( change >= epsilon && niter<nitermax ) {
 		
 		for ( size_t i=0; i<sorted.size(); ++i ) {
 			
@@ -364,14 +364,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                     this->local_solver(*vertexC, threadNo);
 			}
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
 				niter++;
                 break;
             }
@@ -382,14 +382,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                     this->local_solver(*vertexC, threadNo);
 			}
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
                 niter++;
 				break;
             }
@@ -433,13 +433,13 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	std::vector<bool> frozen( this->nodes.size(), false );
 	initTx(Tx, t0, frozen, threadNo);
     
-	T1 error = std::numeric_limits<T1>::max();
 	std::vector<T1> times( this->nodes.size() );
 	for ( size_t n=0; n<this->nodes.size(); ++n )
 		times[n] = this->nodes[n].getTT( threadNo );
 	
     int niter=0;
-	while ( error >= epsilon && niter<nitermax ) {
+    T1 change = std::numeric_limits<T1>::max();
+	while ( change >= epsilon && niter<nitermax ) {
 		
 		for ( size_t i=0; i<sorted.size(); ++i ) {
 			
@@ -453,14 +453,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			//			sprintf(fname, "fsm%06d_%zd_a.dat",niter+1,i+1);
 			//			saveTT(fname, threadNo);
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
 				niter++;
                 break;
             }
@@ -473,14 +473,14 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
 			//			saveTT(fname, threadNo);
 			
-			error = 0.0;
+			change = 0.0;
 			for ( size_t n=0; n<this->nodes.size(); ++n ) {
 				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
 				
-				error += dt;
+				change += dt;
 				times[n] = this->nodes[n].getTT(threadNo);
 			}
-			if ( error < epsilon ) {
+			if ( change < epsilon ) {
                 niter++;
 				break;
             }
