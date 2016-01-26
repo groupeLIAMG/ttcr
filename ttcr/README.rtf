@@ -94,35 +94,34 @@ rcv.dat        # rcvfile,\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\b Model files
+\b \cf0 Model files
 \b0 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 1- \ul Rectilinear grids\
+1- \ul Rectilinear grids\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf0 \ulc0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf0 \ulnone Models can be defined in VTK format or custom GRD format.\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \ul \ulc0 VTK files\ulnone : These files must hold the slowness data, which can be defined either in terms of slowness or velocity, as cell data for grid with cells of constant slowness or as point data for slowness defined at grid nodes.\
 \
-\ul \ulc0 GRD files\ulnone : For this format, the grid dimensions are given in a file with a .grd extension.  The format is the following, where values are given for x, y and z in that order (2D grids should have 0 cells in y):\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \ul VTK files\ulnone : These files must hold the slowness data, which can be defined either in terms of slowness or velocity, as cell data for grid with cells of constant slowness or as point data for slowness defined at grid nodes.\
+\
+\ul GRD files\ulnone : For this format, the grid dimensions are given in a file with a .grd extension.  The format is the following, where values are given for x, y and z in that order (2D grids should have 0 cells in y):\
 \
 --- example.grd ---\
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1 100 0 200 # number of cells,\
+\f1 \cf0 100 0 200 # number of cells,\
 1 1 1 # size of cells,\
 0 0 0 # origin of grid, \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 ------\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \
+\f0 \cf0 \
+------\
+\
 Slowness values should be provided separately in a 
 \f1 slofile
 \f0 .  Slowness values can be assigned to nodes or cells, depending on the total number of slowness values given in the file: if the number is equal to the number of nodes, then the values are assigned to nodes and if the number is equal to the number of cells then the values are assinged to the cells.\
@@ -139,10 +138,8 @@ xmin			zmin+2dz\
   :			  :\
 xmin			zmax\
 xmin+dx		zmin\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 xmin+dx		zmin+dz\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0   :			  :\
+xmin+dx		zmin+dz\
+  :			  :\
 xmax		zmax\
 \
 In 3D, ordering should correspond to coordinates\
@@ -152,44 +149,37 @@ xmin+dx		ymin			zmin\
 xmin+2dx		ymin			zmin\
   :			  :			  :\
 xmax		ymin			zmin\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 xmin			ymin+dy		zmin\
+xmin			ymin+dy		zmin\
 xmin+dx		ymin+dy		zmin\
 xmin+2dx		ymin+dy		zmin\
   :			  :			  :\
 xmax		ymin+dy		zmin\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0   :			  :			  :\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 xmax		ymax		zmin\
+  :			  :			  :\
+xmax		ymax		zmin\
 xmin			ymin			zmin+dz\
 xmin+dx		ymin			zmin+dz\
   :			  :			  :\
 xmax		ymin			zmin+dz\
 xmin			ymin+dy		zmin+dz\
   :			  :			  :\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \
+\
 etc\
 \
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \ul \ulc0 Note regarding the fast sweeping method on rectilinear grids\
+\cf0 \ul Note regarding the fast sweeping method on rectilinear grids\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf0 \ulnone \
 The 2D and 3D implementations require that the cells must be square or cubic respectively .  Only the first value for the size of cell is used when building the grids.\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \
 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 2- \ul Unstructured meshes\ulnone \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \
+\
+2- \ul Unstructured meshes\ulnone \
+\
 Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/gmsh/) files. \
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf0 \ul \ulc0 VTK files\ulnone : As for rectilinear grids, these files must hold the slowness data, which can be defined either in terms of slowness or velocity (see routines in files utils_ttcr.h and VTUReader.h for details).\
+\cf0 \ul VTK files\ulnone : As for rectilinear grids, these files must hold the slowness data, which can be defined either in terms of slowness or velocity (see routines in files utils_ttcr.h and VTUReader.h for details).\
 \
 \ul MSH files\ulnone : gmsh file format version 2.2 is supported.  This format does not allow storing cell attributes, so slowness data must be stored in other files.  There are two options: the first is to have a file holding the slowness values for each cell, in the same cell order than found in the msh file.  This type of file corresponds to the 
 \f1 slofile
@@ -201,8 +191,9 @@ Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/g
 \
  --- model2ds.geo ---\
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1 lc = 25;\
+\f1 \cf0 lc = 25;\
 \
 Point(1) = \{    0,    0, 200, lc \};\
 Point(2) = \{    0, 1000, 250, lc \};\
@@ -283,12 +274,14 @@ These are simple ascii file holding the coordinates of the source points and ini
 \f1 \cf0 2\
 0 0 0 0\
 1 0 0 0\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0 ------\
+\f0 \cf0 ------\
 \
 --- rcv.dat ---\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1 10\
+\f1 \cf0 10\
  10 0 0\
  20 0 0\
  30 0 0\
@@ -299,8 +292,9 @@ These are simple ascii file holding the coordinates of the source points and ini
  80 0 0\
  90 0 0\
 100 0 0\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0 ------\
+\f0 \cf0 ------\
 \
 Note that one "source" can have many points in space.  When raytracing is needed for many sources, simply add the files in the parameter file, as shown below.  In that case, setting 
 \f1 number of threads 
@@ -311,8 +305,9 @@ Note that one "source" can have many points in space.  When raytracing is needed
 \f0  to the number of cores, and raytracing will automatically be performed in "batches".\
 \
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1 ttcr2ds        # basename,\
+\f1 \cf0 ttcr2ds        # basename,\
 model2ds.msh   # modelfile,\
 model2ds.vel   # velfile,\
 src1.dat       # srcfile,\
@@ -323,8 +318,9 @@ rcv.dat        # rcvfile,\
 1              # saveGridTT,\
 5              # secondary nodes,\
 1              # saveRayPaths,\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0 \
+\f0 \cf0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \b \cf0 Compiling
@@ -385,4 +381,30 @@ The programs are coded in C++ and follow the C++11 standard.  You must have VTK 
   publisher = \{Society for Industrial and Applied Mathematics\},\
   url = \{http://www.jstor.org/stable/40232919\}\
 \}\
+\
+@Article\{zhang06,\
+  Title                    = \{High Order Fast Sweeping Methods for Static \{H\}amilton\'96\{J\}acobi Equations\},\
+  Author                   = \{Yong-Tao Zhang and Hong-Kai Zhao and Jianliang Qian\},\
+  Journal                  = \{Journal of Scientific Computing\},\
+  Year                     = \{2006\},\
+  Number                   = \{1\},\
+  Pages                    = \{25--56\},\
+  Volume                   = \{29\},\
+  DOI                      = \{10.1007/s10915-005-9014-3\},\
+  URL                      = \{http://dx.doi.org/10.1007/s10915-005-9014-3\}\
+\}\
+\
+@Article\{zhao05,\
+  Title                    = \{A Fast Sweeping Method for Eikonal Equations\},\
+  Author                   = \{Zhao, Hongkai\},\
+  Journal                  = \{Mathematics of Computation\},\
+  Year                     = \{2005\},\
+  Month                    = apr,\
+  Number                   = \{250\},\
+  Pages                    = \{603--627\},\
+  Volume                   = \{74\},\
+  Publisher                = \{American Mathematical Society\},\
+  URL                      = \{http://www.jstor.org/stable/4100081\}\
+\}\
+\
 }

@@ -1325,20 +1325,15 @@ void Grid3Dri<T1,T2,NODE>::update_node(const size_t i, const size_t j, const siz
     
     t = a1 + fh;
     if ( t > a2 ) {
-        if (fabs(a1-a2) >= fh) {
-            t = (a1<a2 ? a1 : a2) + fh;
-        } else {
-            t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
-        }
-    }
-    if ( t > a3 ) {
-        t = a2 + fh;
+        
+        t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
+        
         if ( t > a3 ) {
-            if (fabs(a2-a3) >= fh) {
-                t = (a2<a3 ? a2 : a3) + fh;
-            } else {
-                t = 0.5*(a2+a3+sqrt(2.*fh*fh - (a2-a3)*(a2-a3)));
-            }
+            
+            t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 - 2.*a2*a2 +
+                                               2.*a1*a3 + 2.*a2*a3 -
+                                               2.*a3*a3 + 3.*fh*fh));
+            
         }
     }
     
@@ -1712,20 +1707,15 @@ void Grid3Dri<T1,T2,NODE>::update_node_weno3(const size_t i,
     
     t = a1 + fh;
     if ( t > a2 ) {
-        if (fabs(a1-a2) >= fh) {
-            t = (a1<a2 ? a1 : a2) + fh;
-        } else {
-            t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
-        }
-    }
-    if ( t > a3 ) {
-        t = a2 + fh;
+        
+        t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
+        
         if ( t > a3 ) {
-            if (fabs(a2-a3) >= fh) {
-                t = (a2<a3 ? a2 : a3) + fh;
-            } else {
-                t = 0.5*(a2+a3+sqrt(2.*fh*fh - (a2-a3)*(a2-a3)));
-            }
+            
+            t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 -
+                                               2.*a2*a2 + 2.*a1*a3 + 2.*a2*a3 -
+                                               2.*a3*a3 + 3.*fh*fh));
+            
         }
     }
     

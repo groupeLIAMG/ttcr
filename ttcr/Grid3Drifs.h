@@ -221,7 +221,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     T1 change = std::numeric_limits<T1>::max();
     if ( weno3 == true ) {
         int niter=0, niterw=0;
-        if ( this->dx != this->dz ) {
+        if ( this->dx != this->dz || this->dx != this->dy ) {
             std::cerr << "Error: WENO stencil needs dx equal to dz" << std::endl;
             abort();
         }
@@ -309,7 +309,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     T1 change = std::numeric_limits<T1>::max();
     if ( weno3 == true ) {
         int niter=0, niterw=0;
-        if ( this->dx != this->dz ) {
+        if ( this->dx != this->dz || this->dx != this->dy ) {
             std::cerr << "Error: WENO stencil needs dx equal to dz" << std::endl;
             abort();
         }
@@ -371,81 +371,14 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<sxyz<T1>>>& r_data,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
-    
-    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-        this->nodes[n].reinit( threadNo );
-    }
-    
-    // Set Tx pts
-    std::vector<bool> frozen( this->nodes.size(), false );
-    int npts = 1;
-    if ( weno3 == true) npts = 2;
-    this->initFSM(Tx, t0, frozen, npts, threadNo);
-    
-    std::vector<T1> times( this->nodes.size() );
-    for ( size_t n=0; n<this->nodes.size(); ++n )
-        times[n] = this->nodes[n].getTT( threadNo );
-    
-    T1 change = std::numeric_limits<T1>::max();
-    if ( weno3 == true ) {
-        int niter=0, niterw=0;
-        if ( this->dx != this->dz ) {
-            std::cerr << "Error: WENO stencil needs dx equal to dz" << std::endl;
-            abort();
-        }
-        while ( change >= epsilon && niter<nitermax ) {
-            this->sweep(frozen, threadNo);
-            change = 0.0;
-            for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-                
-                change += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
-            niter++;
-        }
-        change = std::numeric_limits<T1>::max();
-        while ( change >= epsilon && niterw<nitermax ) {
-            this->sweep_weno3(frozen, threadNo);
-            change = 0.0;
-            for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-                
-                change += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
-            niterw++;
-        }
-        std::cout << niter << " 1st order iterations and ";
-        std::cout << niterw << " 3rd order iterations were needed with epsilon = " << epsilon << '\n';
-    } else {
-        int niter=0;
-        while ( change >= epsilon && niter<nitermax ) {
-            this->sweep(frozen, threadNo);
-            
-            change = 0.0;
-            for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-                
-                change += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
-            niter++;
-        }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
-    }
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
+    int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+    if ( check == 1 ) return 1;
+
     if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
     
     for (size_t n=0; n<Rx.size(); ++n) {
-        traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
     }
     return 0;
@@ -459,95 +392,20 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
-    
-    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-        this->nodes[n].reinit( threadNo );
-    }
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
-    
-    // Set Tx pts
-    std::vector<bool> frozen( this->nodes.size(), false );
-    int npts = 1;
-    if ( weno3 == true) npts = 2;
-    this->initFSM(Tx, t0, frozen, npts, threadNo);
-    
-    std::vector<T1> times( this->nodes.size() );
-    for ( size_t n=0; n<this->nodes.size(); ++n )
-        times[n] = this->nodes[n].getTT( threadNo );
-    
-    T1 change = std::numeric_limits<T1>::max();
-    if ( weno3 == true ) {
-        int niter=0, niterw=0;
-        if ( this->dx != this->dz ) {
-            std::cerr << "Error: WENO stencil needs dx equal to dz" << std::endl;
-            abort();
-        }
-        while ( change >= epsilon && niter<nitermax ) {
-            this->sweep(frozen, threadNo);
-            change = 0.0;
-            for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-                
-                change += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
-            niter++;
-        }
-        change = std::numeric_limits<T1>::max();
-        while ( change >= epsilon && niterw<nitermax ) {
-            this->sweep_weno3(frozen, threadNo);
-            change = 0.0;
-            for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-                
-                change += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
-            niterw++;
-        }
-        std::cout << niter << " 1st order iterations and ";
-        std::cout << niterw << " 3rd order iterations were needed with epsilon = " << epsilon << '\n';
-    } else {
-        int niter=0;
-        while ( change >= epsilon && niter<nitermax ) {
-            this->sweep(frozen, threadNo);
-            
-            change = 0.0;
-            for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-                
-                change += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
-            niter++;
-        }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
-    }
-    
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
+    int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+    if ( check == 1 ) return 1;
+
     if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
     
     for (size_t nr=0; nr<Rx.size(); ++nr) {
-        traveltimes[nr]->resize( Rx[nr]->size() );
         r_data[nr]->resize( Rx[nr]->size() );
         for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
             (*r_data[nr])[ni].resize( 0 );
         }
         
         for (size_t n=0; n<Rx[nr]->size(); ++n) {
-            
-            (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-            
             this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
         }
     }

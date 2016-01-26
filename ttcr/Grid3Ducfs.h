@@ -335,69 +335,8 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<sxyz<T1>>>& r_data,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
-    
-    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-        this->nodes[n].reinit( threadNo );
-    }
-    
-	std::vector<bool> frozen( this->nodes.size(), false );
-	initTx(Tx, t0, frozen, threadNo);
-	
-	std::vector<T1> times( this->nodes.size() );
-	for ( size_t n=0; n<this->nodes.size(); ++n )
-		times[n] = this->nodes[n].getTT( threadNo );
-	
-	int niter=0;
-    T1 change = std::numeric_limits<T1>::max();
-	while ( change >= epsilon && niter<nitermax ) {
-		
-		for ( size_t i=0; i<S.size(); ++i ) {
-			
-			// ascending
-			for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
-                if ( !frozen[(*vertexC)->getGridIndex()] )
-//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
-			}
-			
-			change = 0.0;
-			for ( size_t n=0; n<this->nodes.size(); ++n ) {
-				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-				
-				change += dt;
-				times[n] = this->nodes[n].getTT(threadNo);
-			}
-			if ( change < epsilon ) {
-                break;
-            }
-			
-			// descending
-			for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
-                if ( !frozen[(*vertexC)->getGridIndex()] )
-//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
-			}
-			
-			change = 0.0;
-			for ( size_t n=0; n<this->nodes.size(); ++n ) {
-				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-				
-				change += dt;
-				times[n] = this->nodes[n].getTT(threadNo);
-			}
-			if ( change < epsilon ) {
-				break;
-            }
-		}
-        niter++;
-	}
-    std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
-	
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
+    int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+    if ( check == 1 ) return 1;
 
     if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
@@ -408,12 +347,10 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     
     if ( rp_ho ) {
         for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
             this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
         }
     } else {
         for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
             this->getRaypath(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
         }
     }
@@ -429,85 +366,14 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
-    
-    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-        this->nodes[n].reinit( threadNo );
-    }
-    
-	std::vector<bool> frozen( this->nodes.size(), false );
-	initTx(Tx, t0, frozen, threadNo);
-    
-	std::vector<T1> times( this->nodes.size() );
-	for ( size_t n=0; n<this->nodes.size(); ++n )
-		times[n] = this->nodes[n].getTT( threadNo );
-	
-    int niter=0;
-    T1 change = std::numeric_limits<T1>::max();
-	while ( change >= epsilon && niter<nitermax ) {
-		
-		for ( size_t i=0; i<S.size(); ++i ) {
-			
-			// ascending
-			for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
-                if ( !frozen[(*vertexC)->getGridIndex()] )
-//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
-			}
-			
-			//			char fname[200];
-			//			sprintf(fname, "fsm%06d_%zd_a.dat",niter+1,i+1);
-			//			saveTT(fname, threadNo);
-			
-			change = 0.0;
-			for ( size_t n=0; n<this->nodes.size(); ++n ) {
-				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-				
-				change += dt;
-				times[n] = this->nodes[n].getTT(threadNo);
-			}
-			if ( change < epsilon ) {
-                break;
-            }
-			
-			// descending
-			for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
-                if ( !frozen[(*vertexC)->getGridIndex()] )
-//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
-			}
-			//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
-			//			saveTT(fname, threadNo);
-			
-			change = 0.0;
-			for ( size_t n=0; n<this->nodes.size(); ++n ) {
-				T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
-				
-				change += dt;
-				times[n] = this->nodes[n].getTT(threadNo);
-			}
-			if ( change < epsilon ) {
-				break;
-            }
-            
-		}
-        niter++;
-		std::cout << niter << std::endl;
-	}
-    std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
-	
-	
-    if ( traveltimes.size() != Rx.size() ) {
-        traveltimes.resize( Rx.size() );
-    }
+    int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+    if ( check == 1 ) return 1;
+
     if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
     
     for (size_t nr=0; nr<Rx.size(); ++nr) {
-        traveltimes[nr]->resize( Rx[nr]->size() );
         r_data[nr]->resize( Rx[nr]->size() );
         for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
             (*r_data[nr])[ni].resize( 0 );
@@ -515,12 +381,10 @@ int Grid3Ducfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 
         if ( rp_ho ) {
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
                 this->getRaypath_ho(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
             }
         } else {
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
                 this->getRaypath(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
             }
         }
