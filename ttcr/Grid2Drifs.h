@@ -69,6 +69,9 @@ public:
     virtual ~Grid2Drifs() {
     }
     
+    const int get_niter() const { return niter; }
+    const int get_niterw() const { return niterw; }
+    
     int raytrace(const std::vector<sxz<T1>>& Tx,
                  const std::vector<T1>& t0,
                  const std::vector<sxz<T1>>& Rx,
@@ -99,6 +102,8 @@ public:
 protected:
     T1 epsilon;
     int nitermax;
+    mutable int niter;
+    mutable int niterw;
     bool weno3;
     bool rotated_template;
 
@@ -118,7 +123,7 @@ Grid2Drifs<T1,T2>::Grid2Drifs(const T2 nx, const T2 nz,
                               const T1 eps, const int maxit, const bool w,
                               const bool rt, const size_t nt) :
 Grid2Dri<T1,T2,Node2Di<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
-epsilon(eps), nitermax(maxit), weno3(w), rotated_template(rt)
+epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w), rotated_template(rt)
 {
     buildGridNodes();
     this->buildGridNeighbors();
@@ -217,7 +222,8 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
     T1 change = std::numeric_limits<T1>::max();
     if ( weno3 == true ) {
-        int niter=0, niterw=0;
+        niter=0;
+        niterw=0;
         if ( this->dx != this->dz ) {
             while ( change >= epsilon && niter<nitermax ) {
                 this->sweep_xz(frozen, threadNo);
@@ -267,10 +273,8 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                 niterw++;
             }
         }
-        std::cout << niter << " 1st order iterations and ";
-        std::cout << niterw << " 3rd order iterations were needed with epsilon = " << epsilon << '\n';
     } else {
-        int niter=0;
+        niter=0;
         while ( change >= epsilon && niter<nitermax ) {
             if ( this->dx == this->dz ) {
                 this->sweep(frozen, threadNo);
@@ -290,7 +294,6 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
     }
     
     if ( traveltimes.size() != Rx.size() ) {
@@ -334,7 +337,8 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
     T1 change = std::numeric_limits<T1>::max();
     if ( weno3 == true ) {
-        int niter=0, niterw=0;
+        niter=0;
+        niterw=0;
         if ( this->dx != this->dz ) {
             while ( change >= epsilon && niter<nitermax ) {
                 this->sweep_xz(frozen, threadNo);
@@ -384,10 +388,8 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                 niterw++;
             }
         }
-        std::cout << niter << " 1st order iterations and ";
-        std::cout << niterw << " 3rd order iterations were needed with epsilon = " << epsilon << '\n';
     } else {
-        int niter=0;
+        niter=0;
         while ( change >= epsilon && niter<nitermax ) {
             if ( this->dx == this->dz ) {
                 this->sweep(frozen, threadNo);
@@ -407,7 +409,6 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
     }
     
     for (size_t nr=0; nr<Rx.size(); ++nr) {

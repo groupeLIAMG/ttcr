@@ -295,7 +295,6 @@ Grid3D<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt) {
         return nullptr;
     }
 
-    
     return g;
 }
 
@@ -341,7 +340,7 @@ Grid3D<T,uint32_t> *recti3D_vtr(const input_parameters &par, const size_t nt) {
         << "\n   Z\t" << zrange[0] << '\t' << zrange[1] << '\t' << d[2] << "\t\t" << par.nn[2]
         << std::endl;
         if ( par.method == FAST_SWEEPING && par.weno3 == true)
-            std::cout << "\n\n  Fast Sweeping Method: will use 3rd order WENO stencil\n";
+            std::cout << "\n  Fast Sweeping Method: will use 3rd order WENO stencil\n";
     }
     vtkPointData *pd = dataSet->GetPointData();
     vtkCellData *cd = dataSet->GetCellData();
@@ -369,7 +368,7 @@ Grid3D<T,uint32_t> *recti3D_vtr(const input_parameters &par, const size_t nt) {
 			} else if ( strcmp(pd->GetArrayName(na), "Slowness")==0 ) {
 				
 				vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
-				slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
+				slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
 				
 				if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
 					std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
@@ -1245,7 +1244,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
 			} else if ( strcmp(pd->GetArrayName(na), "Slowness")==0 ) {
 				
 				vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
-				slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
+				slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
 				
 				if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
 					std::cerr << "Problem with Slowness data (wrong size)" << std::endl;

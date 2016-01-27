@@ -76,6 +76,10 @@ public:
 	virtual T1 getYmax() const { return 0; }
 	virtual T1 getZmin() const { return 0; }
 	virtual T1 getZmax() const { return 0; }
+    
+    virtual const int get_niter() const { return 0; }
+    virtual const int get_niterw() const { return 0; }
+
 
 #ifdef VTK
     virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

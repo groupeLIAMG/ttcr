@@ -172,6 +172,9 @@ public:
         return size;
     }
     
+    virtual const int get_niter() const { return 0; }
+    virtual const int get_niterw() const { return 0; }
+
 protected:
     size_t nThreads;	     // number of threads
     T1 dx;                   // cell size in x

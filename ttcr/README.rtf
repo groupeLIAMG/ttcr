@@ -1,5 +1,6 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf340
-{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;}
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;\f2\froman\fcharset0 Times-Roman;
+}
 {\colortbl;\red255\green255\blue255;}
 {\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{hyphen\}}{\leveltext\leveltemplateid1\'01\uc0\u8259 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
 {\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
@@ -64,20 +65,25 @@ The keywords are :\
 {\listtext	\uc0\u8259 	}inverse distance : use inverse distance instead of linear interpolation for computing slowness at secondary nodes (SPM in 3D)\
 {\listtext	\uc0\u8259 	}metric order : metric used to built sweeping ordering (FSM, see Qian et al. 2007) default is 2\
 {\listtext	\uc0\u8259 	}epsilon : convergence criterion (FSM, see Qian et al. 2007) default is 1.e-15\
-{\listtext	\uc0\u8259 	}max number of iteration : max number of sweeping iterations (FSM, see Qian et al. 2007) default is 20\
-{\listtext	\uc0\u8259 	}saveGridTT : save traveltime over whole grid in VTK format.  This will currently save only the last source.\
+{\listtext	\uc0\u8259 	}max number of iteration : max number of sweeping iterations (FSM) default is 20\
+{\listtext	\uc0\u8259 	}saveGridTT : save traveltime over whole grid in VTK format.\
 {\listtext	\uc0\u8259 	}single precision : work with float rather than double\
 {\listtext	\uc0\u8259 	}fast marching : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)\
 {\listtext	\uc0\u8259 	}fast sweeping : use fast sweeping method if value == 1\
 {\listtext	\uc0\u8259 	}process reflectors : \
 {\listtext	\uc0\u8259 	}saveRayPaths : \
 {\listtext	\uc0\u8259 	}raypath high order : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)\
+{\listtext	\uc0\u8259 	}fsm high order : use 3rd order weighted essentially non-oscillatory (WENO) operator with fast sweeping in rectilinear grid if value == 1 (default is 0)
+\f2 \expnd0\expndtw0\kerning0
+\
+\ls1\ilvl0
+\f1 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8259 	}\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0 \cf0 \
-An example is shown below\
+An example is shown below (note that keywords \ul must be\ulnone  comprised between a hashtag and a comma):\
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
@@ -170,7 +176,7 @@ etc\
 \cf0 \ul Note regarding the fast sweeping method on rectilinear grids\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf0 \ulnone \
-The 2D and 3D implementations require that the cells must be square or cubic respectively .  Only the first value for the size of cell is used when building the grids.\
+The 3D implementations require that the cells must be square or cubic respectively .  Only the first value for the size of cell is used when building the grids.\
 \
 \
 \

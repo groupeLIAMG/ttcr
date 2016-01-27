@@ -10,41 +10,30 @@
 		2B04DD841AA7603F000231E6 /* grid3duifs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B04DD821AA75FFD000231E6 /* grid3duifs_mex.cpp */; };
 		2B46D14C19F2B79C00E7ADFC /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
 		2B46D15019F2B84700E7ADFC /* msh2vtk_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */; };
+		2B5162B41C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162B51C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162B61C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162B71C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162B81C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162B91C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162BA1C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
+		2B5162BC1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162BD1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162BE1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162BF1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162C01C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162C11C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162C21C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
+		2B5162C41C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
+		2B5162C51C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
+		2B5162C61C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
+		2B5162C71C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
+		2B5162C81C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
+		2B5162C91C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
+		2B5162CA1C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
 		2B6F87A8190F3EDA002AC9DF /* grid2duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */; };
 		2B8FC25B1AB0D30900EF9265 /* grid3duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */; };
 		2BA2D8CB191D556500923EF6 /* grid2duisp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2duisp.m */; };
-		2BBA05D31C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */; };
-		2BBA05D41C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */; };
-		2BBA05D51C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */; };
-		2BBA05D61C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */; };
-		2BBA05D81C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */; };
-		2BBA05D91C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */; };
-		2BBA05DA1C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */; };
-		2BBA05DB1C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */; };
-		2BBA05DD1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */; };
-		2BBA05DE1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */; };
-		2BBA05DF1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */; };
-		2BBA05E01C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */; };
-		2BBA05E21C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E11C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib */; };
-		2BBA05E31C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E11C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib */; };
-		2BBA05E41C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E11C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib */; };
-		2BBA05E51C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E11C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib */; };
-		2BBA05E71C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E61C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib */; };
-		2BBA05E81C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E61C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib */; };
-		2BBA05E91C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E61C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib */; };
-		2BBA05EA1C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05E61C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib */; };
-		2BBA05EC1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05EB1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib */; };
-		2BBA05ED1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05EB1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib */; };
-		2BBA05EE1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05EB1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib */; };
-		2BBA05EF1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05EB1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib */; };
-		2BBA05F11C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F01C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2BBA05F21C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F01C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2BBA05F31C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F01C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2BBA05F41C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F01C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2BBA05F61C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F51C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib */; };
-		2BBA05F71C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F51C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib */; };
-		2BBA05F81C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F51C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib */; };
-		2BBA05F91C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2BBA05F51C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib */; };
 		2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
 		2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */; };
@@ -139,6 +128,9 @@
 		2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = msh2vtk_io.cpp; sourceTree = "<group>"; };
 		2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = msh2vtk_io.h; sourceTree = "<group>"; };
 		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
+		2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libvtkCommonCore-7.0.1.dylib"; sourceTree = "<group>"; };
+		2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libvtkCommonDataModel-7.0.1.dylib"; sourceTree = "<group>"; };
+		2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libvtkIOXML-7.0.1.dylib"; sourceTree = "<group>"; };
 		2B6F87A5190F3EDA002AC9DF /* grid2duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid2duisp_mex.cpp; sourceTree = "<group>"; };
 		2B6F87AE190F4016002AC9DF /* class_handle.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = class_handle.hpp; sourceTree = "<group>"; };
@@ -154,14 +146,6 @@
 		2B90ECD219054B400015748B /* Grid3Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifm.h; sourceTree = "<group>"; };
 		2B90ECD319054C3D0015748B /* Grid3Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifs.h; sourceTree = "<group>"; };
 		2B98A47519070C6D00816CF1 /* Grid2Dri.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dri.h; sourceTree = "<group>"; };
-		2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOXML-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOXML-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOGeometry-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOGeometry-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOXMLParser-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOXMLParser-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05E11C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkIOCore-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkIOCore-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05E61C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkFiltersGeneral-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkFiltersGeneral-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05EB1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkFiltersCore-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkFiltersCore-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05F01C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkCommonDataModel-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkCommonDataModel-7.0.1.dylib"; sourceTree = "<group>"; };
-		2BBA05F51C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libvtkCommonCore-7.0.1.dylib"; path = "../../../../../usr/local/VTK-7.0.0.rc1/lib/libvtkCommonCore-7.0.1.dylib"; sourceTree = "<group>"; };
 		2BC708D318EDA599004DA2C9 /* ttcr3d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr3d.cpp; sourceTree = "<group>"; };
 		2BC708DF18EDA65F004DA2C9 /* Grad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grad.h; sourceTree = "<group>"; };
@@ -215,6 +199,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B5162C11C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162C91C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162B91C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,14 +209,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BBA05DB1C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */,
-				2BBA05E51C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */,
-				2BBA05EF1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */,
-				2BBA05F41C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2BBA05E01C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */,
-				2BBA05F91C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
-				2BBA05EA1C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */,
-				2BBA05D61C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162C01C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162C81C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162B81C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +219,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B5162BF1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162C71C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162B71C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,6 +229,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B5162C21C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162CA1C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162BA1C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,14 +239,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BBA05D81C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */,
-				2BBA05E21C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */,
-				2BBA05EC1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */,
-				2BBA05F11C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2BBA05F61C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
-				2BBA05E71C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */,
-				2BBA05DD1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */,
-				2BBA05D31C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162BC1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162C41C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162B41C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,14 +249,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BBA05D91C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */,
-				2BBA05E31C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */,
-				2BBA05ED1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */,
-				2BBA05F21C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2BBA05F71C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
-				2BBA05E81C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */,
-				2BBA05DE1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */,
-				2BBA05D41C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162BD1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162C51C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162B51C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,20 +259,25 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BBA05DA1C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib in Frameworks */,
-				2BBA05E41C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib in Frameworks */,
-				2BBA05EE1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib in Frameworks */,
-				2BBA05F31C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2BBA05F81C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
-				2BBA05E91C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib in Frameworks */,
-				2BBA05DF1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib in Frameworks */,
-				2BBA05D51C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162BE1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
+				2B5162C61C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
+				2B5162B61C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2B5162B21C590039007308C6 /* vtk-lib */ = {
+			isa = PBXGroup;
+			children = (
+				2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */,
+				2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */,
+				2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */,
+			);
+			name = "vtk-lib";
+			sourceTree = "<group>";
+		};
 		2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */ = {
 			isa = PBXGroup;
 			children = (
@@ -313,7 +296,7 @@
 		2BC708CA18EDA599004DA2C9 = {
 			isa = PBXGroup;
 			children = (
-				2BDE233D19DBA7B70001FC4D /* vtk-lib */,
+				2B5162B21C590039007308C6 /* vtk-lib */,
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
 				2BC708D418EDA599004DA2C9 /* Products */,
@@ -403,21 +386,6 @@
 				2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */,
 			);
 			path = ttcr;
-			sourceTree = "<group>";
-		};
-		2BDE233D19DBA7B70001FC4D /* vtk-lib */ = {
-			isa = PBXGroup;
-			children = (
-				2BBA05F51C2BA2CB00A5FF38 /* libvtkCommonCore-7.0.1.dylib */,
-				2BBA05F01C2BA2C000A5FF38 /* libvtkCommonDataModel-7.0.1.dylib */,
-				2BBA05EB1C2BA2B100A5FF38 /* libvtkFiltersCore-7.0.1.dylib */,
-				2BBA05E61C2BA2A600A5FF38 /* libvtkFiltersGeneral-7.0.1.dylib */,
-				2BBA05E11C2BA27200A5FF38 /* libvtkIOCore-7.0.1.dylib */,
-				2BBA05D71C2BA25400A5FF38 /* libvtkIOGeometry-7.0.1.dylib */,
-				2BBA05D21C2BA21A00A5FF38 /* libvtkIOXML-7.0.1.dylib */,
-				2BBA05DC1C2BA26500A5FF38 /* libvtkIOXMLParser-7.0.1.dylib */,
-			);
-			name = "vtk-lib";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -766,6 +734,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/usr/local/VTK/lib,
+					"$(PROJECT_DIR)",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -783,6 +752,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/usr/local/VTK/lib,
+					"$(PROJECT_DIR)",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1324,6 +1294,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/usr/local/VTK/lib,
+					"$(PROJECT_DIR)",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

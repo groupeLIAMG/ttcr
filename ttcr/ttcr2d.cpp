@@ -341,7 +341,14 @@ int body(const input_parameters &par) {
 		}
 	}
 	if ( par.time ) { end = chrono::high_resolution_clock::now(); }
-    if ( par.verbose ) cout << "done.\n";
+    if ( par.verbose ) {
+        cout << "done.\n";
+        if ( par.method == FAST_SWEEPING ) {
+            std::cout << g->get_niter() << " 1st order iterations ";
+            if ( par.weno3==true ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
+            std::cout << "were needed with epsilon = " << par.epsilon << '\n';
+        }
+    }
 	if ( par.time ) {
 		cout.precision(12);
 		cout << "Time to perform raytracing: " <<
