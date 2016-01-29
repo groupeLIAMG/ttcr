@@ -76,6 +76,14 @@ public:
                  std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                  const size_t threadNo=0) const;
     
+    int raytrace(const std::vector<sxyz<T1>>& Tx,
+                 const std::vector<T1>& t0,
+                 const std::vector<sxyz<T1>>& Rx,
+                 std::vector<T1>& traveltimes,
+                 std::vector<std::vector<sxyz<T1>>>& r_data,
+                 std::vector<std::vector<siv<T1>>>& l_data,
+                 const size_t threadNo=0) const;
+    
     void savePrimary(const char filename[], const size_t nt=0,
                      const bool vtkFormat=0) const;
     
@@ -803,35 +811,20 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
         std::vector<sxyz<T1>> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         sxyz<T1> child;
-        //        siv<T1> cell;
         
         // store the son's coord
         child.x = Rx[n].x;
         child.y = Rx[n].y;
         child.z = Rx[n].z;
-        //        cell.i = cellParentRx;
         while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
             
             r_tmp.push_back( child );
-            
-            //			cell.v = (*node_p)[iParent].getDistance( child );
-            //			bool found=false;
-            //			for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-            //				if ( l_data[n][nc].i == cell.i ) {
-            //					l_data[n][nc].v += cell.v;
-            //					found = true;
-            //				}
-            //			}
-            //			if ( found == false ) {
-            //				l_data[n].push_back( cell );
-            //			}
             
             // we now go up in time - parent becomes the child of grand'pa
             iChild = iParent;
             child.x = (*node_p)[iChild].getX();
             child.y = (*node_p)[iChild].getY();
             child.z = (*node_p)[iChild].getZ();
-            //            cell.i = (*node_p)[iChild].getCellParent();
             
             // grand'pa is now papa
             iParent = (*node_p)[iChild].getNodeParent(threadNo);
@@ -847,26 +840,11 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
         // parent is now at Tx
         r_tmp.push_back( child );
         
-        //		cell.v = (*node_p)[iParent].getDistance( child );
-        //		bool found=false;
-        //		for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-        //			if ( l_data[n][nc].i == cell.i ) {
-        //				l_data[n][nc].v += cell.v;
-        //				found = true;
-        //			}
-        //		}
-        //		if ( found == false ) {
-        //			l_data[n].push_back( cell );
-        //		}
-        
         // finally, store Tx position
         child.x = (*node_p)[iParent].getX();
         child.y = (*node_p)[iParent].getY();
         child.z = (*node_p)[iParent].getZ();
         r_tmp.push_back( child );
-        
-        //  must be sorted to build matrix L
-        //        sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
         
         // the order should be from Tx to Rx, so we reorder...
         iParent = static_cast<T2>(r_tmp.size());
@@ -990,6 +968,147 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                 (*r_data[nr])[n][nn] = r_tmp[ iParent-1-nn ];
             }
         }
+    }
+    return 0;
+}
+
+template<typename T1, typename T2>
+int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                const std::vector<T1>& t0,
+                                const std::vector<sxyz<T1>>& Rx,
+                                std::vector<T1>& traveltimes,
+                                std::vector<std::vector<sxyz<T1>>>& r_data,
+                                std::vector<std::vector<siv<T1>>>& l_data,
+                                const size_t threadNo) const {
+    
+    // Primary function
+    
+    // Checks if the points are in the grid
+    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->check_pts(Rx) == 1 ) return 1;
+    
+    for ( size_t n=0; n<this->nodes.size(); ++n ) {
+        this->nodes[n].reinit( threadNo );
+    }
+    
+    CompareNodePtr<T1> cmp(threadNo);
+    std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+    CompareNodePtr<T1>> queue(cmp);
+    // txNodes: Extra nodes if the sources points are not on an existing node
+    std::vector<Node3Disp<T1,T2>> txNodes;
+    // inQueue lists the nodes waiting in the queue
+    std::vector<bool> inQueue( this->nodes.size(), false );
+    // Tx sources nodes are "frozen" and their traveltime can't be modified
+    std::vector<bool> frozen( this->nodes.size(), false );
+    
+    initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
+    
+    propagate(queue, inQueue, frozen, threadNo);
+    
+    if ( traveltimes.size() != Rx.size() ) {
+        traveltimes.resize( Rx.size() );
+    }
+    if ( r_data.size() != Rx.size() ) {
+        r_data.resize( Rx.size() );
+    }
+    for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+        r_data[ni].resize( 0 );
+    }
+    if ( l_data.size() != Rx.size() ) {
+        l_data.resize( Rx.size() );
+    }
+    for ( size_t ni=0; ni<l_data.size(); ++ni ) {
+        l_data[ni].resize( 0 );
+    }
+
+    T2 nodeParentRx;
+    T2 cellParentRx;
+    
+    for (size_t n=0; n<Rx.size(); ++n) {
+        traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
+                                             threadNo);
+        
+        // Rx are in nodes (not txNodes)
+        std::vector<Node3Disp<T1,T2>> *node_p;
+        node_p = &(this->nodes);
+        
+        std::vector<sxyz<T1>> r_tmp;
+        T2 iChild, iParent = nodeParentRx;
+        sxyz<T1> child;
+        siv<T1> cell;
+        
+        // store the son's coord
+        child.x = Rx[n].x;
+        child.y = Rx[n].y;
+        child.z = Rx[n].z;
+        cell.i = cellParentRx;
+        while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
+            
+            r_tmp.push_back( child );
+            
+            cell.v = (*node_p)[iParent].getDistance( child );
+            bool found=false;
+            for (size_t nc=0; nc<l_data[n].size(); ++nc) {
+                if ( l_data[n][nc].i == cell.i ) {
+                    l_data[n][nc].v += cell.v;
+                    found = true;
+                }
+            }
+            if ( found == false ) {
+                l_data[n].push_back( cell );
+            }
+            
+            // we now go up in time - parent becomes the child of grand'pa
+            iChild = iParent;
+            child.x = (*node_p)[iChild].getX();
+            child.y = (*node_p)[iChild].getY();
+            child.z = (*node_p)[iChild].getZ();
+            cell.i = (*node_p)[iChild].getCellParent();
+            
+            // grand'pa is now papa
+            iParent = (*node_p)[iChild].getNodeParent(threadNo);
+            if ( iParent >= this->nodes.size() ) {
+                node_p = &txNodes;
+                iParent -= this->nodes.size();
+            }
+            else {
+                node_p = &(this->nodes);
+            }
+        }
+        
+        // parent is now at Tx
+        r_tmp.push_back( child );
+        
+        cell.v = (*node_p)[iParent].getDistance( child );
+        bool found=false;
+        for (size_t nc=0; nc<l_data[n].size(); ++nc) {
+            if ( l_data[n][nc].i == cell.i ) {
+                l_data[n][nc].v += cell.v;
+                found = true;
+            }
+        }
+        if ( found == false ) {
+            l_data[n].push_back( cell );
+        }
+        
+        // finally, store Tx position
+        child.x = (*node_p)[iParent].getX();
+        child.y = (*node_p)[iParent].getY();
+        child.z = (*node_p)[iParent].getZ();
+        r_tmp.push_back( child );
+        
+        //  must be sorted to build matrix L
+        sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
+        
+        // the order should be from Tx to Rx, so we reorder...
+        iParent = static_cast<T2>(r_tmp.size());
+        r_data[n].resize( r_tmp.size() );
+        for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
+            r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
+            r_data[n][nn].y = r_tmp[ iParent-1-nn ].y;
+            r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
+        }
+        
     }
     return 0;
 }

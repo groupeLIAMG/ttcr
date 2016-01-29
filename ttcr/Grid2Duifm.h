@@ -200,7 +200,7 @@ int Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
     if ( traveltimes.size() != Rx.size() ) {
         traveltimes.resize( Rx.size() );
     }
-    
+
     for (size_t nr=0; nr<Rx.size(); ++nr) {
         traveltimes[nr]->resize( Rx[nr]->size() );
         for (size_t n=0; n<Rx[nr]->size(); ++n)
@@ -244,7 +244,10 @@ int Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 	if ( r_data.size() != Rx.size() ) {
         r_data.resize( Rx.size() );
     }
-	
+    for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+        r_data[ni].resize( 0 );
+    }
+
     for (size_t n=0; n<Rx.size(); ++n) {
         traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
