@@ -363,7 +363,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 blk_start = blk_end;
             }
             
-            for ( size_t nv=blk_start; nv<nTx; ++nv ) {
+            for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
                 sxyz<double> sxyz_tmp;
                 vector<sxyz<double>> vRx;
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {

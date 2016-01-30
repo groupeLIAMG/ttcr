@@ -167,8 +167,6 @@ protected:
     
     void grad(sxz<T1> &g, const sxz<T1> &pt, const size_t nt=0) const;
     
-    T1 interpTT(const sxz<T1> &pt, const size_t nt=0) const;
-    
     void getRaypath(const std::vector<sxz<T1>>& Tx,
                     const sxz<T1> &Rx,
                     std::vector<sxz<T1>> &r_data,
@@ -276,57 +274,6 @@ bool Grid2Dri<T1,T2,NODE>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], con
 }
 
 
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-                                       const size_t threadNo) const {
-    
-    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-        if ( nodes[nn] == Rx ) {
-            return nodes[nn].getTT(threadNo);
-        }
-    }
-    
-    T2 cellNo = getCellNo( Rx );
-    T1 t[4];
-    T1 x[4];
-    T1 z[4];
-    size_t in=0;
-    T1 x0 = std::numeric_limits<T1>::max();
-    T1 z0 = std::numeric_limits<T1>::max();
-    for ( size_t k=0; k< neighbors[cellNo].size(); ++k ) {
-        T2 neibNo = neighbors[cellNo][k];
-        if ( nodes[neibNo].isPrimary() ) {
-            t[in] = nodes[neibNo].getTT(threadNo);
-            x[in] = nodes[neibNo].getX();
-            z[in] = nodes[neibNo].getZ();
-            x0 = x0<x[in] ? x0 : x[in];
-            z0 = z0<z[in] ? z0 : z[in];
-            in++;
-        }
-    }
-    T2 i11, i12, i21, i22;
-    for ( T2 k=0; k<4; ++k ) {
-        if ( x0==x[k] && z0==z[k] ) {
-            i11 = k;
-        } else if ( x0!=x[k] && z0!=z[k] ) {
-            i22 = k;
-        } else if ( x0!=x[k] ) {
-            i21 = k;
-        } else if ( z0!=z[k] ) {
-            i12 = k;
-        } else {
-            std::cerr << "should never get here!!!\n";
-            abort();
-        }
-    }
-    T1 traveltime = 1./(dx*dz)*(t[i11]*(x[i22]-Rx.x)*(z[i22]-Rx.z) +
-                         t[i21]*(Rx.x-x[i21])*(z[i22]-Rx.z) +
-                         t[i12]*(x[i22]-Rx.x)*(Rx.z-z[i12]) +
-                         t[i22]*(Rx.x-x[i21])*(Rx.z-z[i12]));
-
-    
-    return traveltime;
-}
 
 //template<typename T1, typename T2, typename NODE>
 //T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
@@ -355,6 +302,63 @@ T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
 //    }
 //    return traveltime;
 //}
+
+template<typename T1, typename T2, typename NODE>
+T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1> &pt, const size_t nt) const {
+    
+    // bilinear interpolation if not on node
+    
+    T1 tt;
+    T2 i, j;
+    
+    getIJ(pt, i, j);
+    
+    if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+        // on node
+        return nodes[i*(ncz+1)+j].getTT(nt);
+    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        
+        // on edge
+        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
+        T1 t2 = nodes[i*(ncz+1)+j+1].getTT(nt);
+        
+        T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
+        T1 w2 = (pt.z - (zmin+j*dz))/dz;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+        
+        // on edge
+        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
+        T1 t2 = nodes[(i+1)*(ncz+1)+j].getTT(nt);
+        
+        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        T1 w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else {
+        
+        T1 t1 = nodes[    i*(ncz+1)+j  ].getTT(nt);
+        T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getTT(nt);
+        T1 t3 = nodes[    i*(ncz+1)+j+1].getTT(nt);
+        T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getTT(nt);
+        
+        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        T1 w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        
+        w1 = (zmin+(j+1)*dz - pt.z)/dz;
+        w2 = (pt.z - (zmin+j*dz))/dz;
+        
+        tt = t1*w1 + t2*w2;
+    }
+    
+    return tt;
+}
 
 
 template<typename T1, typename T2, typename NODE>
@@ -739,68 +743,11 @@ void Grid2Dri<T1,T2,NODE>::grad(sxz<T1> &g, const sxz<T1> &pt,
     
     T1 p1 = pt.x - dx/2.0;
     T1 p2 = p1 + dx;
-    g.x = (interpTT({p2, pt.z}, nt) - interpTT({p1, pt.z}, nt)) / dx;
+    g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
     
     p1 = pt.z - dz/2.0;
     p2 = p1 + dz;
-    g.z = (interpTT({pt.x, p2}, nt) - interpTT({pt.x, p1}, nt)) / dz;
-}
-
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Dri<T1,T2,NODE>::interpTT(const sxz<T1> &pt, const size_t nt) const {
-    
-    // bilinear interpolation if not on node
-    
-    T1 tt;
-    T2 i, j;
-    
-    getIJ(pt, i, j);
-    
-    if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
-        // on node
-        return nodes[i*(ncz+1)+j].getTT(nt);
-    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
-        
-        // on edge
-        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
-        T1 t2 = nodes[i*(ncz+1)+j+1].getTT(nt);
-        
-        T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
-		T1 w2 = (pt.z - (zmin+j*dz))/dz;
-		
-        tt = t1*w1 + t2*w2;
-        
-    } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
-        
-        // on edge
-        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
-        T1 t2 = nodes[(i+1)*(ncz+1)+j].getTT(nt);
-		
-        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-		T1 w2 = (pt.x - (xmin+i*dx))/dx;
-		
-        tt = t1*w1 + t2*w2;
-        
-    } else {
-        
-        T1 t1 = nodes[    i*(ncz+1)+j  ].getTT(nt);
-        T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getTT(nt);
-        T1 t3 = nodes[    i*(ncz+1)+j+1].getTT(nt);
-        T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getTT(nt);
-
-		T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-		T1 w2 = (pt.x - (xmin+i*dx))/dx;
-
-		t1 = t1*w1 + t2*w2;
-		t2 = t3*w1 + t4*w2;
-
-		w1 = (zmin+(j+1)*dz - pt.z)/dz;
-		w2 = (pt.z - (zmin+j*dz))/dz;
-		
-		tt = t1*w1 + t2*w2;
-    }
-	
-    return tt;
+    g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
 }
 
 template<typename T1, typename T2, typename NODE>
@@ -2277,45 +2224,60 @@ void Grid2Dri<T1,T2,NODE>::initFSM(const std::vector<sxz<T1>>& Tx,
 }
 
 template<typename T1, typename T2, typename NODE>
-T1 Grid2Dri<T1,T2,NODE>::getSlowness(const sxz<T1>& Rx) const {
-    T2 cellNo = getCellNo( Rx );
-    T1 s[4];
-    T1 x[4];
-    T1 z[4];
-    size_t in=0;
-    T1 x0 = std::numeric_limits<T1>::max();
-    T1 z0 = std::numeric_limits<T1>::max();
-    for ( size_t k=0; k< neighbors[cellNo].size(); ++k ) {
-        T2 neibNo = neighbors[cellNo][k];
-        if ( nodes[neibNo].isPrimary() ) {
-            s[in] = nodes[neibNo].getNodeSlowness();
-            x[in] = nodes[neibNo].getX();
-            z[in] = nodes[neibNo].getZ();
-            x0 = x0<x[in] ? x0 : x[in];
-            z0 = z0<z[in] ? z0 : z[in];
-            in++;
-        }
+T1 Grid2Dri<T1,T2,NODE>::getSlowness(const sxz<T1>& pt) const {
+
+    // bilinear interpolation if not on node
+    
+    T1 s;
+    T2 i, j;
+    
+    getIJ(pt, i, j);
+    
+    if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+        // on node
+        return nodes[i*(ncz+1)+j].getNodeSlowness();
+    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        
+        // on edge
+        T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
+        T1 t2 = nodes[i*(ncz+1)+j+1].getNodeSlowness();
+        
+        T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
+        T1 w2 = (pt.z - (zmin+j*dz))/dz;
+        
+        s = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+        
+        // on edge
+        T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
+        T1 t2 = nodes[(i+1)*(ncz+1)+j].getNodeSlowness();
+        
+        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        T1 w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        s = t1*w1 + t2*w2;
+        
+    } else {
+        
+        T1 t1 = nodes[    i*(ncz+1)+j  ].getNodeSlowness();
+        T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getNodeSlowness();
+        T1 t3 = nodes[    i*(ncz+1)+j+1].getNodeSlowness();
+        T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getNodeSlowness();
+        
+        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        T1 w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        
+        w1 = (zmin+(j+1)*dz - pt.z)/dz;
+        w2 = (pt.z - (zmin+j*dz))/dz;
+        
+        s = t1*w1 + t2*w2;
     }
-    T2 i11, i12, i21, i22;
-    for ( T2 k=0; k<4; ++k ) {
-        if ( x0==x[k] && z0==z[k] ) {
-            i11 = k;
-        } else if ( x0!=x[k] && z0!=z[k] ) {
-            i22 = k;
-        } else if ( x0!=x[k] ) {
-            i21 = k;
-        } else if ( z0!=z[k] ) {
-            i12 = k;
-        } else {
-            std::cerr << "should never get here!!!\n";
-            abort();
-        }
-    }
-    T1 slo = 1./(dx*dz)*(s[i11]*(x[i22]-Rx.x)*(z[i22]-Rx.z) +
-                         s[i21]*(Rx.x-x[i21])*(z[i22]-Rx.z) +
-                         s[i12]*(x[i22]-Rx.x)*(Rx.z-z[i12]) +
-                         s[i22]*(Rx.x-x[i21])*(Rx.z-z[i12]));
-    return slo;
+    
+    return s;
 }
 
 

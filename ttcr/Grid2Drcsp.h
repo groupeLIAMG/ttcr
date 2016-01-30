@@ -192,7 +192,8 @@ void Grid2Drcsp<T1,T2>::buildGridNodes() {
                        this->ncx*nsnx*(this->ncz+1) +
                        this->ncz*nsnz*(this->ncx+1) +
                        // noeuds primaires
-                       (this->ncx+1) * (this->ncz+1));
+                       (this->ncx+1) * (this->ncz+1),
+                       Node2Dcsp<T1,T2>(this->nThreads));
     
     T1 dxs = this->dx/(nsnx+1);
     T1 dzs = this->dz/(nsnz+1);
@@ -721,6 +722,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  std::vector<std::vector<sxz<double>>>& r_data,
 							  std::vector<std::vector<siv<double>>>& l_data,
 							  const size_t threadNo) const {
+    
+//    std::cout << Tx[0].z << '\t' << threadNo << '\n';
     
     if ( this->check_pts(Tx) == 1 ) return 1;
     if ( this->check_pts(Rx) == 1 ) return 1;

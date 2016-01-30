@@ -227,21 +227,24 @@ protected:
         return ( remainder(value, 1.)  <= small );
     }
     
-    T1 getTraveltime(const sxyz<T1>& Rx,
-                     const std::vector<NODE>& nodes,
-                     const size_t threadNo) const;
+    T1 getTraveltime(const sxyz<T1> &pt, const size_t nt) const;
+    
+//    T1 getTraveltime(const sxyz<T1>& Rx,
+//                     const std::vector<NODE>& nodes,
+//                     const size_t threadNo) const;
     
     T1 getTraveltime(const sxyz<T1>& Rx,
-                     const std::vector<NODE>& nodes,
                      T2&, T2&, const size_t threadNo) const;
+
+//    T1 getTraveltime(const sxyz<T1>& Rx,
+//                     const std::vector<NODE>& nodes,
+//                     T2&, T2&, const size_t threadNo) const;
     
     void grad(sxyz<T1>& g, const size_t i, const size_t j, const size_t k,
               const size_t nt) const;
 
     void grad(sxyz<T1>& g, const sxyz<T1> &pt, const size_t nt) const;
     
-    T1 interpTT(const sxyz<T1> &pt, const size_t nt) const;
-
     void getRaypath(const std::vector<sxyz<T1>>& Tx,
                     const sxyz<T1> &Rx,
                     std::vector<sxyz<T1>> &r_data,
@@ -306,41 +309,178 @@ int Grid3Dri<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1>>& pts) const {
 }
 
 
-
 template<typename T1, typename T2, typename NODE>
-T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
-                                    const std::vector<NODE>& nodes,
-                                    const size_t threadNo) const {
+T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1> &pt, const size_t nt) const {
     
-    // Calculate and return the traveltime for a Rx point.
+    static const size_t nnx = ncx+1;
+    static const size_t nny = ncy+1;
     
-    // If Rx is on a node:
-    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-        if ( nodes[nn] == Rx ) {
-            return nodes[nn].getTT(threadNo);
-        }
+    // trilinear interpolation if not on node
+    
+    T1 tt;
+    T2 i, j, k;
+    
+    getIJK(pt, i, j, k);
+    
+    if ( fabs(pt.x - (xmin+i*dx))<small &&
+        fabs(pt.y - (ymin+j*dy))<small &&
+        fabs(pt.z - (zmin+k*dz))<small ) {
+        // on node
+        return nodes[(k*nny+j)*nnx+i].getTT(nt);
+    } else if ( fabs(pt.x - (xmin+i*dx))<small &&
+               fabs(pt.y - (ymin+j*dy))<small ) {
+        // on edge
+        T1 t1 = nodes[(    k*nny+j)*nnx+i].getTT(nt);
+        T1 t2 = nodes[((k+1)*nny+j)*nnx+i].getTT(nt);
+        
+        T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
+        T1 w2 = (pt.z - (zmin+k*dz))/dz;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.x - (xmin+i*dx))<small &&
+               fabs(pt.z - (zmin+k*dz))<small ) {
+        // on edge
+        T1 t1 = nodes[(k*nny+j  )*nnx+i].getTT(nt);
+        T1 t2 = nodes[(k*nny+j+1)*nnx+i].getTT(nt);
+        
+        T1 w1 = (ymin+(j+1)*dy - pt.y)/dy;
+        T1 w2 = (pt.y - (ymin+j*dy))/dy;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.y - (ymin+j*dy))<small &&
+               fabs(pt.z - (zmin+k*dz))<small ) {
+        // on edge
+        T1 t1 = nodes[(k*nny+j)*nnx+i  ].getTT(nt);
+        T1 t2 = nodes[(k*nny+j)*nnx+i+1].getTT(nt);
+        
+        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        T1 w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        // on YZ face
+        T1 t1 = nodes[(    k*nny+j  )*nnx+i].getTT(nt);
+        T1 t2 = nodes[((k+1)*nny+j  )*nnx+i].getTT(nt);
+        T1 t3 = nodes[(    k*nny+j+1)*nnx+i].getTT(nt);
+        T1 t4 = nodes[((k+1)*nny+j+1)*nnx+i].getTT(nt);
+        
+        T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
+        T1 w2 = (pt.z - (zmin+k*dz))/dz;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        
+        w1 = (ymin+(j+1)*dy - pt.y)/dy;
+        w2 = (pt.y - (ymin+j*dy))/dy;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.y - (ymin+j*dy))<small ) {
+        // on XZ face
+        T1 t1 = nodes[(    k*nny+j)*nnx+i  ].getTT(nt);
+        T1 t2 = nodes[((k+1)*nny+j)*nnx+i  ].getTT(nt);
+        T1 t3 = nodes[(    k*nny+j)*nnx+i+1].getTT(nt);
+        T1 t4 = nodes[((k+1)*nny+j)*nnx+i+1].getTT(nt);
+        
+        T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
+        T1 w2 = (pt.z - (zmin+k*dz))/dz;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        
+        w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else if ( fabs(pt.z - (zmin+k*dz))<small ) {
+        // on XY face
+        T1 t1 = nodes[(k*nny+j  )*nnx+i  ].getTT(nt);
+        T1 t2 = nodes[(k*nny+j+1)*nnx+i  ].getTT(nt);
+        T1 t3 = nodes[(k*nny+j  )*nnx+i+1].getTT(nt);
+        T1 t4 = nodes[(k*nny+j+1)*nnx+i+1].getTT(nt);
+        
+        T1 w1 = (ymin+(j+1)*dy - pt.y)/dy;
+        T1 w2 = (pt.y - (ymin+j*dy))/dy;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        
+        w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        tt = t1*w1 + t2*w2;
+        
+    } else {
+        T1 t1 = nodes[(    k*nny+j  )*nnx+i  ].getTT(nt);
+        T1 t2 = nodes[((k+1)*nny+j  )*nnx+i  ].getTT(nt);
+        T1 t3 = nodes[(    k*nny+j+1)*nnx+i  ].getTT(nt);
+        T1 t4 = nodes[((k+1)*nny+j+1)*nnx+i  ].getTT(nt);
+        T1 t5 = nodes[(    k*nny+j  )*nnx+i+1].getTT(nt);
+        T1 t6 = nodes[((k+1)*nny+j  )*nnx+i+1].getTT(nt);
+        T1 t7 = nodes[(    k*nny+j+1)*nnx+i+1].getTT(nt);
+        T1 t8 = nodes[((k+1)*nny+j+1)*nnx+i+1].getTT(nt);
+        
+        T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
+        T1 w2 = (pt.z - (zmin+k*dz))/dz;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        t3 = t5*w1 + t6*w2;
+        t4 = t7*w1 + t8*w2;
+        
+        w1 = (ymin+(j+1)*dy - pt.y)/dy;
+        w2 = (pt.y - (ymin+j*dy))/dy;
+        
+        t1 = t1*w1 + t2*w2;
+        t2 = t3*w1 + t4*w2;
+        
+        w1 = (xmin+(i+1)*dx - pt.x)/dx;
+        w2 = (pt.x - (xmin+i*dx))/dx;
+        
+        tt = t1*w1 + t2*w2;
+        
     }
-    //If Rx is not on a node:
-    T1 slo = computeSlowness( Rx );
     
-    T2 cellNo = getCellNo( Rx );
-    T2 neibNo = neighbors[cellNo][0];
-    T1 dt = computeDt(nodes[neibNo], Rx, slo);
-    
-    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-        neibNo = neighbors[cellNo][k];
-        dt = computeDt(nodes[neibNo], Rx, slo);
-        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-        }
-    }
-    return traveltime;
+    return tt;
 }
 
+//template<typename T1, typename T2, typename NODE>
+//T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+//                                    const std::vector<NODE>& nodes,
+//                                    const size_t threadNo) const {
+//    
+//    // Calculate and return the traveltime for a Rx point.
+//    
+//    // If Rx is on a node:
+//    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+//        if ( nodes[nn] == Rx ) {
+//            return nodes[nn].getTT(threadNo);
+//        }
+//    }
+//    //If Rx is not on a node:
+//    T1 slo = computeSlowness( Rx );
+//    
+//    T2 cellNo = getCellNo( Rx );
+//    T2 neibNo = neighbors[cellNo][0];
+//    T1 dt = computeDt(nodes[neibNo], Rx, slo);
+//    
+//    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+//    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+//        neibNo = neighbors[cellNo][k];
+//        dt = computeDt(nodes[neibNo], Rx, slo);
+//        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+//            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+//        }
+//    }
+//    return traveltime;
+//}
+
 template<typename T1, typename T2, typename NODE>
 T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
-                                       const std::vector<NODE>& nodes,
                                        T2& nodeParentRx, T2& cellParentRx,
                                        const size_t threadNo) const {
     
@@ -372,6 +512,41 @@ T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     }
     return traveltime;
 }
+
+//template<typename T1, typename T2, typename NODE>
+//T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+//                                       const std::vector<NODE>& nodes,
+//                                       T2& nodeParentRx, T2& cellParentRx,
+//                                       const size_t threadNo) const {
+//    
+//    // Calculate and return the traveltime for a Rx point.
+//    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+//        if ( nodes[nn] == Rx ) {
+//            nodeParentRx = nodes[nn].getNodeParent(threadNo);
+//            cellParentRx = nodes[nn].getCellParent(threadNo);
+//            return nodes[nn].getTT(threadNo);
+//        }
+//    }
+//    //If Rx is not on a node:
+//    T1 slo = computeSlowness( Rx );
+//    
+//    T2 cellNo = getCellNo( Rx );
+//    T2 neibNo = neighbors[cellNo][0];
+//    T1 dt = computeDt(nodes[neibNo], Rx, slo);
+//    
+//    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+//    nodeParentRx = neibNo;
+//    cellParentRx = cellNo;
+//    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+//        neibNo = neighbors[cellNo][k];
+//        dt = computeDt(nodes[neibNo], Rx, slo);
+//        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+//            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+//            nodeParentRx = neibNo;
+//        }
+//    }
+//    return traveltime;
+//}
 
 
 template<typename T1, typename T2, typename NODE>
@@ -406,157 +581,19 @@ void Grid3Dri<T1,T2,NODE>::grad(sxyz<T1>& g, const sxyz<T1> &pt,
     
     T1 p1 = pt.x - dx/2.0;
     T1 p2 = p1 + dx;
-    g.x = (interpTT({p2, pt.y, pt.z}, nt) - interpTT({p1, pt.y, pt.z}, nt)) / dx;
+    g.x = (getTraveltime({p2, pt.y, pt.z}, nt) - getTraveltime({p1, pt.y, pt.z}, nt)) / dx;
 
     p1 = pt.y - dy/2.0;
     p2 = p1 + dy;
-    g.y = (interpTT({pt.x, p2, pt.z}, nt) - interpTT({pt.x, p1, pt.z}, nt)) / dy;
+    g.y = (getTraveltime({pt.x, p2, pt.z}, nt) - getTraveltime({pt.x, p1, pt.z}, nt)) / dy;
 
     p1 = pt.z - dz/2.0;
     p2 = p1 + dz;
-    g.z = (interpTT({pt.x, pt.y, p2}, nt) - interpTT({pt.x, pt.y, p1}, nt)) / dz;
+    g.z = (getTraveltime({pt.x, pt.y, p2}, nt) - getTraveltime({pt.x, pt.y, p1}, nt)) / dz;
 
 }
 
 
-template<typename T1, typename T2, typename NODE>
-T1 Grid3Dri<T1,T2,NODE>::interpTT(const sxyz<T1> &pt, const size_t nt) const {
-    
-    static const size_t nnx = ncx+1;
-    static const size_t nny = ncy+1;
-
-    // trilinear interpolation if not on node
-
-    T1 tt;
-    T2 i, j, k;
-    
-    getIJK(pt, i, j, k);
-
-    if ( fabs(pt.x - (xmin+i*dx))<small &&
-        fabs(pt.y - (ymin+j*dy))<small &&
-        fabs(pt.z - (zmin+k*dz))<small ) {
-        // on node
-        return nodes[(k*nny+j)*nnx+i].getTT(nt);
-    } else if ( fabs(pt.x - (xmin+i*dx))<small &&
-               fabs(pt.y - (ymin+j*dy))<small ) {
-        // on edge
-        T1 t1 = nodes[(    k*nny+j)*nnx+i].getTT(nt);
-        T1 t2 = nodes[((k+1)*nny+j)*nnx+i].getTT(nt);
-        
-		T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
-		T1 w2 = (pt.z - (zmin+k*dz))/dz;
-		
-		tt = t1*w1 + t2*w2;
-		
-    } else if ( fabs(pt.x - (xmin+i*dx))<small &&
-               fabs(pt.z - (zmin+k*dz))<small ) {
-        // on edge
-        T1 t1 = nodes[(k*nny+j  )*nnx+i].getTT(nt);
-        T1 t2 = nodes[(k*nny+j+1)*nnx+i].getTT(nt);
-        
-        T1 w1 = (ymin+(j+1)*dy - pt.y)/dy;
-		T1 w2 = (pt.y - (ymin+j*dy))/dy;
-		
-        tt = t1*w1 + t2*w2;
-
-    } else if ( fabs(pt.y - (ymin+j*dy))<small &&
-               fabs(pt.z - (zmin+k*dz))<small ) {
-        // on edge
-        T1 t1 = nodes[(k*nny+j)*nnx+i  ].getTT(nt);
-        T1 t2 = nodes[(k*nny+j)*nnx+i+1].getTT(nt);
-        
-		T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-        T1 w2 = (pt.x - (xmin+i*dx))/dx;
-		
-        tt = t1*w1 + t2*w2;
-
-    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
-        // on YZ face
-        T1 t1 = nodes[(    k*nny+j  )*nnx+i].getTT(nt);
-        T1 t2 = nodes[((k+1)*nny+j  )*nnx+i].getTT(nt);
-        T1 t3 = nodes[(    k*nny+j+1)*nnx+i].getTT(nt);
-        T1 t4 = nodes[((k+1)*nny+j+1)*nnx+i].getTT(nt);
-
-		T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
-		T1 w2 = (pt.z - (zmin+k*dz))/dz;
-
-		t1 = t1*w1 + t2*w2;
-		t2 = t3*w1 + t4*w2;
-		
-		w1 = (ymin+(j+1)*dy - pt.y)/dy;
-		w2 = (pt.y - (ymin+j*dy))/dy;
-		
-		tt = t1*w1 + t2*w2;
-		
-    } else if ( fabs(pt.y - (ymin+j*dy))<small ) {
-        // on XZ face
-        T1 t1 = nodes[(    k*nny+j)*nnx+i  ].getTT(nt);
-        T1 t2 = nodes[((k+1)*nny+j)*nnx+i  ].getTT(nt);
-        T1 t3 = nodes[(    k*nny+j)*nnx+i+1].getTT(nt);
-        T1 t4 = nodes[((k+1)*nny+j)*nnx+i+1].getTT(nt);
-        
-		T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
-		T1 w2 = (pt.z - (zmin+k*dz))/dz;
-		
-		t1 = t1*w1 + t2*w2;
-		t2 = t3*w1 + t4*w2;
-
-		w1 = (xmin+(i+1)*dx - pt.x)/dx;
-		w2 = (pt.x - (xmin+i*dx))/dx;
-		
-		tt = t1*w1 + t2*w2;
-
-	} else if ( fabs(pt.z - (zmin+k*dz))<small ) {
-        // on XY face
-        T1 t1 = nodes[(k*nny+j  )*nnx+i  ].getTT(nt);
-        T1 t2 = nodes[(k*nny+j+1)*nnx+i  ].getTT(nt);
-        T1 t3 = nodes[(k*nny+j  )*nnx+i+1].getTT(nt);
-        T1 t4 = nodes[(k*nny+j+1)*nnx+i+1].getTT(nt);
-
-		T1 w1 = (ymin+(j+1)*dy - pt.y)/dy;
-		T1 w2 = (pt.y - (ymin+j*dy))/dy;
-
-		t1 = t1*w1 + t2*w2;
-		t2 = t3*w1 + t4*w2;
-		
-		w1 = (xmin+(i+1)*dx - pt.x)/dx;
-		w2 = (pt.x - (xmin+i*dx))/dx;
-		
-		tt = t1*w1 + t2*w2;
-
-    } else {
-        T1 t1 = nodes[(    k*nny+j  )*nnx+i  ].getTT(nt);
-        T1 t2 = nodes[((k+1)*nny+j  )*nnx+i  ].getTT(nt);
-        T1 t3 = nodes[(    k*nny+j+1)*nnx+i  ].getTT(nt);
-        T1 t4 = nodes[((k+1)*nny+j+1)*nnx+i  ].getTT(nt);
-        T1 t5 = nodes[(    k*nny+j  )*nnx+i+1].getTT(nt);
-        T1 t6 = nodes[((k+1)*nny+j  )*nnx+i+1].getTT(nt);
-        T1 t7 = nodes[(    k*nny+j+1)*nnx+i+1].getTT(nt);
-        T1 t8 = nodes[((k+1)*nny+j+1)*nnx+i+1].getTT(nt);
-
-		T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
-		T1 w2 = (pt.z - (zmin+k*dz))/dz;
-		
-		t1 = t1*w1 + t2*w2;
-		t2 = t3*w1 + t4*w2;
-		t3 = t5*w1 + t6*w2;
-		t4 = t7*w1 + t8*w2;
-		
-		w1 = (ymin+(j+1)*dy - pt.y)/dy;
-		w2 = (pt.y - (ymin+j*dy))/dy;
-		
-		t1 = t1*w1 + t2*w2;
-		t2 = t3*w1 + t4*w2;
-		
-		w1 = (xmin+(i+1)*dx - pt.x)/dx;
-		w2 = (pt.x - (xmin+i*dx))/dx;
-		
-		tt = t1*w1 + t2*w2;
-		
-    }
-    
-    return tt;
-}
 
 
 template<typename T1, typename T2, typename NODE>

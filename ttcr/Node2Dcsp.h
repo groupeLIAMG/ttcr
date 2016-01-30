@@ -145,6 +145,9 @@ public:
 	}
 	
 	~Node2Dcsp() {
+        delete [] tt;
+        delete [] nodeParent;
+        delete [] cellParent;
 	}
 	
     void reinit(const size_t thread_no) { //=0) {

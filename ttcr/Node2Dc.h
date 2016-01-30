@@ -96,6 +96,7 @@ public:
 	
 
 	~Node2Dc() {
+        delete [] tt;
 	}
 	
     void reinit(const size_t thread_no) { //=0) {

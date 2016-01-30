@@ -282,7 +282,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     }
     
     for (size_t n=0; n<Rx.size(); ++n) {
-        traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+        traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
     }
     return 0;
 }
@@ -366,7 +366,7 @@ int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     for (size_t nr=0; nr<Rx.size(); ++nr) {
         traveltimes[nr]->resize( Rx[nr]->size() );
         for (size_t n=0; n<Rx[nr]->size(); ++n)
-            (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
     }
     return 0;
 }

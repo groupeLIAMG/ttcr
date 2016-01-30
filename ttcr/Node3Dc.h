@@ -98,6 +98,7 @@ public:
 	}
 
 	~Node3Dc() {
+        delete [] tt;
 	}
 
     // Sets the vectors to the right size of threads and initialize it

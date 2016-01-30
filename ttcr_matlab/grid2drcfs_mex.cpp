@@ -164,7 +164,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         vector<double> s(nSlowness);
         for ( size_t n=0; n<s.size(); ++n ) s[n] = slowness[n];
         if ( grid_instance->setSlowness(s) == 1 ) {
-            mexErrMsgTxt("Slowness values must be defined for each grid node.");
+            mexErrMsgTxt("Slowness values must be defined for each grid cell.");
         }
         
         //
@@ -354,7 +354,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 blk_start = blk_end;
             }
             
-            for ( size_t nv=blk_start; nv<nTx; ++nv ) {
+            for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
                 sxz<double> sxz_tmp;
                 vector<sxz<double>> vRx;
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
