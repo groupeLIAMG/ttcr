@@ -179,6 +179,8 @@ public:
 					  const bool savePhysicalEntity=false) const;
 #endif
 	
+    const size_t get_nthreads() const { return nThreads; }
+
 protected:
     const size_t nThreads;
 	T2 nPrimary;

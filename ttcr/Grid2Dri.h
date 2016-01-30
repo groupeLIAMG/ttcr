@@ -121,6 +121,8 @@ public:
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
 
+    const size_t get_nthreads() const { return nThreads; }
+
 protected:
 	size_t nThreads;
     T1 dx;           // cell size in x
@@ -141,7 +143,7 @@ protected:
 		return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
     
-	T1 computeDt(const NODE& source, const sxz<T1>& node, T1 slo) const {
+    T1 computeDt(const NODE& source, const sxz<T1>& node, T1 slo) const {
 		return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
     
@@ -149,13 +151,18 @@ protected:
     
     bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
     
-    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
-					 const size_t threadNo) const;
+    T1 getTraveltime(const sxz<T1>& Rx, const size_t threadNo) const;
     
-    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
-					 T2& nodeParentRx, T2& cellParentRx,
+//    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
+//					 const size_t threadNo) const;
+    
+    T1 getTraveltime(const sxz<T1>& Rx, T2& nodeParentRx, T2& cellParentRx,
 					 const size_t threadNo) const;
-	
+
+//    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
+//                     T2& nodeParentRx, T2& cellParentRx,
+//                     const size_t threadNo) const;
+
     void grad(sxz<T1> &g, const size_t i, const size_t j, const size_t nt=0) const;
     
     void grad(sxz<T1> &g, const sxz<T1> &pt, const size_t nt=0) const;
@@ -213,6 +220,9 @@ protected:
     void initFSM(const std::vector<sxz<T1>>& Tx,
                  const std::vector<T1>& t0, std::vector<bool>& frozen,
                  const int npts, const size_t threadNo) const;
+    
+    T1 getSlowness(const sxz<T1>& Rx) const;
+    
 private:
     Grid2Dri() {}
     Grid2Dri(const Grid2Dri<T1,T2,NODE>& g) {}
@@ -268,8 +278,7 @@ bool Grid2Dri<T1,T2,NODE>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], con
 
 template<typename T1, typename T2, typename NODE>
 T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-								  const std::vector<NODE>& nodes,
-								  const size_t threadNo) const {
+                                       const size_t threadNo) const {
     
     for ( size_t nn=0; nn<nodes.size(); ++nn ) {
         if ( nodes[nn] == Rx ) {
@@ -278,24 +287,78 @@ T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
     }
     
     T2 cellNo = getCellNo( Rx );
-    T2 neibNo = neighbors[cellNo][0];
-    T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
-    
-    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-        neibNo = neighbors[cellNo][k];
-        dt = computeDt(nodes[neibNo], Rx, cellNo);
-        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+    T1 t[4];
+    T1 x[4];
+    T1 z[4];
+    size_t in=0;
+    T1 x0 = std::numeric_limits<T1>::max();
+    T1 z0 = std::numeric_limits<T1>::max();
+    for ( size_t k=0; k< neighbors[cellNo].size(); ++k ) {
+        T2 neibNo = neighbors[cellNo][k];
+        if ( nodes[neibNo].isPrimary() ) {
+            t[in] = nodes[neibNo].getTT(threadNo);
+            x[in] = nodes[neibNo].getX();
+            z[in] = nodes[neibNo].getZ();
+            x0 = x0<x[in] ? x0 : x[in];
+            z0 = z0<z[in] ? z0 : z[in];
+            in++;
         }
     }
+    T2 i11, i12, i21, i22;
+    for ( T2 k=0; k<4; ++k ) {
+        if ( x0==x[k] && z0==z[k] ) {
+            i11 = k;
+        } else if ( x0!=x[k] && z0!=z[k] ) {
+            i22 = k;
+        } else if ( x0!=x[k] ) {
+            i21 = k;
+        } else if ( z0!=z[k] ) {
+            i12 = k;
+        } else {
+            std::cerr << "should never get here!!!\n";
+            abort();
+        }
+    }
+    T1 traveltime = 1./(dx*dz)*(t[i11]*(x[i22]-Rx.x)*(z[i22]-Rx.z) +
+                         t[i21]*(Rx.x-x[i21])*(z[i22]-Rx.z) +
+                         t[i12]*(x[i22]-Rx.x)*(Rx.z-z[i12]) +
+                         t[i22]*(Rx.x-x[i21])*(Rx.z-z[i12]));
+
+    
     return traveltime;
 }
+
+//template<typename T1, typename T2, typename NODE>
+//T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+//                                       const std::vector<NODE>& nodes,
+//                                       const size_t threadNo) const {
+//    
+//    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+//        if ( nodes[nn] == Rx ) {
+//            return nodes[nn].getTT(threadNo);
+//        }
+//    }
+//    
+//    T1 slownessRx = getSlowness( Rx );
+//    
+//    T2 cellNo = getCellNo( Rx );
+//    T2 neibNo = neighbors[cellNo][0];
+//    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
+//    
+//    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+//    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+//        neibNo = neighbors[cellNo][k];
+//        dt = computeDt(nodes[neibNo], Rx, slownessRx);
+//        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+//            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+//        }
+//    }
+//    return traveltime;
+//}
 
 
 template<typename T1, typename T2, typename NODE>
 T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-                                       const std::vector<NODE>& nodes,
                                        T2& nodeParentRx, T2& cellParentRx,
                                        const size_t threadNo) const {
     
@@ -307,16 +370,18 @@ T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
         }
     }
     
+    T1 slownessRx = getSlowness( Rx );
+    
     T2 cellNo = getCellNo( Rx );
     T2 neibNo = neighbors[cellNo][0];
-    T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
+    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
     
     T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     nodeParentRx = neibNo;
     cellParentRx = cellNo;
     for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
         neibNo = neighbors[cellNo][k];
-        dt = computeDt(nodes[neibNo], Rx, cellNo);
+        dt = computeDt(nodes[neibNo], Rx, slownessRx);
         if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
             traveltime =  nodes[neibNo].getTT(threadNo)+dt;
             nodeParentRx = neibNo;
@@ -324,6 +389,40 @@ T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
     }
     return traveltime;
 }
+
+//template<typename T1, typename T2, typename NODE>
+//T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+//                                       const std::vector<NODE>& nodes,
+//                                       T2& nodeParentRx, T2& cellParentRx,
+//                                       const size_t threadNo) const {
+//    
+//    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+//        if ( nodes[nn] == Rx ) {
+//            nodeParentRx = nodes[nn].getNodeParent(threadNo);
+//            cellParentRx = nodes[nn].getCellParent(threadNo);
+//            return nodes[nn].getTT(threadNo);
+//        }
+//    }
+//    
+//    T1 slownessRx = getSlowness( Rx );
+//    
+//    T2 cellNo = getCellNo( Rx );
+//    T2 neibNo = neighbors[cellNo][0];
+//    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
+//    
+//    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+//    nodeParentRx = neibNo;
+//    cellParentRx = cellNo;
+//    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+//        neibNo = neighbors[cellNo][k];
+//        dt = computeDt(nodes[neibNo], Rx, slownessRx);
+//        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+//            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+//            nodeParentRx = neibNo;
+//        }
+//    }
+//    return traveltime;
+//}
 
 template<typename T1, typename T2, typename NODE>
 void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
@@ -2175,6 +2274,48 @@ void Grid2Dri<T1,T2,NODE>::initFSM(const std::vector<sxz<T1>>& Tx,
             }
         }
     }
+}
+
+template<typename T1, typename T2, typename NODE>
+T1 Grid2Dri<T1,T2,NODE>::getSlowness(const sxz<T1>& Rx) const {
+    T2 cellNo = getCellNo( Rx );
+    T1 s[4];
+    T1 x[4];
+    T1 z[4];
+    size_t in=0;
+    T1 x0 = std::numeric_limits<T1>::max();
+    T1 z0 = std::numeric_limits<T1>::max();
+    for ( size_t k=0; k< neighbors[cellNo].size(); ++k ) {
+        T2 neibNo = neighbors[cellNo][k];
+        if ( nodes[neibNo].isPrimary() ) {
+            s[in] = nodes[neibNo].getNodeSlowness();
+            x[in] = nodes[neibNo].getX();
+            z[in] = nodes[neibNo].getZ();
+            x0 = x0<x[in] ? x0 : x[in];
+            z0 = z0<z[in] ? z0 : z[in];
+            in++;
+        }
+    }
+    T2 i11, i12, i21, i22;
+    for ( T2 k=0; k<4; ++k ) {
+        if ( x0==x[k] && z0==z[k] ) {
+            i11 = k;
+        } else if ( x0!=x[k] && z0!=z[k] ) {
+            i22 = k;
+        } else if ( x0!=x[k] ) {
+            i21 = k;
+        } else if ( z0!=z[k] ) {
+            i12 = k;
+        } else {
+            std::cerr << "should never get here!!!\n";
+            abort();
+        }
+    }
+    T1 slo = 1./(dx*dz)*(s[i11]*(x[i22]-Rx.x)*(z[i22]-Rx.z) +
+                         s[i21]*(Rx.x-x[i21])*(z[i22]-Rx.z) +
+                         s[i12]*(x[i22]-Rx.x)*(Rx.z-z[i12]) +
+                         s[i22]*(Rx.x-x[i21])*(Rx.z-z[i12]));
+    return slo;
 }
 
 

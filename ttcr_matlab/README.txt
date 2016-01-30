@@ -1,7 +1,7 @@
 
-----------------------------------------------------
-Information for compiling mexfiles used by grd2duisp
-----------------------------------------------------
+-----------------------------------------------------
+Information for compiling mexfiles used by grid2duisp
+-----------------------------------------------------
 
 You need:
 - a C++ compiler that conforms to the C++11 standard

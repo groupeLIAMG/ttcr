@@ -185,6 +185,8 @@ public:
     
 	void saveModelXYZ(const std::string &) const;
 
+    const size_t get_nthreads() const { return nThreads; }
+
 protected:
     const size_t nThreads;
 	T2 nPrimary;

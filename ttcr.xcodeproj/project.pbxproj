@@ -8,6 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		2B04DD841AA7603F000231E6 /* grid3duifs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B04DD821AA75FFD000231E6 /* grid3duifs_mex.cpp */; };
+		2B3D86E01C5BF12C00AFFA2A /* grid3drcsp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B3D86D31C5BF06100AFFA2A /* grid3drcsp_mex.cpp */; };
+		2B3D86EF1C5C065D00AFFA2A /* grid3drcfs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B3D86EE1C5C065D00AFFA2A /* grid3drcfs_mex.cpp */; };
+		2B45CD401C5C3A860083644A /* grid2drcfs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B45CD3F1C5C3A860083644A /* grid2drcfs_mex.cpp */; };
+		2B45CD411C5C3DC30083644A /* grid2drcfs.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B45CD3D1C5C39580083644A /* grid2drcfs.m */; };
+		2B45CD421C5C3E030083644A /* grid3drcfs.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B3D86ED1C5C060800AFFA2A /* grid3drcfs.m */; };
+		2B45CD431C5C3E250083644A /* grid3drcsp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B3D86D21C5BE51100AFFA2A /* grid3drcsp.m */; };
+		2B45CD511C5C3FBC0083644A /* grid2drcsp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B45CD501C5C3FBC0083644A /* grid2drcsp_mex.cpp */; };
+		2B45CD531C5C42110083644A /* grid2drcsp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B45CD521C5C3FD70083644A /* grid2drcsp.m */; };
 		2B46D14C19F2B79C00E7ADFC /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
 		2B46D15019F2B84700E7ADFC /* msh2vtk_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */; };
 		2B5162B41C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
@@ -49,6 +57,46 @@
 			dstPath = "$(HOME)/mfiles";
 			dstSubfolderSpec = 0;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B3D86D61C5BF08400AFFA2A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "$(HOME)/mexfiles";
+			dstSubfolderSpec = 0;
+			files = (
+				2B45CD431C5C3E250083644A /* grid3drcsp.m in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B3D86E31C5C054200AFFA2A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "$(HOME)/mexfiles";
+			dstSubfolderSpec = 0;
+			files = (
+				2B45CD421C5C3E030083644A /* grid3drcfs.m in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B45CD331C5C38B40083644A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "$(HOME)/mexfiles";
+			dstSubfolderSpec = 0;
+			files = (
+				2B45CD411C5C3DC30083644A /* grid2drcfs.m in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B45CD461C5C3F100083644A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "$(HOME)/mexfiles";
+			dstSubfolderSpec = 0;
+			files = (
+				2B45CD531C5C42110083644A /* grid2drcsp.m in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -122,6 +170,18 @@
 		2B39B6A518F860BD003985D6 /* Grid2Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dui.h; sourceTree = "<group>"; };
 		2B39B6A618F8808F003985D6 /* Grid2Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duisp.h; sourceTree = "<group>"; };
 		2B3CFD9E18FE137F005B4E1B /* Node2Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node2Di.h; sourceTree = "<group>"; };
+		2B3D86D21C5BE51100AFFA2A /* grid3drcsp.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid3drcsp.m; sourceTree = "<group>"; };
+		2B3D86D31C5BF06100AFFA2A /* grid3drcsp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid3drcsp_mex.cpp; sourceTree = "<group>"; };
+		2B3D86D81C5BF08400AFFA2A /* grid3drcsp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3drcsp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B3D86E51C5C054200AFFA2A /* grid3drcfs_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3drcfs_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B3D86ED1C5C060800AFFA2A /* grid3drcfs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid3drcfs.m; sourceTree = "<group>"; };
+		2B3D86EE1C5C065D00AFFA2A /* grid3drcfs_mex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = grid3drcfs_mex.cpp; sourceTree = "<group>"; };
+		2B45CD351C5C38B40083644A /* grid2drcfs_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2drcfs_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B45CD3D1C5C39580083644A /* grid2drcfs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = grid2drcfs.m; sourceTree = "<group>"; };
+		2B45CD3F1C5C3A860083644A /* grid2drcfs_mex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = grid2drcfs_mex.cpp; sourceTree = "<group>"; };
+		2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2drcsp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B45CD501C5C3FBC0083644A /* grid2drcsp_mex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = grid2drcsp_mex.cpp; sourceTree = "<group>"; };
+		2B45CD521C5C3FD70083644A /* grid2drcsp.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid2drcsp.m; sourceTree = "<group>"; };
 		2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = msh2vtk.cpp; sourceTree = "<group>"; };
 		2B46D14519F2B78C00E7ADFC /* msh2vtk */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = msh2vtk; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B46D14D19F2B80E00E7ADFC /* structs_msh2vtk.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = structs_msh2vtk.h; sourceTree = "<group>"; };
@@ -139,7 +199,7 @@
 		2B76D8911BB2351D00F2D81F /* Grid2Drifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drifs.h; sourceTree = "<group>"; };
 		2B8AAD8A1C3F51DB00C38269 /* Grid3Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drcfs.h; sourceTree = "<group>"; };
 		2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid3duisp_mex.cpp; sourceTree = "<group>"; };
-		2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duisp_mex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B8FC25C1AB0D3AE00EF9265 /* grid3duisp.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid3duisp.m; sourceTree = "<group>"; };
 		2B90ECD019053EC60015748B /* Grid3Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Dui.h; sourceTree = "<group>"; };
 		2B90ECD1190545970015748B /* Node3Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node3Di.h; sourceTree = "<group>"; };
@@ -202,6 +262,34 @@
 				2B5162C11C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
 				2B5162C91C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
 				2B5162B91C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B3D86D51C5BF08400AFFA2A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B3D86E21C5C054200AFFA2A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B45CD321C5C38B40083644A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B45CD451C5C3F100083644A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,6 +377,14 @@
 				2B04DD751AA75CC5000231E6 /* grid3duifs.m */,
 				2B6F87AE190F4016002AC9DF /* class_handle.hpp */,
 				2B6F87B1190F414D002AC9DF /* README.txt */,
+				2B3D86D21C5BE51100AFFA2A /* grid3drcsp.m */,
+				2B3D86D31C5BF06100AFFA2A /* grid3drcsp_mex.cpp */,
+				2B3D86ED1C5C060800AFFA2A /* grid3drcfs.m */,
+				2B3D86EE1C5C065D00AFFA2A /* grid3drcfs_mex.cpp */,
+				2B45CD3D1C5C39580083644A /* grid2drcfs.m */,
+				2B45CD3F1C5C3A860083644A /* grid2drcfs_mex.cpp */,
+				2B45CD521C5C3FD70083644A /* grid2drcsp.m */,
+				2B45CD501C5C3FBC0083644A /* grid2drcsp_mex.cpp */,
 			);
 			path = ttcr_matlab;
 			sourceTree = "<group>";
@@ -312,7 +408,11 @@
 				2B6F87A5190F3EDA002AC9DF /* grid2duisp_mex.mexmaci64 */,
 				2B46D14519F2B78C00E7ADFC /* msh2vtk */,
 				2B04DD801AA75F6E000231E6 /* grid3duifs_mex.mexmaci64 */,
-				2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex */,
+				2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex.mexmaci64 */,
+				2B3D86D81C5BF08400AFFA2A /* grid3drcsp_mex.mexmaci64 */,
+				2B3D86E51C5C054200AFFA2A /* grid3drcfs_mex.mexmaci64 */,
+				2B45CD351C5C38B40083644A /* grid2drcfs_mex.mexmaci64 */,
+				2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -408,6 +508,74 @@
 			productReference = 2B04DD801AA75F6E000231E6 /* grid3duifs_mex.mexmaci64 */;
 			productType = "com.apple.product-type.tool";
 		};
+		2B3D86D71C5BF08400AFFA2A /* grid3drcsp_mex */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B3D86DC1C5BF08400AFFA2A /* Build configuration list for PBXNativeTarget "grid3drcsp_mex" */;
+			buildPhases = (
+				2B3D86D41C5BF08400AFFA2A /* Sources */,
+				2B3D86D51C5BF08400AFFA2A /* Frameworks */,
+				2B3D86D61C5BF08400AFFA2A /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = grid3drcsp_mex;
+			productName = grid3drcsp_mex;
+			productReference = 2B3D86D81C5BF08400AFFA2A /* grid3drcsp_mex.mexmaci64 */;
+			productType = "com.apple.product-type.tool";
+		};
+		2B3D86E41C5C054200AFFA2A /* grid3drcfs_mex */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B3D86E91C5C054200AFFA2A /* Build configuration list for PBXNativeTarget "grid3drcfs_mex" */;
+			buildPhases = (
+				2B3D86E11C5C054200AFFA2A /* Sources */,
+				2B3D86E21C5C054200AFFA2A /* Frameworks */,
+				2B3D86E31C5C054200AFFA2A /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = grid3drcfs_mex;
+			productName = grid3drcfs_mex;
+			productReference = 2B3D86E51C5C054200AFFA2A /* grid3drcfs_mex.mexmaci64 */;
+			productType = "com.apple.product-type.tool";
+		};
+		2B45CD341C5C38B40083644A /* grid2drcfs_mex */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B45CD391C5C38B40083644A /* Build configuration list for PBXNativeTarget "grid2drcfs_mex" */;
+			buildPhases = (
+				2B45CD311C5C38B40083644A /* Sources */,
+				2B45CD321C5C38B40083644A /* Frameworks */,
+				2B45CD331C5C38B40083644A /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = grid2drcfs_mex;
+			productName = grid2drcfs_mex;
+			productReference = 2B45CD351C5C38B40083644A /* grid2drcfs_mex.mexmaci64 */;
+			productType = "com.apple.product-type.tool";
+		};
+		2B45CD471C5C3F100083644A /* grid2drcsp_mex */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B45CD4C1C5C3F100083644A /* Build configuration list for PBXNativeTarget "grid2drcsp_mex" */;
+			buildPhases = (
+				2B45CD441C5C3F100083644A /* Sources */,
+				2B45CD451C5C3F100083644A /* Frameworks */,
+				2B45CD461C5C3F100083644A /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = grid2drcsp_mex;
+			productName = grid2drcsp_mex;
+			productReference = 2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */;
+			productType = "com.apple.product-type.tool";
+		};
 		2B46D14419F2B78C00E7ADFC /* msh2vtk */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2B46D14919F2B78C00E7ADFC /* Build configuration list for PBXNativeTarget "msh2vtk" */;
@@ -456,7 +624,7 @@
 			);
 			name = grid3duisp_mex;
 			productName = grid2duisp;
-			productReference = 2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex */;
+			productReference = 2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex.mexmaci64 */;
 			productType = "com.apple.product-type.tool";
 		};
 		2BC708D218EDA599004DA2C9 /* ttcr3d */ = {
@@ -519,6 +687,18 @@
 				LastUpgradeCheck = 0720;
 				ORGANIZATIONNAME = "Bernard Giroux";
 				TargetAttributes = {
+					2B3D86D71C5BF08400AFFA2A = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					2B3D86E41C5C054200AFFA2A = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					2B45CD341C5C38B40083644A = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					2B45CD471C5C3F100083644A = {
+						CreatedOnToolsVersion = 7.2;
+					};
 					2B46D14419F2B78C00E7ADFC = {
 						CreatedOnToolsVersion = 6.0.1;
 					};
@@ -543,6 +723,10 @@
 				2B46D14419F2B78C00E7ADFC /* msh2vtk */,
 				2B04DD761AA75F6E000231E6 /* grid3duifs_mex */,
 				2B8FC2511AB0D2B000EF9265 /* grid3duisp_mex */,
+				2B3D86D71C5BF08400AFFA2A /* grid3drcsp_mex */,
+				2B3D86E41C5C054200AFFA2A /* grid3drcfs_mex */,
+				2B45CD341C5C38B40083644A /* grid2drcfs_mex */,
+				2B45CD471C5C3F100083644A /* grid2drcsp_mex */,
 			);
 		};
 /* End PBXProject section */
@@ -553,6 +737,38 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B04DD841AA7603F000231E6 /* grid3duifs_mex.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B3D86D41C5BF08400AFFA2A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B3D86E01C5BF12C00AFFA2A /* grid3drcsp_mex.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B3D86E11C5C054200AFFA2A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B3D86EF1C5C065D00AFFA2A /* grid3drcfs_mex.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B45CD311C5C38B40083644A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B45CD401C5C3A860083644A /* grid2drcfs_mex.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B45CD441C5C3F100083644A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B45CD511C5C3FBC0083644A /* grid2drcsp_mex.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -629,12 +845,12 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					/Applications/MATLAB_R2014b.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 					/Applications/MATLAB_R2014a.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					/Applications/MATLAB_R2014a.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
@@ -666,12 +882,12 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					/Applications/MATLAB_R2014b.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 					/Applications/MATLAB_R2014a.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					/Applications/MATLAB_R2014a.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
@@ -700,12 +916,12 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					/Applications/MATLAB_R2014b.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 					/Applications/MATLAB_R2014a.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					/Applications/MATLAB_R2014a.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
@@ -716,6 +932,465 @@
 					"-lmat",
 				);
 				PRODUCT_NAME = grid3duifs_mex.mexmaci64;
+			};
+			name = Release;
+		};
+		2B3D86DD1C5BF08400AFFA2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug;
+		};
+		2B3D86DE1C5BF08400AFFA2A /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug_O;
+		};
+		2B3D86DF1C5BF08400AFFA2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Release;
+		};
+		2B3D86EA1C5C054200AFFA2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_EXTENSION = "";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug;
+		};
+		2B3D86EB1C5C054200AFFA2A /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_EXTENSION = "";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug_O;
+		};
+		2B3D86EC1C5C054200AFFA2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_EXTENSION = "";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Release;
+		};
+		2B45CD3A1C5C38B40083644A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug;
+		};
+		2B45CD3B1C5C38B40083644A /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug_O;
+		};
+		2B45CD3C1C5C38B40083644A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Release;
+		};
+		2B45CD4D1C5C3F100083644A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug;
+		};
+		2B45CD4E1C5C3F100083644A /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
+			};
+			name = Debug_O;
+		};
+		2B45CD4F1C5C3F100083644A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					/Applications/MATLAB_R2015b.app/extern/include,
+					/Applications/MATLAB_R2014a.app/extern/include,
+				);
+				INSTALL_PATH = "$(HOME)/mexfiles";
+				LIBRARY_SEARCH_PATHS = (
+					/Applications/MATLAB_R2015b.app/bin/maci64,
+					/Applications/MATLAB_R2014a.app/bin/maci64,
+					"$(PROJECT_DIR)",
+				);
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = (
+					"-lmx",
+					"-lmex",
+					"-lmat",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME).mexmaci64";
 			};
 			name = Release;
 		};
@@ -777,11 +1452,11 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					/Applications/MATLAB_R2014b.app/extern/include,
-					/Applications/MATLAB_R2014a.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					/Applications/MATLAB_R2014a.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
@@ -810,11 +1485,11 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					/Applications/MATLAB_R2014b.app/extern/include,
-					/Applications/MATLAB_R2014a.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					/Applications/MATLAB_R2014a.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
@@ -861,7 +1536,7 @@
 					"-lmex",
 					"-lmat",
 				);
-				PRODUCT_NAME = grid3duisp_mex;
+				PRODUCT_NAME = grid3duisp_mex.mexmaci64;
 			};
 			name = Debug;
 		};
@@ -898,7 +1573,7 @@
 					"-lmex",
 					"-lmat",
 				);
-				PRODUCT_NAME = grid3duisp_mex;
+				PRODUCT_NAME = grid3duisp_mex.mexmaci64;
 			};
 			name = Debug_O;
 		};
@@ -932,7 +1607,7 @@
 					"-lmex",
 					"-lmat",
 				);
-				PRODUCT_NAME = grid3duisp_mex;
+				PRODUCT_NAME = grid3duisp_mex.mexmaci64;
 			};
 			name = Release;
 		};
@@ -1261,11 +1936,11 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					/Applications/MATLAB_R2014b.app/extern/include,
-					/Applications/MATLAB_R2014a.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					/Applications/MATLAB_R2014a.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
@@ -1310,6 +1985,46 @@
 				2B04DD7D1AA75F6E000231E6 /* Debug */,
 				2B04DD7E1AA75F6E000231E6 /* Debug_O */,
 				2B04DD7F1AA75F6E000231E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B3D86DC1C5BF08400AFFA2A /* Build configuration list for PBXNativeTarget "grid3drcsp_mex" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B3D86DD1C5BF08400AFFA2A /* Debug */,
+				2B3D86DE1C5BF08400AFFA2A /* Debug_O */,
+				2B3D86DF1C5BF08400AFFA2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B3D86E91C5C054200AFFA2A /* Build configuration list for PBXNativeTarget "grid3drcfs_mex" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B3D86EA1C5C054200AFFA2A /* Debug */,
+				2B3D86EB1C5C054200AFFA2A /* Debug_O */,
+				2B3D86EC1C5C054200AFFA2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B45CD391C5C38B40083644A /* Build configuration list for PBXNativeTarget "grid2drcfs_mex" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B45CD3A1C5C38B40083644A /* Debug */,
+				2B45CD3B1C5C38B40083644A /* Debug_O */,
+				2B45CD3C1C5C38B40083644A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B45CD4C1C5C3F100083644A /* Build configuration list for PBXNativeTarget "grid2drcsp_mex" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B45CD4D1C5C3F100083644A /* Debug */,
+				2B45CD4E1C5C3F100083644A /* Debug_O */,
+				2B45CD4F1C5C3F100083644A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

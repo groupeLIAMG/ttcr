@@ -722,8 +722,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  std::vector<std::vector<siv<double>>>& l_data,
 							  const size_t threadNo) const {
     
-    if ( check_pts(Tx) == 1 ) return 1;
-    if ( check_pts(Rx) == 1 ) return 1;
+    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->check_pts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );

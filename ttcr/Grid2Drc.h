@@ -125,6 +125,8 @@ public:
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
 
+    const size_t get_nthreads() const { return nThreads; }
+
 protected:
     size_t nThreads;
     T1 dx;           // cell size in x

@@ -34,6 +34,8 @@
 #include <vector>
 #include <ctime>
 
+#include <boost/math/special_functions/sign.hpp>
+
 #ifdef VTK
 #include "vtkDoubleArray.h"
 #include "vtkPointData.h"
@@ -43,6 +45,7 @@
 #endif
 
 #include "Grid3D.h"
+#include "Interpolator.h"
 
 template<typename T1, typename T2, typename NODE>
 class Grid3Dri : public Grid3D<T1,T2> {
@@ -153,6 +156,8 @@ public:
 
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
+
+    const size_t get_nthreads() const { return nThreads; }
 
 protected:
     size_t nThreads;	     // number of threads

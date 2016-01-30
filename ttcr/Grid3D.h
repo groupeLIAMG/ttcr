@@ -79,6 +79,8 @@ public:
 
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
+    
+    virtual const size_t get_nthreads() const { return 0; }
 
 #ifdef VTK
 	virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

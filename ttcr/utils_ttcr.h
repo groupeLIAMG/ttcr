@@ -1293,7 +1293,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
                     
                     if ( par.verbose ) { std::cout << "Building grid (Grid2Drifs) ... "; std::cout.flush(); }
                     if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                    g = new Grid2Drifs<T,uint32_t>(ncells[0], ncells[2], d[0],
+                    g = new Grid2Drifs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                    xrange[0], zrange[0], par.epsilon,
                                                    par.nitermax, par.weno3,
                                                    par.rotated_template, nt);
@@ -1392,7 +1392,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
                     
                     if ( par.verbose ) { std::cout << "Building grid (Grid2Drcfs) ... "; std::cout.flush(); }
                     if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                    g = new Grid2Drcfs<T,uint32_t>(ncells[0], ncells[2], d[0],
+                    g = new Grid2Drcfs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                    xrange[0], zrange[0], par.epsilon,
                                                    par.nitermax, par.weno3,
                                                    par.rotated_template, nt);

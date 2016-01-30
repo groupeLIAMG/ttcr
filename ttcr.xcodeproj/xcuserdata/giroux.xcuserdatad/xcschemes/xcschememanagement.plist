@@ -9,10 +9,30 @@
 			<key>orderHint</key>
 			<integer>6</integer>
 		</dict>
+		<key>grid2drcfs_mex.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>10</integer>
+		</dict>
+		<key>grid2drcsp_mex.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>11</integer>
+		</dict>
 		<key>grid2duisp.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>4</integer>
+		</dict>
+		<key>grid3drcfs_mex.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>9</integer>
+		</dict>
+		<key>grid3drcsp_mex.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>8</integer>
 		</dict>
 		<key>grid3duifs_mex.xcscheme</key>
 		<dict>
@@ -48,6 +68,31 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>2B04DD761AA75F6E000231E6</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B3D86D71C5BF08400AFFA2A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B3D86E41C5C054200AFFA2A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B45CD281C5C38660083644A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B45CD341C5C38B40083644A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B45CD471C5C3F100083644A</key>
 		<dict>
 			<key>primary</key>
 			<true/>
