@@ -170,8 +170,8 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   std::vector<T1>& traveltimes,
 									   const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -193,7 +193,7 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			// ascending
 			for ( auto vertexC=sorted[i].begin(); vertexC!=sorted[i].end(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-                    this->local_solver(*vertexC, threadNo);
+                    this->localSolver(*vertexC, threadNo);
 			}
 			
 			change = 0.0;
@@ -211,7 +211,7 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			// descending
 			for ( auto vertexC=sorted[i].rbegin(); vertexC!=sorted[i].rend(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-                    this->local_solver(*vertexC, threadNo);
+                    this->localSolver(*vertexC, threadNo);
 			}
 			
 			change = 0.0;
@@ -249,9 +249,9 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   std::vector<std::vector<T1>*>& traveltimes,
 									   const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -273,7 +273,7 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			// ascending
 			for ( auto vertexC=sorted[i].begin(); vertexC!=sorted[i].end(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-                    this->local_solver(*vertexC, threadNo);
+                    this->localSolver(*vertexC, threadNo);
 			}
 			
 			//			char fname[200];
@@ -295,7 +295,7 @@ int Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 			// descending
 			for ( auto vertexC=sorted[i].rbegin(); vertexC!=sorted[i].rend(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-                    this->local_solver(*vertexC, threadNo);
+                    this->localSolver(*vertexC, threadNo);
 			}
 			//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
 			//			saveTT(fname, threadNo);

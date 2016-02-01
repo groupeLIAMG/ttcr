@@ -179,8 +179,8 @@ int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								std::vector<T1>& traveltimes,
 								const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -202,8 +202,8 @@ int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 			// ascending
 			for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-					//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
+					//                    this->local3Dsolver(*vertexC, threadNo);
+                    this->localUpdate3D(*vertexC, threadNo);
 			}
 			
 			change = 0.0;
@@ -220,8 +220,8 @@ int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 			// descending
 			for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-					//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
+					//                    this->local3Dsolver(*vertexC, threadNo);
+                    this->localUpdate3D(*vertexC, threadNo);
 			}
 			
 			change = 0.0;
@@ -257,9 +257,9 @@ int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								std::vector<std::vector<T1>*>& traveltimes,
 								const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -281,8 +281,8 @@ int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 			// ascending
 			for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-					//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
+					//                    this->local3Dsolver(*vertexC, threadNo);
+                    this->localUpdate3D(*vertexC, threadNo);
 			}
 			
 			//			char fname[200];
@@ -303,8 +303,8 @@ int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 			// descending
 			for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
                 if ( !frozen[(*vertexC)->getGridIndex()] )
-					//                    this->local_3Dsolver(*vertexC, threadNo);
-                    this->local_update3D(*vertexC, threadNo);
+					//                    this->local3Dsolver(*vertexC, threadNo);
+                    this->localUpdate3D(*vertexC, threadNo);
 			}
 			//			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
 			//			saveTT(fname, threadNo);

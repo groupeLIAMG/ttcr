@@ -67,24 +67,51 @@ classdef grid3drcsp < handle
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
-        %% Constructor - Create a new C++ class instance
+        % Constructor - Create a new C++ class instance
         function this = grid3drcsp(varargin)
             this.objectHandle = grid3drcsp_mex('new', varargin{:});
         end
         
-        %% Destructor - Destroy the C++ class instance
+        % Destructor - Destroy the C++ class instance
         function delete(this)
             grid3drcsp_mex('delete', this.objectHandle);
         end
         
-        %% setSlowness
+        % setSlowness
         function varargout = setSlowness(this, varargin)
             [varargout{1:nargout}] = grid3drcsp_mex('setSlowness', this.objectHandle, varargin{:});
         end
         
-        %% raytrace
+        % raytrace
         function varargout = raytrace(this, varargin)
             [varargout{1:nargout}] = grid3drcsp_mex('raytrace', this.objectHandle, varargin{:});
+        end
+        
+        % for saving in mat-files
+        function s = saveobj(obj)
+            s.xmin = grid2drcfs_mex('get_xmin', obj.objectHandle);
+            s.ymin = grid2drcfs_mex('get_ymin', obj.objectHandle);
+            s.zmin = grid2drcfs_mex('get_zmin', obj.objectHandle);
+            s.dx = grid2drcfs_mex('get_dx', obj.objectHandle);
+            s.dy = grid2drcfs_mex('get_dy', obj.objectHandle);
+            s.dz = grid2drcfs_mex('get_dz', obj.objectHandle);
+            s.nx = grid2drcfs_mex('get_nx', obj.objectHandle);
+            s.ny = grid2drcfs_mex('get_ny', obj.objectHandle);
+            s.nz = grid2drcfs_mex('get_nz', obj.objectHandle);
+            s.nsx = grid2drcfs_mex('get_nsx', obj.objectHandle);
+            s.nsy = grid2drcfs_mex('get_nsy', obj.objectHandle);
+            s.nsz = grid2drcfs_mex('get_nsz', obj.objectHandle);
+            s.nthreads = grid2drcfs_mex('get_nthreads', obj.objectHandle);
+        end
+    end
+    methods(Static)
+        % for loading from mat-files
+        function obj = loadobj(s)
+            if isstruct(s)
+                obj = grid2drcfs(s, s.nthreads);
+            else
+                error('Wrong input arguments')
+            end
         end
     end
 end

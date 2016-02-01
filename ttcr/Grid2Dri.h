@@ -121,7 +121,13 @@ public:
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
 
-    const size_t get_nthreads() const { return nThreads; }
+    const size_t getNthreads() const { return nThreads; }
+    const T1 getXmin() const { return xmin; }
+    const T1 getZmin() const { return zmin; }
+    const T1 getDx() const { return dx; }
+    const T1 getDz() const { return dz; }
+    const T2 getNcx() const { return ncx; }
+    const T2 getNcz() const { return ncz; }
 
 protected:
 	size_t nThreads;
@@ -131,8 +137,8 @@ protected:
     T1 zmin;         // z origin of the grid
     T1 xmax;         // x end of the grid
     T1 zmax;         // z end of the grid
-    T2 ncx;       // number of cells in x
-    T2 ncz;       // number of cells in x
+    T2 ncx;          // number of cells in x
+    T2 ncz;          // number of cells in x
     
     mutable std::vector<NODE> nodes;
     
@@ -147,7 +153,7 @@ protected:
 		return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
 	}
     
-    int check_pts(const std::vector<sxz<T1>>&) const;
+    int checkPts(const std::vector<sxz<T1>>&) const;
     
     bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
     
@@ -247,7 +253,7 @@ void Grid2Dri<T1,T2,NODE>::buildGridNeighbors() {
 }
 
 template<typename T1, typename T2, typename NODE>
-int Grid2Dri<T1,T2,NODE>::check_pts(const std::vector<sxz<T1>>& pts) const {
+int Grid2Dri<T1,T2,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
     for (size_t n=0; n<pts.size(); ++n) {
         if ( pts[n].x < xmin || pts[n].x > xmax ||
             pts[n].z < zmin || pts[n].z > zmax ) {

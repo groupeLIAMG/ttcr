@@ -210,8 +210,8 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                 std::vector<T1>& traveltimes,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -320,9 +320,9 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                 std::vector<std::vector<T1>*>& traveltimes,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );

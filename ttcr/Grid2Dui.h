@@ -115,25 +115,25 @@ public:
 	
 	size_t getNumberOfNodes() const { return nodes.size(); }
     
-	T1 getXmin() const {
+	const T1 getXmin() const {
 		T1 xmin = nodes[0].getX();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			xmin = xmin<it->getX() ? xmin : it->getX();
 		return xmin;
 	}
-	T1 getXmax() const {
+	const T1 getXmax() const {
 		T1 xmax = nodes[0].getX();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			xmax = xmax>it->getX() ? xmax : it->getX();
 		return xmax;
 	}
-	T1 getZmin() const {
+	const T1 getZmin() const {
 		T1 zmin = nodes[0].getZ();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			zmin = zmin<it->getZ() ? zmin : it->getZ();
 		return zmin;
 	}
-	T1 getZmax() const {
+	const T1 getZmax() const {
 		T1 zmax = nodes[0].getZ();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			zmax = zmax>it->getZ() ? zmax : it->getZ();
@@ -152,7 +152,7 @@ public:
 	}
 #endif
 	
-    const size_t get_nthreads() const { return nThreads; }
+    const size_t getNthreads() const { return nThreads; }
 
 protected:
 	const size_t nThreads;
@@ -201,15 +201,15 @@ protected:
 					 const size_t threadNo) const;
 	
 	
-	int check_pts(const std::vector<sxz<T1>>&) const;
-	int check_pts(const std::vector<sxyz<T1>>&) const;
+	int checkPts(const std::vector<sxz<T1>>&) const;
+	int checkPts(const std::vector<sxyz<T1>>&) const;
 	
 	bool insideTriangle(const sxz<T1>&, const T2) const;
 	bool insideTriangle(const sxyz<T1>&, const T2) const;
     
 	void processObtuse();
 	
-	void local_solver(NODE *vertexC, const size_t threadNo) const;
+	void localSolver(NODE *vertexC, const size_t threadNo) const;
 	
 	void getRaypath_ho(const std::vector<sxz<T1>>& Tx,
 					   const sxz<T1> &Rx,
@@ -317,7 +317,7 @@ T1 Grid2Dui<T1,T2,NODE,S>::computeSlowness( const S& Rx ) const {
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Dui<T1,T2,NODE,S>::check_pts(const std::vector<sxz<T1>>& pts) const {
+int Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
@@ -345,7 +345,7 @@ int Grid2Dui<T1,T2,NODE,S>::check_pts(const std::vector<sxz<T1>>& pts) const {
 }
 
 template<typename T1, typename T2, typename NODE, typename S>
-int Grid2Dui<T1,T2,NODE,S>::check_pts(const std::vector<sxyz<T1>>& pts) const {
+int Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
@@ -664,7 +664,7 @@ void Grid2Dui<T1,T2,NODE,S>::processObtuse() {
 
 
 template<typename T1, typename T2, typename NODE, typename S>
-void Grid2Dui<T1,T2,NODE,S>::local_solver(NODE *vertexC,
+void Grid2Dui<T1,T2,NODE,S>::localSolver(NODE *vertexC,
 										  const size_t threadNo) const {
 	
 	static const double pi2 = pi / 2.;

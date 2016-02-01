@@ -59,9 +59,6 @@ public:
     virtual ~Grid2Drcsp() {
     }
     
-    T2 getNsnx() const { return nsnx; }
-    T2 getNsnz() const { return nsnz; }
-    
     int raytrace(const std::vector<sxz<T1>>& Tx,
                  const std::vector<T1>& t0,
                  const std::vector<sxz<T1>>& Rx,
@@ -107,8 +104,9 @@ public:
 			const std::vector<const std::vector<sxz<T1>>*>&,
 			std::vector<std::vector<T1>*>&,
 			const size_t=0) const;
-	
     
+    const T2 getNsnx() const { return nsnx; }
+    const T2 getNsnz() const { return nsnz; }
     
 protected:
     T2 nsnx;    // number of secondary nodes in x
@@ -433,8 +431,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                         std::vector<T1>& traveltimes,
 						const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -468,9 +466,9 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                               const std::vector<const std::vector<sxz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
                               const size_t threadNo) const {
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -509,8 +507,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  std::vector<std::vector<sxz<T1>>>& r_data,
 							  const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -602,9 +600,9 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                               std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
                               const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -725,8 +723,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
 //    std::cout << Tx[0].z << '\t' << threadNo << '\n';
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -857,8 +855,8 @@ int Grid2Drcsp<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
 		std::cerr << "Error: fast marching method should not be used with secondary nodes.\n";
 		return 1;
 	}
-	if ( check_pts(Tx) == 1 ) return 1;
-    if ( check_pts(Rx) == 1 ) return 1;
+	if ( checkPts(Tx) == 1 ) return 1;
+    if ( checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -897,9 +895,9 @@ int Grid2Drcsp<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
 		std::cerr << "Error: fast marching method should not be used with secondary nodes.\n";
 		return 1;
 	}
-	if ( check_pts(Tx) == 1 ) return 1;
+	if ( checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( check_pts(*Rx[n]) == 1 ) return 1;
+        if ( checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );

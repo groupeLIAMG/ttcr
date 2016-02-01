@@ -108,37 +108,37 @@ public:
     
     size_t getNumberOfNodes() const { return nodes.size(); }
     
-    T1 getXmin() const {
+    const T1 getXmin() const {
 		T1 xmin = nodes[0].getX();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			xmin = xmin<it->getX() ? xmin : it->getX();
 		return xmin;
 	}
-	T1 getXmax() const {
+	const T1 getXmax() const {
 		T1 xmax = nodes[0].getX();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			xmax = xmax>it->getX() ? xmax : it->getX();
 		return xmax;
 	}
-	T1 getYmin() const {
+	const T1 getYmin() const {
 		T1 ymin = nodes[0].getY();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			ymin = ymin<it->getY() ? ymin : it->getY();
 		return ymin;
 	}
-	T1 getYmax() const {
+	const T1 getYmax() const {
 		T1 ymax = nodes[0].getY();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			ymax = ymax>it->getY() ? ymax : it->getY();
 		return ymax;
 	}
-	T1 getZmin() const {
+	const T1 getZmin() const {
 		T1 zmin = nodes[0].getZ();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			zmin = zmin<it->getZ() ? zmin : it->getZ();
 		return zmin;
 	}
-	T1 getZmax() const {
+	const T1 getZmax() const {
 		T1 zmax = nodes[0].getZ();
 		for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
 			zmax = zmax>it->getZ() ? zmax : it->getZ();
@@ -179,7 +179,7 @@ public:
 					  const bool savePhysicalEntity=false) const;
 #endif
 	
-    const size_t get_nthreads() const { return nThreads; }
+    const size_t getNthreads() const { return nThreads; }
 
 protected:
     const size_t nThreads;
@@ -201,7 +201,7 @@ protected:
 					 const std::vector<NODE>& nodes,
 					 const size_t threadNo) const;
 	
-	int check_pts(const std::vector<sxyz<T1>>&) const;
+	int checkPts(const std::vector<sxyz<T1>>&) const;
 	
     bool insideTetrahedron(const sxyz<T1>&, const T2) const;
 	
@@ -223,17 +223,17 @@ protected:
         }
     }
 	
-	void local_update3D(NODE *vertexC, const size_t threadNo) const;
+	void localUpdate3D(NODE *vertexC, const size_t threadNo) const;
 	
-	T1 local_update2D(const NODE *vertexA,
+	T1 localUpdate2D(const NODE *vertexA,
 					  const NODE *vertexB,
 					  const NODE *vertexC,
 					  const T2 tetraNo,
 					  const size_t threadNo) const;
 	
-	void local_3Dsolver(NODE *vertexC, const size_t threadNo) const;
+	void local3Dsolver(NODE *vertexC, const size_t threadNo) const;
 	
-	T1 local_2Dsolver(const NODE *vertexA,
+	T1 local2Dsolver(const NODE *vertexA,
 					  const NODE *vertexB,
 					  const NODE *vertexC,
 					  const T2 tetraNo,
@@ -313,7 +313,7 @@ T1 Grid3Dui<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
 
 
 template<typename T1, typename T2, typename NODE>
-int Grid3Dui<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1>>& pts) const {
+int Grid3Dui<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
 	
     for (size_t n=0; n<pts.size(); ++n) {
 		bool found = false;
@@ -535,7 +535,7 @@ void Grid3Dui<T1,T2,NODE>::saveModelVTU(const std::string &fname,
 
 
 template<typename T1, typename T2, typename NODE>
-void Grid3Dui<T1,T2,NODE>::local_update3D(NODE *vertexD,
+void Grid3Dui<T1,T2,NODE>::localUpdate3D(NODE *vertexD,
 										  const size_t threadNo) const {
 	
 	// méthode of Lelievre et al. 2011
@@ -654,11 +654,11 @@ void Grid3Dui<T1,T2,NODE>::local_update3D(NODE *vertexD,
 		t = vertexC->getTT(threadNo) + vertexD->getNodeSlowness() * vertexD->getDistance( *vertexC );
 		if ( t < tABC ) tABC = t;
 		
-		t = local_update2D(vertexA, vertexB, vertexD, tetNo, threadNo);
+		t = localUpdate2D(vertexA, vertexB, vertexD, tetNo, threadNo);
 		if ( t < tABC ) tABC = t;
-		t = local_update2D(vertexA, vertexC, vertexD, tetNo, threadNo);
+		t = localUpdate2D(vertexA, vertexC, vertexD, tetNo, threadNo);
 		if ( t < tABC ) tABC = t;
-		t = local_update2D(vertexB, vertexC, vertexD, tetNo, threadNo);
+		t = localUpdate2D(vertexB, vertexC, vertexD, tetNo, threadNo);
 		if ( t < tABC ) tABC = t;
 		
 		if ( tABC<vertexD->getTT(threadNo) )
@@ -669,7 +669,7 @@ void Grid3Dui<T1,T2,NODE>::local_update3D(NODE *vertexD,
 
 
 template<typename T1, typename T2, typename NODE>
-T1 Grid3Dui<T1,T2,NODE>::local_update2D(const NODE *vertexA,
+T1 Grid3Dui<T1,T2,NODE>::localUpdate2D(const NODE *vertexA,
                                         const NODE *vertexB,
                                         const NODE *vertexC,
                                         const T2 tetNo,
@@ -718,7 +718,7 @@ T1 Grid3Dui<T1,T2,NODE>::local_update2D(const NODE *vertexA,
 }
 
 template<typename T1, typename T2, typename NODE>
-void Grid3Dui<T1,T2,NODE>::local_3Dsolver(NODE *vertexD,
+void Grid3Dui<T1,T2,NODE>::local3Dsolver(NODE *vertexD,
 										  const size_t threadNo) const {
 	
 	// Méthode de Qian et al. 2007
@@ -852,9 +852,9 @@ void Grid3Dui<T1,T2,NODE>::local_3Dsolver(NODE *vertexD,
 		}
 		
 		if ( apply2Dsolvers ) {
-			T1 tABD = local_2Dsolver(vertexA, vertexB, vertexD, tetNo, threadNo);
-			T1 tACD = local_2Dsolver(vertexA, vertexC, vertexD, tetNo, threadNo);
-			T1 tBCD = local_2Dsolver(vertexB, vertexC, vertexD, tetNo, threadNo);
+			T1 tABD = local2Dsolver(vertexA, vertexB, vertexD, tetNo, threadNo);
+			T1 tACD = local2Dsolver(vertexA, vertexC, vertexD, tetNo, threadNo);
+			T1 tBCD = local2Dsolver(vertexB, vertexC, vertexD, tetNo, threadNo);
 			
 			T1 t = tABD < tACD ? tABD : tACD;
 			t = t < tBCD ? t : tBCD;
@@ -867,7 +867,7 @@ void Grid3Dui<T1,T2,NODE>::local_3Dsolver(NODE *vertexD,
 }
 
 template<typename T1, typename T2, typename NODE>
-T1 Grid3Dui<T1,T2,NODE>::local_2Dsolver(const NODE *vertexA,
+T1 Grid3Dui<T1,T2,NODE>::local2Dsolver(const NODE *vertexA,
                                         const NODE *vertexB,
                                         const NODE *vertexC,
                                         const T2 tetraNo,

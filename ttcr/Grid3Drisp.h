@@ -87,9 +87,9 @@ public:
     void savePrimary(const char filename[], const size_t nt=0,
                      const bool vtkFormat=0) const;
     
-    T2 getNsnx() const { return nsnx; }
-    T2 getNsny() const { return nsny; }
-    T2 getNsnz() const { return nsnz; }
+    const T2 getNsnx() const { return nsnx; }
+    const T2 getNsny() const { return nsny; }
+    const T2 getNsnz() const { return nsnz; }
 
 private:
     T2 nsnx;                 // number of secondary nodes in x
@@ -686,8 +686,8 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     // Primary function
     
     // Checks if the points are in the grid
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -724,9 +724,9 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<T1>*>& traveltimes,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -767,8 +767,8 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     // Primary function
     
     // Checks if the points are in the grid
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -867,9 +867,9 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -984,8 +984,8 @@ int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
     // Primary function
     
     // Checks if the points are in the grid
-    if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );

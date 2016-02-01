@@ -160,8 +160,8 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   std::vector<T1>& traveltimes,
 									   const size_t threadNo) const {
 	
-	if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+	if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -196,9 +196,9 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   std::vector<std::vector<T1>*>& traveltimes,
 									   const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -238,8 +238,8 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   std::vector<std::vector<S>>& r_data,
 									   const size_t threadNo) const {
 	
-	if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+	if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -282,9 +282,9 @@ int Grid2Ducfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
 									   std::vector<std::vector<std::vector<S>>*>& r_data,
 									   const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -419,7 +419,7 @@ void Grid2Ducfm<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
                     continue;
                 }
                 
-				this->local_solver( &(this->nodes[neibNo]), threadNo );
+				this->localSolver( &(this->nodes[neibNo]), threadNo );
 				
 				if ( !inNarrowBand[neibNo] ) {
 					narrow_band.push( &(this->nodes[neibNo]) );

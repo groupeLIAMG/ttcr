@@ -175,7 +175,16 @@ public:
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
 
-    const size_t get_nthreads() const { return nThreads; }
+    const size_t getNthreads() const { return nThreads; }
+    const T1 getXmin() const { return xmin; }
+    const T1 getYmin() const { return ymin; }
+    const T1 getZmin() const { return zmin; }
+    const T1 getDx() const { return dx; }
+    const T1 getDy() const { return dy; }
+    const T1 getDz() const { return dz; }
+    const T2 getNcx() const { return ncx; }
+    const T2 getNcy() const { return ncy; }
+    const T2 getNcz() const { return ncz; }
 
 protected:
     size_t nThreads;	     // number of threads
@@ -231,7 +240,7 @@ protected:
         k = static_cast<long long>( small + (pt.z-zmin)/dz );
     }
     
-    int check_pts(const std::vector<sxyz<T1>>&) const;
+    int checkPts(const std::vector<sxyz<T1>>&) const;
     
     void buildGridNeighbors();
     
@@ -275,7 +284,7 @@ void Grid3Drc<T1,T2,NODE>::buildGridNeighbors() {
 }
 
 template<typename T1, typename T2, typename NODE>
-int Grid3Drc<T1,T2,NODE>::check_pts(const std::vector<sxyz<T1>>& pts) const {
+int Grid3Drc<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
     
     // Check if the points from a vector are in the grid
     for ( size_t n=0; n<pts.size(); ++n ) {

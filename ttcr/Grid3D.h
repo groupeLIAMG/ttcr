@@ -70,17 +70,17 @@ public:
 	virtual void saveTT(const std::string &, const int, const size_t nt=0,
 						const bool vtkFormat=0) const {}
 	
-	virtual T1 getXmin() const { return 0; }
-	virtual T1 getXmax() const { return 0; }
-	virtual T1 getYmin() const { return 0; }
-	virtual T1 getYmax() const { return 0; }
-	virtual T1 getZmin() const { return 0; }
-	virtual T1 getZmax() const { return 0; }
+	virtual const T1 getXmin() const { return 0; }
+	virtual const T1 getXmax() const { return 0; }
+	virtual const T1 getYmin() const { return 0; }
+	virtual const T1 getYmax() const { return 0; }
+	virtual const T1 getZmin() const { return 0; }
+	virtual const T1 getZmax() const { return 0; }
 
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }
     
-    virtual const size_t get_nthreads() const { return 0; }
+    virtual const size_t getNthreads() const { return 0; }
 
 #ifdef VTK
 	virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

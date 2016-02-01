@@ -290,7 +290,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         vector<vector<siv<double> > > L_data(nTx);
         vector<vector<vector<siv<double> > > > l_data( vTx.size() );
         
-        if ( grid_instance->get_nthreads() == 1 ) {
+        if ( grid_instance->getNthreads() == 1 ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );
@@ -315,7 +315,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 }
             }
         } else {
-            size_t num_threads = grid_instance->get_nthreads() < vTx.size() ? grid_instance->get_nthreads() : vTx.size();
+            size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
             size_t const blk_size = (vTx.size()%num_threads ? 1 : 0) + vTx.size()/num_threads;
             
             vector<thread> threads(num_threads-1);
@@ -443,6 +443,203 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         return;
     }
     
+    if (!strcmp("get_nthreads", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_nthreads: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_nthreads: has a maximum of one output argument.");
+        }
+        
+        size_t nt = grid_instance->getNthreads();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+
+    if (!strcmp("get_xmin", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_xmin: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_xmin: has a maximum of one output argument.");
+        }
+        
+        double nt = grid_instance->getXmin();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+
+    if (!strcmp("get_zmin", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_zmin: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_zmin: has a maximum of one output argument.");
+        }
+        
+        double nt = grid_instance->getZmin();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+
+    if (!strcmp("get_dx", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_dx: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_dx: has a maximum of one output argument.");
+        }
+        
+        double nt = grid_instance->getDx();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+    
+    if (!strcmp("get_dz", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_dz: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_dz: has a maximum of one output argument.");
+        }
+        
+        double nt = grid_instance->getDz();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+    
+    if (!strcmp("get_nx", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_nx: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_nx: has a maximum of one output argument.");
+        }
+        
+        uint32_t nt = grid_instance->getNcx();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+    
+    if (!strcmp("get_nz", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_nz: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_nz: has a maximum of one output argument.");
+        }
+        
+        uint32_t nt = grid_instance->getNcz();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+    
+    if (!strcmp("get_nsx", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_nx: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_nx: has a maximum of one output argument.");
+        }
+        
+        uint32_t nt = grid_instance->getNsnx();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
+    
+    if (!strcmp("get_nsz", cmd)) {
+        // Check parameters
+        
+        if ( nrhs > 2 ) {
+            mexErrMsgTxt("get_nz: No arguments needed.");
+        }
+        if (nlhs > 1) {
+            mexErrMsgTxt("get_nz: has a maximum of one output argument.");
+        }
+        
+        uint32_t nt = grid_instance->getNsnz();
+        /* ------------------------------------------------------
+         Output variable
+         ------------------------------------------------------ */
+        
+        plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+        double *ntp = mxGetPr(plhs[0]);
+        ntp[0] = (double)nt;
+        
+        return;
+    }
     
     // Got here, so command not recognized
     mexErrMsgTxt("Command not recognized.");

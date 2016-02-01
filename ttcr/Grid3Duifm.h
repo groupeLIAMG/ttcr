@@ -148,8 +148,8 @@ int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								std::vector<T1>& traveltimes,
 								const size_t threadNo) const {
 	
-	if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+	if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -183,9 +183,9 @@ int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
 								std::vector<std::vector<T1>*>& traveltimes,
 								const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -222,8 +222,8 @@ int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<sxyz<T1>>>& r_data,
                                 const size_t threadNo) const {
     
-	if ( this->check_pts(Tx) == 1 ) return 1;
-    if ( this->check_pts(Rx) == 1 ) return 1;
+	if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -274,9 +274,9 @@ int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                 std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                 const size_t threadNo) const {
     
-    if ( this->check_pts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
     for ( size_t n=0; n<Rx.size(); ++n )
-        if ( this->check_pts(*Rx[n]) == 1 ) return 1;
+        if ( this->checkPts(*Rx[n]) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -482,8 +482,8 @@ void Grid3Duifm<T1,T2>::propagate(std::priority_queue<Node3Di<T1,T2>*,
                     continue;
                 }
                 
-				//				this->local_3Dsolver( &(this->nodes[neibNo]), threadNo );
-				this->local_update3D( &(this->nodes[neibNo]), threadNo );
+				//				this->local3Dsolver( &(this->nodes[neibNo]), threadNo );
+				this->localUpdate3D( &(this->nodes[neibNo]), threadNo );
 				
 				if ( !inNarrowBand[neibNo] ) {
 					narrow_band.push( &(this->nodes[neibNo]) );

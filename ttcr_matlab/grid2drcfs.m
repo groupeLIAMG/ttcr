@@ -58,24 +58,44 @@ classdef grid2drcfs < handle
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
-        %% Constructor - Create a new C++ class instance
+        % Constructor - Create a new C++ class instance
         function this = grid2drcfs(varargin)
             this.objectHandle = grid2drcfs_mex('new', varargin{:});
         end
         
-        %% Destructor - Destroy the C++ class instance
+        % Destructor - Destroy the C++ class instance
         function delete(this)
             grid2drcfs_mex('delete', this.objectHandle);
         end
         
-        %% setSlowness
+        % setSlowness
         function varargout = setSlowness(this, varargin)
             [varargout{1:nargout}] = grid2drcfs_mex('setSlowness', this.objectHandle, varargin{:});
         end
         
-        %% raytrace
+        % raytrace
         function varargout = raytrace(this, varargin)
             [varargout{1:nargout}] = grid2drcfs_mex('raytrace', this.objectHandle, varargin{:});
+        end
+        
+        
+        function s = saveobj(obj)
+            s.xmin = grid2drcfs_mex('get_xmin', obj.objectHandle);
+            s.zmin = grid2drcfs_mex('get_zmin', obj.objectHandle);
+            s.dx = grid2drcfs_mex('get_dx', obj.objectHandle);
+            s.dz = grid2drcfs_mex('get_dz', obj.objectHandle);
+            s.nx = grid2drcfs_mex('get_nx', obj.objectHandle);
+            s.nz = grid2drcfs_mex('get_nz', obj.objectHandle);
+            s.nthreads = grid2drcfs_mex('get_nthreads', obj.objectHandle);
+        end
+    end
+    methods(Static)
+        function obj = loadobj(s)
+            if isstruct(s)
+                obj = grid2drcfs(s, s.nthreads);
+            else
+                error('Wrong input arguments')
+            end
         end
     end
 end
