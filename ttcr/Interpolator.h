@@ -22,10 +22,8 @@
  *
  */
 
-#ifndef ttcr_v2_Interpolator_h
-#define ttcr_v2_Interpolator_h
-
-#include "Node3Disp.h"
+#ifndef ttcr_Interpolator_h
+#define ttcr_Interpolator_h
 
 template<class T> class Interpolator
 {
