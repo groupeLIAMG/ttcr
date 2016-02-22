@@ -796,8 +796,8 @@ void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
         }
         
         // dist to planes
-        T1 tx = (xp - curr_pt.x)/g.x;
-        T1 tz = (zp - curr_pt.z)/g.z;
+        T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+        T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
         
         if ( tx<tz ) { // closer to xp
             curr_pt += tx*g;

@@ -634,9 +634,9 @@ void Grid3Dri<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
         getIJK(curr_pt, i, j, k);
         
         // planes we will intersect
-        T1 xp = xmin + dx*(i + boost::math::sign(g.x)>0.0 ? 1.0 : 0.0);
-        T1 yp = ymin + dy*(j + boost::math::sign(g.y)>0.0 ? 1.0 : 0.0);
-        T1 zp = zmin + dz*(k + boost::math::sign(g.z)>0.0 ? 1.0 : 0.0);
+        T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+        T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
+        T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
         
         if ( fabs(xp-curr_pt.x)<small) {
             xp += dx*boost::math::sign(g.x);
@@ -649,9 +649,9 @@ void Grid3Dri<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
         }
         
         // dist to planes
-        T1 tx = (xp - curr_pt.x)/g.x;
-        T1 ty = (yp - curr_pt.y)/g.y;
-        T1 tz = (zp - curr_pt.z)/g.z;
+        T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+        T1 ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
+        T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
         
         if ( tx<ty && tx<tz ) { // closer to xp
             curr_pt += tx*g;
