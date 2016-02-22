@@ -224,7 +224,7 @@ protected:
 
 	void processObtuse();
 	
-	void localSsolver(NODE *vertexC, const size_t threadNo) const;
+	void localSolver(NODE *vertexC, const size_t threadNo) const;
 	
 	void getRaypath(const std::vector<sxz<T1>>& Tx,
                     const sxz<T1> &Rx,

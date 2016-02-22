@@ -18,27 +18,6 @@
 		2B45CD531C5C42110083644A /* grid2drcsp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B45CD521C5C3FD70083644A /* grid2drcsp.m */; };
 		2B46D14C19F2B79C00E7ADFC /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
 		2B46D15019F2B84700E7ADFC /* msh2vtk_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */; };
-		2B5162B41C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162B51C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162B61C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162B71C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162B81C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162B91C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162BA1C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */; };
-		2B5162BC1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162BD1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162BE1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162BF1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162C01C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162C11C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162C21C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */; };
-		2B5162C41C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
-		2B5162C51C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
-		2B5162C61C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
-		2B5162C71C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
-		2B5162C81C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
-		2B5162C91C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
-		2B5162CA1C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */; };
 		2B6F87A8190F3EDA002AC9DF /* grid2duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */; };
 		2B8FC25B1AB0D30900EF9265 /* grid3duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */; };
 		2BA2D8CB191D556500923EF6 /* grid2duisp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2duisp.m */; };
@@ -188,9 +167,6 @@
 		2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = msh2vtk_io.cpp; sourceTree = "<group>"; };
 		2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = msh2vtk_io.h; sourceTree = "<group>"; };
 		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
-		2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libvtkCommonCore-7.0.1.dylib"; sourceTree = "<group>"; };
-		2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libvtkCommonDataModel-7.0.1.dylib"; sourceTree = "<group>"; };
-		2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libvtkIOXML-7.0.1.dylib"; sourceTree = "<group>"; };
 		2B6F87A5190F3EDA002AC9DF /* grid2duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid2duisp_mex.cpp; sourceTree = "<group>"; };
 		2B6F87AE190F4016002AC9DF /* class_handle.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = class_handle.hpp; sourceTree = "<group>"; };
@@ -259,9 +235,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162C11C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162C91C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162B91C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,9 +270,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162C01C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162C81C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162B81C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -307,9 +277,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162BF1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162C71C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162B71C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -317,9 +284,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162C21C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162CA1C590168007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162BA1C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,9 +291,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162BC1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162C41C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162B41C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,9 +298,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162BD1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162C51C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162B51C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,25 +305,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B5162BE1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib in Frameworks */,
-				2B5162C61C590167007308C6 /* libvtkIOXML-7.0.1.dylib in Frameworks */,
-				2B5162B61C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		2B5162B21C590039007308C6 /* vtk-lib */ = {
-			isa = PBXGroup;
-			children = (
-				2B5162B31C5900FB007308C6 /* libvtkCommonCore-7.0.1.dylib */,
-				2B5162BB1C590123007308C6 /* libvtkCommonDataModel-7.0.1.dylib */,
-				2B5162C31C590167007308C6 /* libvtkIOXML-7.0.1.dylib */,
-			);
-			name = "vtk-lib";
-			sourceTree = "<group>";
-		};
 		2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */ = {
 			isa = PBXGroup;
 			children = (
@@ -392,7 +337,6 @@
 		2BC708CA18EDA599004DA2C9 = {
 			isa = PBXGroup;
 			children = (
-				2B5162B21C590039007308C6 /* vtk-lib */,
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
 				2BC708D418EDA599004DA2C9 /* Products */,
@@ -1655,10 +1599,14 @@
 					"/usr/local/VTK/include/vtk-7.0",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.0.1",
+					"-lvtkCommonDataModel-7.0.1",
+					"-lvtkCommonCore-7.0.1",
+				);
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -1704,9 +1652,13 @@
 					"/usr/local/VTK/include/vtk-7.0",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.0.1",
+					"-lvtkCommonDataModel-7.0.1",
+					"-lvtkCommonCore-7.0.1",
+				);
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -1721,6 +1673,11 @@
 					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.0.1",
+					"-lvtkCommonDataModel-7.0.1",
+					"-lvtkCommonCore-7.0.1",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1734,6 +1691,11 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
+				);
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.0.1",
+					"-lvtkCommonDataModel-7.0.1",
+					"-lvtkCommonCore-7.0.1",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1856,10 +1818,14 @@
 					"/usr/local/VTK/include/vtk-7.0",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.0.1",
+					"-lvtkCommonDataModel-7.0.1",
+					"-lvtkCommonCore-7.0.1",
+				);
 				SDKROOT = macosx;
 			};
 			name = Debug_O;
@@ -1873,6 +1839,11 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/VTK/lib,
 					"$(PROJECT_DIR)",
+				);
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.0.1",
+					"-lvtkCommonDataModel-7.0.1",
+					"-lvtkCommonCore-7.0.1",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
