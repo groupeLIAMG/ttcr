@@ -101,6 +101,36 @@ public:
         return 0;
     }
     
+    const T getXi(const size_t n) const { return xi[n]; }
+    
+    void setXi(const T s) {
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s;
+        }
+    }
+    
+    int setXi(const T *s, const size_t ns) {
+        if ( xi.size() != ns ) {
+            std::cerr << "Error: xi vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s[n];
+        }
+        return 0;
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        if ( xi.size() != s.size() ) {
+            std::cerr << "Error: xi vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s[n];
+        }
+        return 0;
+    }
+    
     T computeDt(const NODE& source, const S& node,
                 const size_t cellNo) const {
         T lx = node.x - source.getX();
@@ -120,6 +150,148 @@ private:
     std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
     
 };
+
+
+// Elliptical anisotropy in 2D (Y Dimension ignored)
+
+template <typename T, typename NODE, typename S>
+class CellTiltedElliptical {
+public:
+    CellTiltedElliptical(const size_t n) :
+    slowness(std::vector<T>(n)),
+    aAngle(std::vector<T>(n)),
+    ca(std::vector<T>(n)),
+    sa(std::vector<T>(n)) {
+    }
+    
+    const T getSlowness(const size_t n) const { return slowness[n]; }
+    
+    void setSlowness(const T s) {
+        for ( size_t n=0; n<slowness.size(); ++n ) {
+            slowness[n] = s;
+        }
+    }
+    
+    int setSlowness(const T *s, const size_t ns) {
+        if ( slowness.size() != ns ) {
+            std::cerr << "Error: slowness vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<slowness.size(); ++n ) {
+            slowness[n] = s[n];
+        }
+        return 0;
+    }
+    
+    int setSlowness(const std::vector<T>& s) {
+        if ( slowness.size() != s.size() ) {
+            std::cerr << "Error: slowness vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<slowness.size(); ++n ) {
+            slowness[n] = s[n];
+        }
+        return 0;
+    }
+    
+    const T getXi(const size_t n) const { return xi[n]; }
+    
+    void setXi(const T s) {
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s;
+        }
+    }
+    
+    int setXi(const T *s, const size_t ns) {
+        if ( xi.size() != ns ) {
+            std::cerr << "Error: xi vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s[n];
+        }
+        return 0;
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        if ( xi.size() != s.size() ) {
+            std::cerr << "Error: xi vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s[n];
+        }
+        return 0;
+    }
+    
+    const T getAngle(const size_t n) const { return aAngle[n]; }
+    
+    void setAngle(const T s) {
+        ca[0] = std::cos(s);
+        sa[0] = std::sin(s);
+
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            aAngle[n] = s;
+            ca[n] = ca[0];
+            sa[n] = sa[0];
+
+        }
+    }
+    
+    int setAngle(const T *s, const size_t ns) {
+        if ( aAngle.size() != ns ) {
+            std::cerr << "Error: angle vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<aAngle.size(); ++n ) {
+            aAngle[n] = s[n];
+            ca[n] = std::cos(s[n]);
+            sa[n] = std::sin(s[n]);
+        }
+        return 0;
+    }
+    
+    int setAngle(const std::vector<T>& s) {
+        if ( aAngle.size() != s.size() ) {
+            std::cerr << "Error: angle vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<aAngle.size(); ++n ) {
+            aAngle[n] = s[n];
+            ca[n] = std::cos(s[n]);
+            sa[n] = std::sin(s[n]);
+        }
+        return 0;
+    }
+    
+    T computeDt(const NODE& source, const S& node,
+                const size_t cellNo) const {
+        T lx = node.x - source.getX();
+        T lz = node.z - source.getZ();
+        T t1 = lx * ca[cellNo] + lz * sa[cellNo];
+        T t2 = lz * ca[cellNo] - lx * sa[cellNo];
+        
+        return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*xi[cellNo]*t2*t2 );
+    }
+    
+    T computeDt(const NODE& source, const NODE& node,
+                const size_t cellNo) const {
+        T lx = node.getX() - source.getX();
+        T lz = node.getZ() - source.getZ();
+        T t1 = lx * ca[cellNo] + lz * sa[cellNo];
+        T t2 = lz * ca[cellNo] - lx * sa[cellNo];
+        
+        return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*xi[cellNo]*t2*t2 );
+    }
+    
+private:
+    std::vector<T> slowness;
+    std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
+    std::vector<T> aAngle;    // column-wise (z axis) anisotropy angle of the cells, in radians
+    std::vector<T> ca;        // cosine of aAngle
+    std::vector<T> sa;        // sine of aAngle
+};
+
 
 
 
@@ -145,7 +317,7 @@ public:
     
     int setVp0(const T *s, const size_t ns) {
         if ( Vp0.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vp0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vp0.size(); ++n ) {
@@ -156,7 +328,7 @@ public:
     
     int setVp0(const std::vector<T>& s) {
         if ( Vp0.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vp0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vp0.size(); ++n ) {
@@ -175,7 +347,7 @@ public:
     
     int setVs0(const T *s, const size_t ns) {
         if ( Vs0.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -186,7 +358,7 @@ public:
     
     int setVs0(const std::vector<T>& s) {
         if ( Vs0.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -205,7 +377,7 @@ public:
     
     int setEpsilon(const T *s, const size_t ns) {
         if ( epsilon.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: epsilon vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<epsilon.size(); ++n ) {
@@ -216,7 +388,7 @@ public:
     
     int setEpsilon(const std::vector<T>& s) {
         if ( epsilon.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: epsilon vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<epsilon.size(); ++n ) {
@@ -235,7 +407,7 @@ public:
     
     int setDelta(const T *s, const size_t ns) {
         if ( delta.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: delta vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<delta.size(); ++n ) {
@@ -246,7 +418,7 @@ public:
     
     int setDelta(const std::vector<T>& s) {
         if ( delta.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: delta vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<delta.size(); ++n ) {
@@ -321,7 +493,7 @@ public:
     
     int setVs0(const T *s, const size_t ns) {
         if ( Vs0.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -332,7 +504,7 @@ public:
     
     int setVs0(const std::vector<T>& s) {
         if ( Vs0.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -351,7 +523,7 @@ public:
     
     int setGamma(const T *s, const size_t ns) {
         if ( gamma.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: gamma vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<gamma.size(); ++n ) {
@@ -362,7 +534,7 @@ public:
     
     int setGamma(const std::vector<T>& s) {
         if ( gamma.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: gamma vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<gamma.size(); ++n ) {
@@ -487,7 +659,7 @@ public:
     
     int setVp0(const T *s, const size_t ns) {
         if ( Vp0.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vp0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vp0.size(); ++n ) {
@@ -498,7 +670,7 @@ public:
     
     int setVp0(const std::vector<T>& s) {
         if ( Vp0.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vp0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vp0.size(); ++n ) {
@@ -517,7 +689,7 @@ public:
     
     int setVs0(const T *s, const size_t ns) {
         if ( Vs0.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -528,7 +700,7 @@ public:
     
     int setVs0(const std::vector<T>& s) {
         if ( Vs0.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -547,7 +719,7 @@ public:
     
     int setEpsilon(const T *s, const size_t ns) {
         if ( epsilon.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: epsilon vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<epsilon.size(); ++n ) {
@@ -558,7 +730,7 @@ public:
     
     int setEpsilon(const std::vector<T>& s) {
         if ( epsilon.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: epsilon vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<epsilon.size(); ++n ) {
@@ -577,7 +749,7 @@ public:
     
     int setDelta(const T *s, const size_t ns) {
         if ( delta.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: delta vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<delta.size(); ++n ) {
@@ -588,7 +760,7 @@ public:
     
     int setDelta(const std::vector<T>& s) {
         if ( delta.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: delta vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<delta.size(); ++n ) {
@@ -669,7 +841,7 @@ public:
     
     int setVs0(const T *s, const size_t ns) {
         if ( Vs0.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -680,7 +852,7 @@ public:
     
     int setVs0(const std::vector<T>& s) {
         if ( Vs0.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: Vs0 vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
@@ -699,7 +871,7 @@ public:
     
     int setGamma(const T *s, const size_t ns) {
         if ( gamma.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: gamma vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<gamma.size(); ++n ) {
@@ -710,7 +882,7 @@ public:
     
     int setGamma(const std::vector<T>& s) {
         if ( gamma.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
+            std::cerr << "Error: gamma vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<gamma.size(); ++n ) {
