@@ -49,8 +49,8 @@
 #include "Grid2Drc.h"
 #include "Node2Dcsp.h"
 
-template<typename T1, typename T2>
-class Grid2Drcsp : public Grid2Drc<T1,T2,Node2Dcsp<T1,T2>> {
+template<typename T1, typename T2, typename CELL>
+class Grid2Drcsp : public Grid2Drc<T1,T2,Node2Dcsp<T1,T2>,CELL> {
 public:
     Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
            const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
@@ -159,7 +159,7 @@ protected:
 					const size_t threadNo) const;
 
 	T1 get_tt_corr(const siv<T1>& cell,
-				  const Grid2Drcsp<T1,T2> *grid,
+				  const Grid2Drcsp<T1,T2,CELL> *grid,
 				  const size_t i) const {
 		return cell.v*(this->slowness[cell.i] - grid->slowness[i]);
 	}
@@ -167,24 +167,24 @@ protected:
 	
 private:
     Grid2Drcsp() {}
-    Grid2Drcsp(const Grid2Drcsp<T1,T2>& g) {}
-    Grid2Drcsp<T1,T2>& operator=(const Grid2Drcsp<T1,T2>& g) {}
+    Grid2Drcsp(const Grid2Drcsp<T1,T2,CELL>& g) {}
+    Grid2Drcsp<T1,T2,CELL>& operator=(const Grid2Drcsp<T1,T2,CELL>& g) {}
     
 };
 
-template<typename T1, typename T2>
-Grid2Drcsp<T1,T2>::Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+template<typename T1, typename T2, typename CELL>
+Grid2Drcsp<T1,T2,CELL>::Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                   const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
 				  const size_t nt) :
-Grid2Drc<T1,T2,Node2Dcsp<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
+Grid2Drc<T1,T2,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,nt),
 nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0)
 {
     buildGridNodes();
     this->buildGridNeighbors();
 }
 
-template<typename T1, typename T2>
-void Grid2Drcsp<T1,T2>::buildGridNodes() {
+template<typename T1, typename T2, typename CELL>
+void Grid2Drcsp<T1,T2,CELL>::buildGridNodes() {
     
     this->nodes.resize( // noeuds secondaires
                        this->ncx*nsnx*(this->ncz+1) +
@@ -315,8 +315,8 @@ void Grid2Drcsp<T1,T2>::buildGridNodes() {
 
 
 
-template<typename T1, typename T2>
-void Grid2Drcsp<T1,T2>::initQueue(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+void Grid2Drcsp<T1,T2,CELL>::initQueue(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								std::priority_queue<Node2Dcsp<T1,T2>*,
 								std::vector<Node2Dcsp<T1,T2>*>,
@@ -354,8 +354,8 @@ void Grid2Drcsp<T1,T2>::initQueue(const std::vector<sxz<T1>>& Tx,
 }
 
 
-template<typename T1, typename T2>
-void Grid2Drcsp<T1,T2>::initBand(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+void Grid2Drcsp<T1,T2,CELL>::initBand(const std::vector<sxz<T1>>& Tx,
 								const std::vector<T1>& t0,
 								std::priority_queue<Node2Dcsp<T1,T2>*,
 								std::vector<Node2Dcsp<T1,T2>*>,
@@ -383,7 +383,7 @@ void Grid2Drcsp<T1,T2>::initBand(const std::vector<sxz<T1>>& Tx,
 						for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
 							T2 neibNo = this->neighbors[cellNo][k];
 							if ( neibNo == nn ) continue;
-							T1 dt = computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
+							T1 dt = this->cells.computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
 							
 							if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
 								this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
@@ -410,7 +410,7 @@ void Grid2Drcsp<T1,T2>::initBand(const std::vector<sxz<T1>>& Tx,
                 T2 neibNo = this->neighbors[cellNo][k];
 				
 				// compute dt
-                T1 dt = computeDt(this->nodes[neibNo], Tx[n], cellNo);
+                T1 dt = this->cells.computeDt(this->nodes[neibNo], Tx[n], cellNo);
 				
 				this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                 narrow_band.push( &(this->nodes[neibNo]) );
@@ -424,8 +424,8 @@ void Grid2Drcsp<T1,T2>::initBand(const std::vector<sxz<T1>>& Tx,
 }
 
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
                         const std::vector<T1>& t0, 
                         const std::vector<sxz<T1>>& Rx,
                         std::vector<T1>& traveltimes,
@@ -460,8 +460,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<const std::vector<sxz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
@@ -499,8 +499,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
 	
 }
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  const std::vector<T1>& t0,
 							  const std::vector<sxz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
@@ -592,8 +592,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<const std::vector<sxz<T1>>*>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
@@ -712,8 +712,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
 }
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  const std::vector<T1>& t0, 
 							  const std::vector<sxz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
@@ -844,8 +844,8 @@ int Grid2Drcsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::fmm(const std::vector<sxz<T1>>& Tx,
 						 const std::vector<T1>& t0,
 						 const std::vector<sxz<T1>>& Rx,
 						 std::vector<T1>& traveltimes,
@@ -884,8 +884,8 @@ int Grid2Drcsp<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
 	return 0;
 }
 
-template<typename T1, typename T2>
-int Grid2Drcsp<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
+template<typename T1, typename T2, typename CELL>
+int Grid2Drcsp<T1,T2,CELL>::fmm(const std::vector<sxz<T1>>& Tx,
 						 const std::vector<T1>& t0,
 						 const std::vector<const std::vector<sxz<T1>>*>& Rx,
 						 std::vector<std::vector<T1>*>& traveltimes,
@@ -928,8 +928,8 @@ int Grid2Drcsp<T1,T2>::fmm(const std::vector<sxz<T1>>& Tx,
 	
 }
 
-template<typename T1, typename T2>
-void Grid2Drcsp<T1,T2>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+template<typename T1, typename T2, typename CELL>
+void Grid2Drcsp<T1,T2,CELL>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
                           CompareNodePtr<T1>>& queue,
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
@@ -951,7 +951,7 @@ void Grid2Drcsp<T1,T2>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::v
                 }
                 
                 // compute dt
-                T1 dt = this->computeDt(*source, this->nodes[neibNo], cellNo);
+                T1 dt = this->cells.computeDt(*source, this->nodes[neibNo], cellNo);
 				
                 if ( source->getTT(threadNo)+dt < this->nodes[neibNo].getTT(threadNo) ) {
                     this->nodes[neibNo].setTT( source->getTT(threadNo)+dt, threadNo );
@@ -970,8 +970,8 @@ void Grid2Drcsp<T1,T2>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::v
 
 
 
-template<typename T1, typename T2>
-void Grid2Drcsp<T1,T2>::propagate_fmm( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+template<typename T1, typename T2, typename CELL>
+void Grid2Drcsp<T1,T2,CELL>::propagate_fmm( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
 								CompareNodePtr<T1>>& narrow_band,
 								std::vector<bool>& inNarrowBand,
 								std::vector<bool>& frozen,
@@ -1047,8 +1047,8 @@ void Grid2Drcsp<T1,T2>::propagate_fmm( std::priority_queue<Node2Dcsp<T1,T2>*, st
 
 
 
-template<typename T1, typename T2>
-T1 Grid2Drcsp<T1,T2>::getTraveltime(const sxz<T1>& Rx,
+template<typename T1, typename T2, typename CELL>
+T1 Grid2Drcsp<T1,T2,CELL>::getTraveltime(const sxz<T1>& Rx,
                            const std::vector<Node2Dcsp<T1,T2>>& nodes,
 						   const size_t threadNo) const {
     
@@ -1060,12 +1060,12 @@ T1 Grid2Drcsp<T1,T2>::getTraveltime(const sxz<T1>& Rx,
     
     T2 cellNo = this->getCellNo( Rx );
     T2 neibNo = this->neighbors[cellNo][0];
-    T1 dt = this->computeDt(nodes[neibNo], Rx, cellNo);
+    T1 dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
     
     T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
         neibNo = this->neighbors[cellNo][k];
-        dt = this->computeDt(nodes[neibNo], Rx, cellNo);
+        dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
         if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
             traveltime =  nodes[neibNo].getTT(threadNo)+dt;
         }
@@ -1074,8 +1074,8 @@ T1 Grid2Drcsp<T1,T2>::getTraveltime(const sxz<T1>& Rx,
 }
 
 
-template<typename T1, typename T2>
-T1 Grid2Drcsp<T1,T2>::getTraveltime(const sxz<T1>& Rx,
+template<typename T1, typename T2, typename CELL>
+T1 Grid2Drcsp<T1,T2,CELL>::getTraveltime(const sxz<T1>& Rx,
                            const std::vector<Node2Dcsp<T1,T2>>& nodes,
                            T2& nodeParentRx, T2& cellParentRx,
 						   const size_t threadNo) const {
@@ -1090,14 +1090,14 @@ T1 Grid2Drcsp<T1,T2>::getTraveltime(const sxz<T1>& Rx,
     
     T2 cellNo = this->getCellNo( Rx );
     T2 neibNo = this->neighbors[cellNo][0];
-    T1 dt = this->computeDt(nodes[neibNo], Rx, cellNo);
+    T1 dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
     
     T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     nodeParentRx = neibNo;
     cellParentRx = cellNo;
     for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
         neibNo = this->neighbors[cellNo][k];
-        dt = this->computeDt(nodes[neibNo], Rx, cellNo);
+        dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
         if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
             traveltime =  nodes[neibNo].getTT(threadNo)+dt;
             nodeParentRx = neibNo;

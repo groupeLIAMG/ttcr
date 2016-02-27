@@ -40,6 +40,7 @@
 #include <vtkXMLRectilinearGridReader.h>
 #endif
 
+#include "Cell.h"
 #include "Grid2Drcfs.h"
 #include "Grid2Drcsp.h"
 #include "Grid2Drifs.h"
@@ -227,7 +228,7 @@ Grid3D<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt) {
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
             if ( constCells )
-                g = new Grid3Drcsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                 d[0], d[1], d[2],
                                                 min[0], min[1], min[0],
                                                 par.nn[0], par.nn[1], par.nn[2],
@@ -484,7 +485,7 @@ Grid3D<T,uint32_t> *recti3D_vtr(const input_parameters &par, const size_t nt) {
 
                     if ( par.verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
                     if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                    g = new Grid3Drcsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                    g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                     d[0], d[1], d[2],
                                                     xrange[0], yrange[0], zrange[0],
                                                     par.nn[0], par.nn[1], par.nn[2], nt);
@@ -1092,7 +1093,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
             }
             if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
             if ( constCells )
-                g = new Grid2Drcsp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                g = new Grid2Drcsp<T, uint32_t, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                               min[0], min[2],
                                               par.nn[0], par.nn[2],
                                               nt);
@@ -1365,7 +1366,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
                 {
                     if ( par.verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
                     if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                    g = new Grid2Drcsp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drcsp<T, uint32_t, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                   xrange[0], zrange[0],
                                                   par.nn[0], par.nn[2], nt);
                     if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }

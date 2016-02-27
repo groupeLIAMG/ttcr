@@ -173,6 +173,7 @@
 		2B6F87AF190F410D002AC9DF /* grid2duisp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = grid2duisp.m; sourceTree = "<group>"; };
 		2B6F87B1190F414D002AC9DF /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
 		2B76D8911BB2351D00F2D81F /* Grid2Drifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drifs.h; sourceTree = "<group>"; };
+		2B8837C11C81BC340081A37C /* Cell.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Cell.h; sourceTree = "<group>"; };
 		2B8AAD8A1C3F51DB00C38269 /* Grid3Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drcfs.h; sourceTree = "<group>"; };
 		2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid3duisp_mex.cpp; sourceTree = "<group>"; };
 		2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -368,6 +369,7 @@
 				2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */,
 				2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */,
 				2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */,
+				2B8837C11C81BC340081A37C /* Cell.h */,
 				2BC708DF18EDA65F004DA2C9 /* Grad.h */,
 				2BC708E018EDA65F004DA2C9 /* Grid2D.h */,
 				2B17F25F1C2B535D00F9C97F /* Grid2Drc.h */,

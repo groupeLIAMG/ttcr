@@ -54,7 +54,7 @@
 #include "Grid3D.h"
 
 
-template<typename T1, typename T2, typename NODE>
+template<typename T1, typename T2, typename NODE, typename CELL>
 class Grid3Drc : public Grid3D<T1,T2> {
 public:
     
@@ -68,40 +68,24 @@ public:
     xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
     ncx(nx), ncy(ny), ncz(nz),
     nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt))),
-    slowness(std::vector<T1>(nx*ny*nz)),
+    cells(CELL(nx*ny*nz)),
     neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
     { }
     
     virtual ~Grid3Drc() {}
     
-    T1 getSlowness(const size_t n) const { return slowness[n]; }
+//    T1 getSlowness(const size_t n) const { return slowness[n]; }
     
     void setSlowness(const T1 s) {
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s;
-        }
+        cells.setSlowness( s );
     }
     
     int setSlowness(const T1 *s, const size_t ns) {
-        if ( slowness.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
+        return cells.setSlowness( s, ns );
     }
     
     int setSlowness(const std::vector<T1>& s) {
-        if ( slowness.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
+        return cells.setSlowness( s );
     }
     
     size_t getNumberOfNodes() const { return nodes.size(); }
@@ -142,7 +126,7 @@ public:
                 for (T2 ni=0; ni<=ncx; ++ni, ++n ){
                     T1 x = xmin + ni*dx;
                     fout << x << "   " << y << "   " << z << "   "
-                    << slowness[n] << '\n';
+                    << cells.getSlowness(n) << '\n';
                 }
             }
         }
@@ -152,9 +136,9 @@ public:
     void saveTT(const std::string &, const int, const size_t nt=0,
                 const bool vtkFormat=0) const;
     
-    size_t getSlownessSize() const {
-        return slowness.size()*sizeof(T1);
-    }
+//    size_t getSlownessSize() const {
+//        return slowness.size()*sizeof(T1);
+//    }
     
     size_t getNeighborsSize() const {
         size_t n_elem = 0;
@@ -203,7 +187,7 @@ protected:
     
     mutable std::vector<NODE> nodes;
     
-    std::vector<T1> slowness;   // column-wise (z axis) slowness vector of the cells, NOT used by Grid3Dcinterp
+    CELL cells;   // column-wise (z axis) slowness vector of the cells, NOT used by Grid3Dcinterp
     std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
 
     
@@ -244,16 +228,6 @@ protected:
     
     void buildGridNeighbors();
     
-    T1 computeDt(const NODE& source, const sxyz<T1>& node,
-                 const size_t cellNo) const {
-        return slowness[cellNo] * source.getDistance( node );
-    }
-    
-    T1 computeDt(const NODE& source, const NODE& node,
-                 const size_t cellNo) const {
-        return slowness[cellNo] * source.getDistance( node );
-    }
-    
     T1 getTraveltime(const sxyz<T1>& Rx,
                      const std::vector<NODE>& nodes,
                      const size_t threadNo) const;
@@ -264,16 +238,16 @@ protected:
     
 private:
     Grid3Drc() {}
-    Grid3Drc(const Grid3Drc<T1,T2,NODE>& g) {}
-    Grid3Drc<T1,T2,NODE>& operator=(const Grid3Drc<T1,T2,NODE>& g) { return *this; }
+    Grid3Drc(const Grid3Drc<T1,T2,NODE,CELL>& g) {}
+    Grid3Drc<T1,T2,NODE,CELL>& operator=(const Grid3Drc<T1,T2,NODE,CELL>& g) { return *this; }
     
 };
 
 
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Drc<T1,T2,NODE>::buildGridNeighbors() {
+template<typename T1, typename T2, typename NODE, typename CELL>
+void Grid3Drc<T1,T2,NODE,CELL>::buildGridNeighbors() {
     
     // Index the neighbors nodes of each cell
     for ( T2 n=0; n<nodes.size(); ++n ) {
@@ -283,8 +257,8 @@ void Grid3Drc<T1,T2,NODE>::buildGridNeighbors() {
     }
 }
 
-template<typename T1, typename T2, typename NODE>
-int Grid3Drc<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+template<typename T1, typename T2, typename NODE, typename CELL>
+int Grid3Drc<T1,T2,NODE,CELL>::checkPts(const std::vector<sxyz<T1>>& pts) const {
     
     // Check if the points from a vector are in the grid
     for ( size_t n=0; n<pts.size(); ++n ) {
@@ -300,8 +274,8 @@ int Grid3Drc<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
 }
 
 
-template<typename T1, typename T2, typename NODE>
-T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+template<typename T1, typename T2, typename NODE, typename CELL>
+T1 Grid3Drc<T1,T2,NODE,CELL>::getTraveltime(const sxyz<T1>& Rx,
                                        const std::vector<NODE>& nodes,
                                        const size_t threadNo) const {
     
@@ -313,12 +287,12 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     }
     size_t cellNo = getCellNo( Rx );
     size_t neibNo = neighbors[cellNo][0];
-    T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
+    T1 dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
     
     T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
         neibNo = neighbors[cellNo][k];
-        dt = computeDt(nodes[neibNo], Rx, cellNo);
+        dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
         if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
             traveltime =  nodes[neibNo].getTT(threadNo)+dt;
         }
@@ -326,8 +300,8 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     return traveltime;
 }
 
-template<typename T1, typename T2, typename NODE>
-T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+template<typename T1, typename T2, typename NODE, typename CELL>
+T1 Grid3Drc<T1,T2,NODE,CELL>::getTraveltime(const sxyz<T1>& Rx,
                                        const std::vector<NODE>& nodes,
                                        T2& nodeParentRx, T2& cellParentRx,
                                        const size_t threadNo) const {
@@ -342,14 +316,14 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     }
     T2 cellNo = getCellNo( Rx );
     T2 neibNo = neighbors[cellNo][0];
-    T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
+    T1 dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
     
     T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     nodeParentRx = neibNo;
     cellParentRx = cellNo;
     for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
         neibNo = neighbors[cellNo][k];
-        dt = computeDt(nodes[neibNo], Rx, cellNo);
+        dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
         if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
             traveltime =  nodes[neibNo].getTT(threadNo)+dt;
             nodeParentRx = neibNo;
@@ -361,8 +335,8 @@ T1 Grid3Drc<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
 
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Drc<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
+template<typename T1, typename T2, typename NODE, typename CELL>
+void Grid3Drc<T1,T2,NODE,CELL>::saveTT(const std::string &fname, const int all,
                                   const size_t nt, const bool vtkFormat) const {
     
     if (vtkFormat) {

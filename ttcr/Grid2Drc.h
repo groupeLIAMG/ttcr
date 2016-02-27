@@ -26,7 +26,7 @@
 
 #include "Grid2D.h"
 
-template<typename T1, typename T2, typename NODE>
+template<typename T1, typename T2, typename NODE, typename CELL>
 class Grid2Drc : public Grid2D<T1,T2,sxz<T1>> {
 public:
     Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
@@ -35,35 +35,19 @@ public:
     virtual ~Grid2Drc() {
     }
 
-    T2 getNumberOfCells() const { return slowness.size(); }
-    virtual T1 getSlowness(const size_t n) const { return slowness[n]; }
+    virtual T1 getSlowness(const size_t n) const {
+        return cells.getSlowness(n); }
     
     virtual void setSlowness(const T1 s) {
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s;
-        }
+        cells.setSlowness( s );
     }
     
     virtual int setSlowness(const T1 *s, const size_t ns) {
-        if ( slowness.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
+        return cells.setSlowness( s, ns );
     }
     
     virtual int setSlowness(const std::vector<T1>& s) {
-        if ( slowness.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
+        return cells.setSlowness( s );
     }
     
     virtual int raytrace(const std::vector<sxz<T1>>& Tx,
@@ -109,7 +93,7 @@ public:
             T1 x = xmin + (0.5+j)*dx;
             for ( T2 i=0; i<ncz; ++i, ++n ) {
                 T1 z = zmin + (0.5+i)*dz;
-                fout << x << "   " << z << "   " << slowness[n] << '\n';
+                fout << x << "   " << z << "   " << cells.getSlowness(n) << '\n';
             }
         }
         
@@ -146,21 +130,11 @@ protected:
 
     mutable std::vector<NODE> nodes;
     
-    std::vector<T1> slowness;   // column-wise (z axis) slowness vector of the cells
+    CELL cells;   // column-wise (z axis) slowness vector of the cells
     std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
 
     void buildGridNeighbors();
 
-    T1 computeDt(const NODE& source, const sxz<T1>& node,
-                         const T2 cellNo) const {
-        return slowness[cellNo] * source.getDistance( node );
-    }
-    
-    T1 computeDt(const NODE& source, const NODE& node,
-                         const T2 cellNo) const {
-        return slowness[cellNo] * source.getDistance( node );
-    }
-    
     int checkPts(const std::vector<sxz<T1>>&) const;
 
     bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
@@ -168,18 +142,19 @@ protected:
 
 };
 
-template<typename T1, typename T2, typename NODE>
-Grid2Drc<T1,T2,NODE>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+template<typename T1, typename T2, typename NODE, typename CELL>
+Grid2Drc<T1,T2,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                                const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
 dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
 ncx(nx), ncz(nz),
 nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
-slowness(std::vector<T1>(ncx*ncz)),
+cells(ncx*ncz),
 neighbors(std::vector<std::vector<T2>>(ncx*ncz))
 { }
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Drc<T1,T2,NODE>::buildGridNeighbors() {
+
+template<typename T1, typename T2, typename NODE, typename CELL>
+void Grid2Drc<T1,T2,NODE,CELL>::buildGridNeighbors() {
     for ( T2 n=0; n<nodes.size(); ++n ) {
         for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
             neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
@@ -187,8 +162,8 @@ void Grid2Drc<T1,T2,NODE>::buildGridNeighbors() {
     }
 }
 
-template<typename T1, typename T2, typename NODE>
-void Grid2Drc<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
+template<typename T1, typename T2, typename NODE, typename CELL>
+void Grid2Drc<T1,T2,NODE,CELL>::saveTT(const std::string& fname, const int all,
                                   const size_t nt,
                                   const bool vtkFormat) const {
     
@@ -251,8 +226,8 @@ void Grid2Drc<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
 }
 
 
-template<typename T1, typename T2, typename NODE>
-int Grid2Drc<T1,T2,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
+template<typename T1, typename T2, typename NODE, typename CELL>
+int Grid2Drc<T1,T2,NODE,CELL>::checkPts(const std::vector<sxz<T1>>& pts) const {
     for (size_t n=0; n<pts.size(); ++n) {
         if ( pts[n].x < xmin || pts[n].x > xmax ||
             pts[n].z < zmin || pts[n].z > zmax ) {
@@ -265,8 +240,8 @@ int Grid2Drc<T1,T2,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
 }
 
 
-template<typename T1, typename T2, typename NODE>
-bool Grid2Drc<T1,T2,NODE>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
+template<typename T1, typename T2, typename NODE, typename CELL>
+bool Grid2Drc<T1,T2,NODE,CELL>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
     bool c = false;
     for (size_t i = 0, j = N-1; i < N; j = i++) {
         if ((((poly[i].z <= p.z) && (p.z < poly[j].z)) ||
