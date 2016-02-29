@@ -34,20 +34,13 @@ public:
     
     virtual ~Grid2Drc() {
     }
-
-    virtual T1 getSlowness(const size_t n) const {
-        return cells.getSlowness(n); }
-    
-    virtual void setSlowness(const T1 s) {
-        cells.setSlowness( s );
-    }
-    
-    virtual int setSlowness(const T1 *s, const size_t ns) {
-        return cells.setSlowness( s, ns );
-    }
     
     virtual int setSlowness(const std::vector<T1>& s) {
         return cells.setSlowness( s );
+    }
+    
+    int setXi(const std::vector<T1>& x) {
+        return cells.setXi( x );
     }
     
     virtual int raytrace(const std::vector<sxz<T1>>& Tx,

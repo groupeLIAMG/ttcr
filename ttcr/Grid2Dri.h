@@ -54,12 +54,6 @@ public:
     virtual ~Grid2Dri() {
     }
     
-    void setSlowness(const T1 s) {
-        for ( size_t n=0; n<nodes.size(); ++n ) {
-        	nodes[n].setNodeSlowness( s );
-        }
-    }
-    
     virtual int setSlowness(const std::vector<T1>& s) {
         if ( nodes.size() != s.size() ) {
             std::cerr << "Error: slowness vectors of incompatible size.";

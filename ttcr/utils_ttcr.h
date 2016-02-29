@@ -1225,6 +1225,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
 	
     bool foundSlowness = false;
 	std::vector<T> slowness;
+    std::vector<T> xi;
 	if ( pd->HasArray("P-wave velocity") ||
 		pd->HasArray("Velocity") ||
 		pd->HasArray("Slowness") ) {
@@ -1329,6 +1330,8 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
 	} else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
 		cd->HasArray("Slowness") ) {
         
+        bool foundXi = false;
+        
         for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
             if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
 				strcmp(cd->GetArrayName(na), "Velocity")==0 ) {
@@ -1357,6 +1360,24 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
 					slowness[n] = slo->GetComponent(n, 0);
 				}
 				foundSlowness = true;
+                
+                if ( cd->HasArray("xi") ) {
+                    
+                    vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
+                    x = vtkDoubleArray::SafeDownCast( cd->GetArray("xi") );
+                    
+                    if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
+                        std::cout << "Problem with xi data (wrong size)" << std::endl;
+                        return nullptr;
+                    }
+                    
+                    xi.resize( x->GetSize() );
+                    for ( size_t n=0; n<x->GetSize(); ++n ) {
+                        xi[n] = x->GetComponent(n, 0);
+                    }
+                    foundXi = true;
+                    if ( par.verbose ) { cout << "Model contains anisotropy ratio\n"; }
+                }
 				break;
 			}
 		}
@@ -1366,15 +1387,30 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
                 {
                     if ( par.verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
                     if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                    g = new Grid2Drcsp<T, uint32_t, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
-                                                  xrange[0], zrange[0],
-                                                  par.nn[0], par.nn[2], nt);
+                    if ( foundXi ) {
+                        g = new Grid2Drcsp<T, uint32_t, CellElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                 xrange[0], zrange[0],
+                                                                                                 par.nn[0], par.nn[2], nt);
+                    } else {
+                        g = new Grid2Drcsp<T, uint32_t, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                 xrange[0], zrange[0],
+                                                                                                 par.nn[0], par.nn[2], nt);
+                    }
                     if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                     if ( par.verbose ) {
                         cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                         << "\nAssigning slowness at grid cells ... ";
                     }
-                    g->setSlowness( slowness );
+                    if ( g->setSlowness( slowness ) == 1 ) {
+                        std::cerr << "aborting";
+                        std::abort();
+                    }
+                    if ( foundXi ) {
+                        if ( g->setXi( xi ) == 1 ) {
+                            std::cerr << "aborting";
+                            std::abort();
+                        }
+                    }
                     if ( par.verbose ) cout << "done.\n";
                     if ( par.time ) {
                         std::cout.precision(12);

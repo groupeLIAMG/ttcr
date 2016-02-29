@@ -74,16 +74,6 @@ public:
     
     virtual ~Grid3Drc() {}
     
-//    T1 getSlowness(const size_t n) const { return slowness[n]; }
-    
-    void setSlowness(const T1 s) {
-        cells.setSlowness( s );
-    }
-    
-    int setSlowness(const T1 *s, const size_t ns) {
-        return cells.setSlowness( s, ns );
-    }
-    
     int setSlowness(const std::vector<T1>& s) {
         return cells.setSlowness( s );
     }
