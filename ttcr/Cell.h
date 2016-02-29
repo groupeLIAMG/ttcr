@@ -16,25 +16,6 @@ class Cell {
 public:
     Cell(const size_t n) : slowness(std::vector<T>(n)) { }
     
-    const T getSlowness(const size_t n) const { return slowness[n]; }
-    
-    void setSlowness(const T s) {
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s;
-        }
-    }
-    
-    int setSlowness(const T *s, const size_t ns) {
-        if ( slowness.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setSlowness(const std::vector<T>& s) {
         if ( slowness.size() != s.size() ) {
             std::cerr << "Error: slowness vectors of incompatible size.";
@@ -44,6 +25,41 @@ public:
             slowness[n] = s[n];
         }
         return 0;
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        std::cerr << "Error: xi not defined for Cell.";
+        return 1;
+    }
+    
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for Cell.";
+        return 1;
+    }
+    
+    int setVp0(const std::vector<T>& s) {
+        std::cerr << "Error: Vp0 not defined for Cell.";
+        return 1;
+    }
+    
+    int setVs0(const std::vector<T>& s) {
+        std::cerr << "Error: Vs0 not defined for Cell.";
+        return 1;
+    }
+    
+    int setDelta(const std::vector<T>& s) {
+        std::cerr << "Error: delta not defined for Cell.";
+        return 1;
+    }
+    
+    int setEpsilon(const std::vector<T>& s) {
+        std::cerr << "Error: epsilon not defined for Cell.";
+        return 1;
+    }
+    
+    int setGamma(const std::vector<T>& s) {
+        std::cerr << "Error: gamma not defined for Cell.";
+        return 1;
     }
     
     T computeDt(const NODE& source, const S& node,
@@ -71,25 +87,6 @@ public:
     xi(std::vector<T>(n)) {
     }
     
-    const T getSlowness(const size_t n) const { return slowness[n]; }
-    
-    void setSlowness(const T s) {
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s;
-        }
-    }
-    
-    int setSlowness(const T *s, const size_t ns) {
-        if ( slowness.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setSlowness(const std::vector<T>& s) {
         if ( slowness.size() != s.size() ) {
             std::cerr << "Error: slowness vectors of incompatible size.";
@@ -101,34 +98,45 @@ public:
         return 0;
     }
     
-    const T getXi(const size_t n) const { return xi[n]; }
-    
-    void setXi(const T s) {
-        for ( size_t n=0; n<xi.size(); ++n ) {
-            xi[n] = s;
-        }
-    }
-    
-    int setXi(const T *s, const size_t ns) {
-        if ( xi.size() != ns ) {
-            std::cerr << "Error: xi vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<xi.size(); ++n ) {
-            xi[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setXi(const std::vector<T>& s) {
         if ( xi.size() != s.size() ) {
             std::cerr << "Error: xi vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<xi.size(); ++n ) {
-            xi[n] = s[n];
+            xi[n] = s[n]*s[n];
         }
         return 0;
+    }
+    
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for CellElliptical.";
+        return 1;
+    }
+    
+    int setVp0(const std::vector<T>& s) {
+        std::cerr << "Error: Vp0 not defined for CellElliptical.";
+        return 1;
+    }
+    
+    int setVs0(const std::vector<T>& s) {
+        std::cerr << "Error: Vs0 not defined for CellElliptical.";
+        return 1;
+    }
+    
+    int setDelta(const std::vector<T>& s) {
+        std::cerr << "Error: delta not defined for CellElliptical.";
+        return 1;
+    }
+    
+    int setEpsilon(const std::vector<T>& s) {
+        std::cerr << "Error: epsilon not defined for CellElliptical.";
+        return 1;
+    }
+    
+    int setGamma(const std::vector<T>& s) {
+        std::cerr << "Error: gamma not defined for CellElliptical.";
+        return 1;
     }
     
     T computeDt(const NODE& source, const S& node,
@@ -148,7 +156,6 @@ public:
 private:
     std::vector<T> slowness;
     std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
-    
 };
 
 
@@ -164,25 +171,6 @@ public:
     sa(std::vector<T>(n)) {
     }
     
-    const T getSlowness(const size_t n) const { return slowness[n]; }
-    
-    void setSlowness(const T s) {
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s;
-        }
-    }
-    
-    int setSlowness(const T *s, const size_t ns) {
-        if ( slowness.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setSlowness(const std::vector<T>& s) {
         if ( slowness.size() != s.size() ) {
             std::cerr << "Error: slowness vectors of incompatible size.";
@@ -194,64 +182,18 @@ public:
         return 0;
     }
     
-    const T getXi(const size_t n) const { return xi[n]; }
-    
-    void setXi(const T s) {
-        for ( size_t n=0; n<xi.size(); ++n ) {
-            xi[n] = s;
-        }
-    }
-    
-    int setXi(const T *s, const size_t ns) {
-        if ( xi.size() != ns ) {
-            std::cerr << "Error: xi vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<xi.size(); ++n ) {
-            xi[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setXi(const std::vector<T>& s) {
         if ( xi.size() != s.size() ) {
             std::cerr << "Error: xi vectors of incompatible size.";
             return 1;
         }
         for ( size_t n=0; n<xi.size(); ++n ) {
-            xi[n] = s[n];
+            xi[n] = s[n]*s[n];
         }
         return 0;
     }
     
-    const T getAngle(const size_t n) const { return aAngle[n]; }
-    
-    void setAngle(const T s) {
-        ca[0] = std::cos(s);
-        sa[0] = std::sin(s);
-
-        for ( size_t n=0; n<xi.size(); ++n ) {
-            aAngle[n] = s;
-            ca[n] = ca[0];
-            sa[n] = sa[0];
-
-        }
-    }
-    
-    int setAngle(const T *s, const size_t ns) {
-        if ( aAngle.size() != ns ) {
-            std::cerr << "Error: angle vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<aAngle.size(); ++n ) {
-            aAngle[n] = s[n];
-            ca[n] = std::cos(s[n]);
-            sa[n] = std::sin(s[n]);
-        }
-        return 0;
-    }
-    
-    int setAngle(const std::vector<T>& s) {
+    int setTiltAngle(const std::vector<T>& s) {
         if ( aAngle.size() != s.size() ) {
             std::cerr << "Error: angle vectors of incompatible size.";
             return 1;
@@ -262,6 +204,31 @@ public:
             sa[n] = std::sin(s[n]);
         }
         return 0;
+    }
+    
+    int setVp0(const std::vector<T>& s) {
+        std::cerr << "Error: Vp0 not defined for CellTiltedElliptical.";
+        return 1;
+    }
+    
+    int setVs0(const std::vector<T>& s) {
+        std::cerr << "Error: Vs0 not defined for CellTiltedElliptical.";
+        return 1;
+    }
+    
+    int setDelta(const std::vector<T>& s) {
+        std::cerr << "Error: delta not defined for CellTiltedElliptical.";
+        return 1;
+    }
+    
+    int setEpsilon(const std::vector<T>& s) {
+        std::cerr << "Error: epsilon not defined for CellTiltedElliptical.";
+        return 1;
+    }
+    
+    int setGamma(const std::vector<T>& s) {
+        std::cerr << "Error: gamma not defined for CellTiltedElliptical.";
+        return 1;
     }
     
     T computeDt(const NODE& source, const S& node,
@@ -307,25 +274,6 @@ public:
     delta(std::vector<T>(n)) {
     }
     
-    const T getVp0(const size_t n) const { return Vp0[n]; }
-    
-    void setVp0(const T s) {
-        for ( size_t n=0; n<Vp0.size(); ++n ) {
-            Vp0[n] = s;
-        }
-    }
-    
-    int setVp0(const T *s, const size_t ns) {
-        if ( Vp0.size() != ns ) {
-            std::cerr << "Error: Vp0 vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<Vp0.size(); ++n ) {
-            Vp0[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setVp0(const std::vector<T>& s) {
         if ( Vp0.size() != s.size() ) {
             std::cerr << "Error: Vp0 vectors of incompatible size.";
@@ -333,25 +281,6 @@ public:
         }
         for ( size_t n=0; n<Vp0.size(); ++n ) {
             Vp0[n] = s[n];
-        }
-        return 0;
-    }
-    
-    const T getVs0(const size_t n) const { return Vs0[n]; }
-    
-    void setVs0(const T s) {
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s;
-        }
-    }
-    
-    int setVs0(const T *s, const size_t ns) {
-        if ( Vs0.size() != ns ) {
-            std::cerr << "Error: Vs0 vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s[n];
         }
         return 0;
     }
@@ -367,25 +296,6 @@ public:
         return 0;
     }
     
-    const T getEpsilon(const size_t n) const { return epsilon[n]; }
-    
-    void setEpsilon(const T s) {
-        for ( size_t n=0; n<epsilon.size(); ++n ) {
-            epsilon[n] = s;
-        }
-    }
-    
-    int setEpsilon(const T *s, const size_t ns) {
-        if ( epsilon.size() != ns ) {
-            std::cerr << "Error: epsilon vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<epsilon.size(); ++n ) {
-            epsilon[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setEpsilon(const std::vector<T>& s) {
         if ( epsilon.size() != s.size() ) {
             std::cerr << "Error: epsilon vectors of incompatible size.";
@@ -393,25 +303,6 @@ public:
         }
         for ( size_t n=0; n<epsilon.size(); ++n ) {
             epsilon[n] = s[n];
-        }
-        return 0;
-    }
-    
-    const T getDelta(const size_t n) const { return delta[n]; }
-    
-    void setDelta(const T s) {
-        for ( size_t n=0; n<delta.size(); ++n ) {
-            delta[n] = s;
-        }
-    }
-    
-    int setDelta(const T *s, const size_t ns) {
-        if ( delta.size() != ns ) {
-            std::cerr << "Error: delta vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<delta.size(); ++n ) {
-            delta[n] = s[n];
         }
         return 0;
     }
@@ -426,8 +317,27 @@ public:
         }
         return 0;
     }
-    
 
+    void setPhase(const int p) {
+        if ( p==1 ) sign = 1.;  // P wave
+        else sign = -1.;        // SV wave
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        std::cerr << "Error: xi not defined for CellVTI_PSV.";
+        return 1;
+    }
+
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for CellVTI_PSV.";
+        return 1;
+    }
+    
+    int setGamma(const std::vector<T>& s) {
+        std::cerr << "Error: gamma not defined for CellVTI_PSV.";
+        return 1;
+    }
+    
     T computeDt(const NODE& source, const S& node,
                 const size_t cellNo) const {
         // theta: angle w/r to vertical axis
@@ -458,18 +368,12 @@ public:
         return source.getDistance( node ) / v;
     }
     
-    void setPhase(const int p) {
-        if ( p==1 ) sign = 1.;  // P wave
-        else sign = -1.;        // SV wave
-    }
-    
 private:
     T sign;
     std::vector<T> Vp0;
     std::vector<T> Vs0;
     std::vector<T> epsilon;
     std::vector<T> delta;
-
 };
 
 
@@ -483,25 +387,6 @@ public:
     gamma(std::vector<T>(n)) {
     }
     
-    const T getVs0(const size_t n) const { return Vs0[n]; }
-    
-    void setVs0(const T s) {
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s;
-        }
-    }
-    
-    int setVs0(const T *s, const size_t ns) {
-        if ( Vs0.size() != ns ) {
-            std::cerr << "Error: Vs0 vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setVs0(const std::vector<T>& s) {
         if ( Vs0.size() != s.size() ) {
             std::cerr << "Error: Vs0 vectors of incompatible size.";
@@ -509,25 +394,6 @@ public:
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
             Vs0[n] = s[n];
-        }
-        return 0;
-    }
-    
-    const T getGamma(const size_t n) const { return gamma[n]; }
-    
-    void setGamma(const T s) {
-        for ( size_t n=0; n<gamma.size(); ++n ) {
-            gamma[n] = s;
-        }
-    }
-    
-    int setGamma(const T *s, const size_t ns) {
-        if ( gamma.size() != ns ) {
-            std::cerr << "Error: gamma vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<gamma.size(); ++n ) {
-            gamma[n] = s[n];
         }
         return 0;
     }
@@ -541,6 +407,31 @@ public:
             gamma[n] = s[n];
         }
         return 0;
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        std::cerr << "Error: xi not defined for CellVTI_SH.";
+        return 1;
+    }
+
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for CellVTI_SH.";
+        return 1;
+    }
+    
+    int setVp0(const std::vector<T>& s) {
+        std::cerr << "Error: Vp0 not defined for CellVTI_SH.";
+        return 1;
+    }
+    
+    int setDelta(const std::vector<T>& s) {
+        std::cerr << "Error: delta not defined for CellVTI_SH.";
+        return 1;
+    }
+    
+    int setEpsilon(const std::vector<T>& s) {
+        std::cerr << "Error: epsilon not defined for CellVTI_SH.";
+        return 1;
     }
     
     T computeDt(const NODE& source, const S& node,
@@ -562,7 +453,6 @@ public:
 private:
     std::vector<T> Vs0;
     std::vector<T> gamma;
-    
 };
 
 
@@ -581,25 +471,6 @@ public:
     xi(std::vector<T>(n)) {
     }
     
-    const T getSlowness(const size_t n) const { return slowness[n]; }
-    
-    void setSlowness(const T s) {
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s;
-        }
-    }
-    
-    int setSlowness(const T *s, const size_t ns) {
-        if ( slowness.size() != ns ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<slowness.size(); ++n ) {
-            slowness[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setSlowness(const std::vector<T>& s) {
         if ( slowness.size() != s.size() ) {
             std::cerr << "Error: slowness vectors of incompatible size.";
@@ -609,6 +480,47 @@ public:
             slowness[n] = s[n];
         }
         return 0;
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        if ( xi.size() != s.size() ) {
+            std::cerr << "Error: xi vectors of incompatible size.";
+            return 1;
+        }
+        for ( size_t n=0; n<xi.size(); ++n ) {
+            xi[n] = s[n]*s[n];
+        }
+        return 0;
+    }
+
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for CellElliptical3D.";
+        return 1;
+    }
+    
+    int setVp0(const std::vector<T>& s) {
+        std::cerr << "Error: Vp0 not defined for CellElliptical3D.";
+        return 1;
+    }
+    
+    int setVs0(const std::vector<T>& s) {
+        std::cerr << "Error: Vs0 not defined for CellElliptical3D.";
+        return 1;
+    }
+    
+    int setDelta(const std::vector<T>& s) {
+        std::cerr << "Error: delta not defined for CellElliptical3D.";
+        return 1;
+    }
+    
+    int setEpsilon(const std::vector<T>& s) {
+        std::cerr << "Error: epsilon not defined for CellElliptical3D.";
+        return 1;
+    }
+
+    int setGamma(const std::vector<T>& s) {
+        std::cerr << "Error: gamma not defined for CellElliptical3D.";
+        return 1;
     }
     
     T computeDt(const NODE& source, const S& node,
@@ -632,7 +544,6 @@ public:
 private:
     std::vector<T> slowness;
     std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
-    
 };
 
 
@@ -649,25 +560,6 @@ public:
     delta(std::vector<T>(n)) {
     }
     
-    const T getVp0(const size_t n) const { return Vp0[n]; }
-    
-    void setVp0(const T s) {
-        for ( size_t n=0; n<Vp0.size(); ++n ) {
-            Vp0[n] = s;
-        }
-    }
-    
-    int setVp0(const T *s, const size_t ns) {
-        if ( Vp0.size() != ns ) {
-            std::cerr << "Error: Vp0 vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<Vp0.size(); ++n ) {
-            Vp0[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setVp0(const std::vector<T>& s) {
         if ( Vp0.size() != s.size() ) {
             std::cerr << "Error: Vp0 vectors of incompatible size.";
@@ -675,25 +567,6 @@ public:
         }
         for ( size_t n=0; n<Vp0.size(); ++n ) {
             Vp0[n] = s[n];
-        }
-        return 0;
-    }
-    
-    const T getVs0(const size_t n) const { return Vs0[n]; }
-    
-    void setVs0(const T s) {
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s;
-        }
-    }
-    
-    int setVs0(const T *s, const size_t ns) {
-        if ( Vs0.size() != ns ) {
-            std::cerr << "Error: Vs0 vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s[n];
         }
         return 0;
     }
@@ -709,25 +582,6 @@ public:
         return 0;
     }
     
-    const T getEpsilon(const size_t n) const { return epsilon[n]; }
-    
-    void setEpsilon(const T s) {
-        for ( size_t n=0; n<epsilon.size(); ++n ) {
-            epsilon[n] = s;
-        }
-    }
-    
-    int setEpsilon(const T *s, const size_t ns) {
-        if ( epsilon.size() != ns ) {
-            std::cerr << "Error: epsilon vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<epsilon.size(); ++n ) {
-            epsilon[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setEpsilon(const std::vector<T>& s) {
         if ( epsilon.size() != s.size() ) {
             std::cerr << "Error: epsilon vectors of incompatible size.";
@@ -735,25 +589,6 @@ public:
         }
         for ( size_t n=0; n<epsilon.size(); ++n ) {
             epsilon[n] = s[n];
-        }
-        return 0;
-    }
-    
-    const T getDelta(const size_t n) const { return delta[n]; }
-    
-    void setDelta(const T s) {
-        for ( size_t n=0; n<delta.size(); ++n ) {
-            delta[n] = s;
-        }
-    }
-    
-    int setDelta(const T *s, const size_t ns) {
-        if ( delta.size() != ns ) {
-            std::cerr << "Error: delta vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<delta.size(); ++n ) {
-            delta[n] = s[n];
         }
         return 0;
     }
@@ -769,7 +604,26 @@ public:
         return 0;
     }
     
+    void setPhase(const int p) {
+        if ( p==1 ) sign = 1.;  // P wave
+        else sign = -1.;        // SV wave
+    }
     
+    int setXi(const std::vector<T>& s) {
+        std::cerr << "Error: xi not defined for CellVTI_PSV3D.";
+        return 1;
+    }
+
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for CellVTI_PSV3D.";
+        return 1;
+    }
+    
+    int setGamma(const std::vector<T>& s) {
+        std::cerr << "Error: gamma not defined for CellVTI_PSV3D.";
+        return 1;
+    }
+
     T computeDt(const NODE& source, const S& node,
                 const size_t cellNo) const {
         // theta: angle w/r to vertical axis
@@ -806,18 +660,12 @@ public:
         return source.getDistance( node ) / v;
     }
     
-    void setPhase(const int p) {
-        if ( p==1 ) sign = 1.;  // P wave
-        else sign = -1.;        // SV wave
-    }
-    
 private:
     T sign;
     std::vector<T> Vp0;
     std::vector<T> Vs0;
     std::vector<T> epsilon;
     std::vector<T> delta;
-    
 };
 
 
@@ -831,25 +679,6 @@ public:
     gamma(std::vector<T>(n)) {
     }
     
-    const T getVs0(const size_t n) const { return Vs0[n]; }
-    
-    void setVs0(const T s) {
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s;
-        }
-    }
-    
-    int setVs0(const T *s, const size_t ns) {
-        if ( Vs0.size() != ns ) {
-            std::cerr << "Error: Vs0 vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<Vs0.size(); ++n ) {
-            Vs0[n] = s[n];
-        }
-        return 0;
-    }
-    
     int setVs0(const std::vector<T>& s) {
         if ( Vs0.size() != s.size() ) {
             std::cerr << "Error: Vs0 vectors of incompatible size.";
@@ -857,25 +686,6 @@ public:
         }
         for ( size_t n=0; n<Vs0.size(); ++n ) {
             Vs0[n] = s[n];
-        }
-        return 0;
-    }
-    
-    const T getGamma(const size_t n) const { return gamma[n]; }
-    
-    void setGamma(const T s) {
-        for ( size_t n=0; n<gamma.size(); ++n ) {
-            gamma[n] = s;
-        }
-    }
-    
-    int setGamma(const T *s, const size_t ns) {
-        if ( gamma.size() != ns ) {
-            std::cerr << "Error: gamma vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<gamma.size(); ++n ) {
-            gamma[n] = s[n];
         }
         return 0;
     }
@@ -889,6 +699,31 @@ public:
             gamma[n] = s[n];
         }
         return 0;
+    }
+    
+    int setXi(const std::vector<T>& s) {
+        std::cerr << "Error: xi not defined for CellVTI_SH3D.";
+        return 1;
+    }
+
+    int setTiltAngle(const std::vector<T>& s) {
+        std::cerr << "Error: TiltAngle not defined for CellVTI_SH3D.";
+        return 1;
+    }
+
+    int setVp0(const std::vector<T>& s) {
+        std::cerr << "Error: Vp0 not defined for CellVTI_SH3D.";
+        return 1;
+    }
+
+    int setDelta(const std::vector<T>& s) {
+        std::cerr << "Error: delta not defined for CellVTI_SH3D.";
+        return 1;
+    }
+    
+    int setEpsilon(const std::vector<T>& s) {
+        std::cerr << "Error: epsilon not defined for CellVTI_SH3D.";
+        return 1;
     }
     
     T computeDt(const NODE& source, const S& node,
@@ -916,7 +751,6 @@ public:
 private:
     std::vector<T> Vs0;
     std::vector<T> gamma;
-    
 };
 
 
