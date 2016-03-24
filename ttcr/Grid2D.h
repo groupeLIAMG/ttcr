@@ -62,6 +62,7 @@ public:
 	
     virtual int setSlowness(const std::vector<T1>& s) { return 0; }
     virtual int setXi(const std::vector<T1>& x) { return 1; }
+    virtual int setTiltAngle(const std::vector<T1>& x) { return 1; }
 
     
     virtual size_t getNumberOfNodes() const { return 0; }

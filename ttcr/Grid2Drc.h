@@ -43,6 +43,10 @@ public:
         return cells.setXi( x );
     }
     
+    int setTiltAngle(const std::vector<T1>& t) {
+        return cells.setTiltAngle( t );
+    }
+    
     virtual int raytrace(const std::vector<sxz<T1>>& Tx,
                          const std::vector<T1>& t0,
                          const std::vector<sxz<T1>>& Rx,

@@ -1430,6 +1430,12 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
                         std::cerr << "aborting";
                         std::abort();
                     }
+                    if ( foundTheta ) {
+                        if ( g->setTiltAngle( theta ) == 1 ) {
+                            std::cerr << "aborting";
+                            std::abort();
+                        }
+                    }
                     if ( foundXi ) {
                         if ( g->setXi( xi ) == 1 ) {
                             std::cerr << "aborting";
