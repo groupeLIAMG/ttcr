@@ -166,7 +166,8 @@ class CellTiltedElliptical {
 public:
     CellTiltedElliptical(const size_t n) :
     slowness(std::vector<T>(n)),
-    aAngle(std::vector<T>(n)),
+    xi(std::vector<T>(n)),
+    tAngle(std::vector<T>(n)),
     ca(std::vector<T>(n)),
     sa(std::vector<T>(n)) {
     }
@@ -194,12 +195,12 @@ public:
     }
     
     int setTiltAngle(const std::vector<T>& s) {
-        if ( aAngle.size() != s.size() ) {
+        if ( tAngle.size() != s.size() ) {
             std::cerr << "Error: angle vectors of incompatible size.";
             return 1;
         }
-        for ( size_t n=0; n<aAngle.size(); ++n ) {
-            aAngle[n] = s[n];
+        for ( size_t n=0; n<tAngle.size(); ++n ) {
+            tAngle[n] = s[n];
             ca[n] = std::cos(s[n]);
             sa[n] = std::sin(s[n]);
         }
@@ -254,9 +255,9 @@ public:
 private:
     std::vector<T> slowness;
     std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
-    std::vector<T> aAngle;    // column-wise (z axis) anisotropy angle of the cells, in radians
-    std::vector<T> ca;        // cosine of aAngle
-    std::vector<T> sa;        // sine of aAngle
+    std::vector<T> tAngle;    // column-wise (z axis) anisotropy angle of the cells, in radians
+    std::vector<T> ca;        // cosine of tAngle
+    std::vector<T> sa;        // sine of tAngle
 };
 
 
