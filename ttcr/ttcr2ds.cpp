@@ -29,7 +29,7 @@
 #include "Rcv.h"
 #include "Src.h"
 #include "ttcr_io.h"
-#include "utils_ttcr.h"
+#include "grids.h"
 
 using namespace std;
 

@@ -34,7 +34,7 @@
 #include "Src.h"
 #include "structs_ttcr.h"
 #include "ttcr_io.h"
-#include "utils_ttcr.h"
+#include "grids.h"
 
 using namespace std;
 

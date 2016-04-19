@@ -146,6 +146,7 @@
 		2B150F0F1BB1E7D500475F01 /* Grid2Drisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drisp.h; sourceTree = "<group>"; };
 		2B17F25F1C2B535D00F9C97F /* Grid2Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid2Drc.h; sourceTree = "<group>"; };
 		2B17F2601C2B6A1300F9C97F /* Grid2Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drcfs.h; sourceTree = "<group>"; };
+		2B3323751CA450D2005F3C8D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		2B39B6A518F860BD003985D6 /* Grid2Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dui.h; sourceTree = "<group>"; };
 		2B39B6A618F8808F003985D6 /* Grid2Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duisp.h; sourceTree = "<group>"; };
 		2B3CFD9E18FE137F005B4E1B /* Node2Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node2Di.h; sourceTree = "<group>"; };
@@ -220,7 +221,7 @@
 		2BC7090018EDA83B004DA2C9 /* Src.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Src.h; sourceTree = "<group>"; };
 		2BC7090118EDA83B004DA2C9 /* Src2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Src2D.h; sourceTree = "<group>"; };
 		2BC7090218EDA83B004DA2C9 /* structs_ttcr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = structs_ttcr.h; sourceTree = "<group>"; };
-		2BC7090318EDA83B004DA2C9 /* utils_ttcr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils_ttcr.h; sourceTree = "<group>"; };
+		2BC7090318EDA83B004DA2C9 /* grids.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = grids.h; sourceTree = "<group>"; };
 		2BC7090918EDAAA0004DA2C9 /* ttcr2d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2d.cpp; sourceTree = "<group>"; };
 		2BD0F4F418EED76000B3957F /* ttcr2ds */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2ds; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -365,6 +366,7 @@
 		2BC708D518EDA599004DA2C9 /* ttcr */ = {
 			isa = PBXGroup;
 			children = (
+				2B3323751CA450D2005F3C8D /* README.md */,
 				2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */,
 				2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */,
 				2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */,
@@ -422,7 +424,7 @@
 				2BC708FF18EDA83B004DA2C9 /* ttcr_io.h */,
 				2BC708F918EDA67F004DA2C9 /* ttcr_t.h */,
 				2BC708FA18EDA67F004DA2C9 /* utils.h */,
-				2BC7090318EDA83B004DA2C9 /* utils_ttcr.h */,
+				2BC7090318EDA83B004DA2C9 /* grids.h */,
 				2BC708FB18EDA67F004DA2C9 /* VTUReader.h */,
 				2B4CC10D18F5CDCC00D0B195 /* README.rtf */,
 				2BDE233B19DBA63F0001FC4D /* CMakeLists.txt */,

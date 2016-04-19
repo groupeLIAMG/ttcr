@@ -243,4 +243,16 @@ void saveRayPaths(const std::string &fname,
     
 }
 
+template<typename T>
+std::string to_string( const T & value )
+{
+    // utiliser un flux de sortie pour créer la chaîne
+    std::ostringstream oss;
+    // écrire la valeur dans le flux
+    oss << value;
+    // renvoyer une string
+    return oss.str();
+}
+
+
 #endif

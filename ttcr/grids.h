@@ -1,5 +1,5 @@
 //
-//  utils_ttcr.h
+//  grids.h
 //  ttcr_u
 //
 //  Created by Bernard Giroux on 2014-01-23.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_utils_ttcr_h
-#define ttcr_u_utils_ttcr_h
+#ifndef ttcr_u_grids_h
+#define ttcr_u_grids_h
 
 #include <chrono>
 #include <set>
@@ -72,17 +72,6 @@
 #include "Rcv2D.h"
 
 #include "utils.h"
-
-template<typename T>
-std::string to_string( const T & value )
-{
-    // utiliser un flux de sortie pour créer la chaîne
-    std::ostringstream oss;
-    // écrire la valeur dans le flux
-    oss << value;
-    // renvoyer une string
-    return oss.str();
-}
 
 template<typename T>
 Grid3D<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt) {
