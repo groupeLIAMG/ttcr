@@ -153,15 +153,8 @@ protected:
     
     T1 getTraveltime(const sxz<T1>& Rx, const size_t threadNo) const;
     
-//    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
-//					 const size_t threadNo) const;
-    
     T1 getTraveltime(const sxz<T1>& Rx, T2& nodeParentRx, T2& cellParentRx,
 					 const size_t threadNo) const;
-
-//    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
-//                     T2& nodeParentRx, T2& cellParentRx,
-//                     const size_t threadNo) const;
 
     void grad(sxz<T1> &g, const size_t i, const size_t j, const size_t nt=0) const;
     

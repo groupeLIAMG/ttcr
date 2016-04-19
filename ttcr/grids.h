@@ -1218,7 +1218,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
     std::vector<T> theta;
 	if ( pd->HasArray("P-wave velocity") ||
 		pd->HasArray("Velocity") ||
-		pd->HasArray("Slowness") ) {
+		pd->HasArray("Slowness") ) {  // properties defined at nodes
 		
 		for (int na = 0; na < pd->GetNumberOfArrays(); ++na) {
             if ( strcmp(pd->GetArrayName(na), "P-wave velocity")==0 ||
@@ -1318,7 +1318,7 @@ Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t
         }
         
 	} else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
-		cd->HasArray("Slowness") ) {
+		cd->HasArray("Slowness") ) { // properties defined at cells
         
         bool foundXi = false;
         bool foundTheta = false;

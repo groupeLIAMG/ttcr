@@ -508,7 +508,7 @@ int Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
         this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
         
         for (size_t ns=0; ns<r_data[n].size()-1; ++ns) {
-            sxz<T1> m = 0.5*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
+            sxz<T1> m = static_cast<T1>(0.5)*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
             cell.i = this->getCellNo( m );
             cell.v = r_data[n][ns].getDistance( r_data[n][ns+1] );
             

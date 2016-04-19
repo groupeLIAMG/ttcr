@@ -59,6 +59,15 @@ public:
                          std::vector<std::vector<T1>*>& traveltimes,
                          std::vector<std::vector<std::vector<S>>*>& r_data,
                          const size_t threadNo=0) const { return 0; }
+    
+    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                         const std::vector<T1>& t0,
+                         const std::vector<S>& Rx,
+                         std::vector<T1>& traveltimes,
+                         std::vector<std::vector<S>>& r_data,
+                         std::vector<std::vector<siv<T1>>>& l_data,
+                         const size_t threadNo=0) const { return 0; }
+
 	
     virtual int setSlowness(const std::vector<T1>& s) { return 0; }
     virtual int setXi(const std::vector<T1>& x) { return 1; }
@@ -79,6 +88,11 @@ public:
 	virtual const T1 getYmax() const { return 0; }
 	virtual const T1 getZmin() const { return 0; }
 	virtual const T1 getZmax() const { return 0; }
+    virtual const T1 getDx() const { return 0; }
+    virtual const T1 getDz() const { return 0; }
+    virtual const T2 getNcx() const { return 0; }
+    virtual const T2 getNcz() const { return 0; }
+
     
     virtual const int get_niter() const { return 0; }
     virtual const int get_niterw() const { return 0; }

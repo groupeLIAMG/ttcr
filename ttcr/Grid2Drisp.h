@@ -636,8 +636,8 @@ int Grid2Drisp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                    std::vector<std::vector<siv<double>>>& l_data,
                                    const size_t threadNo) const {
     
-    if ( checkPts(Tx) == 1 ) return 1;
-    if ( checkPts(Rx) == 1 ) return 1;
+    if ( this->checkPts(Tx) == 1 ) return 1;
+    if ( this->checkPts(Rx) == 1 ) return 1;
     
     for ( size_t n=0; n<this->nodes.size(); ++n ) {
         this->nodes[n].reinit( threadNo );
@@ -674,8 +674,8 @@ int Grid2Drisp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     
     for (size_t n=0; n<Rx.size(); ++n) {
         
-        traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
-                                       threadNo);
+        traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx, cellParentRx,
+                                             threadNo);
         
         // Rx are in nodes (not txNodes)
         std::vector<Node2Disp<T1,T2>> *node_p;

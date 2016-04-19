@@ -9,6 +9,8 @@
 #ifndef Cell_h
 #define Cell_h
 
+#include <cmath>
+#include <iostream>
 #include <vector>
 
 template <typename T, typename NODE, typename S>
