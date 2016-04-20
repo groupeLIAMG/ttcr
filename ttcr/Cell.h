@@ -86,7 +86,7 @@ class CellElliptical {
 public:
     CellElliptical(const size_t n) :
     slowness(std::vector<T>(n)),
-    xi(std::vector<T>(n)) {
+    xi(std::vector<T>(n,0.0)) {
     }
     
     int setSlowness(const std::vector<T>& s) {
@@ -168,10 +168,10 @@ class CellTiltedElliptical {
 public:
     CellTiltedElliptical(const size_t n) :
     slowness(std::vector<T>(n)),
-    xi(std::vector<T>(n)),
-    tAngle(std::vector<T>(n)),
-    ca(std::vector<T>(n)),
-    sa(std::vector<T>(n)) {
+    xi(std::vector<T>(n,0.0)),
+    tAngle(std::vector<T>(n,0.0)),
+    ca(std::vector<T>(n,1.0)),
+    sa(std::vector<T>(n,0.0)) {
     }
     
     int setSlowness(const std::vector<T>& s) {
