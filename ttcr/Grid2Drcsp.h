@@ -90,7 +90,7 @@ public:
                  const std::vector<sxz<T1>>& Rx,
                  std::vector<T1>& traveltimes,
                  std::vector<std::vector<sxz<double>>>& r_data,
-                 std::vector<std::vector<siv<double>>>& l_data,
+                 std::vector<std::vector<siv2<double>>>& l_data,
 				 const size_t threadNo=0) const;
 	
     const T2 getNsnx() const { return nsnx; }
@@ -139,7 +139,7 @@ protected:
                     T2& nodeParentRx, T2& cellParentRx,
 					const size_t threadNo) const;
 
-	T1 get_tt_corr(const siv<T1>& cell,
+	T1 get_tt_corr(const siv2<T1>& cell,
 				  const Grid2Drcsp<T1,T2,CELL> *grid,
 				  const size_t i) const {
 		return cell.v*(this->slowness[cell.i] - grid->slowness[i]);
@@ -699,7 +699,7 @@ int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
 							  const std::vector<sxz<T1>>& Rx,
 							  std::vector<T1>& traveltimes,
 							  std::vector<std::vector<sxz<double>>>& r_data,
-							  std::vector<std::vector<siv<double>>>& l_data,
+							  std::vector<std::vector<siv2<double>>>& l_data,
 							  const size_t threadNo) const {
     
 //    std::cout << Tx[0].z << '\t' << threadNo << '\n';
@@ -752,7 +752,7 @@ int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
         std::vector<sxz<double>> r_tmp;
         T2 iChild, iParent = nodeParentRx;
         sxz<double> child;
-        siv<double> cell;
+        siv2<double> cell;
 		
         // store the son's coord 
         child.x = Rx[n].x;
@@ -762,11 +762,12 @@ int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
  			
 			r_tmp.push_back( child );
 
-			cell.v = (*node_p)[iParent].getDistance( child );
+            //cell.v = (*node_p)[iParent].getDistance( child );
+            this->cells.computeDistance( (*node_p)[iParent], child, cell);
 			bool found=false;
 			for (size_t nc=0; nc<l_data[n].size(); ++nc) {
 				if ( l_data[n][nc].i == cell.i ) {
-					l_data[n][nc].v += cell.v;
+					l_data[n][nc] += cell;
 					found = true;
 				}
 			}
@@ -794,11 +795,12 @@ int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
 		// parent is now at Tx
 		r_tmp.push_back( child );
 		
-		cell.v = (*node_p)[iParent].getDistance( child );
+		//cell.v = (*node_p)[iParent].getDistance( child );
+        this->cells.computeDistance( (*node_p)[iParent], child, cell);
 		bool found=false;
 		for (size_t nc=0; nc<l_data[n].size(); ++nc) {
 			if ( l_data[n][nc].i == cell.i ) {
-				l_data[n][nc].v += cell.v;
+				l_data[n][nc] += cell;
 				found = true;
 			}
 		}
@@ -812,7 +814,7 @@ int Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
 		r_tmp.push_back( child );
 		
         //  must be sorted to build matrix L
-        sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
+        sort(l_data[n].begin(), l_data[n].end(), CompareSiv2_i<T1>());
         
         // the order should be from Tx to Rx, so we reorder...
         iParent = r_tmp.size();

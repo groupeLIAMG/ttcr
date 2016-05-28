@@ -342,13 +342,24 @@ template<typename T>
 struct siv {
     size_t i;   // index
     T v;        // value
+
+    siv<T>& operator+=(const siv<T>& s) {
+        v += s.v;
+        return *this;
+    }
 };
 
 template<typename T>
 struct siv2 {
     size_t i;    // index
-    T v1;        // first value
+    T v;         // first value
     T v2;        // second value
+    
+    siv2<T>& operator+=(const siv2<T>& s) {
+        v += s.v;
+        v2 += s.v2;
+        return *this;
+    }
 };
 
 template<typename T>

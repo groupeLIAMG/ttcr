@@ -13,6 +13,8 @@
 #include <iostream>
 #include <vector>
 
+#include "ttcr_t.h"
+
 template <typename T, typename NODE, typename S>
 class Cell {
 public:
@@ -72,6 +74,10 @@ public:
     T computeDt(const NODE& source, const NODE& node,
                 const size_t cellNo) const {
         return slowness[cellNo] * source.getDistance( node );
+    }
+    void computeDistance(const NODE& source, const S& node,
+                         siv2<T>& cell) const {
+        cell.v = source.getDistance( node );
     }
     
 private:
@@ -153,6 +159,11 @@ public:
         T lx = node.getX() - source.getX();
         T lz = node.getZ() - source.getZ();
         return slowness[cellNo] * std::sqrt( lx*lx + xi[cellNo]*lz*lz );
+    }
+    void computeDistance(const NODE& source, const S& node,
+                         siv2<T>& cell) const {
+        cell.v  = fabs(node.x - source.getX());
+        cell.v2 = fabs(node.z - source.getZ());
     }
     
 private:
@@ -253,7 +264,12 @@ public:
         
         return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*xi[cellNo]*t2*t2 );
     }
-    
+    void computeDistance(const NODE& source, const S& node,
+                         siv2<T>& cell) const {
+        cell.v  = fabs(node.x - source.getX());
+        cell.v2 = fabs(node.z - source.getZ());
+    }
+
 private:
     std::vector<T> slowness;
     std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***

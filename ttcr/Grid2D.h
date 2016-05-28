@@ -65,7 +65,7 @@ public:
                          const std::vector<S>& Rx,
                          std::vector<T1>& traveltimes,
                          std::vector<std::vector<S>>& r_data,
-                         std::vector<std::vector<siv<T1>>>& l_data,
+                         std::vector<std::vector<siv2<T1>>>& l_data,
                          const size_t threadNo=0) const { return 0; }
 
 	
