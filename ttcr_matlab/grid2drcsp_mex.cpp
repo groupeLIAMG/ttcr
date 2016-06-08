@@ -7,15 +7,18 @@
 //
 
 #include <thread>
+#include <vector>
 
 #include "mex.h"
 #include "class_handle.hpp"
 
+#include "Cell.h"
 #include "Grid2Drcsp.h"
 
 using namespace std;
+using namespace ttcr;
 
-typedef Grid2Drcsp<double,uint32_t> grid;
+typedef Grid2Drcsp<double,uint32_t,Cell<double, Node2Dcsp<double, uint32_t>, sxz<double>>> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -129,7 +132,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
         
-        if ( grid_instance->setSlowness(slowness, nSlowness) == 1 ) {
+        vector<double> slown(nSlowness);
+        for ( size_t n=0; n<nSlowness; ++n ) slown[n] = slowness[n];
+        
+        if ( grid_instance->setSlowness(slown) == 1 ) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         
@@ -164,7 +170,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
         
-        if ( grid_instance->setSlowness(slowness, nSlowness) == 1 ) {
+        vector<double> slown(nSlowness);
+        for ( size_t n=0; n<nSlowness; ++n ) slown[n] = slowness[n];
+        
+        if ( grid_instance->setSlowness(slown) == 1 ) {
             mexErrMsgTxt("Slowness values must be defined for each grid cell.");
         }
         
@@ -287,8 +296,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         vector<sxz<double>> vRx;
         vector<vector<double>> tt( vTx.size() );
         vector<vector<vector<sxz<double>>>> r_data( vTx.size() );
-        vector<vector<siv<double> > > L_data(nTx);
-        vector<vector<vector<siv<double> > > > l_data( vTx.size() );
+        vector<vector<siv2<double> > > L_data(nTx);
+        vector<vector<vector<siv2<double> > > > l_data( vTx.size() );
         
         if ( grid_instance->getNthreads() == 1 ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {

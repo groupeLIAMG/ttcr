@@ -27,6 +27,7 @@
 #include "msh2vtk_io.h"
 
 using namespace std;
+using namespace ttcr;
 
 int main(int argc, char * argv[])
 {

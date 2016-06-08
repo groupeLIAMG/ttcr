@@ -32,7 +32,7 @@
 #include "grids.h"
 
 using namespace std;
-
+using namespace ttcr;
 
 
 template<typename T>

@@ -1470,13 +1470,11 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					/Applications/MATLAB_R2014b.app/extern/include,
-					/Applications/MATLAB_R2014a.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
-					/Applications/MATLAB_R2014a.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
 				MACH_O_TYPE = mh_bundle;
@@ -1507,13 +1505,11 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					/Applications/MATLAB_R2014b.app/extern/include,
-					/Applications/MATLAB_R2014a.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
-					/Applications/MATLAB_R2014a.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
 				MACH_O_TYPE = mh_bundle;
@@ -1541,13 +1537,11 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					/Applications/MATLAB_R2014b.app/extern/include,
-					/Applications/MATLAB_R2014a.app/extern/include,
+					/Applications/MATLAB_R2015b.app/extern/include,
 				);
 				INSTALL_PATH = "$(HOME)/mexfiles";
 				LIBRARY_SEARCH_PATHS = (
-					/Applications/MATLAB_R2014b.app/bin/maci64,
-					/Applications/MATLAB_R2014a.app/bin/maci64,
+					/Applications/MATLAB_R2015b.app/bin/maci64,
 					"$(PROJECT_DIR)",
 				);
 				MACH_O_TYPE = mh_bundle;

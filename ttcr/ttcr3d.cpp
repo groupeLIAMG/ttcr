@@ -37,7 +37,7 @@
 #include "grids.h"
 
 using namespace std;
-
+using namespace ttcr;
 
 // Creates a template to be able to call body() for two formats: float or double
 template<typename T>
