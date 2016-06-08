@@ -12,6 +12,7 @@
 #include "Grid3Duifs.h"
 
 using namespace std;
+using namespace ttcr;
 
 typedef Grid3Duifs<double,uint32_t> grid;
 

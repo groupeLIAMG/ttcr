@@ -34,11 +34,10 @@
 #include "Src2D.h"
 #include "structs_ttcr.h"
 #include "ttcr_io.h"
-#include "utils_ttcr.h"
+#include "grids.h"
 
 using namespace std;
-
-
+using namespace ttcr;
 
 template<typename T>
 int body(const input_parameters &par) {

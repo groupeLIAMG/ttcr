@@ -35,137 +35,139 @@
 
 #include "Node.h"
 
-template<typename T1, typename T2>
-class Node3Dc : public Node<T1> {
-public:
-    Node3Dc(const size_t nt=1) :
-	nThreads(nt), 
-	x(0.0f), y(0.0f), z(0.0f),
-    gridIndex(std::numeric_limits<T2>::max()),
-    tt(nullptr),
-    owners(0)
-    {
-		tt = new T1[nt];
-		
-		for ( size_t n=0; n<nt; ++n ) {
-			tt[n] = std::numeric_limits<T1>::max();
-		}
-	}
-
-    Node3Dc(const T1 xx, const T1 yy, const T1 zz, const T2 index,
-            const size_t nt) :
-	nThreads(nt),
-    x(xx), y(yy), z(zz),
-    gridIndex(index),
-    tt(nullptr),
-    owners(0)
-    {
-		tt = new T1[nt];
-		
-		for ( size_t n=0; n<nt; ++n ) {
-			tt[n] = std::numeric_limits<T1>::max();
-		}
-    }
-	
-    Node3Dc(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
-			const size_t i) :
-	nThreads(nt),
-    x(xx), y(yy), z(zz),
-    gridIndex(std::numeric_limits<T2>::max()),
-    tt(nullptr),
-    owners(0)
-    {
-		tt = new T1[nt];
-		
-		for ( size_t n=0; n<nt; ++n ) {
-			tt[n] = std::numeric_limits<T1>::max();
-		}
-        tt[i]=t;
-    }
-	
-	Node3Dc(const Node3Dc<T1,T2>& node) :
-	nThreads(node.nThreads), 
-	x(node.x), y(node.y), z(node.z),
-    gridIndex(node.gridIndex),
-    tt(nullptr),
-    owners(node.owners)
-    {
-		tt = new T1[nThreads];
-		
-		for ( size_t n=0; n<nThreads; ++n ) {
-			tt[n] = node.tt[n];
-		}
-	}
-
-	~Node3Dc() {
-        delete [] tt;
-	}
-
-    // Sets the vectors to the right size of threads and initialize it
-    void reinit(const size_t n) {
-        tt[n] = std::numeric_limits<T1>::max();
+namespace ttcr {
+    
+    template<typename T1, typename T2>
+    class Node3Dc : public Node<T1> {
+    public:
+        Node3Dc(const size_t nt=1) :
+        nThreads(nt),
+        x(0.0f), y(0.0f), z(0.0f),
+        gridIndex(std::numeric_limits<T2>::max()),
+        tt(nullptr),
+        owners(0)
+        {
+            tt = new T1[nt];
+            
+            for ( size_t n=0; n<nt; ++n ) {
+                tt[n] = std::numeric_limits<T1>::max();
+            }
+        }
+        
+        Node3Dc(const T1 xx, const T1 yy, const T1 zz, const T2 index,
+                const size_t nt) :
+        nThreads(nt),
+        x(xx), y(yy), z(zz),
+        gridIndex(index),
+        tt(nullptr),
+        owners(0)
+        {
+            tt = new T1[nt];
+            
+            for ( size_t n=0; n<nt; ++n ) {
+                tt[n] = std::numeric_limits<T1>::max();
+            }
+        }
+        
+        Node3Dc(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
+                const size_t i) :
+        nThreads(nt),
+        x(xx), y(yy), z(zz),
+        gridIndex(std::numeric_limits<T2>::max()),
+        tt(nullptr),
+        owners(0)
+        {
+            tt = new T1[nt];
+            
+            for ( size_t n=0; n<nt; ++n ) {
+                tt[n] = std::numeric_limits<T1>::max();
+            }
+            tt[i]=t;
+        }
+        
+        Node3Dc(const Node3Dc<T1,T2>& node) :
+        nThreads(node.nThreads),
+        x(node.x), y(node.y), z(node.z),
+        gridIndex(node.gridIndex),
+        tt(nullptr),
+        owners(node.owners)
+        {
+            tt = new T1[nThreads];
+            
+            for ( size_t n=0; n<nThreads; ++n ) {
+                tt[n] = node.tt[n];
+            }
+        }
+        
+        ~Node3Dc() {
+            delete [] tt;
+        }
+        
+        // Sets the vectors to the right size of threads and initialize it
+        void reinit(const size_t n) {
+            tt[n] = std::numeric_limits<T1>::max();
+        }
+        
+        T1 getTT(const size_t n) const { return tt[n]; }
+        void setTT(const T1 t, const size_t n ) { tt[n] = t; }
+        
+        void setXYZindex(const T1 xx, const T1 yy, const T1 zz, const T2 index) {
+            x=xx; y=yy; z=zz; gridIndex = index;  }
+        
+        T1 getX() const { return x; }
+        void setX(const T1 xx) { x = xx; }
+        
+        T1 getY() const { return y; }
+        void setY(const T1 yy) { y = yy; }
+        
+        T1 getZ() const { return z; }
+        void setZ(const T1 zz) { z = zz; }
+        
+        T2 getGridIndex() const { return gridIndex; }
+        void setGridIndex(const T2 index) { gridIndex = index; }
+        
+        void pushOwner(const T2 o) { owners.push_back(o); }
+        const std::vector<T2>& getOwners() const { return owners; }
+        
+        T1 getDistance( const Node3Dc<T1,T2>& node ) const {
+            return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
+        }
+        
+        T1 getDistance( const sxyz<T1>& node ) const {
+            return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
+        }
+        
+        // operator to test if same location
+        bool operator==( const sxyz<T1>& node ) const {
+            return fabs(x-node.x)<small && fabs(y-node.y)<small && fabs(z-node.z)<small;
+        }
+        
+        size_t getSize() const {
+            return sizeof(size_t) + nThreads*sizeof(T1) + 3*sizeof(T1) +
+            (1+2*nThreads)*sizeof(T2) + owners.size() * sizeof(T2);
+        }
+        
+        int getDimension() const { return 3; }
+        
+        const bool isPrimary() const { return true; }
+        
+    private:
+        size_t nThreads;
+        T1 x;                       // x coordinate [km]
+        T1 y;						// y coordinate [km]
+        T1 z;                       // z coordinate [km]
+        T2 gridIndex;               // index of this node in the list of the grid
+        T1 *tt;                     // travel time for the multiple source points
+        std::vector<T2> owners;     // indices of cells touching the node
+        
+    };
+    
+    template<typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const Node3Dc<T1, T2> &n) {
+        os << n.getX() << ' ' << n.getY() << ' ' << n.getZ();
+        return os;
     }
     
-    T1 getTT(const size_t n) const { return tt[n]; }
-    void setTT(const T1 t, const size_t n ) { tt[n] = t; }
-
-	void setXYZindex(const T1 xx, const T1 yy, const T1 zz, const T2 index) {
-		x=xx; y=yy; z=zz; gridIndex = index;  }
-
-    T1 getX() const { return x; }
-    void setX(const T1 xx) { x = xx; }
-    
-    T1 getY() const { return y; }
-    void setY(const T1 yy) { y = yy; }
-
-    T1 getZ() const { return z; }
-    void setZ(const T1 zz) { z = zz; }
-    
-    T2 getGridIndex() const { return gridIndex; }
-    void setGridIndex(const T2 index) { gridIndex = index; }
-    
-    void pushOwner(const T2 o) { owners.push_back(o); }
-    const std::vector<T2>& getOwners() const { return owners; }
-    
-    T1 getDistance( const Node3Dc<T1,T2>& node ) const {
-        return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
-    }
-
-    T1 getDistance( const sxyz<T1>& node ) const {
-        return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
-    }
-	
-	// operator to test if same location
-	bool operator==( const sxyz<T1>& node ) const {
-		return fabs(x-node.x)<small && fabs(y-node.y)<small && fabs(z-node.z)<small;
-	}
-
-    size_t getSize() const {
-        return sizeof(size_t) + nThreads*sizeof(T1) + 3*sizeof(T1) +
-        (1+2*nThreads)*sizeof(T2) + owners.size() * sizeof(T2);
-    }
-
-	int getDimension() const { return 3; }
-    
-    const bool isPrimary() const { return true; }
-	
-private:
-	size_t nThreads;
-    T1 x;                       // x coordinate [km]
-    T1 y;						// y coordinate [km]
-    T1 z;                       // z coordinate [km]
-    T2 gridIndex;               // index of this node in the list of the grid
-    T1 *tt;                     // travel time for the multiple source points
-    std::vector<T2> owners;     // indices of cells touching the node
-	
-};
-
-template<typename T1, typename T2>
-std::ostream& operator<< (std::ostream& os, const Node3Dc<T1, T2> &n) {
-    os << n.getX() << ' ' << n.getY() << ' ' << n.getZ();
-    return os;
 }
-
-
 
 #endif

@@ -45,2246 +45,2236 @@
 
 #include "Grid2D.h"
 
-template<typename T1, typename T2, typename NODE>
-class Grid2Dri : public Grid2D<T1,T2,sxz<T1>> {
-public:
-    Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-			 const T1 minx, const T1 minz, const size_t nt=1);
+namespace ttcr {
     
-    virtual ~Grid2Dri() {
-    }
+    template<typename T1, typename T2, typename NODE>
+    class Grid2Dri : public Grid2D<T1,T2,sxz<T1>> {
+    public:
+        Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+                 const T1 minx, const T1 minz, const size_t nt=1);
+        
+        virtual ~Grid2Dri() {
+        }
+        
+        virtual int setSlowness(const std::vector<T1>& s) {
+            if ( nodes.size() != s.size() ) {
+                std::cerr << "Error: slowness vectors of incompatible size.";
+                return 1;
+            }
+            for ( size_t n=0; n<nodes.size(); ++n ) {
+                nodes[n].setNodeSlowness( s[n] );
+            }
+            return 0;
+        }
+        
+        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<sxz<T1>>& Rx,
+                             std::vector<T1>& traveltimes,
+                             const size_t threadNo=0) const { return 0; }
+        
+        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                             std::vector<std::vector<T1>*>& traveltimes,
+                             const size_t threadNo=0) const { return 0; }
+        
+        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<sxz<T1>>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<sxz<T1>>>& r_data,
+                             const size_t threadNo=0) const { return 0; }
+        
+        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                             std::vector<std::vector<T1>*>& traveltimes,
+                             std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                             const size_t threadNo=0) const { return 0; }
+        
+        size_t getNumberOfNodes() const { return nodes.size(); }
+        
+        void saveSlownessXYZ(const char filename[]) const {
+            std::ofstream fout( filename );
+            
+            for ( size_t n=0; n<nodes.size(); ++n ) {
+                fout << nodes[n].getX() << "   " << nodes[n].getZ() << "   " << nodes[n].getNodeSlowness() << '\n';
+            }
+            
+            fout.close();
+        }
+        
+        void saveTT(const std::string &, const int, const size_t nt=0,
+                    const bool vtkFormat=0) const;
+        
+        void saveTTgrad(const std::string &, const size_t nt=0,
+                        const bool vtkFormat=0) const;
+        
+        //    void saveTTgrad2(const std::string &, const size_t nt=0,
+        //                     const bool vtkFormat=0) const;
+        
+        virtual const int get_niter() const { return 0; }
+        virtual const int get_niterw() const { return 0; }
+        
+        const size_t getNthreads() const { return nThreads; }
+        const T1 getXmin() const { return xmin; }
+        const T1 getZmin() const { return zmin; }
+        const T1 getDx() const { return dx; }
+        const T1 getDz() const { return dz; }
+        const T2 getNcx() const { return ncx; }
+        const T2 getNcz() const { return ncz; }
+        
+    protected:
+        size_t nThreads;
+        T1 dx;           // cell size in x
+        T1 dz;           // cell size in z
+        T1 xmin;         // x origin of the grid
+        T1 zmin;         // z origin of the grid
+        T1 xmax;         // x end of the grid
+        T1 zmax;         // z end of the grid
+        T2 ncx;          // number of cells in x
+        T2 ncz;          // number of cells in x
+        
+        mutable std::vector<NODE> nodes;
+        
+        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
+        void buildGridNeighbors();
+        
+        T1 computeDt(const NODE& source, const NODE& node) const {
+            return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
+        }
+        
+        T1 computeDt(const NODE& source, const sxz<T1>& node, T1 slo) const {
+            return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
+        }
+        
+        int checkPts(const std::vector<sxz<T1>>&) const;
+        
+        bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
+        
+        T1 getTraveltime(const sxz<T1>& Rx, const size_t threadNo) const;
+        
+        T1 getTraveltime(const sxz<T1>& Rx, T2& nodeParentRx, T2& cellParentRx,
+                         const size_t threadNo) const;
+        
+        void grad(sxz<T1> &g, const size_t i, const size_t j, const size_t nt=0) const;
+        
+        void grad(sxz<T1> &g, const sxz<T1> &pt, const size_t nt=0) const;
+        
+        void getRaypath(const std::vector<sxz<T1>>& Tx,
+                        const sxz<T1> &Rx,
+                        std::vector<sxz<T1>> &r_data,
+                        const size_t threadNo=0) const;
+        void getRaypath_old(const std::vector<sxz<T1>>& Tx,
+                            const sxz<T1> &Rx,
+                            std::vector<sxz<T1>> &r_data,
+                            const size_t threadNo=0) const;
+        void getRaypath_old2(const std::vector<sxz<T1>>& Tx,
+                             const sxz<T1> &Rx,
+                             std::vector<sxz<T1>> &r_data,
+                             const size_t threadNo=0) const;
+        
+        T2 getCellNo(const sxz<T1>& pt) const {
+            T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
+            T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
+            T2 nx = static_cast<T2>( small + (x-xmin)/dx );
+            T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+            return nx*ncz + nz;
+        }
+        
+        void getIJ(const sxz<T1>& pt, T2& i, T2& j) const {
+            i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            j = static_cast<T2>( small + (pt.z-zmin)/dz );
+        }
+        
+        void getIJ(const sxz<T1>& pt, long long& i, long long& j) const {
+            i = static_cast<long long>( small + (pt.x-xmin)/dx );
+            j = static_cast<long long>( small + (pt.z-zmin)/dz );
+        }
+        
+        void sweep(const std::vector<bool>& frozen,
+                   const size_t threadNo) const;
+        void sweep45(const std::vector<bool>& frozen,
+                     const size_t threadNo) const;
+        void sweep_xz(const std::vector<bool>& frozen,
+                      const size_t threadNo) const;
+        void sweep_weno3(const std::vector<bool>& frozen,
+                         const size_t threadNo) const;
+        void sweep_weno3_xz(const std::vector<bool>& frozen,
+                            const size_t threadNo) const;
+        
+        void update_node(const size_t, const size_t, const size_t=0) const;
+        void update_node45(const size_t, const size_t, const size_t=0) const;
+        void update_node_xz(const size_t, const size_t, const size_t=0) const;
+        void update_node_weno3(const size_t, const size_t, const size_t=0) const;
+        void update_node_weno3_xz(const size_t, const size_t, const size_t=0) const;
+        
+        void initFSM(const std::vector<sxz<T1>>& Tx,
+                     const std::vector<T1>& t0, std::vector<bool>& frozen,
+                     const int npts, const size_t threadNo) const;
+        
+        T1 getSlowness(const sxz<T1>& Rx) const;
+        
+    private:
+        Grid2Dri() {}
+        Grid2Dri(const Grid2Dri<T1,T2,NODE>& g) {}
+        Grid2Dri<T1,T2,NODE>& operator=(const Grid2Dri<T1,T2,NODE>& g) {}
+        
+    };
     
-    void setSlowness(const T1 s) {
-        for ( size_t n=0; n<nodes.size(); ++n ) {
-        	nodes[n].setNodeSlowness( s );
+    template<typename T1, typename T2, typename NODE>
+    Grid2Dri<T1,T2,NODE>::Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+                                   const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
+    dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
+    ncx(nx), ncz(nz),
+    nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
+    neighbors(std::vector<std::vector<T2>>(ncx*ncz))
+    { }
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::buildGridNeighbors() {
+        for ( T2 n=0; n<nodes.size(); ++n ) {
+            for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
+                neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
+            }
         }
     }
     
-    virtual int setSlowness(const std::vector<T1>& s) {
-        if ( nodes.size() != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
-        }
-        for ( size_t n=0; n<nodes.size(); ++n ) {
-            nodes[n].setNodeSlowness( s[n] );
+    template<typename T1, typename T2, typename NODE>
+    int Grid2Dri<T1,T2,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
+        for (size_t n=0; n<pts.size(); ++n) {
+            if ( pts[n].x < xmin || pts[n].x > xmax ||
+                pts[n].z < zmin || pts[n].z > zmax ) {
+                std::cerr << "Error: point no " << (n+1)
+                << " outside the grid.\n";
+                return 1;
+            }
         }
         return 0;
     }
     
-    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                         const std::vector<T1>& t0,
-                         const std::vector<sxz<T1>>& Rx,
-                         std::vector<T1>& traveltimes,
-                         const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                         const std::vector<T1>& t0,
-                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                         std::vector<std::vector<T1>*>& traveltimes,
-                         const size_t threadNo=0) const { return 0; }
     
-    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                         const std::vector<T1>& t0,
-                         const std::vector<sxz<T1>>& Rx,
-                         std::vector<T1>& traveltimes,
-                         std::vector<std::vector<sxz<T1>>>& r_data,
-                         const size_t threadNo=0) const { return 0; }
+    template<typename T1, typename T2, typename NODE>
+    bool Grid2Dri<T1,T2,NODE>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
+        bool c = false;
+        for (size_t i = 0, j = N-1; i < N; j = i++) {
+            if ((((poly[i].z <= p.z) && (p.z < poly[j].z)) ||
+                 ((poly[j].z <= p.z) && (p.z < poly[i].z))) &&
+                (p.x < (poly[j].x - poly[i].x) * (p.z - poly[i].z) / (poly[j].z - poly[i].z) + poly[i].x))
+                c = !c;
+        }
+        return c;
+    }
     
-    virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                         const std::vector<T1>& t0,
-                         const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                         std::vector<std::vector<T1>*>& traveltimes,
-                         std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
-                         const size_t threadNo=0) const { return 0; }
-	
-    size_t getNumberOfNodes() const { return nodes.size(); }
     
-    void saveSlownessXYZ(const char filename[]) const {
-        std::ofstream fout( filename );
+    
+    //template<typename T1, typename T2, typename NODE>
+    //T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+    //                                       const std::vector<NODE>& nodes,
+    //                                       const size_t threadNo) const {
+    //
+    //    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+    //        if ( nodes[nn] == Rx ) {
+    //            return nodes[nn].getTT(threadNo);
+    //        }
+    //    }
+    //
+    //    T1 slownessRx = getSlowness( Rx );
+    //
+    //    T2 cellNo = getCellNo( Rx );
+    //    T2 neibNo = neighbors[cellNo][0];
+    //    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
+    //
+    //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+    //    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+    //        neibNo = neighbors[cellNo][k];
+    //        dt = computeDt(nodes[neibNo], Rx, slownessRx);
+    //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+    //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+    //        }
+    //    }
+    //    return traveltime;
+    //}
+    
+    template<typename T1, typename T2, typename NODE>
+    T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1> &pt, const size_t nt) const {
         
-		for ( size_t n=0; n<nodes.size(); ++n ) {
-			fout << nodes[n].getX() << "   " << nodes[n].getZ() << "   " << nodes[n].getNodeSlowness() << '\n';
+        // bilinear interpolation if not on node
+        
+        T1 tt;
+        T2 i, j;
+        
+        getIJ(pt, i, j);
+        
+        if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+            // on node
+            return nodes[i*(ncz+1)+j].getTT(nt);
+        } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+            
+            // on edge
+            T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
+            T1 t2 = nodes[i*(ncz+1)+j+1].getTT(nt);
+            
+            T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
+            T1 w2 = (pt.z - (zmin+j*dz))/dz;
+            
+            tt = t1*w1 + t2*w2;
+            
+        } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+            
+            // on edge
+            T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
+            T1 t2 = nodes[(i+1)*(ncz+1)+j].getTT(nt);
+            
+            T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+            T1 w2 = (pt.x - (xmin+i*dx))/dx;
+            
+            tt = t1*w1 + t2*w2;
+            
+        } else {
+            
+            T1 t1 = nodes[    i*(ncz+1)+j  ].getTT(nt);
+            T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getTT(nt);
+            T1 t3 = nodes[    i*(ncz+1)+j+1].getTT(nt);
+            T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getTT(nt);
+            
+            T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+            T1 w2 = (pt.x - (xmin+i*dx))/dx;
+            
+            t1 = t1*w1 + t2*w2;
+            t2 = t3*w1 + t4*w2;
+            
+            w1 = (zmin+(j+1)*dz - pt.z)/dz;
+            w2 = (pt.z - (zmin+j*dz))/dz;
+            
+            tt = t1*w1 + t2*w2;
         }
         
-        fout.close();
+        return tt;
     }
     
-    void saveTT(const std::string &, const int, const size_t nt=0,
-                const bool vtkFormat=0) const;
-
-    void saveTTgrad(const std::string &, const size_t nt=0,
-                    const bool vtkFormat=0) const;
-
-//    void saveTTgrad2(const std::string &, const size_t nt=0,
-//                     const bool vtkFormat=0) const;
-
-    virtual const int get_niter() const { return 0; }
-    virtual const int get_niterw() const { return 0; }
-
-    const size_t getNthreads() const { return nThreads; }
-    const T1 getXmin() const { return xmin; }
-    const T1 getZmin() const { return zmin; }
-    const T1 getDx() const { return dx; }
-    const T1 getDz() const { return dz; }
-    const T2 getNcx() const { return ncx; }
-    const T2 getNcz() const { return ncz; }
-
-protected:
-	size_t nThreads;
-    T1 dx;           // cell size in x
-    T1 dz;           // cell size in z
-    T1 xmin;         // x origin of the grid
-    T1 zmin;         // z origin of the grid
-    T1 xmax;         // x end of the grid
-    T1 zmax;         // z end of the grid
-    T2 ncx;          // number of cells in x
-    T2 ncz;          // number of cells in x
     
-    mutable std::vector<NODE> nodes;
-    
-    std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
-    void buildGridNeighbors();
-	
-	T1 computeDt(const NODE& source, const NODE& node) const {
-		return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
-	}
-    
-    T1 computeDt(const NODE& source, const sxz<T1>& node, T1 slo) const {
-		return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
-	}
-    
-    int checkPts(const std::vector<sxz<T1>>&) const;
-    
-    bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
-    
-    T1 getTraveltime(const sxz<T1>& Rx, const size_t threadNo) const;
-    
-//    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
-//					 const size_t threadNo) const;
-    
-    T1 getTraveltime(const sxz<T1>& Rx, T2& nodeParentRx, T2& cellParentRx,
-					 const size_t threadNo) const;
-
-//    T1 getTraveltime(const sxz<T1>& Rx, const std::vector<NODE>& nodes,
-//                     T2& nodeParentRx, T2& cellParentRx,
-//                     const size_t threadNo) const;
-
-    void grad(sxz<T1> &g, const size_t i, const size_t j, const size_t nt=0) const;
-    
-    void grad(sxz<T1> &g, const sxz<T1> &pt, const size_t nt=0) const;
-    
-    void getRaypath(const std::vector<sxz<T1>>& Tx,
-                    const sxz<T1> &Rx,
-                    std::vector<sxz<T1>> &r_data,
-                    const size_t threadNo=0) const;
-    void getRaypath_old(const std::vector<sxz<T1>>& Tx,
-                        const sxz<T1> &Rx,
-                        std::vector<sxz<T1>> &r_data,
-                        const size_t threadNo=0) const;
-    void getRaypath_old2(const std::vector<sxz<T1>>& Tx,
-                         const sxz<T1> &Rx,
-                         std::vector<sxz<T1>> &r_data,
-                         const size_t threadNo=0) const;
-    
-    T2 getCellNo(const sxz<T1>& pt) const {
-        T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
-        T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
-        T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-        T2 nz = static_cast<T2>( small + (z-zmin)/dz );
-        return nx*ncz + nz;
-    }
-    
-    void getIJ(const sxz<T1>& pt, T2& i, T2& j) const {
-        i = static_cast<T2>( small + (pt.x-xmin)/dx );
-        j = static_cast<T2>( small + (pt.z-zmin)/dz );
-    }
-    
-    void getIJ(const sxz<T1>& pt, long long& i, long long& j) const {
-        i = static_cast<long long>( small + (pt.x-xmin)/dx );
-        j = static_cast<long long>( small + (pt.z-zmin)/dz );
-    }
-
-    void sweep(const std::vector<bool>& frozen,
-               const size_t threadNo) const;
-    void sweep45(const std::vector<bool>& frozen,
-                 const size_t threadNo) const;
-    void sweep_xz(const std::vector<bool>& frozen,
-                  const size_t threadNo) const;
-    void sweep_weno3(const std::vector<bool>& frozen,
-                     const size_t threadNo) const;
-    void sweep_weno3_xz(const std::vector<bool>& frozen,
-                        const size_t threadNo) const;
-    
-    void update_node(const size_t, const size_t, const size_t=0) const;
-    void update_node45(const size_t, const size_t, const size_t=0) const;
-    void update_node_xz(const size_t, const size_t, const size_t=0) const;
-    void update_node_weno3(const size_t, const size_t, const size_t=0) const;
-    void update_node_weno3_xz(const size_t, const size_t, const size_t=0) const;
-
-    void initFSM(const std::vector<sxz<T1>>& Tx,
-                 const std::vector<T1>& t0, std::vector<bool>& frozen,
-                 const int npts, const size_t threadNo) const;
-    
-    T1 getSlowness(const sxz<T1>& Rx) const;
-    
-private:
-    Grid2Dri() {}
-    Grid2Dri(const Grid2Dri<T1,T2,NODE>& g) {}
-    Grid2Dri<T1,T2,NODE>& operator=(const Grid2Dri<T1,T2,NODE>& g) {}
-    
-};
-
-template<typename T1, typename T2, typename NODE>
-Grid2Dri<T1,T2,NODE>::Grid2Dri(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-						  const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
-dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
-ncx(nx), ncz(nz),
-nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
-neighbors(std::vector<std::vector<T2>>(ncx*ncz))
-{ }
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::buildGridNeighbors() {
-    for ( T2 n=0; n<nodes.size(); ++n ) {
-        for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
-            neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
-        }
-    }
-}
-
-template<typename T1, typename T2, typename NODE>
-int Grid2Dri<T1,T2,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
-    for (size_t n=0; n<pts.size(); ++n) {
-        if ( pts[n].x < xmin || pts[n].x > xmax ||
-            pts[n].z < zmin || pts[n].z > zmax ) {
-            std::cerr << "Error: point no " << (n+1)
-            << " outside the grid.\n";
-            return 1;
-        }
-    }
-    return 0;
-}
-
-
-
-template<typename T1, typename T2, typename NODE>
-bool Grid2Dri<T1,T2,NODE>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
-    bool c = false;
-    for (size_t i = 0, j = N-1; i < N; j = i++) {
-        if ((((poly[i].z <= p.z) && (p.z < poly[j].z)) ||
-             ((poly[j].z <= p.z) && (p.z < poly[i].z))) &&
-            (p.x < (poly[j].x - poly[i].x) * (p.z - poly[i].z) / (poly[j].z - poly[i].z) + poly[i].x))
-            c = !c;
-    }
-    return c;
-}
-
-
-
-//template<typename T1, typename T2, typename NODE>
-//T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-//                                       const std::vector<NODE>& nodes,
-//                                       const size_t threadNo) const {
-//    
-//    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-//        if ( nodes[nn] == Rx ) {
-//            return nodes[nn].getTT(threadNo);
-//        }
-//    }
-//    
-//    T1 slownessRx = getSlowness( Rx );
-//    
-//    T2 cellNo = getCellNo( Rx );
-//    T2 neibNo = neighbors[cellNo][0];
-//    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
-//    
-//    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-//    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-//        neibNo = neighbors[cellNo][k];
-//        dt = computeDt(nodes[neibNo], Rx, slownessRx);
-//        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-//            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-//        }
-//    }
-//    return traveltime;
-//}
-
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1> &pt, const size_t nt) const {
-    
-    // bilinear interpolation if not on node
-    
-    T1 tt;
-    T2 i, j;
-    
-    getIJ(pt, i, j);
-    
-    if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
-        // on node
-        return nodes[i*(ncz+1)+j].getTT(nt);
-    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+    template<typename T1, typename T2, typename NODE>
+    T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+                                           T2& nodeParentRx, T2& cellParentRx,
+                                           const size_t threadNo) const {
         
-        // on edge
-        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
-        T1 t2 = nodes[i*(ncz+1)+j+1].getTT(nt);
-        
-        T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
-        T1 w2 = (pt.z - (zmin+j*dz))/dz;
-        
-        tt = t1*w1 + t2*w2;
-        
-    } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
-        
-        // on edge
-        T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
-        T1 t2 = nodes[(i+1)*(ncz+1)+j].getTT(nt);
-        
-        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-        T1 w2 = (pt.x - (xmin+i*dx))/dx;
-        
-        tt = t1*w1 + t2*w2;
-        
-    } else {
-        
-        T1 t1 = nodes[    i*(ncz+1)+j  ].getTT(nt);
-        T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getTT(nt);
-        T1 t3 = nodes[    i*(ncz+1)+j+1].getTT(nt);
-        T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getTT(nt);
-        
-        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-        T1 w2 = (pt.x - (xmin+i*dx))/dx;
-        
-        t1 = t1*w1 + t2*w2;
-        t2 = t3*w1 + t4*w2;
-        
-        w1 = (zmin+(j+1)*dz - pt.z)/dz;
-        w2 = (pt.z - (zmin+j*dz))/dz;
-        
-        tt = t1*w1 + t2*w2;
-    }
-    
-    return tt;
-}
-
-
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-                                       T2& nodeParentRx, T2& cellParentRx,
-                                       const size_t threadNo) const {
-    
-    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-        if ( nodes[nn] == Rx ) {
-            nodeParentRx = nodes[nn].getNodeParent(threadNo);
-            cellParentRx = nodes[nn].getCellParent(threadNo);
-            return nodes[nn].getTT(threadNo);
-        }
-    }
-    
-    T1 slownessRx = getSlowness( Rx );
-    
-    T2 cellNo = getCellNo( Rx );
-    T2 neibNo = neighbors[cellNo][0];
-    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
-    
-    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    nodeParentRx = neibNo;
-    cellParentRx = cellNo;
-    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-        neibNo = neighbors[cellNo][k];
-        dt = computeDt(nodes[neibNo], Rx, slownessRx);
-        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-            nodeParentRx = neibNo;
-        }
-    }
-    return traveltime;
-}
-
-//template<typename T1, typename T2, typename NODE>
-//T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
-//                                       const std::vector<NODE>& nodes,
-//                                       T2& nodeParentRx, T2& cellParentRx,
-//                                       const size_t threadNo) const {
-//    
-//    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-//        if ( nodes[nn] == Rx ) {
-//            nodeParentRx = nodes[nn].getNodeParent(threadNo);
-//            cellParentRx = nodes[nn].getCellParent(threadNo);
-//            return nodes[nn].getTT(threadNo);
-//        }
-//    }
-//    
-//    T1 slownessRx = getSlowness( Rx );
-//    
-//    T2 cellNo = getCellNo( Rx );
-//    T2 neibNo = neighbors[cellNo][0];
-//    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
-//    
-//    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-//    nodeParentRx = neibNo;
-//    cellParentRx = cellNo;
-//    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-//        neibNo = neighbors[cellNo][k];
-//        dt = computeDt(nodes[neibNo], Rx, slownessRx);
-//        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-//            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-//            nodeParentRx = neibNo;
-//        }
-//    }
-//    return traveltime;
-//}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
-                                  const size_t nt,
-                                  const bool vtkFormat) const {
-    
-    if (vtkFormat) {
-#ifdef VTK
-
-        std::string filename = fname+".vtr";
-        int nn[3] = {static_cast<int>(ncx+1), 1, static_cast<int>(ncz+1)};
-        
-        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t n=0; n<nn[0]; ++n)
-            xCoords->InsertNextValue( xmin + n*dx );
-        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        yCoords->InsertNextValue( 0.0 );
-        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t n=0; n<nn[2]; ++n)
-            zCoords->InsertNextValue( zmin + n*dz );
-        
-        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-        rgrid->SetDimensions( nn );
-        rgrid->SetXCoordinates(xCoords);
-        rgrid->SetYCoordinates(yCoords);
-        rgrid->SetZCoordinates(zCoords);
-
-        
-        vtkSmartPointer<vtkDoubleArray> newScalars =
-        vtkSmartPointer<vtkDoubleArray>::New();
-        
-        newScalars->SetName("Travel time");
-        newScalars->SetNumberOfComponents(1);
-        newScalars->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
-        
-        
-        for ( size_t n=0; n<nodes.size(); ++n ) {
-            if ( nodes[n].isPrimary() == true ) {
-                vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
-                newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == Rx ) {
+                nodeParentRx = nodes[nn].getNodeParent(threadNo);
+                cellParentRx = nodes[nn].getCellParent(threadNo);
+                return nodes[nn].getTT(threadNo);
             }
         }
-        rgrid->GetPointData()->SetScalars(newScalars);
         
-        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
-        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+        T1 slownessRx = getSlowness( Rx );
         
-        writer->SetFileName( filename.c_str() );
-        writer->SetInputData( rgrid );
-        writer->SetDataModeToBinary();
-        writer->Update();
-#else
-        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
-#endif
-    } else {
-        std::ofstream fout(fname.c_str());
-        fout.precision(12);
-        for ( T2 n=0; n<nodes.size(); ++n ) {
-            if ( nodes[n].isPrimary() == true || all==1 ) {
-
-                fout << nodes[n].getX() << '\t'
-                << nodes[n].getZ() << '\t'
-                << nodes[n].getTT(nt) << '\n';
+        T2 cellNo = getCellNo( Rx );
+        T2 neibNo = neighbors[cellNo][0];
+        T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
+        
+        T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+        nodeParentRx = neibNo;
+        cellParentRx = cellNo;
+        for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+            neibNo = neighbors[cellNo][k];
+            dt = computeDt(nodes[neibNo], Rx, slownessRx);
+            if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+                traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+                nodeParentRx = neibNo;
             }
         }
-        fout.close();
+        return traveltime;
     }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
+    
+    //template<typename T1, typename T2, typename NODE>
+    //T1 Grid2Dri<T1,T2,NODE>::getTraveltime(const sxz<T1>& Rx,
+    //                                       const std::vector<NODE>& nodes,
+    //                                       T2& nodeParentRx, T2& cellParentRx,
+    //                                       const size_t threadNo) const {
+    //
+    //    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+    //        if ( nodes[nn] == Rx ) {
+    //            nodeParentRx = nodes[nn].getNodeParent(threadNo);
+    //            cellParentRx = nodes[nn].getCellParent(threadNo);
+    //            return nodes[nn].getTT(threadNo);
+    //        }
+    //    }
+    //
+    //    T1 slownessRx = getSlowness( Rx );
+    //
+    //    T2 cellNo = getCellNo( Rx );
+    //    T2 neibNo = neighbors[cellNo][0];
+    //    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
+    //
+    //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+    //    nodeParentRx = neibNo;
+    //    cellParentRx = cellNo;
+    //    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
+    //        neibNo = neighbors[cellNo][k];
+    //        dt = computeDt(nodes[neibNo], Rx, slownessRx);
+    //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+    //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+    //            nodeParentRx = neibNo;
+    //        }
+    //    }
+    //    return traveltime;
+    //}
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::saveTT(const std::string& fname, const int all,
                                       const size_t nt,
                                       const bool vtkFormat) const {
-    
-    if (vtkFormat) {
+        
+        if (vtkFormat) {
 #ifdef VTK
-        
-        std::string filename = fname+".vtr";
-        int nn[3] = {static_cast<int>(ncx), 1, static_cast<int>(ncz)};
-        
-        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t n=0; n<nn[0]; ++n)
-            xCoords->InsertNextValue( xmin + (0.5+n)*dx );
-        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        yCoords->InsertNextValue( 0.0 );
-        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-        for (size_t n=0; n<nn[2]; ++n)
-            zCoords->InsertNextValue( zmin + (0.5+n)*dz );
-        
-        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-        rgrid->SetDimensions( nn );
-        rgrid->SetXCoordinates(xCoords);
-        rgrid->SetYCoordinates(yCoords);
-        rgrid->SetZCoordinates(zCoords);
-        
-        
-        vtkSmartPointer<vtkDoubleArray> grad_tt =
-        vtkSmartPointer<vtkDoubleArray>::New();
-        
-        grad_tt->SetName("grad tt");
-        grad_tt->SetNumberOfComponents(3);
-        grad_tt->SetComponentName(0, "x");
-        grad_tt->SetComponentName(1, "y");
-        grad_tt->SetComponentName(2, "z");
-        grad_tt->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
-        
-        
-        double x[3];
-        x[1] = 0.0;
-        for ( size_t i=0; i<ncx; ++i ) {
-            for ( size_t j=0; j<ncz; ++j ) {
-                sxz<T1> g;
-                grad(g, i, j, nt);
-                
-                x[0] = xmin + (i+0.5)*dx;
-                x[2] = zmin + (j+0.5)*dz;
-                
-                vtkIdType id = rgrid->FindPoint(x);
-                grad_tt->SetTuple3(id, g.x, 0.0, g.z );
-            }
-        }
-        rgrid->GetPointData()->SetVectors( grad_tt );
-        
-        
-        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
-        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
-        
-        writer->SetFileName( filename.c_str() );
-        writer->SetInputData( rgrid );
-        writer->SetDataModeToBinary();
-        writer->Update();
-#else
-        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
-#endif
-    } else {
-        std::ofstream fout(fname.c_str());
-        fout.precision(12);
-        for ( size_t i=0; i<ncx; ++i ) {
-            for ( size_t j=0; j<ncz; ++j ) {
-                sxz<T1> g;
-                grad(g, i, j, nt);
-                
-                T1 x = xmin + (i+0.5)*dx;
-                T1 z = zmin + (j+0.5)*dz;
-                
-                fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
-            }
-        }
-        fout.close();
-    }
-}
-
-
-//template<typename T1, typename T2, typename NODE>
-//void Grid2Dri<T1,T2,NODE>::saveTTgrad2(const std::string& fname,
-//                                      const size_t nt,
-//                                      const bool vtkFormat) const {
-//    
-//    if (vtkFormat) {
-//#ifdef VTK
-//        
-//        std::string filename = fname+".vtp";
-//        
-//        
-//        
-//        vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
-//        vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
-//        vtkSmartPointer<vtkDoubleArray> grad_tt =
-//        vtkSmartPointer<vtkDoubleArray>::New();
-//        
-//        grad_tt->SetName("grad tt");
-//        grad_tt->SetNumberOfComponents(3);
-//        grad_tt->SetComponentName(0, "x");
-//        grad_tt->SetComponentName(1, "y");
-//        grad_tt->SetComponentName(2, "z");
-//        
-//        size_t npts=12;
-//        pts->SetNumberOfPoints(npts);
-//        grad_tt->SetNumberOfTuples( npts );
-//
-//        sxz<T1> g, pt;
-//        
-//        pt.x = 50.23;
-//        pt.z = 100.1;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 49.23;
-//        pt.z = 100.1;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.23;
-//        pt.z = 99.9;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//
-//        pt.x = 50.23;
-//        pt.z = 100.9;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//
-//        pt.x = 49.23;
-//        pt.z = 99.9;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.7;
-//        pt.z = 99.8;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.0;
-//        pt.z = 100.0;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.0;
-//        pt.z = 100.2;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.3;
-//        pt.z = 100.0;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.7;
-//        pt.z = 100.7;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 50.7;
-//        pt.z = 100.7;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 49.7;
-//        pt.z = 98.0;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//        pt.x = 49.2;
-//        pt.z = 98.0;
-//        grad(g, pt, nt);
-//        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-//        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-//        
-//
-//        
-//        polydata->SetPoints(pts);
-//        polydata->GetPointData()->SetVectors(grad_tt);
-//        
-//        vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-//        writer->SetFileName( filename.c_str() );
-//        writer->SetInputData( polydata );
-//        writer->SetDataModeToBinary();
-//        writer->Update();
-//
-//        
-//        #else
-//        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
-//#endif
-//    } else {
-//        std::ofstream fout(fname.c_str());
-//        fout.precision(12);
-//        for ( size_t i=0; i<ncx; ++i ) {
-//            for ( size_t j=0; j<ncz; ++j ) {
-//                sxz<T1> g;
-//                grad(g, i, j, nt);
-//                
-//                T1 x = xmin + (i+0.5)*dx;
-//                T1 z = zmin + (j+0.5)*dz;
-//                
-//                fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
-//            }
-//        }
-//        fout.close();
-//    }
-//}
-
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::grad(sxz<T1>& g, const size_t i, const size_t j,
-                                const size_t nt) const {
-    
-    // compute average gradient for cell (i,j)
-    
-    static const size_t nnz = ncz+1;
-    
-    g.x = 0.5*(( nodes[(i+1)*nnz+j].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
-               ( nodes[    i*nnz+j].getTT(nt)+nodes[    i*nnz+j+1].getTT(nt) ))/dx;
-    g.z = 0.5*(( nodes[i*nnz+j+1].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
-               ( nodes[i*nnz+j  ].getTT(nt)+nodes[(i+1)*nnz+j  ].getTT(nt) ))/dz;
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::grad(sxz<T1> &g, const sxz<T1> &pt,
-                                const size_t nt) const {
-    
-    // compute travel time gradient at point pt
-    
-    T1 p1 = pt.x - dx/2.0;
-    T1 p2 = p1 + dx;
-    g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
-    
-    p1 = pt.z - dz/2.0;
-    p2 = p1 + dz;
-    g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
-                                      const sxz<T1> &Rx,
-                                      std::vector<sxz<T1>> &r_data,
-                                      const size_t threadNo) const {
-
-    r_data.push_back( Rx );
-    
-    for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-        if ( Rx == Tx[ns] ) {
-            return;
-        }
-    }
-    
-    sxz<T1> curr_pt( Rx );
-    // distance between opposite nodes of a voxel
-    static const T1 maxDist = sqrt( dx*dx + dz*dz );
-    sxz<T1> g;
-    
-    bool reachedTx = false;
-    while ( reachedTx == false ) {
-
-        grad(g, curr_pt, threadNo);
-        g *= -1.0;
-        
-        long long i, k;
-        getIJ(curr_pt, i, k);
-        
-        // planes we will intersect
-        T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
-        T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
-        
-        if ( fabs(xp-curr_pt.x)<small) {
-            xp += dx*boost::math::sign(g.x);
-        }
-        if ( fabs(zp-curr_pt.z)<small) {
-            zp += dz*boost::math::sign(g.z);
-        }
-        
-        // dist to planes
-        T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
-        T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
-        
-        if ( tx<tz ) { // closer to xp
-            curr_pt += tx*g;
-            curr_pt.x = xp;     // make sure we don't accumulate rounding errors
-        } else {
-            curr_pt += tz*g;
-            curr_pt.z = zp;
-        }
-        
-        if ( curr_pt.x < xmin || curr_pt.x > xmax ||
-            curr_pt.z < zmin || curr_pt.z > zmax ) {
-            //  we are going oustide the grid!
-            std::cerr << "Error while computing raypaths: going outside grid!\n"
-            << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-            return;
             
-        }
-
-        r_data.push_back( curr_pt );
-        
-        // are we close enough to one the Tx nodes ?
-        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
-                r_data.push_back( Tx[ns] );
-                reachedTx = true;
+            std::string filename = fname+".vtr";
+            int nn[3] = {static_cast<int>(ncx+1), 1, static_cast<int>(ncz+1)};
+            
+            vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
+            for (size_t n=0; n<nn[0]; ++n)
+                xCoords->InsertNextValue( xmin + n*dx );
+            vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
+            yCoords->InsertNextValue( 0.0 );
+            vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
+            for (size_t n=0; n<nn[2]; ++n)
+                zCoords->InsertNextValue( zmin + n*dz );
+            
+            vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
+            rgrid->SetDimensions( nn );
+            rgrid->SetXCoordinates(xCoords);
+            rgrid->SetYCoordinates(yCoords);
+            rgrid->SetZCoordinates(zCoords);
+            
+            
+            vtkSmartPointer<vtkDoubleArray> newScalars =
+            vtkSmartPointer<vtkDoubleArray>::New();
+            
+            newScalars->SetName("Travel time");
+            newScalars->SetNumberOfComponents(1);
+            newScalars->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
+            
+            
+            for ( size_t n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() == true ) {
+                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
+                    newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+                }
             }
+            rgrid->GetPointData()->SetScalars(newScalars);
+            
+            vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
+            vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+            
+            writer->SetFileName( filename.c_str() );
+            writer->SetInputData( rgrid );
+            writer->SetDataModeToBinary();
+            writer->Update();
+#else
+            std::cerr << "VTK not included during compilation.\nNothing saved.\n";
+#endif
+        } else {
+            std::ofstream fout(fname.c_str());
+            fout.precision(12);
+            for ( T2 n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() == true || all==1 ) {
+                    
+                    fout << nodes[n].getX() << '\t'
+                    << nodes[n].getZ() << '\t'
+                    << nodes[n].getTT(nt) << '\n';
+                }
+            }
+            fout.close();
         }
-
     }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::saveTTgrad(const std::string& fname,
+                                          const size_t nt,
+                                          const bool vtkFormat) const {
+        
+        if (vtkFormat) {
+#ifdef VTK
+            
+            std::string filename = fname+".vtr";
+            int nn[3] = {static_cast<int>(ncx), 1, static_cast<int>(ncz)};
+            
+            vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
+            for (size_t n=0; n<nn[0]; ++n)
+                xCoords->InsertNextValue( xmin + (0.5+n)*dx );
+            vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
+            yCoords->InsertNextValue( 0.0 );
+            vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
+            for (size_t n=0; n<nn[2]; ++n)
+                zCoords->InsertNextValue( zmin + (0.5+n)*dz );
+            
+            vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
+            rgrid->SetDimensions( nn );
+            rgrid->SetXCoordinates(xCoords);
+            rgrid->SetYCoordinates(yCoords);
+            rgrid->SetZCoordinates(zCoords);
+            
+            
+            vtkSmartPointer<vtkDoubleArray> grad_tt =
+            vtkSmartPointer<vtkDoubleArray>::New();
+            
+            grad_tt->SetName("grad tt");
+            grad_tt->SetNumberOfComponents(3);
+            grad_tt->SetComponentName(0, "x");
+            grad_tt->SetComponentName(1, "y");
+            grad_tt->SetComponentName(2, "z");
+            grad_tt->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
+            
+            
+            double x[3];
+            x[1] = 0.0;
+            for ( size_t i=0; i<ncx; ++i ) {
+                for ( size_t j=0; j<ncz; ++j ) {
+                    sxz<T1> g;
+                    grad(g, i, j, nt);
+                    
+                    x[0] = xmin + (i+0.5)*dx;
+                    x[2] = zmin + (j+0.5)*dz;
+                    
+                    vtkIdType id = rgrid->FindPoint(x);
+                    grad_tt->SetTuple3(id, g.x, 0.0, g.z );
+                }
+            }
+            rgrid->GetPointData()->SetVectors( grad_tt );
+            
+            
+            vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
+            vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+            
+            writer->SetFileName( filename.c_str() );
+            writer->SetInputData( rgrid );
+            writer->SetDataModeToBinary();
+            writer->Update();
+#else
+            std::cerr << "VTK not included during compilation.\nNothing saved.\n";
+#endif
+        } else {
+            std::ofstream fout(fname.c_str());
+            fout.precision(12);
+            for ( size_t i=0; i<ncx; ++i ) {
+                for ( size_t j=0; j<ncz; ++j ) {
+                    sxz<T1> g;
+                    grad(g, i, j, nt);
+                    
+                    T1 x = xmin + (i+0.5)*dx;
+                    T1 z = zmin + (j+0.5)*dz;
+                    
+                    fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
+                }
+            }
+            fout.close();
+        }
+    }
+    
+    
+    //template<typename T1, typename T2, typename NODE>
+    //void Grid2Dri<T1,T2,NODE>::saveTTgrad2(const std::string& fname,
+    //                                      const size_t nt,
+    //                                      const bool vtkFormat) const {
+    //
+    //    if (vtkFormat) {
+    //#ifdef VTK
+    //
+    //        std::string filename = fname+".vtp";
+    //
+    //
+    //
+    //        vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
+    //        vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
+    //        vtkSmartPointer<vtkDoubleArray> grad_tt =
+    //        vtkSmartPointer<vtkDoubleArray>::New();
+    //
+    //        grad_tt->SetName("grad tt");
+    //        grad_tt->SetNumberOfComponents(3);
+    //        grad_tt->SetComponentName(0, "x");
+    //        grad_tt->SetComponentName(1, "y");
+    //        grad_tt->SetComponentName(2, "z");
+    //
+    //        size_t npts=12;
+    //        pts->SetNumberOfPoints(npts);
+    //        grad_tt->SetNumberOfTuples( npts );
+    //
+    //        sxz<T1> g, pt;
+    //
+    //        pt.x = 50.23;
+    //        pt.z = 100.1;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 49.23;
+    //        pt.z = 100.1;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.23;
+    //        pt.z = 99.9;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.23;
+    //        pt.z = 100.9;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 49.23;
+    //        pt.z = 99.9;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.7;
+    //        pt.z = 99.8;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.0;
+    //        pt.z = 100.0;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.0;
+    //        pt.z = 100.2;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.3;
+    //        pt.z = 100.0;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.7;
+    //        pt.z = 100.7;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 50.7;
+    //        pt.z = 100.7;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 49.7;
+    //        pt.z = 98.0;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //        pt.x = 49.2;
+    //        pt.z = 98.0;
+    //        grad(g, pt, nt);
+    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
+    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
+    //
+    //
+    //
+    //        polydata->SetPoints(pts);
+    //        polydata->GetPointData()->SetVectors(grad_tt);
+    //
+    //        vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    //        writer->SetFileName( filename.c_str() );
+    //        writer->SetInputData( polydata );
+    //        writer->SetDataModeToBinary();
+    //        writer->Update();
+    //
+    //
+    //        #else
+    //        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
+    //#endif
+    //    } else {
+    //        std::ofstream fout(fname.c_str());
+    //        fout.precision(12);
+    //        for ( size_t i=0; i<ncx; ++i ) {
+    //            for ( size_t j=0; j<ncz; ++j ) {
+    //                sxz<T1> g;
+    //                grad(g, i, j, nt);
+    //
+    //                T1 x = xmin + (i+0.5)*dx;
+    //                T1 z = zmin + (j+0.5)*dz;
+    //
+    //                fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
+    //            }
+    //        }
+    //        fout.close();
+    //    }
+    //}
+    
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::grad(sxz<T1>& g, const size_t i, const size_t j,
+                                    const size_t nt) const {
+        
+        // compute average gradient for cell (i,j)
+        
+        static const size_t nnz = ncz+1;
+        
+        g.x = 0.5*(( nodes[(i+1)*nnz+j].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
+                   ( nodes[    i*nnz+j].getTT(nt)+nodes[    i*nnz+j+1].getTT(nt) ))/dx;
+        g.z = 0.5*(( nodes[i*nnz+j+1].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
+                   ( nodes[i*nnz+j  ].getTT(nt)+nodes[(i+1)*nnz+j  ].getTT(nt) ))/dz;
+    }
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::grad(sxz<T1> &g, const sxz<T1> &pt,
+                                    const size_t nt) const {
+        
+        // compute travel time gradient at point pt
+        
+        T1 p1 = pt.x - dx/2.0;
+        T1 p2 = p1 + dx;
+        g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
+        
+        p1 = pt.z - dz/2.0;
+        p2 = p1 + dz;
+        g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
+    }
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                           const sxz<T1> &Rx,
                                           std::vector<sxz<T1>> &r_data,
                                           const size_t threadNo) const {
-    
-    r_data.push_back( Rx );
-    
-    for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-        if ( Rx == Tx[ns] ) {
-            return;
-        }
-    }
-    
-    
-    long long int iIn, kIn, iOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
-    sxz<T1> curr_pt( Rx );
-    sxz<T1> gOut = {0.0, 0.0};
-    
-    // distance between opposite nodes of a voxel
-    static const T1 maxDist = sqrt( dx*dx + dz*dz );
-    
-    getIJ(curr_pt, iIn, kIn);
-    
-    bool reachedTx = false;
-    while ( reachedTx == false ) {
         
-        bool onNode=false;
+        r_data.push_back( Rx );
         
-        if ( fabs(remainder(curr_pt.x,dx))<small &&
-            fabs(remainder(curr_pt.z,dz))<small ) {
-            onNode = true;
-        }
-        
-        if ( onNode ) {
-            
-            T2 i, k;
-            getIJ(curr_pt, i, k);
-            std::vector<sij<T2>> cells;
-            
-            // find voxels touching node
-            if ( i<=ncx && k<=ncz )
-                cells.push_back( {i,k} );
-            if ( i<=ncx && k>0 )
-                cells.push_back( {i,k-1} );
-            if ( i>0 && k<=ncz )
-                cells.push_back( {i-1,k} );
-            if ( i>0 && k>0 )
-                cells.push_back( {i-1,k-1} );
-            
-            gOut = static_cast<T1>(0.0);
-            sxz<T1> g;
-            T2 nc;
-            for ( nc=0; nc<cells.size(); ++nc ) {
-                grad( g, cells[nc].i, cells[nc].j, threadNo );
-                g *= -1.0;
-                gOut += g;
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                return;
             }
-            gOut /= nc;  // gOut holds average grad
+        }
+        
+        sxz<T1> curr_pt( Rx );
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        sxz<T1> g;
+        
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
             
-            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
-                (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
+            grad(g, curr_pt, threadNo);
+            g *= -1.0;
+            
+            long long i, k;
+            getIJ(curr_pt, i, k);
+            
+            // planes we will intersect
+            T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+            
+            if ( fabs(xp-curr_pt.x)<small) {
+                xp += dx*boost::math::sign(g.x);
+            }
+            if ( fabs(zp-curr_pt.z)<small) {
+                zp += dz*boost::math::sign(g.z);
+            }
+            
+            // dist to planes
+            T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+            T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+            
+            if ( tx<tz ) { // closer to xp
+                curr_pt += tx*g;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+            } else {
+                curr_pt += tz*g;
+                curr_pt.z = zp;
+            }
+            
+            if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
                 std::cerr << "Error while computing raypaths: going outside grid!\n"
                 << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
                 return;
-            }
-            
-            iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
-            kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
-            
-            // planes we will intersect
-            T1 xp = xmin + dx*(i + boost::math::sign(gOut.x));
-            T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
-            
-            
-            // dist to planes
-            T1 tx = (xp - curr_pt.x)/gOut.x;
-            T1 tz = (zp - curr_pt.z)/gOut.z;
-            
-            if ( tx<tz ) { // closer to xp
-                curr_pt += tx*gOut;
-                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
-                iIn = iOut + boost::math::sign(gOut.x);
-                kIn = kOut;
-            } else {
-                curr_pt += tz*gOut;
-                curr_pt.z = zp;
-                iIn = iOut;
-                kIn = kOut + boost::math::sign(gOut.z);
-            }
-            
-        } else {
-            
-            sxz<T1> gIn;
-            grad( gIn, iIn, kIn, threadNo );
-            gIn *= -1.0;
-            
-            if ( iIn == iOut && kIn == kOut) {
-                // ray is returning to cell it was exiting
-                // we might be at grazing incidence
-                // check if gIn is significantly different from gOut
                 
-                sxz<T1> diff = normalize(gOut)-normalize(gIn);
-                if ( norm(diff) > small ) {
-                    std::cerr << "Error while computing raypaths: raypath not converging!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
+            }
+            
+            r_data.push_back( curr_pt );
+            
+            // are we close enough to one the Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                    r_data.push_back( Tx[ns] );
+                    reachedTx = true;
                 }
             }
             
-            gOut = gIn;
-            iOut = iIn;
-            kOut = kIn;
-            
-            if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==ncx+1) ||
-                (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
-                //  we are going oustide the grid!
-                std::cerr << "Error while computing raypaths: going outside grid!\n"
-                << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+        }
+    }
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxz<T1>>& Tx,
+                                              const sxz<T1> &Rx,
+                                              std::vector<sxz<T1>> &r_data,
+                                              const size_t threadNo) const {
+        
+        r_data.push_back( Rx );
+        
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
                 return;
             }
+        }
+        
+        
+        long long int iIn, kIn, iOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
+        sxz<T1> curr_pt( Rx );
+        sxz<T1> gOut = {0.0, 0.0};
+        
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        
+        getIJ(curr_pt, iIn, kIn);
+        
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
             
-            // planes we will intersect
-            T1 xp = xmin + dx*(iIn + (boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0));
-            T1 zp = zmin + dz*(kIn + (boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0));
+            bool onNode=false;
             
-            if ( fabs(xp-curr_pt.x)<small) {
-                xp += dx*boost::math::sign(gOut.x);
-                iOut += boost::math::sign(gOut.x);
+            if ( fabs(remainder(curr_pt.x,dx))<small &&
+                fabs(remainder(curr_pt.z,dz))<small ) {
+                onNode = true;
             }
-            if ( fabs(zp-curr_pt.z)<small) {
-                zp += dz*boost::math::sign(gOut.z);
-                kOut += boost::math::sign(gOut.z);
-            }
             
-            // dist to planes
-            T1 tx = (xp - curr_pt.x)/gOut.x;
-            T1 tz = (zp - curr_pt.z)/gOut.z;
-            
-            if ( tx<tz ) { // closer to xp
-                curr_pt += tx*gOut;
-                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
-                iIn = iOut + boost::math::sign(gOut.x);
-                kIn = kOut;
+            if ( onNode ) {
+                
+                T2 i, k;
+                getIJ(curr_pt, i, k);
+                std::vector<sij<T2>> cells;
+                
+                // find voxels touching node
+                if ( i<=ncx && k<=ncz )
+                    cells.push_back( {i,k} );
+                if ( i<=ncx && k>0 )
+                    cells.push_back( {i,k-1} );
+                if ( i>0 && k<=ncz )
+                    cells.push_back( {i-1,k} );
+                if ( i>0 && k>0 )
+                    cells.push_back( {i-1,k-1} );
+                
+                gOut = static_cast<T1>(0.0);
+                sxz<T1> g;
+                T2 nc;
+                for ( nc=0; nc<cells.size(); ++nc ) {
+                    grad( g, cells[nc].i, cells[nc].j, threadNo );
+                    g *= -1.0;
+                    gOut += g;
+                }
+                gOut /= nc;  // gOut holds average grad
+                
+                if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
+                    (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
+                    //  we are going oustide the grid!
+                    std::cerr << "Error while computing raypaths: going outside grid!\n"
+                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                    return;
+                }
+                
+                iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
+                kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
+                
+                // planes we will intersect
+                T1 xp = xmin + dx*(i + boost::math::sign(gOut.x));
+                T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
+                
+                
+                // dist to planes
+                T1 tx = (xp - curr_pt.x)/gOut.x;
+                T1 tz = (zp - curr_pt.z)/gOut.z;
+                
+                if ( tx<tz ) { // closer to xp
+                    curr_pt += tx*gOut;
+                    curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    iIn = iOut + boost::math::sign(gOut.x);
+                    kIn = kOut;
+                } else {
+                    curr_pt += tz*gOut;
+                    curr_pt.z = zp;
+                    iIn = iOut;
+                    kIn = kOut + boost::math::sign(gOut.z);
+                }
+                
             } else {
-                curr_pt += tz*gOut;
-                curr_pt.z = zp;
-                iIn = iOut;
-                kIn = kOut + boost::math::sign(gOut.z);
+                
+                sxz<T1> gIn;
+                grad( gIn, iIn, kIn, threadNo );
+                gIn *= -1.0;
+                
+                if ( iIn == iOut && kIn == kOut) {
+                    // ray is returning to cell it was exiting
+                    // we might be at grazing incidence
+                    // check if gIn is significantly different from gOut
+                    
+                    sxz<T1> diff = normalize(gOut)-normalize(gIn);
+                    if ( norm(diff) > small ) {
+                        std::cerr << "Error while computing raypaths: raypath not converging!\n"
+                        << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                        return;
+                    }
+                }
+                
+                gOut = gIn;
+                iOut = iIn;
+                kOut = kIn;
+                
+                if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==ncx+1) ||
+                    (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
+                    //  we are going oustide the grid!
+                    std::cerr << "Error while computing raypaths: going outside grid!\n"
+                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                    return;
+                }
+                
+                // planes we will intersect
+                T1 xp = xmin + dx*(iIn + (boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0));
+                T1 zp = zmin + dz*(kIn + (boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0));
+                
+                if ( fabs(xp-curr_pt.x)<small) {
+                    xp += dx*boost::math::sign(gOut.x);
+                    iOut += boost::math::sign(gOut.x);
+                }
+                if ( fabs(zp-curr_pt.z)<small) {
+                    zp += dz*boost::math::sign(gOut.z);
+                    kOut += boost::math::sign(gOut.z);
+                }
+                
+                // dist to planes
+                T1 tx = (xp - curr_pt.x)/gOut.x;
+                T1 tz = (zp - curr_pt.z)/gOut.z;
+                
+                if ( tx<tz ) { // closer to xp
+                    curr_pt += tx*gOut;
+                    curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    iIn = iOut + boost::math::sign(gOut.x);
+                    kIn = kOut;
+                } else {
+                    curr_pt += tz*gOut;
+                    curr_pt.z = zp;
+                    iIn = iOut;
+                    kIn = kOut + boost::math::sign(gOut.z);
+                }
+                
             }
             
-        }
-        
-        
-        r_data.push_back( curr_pt );
-        
-        // are we close enough to one the of Tx nodes ?
-        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
-                r_data.push_back( Tx[ns] );
-                reachedTx = true;
+            
+            r_data.push_back( curr_pt );
+            
+            // are we close enough to one the of Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                    r_data.push_back( Tx[ns] );
+                    reachedTx = true;
+                }
             }
         }
-    }
-
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
-                                           const sxz<T1> &Rx,
-                                           std::vector<sxz<T1>> &r_data,
-                                           const size_t threadNo) const {
-    
-    r_data.push_back( Rx );
-    
-    for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-        if ( Rx == Tx[ns] ) {
-            return;
-        }
-    }
-    
-	long long int iIn, jIn, iOut, jOut; // iOut, jOut for cell we are exiting; iIn, jIn for cell we are entering
-    sxz<T1> curr_pt( Rx );
-    sxz<T1> gOut;
-    
-    // distance between opposite nodes of a cell
-    static const T1 maxDist = sqrt( dx*dx + dz*dz );
-    
-    bool onNode=false;
-    if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
-        onNode = true;
-    }
-
-    if ( !onNode ) {
-		
-		// go to first edge
-		T2 i, j;
-		getIJ(curr_pt, i, j);
-		iOut = i;
-		jOut = j;
-		grad( gOut, iOut, jOut, threadNo );
-        gOut *= -1.0;
         
-		T1 theta = atan2( gOut.z, gOut.x );
-		
-		if ( theta > pi/2. ) {
-			T1 x1 = xmin+iOut*dx;
-			T1 ddx = curr_pt.x - x1;
-            if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; } // we are on the rightmost edge
-			T1 ddz = ddx*gOut.z/gOut.x;    // ratio is negative
-			T1 z1 = curr_pt.z - ddz;
-			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
-
-			T1 z2 = zmin+(jOut+1)*dz;
-			ddz = z2 - curr_pt.z;
-            if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; }
-			ddx = ddz*gOut.x/gOut.z;
-			T1 x2 = curr_pt.x + ddx;
-			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
-
-			if ( d1 <= d2 ) {
-				curr_pt.x = x1;
-				curr_pt.z = z1;
-				iIn = iOut-1;
-				jIn = jOut;
-			} else {
-				curr_pt.x = x2;
-				curr_pt.z = z2;
-				iIn = iOut;
-				jIn = jOut+1;
-			}
-		} else if ( theta > 0. ) {
-			T1 x1 = xmin+(iOut+1)*dx;
-			T1 ddx = x1 - curr_pt.x;
-            if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; }
-			T1 ddz = ddx*gOut.z/gOut.x;
-			T1 z1 = curr_pt.z + ddz;
-			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
-			
-			T1 z2 = zmin+(jOut+1)*dz;
-			ddz = z2 - curr_pt.z;
-            if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; }
-			ddx = ddz*gOut.x/gOut.z;
-			T1 x2 = curr_pt.x + ddx;
-			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
-			
-			if ( d1 <= d2 ) {
-				curr_pt.x = x1;
-				curr_pt.z = z1;
-				iIn = iOut+1;
-				jIn = jOut;
-			} else {
-				curr_pt.x = x2;
-				curr_pt.z = z2;
-				iIn = iOut;
-				jIn = jOut+1;
-			}
-		} else if ( theta > -pi/2. ) {
-			T1 x1 = xmin+(iOut+1)*dx;
-			T1 ddx = x1 - curr_pt.x;
-            if ( ddx == 0.0 ) { x1 += dx; ddx = x1 = curr_pt.x; }
-			T1 ddz = ddx*gOut.z/gOut.x;  // ratio is negative
-			T1 z1 = curr_pt.z + ddz;
-			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
-			
-			T1 z2 = zmin+jOut*dz;
-			ddz = curr_pt.z - z2;
-            if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; }
-			ddx = ddz*gOut.x/gOut.z;
-			T1 x2 = curr_pt.x - ddx;
-			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
-			
-			if ( d1 <= d2 ) {
-				curr_pt.x = x1;
-				curr_pt.z = z1;
-				iIn = iOut+1;
-				jIn = jOut;
-			} else {
-				curr_pt.x = x2;
-				curr_pt.z = z2;
-				iIn = iOut;
-				jIn = jOut-1;
-			}
-
-		} else {
-			T1 x1 = xmin+iOut*dx;
-			T1 ddx = curr_pt.x - x1;
-            if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; }
-			T1 ddz = ddx*gOut.z/gOut.x;
-			T1 z1 = curr_pt.z - ddz;
-			T1 d1 = sqrt(ddx*ddx + ddz*ddz);
-
-			T1 z2 = zmin+jOut*dz;
-			ddz = curr_pt.z - z2;
-            if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; }
-			ddx = ddz*gOut.x/gOut.z;
-			T1 x2 = curr_pt.x - ddx;
-			T1 d2 = sqrt(ddx*ddx + ddz*ddz);
-			
-			if ( d1 <= d2 ) {
-				curr_pt.x = x1;
-				curr_pt.z = z1;
-				iIn = iOut-1;
-				jIn = jOut;
-			} else {
-				curr_pt.x = x2;
-				curr_pt.z = z2;
-				iIn = iOut;
-				jIn = jOut-1;
-			}
-		}
-		
-		if ( iIn<0 || iIn>ncx || jIn<0 || jIn>ncz ) {
-			//  we are going oustide the grid!
-			std::cerr << "Error while computing raypaths: going outside grid!\n"
-			<< "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-			return;
-		}
-		
-		r_data.push_back( curr_pt );
+    }
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::getRaypath_old2(const std::vector<sxz<T1>>& Tx,
+                                               const sxz<T1> &Rx,
+                                               std::vector<sxz<T1>> &r_data,
+                                               const size_t threadNo) const {
         
-        // are we close enough to one the of Tx nodes ?
+        r_data.push_back( Rx );
+        
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
-                r_data.push_back( Tx[ns] );
+            if ( Rx == Tx[ns] ) {
                 return;
             }
         }
         
-		onNode = false;
+        long long int iIn, jIn, iOut, jOut; // iOut, jOut for cell we are exiting; iIn, jIn for cell we are entering
+        sxz<T1> curr_pt( Rx );
+        sxz<T1> gOut;
+        
+        // distance between opposite nodes of a cell
+        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        
+        bool onNode=false;
         if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
             onNode = true;
         }
-		
-    }
-	
-    bool reachedTx = false;
-    while ( reachedTx == false ) {
         
-        if ( onNode ) {
+        if ( !onNode ) {
             
-            // compute average gradient
+            // go to first edge
             T2 i, j;
             getIJ(curr_pt, i, j);
-            std::vector<sij<T2>> cells;
-            
-            // find cells touching node
-            if ( i<=ncx && j<=ncz )
-                cells.push_back( {i, j} );
-            if ( i>0 && j<=ncz )
-                cells.push_back( {i-1, j} );
-            if ( i<=ncx && j>0 )
-                cells.push_back( {i, j-1} );
-            if ( i>0 && j>0 )
-                cells.push_back( {i-1, j-1} );
-            
-            gOut = static_cast<T1>(0.0);
-            sxz<T1> g;
-            T2 nc;
-            for ( nc=0; nc<cells.size(); ++nc ) {
-                grad( g, cells[nc].i, cells[nc].j, threadNo );
-                g *= -1.0;
-                gOut += g;
-            }
-            gOut /= nc;  // gOut holds average grad
-            
-            
-            if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
-                (gOut.z<0.0 && j==0) || (gOut.z>0.0 && j==ncz+1)) {
-                //  we are going oustide the grid!
-                std::cerr << "Error while computing raypaths: going outside grid!\n"
-                          << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                return;
-            }
-            
+            iOut = i;
+            jOut = j;
+            grad( gOut, iOut, jOut, threadNo );
+            gOut *= -1.0;
             
             T1 theta = atan2( gOut.z, gOut.x );
             
-            if ( gOut.z==0.0 && gOut.x<0.0 ) {          // toward node i-1, j
-                curr_pt.x -= dx;
-                r_data.push_back( curr_pt );
-                onNode = true;
-                
-            } else if ( theta>pi/2.0 ) {                // toward cell i-1, j
-				iOut = i-1;
-				jOut = j;
-                if ( gOut.z/gOut.x > -dz/dx ) {  // ratio is negative
-                    curr_pt.x -= dx;
-                    curr_pt.z += dx*sin(pi-theta);
-                    r_data.push_back( curr_pt );
-					iIn = iOut - 1;
-					jIn = jOut;
-                    onNode = false;
-                } else if ( gOut.z/gOut.x < -dz/dx ) {
-                    curr_pt.x -= dz*sin(theta-pi/2.0);
-                    curr_pt.z += dz;
-					iIn = iOut;
-					jIn = jOut + 1;
-                    onNode = false;
-                } else { // gOut.z/gOut.x == dz/dx   ->    toward node i-1, j+1
-                    curr_pt.x -= dx;
-                    curr_pt.z += dz;
-                    r_data.push_back( curr_pt );
-                    onNode = true;
-                }
-                
-            } else if ( gOut.z>0.0 && gOut.x==0.0 ) {   // toward node i, j+1
-                curr_pt.z += dz;
-                r_data.push_back( curr_pt );
-                onNode = true;
-                
-            } else if ( theta>0.0 ) {                   // toward cell i, j
-				iOut = i;
-				jOut = j;
-				if ( gOut.z/gOut.x < dz/dx ) {  // ratio is positive
-					curr_pt.x += dx;
-					curr_pt.z += dx*sin(theta);
-					r_data.push_back( curr_pt );
-					iIn = iOut + 1;
-					jIn = jOut;
-					onNode = false;
-				} else if ( gOut.z/gOut.x > dz/dx ) {
-					curr_pt.x += dz*sin(pi/2.-theta);
-					curr_pt.z += dz;
-					r_data.push_back( curr_pt );
-					iIn = iOut;
-					jIn = jOut + 1;
-					onNode = false;
-				} else { // gOut.z/gOut.x == dz/dx   ->    toward node i+1, j+1
-					curr_pt.x += dx;
-					curr_pt.z += dz;
-					r_data.push_back( curr_pt );
-					onNode = true;
-				}
-				
-            } else if ( gOut.z==0.0 && gOut.x>0.0 ) {   // toward node i+1, j
-                curr_pt.x += dx;
-                r_data.push_back( curr_pt );
-                onNode = true;
-                
-            } else if ( theta>-pi/2.0 ) {               // toward cell i, j-1
-				iOut = i;
-				jOut = j-1;
-				if ( gOut.z/gOut.x > -dz/dx ) {  // ratio is negative
-					curr_pt.x += dx;
-					curr_pt.z -= dx*sin(-theta);
-					r_data.push_back( curr_pt );
-					iIn = iOut + 1;
-					jIn = jOut;
-					onNode = false;
-				} else if ( gOut.z/gOut.x < -dz/dx ) {
-					curr_pt.x += dz*sin(pi/2.+theta);
-					curr_pt.z -= dz;
-					r_data.push_back( curr_pt );
-					iIn = iOut;
-					jIn = jOut - 1;
-					onNode = false;
-				} else { // gOut.z/gOut.x == dz/dx   ->    toward node i+1, j-1
-					curr_pt.x += dx;
-					curr_pt.z -= dz;
-					r_data.push_back( curr_pt );
-					onNode = true;
-				}
-                
-            } else if ( gOut.z<0.0 && gOut.x==0.0 ) {   // toward node i, j-1
-                curr_pt.z -= dz;
-                r_data.push_back( curr_pt );
-                onNode = true;
-                
-            } else {                                    // toward cell i-1, j-1
-				iOut = i-1;
-				jOut = j-1;
-				if ( gOut.z/gOut.x < dz/dx ) {  // ratio is positive
-					curr_pt.x -= dx;
-					curr_pt.z -= dx*sin(pi+theta);
-					r_data.push_back( curr_pt );
-					iIn = iOut - 1;
-					jIn = jOut;
-					onNode = false;
-				} else if ( gOut.z/gOut.x > dz/dx ) {
-					curr_pt.x -= dz*sin(-pi/2.0-theta);
-					curr_pt.z -= dz;
-					r_data.push_back( curr_pt );
-					iIn = iOut;
-					jIn = jOut - 1;
-					onNode = false;
-				} else { // gOut.z/gOut.x == dz/dx   ->    toward node i-1, j-1
-					curr_pt.x -= dx;
-					curr_pt.z -= dz;
-					r_data.push_back( curr_pt );
-					onNode = true;
-				}
-            }
-            
-		} else { // not on node, must be on an edge
-            
-            sxz<T1> gIn;
-            grad( gIn, iIn, jIn, threadNo );
-            gIn *= -1.0;
-            T1 theta = atan2( gIn.z, gIn.x );
-
-            if ( iIn == iOut && jIn == jOut ) {
-                // ray is returning to cell it was exiting
-                // we might be at grazing incidence
-                // check if gIn is significantly different from gOut
-                
-                T1 thetaOut = atan2( gOut.z, gOut.x );
-                if ( fabs(theta-thetaOut) < pi/180. ) {
-                    // less that 1 degree difference, OK
-                    gOut = gIn;
-                } else {
-                    std::cerr << "Error while computing raypaths: raypath not converging!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
-                }
-            }
-            
-            if ( theta > pi/2.0 ) {
-                T1 x1 = xmin+iIn*dx;
+            if ( theta > pi/2. ) {
+                T1 x1 = xmin+iOut*dx;
                 T1 ddx = curr_pt.x - x1;
-                if ( ddx == 0 ) { x1 -= dx; ddx = curr_pt.x - x1; iIn--; }
-                T1 ddz = ddx*gIn.z/gIn.x;    // ratio is negative
+                if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; } // we are on the rightmost edge
+                T1 ddz = ddx*gOut.z/gOut.x;    // ratio is negative
                 T1 z1 = curr_pt.z - ddz;
                 T1 d1 = sqrt(ddx*ddx + ddz*ddz);
                 
-                T1 z2 = zmin+(jIn+1)*dz;
+                T1 z2 = zmin+(jOut+1)*dz;
                 ddz = z2 - curr_pt.z;
-                if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; jIn++; }
-                ddx = ddz*gIn.x/gIn.z;
+                if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; }
+                ddx = ddz*gOut.x/gOut.z;
                 T1 x2 = curr_pt.x + ddx;
                 T1 d2 = sqrt(ddx*ddx + ddz*ddz);
                 
                 if ( d1 <= d2 ) {
                     curr_pt.x = x1;
                     curr_pt.z = z1;
-                    iOut = iIn;
-                    jOut = jIn;
-                    iIn--;
+                    iIn = iOut-1;
+                    jIn = jOut;
                 } else {
                     curr_pt.x = x2;
                     curr_pt.z = z2;
-                    iOut = iIn;
-                    jOut = jIn;
-                    jIn++;
+                    iIn = iOut;
+                    jIn = jOut+1;
                 }
-
             } else if ( theta > 0. ) {
-                T1 x1 = xmin+(iIn+1)*dx;
+                T1 x1 = xmin+(iOut+1)*dx;
                 T1 ddx = x1 - curr_pt.x;
-                if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; iIn++; }
-                T1 ddz = ddx*gIn.z/gIn.x;
+                if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; }
+                T1 ddz = ddx*gOut.z/gOut.x;
                 T1 z1 = curr_pt.z + ddz;
                 T1 d1 = sqrt(ddx*ddx + ddz*ddz);
                 
-                T1 z2 = zmin+(jIn+1)*dz;
+                T1 z2 = zmin+(jOut+1)*dz;
                 ddz = z2 - curr_pt.z;
-                if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; jIn++; }
-                ddx = ddz*gIn.x/gIn.z;
+                if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; }
+                ddx = ddz*gOut.x/gOut.z;
                 T1 x2 = curr_pt.x + ddx;
                 T1 d2 = sqrt(ddx*ddx + ddz*ddz);
                 
                 if ( d1 <= d2 ) {
                     curr_pt.x = x1;
                     curr_pt.z = z1;
-                    iOut = iIn;
-                    jOut = jIn;
-                    iIn++;
+                    iIn = iOut+1;
+                    jIn = jOut;
                 } else {
                     curr_pt.x = x2;
                     curr_pt.z = z2;
-                    iOut = iIn;
-                    jOut = jIn;
-                    jIn++;
+                    iIn = iOut;
+                    jIn = jOut+1;
                 }
-                
             } else if ( theta > -pi/2. ) {
-                T1 x1 = xmin+(iIn+1)*dx;
+                T1 x1 = xmin+(iOut+1)*dx;
                 T1 ddx = x1 - curr_pt.x;
-                if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; iIn++; }
-                T1 ddz = ddx*gIn.z/gIn.x;  // ratio is negative
+                if ( ddx == 0.0 ) { x1 += dx; ddx = x1 = curr_pt.x; }
+                T1 ddz = ddx*gOut.z/gOut.x;  // ratio is negative
                 T1 z1 = curr_pt.z + ddz;
                 T1 d1 = sqrt(ddx*ddx + ddz*ddz);
                 
-                T1 z2 = zmin+jIn*dz;
+                T1 z2 = zmin+jOut*dz;
                 ddz = curr_pt.z - z2;
-                if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; jIn--; }
-                ddx = ddz*gIn.x/gIn.z;
+                if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; }
+                ddx = ddz*gOut.x/gOut.z;
                 T1 x2 = curr_pt.x - ddx;
                 T1 d2 = sqrt(ddx*ddx + ddz*ddz);
                 
                 if ( d1 <= d2 ) {
                     curr_pt.x = x1;
                     curr_pt.z = z1;
-                    iOut = iIn;
-                    jOut = jIn;
-                    iIn++;
+                    iIn = iOut+1;
+                    jIn = jOut;
                 } else {
                     curr_pt.x = x2;
                     curr_pt.z = z2;
-                    iOut = iIn;
-                    jOut = jIn;
-                    jIn--;
+                    iIn = iOut;
+                    jIn = jOut-1;
                 }
                 
             } else {
-                T1 x1 = xmin+iIn*dx;
+                T1 x1 = xmin+iOut*dx;
                 T1 ddx = curr_pt.x - x1;
-                if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; iIn--; }
-                T1 ddz = ddx*gIn.z/gIn.x;
+                if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; }
+                T1 ddz = ddx*gOut.z/gOut.x;
                 T1 z1 = curr_pt.z - ddz;
                 T1 d1 = sqrt(ddx*ddx + ddz*ddz);
                 
-                T1 z2 = zmin+jIn*dz;
+                T1 z2 = zmin+jOut*dz;
                 ddz = curr_pt.z - z2;
-                if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; jIn--; }
-                ddx = ddz*gIn.x/gIn.z;
+                if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; }
+                ddx = ddz*gOut.x/gOut.z;
                 T1 x2 = curr_pt.x - ddx;
                 T1 d2 = sqrt(ddx*ddx + ddz*ddz);
                 
                 if ( d1 <= d2 ) {
                     curr_pt.x = x1;
                     curr_pt.z = z1;
-                    iOut = iIn;
-                    jOut = jIn;
-                    iIn--;
+                    iIn = iOut-1;
+                    jIn = jOut;
                 } else {
                     curr_pt.x = x2;
                     curr_pt.z = z2;
-                    iOut = iIn;
-                    jOut = jIn;
-                    jIn--;
+                    iIn = iOut;
+                    jIn = jOut-1;
+                }
+            }
+            
+            if ( iIn<0 || iIn>ncx || jIn<0 || jIn>ncz ) {
+                //  we are going oustide the grid!
+                std::cerr << "Error while computing raypaths: going outside grid!\n"
+                << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                return;
+            }
+            
+            r_data.push_back( curr_pt );
+            
+            // are we close enough to one the of Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                    r_data.push_back( Tx[ns] );
+                    return;
                 }
             }
             
             onNode = false;
             if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+                onNode = true;
+            }
+            
+        }
+        
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
+            
+            if ( onNode ) {
+                
+                // compute average gradient
+                T2 i, j;
+                getIJ(curr_pt, i, j);
+                std::vector<sij<T2>> cells;
+                
+                // find cells touching node
+                if ( i<=ncx && j<=ncz )
+                    cells.push_back( {i, j} );
+                if ( i>0 && j<=ncz )
+                    cells.push_back( {i-1, j} );
+                if ( i<=ncx && j>0 )
+                    cells.push_back( {i, j-1} );
+                if ( i>0 && j>0 )
+                    cells.push_back( {i-1, j-1} );
+                
+                gOut = static_cast<T1>(0.0);
+                sxz<T1> g;
+                T2 nc;
+                for ( nc=0; nc<cells.size(); ++nc ) {
+                    grad( g, cells[nc].i, cells[nc].j, threadNo );
+                    g *= -1.0;
+                    gOut += g;
+                }
+                gOut /= nc;  // gOut holds average grad
+                
+                
+                if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
+                    (gOut.z<0.0 && j==0) || (gOut.z>0.0 && j==ncz+1)) {
+                    //  we are going oustide the grid!
+                    std::cerr << "Error while computing raypaths: going outside grid!\n"
+                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                    return;
+                }
+                
+                
+                T1 theta = atan2( gOut.z, gOut.x );
+                
+                if ( gOut.z==0.0 && gOut.x<0.0 ) {          // toward node i-1, j
+                    curr_pt.x -= dx;
+                    r_data.push_back( curr_pt );
                     onNode = true;
+                    
+                } else if ( theta>pi/2.0 ) {                // toward cell i-1, j
+                    iOut = i-1;
+                    jOut = j;
+                    if ( gOut.z/gOut.x > -dz/dx ) {  // ratio is negative
+                        curr_pt.x -= dx;
+                        curr_pt.z += dx*sin(pi-theta);
+                        r_data.push_back( curr_pt );
+                        iIn = iOut - 1;
+                        jIn = jOut;
+                        onNode = false;
+                    } else if ( gOut.z/gOut.x < -dz/dx ) {
+                        curr_pt.x -= dz*sin(theta-pi/2.0);
+                        curr_pt.z += dz;
+                        iIn = iOut;
+                        jIn = jOut + 1;
+                        onNode = false;
+                    } else { // gOut.z/gOut.x == dz/dx   ->    toward node i-1, j+1
+                        curr_pt.x -= dx;
+                        curr_pt.z += dz;
+                        r_data.push_back( curr_pt );
+                        onNode = true;
+                    }
+                    
+                } else if ( gOut.z>0.0 && gOut.x==0.0 ) {   // toward node i, j+1
+                    curr_pt.z += dz;
+                    r_data.push_back( curr_pt );
+                    onNode = true;
+                    
+                } else if ( theta>0.0 ) {                   // toward cell i, j
+                    iOut = i;
+                    jOut = j;
+                    if ( gOut.z/gOut.x < dz/dx ) {  // ratio is positive
+                        curr_pt.x += dx;
+                        curr_pt.z += dx*sin(theta);
+                        r_data.push_back( curr_pt );
+                        iIn = iOut + 1;
+                        jIn = jOut;
+                        onNode = false;
+                    } else if ( gOut.z/gOut.x > dz/dx ) {
+                        curr_pt.x += dz*sin(pi/2.-theta);
+                        curr_pt.z += dz;
+                        r_data.push_back( curr_pt );
+                        iIn = iOut;
+                        jIn = jOut + 1;
+                        onNode = false;
+                    } else { // gOut.z/gOut.x == dz/dx   ->    toward node i+1, j+1
+                        curr_pt.x += dx;
+                        curr_pt.z += dz;
+                        r_data.push_back( curr_pt );
+                        onNode = true;
+                    }
+                    
+                } else if ( gOut.z==0.0 && gOut.x>0.0 ) {   // toward node i+1, j
+                    curr_pt.x += dx;
+                    r_data.push_back( curr_pt );
+                    onNode = true;
+                    
+                } else if ( theta>-pi/2.0 ) {               // toward cell i, j-1
+                    iOut = i;
+                    jOut = j-1;
+                    if ( gOut.z/gOut.x > -dz/dx ) {  // ratio is negative
+                        curr_pt.x += dx;
+                        curr_pt.z -= dx*sin(-theta);
+                        r_data.push_back( curr_pt );
+                        iIn = iOut + 1;
+                        jIn = jOut;
+                        onNode = false;
+                    } else if ( gOut.z/gOut.x < -dz/dx ) {
+                        curr_pt.x += dz*sin(pi/2.+theta);
+                        curr_pt.z -= dz;
+                        r_data.push_back( curr_pt );
+                        iIn = iOut;
+                        jIn = jOut - 1;
+                        onNode = false;
+                    } else { // gOut.z/gOut.x == dz/dx   ->    toward node i+1, j-1
+                        curr_pt.x += dx;
+                        curr_pt.z -= dz;
+                        r_data.push_back( curr_pt );
+                        onNode = true;
+                    }
+                    
+                } else if ( gOut.z<0.0 && gOut.x==0.0 ) {   // toward node i, j-1
+                    curr_pt.z -= dz;
+                    r_data.push_back( curr_pt );
+                    onNode = true;
+                    
+                } else {                                    // toward cell i-1, j-1
+                    iOut = i-1;
+                    jOut = j-1;
+                    if ( gOut.z/gOut.x < dz/dx ) {  // ratio is positive
+                        curr_pt.x -= dx;
+                        curr_pt.z -= dx*sin(pi+theta);
+                        r_data.push_back( curr_pt );
+                        iIn = iOut - 1;
+                        jIn = jOut;
+                        onNode = false;
+                    } else if ( gOut.z/gOut.x > dz/dx ) {
+                        curr_pt.x -= dz*sin(-pi/2.0-theta);
+                        curr_pt.z -= dz;
+                        r_data.push_back( curr_pt );
+                        iIn = iOut;
+                        jIn = jOut - 1;
+                        onNode = false;
+                    } else { // gOut.z/gOut.x == dz/dx   ->    toward node i-1, j-1
+                        curr_pt.x -= dx;
+                        curr_pt.z -= dz;
+                        r_data.push_back( curr_pt );
+                        onNode = true;
+                    }
+                }
+                
+            } else { // not on node, must be on an edge
+                
+                sxz<T1> gIn;
+                grad( gIn, iIn, jIn, threadNo );
+                gIn *= -1.0;
+                T1 theta = atan2( gIn.z, gIn.x );
+                
+                if ( iIn == iOut && jIn == jOut ) {
+                    // ray is returning to cell it was exiting
+                    // we might be at grazing incidence
+                    // check if gIn is significantly different from gOut
+                    
+                    T1 thetaOut = atan2( gOut.z, gOut.x );
+                    if ( fabs(theta-thetaOut) < pi/180. ) {
+                        // less that 1 degree difference, OK
+                        gOut = gIn;
+                    } else {
+                        std::cerr << "Error while computing raypaths: raypath not converging!\n"
+                        << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
+                        return;
+                    }
+                }
+                
+                if ( theta > pi/2.0 ) {
+                    T1 x1 = xmin+iIn*dx;
+                    T1 ddx = curr_pt.x - x1;
+                    if ( ddx == 0 ) { x1 -= dx; ddx = curr_pt.x - x1; iIn--; }
+                    T1 ddz = ddx*gIn.z/gIn.x;    // ratio is negative
+                    T1 z1 = curr_pt.z - ddz;
+                    T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    T1 z2 = zmin+(jIn+1)*dz;
+                    ddz = z2 - curr_pt.z;
+                    if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; jIn++; }
+                    ddx = ddz*gIn.x/gIn.z;
+                    T1 x2 = curr_pt.x + ddx;
+                    T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    if ( d1 <= d2 ) {
+                        curr_pt.x = x1;
+                        curr_pt.z = z1;
+                        iOut = iIn;
+                        jOut = jIn;
+                        iIn--;
+                    } else {
+                        curr_pt.x = x2;
+                        curr_pt.z = z2;
+                        iOut = iIn;
+                        jOut = jIn;
+                        jIn++;
+                    }
+                    
+                } else if ( theta > 0. ) {
+                    T1 x1 = xmin+(iIn+1)*dx;
+                    T1 ddx = x1 - curr_pt.x;
+                    if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; iIn++; }
+                    T1 ddz = ddx*gIn.z/gIn.x;
+                    T1 z1 = curr_pt.z + ddz;
+                    T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    T1 z2 = zmin+(jIn+1)*dz;
+                    ddz = z2 - curr_pt.z;
+                    if ( ddz == 0.0 ) { z2 += dz; ddz = z2 - curr_pt.z; jIn++; }
+                    ddx = ddz*gIn.x/gIn.z;
+                    T1 x2 = curr_pt.x + ddx;
+                    T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    if ( d1 <= d2 ) {
+                        curr_pt.x = x1;
+                        curr_pt.z = z1;
+                        iOut = iIn;
+                        jOut = jIn;
+                        iIn++;
+                    } else {
+                        curr_pt.x = x2;
+                        curr_pt.z = z2;
+                        iOut = iIn;
+                        jOut = jIn;
+                        jIn++;
+                    }
+                    
+                } else if ( theta > -pi/2. ) {
+                    T1 x1 = xmin+(iIn+1)*dx;
+                    T1 ddx = x1 - curr_pt.x;
+                    if ( ddx == 0.0 ) { x1 += dx; ddx = x1 - curr_pt.x; iIn++; }
+                    T1 ddz = ddx*gIn.z/gIn.x;  // ratio is negative
+                    T1 z1 = curr_pt.z + ddz;
+                    T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    T1 z2 = zmin+jIn*dz;
+                    ddz = curr_pt.z - z2;
+                    if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; jIn--; }
+                    ddx = ddz*gIn.x/gIn.z;
+                    T1 x2 = curr_pt.x - ddx;
+                    T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    if ( d1 <= d2 ) {
+                        curr_pt.x = x1;
+                        curr_pt.z = z1;
+                        iOut = iIn;
+                        jOut = jIn;
+                        iIn++;
+                    } else {
+                        curr_pt.x = x2;
+                        curr_pt.z = z2;
+                        iOut = iIn;
+                        jOut = jIn;
+                        jIn--;
+                    }
+                    
+                } else {
+                    T1 x1 = xmin+iIn*dx;
+                    T1 ddx = curr_pt.x - x1;
+                    if ( ddx == 0.0 ) { x1 -= dx; ddx = curr_pt.x - x1; iIn--; }
+                    T1 ddz = ddx*gIn.z/gIn.x;
+                    T1 z1 = curr_pt.z - ddz;
+                    T1 d1 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    T1 z2 = zmin+jIn*dz;
+                    ddz = curr_pt.z - z2;
+                    if ( ddz == 0.0 ) { z2 -= dz; ddz = curr_pt.z - z2; jIn--; }
+                    ddx = ddz*gIn.x/gIn.z;
+                    T1 x2 = curr_pt.x - ddx;
+                    T1 d2 = sqrt(ddx*ddx + ddz*ddz);
+                    
+                    if ( d1 <= d2 ) {
+                        curr_pt.x = x1;
+                        curr_pt.z = z1;
+                        iOut = iIn;
+                        jOut = jIn;
+                        iIn--;
+                    } else {
+                        curr_pt.x = x2;
+                        curr_pt.z = z2;
+                        iOut = iIn;
+                        jOut = jIn;
+                        jIn--;
+                    }
+                }
+                
+                onNode = false;
+                if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+                    onNode = true;
+                }
+                
+                gOut = gIn;
+                
             }
             
-            gOut = gIn;
+            r_data.push_back( curr_pt );
             
+            //        std::cout << curr_pt.x << '\t' << curr_pt.z << '\t' << iIn << '\t' << jIn << '\t' << iOut << '\t' << jOut << '\n';
+            
+            // are we close enough to one the of Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
+                    r_data.push_back( Tx[ns] );
+                    reachedTx = true;
+                }
+            }
         }
+    }
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,
+                                     const size_t threadNo) const {
         
-        r_data.push_back( curr_pt );
+        //    std::cout << '\n';
+        //    for ( int j=ncz; j>=0; --j ) {
+        //        for ( size_t i=0; i<=ncx; ++i ) {
+        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+        //        }
+        //        std::cout << '\n';
+        //    }
         
-//        std::cout << curr_pt.x << '\t' << curr_pt.z << '\t' << iIn << '\t' << jIn << '\t' << iOut << '\t' << jOut << '\n';
+        // sweep first direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node(i, j, threadNo);
+                }
+            }
+        }
+        //    std::cout << '\n';
+        //    for ( int j=ncz; j>=0; --j ) {
+        //        for ( size_t i=0; i<=ncx; ++i ) {
+        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+        //        }
+        //        std::cout << '\n';
+        //    }
         
-        // are we close enough to one the of Tx nodes ?
-        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-            if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
-                r_data.push_back( Tx[ns] );
-                reachedTx = true;
+        // sweep second direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node(i, j, threadNo);
+                }
             }
         }
-    }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,
-                                 const size_t threadNo) const {
-    
-    //    std::cout << '\n';
-    //    for ( int j=ncz; j>=0; --j ) {
-    //        for ( size_t i=0; i<=ncx; ++i ) {
-    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-    //        }
-    //        std::cout << '\n';
-    //    }
-    
-    // sweep first direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node(i, j, threadNo);
+        //    std::cout << '\n';
+        //    for ( int j=ncz; j>=0; --j ) {
+        //        for ( size_t i=0; i<=ncx; ++i ) {
+        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+        //        }
+        //        std::cout << '\n';
+        //    }
+        
+        // sweep third direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node(i, j, threadNo);
+                }
             }
         }
-    }
-    //    std::cout << '\n';
-    //    for ( int j=ncz; j>=0; --j ) {
-    //        for ( size_t i=0; i<=ncx; ++i ) {
-    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-    //        }
-    //        std::cout << '\n';
-    //    }
-    
-    // sweep second direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node(i, j, threadNo);
+        //    std::cout << '\n';
+        //    for ( int j=ncz; j>=0; --j ) {
+        //        for ( size_t i=0; i<=ncx; ++i ) {
+        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+        //        }
+        //        std::cout << '\n';
+        //    }
+        
+        // sweep fourth direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node(i, j, threadNo);
+                }
             }
         }
-    }
-    //    std::cout << '\n';
-    //    for ( int j=ncz; j>=0; --j ) {
-    //        for ( size_t i=0; i<=ncx; ++i ) {
-    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-    //        }
-    //        std::cout << '\n';
-    //    }
-    
-    // sweep third direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node(i, j, threadNo);
-            }
-        }
-    }
-    //    std::cout << '\n';
-    //    for ( int j=ncz; j>=0; --j ) {
-    //        for ( size_t i=0; i<=ncx; ++i ) {
-    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-    //        }
-    //        std::cout << '\n';
-    //    }
-    
-    // sweep fourth direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node(i, j, threadNo);
-            }
-        }
-    }
-    //    std::cout << '\n';
-    //    for ( int j=ncz; j>=0; --j ) {
-    //        for ( size_t i=0; i<=ncx; ++i ) {
-    //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-    //        }
-    //        std::cout << '\n';
-    //    }
-}
-
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::sweep45(const std::vector<bool>& frozen,
-                                   const size_t threadNo) const {
-    
-    // sweep first direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node45(i, j, threadNo);
-            }
-        }
+        //    std::cout << '\n';
+        //    for ( int j=ncz; j>=0; --j ) {
+        //        for ( size_t i=0; i<=ncx; ++i ) {
+        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
+        //        }
+        //        std::cout << '\n';
+        //    }
     }
     
-    // sweep second direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node45(i, j, threadNo);
-            }
-        }
-    }
     
-    // sweep third direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node45(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep fourth direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node45(i, j, threadNo);
-            }
-        }
-    }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::sweep_xz(const std::vector<bool>& frozen,
-                                    const size_t threadNo) const {
-    
-    // sweep first direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_xz(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep second direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_xz(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep third direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_xz(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep fourth direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_xz(i, j, threadNo);
-            }
-        }
-    }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
-                                    const size_t threadNo) const {
-    
-    // sweep first direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep second direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep third direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep fourth direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3(i, j, threadNo);
-            }
-        }
-    }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::sweep_weno3_xz(const std::vector<bool>& frozen,
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::sweep45(const std::vector<bool>& frozen,
                                        const size_t threadNo) const {
-    
-    // sweep first direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3_xz(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep second direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( size_t j=0; j<=ncz; ++j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3_xz(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep third direction
-    for ( long int i=ncx; i>=0; --i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3_xz(i, j, threadNo);
-            }
-        }
-    }
-    
-    // sweep fourth direction
-    for ( size_t i=0; i<=ncx; ++i ) {
-        for ( long int j=ncz; j>=0; --j ) {
-            if ( !frozen[ i*(ncz+1)+j ] ) {
-                update_node_weno3_xz(i, j, threadNo);
-            }
-        }
-    }
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::update_node(const size_t i, const size_t j,
-                                      const size_t threadNo) const {
-    
-    T1 a, b, t;
-    if (i==0)
-        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
-    else if (i==ncx)
-        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-    else {
-        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
-        a = a<t ? a : t;
-    }
-    
-    if (j==0)
-        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
-    else if (j==ncz)
-        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-    else {
-        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
-        b = b<t ? b : t;
-    }
         
-    T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
+        // sweep first direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node45(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep second direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node45(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep third direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node45(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep fourth direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node45(i, j, threadNo);
+                }
+            }
+        }
+    }
     
-    if ( fabs(a-b) >= fh )
-        t = (a<b ? a : b) + fh;
-    else
-        t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
-    
-    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
-        nodes[i*(ncz+1)+j].setTT(t,threadNo);
-    
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::update_node45(const size_t i, const size_t j,
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::sweep_xz(const std::vector<bool>& frozen,
                                         const size_t threadNo) const {
-    // stencil rotated pi/4
-    
-    T1 a, b, t;
-    if (i==0) {
-        if (j!=ncz)
-            a = nodes[ (i+1)*(ncz+1)+j+1 ].getTT(threadNo);
-        else
-            a = std::numeric_limits<T1>::max();
-    } else if (i==ncx) {
-        if (j!=0)
-            a = nodes[ (i-1)*(ncz+1)+j-1 ].getTT(threadNo);
-        else
-            a = std::numeric_limits<T1>::max();
-    } else {
-        if (j!=ncz)
-            a = nodes[ (i+1)*(ncz+1)+j+1 ].getTT(threadNo);
-        else
-            a = std::numeric_limits<T1>::max();
-        if (j!=0)
-            t = nodes[ (i-1)*(ncz+1)+j-1 ].getTT(threadNo);
-        else
-            t = std::numeric_limits<T1>::max();
-        a = a<t ? a : t;
+        
+        // sweep first direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_xz(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep second direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_xz(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep third direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_xz(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep fourth direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_xz(i, j, threadNo);
+                }
+            }
+        }
     }
     
-    if (i==0) {
-        if (j!=0)
-            b = nodes[ (i+1)*(ncz+1)+j-1 ].getTT(threadNo);
-        else
-            b = std::numeric_limits<T1>::max();
-    } else if (i==ncx) {
-        if (j!=ncz)
-            b = nodes[ (i-1)*(ncz+1)+j+1 ].getTT(threadNo);
-        else
-            b = std::numeric_limits<T1>::max();
-    } else {
-        if (j!=0)
-            b = nodes[ (i+1)*(ncz+1)+j-1 ].getTT(threadNo);
-        else
-            b = std::numeric_limits<T1>::max();
-        if (j!=ncz)
-            t = nodes[ (i-1)*(ncz+1)+j+1 ].getTT(threadNo);
-        else
-            t = std::numeric_limits<T1>::max();
-        b = b<t ? b : t;
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
+                                           const size_t threadNo) const {
+        
+        // sweep first direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep second direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep third direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep fourth direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3(i, j, threadNo);
+                }
+            }
+        }
     }
     
-    T1 fh = 1.414213562373095 * nodes[i*(ncz+1)+j].getNodeSlowness() *
-    dx;
-    if ( fabs(a-b) >= fh )
-        t = (a<b ? a : b) + fh;
-    else
-        t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
-    
-    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
-        nodes[i*(ncz+1)+j].setTT(t,threadNo);
-}
-
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::update_node_xz(const size_t i, const size_t j,
-                                          const size_t threadNo) const {
-    
-    T1 a, b, t;
-    if (i==0)
-        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
-    else if (i==ncx)
-        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-    else {
-        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
-        a = a<t ? a : t;
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::sweep_weno3_xz(const std::vector<bool>& frozen,
+                                              const size_t threadNo) const {
+        
+        // sweep first direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3_xz(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep second direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( size_t j=0; j<=ncz; ++j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3_xz(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep third direction
+        for ( long int i=ncx; i>=0; --i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3_xz(i, j, threadNo);
+                }
+            }
+        }
+        
+        // sweep fourth direction
+        for ( size_t i=0; i<=ncx; ++i ) {
+            for ( long int j=ncz; j>=0; --j ) {
+                if ( !frozen[ i*(ncz+1)+j ] ) {
+                    update_node_weno3_xz(i, j, threadNo);
+                }
+            }
+        }
     }
     
-    if (j==0)
-        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
-    else if (j==ncz)
-        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-    else {
-        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
-        b = b<t ? b : t;
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::update_node(const size_t i, const size_t j,
+                                           const size_t threadNo) const {
+        
+        T1 a, b, t;
+        if (i==0)
+            a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+        else if (i==ncx)
+            a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        else {
+            a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+            a = a<t ? a : t;
+        }
+        
+        if (j==0)
+            b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+        else if (j==ncz)
+            b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        else {
+            b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+            b = b<t ? b : t;
+        }
+        
+        T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
+        
+        if ( fabs(a-b) >= fh )
+            t = (a<b ? a : b) + fh;
+        else
+            t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+        
+        if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+            nodes[i*(ncz+1)+j].setTT(t,threadNo);
+        
     }
     
-    if ( a<b && ((b-a)/dx)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
-        t = a + nodes[i*(ncz+1)+j].getNodeSlowness()*dx;
-    } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
-        t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
-    } else {
-        T1 dx2 = dx*dx;
-        T1 dz2 = dz*dz;
-        T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
-        t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
-                                                b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
-                                                dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
-    }
-    
-    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
-        nodes[i*(ncz+1)+j].setTT(t,threadNo);
-}
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::update_node_weno3(const size_t i, const size_t j,
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::update_node45(const size_t i, const size_t j,
                                              const size_t threadNo) const {
-
-    // not valid if dx != dz
-    
-//    @Article{zhang06,
-//        Title                    = {High Order Fast Sweeping Methods for Static {H}amilton–{J}acobi Equations},
-//        Author                   = {Yong-Tao Zhang and Hong-Kai Zhao and Jianliang Qian},
-//        Journal                  = {Journal of Scientific Computing},
-//        Year                     = {2006},
-//        Number                   = {1},
-//        Pages                    = {25--56},
-//        Volume                   = {29},
-//        DOI                      = {10.1007/s10915-005-9014-3},
-//        URL                      = {http://dx.doi.org/10.1007/s10915-005-9014-3}
-//        }
-
-    
-    T1 a, b, t;
-    if (i==0) {
-        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);  // fist order
-    } else if (i==1) {
-        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
+        // stencil rotated pi/4
         
-        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        T1 a, b, t;
+        if (i==0) {
+            if (j!=ncz)
+                a = nodes[ (i+1)*(ncz+1)+j+1 ].getTT(threadNo);
+            else
+                a = std::numeric_limits<T1>::max();
+        } else if (i==ncx) {
+            if (j!=0)
+                a = nodes[ (i-1)*(ncz+1)+j-1 ].getTT(threadNo);
+            else
+                a = std::numeric_limits<T1>::max();
+        } else {
+            if (j!=ncz)
+                a = nodes[ (i+1)*(ncz+1)+j+1 ].getTT(threadNo);
+            else
+                a = std::numeric_limits<T1>::max();
+            if (j!=0)
+                t = nodes[ (i-1)*(ncz+1)+j-1 ].getTT(threadNo);
+            else
+                t = std::numeric_limits<T1>::max();
+            a = a<t ? a : t;
+        }
         
-        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        if (i==0) {
+            if (j!=0)
+                b = nodes[ (i+1)*(ncz+1)+j-1 ].getTT(threadNo);
+            else
+                b = std::numeric_limits<T1>::max();
+        } else if (i==ncx) {
+            if (j!=ncz)
+                b = nodes[ (i-1)*(ncz+1)+j+1 ].getTT(threadNo);
+            else
+                b = std::numeric_limits<T1>::max();
+        } else {
+            if (j!=0)
+                b = nodes[ (i+1)*(ncz+1)+j-1 ].getTT(threadNo);
+            else
+                b = std::numeric_limits<T1>::max();
+            if (j!=ncz)
+                t = nodes[ (i-1)*(ncz+1)+j+1 ].getTT(threadNo);
+            else
+                t = std::numeric_limits<T1>::max();
+            b = b<t ? b : t;
+        }
         
-        t = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo); // first order for left
-        a = a<t ? a : t;
+        T1 fh = 1.414213562373095 * nodes[i*(ncz+1)+j].getNodeSlowness() *
+        dx;
+        if ( fabs(a-b) >= fh )
+            t = (a<b ? a : b) + fh;
+        else
+            t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
         
-    } else if (i==ncx) {
-        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-    } else if (i==ncx-1) {
-        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am;
-        
-        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo); // first order for right
-        a = a<t ? a : t;
-        
-    } else {
-        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        w = 1./(1.+2.*r*r);
-        
-        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap ?
-        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
-        
-    }
-
-    if (j==0) {
-        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
-    } else if (j==1) {
-        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
-        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp;
-        
-        t = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        b = b<t ? b : t;
-        
-    } else if (j==ncz) {
-        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-    } else if (j==ncz-1) {
-        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dx);
-        
-        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm;
-        
-        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo); // first order for right
-        b = b<t ? b : t;
-        
-    } else {
-        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
-        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
-        num *= num;
-        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        w = 1./(1.+2.*r*r);
-        
-        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dx);
-
-        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp ?
-        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp;
-        
+        if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+            nodes[i*(ncz+1)+j].setTT(t,threadNo);
     }
     
-    T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
     
-    if ( fabs(a-b) >= fh )
-        t = (a<b ? a : b) + fh;
-    else
-        t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::update_node_xz(const size_t i, const size_t j,
+                                              const size_t threadNo) const {
+        
+        T1 a, b, t;
+        if (i==0)
+            a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+        else if (i==ncx)
+            a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        else {
+            a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);
+            a = a<t ? a : t;
+        }
+        
+        if (j==0)
+            b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+        else if (j==ncz)
+            b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        else {
+            b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+            b = b<t ? b : t;
+        }
+        
+        if ( a<b && ((b-a)/dx)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+            t = a + nodes[i*(ncz+1)+j].getNodeSlowness()*dx;
+        } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+            t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
+        } else {
+            T1 dx2 = dx*dx;
+            T1 dz2 = dz*dz;
+            T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
+            t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
+                                                    b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
+                                                    dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+        }
+        
+        if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+            nodes[i*(ncz+1)+j].setTT(t,threadNo);
+    }
     
-    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
-        nodes[i*(ncz+1)+j].setTT(t,threadNo);
-    
-    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
-        nodes[i*(ncz+1)+j].setTT(t,threadNo);
-
-}
-
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::update_node_weno3_xz(const size_t i, const size_t j,
-                                                const size_t threadNo) const {
-    
-    T1 a, b, t;
-    if (i==0) {
-        a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);  // fist order
-    } else if (i==1) {
-        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::update_node_weno3(const size_t i, const size_t j,
+                                                 const size_t threadNo) const {
         
-        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        // not valid if dx != dz
         
-        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        //    @Article{zhang06,
+        //        Title                    = {High Order Fast Sweeping Methods for Static {H}amilton–{J}acobi Equations},
+        //        Author                   = {Yong-Tao Zhang and Hong-Kai Zhao and Jianliang Qian},
+        //        Journal                  = {Journal of Scientific Computing},
+        //        Year                     = {2006},
+        //        Number                   = {1},
+        //        Pages                    = {25--56},
+        //        Volume                   = {29},
+        //        DOI                      = {10.1007/s10915-005-9014-3},
+        //        URL                      = {http://dx.doi.org/10.1007/s10915-005-9014-3}
+        //        }
         
-        t = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo); // first order for left
-        a = a<t ? a : t;
         
-    } else if (i==ncx) {
-        a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-    } else if (i==ncx-1) {
-        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
+        T1 a, b, t;
+        if (i==0) {
+            a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);  // fist order
+        } else if (i==1) {
+            T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            a = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+            
+            t = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo); // first order for left
+            a = a<t ? a : t;
+            
+        } else if (i==ncx) {
+            a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        } else if (i==ncx-1) {
+            T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am;
+            
+            t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo); // first order for right
+            a = a<t ? a : t;
+            
+        } else {
+            T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            w = 1./(1.+2.*r*r);
+            
+            T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap ?
+            nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+            
+        }
         
-        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+        if (j==0) {
+            b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+        } else if (j==1) {
+            T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+            w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            b = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp;
+            
+            t = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            b = b<t ? b : t;
+            
+        } else if (j==ncz) {
+            b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        } else if (j==ncz-1) {
+            T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dx);
+            
+            b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm;
+            
+            t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo); // first order for right
+            b = b<t ? b : t;
+            
+        } else {
+            T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+            w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+            num *= num;
+            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            w = 1./(1.+2.*r*r);
+            
+            T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dx) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dx);
+            
+            b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp ?
+            nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*bm : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*bp;
+            
+        }
         
-        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am;
+        T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
         
-        t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo); // first order for right
-        a = a<t ? a : t;
+        if ( fabs(a-b) >= fh )
+            t = (a<b ? a : b) + fh;
+        else
+            t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
         
-    } else {
-        T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
+        if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+            nodes[i*(ncz+1)+j].setTT(t,threadNo);
         
-        T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        w = 1./(1.+2.*r*r);
-        
-        T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
-        
-        a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap ?
-        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+        if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+            nodes[i*(ncz+1)+j].setTT(t,threadNo);
         
     }
     
-    if (j==0) {
-        b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
-    } else if (j==1) {
-        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::update_node_weno3_xz(const size_t i, const size_t j,
+                                                    const size_t threadNo) const {
         
-        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
-        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dz);
+        T1 a, b, t;
+        if (i==0) {
+            a = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo);  // fist order
+        } else if (i==1) {
+            T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            a = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+            
+            t = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo); // first order for left
+            a = a<t ? a : t;
+            
+        } else if (i==ncx) {
+            a = nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+        } else if (i==ncx-1) {
+            T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am;
+            
+            t = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo); // first order for right
+            a = a<t ? a : t;
+            
+        } else {
+            T1 num = nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 ap = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(-nodes[ (i+2)*(ncz+1)+j ].getTT(threadNo) +4.*nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            w = 1./(1.+2.*r*r);
+            
+            T1 am = (1.-w)*(nodes[ (i+1)*(ncz+1)+j ].getTT(threadNo)-nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo))/(2.*dx) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ (i-1)*(ncz+1)+j ].getTT(threadNo) + nodes[ (i-2)*(ncz+1)+j ].getTT(threadNo))/(2.*dx);
+            
+            a = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap ?
+            nodes[ i*(ncz+1)+j ].getTT(threadNo) - dx*am : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dx*ap;
+            
+        }
         
-        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp;
+        if (j==0) {
+            b = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo);
+        } else if (j==1) {
+            T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+            w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dz);
+            
+            b = nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp;
+            
+            t = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            b = b<t ? b : t;
+            
+        } else if (j==ncz) {
+            b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+        } else if (j==ncz-1) {
+            T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dz);
+            
+            b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm;
+            
+            t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo); // first order for right
+            b = b<t ? b : t;
+            
+        } else {
+            T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
+            num *= num;
+            T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
+            den *= den;
+            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            T1 w = 1./(1.+2.*r*r);
+            
+            T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+            w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dz);
+            
+            num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
+            num *= num;
+            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
+            w = 1./(1.+2.*r*r);
+            
+            T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
+            w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dz);
+            
+            b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp ?
+            nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp;
+            
+        }
         
-        t = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        b = b<t ? b : t;
+        if ( a<b && ((b-a)/dx)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+            t = a + nodes[i*(ncz+1)+j].getNodeSlowness()*dx;
+        } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
+            t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
+        } else {
+            T1 dx2 = dx*dx;
+            T1 dz2 = dz*dz;
+            T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
+            t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
+                                                    b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
+                                                    dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+        }
         
-    } else if (j==ncz) {
-        b = nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-    } else if (j==ncz-1) {
-        T1 num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dz);
-        
-        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm;
-        
-        t = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo); // first order for right
-        b = b<t ? b : t;
-        
-    } else {
-        T1 num = nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j ].getTT(threadNo);
-        num *= num;
-        T1 den = nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j ].getTT(threadNo) + nodes[ i*(ncz+1)+j-1 ].getTT(threadNo);
-        den *= den;
-        T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        T1 w = 1./(1.+2.*r*r);
-        
-        T1 bp = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
-        w*(-nodes[ i*(ncz+1)+j+2 ].getTT(threadNo) +4.*nodes[ i*(ncz+1)+j+1 ].getTT(threadNo) -3.*nodes[ i*(ncz+1)+j ].getTT(threadNo))/(2.*dz);
-        
-        num = nodes[ i*(ncz+1)+j ].getTT(threadNo) -2.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo);
-        num *= num;
-        r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-        w = 1./(1.+2.*r*r);
-        
-        T1 bm = (1.-w)*(nodes[ i*(ncz+1)+j+1 ].getTT(threadNo)-nodes[ i*(ncz+1)+j-1 ].getTT(threadNo))/(2.*dz) +
-        w*(3.*nodes[ i*(ncz+1)+j ].getTT(threadNo) -4.*nodes[ i*(ncz+1)+j-1 ].getTT(threadNo) + nodes[ i*(ncz+1)+j-2 ].getTT(threadNo))/(2.*dz);
-        
-        b = nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm < nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp ?
-        nodes[ i*(ncz+1)+j ].getTT(threadNo) - dz*bm : nodes[ i*(ncz+1)+j ].getTT(threadNo) + dz*bp;
-        
-    }
-
-    if ( a<b && ((b-a)/dx)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
-        t = a + nodes[i*(ncz+1)+j].getNodeSlowness()*dx;
-    } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
-        t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
-    } else {
-        T1 dx2 = dx*dx;
-        T1 dz2 = dz*dz;
-        T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
-        t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
-                                                b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
-                                                dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+        if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
+            nodes[i*(ncz+1)+j].setTT(t,threadNo);
     }
     
-    if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
-        nodes[i*(ncz+1)+j].setTT(t,threadNo);
-}
-
-
-template<typename T1, typename T2, typename NODE>
-void Grid2Dri<T1,T2,NODE>::initFSM(const std::vector<sxz<T1>>& Tx,
-                                   const std::vector<T1>& t0,
-                                   std::vector<bool>& frozen, const int npts,
-                                   const size_t threadNo) const {
     
-    for (size_t n=0; n<Tx.size(); ++n) {
-        bool found = false;
-        for ( long long nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Tx[n] ) {
-                found = true;
-                nodes[nn].setTT( t0[n], threadNo );
-                frozen[nn] = true;
+    template<typename T1, typename T2, typename NODE>
+    void Grid2Dri<T1,T2,NODE>::initFSM(const std::vector<sxz<T1>>& Tx,
+                                       const std::vector<T1>& t0,
+                                       std::vector<bool>& frozen, const int npts,
+                                       const size_t threadNo) const {
+        
+        for (size_t n=0; n<Tx.size(); ++n) {
+            bool found = false;
+            for ( long long nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == Tx[n] ) {
+                    found = true;
+                    nodes[nn].setTT( t0[n], threadNo );
+                    frozen[nn] = true;
+                    
+                    long long i = nn/(ncz+1);
+                    long long j = nn - i*(ncz+1);
+                    
+                    for ( long long ii=i-npts; ii<=i+npts; ++ii ) {
+                        if ( ii>=0 && ii<=ncx ) {
+                            for ( long long jj=j-npts; jj<=j+npts; ++jj ) {
+                                if ( jj>=0 && jj<=ncz && !(ii==i && jj==j) ) {
+                                    
+                                    size_t nnn = ii*(ncz+1) + jj;
+                                    
+                                    T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * 0.5*(nodes[nnn].getNodeSlowness() + nodes[nn].getNodeSlowness());
+                                    nodes[nnn].setTT( tt, threadNo );
+                                    frozen[nnn] = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+            if ( found==false ) {
                 
-                long long i = nn/(ncz+1);
-                long long j = nn - i*(ncz+1);
+                // find cell where Tx resides
+                long long cellNo = getCellNo(Tx[n]);
                 
-                for ( long long ii=i-npts; ii<=i+npts; ++ii ) {
+                long long i = cellNo/ncz;
+                long long j = cellNo - i*ncz;
+                
+                for ( long long ii=i-(npts-1); ii<=i+npts; ++ii ) {
                     if ( ii>=0 && ii<=ncx ) {
-                        for ( long long jj=j-npts; jj<=j+npts; ++jj ) {
-                            if ( jj>=0 && jj<=ncz && !(ii==i && jj==j) ) {
-                                
+                        for ( long long jj=j-(npts-1); jj<=j+npts; ++jj ) {
+                            if ( jj>=0 && jj<=ncz ) {
                                 size_t nnn = ii*(ncz+1) + jj;
                                 
-                                T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * 0.5*(nodes[nnn].getNodeSlowness() + nodes[nn].getNodeSlowness());
+                                T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
                                 nodes[nnn].setTT( tt, threadNo );
                                 frozen[nnn] = true;
                             }
                         }
                     }
                 }
-                
-                break;
-            }
-        }
-        if ( found==false ) {
-            
-            // find cell where Tx resides
-            long long cellNo = getCellNo(Tx[n]);
-            
-            long long i = cellNo/ncz;
-            long long j = cellNo - i*ncz;
-            
-            for ( long long ii=i-(npts-1); ii<=i+npts; ++ii ) {
-                if ( ii>=0 && ii<=ncx ) {
-                    for ( long long jj=j-(npts-1); jj<=j+npts; ++jj ) {
-                        if ( jj>=0 && jj<=ncz ) {
-                            size_t nnn = ii*(ncz+1) + jj;
-                            
-                            T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
-                            nodes[nnn].setTT( tt, threadNo );
-                            frozen[nnn] = true;
-                        }
-                    }
-                }
             }
         }
     }
-}
-
-template<typename T1, typename T2, typename NODE>
-T1 Grid2Dri<T1,T2,NODE>::getSlowness(const sxz<T1>& pt) const {
-
-    // bilinear interpolation if not on node
     
-    T1 s;
-    T2 i, j;
-    
-    getIJ(pt, i, j);
-    
-    if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
-        // on node
-        return nodes[i*(ncz+1)+j].getNodeSlowness();
-    } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+    template<typename T1, typename T2, typename NODE>
+    T1 Grid2Dri<T1,T2,NODE>::getSlowness(const sxz<T1>& pt) const {
         
-        // on edge
-        T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
-        T1 t2 = nodes[i*(ncz+1)+j+1].getNodeSlowness();
+        // bilinear interpolation if not on node
         
-        T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
-        T1 w2 = (pt.z - (zmin+j*dz))/dz;
+        T1 s;
+        T2 i, j;
         
-        s = t1*w1 + t2*w2;
+        getIJ(pt, i, j);
         
-    } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+        if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+            // on node
+            return nodes[i*(ncz+1)+j].getNodeSlowness();
+        } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+            
+            // on edge
+            T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
+            T1 t2 = nodes[i*(ncz+1)+j+1].getNodeSlowness();
+            
+            T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
+            T1 w2 = (pt.z - (zmin+j*dz))/dz;
+            
+            s = t1*w1 + t2*w2;
+            
+        } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+            
+            // on edge
+            T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
+            T1 t2 = nodes[(i+1)*(ncz+1)+j].getNodeSlowness();
+            
+            T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+            T1 w2 = (pt.x - (xmin+i*dx))/dx;
+            
+            s = t1*w1 + t2*w2;
+            
+        } else {
+            
+            T1 t1 = nodes[    i*(ncz+1)+j  ].getNodeSlowness();
+            T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getNodeSlowness();
+            T1 t3 = nodes[    i*(ncz+1)+j+1].getNodeSlowness();
+            T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getNodeSlowness();
+            
+            T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
+            T1 w2 = (pt.x - (xmin+i*dx))/dx;
+            
+            t1 = t1*w1 + t2*w2;
+            t2 = t3*w1 + t4*w2;
+            
+            w1 = (zmin+(j+1)*dz - pt.z)/dz;
+            w2 = (pt.z - (zmin+j*dz))/dz;
+            
+            s = t1*w1 + t2*w2;
+        }
         
-        // on edge
-        T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
-        T1 t2 = nodes[(i+1)*(ncz+1)+j].getNodeSlowness();
-        
-        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-        T1 w2 = (pt.x - (xmin+i*dx))/dx;
-        
-        s = t1*w1 + t2*w2;
-        
-    } else {
-        
-        T1 t1 = nodes[    i*(ncz+1)+j  ].getNodeSlowness();
-        T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getNodeSlowness();
-        T1 t3 = nodes[    i*(ncz+1)+j+1].getNodeSlowness();
-        T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getNodeSlowness();
-        
-        T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
-        T1 w2 = (pt.x - (xmin+i*dx))/dx;
-        
-        t1 = t1*w1 + t2*w2;
-        t2 = t3*w1 + t4*w2;
-        
-        w1 = (zmin+(j+1)*dz - pt.z)/dz;
-        w2 = (pt.z - (zmin+j*dz))/dz;
-        
-        s = t1*w1 + t2*w2;
+        return s;
     }
     
-    return s;
 }
-
 
 #endif

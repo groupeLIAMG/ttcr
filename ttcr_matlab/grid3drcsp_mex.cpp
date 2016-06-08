@@ -7,16 +7,18 @@
 //
 
 #include <thread>
-
+#include <vector>
 
 #include "mex.h"
 #include "class_handle.hpp"
 
+#include "Cell.h"
 #include "Grid3Drcsp.h"
 
 using namespace std;
+using namespace ttcr;
 
-typedef Grid3Drcsp<double,uint32_t> grid;
+typedef Grid3Drcsp<double,uint32_t, Cell<double,Node3Dcsp<double,uint32_t>,sxyz<double>>> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -136,7 +138,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
         
-        if ( grid_instance->setSlowness(slowness, nSlowness) == 1 ) {
+        vector<double> slown(nSlowness);
+        for ( size_t n=0; n<nSlowness; ++n ) slown[n] = slowness[n];
+
+        if ( grid_instance->setSlowness(slown) == 1 ) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         
@@ -171,7 +176,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
         
-        if ( grid_instance->setSlowness(slowness, nSlowness) == 1 ) {
+        vector<double> slown(nSlowness);
+        for ( size_t n=0; n<nSlowness; ++n ) slown[n] = slowness[n];
+
+        if ( grid_instance->setSlowness(slown) == 1 ) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         

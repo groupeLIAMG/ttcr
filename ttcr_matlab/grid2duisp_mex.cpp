@@ -21,6 +21,7 @@
 #include "Node3Disp.h"
 
 using namespace std;
+using namespace ttcr;
 
 typedef Grid2Duisp<double,uint32_t,Node3Disp<double,uint32_t>,sxyz<double>> grid;
 

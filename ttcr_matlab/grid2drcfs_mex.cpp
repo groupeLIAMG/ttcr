@@ -14,6 +14,7 @@
 #include "Grid2Drcfs.h"
 
 using namespace std;
+using namespace ttcr;
 
 typedef Grid2Drcfs<double,uint32_t> grid;
 

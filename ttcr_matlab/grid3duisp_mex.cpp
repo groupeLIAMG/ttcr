@@ -28,6 +28,7 @@
 #include "Grid3Duisp.h"
 
 using namespace std;
+using namespace ttcr;
 
 typedef Grid3Duisp<double,uint32_t> grid;
 

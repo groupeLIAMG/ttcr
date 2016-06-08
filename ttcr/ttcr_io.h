@@ -32,8 +32,12 @@
 #include "ttcr_t.h"
 #include "structs_ttcr.h"
 
-void print_usage (std::ostream&, char *, int);
-std::string parse_input(int argc, char * argv[], input_parameters &);
-void get_params(const std::string &, input_parameters &);
+namespace ttcr {
+    
+    void print_usage (std::ostream&, char *, int);
+    std::string parse_input(int argc, char * argv[], input_parameters &);
+    void get_params(const std::string &, input_parameters &);
+    
+}
 
 #endif /* defined(__ttcr_u__spmrt_io__) */
