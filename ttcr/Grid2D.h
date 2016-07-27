@@ -77,6 +77,7 @@ namespace ttcr {
         
         
         virtual size_t getNumberOfNodes() const { return 0; }
+        virtual size_t getNumberOfCells() const { return 0; }
         
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const bool vtkFormat=0) const {}

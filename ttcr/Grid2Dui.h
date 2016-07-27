@@ -115,6 +115,7 @@ namespace ttcr {
                              const size_t threadNo=0) const { return 0; }
         
         size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfCells() const { return triangles.size(); }
         
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();

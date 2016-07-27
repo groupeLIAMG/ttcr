@@ -76,6 +76,7 @@ namespace ttcr {
                              const size_t threadNo=0) const { return 0; }
         
         size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfCells() const { return ncx*ncz; }
         
         T2 getCellNo(const sxz<T1>& pt) const {
             T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;

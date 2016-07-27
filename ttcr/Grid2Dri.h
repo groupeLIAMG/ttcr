@@ -94,6 +94,7 @@ namespace ttcr {
                              const size_t threadNo=0) const { return 0; }
         
         size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfCells() const { return ncx*ncz; }
         
         void saveSlownessXYZ(const char filename[]) const {
             std::ofstream fout( filename );

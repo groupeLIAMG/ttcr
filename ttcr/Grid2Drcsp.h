@@ -704,7 +704,7 @@ namespace ttcr {
                                          std::vector<std::vector<siv2<double>>>& l_data,
                                          const size_t threadNo) const {
         
-        //    std::cout << Tx[0].z << '\t' << threadNo << '\n';
+//        std::cout << "in raytrace " << Tx[0].z << '\t' << threadNo << '\n';
         
         if ( this->checkPts(Tx) == 1 ) return 1;
         if ( this->checkPts(Rx) == 1 ) return 1;
