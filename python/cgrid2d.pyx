@@ -13,10 +13,6 @@ cdef extern from "ttcr_t.h" namespace "ttcr":
     cdef cppclass sxz[T]:
         sxz(T, T) except +
 
-cdef extern from "ttcr_t.h" namespace "ttcr":
-    cdef cppclass siv2[T]:
-        siv2()
-
 
 cdef extern from "Grid2Dttcr.h" namespace "ttcr":
     cdef cppclass Grid2Dttcr:
@@ -26,7 +22,10 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
         void setXi(const vector[double]&) except +
         void setTheta(const vector[double]&) except +
         int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object)
-
+        @staticmethod
+        void Lsr2d(double*,double*,size_t,double*,size_t,double*,size_t,object)
+        @staticmethod
+        void Lsr2da(double*,double*,size_t,double*,size_t,double*,size_t,object)
 
 
 
@@ -100,3 +99,39 @@ cdef class Grid2Dcpp:
         L = csr_matrix(Ldata, shape=(M,N))
     
         return tt,rays,L
+
+
+    @staticmethod
+    def Lsr2d(Tx, Rx, grx, grz):
+        
+        cdef size_t nTx = Tx.shape[0]
+        cdef size_t n_grx = grx.shape[0]
+        cdef size_t n_grz = grz.shape[0]
+            
+        Ldata = ([0.0], [0.0], [0.0])
+        
+        Grid2Dttcr.Lsr2d(<double*> np.PyArray_DATA(Tx), <double*> np.PyArray_DATA(Rx), nTx, <double*> np.PyArray_DATA(grx), n_grx, <double*> np.PyArray_DATA(grz), n_grz, Ldata)
+
+        M = nTx
+        N = (n_grx-1)*(n_grz-1)
+        L = csr_matrix(Ldata, shape=(M,N))
+        
+        return L
+        
+        
+    @staticmethod
+    def Lsr2da(Tx, Rx, grx, grz):
+        
+        cdef size_t nTx = Tx.shape[0]
+        cdef size_t n_grx = grx.shape[0]
+        cdef size_t n_grz = grz.shape[0]
+            
+        Ldata = ([0.0], [0.0], [0.0])
+        
+        Grid2Dttcr.Lsr2da(<double*> np.PyArray_DATA(Tx), <double*> np.PyArray_DATA(Rx), nTx, <double*> np.PyArray_DATA(grx), n_grx, <double*> np.PyArray_DATA(grz), n_grz, Ldata)
+
+        M = nTx
+        N = 2*(n_grx-1)*(n_grz-1)
+        L = csr_matrix(Ldata, shape=(M,N))
+        
+        return L

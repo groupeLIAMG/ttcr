@@ -279,4 +279,425 @@ namespace ttcr {
         
         return 0;
     }
+    
+    void Grid2Dttcr::Lsr2d(const double* Tx,
+                           const double* Rx,
+                           const size_t nTx,
+                           const double* grx,
+                           const size_t n_grx,
+                           const double* grz,
+                           const size_t n_grz,
+                           PyObject* L) {
+        
+        const double  small=1.e-10;
+        
+        size_t nCells = (n_grx-1)*(n_grz-1);
+        size_t nLmax = nTx * n_grx * n_grz/2;
+        double percent_sp = (nLmax*1.0)/(nTx*nCells*1.0);
+        
+        double* data_p = (double*)malloc( nLmax*sizeof(double) );
+        int64_t* indices_p = (int64_t*)malloc( nLmax*sizeof(int64_t) );
+        int64_t* indptr_p = (int64_t*)malloc( (nTx+1)*sizeof(int64_t) );
+        
+        size_t k = 0;
+        size_t ix, iz;
+        for ( size_t n=0; n<nTx; ++n ) {
+            indptr_p[n] = k;
+        
+            double xs = Tx[2*n];
+            double zs = Tx[2*n+1];
+            double xr = Rx[2*n];
+            double zr = Rx[2*n+1];
+			
+			std::cout << xs << '\t' << zs << "\t-\t" << xr << '\t' << zr << '\n';
+			
+            if ( xs>xr ) {  /* on va de s à r, on veut x croissant */
+                double dtmp = xs;
+                xs = xr;
+                xr = dtmp;
+                dtmp = zs;
+                zs = zr;
+                zr = dtmp;
+            }
+        
+            /* points de depart */
+            double x = xs;
+            double z = zs;
+            
+            if ( fabs(zs-zr)<small ) {  /* rai horizontal */
+                
+                for ( ix=0; ix<n_grx-1; ++ix ) if ( x < grx[ix+1] ) break;
+                for ( iz=0; iz<n_grz-1; ++iz ) if ( z < grz[iz+1] ) break;
+        
+                while ( x < xr ) {
+                    int64_t iCell = ix*(n_grz-1) + iz;
+                    
+                    double dlx = ( grx[ix+1]<xr ? grx[ix+1] : xr ) - x;
+                    
+                    indices_p[k] = iCell;
+                    data_p[k] = dlx;
+                    k++;
+                    
+                    if (k>=nLmax){
+                        size_t oldnzmax = nLmax;
+                        percent_sp += 0.1;
+                        nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+                        
+                        /* make sure nzmax increases at least by 1 */
+                        if (oldnzmax == nLmax) nLmax++;
+                        
+                        data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+                        indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+                    }
+                    
+                    ix++;
+                    x = grx[ix];
+                }
+            }
+            else if ( fabs(xs-xr)<small ) { /* rai vertical */
+                if ( zs > zr ) {  /* on va de s à r, on veut z croissant */
+                    double dtmp = zs;
+                    zs = zr;
+                    zr = dtmp;
+                }
+                z = zs;
+                
+                for ( ix=0; ix<n_grx-1; ++ix ) if ( x < grx[ix+1] ) break;
+                for ( iz=0; iz<n_grz-1; ++iz ) if ( z < grz[iz+1] ) break;
+                
+                while ( z < zr ) {
+                    int64_t iCell = ix*(n_grz-1) + iz;
+                    
+                    double dlz = ( grz[iz+1]<zr ? grz[iz+1] : zr ) - z;
+                    
+                    indices_p[k] = iCell;
+                    data_p[k] = dlz;
+                    k++;
+                    
+                    if (k>=nLmax){
+                        size_t oldnzmax = nLmax;
+                        percent_sp += 0.1;
+                        nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+                        
+                        /* make sure nzmax increases at least by 1 */
+                        if (oldnzmax == nLmax) nLmax++;
+
+                        data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+                        indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+                    }
+                    
+                    iz++;
+                    z = grz[iz];
+                }
+            }
+            else { /* rai oblique */
+				/* pente du rai */
+				double m = (zr-zs)/(xr-xs);
+				double b = zr - m*xr;
+				bool up = m>0;
+				
+				for ( ix=0; ix<n_grx-1; ++ix ) if ( x < grx[ix+1] ) break;
+				for ( iz=0; iz<n_grz-1; ++iz ) if ( z < grz[iz+1] ) break;
+				
+				while ( x < xr ) {
+					
+					double zi = m*grx[ix+1] + b;
+					
+					if ( up ) {
+						while ( z < zi && z < zr ) {
+							int64_t iCell = ix*(n_grz-1) + iz;
+							
+							double ze = grz[iz+1]<zi ? grz[iz+1] : zi;
+							ze = ze<zr ? ze : zr;
+							double xe = (ze-b)/m;
+							double dlx = xe - x;
+							double dlz = ze - z;
+							double dl = sqrt( dlx*dlx + dlz*dlz );
+							
+							indices_p[k] = iCell;
+							data_p[k] = dl;
+							k++;
+							
+							if (k>=nLmax){
+								size_t oldnzmax = nLmax;
+								percent_sp += 0.1;
+								nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+								
+								/* make sure nzmax increases at least by 1 */
+								if (oldnzmax == nLmax) nLmax++;
+
+								data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+								indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+							}
+							
+							x = xe;
+							z = ze;
+							if ( fabs(z-grz[iz+1])<small ) iz++;
+						}
+					} else {
+						while ( z > zi && z > zr ) {
+							int64_t iCell = ix*(n_grz-1) + iz;
+							
+							double ze = grz[iz]>zi ? grz[iz] : zi;
+							ze = ze>zr ? ze : zr;
+							double xe = (ze-b)/m;
+							double dlx = xe - x;
+							double dlz = ze - z;
+							double dl = sqrt( dlx*dlx + dlz*dlz );
+
+							indices_p[k] = iCell;
+							data_p[k] = dl;
+							k++;
+							
+							if (k>=nLmax){
+								size_t oldnzmax = nLmax;
+								percent_sp += 0.1;
+								nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+								
+								/* make sure nzmax increases at least by 1 */
+								if (oldnzmax == nLmax) nLmax++;
+
+								data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+								indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+							}
+							
+							x = xe;
+							z = ze;
+							if ( fabs(z-grz[iz])<small ) iz--;
+						}
+					}
+					
+					ix++;
+					x = grx[ix];
+				}
+            }
+        }
+		indptr_p[nTx] = k;
+        size_t nnz = k;
+		
+		data_p = (double*)realloc( data_p, nnz*sizeof(double) );
+		indices_p = (int64_t*)realloc( indices_p, nnz*sizeof(int64_t) );
+		
+        npy_intp dims[] = {static_cast<npy_intp>(nnz)};
+        PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);
+        PyObject* indices = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indices_p);
+        dims[0] = nTx+1;
+        PyObject* indptr = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indptr_p);
+        PyTuple_SetItem(L, 0, data);
+        PyTuple_SetItem(L, 1, indices);
+        PyTuple_SetItem(L, 2, indptr);
+    }
+
+
+	void Grid2Dttcr::Lsr2da(const double* Tx,
+							const double* Rx,
+							const size_t nTx,
+							const double* grx,
+							const size_t n_grx,
+							const double* grz,
+							const size_t n_grz,
+							PyObject* L) {
+		
+		const double  small=1.e-10;
+		
+		size_t nCells = (n_grx-1)*(n_grz-1);
+		size_t nLmax = nTx * n_grx * n_grz/2;
+		double percent_sp = (nLmax*1.0)/(nTx*nCells*1.0);
+		
+		double* data_p = (double*)malloc( nLmax*sizeof(double) );
+		int64_t* indices_p = (int64_t*)malloc( nLmax*sizeof(int64_t) );
+		int64_t* indptr_p = (int64_t*)malloc( (nTx+1)*sizeof(int64_t) );
+		
+		size_t k = 0;
+		size_t ix, iz;
+		for ( size_t n=0; n<nTx; ++n ) {
+			indptr_p[n] = k;
+			
+			double xs = Tx[2*n];
+			double zs = Tx[2*n+1];
+			double xr = Rx[2*n];
+			double zr = Rx[2*n+1];
+			
+			std::cout << xs << '\t' << zs << "\t-\t" << xr << '\t' << zr << '\n';
+			
+			if ( xs>xr ) {  /* on va de s à r, on veut x croissant */
+				double dtmp = xs;
+				xs = xr;
+				xr = dtmp;
+				dtmp = zs;
+				zs = zr;
+				zr = dtmp;
+			}
+			
+			/* points de depart */
+			double x = xs;
+			double z = zs;
+			
+			if ( fabs(zs-zr)<small ) {  /* rai horizontal */
+				
+				for ( ix=0; ix<n_grx-1; ++ix ) if ( x < grx[ix+1] ) break;
+				for ( iz=0; iz<n_grz-1; ++iz ) if ( z < grz[iz+1] ) break;
+				
+				while ( x < xr ) {
+					int64_t iCell = ix*(n_grz-1) + iz;
+					
+					double dlx = ( grx[ix+1]<xr ? grx[ix+1] : xr ) - x;
+					
+					indices_p[k] = iCell;
+					data_p[k] = dlx;
+					k++;
+					
+					if (k>=nLmax){
+						size_t oldnzmax = nLmax;
+						percent_sp += 0.1;
+						nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+						
+						/* make sure nzmax increases at least by 1 */
+						if (oldnzmax == nLmax) nLmax++;
+						
+						data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+						indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+					}
+					
+					ix++;
+					x = grx[ix];
+				}
+			}
+			else if ( fabs(xs-xr)<small ) { /* rai vertical */
+				if ( zs > zr ) {  /* on va de s à r, on veut z croissant */
+					double dtmp = zs;
+					zs = zr;
+					zr = dtmp;
+				}
+				z = zs;
+				
+				for ( ix=0; ix<n_grx-1; ++ix ) if ( x < grx[ix+1] ) break;
+				for ( iz=0; iz<n_grz-1; ++iz ) if ( z < grz[iz+1] ) break;
+				
+				while ( z < zr ) {
+					int64_t iCell = ix*(n_grz-1) + iz;
+					
+					double dlz = ( grz[iz+1]<zr ? grz[iz+1] : zr ) - z;
+					
+					indices_p[k] = iCell+nCells;
+					data_p[k] = dlz;
+					k++;
+					
+					if (k>=nLmax){
+						size_t oldnzmax = nLmax;
+						percent_sp += 0.1;
+						nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+						
+						/* make sure nzmax increases at least by 1 */
+						if (oldnzmax == nLmax) nLmax++;
+						
+						data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+						indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+					}
+					
+					iz++;
+					z = grz[iz];
+				}
+			}
+			else { /* rai oblique */
+				/* pente du rai */
+				double m = (zr-zs)/(xr-xs);
+				double b = zr - m*xr;
+				bool up = m>0;
+				
+				for ( ix=0; ix<n_grx-1; ++ix ) if ( x < grx[ix+1] ) break;
+				for ( iz=0; iz<n_grz-1; ++iz ) if ( z < grz[iz+1] ) break;
+				
+				while ( x < xr ) {
+					
+					double zi = m*grx[ix+1] + b;
+					
+					if ( up ) {
+						while ( z < zi && z < zr ) {
+							int64_t iCell = ix*(n_grz-1) + iz;
+							
+							double ze = grz[iz+1]<zi ? grz[iz+1] : zi;
+							ze = ze<zr ? ze : zr;
+							double xe = (ze-b)/m;
+							double dlx = xe - x;
+							double dlz = ze - z;
+							
+							indices_p[k] = iCell;
+							data_p[k] = dlx;
+							k++;
+							indices_p[k] = iCell+nCells;
+							data_p[k] = dlz;
+							k++;
+							
+							if (k>=nLmax){
+								size_t oldnzmax = nLmax;
+								percent_sp += 0.1;
+								nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+								
+								/* make sure nzmax increases at least by 2 */
+								if (oldnzmax == nLmax) nLmax+=2;
+								
+								data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+								indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+							}
+							
+							x = xe;
+							z = ze;
+							if ( fabs(z-grz[iz+1])<small ) iz++;
+						}
+					} else {
+						while ( z > zi && z > zr ) {
+							int64_t iCell = ix*(n_grz-1) + iz;
+							
+							double ze = grz[iz]>zi ? grz[iz] : zi;
+							ze = ze>zr ? ze : zr;
+							double xe = (ze-b)/m;
+							double dlx = xe - x;
+							double dlz = ze - z;
+							
+							indices_p[k] = iCell;
+							data_p[k] = dlx;
+							k++;
+							indices_p[k] = iCell+nCells;
+							data_p[k] = dlz;
+							k++;
+							
+							if (k>=nLmax){
+								size_t oldnzmax = nLmax;
+								percent_sp += 0.1;
+								nLmax = (size_t)ceil((double)nTx*(double)nCells*percent_sp);
+								
+								/* make sure nzmax increases at least by 2 */
+								if (oldnzmax == nLmax) nLmax+=2;
+								
+								data_p = (double*)realloc( data_p, nLmax*sizeof(double) );
+								indices_p = (int64_t*)realloc( indices_p, nLmax*sizeof(int64_t) );
+							}
+							
+							x = xe;
+							z = ze;
+							if ( fabs(z-grz[iz])<small ) iz--;
+						}
+					}
+					
+					ix++;
+					x = grx[ix];
+				}
+			}
+		}
+		indptr_p[nTx] = k;
+		size_t nnz = k;
+		
+		data_p = (double*)realloc( data_p, nnz*sizeof(double) );
+		indices_p = (int64_t*)realloc( indices_p, nnz*sizeof(int64_t) );
+		
+		npy_intp dims[] = {static_cast<npy_intp>(nnz)};
+		PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);
+		PyObject* indices = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indices_p);
+		dims[0] = nTx+1;
+		PyObject* indptr = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indptr_p);
+		PyTuple_SetItem(L, 0, data);
+		PyTuple_SetItem(L, 1, indices);
+		PyTuple_SetItem(L, 2, indptr);
+	}
 }

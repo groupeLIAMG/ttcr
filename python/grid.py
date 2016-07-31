@@ -67,7 +67,7 @@ class Grid:
             return (self.grx.size-1, self.grz.size-1)
 
 
-@staticmethod
+    @staticmethod
     def lsplane(X):
         """
         Least-squares plane (orthogonal distance regression) to a cloud of points
@@ -172,9 +172,41 @@ class Grid2D(Grid):
                     typeG = b'elliptical'
             self.cgrid = cgrid2d.Grid2Dcpp(typeG,nx,nz,dx,dz,self.grx[0],self.grz[0],self.nsnx,self.nsnz,self.nthreads)
         
-                return self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
+        return self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
 
+    def getForwardStraightRays(self, ind=None, dx=None, dy=None, dz=None, aniso=False):
+        """
+        Build ray projection matrix for straight rays
+        
+        Input:
+            ind: indices of Tx-Rx pairs for which matrix is built
+            dx: grid cell size along X (default is size of grid instance)
+            dz: grid cell size along Z (default is size of grid instance)
+            aniso: if true build matrix for anisotropic slowness
+            
+        Output:
+            L: ray projection matrix, ndata by ncell (ndata x 2*ncell for anisotropic media)
+        """
+        if ind is None:
+            ind = np.ones((self.Tx.shape[0],),dtype=bool)
 
+        small = 0.00001            
+        if dx is None:
+            grx = self.grx
+        else:
+            grx = np.arange(self.grx[0],self.grx[-1]+small, dx)  
+        
+        if dz is None:
+            grz = self.grz
+        else:
+            grz = np.arange(self.grz[0],self.grz[-1]+small, dz)
+
+        if aniso==False:
+            return cgrid2d.Grid2Dcpp.Lsr2d(self.Tx[np.ix_(ind,[0,2])], self.Rx[np.ix_(ind,[0,2])], grx, grz)
+        else:
+            return cgrid2d.Grid2Dcpp.Lsr2da(self.Tx[np.ix_(ind,[0,2])], self.Rx[np.ix_(ind,[0,2])], grx, grz)
+            
+            
 
 if __name__ == '__main__':
     
@@ -186,7 +218,8 @@ if __name__ == '__main__':
     
     grid = Grid2D(grx,grz)
     
-    slowness = np.ones((grid.getNumberOfCells(),))
+    nc = grid.getNumberOfCells()
+    slowness = np.ones((nc,))
     
     Tx = np.array([[0.2, 0.0, 0.2],[0.2, 0.0, 0.2],[0.2, 0.0, 0.2],[0.2, 0.0, 1.2],[0.2, 0.0, 1.2],[0.2, 0.0, 1.2]])
     Rx = np.array([[9.8, 0.0, 0.2],[9.8, 0.0, 3.2],[9.8, 0.0, 6.2],[9.8, 0.0, 0.2],[9.8, 0.0, 3.2],[9.8, 0.0, 6.2]])
@@ -201,8 +234,31 @@ if __name__ == '__main__':
     print(d-tt1)
     print(d-tt2)   
     
-    print(L1)
+    #print(L1)
     
     plt.matshow(L1.toarray())
     
     plt.show()
+    
+    
+    grid.Tx = Tx
+    grid.Rx = Rx
+    
+    Lsr = grid.getForwardStraightRays()
+    ttsr = Lsr*slowness
+    
+    print(d-ttsr)
+
+
+    Lsr2 = grid.getForwardStraightRays(aniso=True)
+    slowness2 = np.ones((2*nc,))
+    ttsr2 = np.sqrt( (Lsr2[:,:nc]*slowness2[:nc])**2 + (Lsr2[:,nc:]*slowness2[nc:])**2)
+    
+    print(d-ttsr2)
+
+
+    
+    plt.matshow(Lsr.toarray())
+    
+    plt.show()
+    

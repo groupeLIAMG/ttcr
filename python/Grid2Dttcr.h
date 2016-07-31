@@ -50,13 +50,32 @@ namespace ttcr {
                      PyObject* rays,
                      PyObject* L) const;
         
+        static void Lsr2d(const double* Tx,
+                          const double* Rx,
+                          const size_t nTx,
+                          const double* grx,
+                          const size_t n_grx,
+                          const double* grz,
+                          const size_t n_grz,
+                          PyObject* L);
+
+		static void Lsr2da(const double* Tx,
+						   const double* Rx,
+						   const size_t nTx,
+						   const double* grx,
+						   const size_t n_grx,
+						   const double* grz,
+						   const size_t n_grz,
+						   PyObject* L);
+
+		
     private:
         const std::string type;
         grid *grid_instance;
-        
+		
         Grid2Dttcr() {}
     };
-    
+	
 }
 
 #endif /* Grid2Dttcr_h */
