@@ -67,32 +67,6 @@ namespace ttcr {
             return 0;
         }
         
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxz<T1>>>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncz; }
         

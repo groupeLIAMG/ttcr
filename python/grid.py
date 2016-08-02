@@ -8,9 +8,7 @@ Created on Tue Jun 21 20:55:29 2016
 Copyright 2016 Bernard Giroux
 email: bernard.giroux@ete.inrs.ca
 
-This file is part of BhTomoPy.
-
-BhTomoPy is free software: you can redistribute it and/or modify
+This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -27,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 import cgrid2d
+
+from utils import nargout
+
 
 class Grid:
     """
@@ -114,8 +115,9 @@ class Grid2D(Grid):
         """
         Compute traveltimes, raypaths and build ray projection matrix
         
-        Usage:
-            tt,rays,L = grid.raytrace(slowness,Tx,Rx,t0,xi,theta)
+        Usages:
+            tt,L,rays = grid.raytrace(slowness,Tx,Rx,t0,xi,theta)
+            tt,L = grid.raytrace(slowness,Tx,Rx,t0,xi,theta)  {Note: rays can be omitted from output}
         
         Input:
             slowness: vector of slowness values at grid cells (ncell x 1)
@@ -128,11 +130,12 @@ class Grid2D(Grid):
                 counter-clockwise from horizontal, units in radian
         Output:
             tt: vector of traveltimes, ndata by 1
+            L: ray projection matrix, ndata by ncell (ndata x 2*ncell for anisotropic media)
             rays: tuple containing the matrices of coordinates of the ray
                   paths, ndata by 1.  Each matrix is nPts by 2
-            L: ray projection matrix, ndata by ncell (ndata x 2*ncell for anisotropic media)
         """
         
+        nout = nargout()
         # check input data consistency
         
         if Tx.ndim != 2 or Rx.ndim != 2:
@@ -172,7 +175,13 @@ class Grid2D(Grid):
                     typeG = b'elliptical'
             self.cgrid = cgrid2d.Grid2Dcpp(typeG,nx,nz,dx,dz,self.grx[0],self.grz[0],self.nsnx,self.nsnz,self.nthreads)
         
-        return self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
+        if nout==2:
+            tt,L = self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
+            return tt,L
+        elif nout==3:
+            tt,L,rays = self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
+            return tt,L,rays
+            
 
     def getForwardStraightRays(self, ind=None, dx=None, dy=None, dz=None, aniso=False):
         """
@@ -225,16 +234,19 @@ if __name__ == '__main__':
     Rx = np.array([[9.8, 0.0, 0.2],[9.8, 0.0, 3.2],[9.8, 0.0, 6.2],[9.8, 0.0, 0.2],[9.8, 0.0, 3.2],[9.8, 0.0, 6.2]])
     t0 = np.zeros([6,])
     
-    tt1,rays1,L1 = grid.raytrace(slowness, Tx, Rx, t0)
-    
-    tt2,rays2,L2 = grid.raytrace(slowness, Tx, Rx)
+    tt1,L1,rays1 = grid.raytrace(slowness, Tx, Rx, t0)
+    tt1b,L1b = grid.raytrace(slowness, Tx, Rx, t0)    
+    tt2,L2,rays2 = grid.raytrace(slowness, Tx, Rx)
     
     d = np.sqrt(np.sum((Tx-Rx)**2,axis=1))
     
     print(d-tt1)
+    print(d-tt1b)
+    
     print(d-tt2)   
     
-    #print(L1)
+    dL = L1-L1b
+    print( dL==0 )
     
     plt.matshow(L1.toarray())
     

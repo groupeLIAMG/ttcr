@@ -70,6 +70,13 @@ namespace ttcr {
                              std::vector<std::vector<siv2<T1>>>& l_data,
                              const size_t threadNo=0) const { return 0; }
         
+        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<S>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<siv2<T1>>>& l_data,
+                             const size_t threadNo=0) const { return 0; }
+        
         
         virtual int setSlowness(const std::vector<T1>& s) { return 0; }
         virtual int setXi(const std::vector<T1>& x) { return 1; }

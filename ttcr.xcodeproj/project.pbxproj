@@ -173,6 +173,7 @@
 		2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = msh2vtk_io.cpp; sourceTree = "<group>"; };
 		2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = msh2vtk_io.h; sourceTree = "<group>"; };
 		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
+		2B6D56201D50358C00075138 /* utils.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = utils.py; path = python/utils.py; sourceTree = "<group>"; };
 		2B6F87A5190F3EDA002AC9DF /* grid2duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid2duisp_mex.cpp; sourceTree = "<group>"; };
 		2B6F87AE190F4016002AC9DF /* class_handle.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = class_handle.hpp; sourceTree = "<group>"; };
@@ -344,6 +345,7 @@
 		2BB7D5BA1D07A801004730B9 /* python */ = {
 			isa = PBXGroup;
 			children = (
+				2B6D56201D50358C00075138 /* utils.py */,
 				2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */,
 				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
 				2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */,
