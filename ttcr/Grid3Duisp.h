@@ -973,6 +973,7 @@ namespace ttcr {
             const Node3Disp<T1,T2>* src = queue.top();
             queue.pop();
             inQueue[ src->getGridIndex() ] = false;
+            frozen[ src->getGridIndex() ] = true;
             
             for ( size_t no=0; no<src->getOwners().size(); ++no ) {
                 

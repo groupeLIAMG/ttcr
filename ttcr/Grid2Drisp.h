@@ -771,6 +771,7 @@ namespace ttcr {
             const Node2Disp<T1,T2>* source = queue.top();
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
+            frozen[ source->getGridIndex() ] = true;
             
             for ( size_t no=0; no<source->getOwners().size(); ++no ) {
                 

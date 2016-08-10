@@ -665,6 +665,7 @@ namespace ttcr {
             const NODE* source = queue.top();
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
+            frozen[ source->getGridIndex() ] = true;
             
 #ifdef DEBUG
             char fname[80];
