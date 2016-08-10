@@ -267,13 +267,11 @@ namespace ttcr {
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
-                        const T1 tRx,
                         std::vector<sxyz<T1>> &r_data,
                         const size_t threadNo) const;
         
         void getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                            const sxyz<T1> &Rx,
-                           const T1 tRx,
                            std::vector<sxyz<T1>> &r_data,
                            const size_t threadNo) const;
         
@@ -1290,7 +1288,6 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
-                                          const T1 tRx,
                                           std::vector<sxyz<T1>> &r_data,
                                           const size_t threadNo) const {
         
@@ -1448,7 +1445,7 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
                     
-                    for ( size_t n1=0; n1<2; ++n1 ) {
+                    for ( size_t n1=0; n1<3; ++n1 ) {   // changed n1<2  -> n1<3
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
                             edgeNodes[0] = nb[n1];
@@ -1884,7 +1881,6 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                                              const sxyz<T1> &Rx,
-                                             const T1 tRx,
                                              std::vector<sxyz<T1>> &r_data,
                                              const size_t threadNo) const {
         
