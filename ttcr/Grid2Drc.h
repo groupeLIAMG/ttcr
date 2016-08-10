@@ -188,7 +188,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             fout.precision(12);
             for ( T2 n=0; n<nodes.size(); ++n ) {
                 fout << nodes[n].getX() << '\t'

@@ -188,10 +188,10 @@ int body(const input_parameters &par) {
         chrono::duration<double>(end-begin).count() << '\n';
 	}
 	
-	if ( par.saveGridTT ) {
+	if ( par.saveGridTT>0 ) {
 		//  will overwrite if nsrc>1
 		string filename = par.basename+"_all_tt";
-		g->saveTT(filename, 0, 0, true);
+		g->saveTT(filename, 0, 0, par.saveGridTT==2);
         
 //		string filename = par.basename+"_all_tt.dat";
 //		g->saveTT(filename, 0);

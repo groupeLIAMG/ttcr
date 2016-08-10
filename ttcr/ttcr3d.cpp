@@ -181,7 +181,7 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt, all_r_data);
                 
-                if ( par.saveGridTT ) {
+                if ( par.saveGridTT>0 ) {
                     
                     string srcname = par.srcfiles[n];
                     size_t pos = srcname.rfind("/");
@@ -191,7 +191,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, true);
+                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
                 }
 				
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
@@ -275,7 +275,7 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt);
 				
-                if ( par.saveGridTT ) {
+                if ( par.saveGridTT>0 ) {
                     
                     string srcname = par.srcfiles[n];
                     size_t pos = srcname.rfind("/");
@@ -285,7 +285,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, true);
+                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
                 }
 
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {

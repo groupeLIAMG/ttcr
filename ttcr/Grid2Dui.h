@@ -451,7 +451,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             fout.precision(12);
             T2 nMax = nPrimary;
             if ( all == 1 ) {
