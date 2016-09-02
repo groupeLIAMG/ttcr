@@ -13,6 +13,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <thread>
 
 #include "mex.h"
 #include "class_handle.hpp"
@@ -39,8 +40,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if (nlhs != 1) {
             mexErrMsgTxt("New: One output expected.");
         }
-        if (nrhs != 3 && nrhs != 4) {
-            mexErrMsgTxt("New: 2 or 3 input arguments needed.");
+        if (nrhs != 3 && nrhs != 4 && nrhs != 5) {
+            mexErrMsgTxt("New: between 2 and 4 input arguments needed.");
         }
         // Return a handle to a new C++ instance
         
@@ -94,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // Number of secondary nodes
         //
         uint32_t nSecondary = 5;
-        if ( nrhs == 4 ) {
+        if ( nrhs >= 4 ) {
             if (!(mxIsDouble(prhs[3]))) {
                 mexErrMsgTxt("Number of secondary nodes must be double precision.");
             }
@@ -104,7 +105,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             nSecondary = static_cast<uint32_t>( mxGetScalar(prhs[3]) );
         }
         
-        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, triangles, nSecondary));
+        // ------------------------------------------------------
+        // number of threads
+        // ------------------------------------------------------
+        size_t nthreads = 1;
+        if ( nrhs == 5) {
+            size_t mrows = mxGetM(prhs[4]);
+            size_t ncols = mxGetN(prhs[4]);
+            if( !mxIsDouble(prhs[4]) || mxIsComplex(prhs[4]) ||
+               !(mrows==1 && ncols==1) ) {
+                mexErrMsgTxt("Input must be a noncomplex scalar double.");
+            }
+            
+            double *dtmp = mxGetPr( prhs[4] );
+            nthreads = round( *dtmp );
+        }
+        
+        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, triangles, nSecondary, nthreads));
         return;
     }
     
@@ -320,26 +337,87 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         vector<vector<double>> tt( vTx.size() );
         vector<vector<vector<sxyz<double>>>> r_data( vTx.size() );
         
-        for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-            
-            vRx.resize( 0 );
-            for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                sxyz_tmp.x = Rx[ iTx[nv][ni] ];
-                sxyz_tmp.y = Rx[ iTx[nv][ni]+nRx ];
-                sxyz_tmp.z = Rx[ iTx[nv][ni]+2*nRx ];
-                vRx.push_back( sxyz_tmp );
-            }
-            
-            if ( nlhs == 2 ) {
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]) == 1 ) {
-                    mexErrMsgTxt("Problem while raytracing.");
+        if ( grid_instance->getNthreads() == 1 ) {
+            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+                
+                vRx.resize( 0 );
+                for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                    sxyz_tmp.x = Rx[ iTx[nv][ni] ];
+                    sxyz_tmp.y = Rx[ iTx[nv][ni]+nRx ];
+                    sxyz_tmp.z = Rx[ iTx[nv][ni]+2*nRx ];
+                    vRx.push_back( sxyz_tmp );
+                }
+                
+                if ( nlhs == 2 ) {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]) == 1 ) {
+                        mexErrMsgTxt("Problem while raytracing.");
+                    }
+                }
+                else {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
+                        mexErrMsgTxt("Problem while raytracing.");
+                    }
                 }
             }
-            else {
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
-                    mexErrMsgTxt("Problem while raytracing.");
+        } else {
+            size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
+            size_t const blk_size = (vTx.size()%num_threads ? 1 : 0) + vTx.size()/num_threads;
+            
+            vector<thread> threads(num_threads-1);
+            size_t blk_start = 0;
+            for ( size_t i=0; i<num_threads-1; ++i ) {
+                
+                size_t blk_end = blk_start + blk_size;
+                
+                threads[i]=thread( [&grid_instance,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
+                                    &nlhs,&r_data,blk_start,blk_end,i]{
+                    
+                    for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
+                        
+                        sxyz<double> sxyz_tmp;
+                        vector<sxyz<double>> vRx;
+                        for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                            sxyz_tmp.x = Rx[ iTx[nv][ni] ];
+                            sxyz_tmp.y = Rx[ iTx[nv][ni]+nRx ];
+                            sxyz_tmp.z = Rx[ iTx[nv][ni]+2*nRx ];
+                            vRx.push_back( sxyz_tmp );
+                        }
+                        if ( nlhs == 2 ) {
+                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i+1) == 1 ) {
+                                mexErrMsgTxt("Problem while raytracing.");
+                            }
+                        } else {
+                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 ) {
+                                mexErrMsgTxt("Problem while raytracing.");
+                            }
+                        }
+                    }
+                });
+                
+                blk_start = blk_end;
+            }
+            for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
+                sxyz<double> sxyz_tmp;
+                vector<sxyz<double>> vRx;
+                for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                    sxyz_tmp.x = Rx[ iTx[nv][ni] ];
+                    sxyz_tmp.y = Rx[ iTx[nv][ni]+nRx ];
+                    sxyz_tmp.z = Rx[ iTx[nv][ni]+2*nRx ];
+                    vRx.push_back( sxyz_tmp );
+                }
+                if ( nlhs == 2 ) {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], 0) == 1 ) {
+                        mexErrMsgTxt("Problem while raytracing.");
+                    }
+                } else {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 ) {
+                        mexErrMsgTxt("Problem while raytracing.");
+                    }
                 }
             }
+            
+            std::for_each(threads.begin(),threads.end(),
+                          std::mem_fn(&std::thread::join));
         }
         
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {

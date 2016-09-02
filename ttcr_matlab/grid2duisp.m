@@ -4,7 +4,7 @@
 %
 %  Create and destroy instance of class
 %
-%    g = grid2duisp(nodes, triangles, nsecondary)
+%    g = grid2duisp(nodes, triangles, nsecondary, nthreads)
 %    clear g
 %
 %   Input for instantiation
@@ -13,6 +13,7 @@
 %             3rd contains Z coordinates
 %    triangles: indices of nodes making mesh triangles (nCells by 3)
 %    nsecondary: number of secondary nodes (optional: 5 if not set)
+%    nthreads: number of treads for parallel raytracing (optional: 1 if not set)
 %
 %  Raytracing
 %    [tt] = raytrace(g, s, Tx, Rx, t0)
