@@ -333,7 +333,7 @@ namespace ttcr {
             }
             if ( found == false ) {
                 std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
+                << " outside the grid ("<< pts[n].x <<", "<< pts[n].y <<", "<< pts[n].z<<").\n";
                 return 1;
             }
         }

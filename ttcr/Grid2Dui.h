@@ -256,7 +256,7 @@ namespace ttcr {
         cellParentRx = cellNo;
         for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
             neibNo = neighbors[cellNo][k];
-            dt = computeDt(nodes[neibNo], Rx, cellNo);
+            dt = computeDt(nodes[neibNo], Rx, slo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
                 nodeParentRx = neibNo;
@@ -341,7 +341,7 @@ namespace ttcr {
             }
             if ( found == false ) {
                 std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
+                << " outside the grid ("<< pts[n].x <<", "<< pts[n].y <<", "<< pts[n].z<<").\n";
                 return 1;
             }
         }
