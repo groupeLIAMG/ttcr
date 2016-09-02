@@ -27,11 +27,9 @@
 
 
 
-extern "C" {
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "Python.h"
 #include "numpy/ndarrayobject.h"
-}
 
 #include <string>
 #include <vector>
@@ -72,7 +70,7 @@ namespace ttcr {
                      double* traveltimes,
                      PyObject* L) const;
         
-        static void Lsr2d(const double* Tx,
+        static int Lsr2d(const double* Tx,
                           const double* Rx,
                           const size_t nTx,
                           const double* grx,
@@ -81,7 +79,7 @@ namespace ttcr {
                           const size_t n_grz,
                           PyObject* L);
 
-		static void Lsr2da(const double* Tx,
+		static int Lsr2da(const double* Tx,
 						   const double* Rx,
 						   const size_t nTx,
 						   const double* grx,

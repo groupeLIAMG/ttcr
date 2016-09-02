@@ -45,15 +45,17 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
         int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object)
         int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object)
         @staticmethod
-        void Lsr2d(double*,double*,size_t,double*,size_t,double*,size_t,object)
+        int Lsr2d(double*,double*,size_t,double*,size_t,double*,size_t,object)
         @staticmethod
-        void Lsr2da(double*,double*,size_t,double*,size_t,double*,size_t,object)
+        int Lsr2da(double*,double*,size_t,double*,size_t,double*,size_t,object)
 
 
 
 cdef class Grid2Dcpp:
     cdef Grid2Dttcr* grid
-    def __cinit__(self, gridType, uint32_t nx, uint32_t nz, double dx, double dz,double xmin, double zmin,uint32_t nsnx, uint32_t nsnz,size_t nthreads):
+    def __cinit__(self, gridType, uint32_t nx, uint32_t nz, double dx, double dz,
+                  double xmin, double zmin,uint32_t nsnx, uint32_t nsnz,
+                  size_t nthreads):
         self.grid = new Grid2Dttcr(gridType, nx, nz, dx, dz, xmin, zmin, nsnx, nsnz, nthreads)
 
     def __dealloc__(self):
