@@ -88,33 +88,8 @@ namespace ttcr {
             nodes[nn].setTT(tt, nt);
         }
         
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<S>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<S>>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<S>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<S>>*>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
         size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfCells() const { return triangles.size(); }
         
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
@@ -143,6 +118,8 @@ namespace ttcr {
         
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const bool vtkFormat=0) const;
+        
+        int projectPts(std::vector<S>&) const;
         
 #ifdef VTK
         void saveModelVTU(const std::string &, const bool saveSlowness=true,
@@ -281,7 +258,7 @@ namespace ttcr {
         cellParentRx = cellNo;
         for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
             neibNo = neighbors[cellNo][k];
-            dt = computeDt(nodes[neibNo], Rx, cellNo);
+            dt = computeDt(nodes[neibNo], Rx, slo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
                 nodeParentRx = neibNo;
@@ -296,6 +273,10 @@ namespace ttcr {
         //Calculate the slowness of any point that is not on a node
         
         T2 cellNo = this->getCellNo( Rx );
+        if ( cellNo == -1 ) {
+            std::cerr << "Error: cannot compute slowness, cell not found" << std::endl;
+            return -1;
+        }
         
         //We calculate the Slowness at the point
         std::vector<T2> list;
@@ -366,7 +347,7 @@ namespace ttcr {
             }
             if ( found == false ) {
                 std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
+                << " outside the grid ("<< pts[n].x <<", "<< pts[n].y <<", "<< pts[n].z<<").\n";
                 return 1;
             }
         }
@@ -395,7 +376,6 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
     bool Grid2Dui<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
-        
         
         
         sxyz<T1> a = { nodes[ triangles[nt].i[0] ].getX(),
@@ -476,7 +456,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             fout.precision(12);
             T2 nMax = nPrimary;
             if ( all == 1 ) {
@@ -489,6 +470,49 @@ namespace ttcr {
             }
             fout.close();
         }
+    }
+    
+    template<typename T1, typename T2, typename NODE, typename S>
+    int Grid2Dui<T1,T2,NODE,S>::projectPts(std::vector<S>& pts) const {
+        
+        std::vector<S> centroid( triangles.size() );
+        
+        for ( size_t n=0; n<triangles.size(); ++n ) {
+            // precompute centroids of all triangles
+            S stmp(nodes[triangles[n].i[1]] + nodes[triangles[n].i[2]]);
+            centroid[n] =  static_cast<T1>(1./3.) * S(nodes[triangles[n].i[0]] + stmp);
+//            for ( size_t nn = 0; nn<3; ++nn )
+//                std::cout << nodes[triangles[n].i[nn]].getX() << ' ' << nodes[triangles[n].i[nn]].getY() << ' ' << nodes[triangles[n].i[nn]].getZ() << '\n';
+//            std::cout << "   " << centroid[n].x << ' ' << centroid[n].y << ' ' << centroid[n].z << '\n';
+        }
+        for ( size_t nt=0; nt<pts.size(); ++nt ) {
+            // find closest triangle
+            T1 minDist = pts[nt].getDistance( centroid[0] );
+            size_t iMinDist = 0;
+            for ( size_t nn=1; nn<centroid.size(); ++nn ) {
+                T1 d = pts[nt].getDistance( centroid[nn] );
+                if ( d < minDist ) {
+                    minDist = d;
+                    iMinDist = nn;
+                }
+            }
+            // project point on closest triangle ( W. Heidrich, Journal of Graphics, GPU, and Game Tools,Volume 10, Issue 3, 2005)
+            S p1 = S(nodes[triangles[iMinDist].i[0]]);
+            S p2 = S(nodes[triangles[iMinDist].i[1]]);
+            S p3 = S(nodes[triangles[iMinDist].i[2]]);
+            S u = p2 - p1;
+            S v = p3 - p1;
+            S n = cross(u, v);
+            S w = pts[nt] - p1;
+            T1 n2 = norm2(n);
+            T1 gamma = dot(cross(u, w), cross(u, v))/n2;  // need to call cross(u, v) to avoid issues with 2D sxz points
+            T1 beta = dot(cross(w, v), cross(u, v))/n2;
+            T1 alpha = 1. - gamma - beta;
+            
+            pts[nt] = alpha*p1 + beta*p2 + gamma*p3;
+        }
+
+        return 0;
     }
     
 #ifdef VTK

@@ -309,7 +309,7 @@ namespace ttcr {
             std::ifstream fin(filename.c_str());
             bool format_ok = false;
             std::string line;
-            size_t tmp;
+//            size_t tmp;
             while ( fin ) {
                 getline( fin, line );
                 if ( line.find("$MeshFormat") != std::string::npos ) {
@@ -320,19 +320,19 @@ namespace ttcr {
                         format_ok = true;
                     }
                 }
-                if ( line.find("$Elements") != std::string::npos ) {
-                    fin >> tmp;
-                    size_t index;
-                    int elm_type, nTags;
-                    for ( size_t n=0; n<tmp; ++n ) {
-                        fin >> index >> elm_type >> nTags;
-                        if ( nTags == 0 ) {
-                            format_ok = false;
-                            fin.close();
-                            return format_ok;
-                        }
-                    }
-                }
+//                if ( line.find("$Elements") != std::string::npos ) {
+//                    fin >> tmp;
+//                    size_t index;
+//                    int elm_type, nTags;
+//                    for ( size_t n=0; n<tmp; ++n ) {
+//                        fin >> index >> elm_type >> nTags;
+//                        if ( nTags == 0 ) {
+//                            format_ok = false;
+//                            fin.close();
+//                            return format_ok;
+//                        }
+//                    }
+//                }
             }
             fin.close();
             return format_ok;
@@ -371,7 +371,7 @@ namespace ttcr {
             std::ifstream fin(filename.c_str());
             std::string line;
             size_t tmp;
-            size_t nTriangles=0;
+            size_t nElem=0;
             while ( fin ) {
                 getline( fin, line );
                 if ( line.find("$Elements") != std::string::npos ) {
@@ -381,7 +381,7 @@ namespace ttcr {
                     for ( size_t n=0; n<tmp; ++n ) {
                         fin >> index >> elm_type;
                         if ( elm_type == type ) {
-                            nTriangles++;
+                            nElem++;
                         }
                         getline( fin, line );
                     }
@@ -389,7 +389,7 @@ namespace ttcr {
                 }
             }
             fin.close();
-            return nTriangles;
+            return nElem;
         }
     };
     

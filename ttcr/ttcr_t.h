@@ -78,7 +78,10 @@ namespace ttcr {
         
         sxz() : x(0), z(0) {}
         sxz(const T x_, const T z_) : x(x_), z(z_) {}
-        
+        sxz(const T v) : x(v), z(v) {}
+        template<typename NODE>
+        sxz(const NODE& n) : x(n.getX()), z(n.getZ()) {}
+
         bool operator==(const sxz<T>& s) const {
             //        return (fabs(x-a.x)<small && fabs(z-a.z)<small);
             return x==s.x && z==s.z;
@@ -157,6 +160,12 @@ namespace ttcr {
         return is;
     }
     
+    template <typename T, typename NODE>
+    sxz<T> operator+(const NODE& lhs, const sxz<T>& rhs)
+    {
+        return sxz<T>(lhs.getX()+rhs.x, lhs.getZ()+rhs.z);
+    }
+    
     template <typename T>
     sxz<T> operator+(const sxz<T>& lhs, const sxz<T>& rhs)
     {
@@ -198,7 +207,10 @@ namespace ttcr {
         
         sxyz() : x(0), y(0), z(0) {}
         sxyz(const T x_, const T y_, const T z_) : x(x_), y(y_), z(z_) {}
-        
+        sxyz(const T v) : x(v), y(v), z(v) {}
+        template<typename NODE>
+        sxyz(const NODE& n) : x(n.getX()), y(n.getY()), z(n.getZ()) {}
+
         bool operator==(const sxyz<T>& s) const {
             //        return (fabs(x-a.x)<small && fabs(z-a.z)<small);
             return x==s.x && y==s.y && z==s.z;
@@ -286,6 +298,12 @@ namespace ttcr {
         return is;
     }
     
+    template <typename T, typename NODE>
+    sxyz<T> operator+(const NODE& lhs, const sxyz<T>& rhs)
+    {
+        return sxyz<T>(lhs.getX()+rhs.x, lhs.getY()+rhs.y, lhs.getZ()+rhs.z);
+    }
+    
     template <typename T>
     sxyz<T> operator+(const sxyz<T>& lhs, const sxyz<T>& rhs)
     {
@@ -349,6 +367,13 @@ namespace ttcr {
             v += s.v;
             return *this;
         }
+    };
+    
+    template<typename T>
+    struct sijv {
+        size_t i;  // index in 1st dim
+        size_t j;  // index in 2nd dim
+        T v;       // value
     };
     
     template<typename T>
@@ -501,6 +526,18 @@ namespace ttcr {
         return v1.x*v2.x + v1.z*v2.z;
     }
     
+//    template<typename T>
+//    T dot(const T v1, const sxz<T>& v2) {
+//        // v1 considered to be a vector along y
+//        return 0.0;
+//    }
+    
+    template<typename T>
+    T dot(const T v1, const T v2) {
+        // both v1 & v2 considered to be a vector along y
+        return v1*v2;
+    }
+    
     template<typename T>
     T cross(const sxz<T>& v1, const sxz<T>& v2) {
         return v1.z*v2.x - v1.x*v2.z;
@@ -529,6 +566,11 @@ namespace ttcr {
     template<typename T>
     T norm(const sxyz<T>& v) {
         return sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
+    }
+    
+    template<typename T>
+    T norm2(const sxz<T>& v) {
+        return v.x*v.x + v.z*v.z;
     }
     
     template<typename T>
