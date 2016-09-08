@@ -297,19 +297,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         double *t_arr = mxGetPr(plhs[0]);
         
         
-        /* ------------------------------------------------------
-         Optional output variables
-         ------------------------------------------------------ */
-        
-        mxArray **Rays;
-        mxArray **M;
-        
-//        if ( nlhs >= 2 ) {
-//            // 2rd arg: rays.
-//            plhs[1] = mxCreateCellMatrix(nRx, 1);
-//            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
-//        }
-        
         /*
          Looking for redundants Tx pts
          */
@@ -349,6 +336,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             delete [] tTx;
         }
         
+        
+        /* ------------------------------------------------------
+         Optional output variables
+         ------------------------------------------------------ */
+        
+        mxArray **Rays;
+        mxArray **M;
+        
+        if ( nlhs >= 2 ) {
+            // 2rd arg: rays.
+            plhs[1] = mxCreateCellMatrix(nRx, 1);
+            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
+        }
+        if ( nlhs >= 3 ) {
+            plhs[2] = mxCreateCellMatrix(vTx.size(), 1);
+            M = (mxArray **) mxCalloc(vTx.size(), sizeof(mxArray *));
+        }
         
         /*
          Looping over all non redundant Tx
@@ -475,8 +479,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         
         if ( nlhs >= 2 ) {
-            plhs[1] = mxCreateCellMatrix(nRx, 1);
-            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     size_t npts = r_data[nv][ni].size();
@@ -492,74 +494,38 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
         if ( nlhs >= 3 ) {
-            if ( 0 ) {
-                plhs[2] = mxCreateCellMatrix(nRx, 1);
-                M = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
-                
-                for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-                    for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                        size_t nMmax = m_data[nv][ni].size();
-                        M[ iTx[nv][ni] ] = mxCreateSparse(1, nSlowness, nMmax, mxREAL);
-                        double *Mval = mxGetPr( M[ iTx[nv][ni] ] );
-                        mwIndex *irM  = mxGetIr( M[ iTx[nv][ni] ] );
-                        mwIndex *jcM  = mxGetJc( M[ iTx[nv][ni] ] );
-                        
-                        size_t k = 0;
-                        for ( size_t j=0; j<nSlowness; ++j ) {
-                            jcM[j] = k;
-                            for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
-                                if ( m_data[nv][ni][n].j == j ) {
-                                    irM[k] = 0;
-                                    Mval[k] = m_data[nv][ni][n].v;
-                                    k++;
-                                }
-                            }
-                        }
-                        jcM[nSlowness] = k;
-                        
-                        mxSetCell( plhs[2], iTx[nv][ni], M[ iTx[nv][ni] ] );
-                    }
+            // for this to work, Tx & Rx data should be ordered so that redundant Tx should be contiguous
+            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+                size_t nRcv = m_data[nv].size();
+                size_t nMmax = nRcv;
+                for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
+                    nMmax += m_data[nv][ni].size();
                 }
-            } else {
-                // for this to work, Tx & Rx data should be ordered so that redundant Tx should be contiguous
-                plhs[2] = mxCreateCellMatrix(vTx.size(), 1);
-                M = (mxArray **) mxCalloc(vTx.size(), sizeof(mxArray *));
-                for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-                    size_t nRcv = m_data[nv].size();
-                    size_t nMmax = nRcv;
+                M[ nv ] = mxCreateSparse(nRcv, nSlowness+nRcv, nMmax, mxREAL);
+                double *Mval = mxGetPr( M[ nv ] );
+                mwIndex *irM  = mxGetIr( M[ nv ] );
+                mwIndex *jcM  = mxGetJc( M[ nv ] );
+                size_t k = 0;
+                for ( size_t j=0; j<nSlowness; ++j ) {
+                    jcM[j] = k;
                     for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
-                        nMmax += m_data[nv][ni].size();
-                    }
-                    M[ nv ] = mxCreateSparse(nRcv, nSlowness+nRcv, nMmax, mxREAL);
-                    double *Mval = mxGetPr( M[ nv ] );
-                    mwIndex *irM  = mxGetIr( M[ nv ] );
-                    mwIndex *jcM  = mxGetJc( M[ nv ] );
-                    size_t k = 0;
-                    for ( size_t j=0; j<nSlowness; ++j ) {
-                        jcM[j] = k;
-                        for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
-                            for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
-                                if ( m_data[nv][ni][n].j == j ) {
-                                    irM[k] = ni;
-                                    Mval[k] = m_data[nv][ni][n].v;
-                                    k++;
-                                }
+                        for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
+                            if ( m_data[nv][ni][n].j == j && m_data[nv][ni][n].i == ni ) {
+                                irM[k] = ni;
+                                Mval[k] = m_data[nv][ni][n].v;
+                                k++;
                             }
                         }
                     }
-                    for ( size_t j=0; j<nRcv; ++j ) {
-                        jcM[nSlowness+j] = k;
-                        for ( size_t n=0; n<nRcv; ++n ) {  // derivative of t w/r to static correction
-                            irM[k] = n;
-                            Mval[k] = 1.0;
-                            k++;
-                        }
-                    }
-                    jcM[nSlowness+nRcv] = k;
-                    mxSetCell( plhs[2], nv, M[ nv ] );
                 }
-                
-                
+                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
+                    jcM[nSlowness+j] = k;
+                    irM[k] = j;
+                    Mval[k] = 1.0;
+                    k++;
+                }
+                jcM[nSlowness+nRcv] = k;
+                mxSetCell( plhs[2], nv, M[ nv ] );
             }
         }
         

@@ -806,7 +806,17 @@ namespace ttcr {
                         //std::cout << "       *it = " << *it << std::endl;
 						m.j = *it;
 						m.v = -1.0 / v * ds * w[nn++]/sum_w;
-						m_data[n].push_back(m);
+                        bool found = false;
+                        for ( size_t nn=0; nn<m_data[n].size(); ++nn ) {
+                            if ( m_data[n][nn].j == m.j ) {
+                                m_data[n][nn].v += m.v;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if ( found == false ) {
+                            m_data[n].push_back(m);
+                        }
 					}
 					
 				}
@@ -856,9 +866,18 @@ namespace ttcr {
             for ( size_t nn=0; nn<3; ++nn ) {
                 m.j = this->triangles[cell].i[nn];
                 m.v = -1.0 / v * ds * w[nn]/sum_w;
-                m_data[n].push_back(m);
+                bool found = false;
+                for ( size_t nnn=0; nnn<m_data[n].size(); ++nnn ) {
+                    if ( m_data[n][nnn].j == m.j ) {
+                        m_data[n][nnn].v += m.v;
+                        found = true;
+                        break;
+                    }
+                }
+                if ( found == false ) {
+                    m_data[n].push_back(m);
+                }
             }
-            
             
             // the order should be from Tx to Rx, so we reorder...
             iParent = static_cast<T2>(r_tmp.size());
