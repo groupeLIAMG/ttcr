@@ -119,6 +119,8 @@ namespace ttcr {
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const bool vtkFormat=0) const;
         
+        int projectPts(std::vector<S>&) const;
+        
 #ifdef VTK
         void saveModelVTU(const std::string &, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
@@ -271,6 +273,10 @@ namespace ttcr {
         //Calculate the slowness of any point that is not on a node
         
         T2 cellNo = this->getCellNo( Rx );
+        if ( cellNo == -1 ) {
+            std::cerr << "Error: cannot compute slowness, cell not found" << std::endl;
+            return -1;
+        }
         
         //We calculate the Slowness at the point
         std::vector<T2> list;
@@ -372,7 +378,6 @@ namespace ttcr {
     bool Grid2Dui<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
         
         
-        
         sxyz<T1> a = { nodes[ triangles[nt].i[0] ].getX(),
             nodes[ triangles[nt].i[0] ].getY(),
             nodes[ triangles[nt].i[0] ].getZ() };
@@ -465,6 +470,49 @@ namespace ttcr {
             }
             fout.close();
         }
+    }
+    
+    template<typename T1, typename T2, typename NODE, typename S>
+    int Grid2Dui<T1,T2,NODE,S>::projectPts(std::vector<S>& pts) const {
+        
+        std::vector<S> centroid( triangles.size() );
+        
+        for ( size_t n=0; n<triangles.size(); ++n ) {
+            // precompute centroids of all triangles
+            S stmp(nodes[triangles[n].i[1]] + nodes[triangles[n].i[2]]);
+            centroid[n] =  static_cast<T1>(1./3.) * S(nodes[triangles[n].i[0]] + stmp);
+//            for ( size_t nn = 0; nn<3; ++nn )
+//                std::cout << nodes[triangles[n].i[nn]].getX() << ' ' << nodes[triangles[n].i[nn]].getY() << ' ' << nodes[triangles[n].i[nn]].getZ() << '\n';
+//            std::cout << "   " << centroid[n].x << ' ' << centroid[n].y << ' ' << centroid[n].z << '\n';
+        }
+        for ( size_t nt=0; nt<pts.size(); ++nt ) {
+            // find closest triangle
+            T1 minDist = pts[nt].getDistance( centroid[0] );
+            size_t iMinDist = 0;
+            for ( size_t nn=1; nn<centroid.size(); ++nn ) {
+                T1 d = pts[nt].getDistance( centroid[nn] );
+                if ( d < minDist ) {
+                    minDist = d;
+                    iMinDist = nn;
+                }
+            }
+            // project point on closest triangle ( W. Heidrich, Journal of Graphics, GPU, and Game Tools,Volume 10, Issue 3, 2005)
+            S p1 = S(nodes[triangles[iMinDist].i[0]]);
+            S p2 = S(nodes[triangles[iMinDist].i[1]]);
+            S p3 = S(nodes[triangles[iMinDist].i[2]]);
+            S u = p2 - p1;
+            S v = p3 - p1;
+            S n = cross(u, v);
+            S w = pts[nt] - p1;
+            T1 n2 = norm2(n);
+            T1 gamma = dot(cross(u, w), cross(u, v))/n2;  // need to call cross(u, v) to avoid issues with 2D sxz points
+            T1 beta = dot(cross(w, v), cross(u, v))/n2;
+            T1 alpha = 1. - gamma - beta;
+            
+            pts[nt] = alpha*p1 + beta*p2 + gamma*p3;
+        }
+
+        return 0;
     }
     
 #ifdef VTK

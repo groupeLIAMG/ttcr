@@ -61,18 +61,20 @@ int body(const input_parameters &par) {
     // Calculate the number of threads to be used
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
+    size_t const min_per_thread=5;
 
 	if ( par.nt == 0 ) {
 		size_t const hardware_threads = std::thread::hardware_concurrency();
-		size_t const min_per_thread=5;
 		size_t const max_threads = (nTx+min_per_thread-1)/min_per_thread;
 		num_threads = std::min((hardware_threads!=0?hardware_threads:2), max_threads);
 	} else {
 		num_threads = par.nt < nTx ? par.nt : nTx;
 	}
 	
-    size_t const blk_size = (nTx%num_threads ? 1 : 0) + nTx/num_threads;
-    
+    size_t blk_size = (nTx / num_threads);
+    if (blk_size<min_per_thread)
+        blk_size = min_per_thread;
+    num_threads = ((nTx-1) / blk_size)+1;
     
     
     // ? Find the generic file name of the input model?

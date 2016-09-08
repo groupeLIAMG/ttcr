@@ -42,9 +42,11 @@ namespace ttcr {
         bool singlePrecision;
         bool saveRaypaths;
         bool saveModelVTK;
+        bool saveM;
         bool saveGridTT;
         bool time;
         bool processReflectors;
+        bool projectTxRx;
         bool raypath_high_order;
         bool rotated_template;
         bool weno3;
@@ -60,7 +62,8 @@ namespace ttcr {
         
         input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
         inverseDistance(false),	singlePrecision(false), saveRaypaths(false),
-        saveModelVTK(false), saveGridTT(false), time(false), processReflectors(false),
+        saveModelVTK(false), saveM(false), saveGridTT(false), time(false),
+        processReflectors(false), projectTxRx(false), 
         raypath_high_order(false), rotated_template(false), weno3(false),
         epsilon(1.e-15), source_radius(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}

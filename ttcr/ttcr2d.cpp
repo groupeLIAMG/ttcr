@@ -54,16 +54,20 @@ int body(const input_parameters &par) {
 	
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
-	if ( par.nt == 0 ) {
+    size_t const min_per_thread=5;
+
+    if ( par.nt == 0 ) {
 		size_t const hardware_threads = thread::hardware_concurrency();
-		size_t const min_per_thread=5;
 		size_t const max_threads = (nTx+min_per_thread-1)/min_per_thread;
 		num_threads = min((hardware_threads!=0?hardware_threads:2), max_threads);
 	} else {
 		num_threads = par.nt < nTx ? par.nt : nTx;
 	}
 	
-    size_t const blk_size = (nTx%num_threads ? 1 : 0) + nTx/num_threads;
+    size_t blk_size = (nTx / num_threads);
+    if (blk_size<min_per_thread)
+        blk_size = min_per_thread;
+    num_threads = ((nTx-1) / blk_size)+1;
 	
 	string::size_type idx;
     

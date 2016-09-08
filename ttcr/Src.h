@@ -43,6 +43,7 @@ namespace ttcr {
         
         void init();
         const std::vector<sxyz<T>>& get_coord() const { return coord; }
+        std::vector<sxyz<T>>& get_coord() { return coord; }
         const std::vector<T>& get_t0() const { return t0; }
         
     private:

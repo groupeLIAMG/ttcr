@@ -62,7 +62,7 @@ namespace ttcr {
                              std::vector<std::vector<std::vector<S>>*>& r_data,
                              const size_t threadNo=0) const { return 0; }
         
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+        virtual int raytrace(const std::vector<S>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<S>& Rx,
                              std::vector<T1>& traveltimes,
@@ -70,11 +70,19 @@ namespace ttcr {
                              std::vector<std::vector<siv2<T1>>>& l_data,
                              const size_t threadNo=0) const { return 0; }
         
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
+        virtual int raytrace(const std::vector<S>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<S>& Rx,
                              std::vector<T1>& traveltimes,
                              std::vector<std::vector<siv2<T1>>>& l_data,
+                             const size_t threadNo=0) const { return 0; }
+        
+        virtual int raytrace(const std::vector<S>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<S>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<S>>& r_data,
+                             std::vector<std::vector<sijv<T1>>>& m_data,
                              const size_t threadNo=0) const { return 0; }
         
         
@@ -108,6 +116,8 @@ namespace ttcr {
         virtual const int get_niterw() const { return 0; }
         
         virtual const size_t getNthreads() const { return 0; }
+        
+        virtual int projectPts(std::vector<S>&) const { return 0; }
         
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

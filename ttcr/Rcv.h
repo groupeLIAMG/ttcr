@@ -42,7 +42,7 @@ namespace ttcr {
         
         void init(const size_t, const size_t nr=0);
         const std::vector<sxyz<T>>& get_coord() const { return coord; }
-        std::vector<sxyz<T>>* get_coord_ptr() { return &coord; }
+        std::vector<sxyz<T>>& get_coord() { return coord; }
         std::vector<T>& get_tt(const size_t n, const size_t nr=0) { return tt[n][nr]; }
         
         void save_tt( const std::string &, const size_t) const;
