@@ -158,6 +158,7 @@ namespace ttcr {
         }
         
         T1 computeSlowness(const S& Rx ) const;
+        T1 computeSlowness(const S& Rx, const T2 cellNo ) const;
         
         T2 getCellNo(const S& pt) const {
             for ( T2 n=0; n<triangles.size(); ++n ) {
@@ -268,11 +269,11 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dui<T1,T2,NODE,S>::computeSlowness( const S& Rx ) const {
+    T1 Grid2Dui<T1,T2,NODE,S>::computeSlowness( const S& pt ) const {
         
         //Calculate the slowness of any point that is not on a node
         
-        T2 cellNo = this->getCellNo( Rx );
+        T2 cellNo = this->getCellNo( pt );
         if ( cellNo == -1 ) {
             std::cerr << "Error: cannot compute slowness, cell not found" << std::endl;
             return -1;
@@ -294,10 +295,34 @@ namespace ttcr {
         for ( size_t nn=0; nn<list.size(); ++nn )
             interpNodes.push_back( &(nodes[list[nn] ]) );
         
-        return Interpolator<T1>::inverseDistance( Rx, interpNodes );
+        return Interpolator<T1>::inverseDistance( pt, interpNodes );
         
     }
-    
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    T1 Grid2Dui<T1,T2,NODE,S>::computeSlowness( const S& pt, const T2 cellNo ) const {
+        
+        //Calculate the slowness of any point that is not on a node
+        
+        std::vector<T2> list;
+        
+        for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
+            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
+                list.push_back(neighbors[ cellNo ][n3]);
+            }
+        }
+        
+        std::vector<size_t>::iterator it;
+        
+        std::vector<NODE*> interpNodes;
+        
+        for ( size_t nn=0; nn<list.size(); ++nn )
+            interpNodes.push_back( &(nodes[list[nn] ]) );
+        
+        return Interpolator<T1>::inverseDistance( pt, interpNodes );
+        
+    }
+
     template<typename T1, typename T2, typename NODE, typename S>
     int Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
         
