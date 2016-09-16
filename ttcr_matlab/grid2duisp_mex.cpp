@@ -548,6 +548,70 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         return;
     }
     
+    // ---------------------------------------------------------------------------
+    // computeD
+    //
+    if (!strcmp("computeD", cmd)) {
+        // Check parameters
+        if (nlhs < 0 || nrhs != 3)
+            mexErrMsgTxt("computeD: Unexpected arguments.");
+        // Call the method
+        
+        if (!(mxIsDouble(prhs[2]))) {
+            mexErrMsgTxt("Pts must be double precision.");
+        }
+        double *tmp = static_cast<double*>( mxGetPr(prhs[2]) );
+        mwSize number_of_dims = mxGetNumberOfDimensions(prhs[2]);
+        if ( number_of_dims != 2 ) {
+            mexErrMsgTxt("Pts must be a matrix (nPts by 3).");
+        }
+        const mwSize *dim_array = mxGetDimensions(prhs[2]);
+        size_t npts = static_cast<size_t>( dim_array[0] );
+        if ( dim_array[1] != 3 ) {
+            mexErrMsgTxt("Pts must be a matrix (nPts by 3).");
+        }
+        
+        vector<vector<siv<double>>> d_data( npts );
+        vector<sxyz<double>> pts( npts );
+        for ( size_t n=0; n<npts; ++n ) {
+            pts[n].x = tmp[n];
+            pts[n].y = tmp[n+npts];
+            pts[n].z = tmp[n+2*npts];
+        }
+        if ( grid_instance->computeD(pts, d_data) == 1 ) {
+            mexErrMsgTxt("Problem building matrix D.");
+        }
+        
+        size_t nnz = 0;
+        size_t nnodes = grid_instance->getNumberOfNodes(true);
+        for ( size_t n=0; n<npts; ++n ) {
+            nnz += d_data.size();
+        }
+        
+        plhs[0] = mxCreateSparse(npts, nnodes, nnz, mxREAL);
+        double *Dval = mxGetPr( plhs[0] );
+        mwIndex *irD  = mxGetIr( plhs[0] );
+        mwIndex *jcD  = mxGetJc( plhs[0] );
+        
+        size_t k = 0;
+        for ( size_t j=0; j<nnodes; ++j ) {
+            jcD[j] = k;
+            for ( size_t n=0; n<npts; ++n ) {
+                for ( size_t nn=0; nn<d_data[n].size(); ++nn ) {
+                    if ( d_data[n][nn].i == j ) {
+                        irD[k] = n;
+                        Dval[k] = d_data[n][nn].v;
+                        k++;
+                    }
+                }
+            }
+        }
+        jcD[nnodes] = k;
+        
+        return;
+    }
+
+    
     // Got here, so command not recognized
     mexErrMsgTxt("Command not recognized.");
 }

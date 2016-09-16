@@ -124,6 +124,9 @@ namespace ttcr {
                      std::vector<std::vector<sijv<T1>>>&,
                      const size_t=0) const;
 
+        int computeD(const std::vector<sxyz<T1>>&,
+                     std::vector<std::vector<siv<T1>>>&) const;
+        
     private:
         T2 nsecondary;
         
@@ -1102,7 +1105,40 @@ namespace ttcr {
             }
         }
     }
-    
+ 
+    template<typename T1, typename T2, typename NODE, typename S>
+    int Grid2Duisp<T1,T2,NODE,S>::computeD(const std::vector<sxyz<T1>>& pts,
+                                           std::vector<std::vector<siv<T1>>>& d_data) const{
+        
+        for ( size_t n=0; n<pts.size(); ++n ) {
+            bool found = false;
+            for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
+                if ( this->nodes[nn] == pts[n] ) {
+                    found = true;
+                    d_data[n].push_back( {nn, 1.0} );
+                    break;
+                }
+            }
+            if ( found == false ) {
+                T2 cellNo = this->getCellNo( pts[n] );
+                if ( cellNo == -1 ) return 1;
+                
+                T1 w[3];
+                T1 sum_w = 0.0;
+                
+                for ( size_t nn=0; nn<3; ++nn ) {
+                    w[nn] = 1. / this->nodes[ this->triangles[cellNo].i[nn] ].getDistance( pts[n] );
+                    sum_w += w[nn];
+                }
+                for ( size_t nn=0; nn<3; ++nn ) {
+                    w[nn] /= sum_w;
+                    
+                    d_data[n].push_back( {this->triangles[cellNo].i[nn], w[nn]} );
+                }
+            }
+        }
+        return 0;
+    }
 }
 
 #endif

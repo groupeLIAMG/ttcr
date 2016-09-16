@@ -88,7 +88,16 @@ namespace ttcr {
             nodes[nn].setTT(tt, nt);
         }
         
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes(bool primary=false) const {
+            if ( primary ) {
+                size_t nn = 0;
+                for ( size_t n=0; n<nodes.size(); ++n ) {
+                    if ( nodes[n].isPrimary()==true ) nn++;
+                }
+                return nn;
+            }
+            return nodes.size();
+        }
         size_t getNumberOfCells() const { return triangles.size(); }
         
         const T1 getXmin() const {
