@@ -60,10 +60,8 @@ int body(const input_parameters &par) {
 		num_threads = par.nt < nTx ? par.nt : nTx;
 	}
 	
-    size_t blk_size = (nTx / num_threads);
-    if (blk_size<min_per_thread)
-        blk_size = min_per_thread;
-    num_threads = ((nTx-1) / blk_size)+1;
+    size_t blk_size = nTx/num_threads;
+    if ( blk_size == 0 ) blk_size++;
     
 	string::size_type idx;
     
@@ -114,6 +112,7 @@ int body(const input_parameters &par) {
 	chrono::high_resolution_clock::time_point begin, end;
 	vector<vector<vector<sxyz<T>>>> r_data(src.size());
     vector<vector<vector<sijv<T>>>> m_data(src.size());
+    vector<T> v0(src.size());
     
     if ( par.projectTxRx ) {
         for ( size_t n=0; n<src.size(); ++n ) {
@@ -128,7 +127,7 @@ int body(const input_parameters &par) {
         if ( num_threads == 1 ) {
             for ( size_t n=0; n<src.size(); ++n ) {
                 g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], m_data[n]);
+                            rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
             }
         } else {
             // threaded jobs
@@ -139,11 +138,11 @@ int body(const input_parameters &par) {
                 
                 size_t blk_end = blk_start + blk_size;
                 
-                threads[i]=thread( [&g,&src,&rcv,&r_data,&m_data,blk_start,blk_end,i]{
+                threads[i]=thread( [&g,&src,&rcv,&r_data,&v0,&m_data,blk_start,blk_end,i]{
                     
                     for ( size_t n=blk_start; n<blk_end; ++n ) {
                         g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                    rcv.get_tt(n), r_data[n], m_data[n], i+1);
+                                    rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
                     }
                 });
                 
@@ -151,7 +150,7 @@ int body(const input_parameters &par) {
             }
             for ( size_t n=blk_start; n<nTx; ++n ) {
                 g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], m_data[n], 0);
+                            rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
             }
             
             for_each(threads.begin(),threads.end(), mem_fn(&thread::join));

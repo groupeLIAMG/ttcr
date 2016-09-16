@@ -141,12 +141,9 @@ namespace ttcr {
                 }
             }
         } else {
-            size_t min_blk_size = 2;
             size_t num_threads = grid_instance->getNthreads();
-            size_t blk_size = (vTx.size() / num_threads);
-            if (blk_size<min_blk_size)
-                blk_size = min_blk_size;
-            num_threads = ((vTx.size()-1) / blk_size)+1;
+            size_t blk_size = vTx.size()/num_threads;
+            if ( blk_size == 0 ) blk_size++;
             
             vector<thread> threads(num_threads-1);
             size_t blk_start = 0;
@@ -344,7 +341,7 @@ namespace ttcr {
         vector<vector<siv2<double>>> L_data(nTx);
         vector<vector<vector<siv2<double>>>> l_data( vTx.size() );
         
-        if ( grid_instance->getNthreads() == 1 ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size()<=grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );
@@ -358,7 +355,8 @@ namespace ttcr {
             }
         } else {
             size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
-            size_t const blk_size = (vTx.size()%num_threads ? 1 : 0) + vTx.size()/num_threads;
+            size_t blk_size = vTx.size()/num_threads;
+            if ( blk_size == 0 ) blk_size++;
             
             vector<thread> threads(num_threads-1);
             size_t blk_start = 0;

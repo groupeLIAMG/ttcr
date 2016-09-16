@@ -64,10 +64,8 @@ int body(const input_parameters &par) {
 		num_threads = par.nt < nTx ? par.nt : nTx;
 	}
 	
-    size_t blk_size = (nTx / num_threads);
-    if (blk_size<min_per_thread)
-        blk_size = min_per_thread;
-    num_threads = ((nTx-1) / blk_size)+1;
+    size_t blk_size = nTx/num_threads;
+    if ( blk_size == 0 ) blk_size++;
 	
 	string::size_type idx;
     

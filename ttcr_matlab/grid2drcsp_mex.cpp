@@ -325,7 +325,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         } else {
             size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
-            size_t const blk_size = (vTx.size()%num_threads ? 1 : 0) + vTx.size()/num_threads;
+            size_t blk_size = vTx.size()/num_threads;
+            if ( blk_size == 0 ) blk_size++;
             
             vector<thread> threads(num_threads-1);
             size_t blk_start = 0;
