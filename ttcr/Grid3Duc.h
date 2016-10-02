@@ -850,21 +850,23 @@ namespace ttcr {
                 
                 // project point on AB
                 
-                k = dot(v_pt,v_c)/dot(v_c,v_c);
-                pt.x = vertexA->getX() + k*v_c.x;
-                pt.y = vertexA->getY() + k*v_c.y;
-                pt.z = vertexA->getZ() + k*v_c.z;
-                
-                T1 xi0 = vertexA->getDistance( pt )/c;
+//                k = dot(v_pt,v_c)/dot(v_c,v_c);
+//                pt.x = vertexA->getX() + k*v_c.x;
+//                pt.y = vertexA->getY() + k*v_c.y;
+//                pt.z = vertexA->getZ() + k*v_c.z;
+//                
+//                T1 xi0 = vertexA->getDistance( pt )/c;
+                T1 xi0 = dot(v_pt,v_c)/dot(v_c,v_c);
                 
                 // project point on AC
                 
-                k = dot(v_pt,v_b)/dot(v_b,v_b);
-                pt.x = vertexA->getX() + k*v_b.x;
-                pt.y = vertexA->getY() + k*v_b.y;
-                pt.z = vertexA->getZ() + k*v_b.z;
-                
-                T1 zeta0 = vertexA->getDistance( pt )/b;
+//                k = dot(v_pt,v_b)/dot(v_b,v_b);
+//                pt.x = vertexA->getX() + k*v_b.x;
+//                pt.y = vertexA->getY() + k*v_b.y;
+//                pt.z = vertexA->getZ() + k*v_b.z;
+//                
+//                T1 zeta0 = vertexA->getDistance( pt )/b;
+                T1 zeta0 = dot(v_pt,v_b)/dot(v_b,v_b);
                 
                 
                 T1 beta = u*b*b - v*d2;    // from eq 19
@@ -941,7 +943,8 @@ namespace ttcr {
         pt.z = vertexA->getZ() + k*v_c.z;
         
         T1 rho0 = vertexC->getDistance( pt );
-        T1 xi0 = vertexA->getDistance( pt )/c;
+//        T1 xi0 = vertexA->getDistance( pt )/c;
+        T1 xi0 = k;
         
         T1 xi = xi0 - u*rho0/(w*c);
         

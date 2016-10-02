@@ -453,7 +453,7 @@ namespace ttcr {
                             std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
                             abort();
                         } else {
-                            std::cout << "(found " << nodes_added << " nodes arounf Tx point)\n";
+                            std::cout << "(found " << nodes_added << " nodes around Tx point)\n";
                         }
                     }
                     
