@@ -940,9 +940,9 @@ namespace ttcr {
                         m.j = *it;
                         m.v = -1.0 / v * ds * w[nn++]/sum_w;
                         bool found = false;
-                        for ( size_t nn=0; nn<m_data[n].size(); ++nn ) {
-                            if ( m_data[n][nn].j == m.j ) {
-                                m_data[n][nn].v += m.v;
+                        for ( size_t nm=0; nm<m_data[n].size(); ++nm ) {
+                            if ( m_data[n][nm].j == m.j ) {
+                                m_data[n][nm].v += m.v;
                                 found = true;
                                 break;
                             }
