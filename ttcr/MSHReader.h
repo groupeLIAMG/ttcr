@@ -364,8 +364,7 @@ namespace ttcr {
             }
             fin.close();
         }
-        
-        
+                
         size_t getNumberOfElements(const int type) const {
             
             std::ifstream fin(filename.c_str());
