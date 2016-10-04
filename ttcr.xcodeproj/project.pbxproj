@@ -236,6 +236,7 @@
 		2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drisp.h; sourceTree = "<group>"; };
 		2BDE5D621C3EB2D800223E26 /* Grid3Drcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drcsp.h; sourceTree = "<group>"; };
 		2BF787831905A36200E80373 /* Grid3Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duisp.h; sourceTree = "<group>"; };
+		98CCBF011DA4473B00B719D8 /* Grid3Duigm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duigm.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -423,6 +424,7 @@
 				2B90ECD019053EC60015748B /* Grid3Dui.h */,
 				2B90ECD219054B400015748B /* Grid3Duifm.h */,
 				2B90ECD319054C3D0015748B /* Grid3Duifs.h */,
+				98CCBF011DA4473B00B719D8 /* Grid3Duigm.h */,
 				2BF787831905A36200E80373 /* Grid3Duisp.h */,
 				2BC708EE18EDA65F004DA2C9 /* Interface.h */,
 				2BC708EF18EDA65F004DA2C9 /* Interpolator.h */,

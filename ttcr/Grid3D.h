@@ -63,6 +63,23 @@ namespace ttcr {
                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                              const size_t=0) const { return 0; }
         
+        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<sxyz<T1>>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<sxyz<T1>>>& r_data,
+                             T1& v0,
+                             const size_t threadNo=0) const { return 0; }
+        
+        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<sxyz<T1>>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<sxyz<T1>>>& r_data,
+                             T1& v0,
+                             std::vector<std::vector<sijv<T1>>>& m_data,
+                             const size_t threadNo=0) const { return 0; }
+
         virtual int setSlowness(const std::vector<T1>& s) { return 0; }
         
         virtual void setSourceRadius(const double) {}

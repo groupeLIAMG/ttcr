@@ -20,7 +20,7 @@ $MATLAB/bin/mex -O CXXFLAGS='$CXXFLAGS -std=c++11 -stdlib=libc++' LDFLAGS='$LDFL
 
 On a windows 8.1 machine with intel compiler installed, I could compile it from the matlab prompt with:
 
-mex -O COMPFLAGS='$COMPFLAGS /Qstd=c++11' -largeArrayDims -v -I../ttcr -I'C:\libraries\boost_1_55_0' -I'C:\Program Files (x86)\Eigen\include' grid2duisp_mex.cpp
+mex -v -O COMPFLAGS='$COMPFLAGS /Qstd=c++11' -largeArrayDims -I../ttcr -I'C:\libraries\boost_1_61_0' -I'C:\Program Files (x86)\Eigen\include' grid2duisp_mex.cpp
 
 I got windows binaries of the eigen library from http://pointclouds.org/downloads/windows.html
 

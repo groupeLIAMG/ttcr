@@ -204,8 +204,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if ( nrhs != 5 && nrhs != 6 ) {
             mexErrMsgTxt("raytrace: Unexpected arguments.");
         }
-        if (nlhs > 3) {
-            mexErrMsgTxt("raytrace has a maximum of three output argument.");
+        if (nlhs > 4) {
+            mexErrMsgTxt("raytrace has a maximum of four output argument.");
         }
         //
         // Slowness
@@ -297,19 +297,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         double *t_arr = mxGetPr(plhs[0]);
         
         
-        /* ------------------------------------------------------
-         Optional output variables
-         ------------------------------------------------------ */
-        
-        mxArray **Rays;
-        mxArray **M;
-        
-//        if ( nlhs >= 2 ) {
-//            // 2rd arg: rays.
-//            plhs[1] = mxCreateCellMatrix(nRx, 1);
-//            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
-//        }
-        
         /*
          Looking for redundants Tx pts
          */
@@ -350,6 +337,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         
         
+        /* ------------------------------------------------------
+         Optional output variables
+         ------------------------------------------------------ */
+        
+        mxArray **Rays;
+        mxArray **M;
+        double *V0;
+        if ( nlhs >= 2 ) {
+            // 2rd arg: rays.
+            plhs[1] = mxCreateCellMatrix(nRx, 1);
+            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
+        }
+        if ( nlhs >= 3 ) {
+            plhs[2] = mxCreateDoubleMatrix(nRx, 1, mxREAL);
+        }
+        if ( nlhs >= 4 ) {
+            plhs[3] = mxCreateCellMatrix(vTx.size(), 1);
+            M = (mxArray **) mxCalloc(vTx.size(), sizeof(mxArray *));
+        }
+        
         /*
          Looping over all non redundant Tx
          */
@@ -357,6 +364,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         vector<sxyz<double>> vRx;
         vector<vector<double>> tt( vTx.size() );
         vector<vector<vector<sxyz<double>>>> r_data( vTx.size() );
+        vector<double> v0( vTx.size() );
         vector<vector<vector<sijv<double>>>> m_data( vTx.size() );
         
         if ( grid_instance->getNthreads() == 1 || vTx.size()<=grid_instance->getNthreads() ) {
@@ -370,34 +378,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     vRx.push_back( sxyz_tmp );
                 }
                 
-                if ( nlhs == 3 ) {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], m_data[nv]) == 1 ) {
+                if ( nlhs == 4 ) {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 ) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
-                }
-                else if ( nlhs == 2 ) {
+                } else if ( nlhs == 3 ) {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]) == 1 ) {
+                        mexErrMsgTxt("Problem while raytracing.");
+                    }
+                } else if ( nlhs == 2 ) {
                     if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]) == 1 ) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
-                }
-                else {
+                } else {
                     if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 }
             }
         } else {
-            
-            size_t min_blk_size = 2;
-            size_t num_threads = grid_instance->getNthreads();
-            size_t blk_size = (vTx.size() / num_threads);
-            if (blk_size<min_blk_size)
-                blk_size = min_blk_size;
-            num_threads = ((vTx.size()-1) / blk_size)+1;
-            
-//            size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
-//            size_t const blk_size = (vTx.size()%num_threads ? 1 : 0) + vTx.size()/num_threads;
-            
+			
+            size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
+            size_t blk_size = vTx.size()/num_threads;
+			if ( blk_size == 0 ) blk_size++;
+			
 //            cout << vTx.size() << '\t' << grid_instance->getNthreads() << '\t' << num_threads << '\t' << blk_size << endl;
             
             size_t blk_start = 0;
@@ -407,7 +411,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 size_t blk_end = blk_start + blk_size;
                 
                 threads[i]=thread( [&grid_instance,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
-                                    &nlhs,&r_data,&m_data,blk_start,blk_end,i]{
+                                    &nlhs,&r_data,&v0,&m_data,blk_start,blk_end,i]{
                     
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
                         
@@ -419,12 +423,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             sxyz_tmp.z = Rx[ iTx[nv][ni]+2*nRx ];
                             vRx.push_back( sxyz_tmp );
                         }
-                        if ( nlhs == 3 ) {
-                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], m_data[nv], i+1) == 1 ) {
+                        if ( nlhs == 4 ) {
+                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 ) {
                                 mexErrMsgTxt("Problem while raytracing.");
                             }
-                        }
-                        else if ( nlhs == 2 ) {
+                        } else if ( nlhs == 3 ) {
+                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1) == 1 ) {
+                                mexErrMsgTxt("Problem while raytracing.");
+                            }
+                        } else if ( nlhs == 2 ) {
                             if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i+1) == 1 ) {
                                 mexErrMsgTxt("Problem while raytracing.");
                             }
@@ -449,8 +456,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     sxyz_tmp.z = Rx[ iTx[nv][ni]+2*nRx ];
                     vRx.push_back( sxyz_tmp );
                 }
-                if ( nlhs == 3 ) {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], m_data[nv], 0) == 1 ) {
+                if ( nlhs == 4 ) {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 ) {
+                        mexErrMsgTxt("Problem while raytracing.");
+                    }
+                }
+                else if ( nlhs == 3 ) {
+                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 ) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 }
@@ -475,8 +487,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         
         if ( nlhs >= 2 ) {
-            plhs[1] = mxCreateCellMatrix(nRx, 1);
-            Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     size_t npts = r_data[nv][ni].size();
@@ -492,79 +502,115 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
         if ( nlhs >= 3 ) {
-            if ( 0 ) {
-                plhs[2] = mxCreateCellMatrix(nRx, 1);
-                M = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
-                
-                for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-                    for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                        size_t nMmax = m_data[nv][ni].size();
-                        M[ iTx[nv][ni] ] = mxCreateSparse(1, nSlowness, nMmax, mxREAL);
-                        double *Mval = mxGetPr( M[ iTx[nv][ni] ] );
-                        mwIndex *irM  = mxGetIr( M[ iTx[nv][ni] ] );
-                        mwIndex *jcM  = mxGetJc( M[ iTx[nv][ni] ] );
-                        
-                        size_t k = 0;
-                        for ( size_t j=0; j<nSlowness; ++j ) {
-                            jcM[j] = k;
-                            for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
-                                if ( m_data[nv][ni][n].j == j ) {
-                                    irM[k] = 0;
-                                    Mval[k] = m_data[nv][ni][n].v;
-                                    k++;
-                                }
-                            }
-                        }
-                        jcM[nSlowness] = k;
-                        
-                        mxSetCell( plhs[2], iTx[nv][ni], M[ iTx[nv][ni] ] );
-                    }
+            V0 = mxGetPr(plhs[2]);
+            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+                for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                    V0[ iTx[nv][ni] ] = v0[nv];
                 }
-            } else {
-                // for this to work, Tx & Rx data should be ordered so that redundant Tx should be contiguous
-                plhs[2] = mxCreateCellMatrix(vTx.size(), 1);
-                M = (mxArray **) mxCalloc(vTx.size(), sizeof(mxArray *));
-                for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-                    size_t nRcv = m_data[nv].size();
-                    size_t nMmax = nRcv;
+            }
+        }
+        if ( nlhs >= 4 ) {
+            // for this to work, Tx & Rx data should be ordered so that redundant Tx should be contiguous
+            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+                size_t nRcv = m_data[nv].size();
+                size_t nMmax = nRcv;
+                for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
+                    nMmax += m_data[nv][ni].size();
+                }
+                M[ nv ] = mxCreateSparse(nRcv, nSlowness+nRcv, nMmax, mxREAL);
+                double *Mval = mxGetPr( M[ nv ] );
+                mwIndex *irM  = mxGetIr( M[ nv ] );
+                mwIndex *jcM  = mxGetJc( M[ nv ] );
+                size_t k = 0;
+                for ( size_t j=0; j<nSlowness; ++j ) {
+                    jcM[j] = k;
                     for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
-                        nMmax += m_data[nv][ni].size();
-                    }
-                    M[ nv ] = mxCreateSparse(nRcv, nSlowness+nRcv, nMmax, mxREAL);
-                    double *Mval = mxGetPr( M[ nv ] );
-                    mwIndex *irM  = mxGetIr( M[ nv ] );
-                    mwIndex *jcM  = mxGetJc( M[ nv ] );
-                    size_t k = 0;
-                    for ( size_t j=0; j<nSlowness; ++j ) {
-                        jcM[j] = k;
-                        for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
-                            for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
-                                if ( m_data[nv][ni][n].j == j ) {
-                                    irM[k] = ni;
-                                    Mval[k] = m_data[nv][ni][n].v;
-                                    k++;
-                                }
+                        for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
+                            if ( m_data[nv][ni][n].j == j && m_data[nv][ni][n].i == ni ) {
+                                irM[k] = ni;
+                                Mval[k] = m_data[nv][ni][n].v;
+                                k++;
                             }
                         }
                     }
-                    for ( size_t j=0; j<nRcv; ++j ) {
-                        jcM[nSlowness+j] = k;
-                        for ( size_t n=0; n<nRcv; ++n ) {  // derivative of t w/r to static correction
-                            irM[k] = n;
-                            Mval[k] = 1.0;
-                            k++;
-                        }
-                    }
-                    jcM[nSlowness+nRcv] = k;
-                    mxSetCell( plhs[2], nv, M[ nv ] );
                 }
-                
-                
+                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
+                    jcM[nSlowness+j] = k;
+                    irM[k] = j;
+                    Mval[k] = 1.0;
+                    k++;
+                }
+                jcM[nSlowness+nRcv] = k;
+                mxSetCell( plhs[3], nv, M[ nv ] );
             }
         }
         
         return;
     }
+    
+    // ---------------------------------------------------------------------------
+    // computeD
+    //
+    if (!strcmp("computeD", cmd)) {
+        // Check parameters
+        if (nlhs < 0 || nrhs != 3)
+            mexErrMsgTxt("computeD: Unexpected arguments.");
+        // Call the method
+        
+        if (!(mxIsDouble(prhs[2]))) {
+            mexErrMsgTxt("Pts must be double precision.");
+        }
+        double *tmp = static_cast<double*>( mxGetPr(prhs[2]) );
+        mwSize number_of_dims = mxGetNumberOfDimensions(prhs[2]);
+        if ( number_of_dims != 2 ) {
+            mexErrMsgTxt("Pts must be a matrix (nPts by 3).");
+        }
+        const mwSize *dim_array = mxGetDimensions(prhs[2]);
+        size_t npts = static_cast<size_t>( dim_array[0] );
+        if ( dim_array[1] != 3 ) {
+            mexErrMsgTxt("Pts must be a matrix (nPts by 3).");
+        }
+        
+        vector<vector<siv<double>>> d_data( npts );
+        vector<sxyz<double>> pts( npts );
+        for ( size_t n=0; n<npts; ++n ) {
+            pts[n].x = tmp[n];
+            pts[n].y = tmp[n+npts];
+            pts[n].z = tmp[n+2*npts];
+        }
+        if ( grid_instance->computeD(pts, d_data) == 1 ) {
+            mexErrMsgTxt("Problem building matrix D.");
+        }
+        
+        size_t nnz = 0;
+        size_t nnodes = grid_instance->getNumberOfNodes(true);
+        for ( size_t n=0; n<npts; ++n ) {
+            nnz += d_data.size();
+        }
+        
+        plhs[0] = mxCreateSparse(npts, nnodes, nnz, mxREAL);
+        double *Dval = mxGetPr( plhs[0] );
+        mwIndex *irD  = mxGetIr( plhs[0] );
+        mwIndex *jcD  = mxGetJc( plhs[0] );
+        
+        size_t k = 0;
+        for ( size_t j=0; j<nnodes; ++j ) {
+            jcD[j] = k;
+            for ( size_t n=0; n<npts; ++n ) {
+                for ( size_t nn=0; nn<d_data[n].size(); ++nn ) {
+                    if ( d_data[n][nn].i == j ) {
+                        irD[k] = n;
+                        Dval[k] = d_data[n][nn].v;
+                        k++;
+                    }
+                }
+            }
+        }
+        jcD[nnodes] = k;
+        
+        return;
+    }
+
     
     // Got here, so command not recognized
     mexErrMsgTxt("Command not recognized.");
