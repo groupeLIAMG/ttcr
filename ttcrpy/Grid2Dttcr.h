@@ -1,5 +1,5 @@
 //
-//  Grid2Dttcr.hpp
+//  Grid2Dttcr.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 16-07-28.
@@ -25,8 +25,6 @@
 #ifndef Grid2Dttcr_h
 #define Grid2Dttcr_h
 
-
-
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "Python.h"
 #include "numpy/ndarrayobject.h"
@@ -36,7 +34,6 @@
 
 #include "Cell.h"
 #include "Grid2Drcsp.h"
-
 
 namespace ttcr {
     
