@@ -1692,13 +1692,13 @@
 					"/usr/local/VTK/include/vtk-7.0",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -1745,12 +1745,12 @@
 					"/usr/local/VTK/include/vtk-7.0",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -1982,13 +1982,13 @@
 					"/usr/local/VTK/include/vtk-7.0",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -2243,6 +2243,7 @@
 				2BEAEF911DBBFB5F001AEA17 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
