@@ -31,8 +31,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if (nlhs != 1) {
             mexErrMsgTxt("New: One output expected.");
         }
-        if (nrhs != 3) {
-            mexErrMsgTxt("New: 2 input arguments needed.");
+        if (nrhs != 3 || nrhs != 4 ) {
+            mexErrMsgTxt("New: 2 or 3 input arguments needed.");
         }
         // Return a handle to a new C++ instance
         
@@ -83,7 +83,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             tetrahedra[n].i[3] = static_cast<uint32_t>( ind[n+3*nTet]-1 );
         }
         
-        int order=2; // use order 2 for metric
+		// ------------------------------------------------------
+		// number of threads
+		// ------------------------------------------------------
+		size_t nthreads = 1;
+		if ( nrhs == 4 ) {
+			size_t mrows = mxGetM(prhs[3]);
+			size_t ncols = mxGetN(prhs[3]);
+			if( !mxIsDouble(prhs[3]) || mxIsComplex(prhs[3]) ||
+			   !(mrows==1 && ncols==1) ) {
+				mexErrMsgTxt("Input must be a noncomplex scalar double.");
+			}
+			
+			double *dtmp = mxGetPr( prhs[3] );
+			nthreads = round( *dtmp );
+		}
+		
+		int order=2; // use order 2 for metric
         double xmin = nodes[0].x;
         double xmax = nodes[0].x;
         double ymin = nodes[0].y;
@@ -109,7 +125,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         ptsRef.push_back( {xmax, ymax, zmin} );
         ptsRef.push_back( {xmax, ymax, zmax} );
         
-        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, 1.e-15, 20, ptsRef, order, true));
+        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, 1.e-15, 20, ptsRef, order, true, nthreads));
         return;
     }
     

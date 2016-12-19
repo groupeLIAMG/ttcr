@@ -1105,10 +1105,11 @@ namespace ttcr {
             }
             if ( !onEdge ) {
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
@@ -1346,10 +1347,11 @@ namespace ttcr {
                                             threadNo);
                 
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
@@ -1420,10 +1422,10 @@ namespace ttcr {
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     
-                    ind[0] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]};
-                    ind[1] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]};
-                    ind[2] = {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]};
-                    ind[3] = {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]};
+                    ind[0] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } };
+                    ind[1] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } };
+                    ind[2] = { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } };
+                    ind[3] = { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } };
                     
                     for ( size_t n=0; n<4; ++n )
                         std::sort( ind[n].begin(), ind[n].end() );
@@ -1630,10 +1632,11 @@ namespace ttcr {
             }
             if ( !onEdge ) {
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
@@ -1859,10 +1862,11 @@ namespace ttcr {
                 sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
                 
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
@@ -1933,10 +1937,10 @@ namespace ttcr {
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     
-                    ind[0] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]};
-                    ind[1] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]};
-                    ind[2] = {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]};
-                    ind[3] = {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]};
+                    ind[0] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } };
+                    ind[1] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } };
+                    ind[2] = { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } };
+                    ind[3] = { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } };
                     
                     for ( size_t n=0; n<4; ++n )
                         std::sort( ind[n].begin(), ind[n].end() );
@@ -2150,10 +2154,11 @@ namespace ttcr {
             }
             if ( !onEdge ) {
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
@@ -2827,10 +2832,11 @@ namespace ttcr {
                                             nodes[ neighbors[cellNo][3] ], threadNo);
                 
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
@@ -3067,11 +3073,11 @@ namespace ttcr {
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
 					
-                    ind[0] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]};
-                    ind[1] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]};
-                    ind[2] = {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]};
-                    ind[3] = {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]};
-                    
+                    ind[0] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } };
+                    ind[1] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } };
+                    ind[2] = { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } };
+                    ind[3] = { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } };
+            
                     for ( size_t n=0; n<4; ++n )
                         std::sort( ind[n].begin(), ind[n].end() );
                     
@@ -3450,10 +3456,10 @@ namespace ttcr {
             }
             if ( !onEdge ) {
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]} } };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
@@ -4116,10 +4122,11 @@ namespace ttcr {
                 sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
                 
                 std::array<T2,3> ind[4] = {
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]},
-                    {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]}};
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
@@ -4356,10 +4363,10 @@ namespace ttcr {
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     
-                    ind[0] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2]};
-                    ind[1] = {neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3]};
-                    ind[2] = {neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3]};
-                    ind[3] = {neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]};
+                    ind[0] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } };
+                    ind[1] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } };
+                    ind[2] = { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } };
+                    ind[3] = { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } };
                     
                     for ( size_t n=0; n<4; ++n )
                         std::sort( ind[n].begin(), ind[n].end() );

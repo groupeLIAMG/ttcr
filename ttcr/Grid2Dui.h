@@ -513,8 +513,8 @@ namespace ttcr {
         
         for ( size_t n=0; n<triangles.size(); ++n ) {
             // precompute centroids of all triangles
-            S stmp(nodes[triangles[n].i[1]] + nodes[triangles[n].i[2]]);
-            centroid[n] =  static_cast<T1>(1./3.) * S(nodes[triangles[n].i[0]] + stmp);
+            S stmp = S(nodes[triangles[n].i[0]]) + S(nodes[triangles[n].i[1]]) + S(nodes[triangles[n].i[2]]);
+            centroid[n] =  static_cast<T1>(1./3.) * stmp;
 //            for ( size_t nn = 0; nn<3; ++nn )
 //                std::cout << nodes[triangles[n].i[nn]].getX() << ' ' << nodes[triangles[n].i[nn]].getY() << ' ' << nodes[triangles[n].i[nn]].getZ() << '\n';
 //            std::cout << "   " << centroid[n].x << ' ' << centroid[n].y << ' ' << centroid[n].z << '\n';
