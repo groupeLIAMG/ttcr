@@ -394,7 +394,6 @@
 				2BB7D5BA1D07A801004730B9 /* ttcrpy */,
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
-				2BEAEF8C1DBBFB5F001AEA17 /* ttcrpy */,
 				2BC708D418EDA599004DA2C9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -490,13 +489,6 @@
 				2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */,
 			);
 			path = ttcr;
-			sourceTree = "<group>";
-		};
-		2BEAEF8C1DBBFB5F001AEA17 /* ttcrpy */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = ttcrpy;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1762,15 +1754,17 @@
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1781,15 +1775,17 @@
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1804,15 +1800,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK/include/vtk-6.1",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1823,15 +1819,15 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK/include/vtk-6.1",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1845,9 +1841,15 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1859,9 +1861,15 @@
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				DEPLOYMENT_LOCATION = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2000,15 +2008,17 @@
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug_O;
@@ -2023,15 +2033,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK/include/vtk-6.1",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug_O;
@@ -2045,9 +2055,15 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
