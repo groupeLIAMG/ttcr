@@ -1612,16 +1612,16 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-7.0",
+					"/opt/local/include/vtk-7.1",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -1665,15 +1665,15 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-7.0",
+					"/opt/local/include/vtk-7.1",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -1831,16 +1831,16 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-7.0",
+					"/opt/local/include/vtk-7.1",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
-				LIBRARY_SEARCH_PATHS = /usr/local/VTK/lib;
+				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
