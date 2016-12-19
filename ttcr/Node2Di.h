@@ -151,6 +151,11 @@ namespace ttcr {
         std::vector<T2> owners;        // indices of cells touching the node
     };
     
+	
+//	template <typename T1, typename T2>
+//	Node2Di<T1,T2> operator+(const Node2Di<T1,T2>& lhs, const Node2Di<T1,T2>& rhs)
+//	{
+//		return Node2Di<T1,T2>(lhs.x+rhs.x, lhs.z+rhs.z);
+//	}
 }
-
 #endif

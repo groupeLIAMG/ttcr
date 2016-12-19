@@ -2,12 +2,25 @@
 # python setup.py build_ext --inplace
 
 import numpy as np
-from distutils.core import setup, Extension
+from distutils.core import setup
+from distutils.extension import Extension
 from Cython.Build import cythonize
 
-setup(ext_modules = cythonize(Extension(
-                                        'cgrid2d',
-                                        sources=['cgrid2d.pyx', 'Grid2Dttcr.cpp'],  # additional source file(s)
-                                        include_dirs=['../ttcr/',np.get_include()],
-                                        language='c++',             # generate C++ code
-                                        extra_compile_args=['-std=c++11'],)))
+
+extensions = [
+    Extension('cgrid2d',
+              sources=['cgrid2d.pyx', 'Grid2Dttcr.cpp'],  # additional source file(s)
+              include_dirs=['../ttcr/',np.get_include()],
+              language='c++',             # generate C++ code
+              extra_compile_args=['-std=c++11','-O3'],),
+    Extension('cmesh3d',
+              sources=['cmesh3d.pyx', 'Mesh3Dttcr.cpp'],
+              include_dirs=['../ttcr/','/opt/local/include/eigen3/',np.get_include()],
+              language='c++',             # generate C++ code
+              extra_compile_args=['-std=c++11','-O3'],),
+]
+
+setup(
+    name='ttcrpy',
+    ext_modules=cythonize(extensions, include_path=['.',]),
+)
