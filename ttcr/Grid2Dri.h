@@ -67,32 +67,6 @@ namespace ttcr {
             return 0;
         }
         
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxz<T1>>>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<sxz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncz; }
         
@@ -478,7 +452,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             fout.precision(12);
             for ( T2 n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() == true || all==1 ) {
@@ -558,7 +533,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             fout.precision(12);
             for ( size_t i=0; i<ncx; ++i ) {
                 for ( size_t j=0; j<ncz; ++j ) {

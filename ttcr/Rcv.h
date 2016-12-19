@@ -27,6 +27,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -42,7 +43,7 @@ namespace ttcr {
         
         void init(const size_t, const size_t nr=0);
         const std::vector<sxyz<T>>& get_coord() const { return coord; }
-        std::vector<sxyz<T>>* get_coord_ptr() { return &coord; }
+        std::vector<sxyz<T>>& get_coord() { return coord; }
         std::vector<T>& get_tt(const size_t n, const size_t nr=0) { return tt[n][nr]; }
         
         void save_tt( const std::string &, const size_t) const;
@@ -77,11 +78,36 @@ namespace ttcr {
         std::getline(fin, test);
         
         char lastChar = ' ';
+		bool vtk = false;
         if (!test.empty()) {
             lastChar = *test.rbegin();
+			if ( test.find("vtk") != std::string::npos ) vtk = true;
         }
-        
-        if ( lastChar == '/' ) {
+		
+		if ( vtk == true ) {
+			std::getline(fin, test);  // 2nd line should be vtk output
+			std::getline(fin, test);  // 3rd line should be ASCII
+			if ( test.find("ASCII") == std::string::npos ) {
+				std::cerr << "Error: vtk file should be ascii.\n";
+				exit(1);
+			}
+			while ( test.find("POINTS") == std::string::npos ) {
+				std::getline(fin, test);
+			}
+			std::istringstream sin( test );
+			size_t nrcv;
+			sin >> test >> nrcv;
+			coord.resize( nrcv );
+			for (size_t n=0; n<nsrc; ++n )
+				for ( size_t nr=0; nr<=nrefl; ++nr )
+					tt[n][nr].resize( nrcv );
+			size_t nread = 0;
+			while ( fin && nread<nrcv ) {
+				fin >> coord[nread].x >> coord[nread].y >> coord[nread].z;
+				nread++;
+			}
+			
+		} else if ( lastChar == '/' ) {
             // CRT format
             coord.resize(0);
             sxyz<T> co;

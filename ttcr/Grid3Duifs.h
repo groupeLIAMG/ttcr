@@ -94,6 +94,23 @@ namespace ttcr {
                      std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
                      const size_t=0) const;
         
+        int raytrace(const std::vector<sxyz<T1>>& Tx,
+                     const std::vector<T1>& t0,
+                     const std::vector<sxyz<T1>>& Rx,
+                     std::vector<T1>& traveltimes,
+                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                     T1& v0,
+                     const size_t threadNo=0) const;
+        
+        int raytrace(const std::vector<sxyz<T1>>& Tx,
+                     const std::vector<T1>& t0,
+                     const std::vector<sxyz<T1>>& Rx,
+                     std::vector<T1>& traveltimes,
+                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                     T1& v0,
+                     std::vector<std::vector<sijv<T1>>>& m_data,
+                     const size_t threadNo=0) const;
+
     private:
         bool rp_ho;
         T1 epsilon;
@@ -362,11 +379,11 @@ namespace ttcr {
         
         if ( rp_ho ) {
             for (size_t n=0; n<Rx.size(); ++n) {
-                this->getRaypath_ho(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
+                this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
             }
         } else {
             for (size_t n=0; n<Rx.size(); ++n) {
-                this->getRaypath(Tx, Rx[n], traveltimes[n], r_data[n], threadNo);
+                this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
             }
         }
         
@@ -396,17 +413,100 @@ namespace ttcr {
             
             if ( rp_ho ) {
                 for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    this->getRaypath_ho(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+                    this->getRaypath_ho(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
                 }
             } else {
                 for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    this->getRaypath(Tx, (*Rx[nr])[n], (*traveltimes[nr])[n], (*r_data[nr])[n], threadNo);
+                    this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
                 }
             }
         }
         return 0;
     }
     
+    template<typename T1, typename T2>
+    int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const std::vector<sxyz<T1>>& Rx,
+                                    std::vector<T1>& traveltimes,
+                                    std::vector<std::vector<sxyz<T1>>>& r_data,
+                                    T1& v0,
+                                    const size_t threadNo) const {
+        
+        int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        if ( check == 1 ) return 1;
+        
+        if ( r_data.size() != Rx.size() ) {
+            r_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+            r_data[ni].resize( 0 );
+        }
+        
+        v0 = 0.0;
+        for ( size_t n=0; n<Tx.size(); ++n ) {
+            v0 += this->computeSlowness( Tx[n] );
+        }
+        v0 = Tx.size() / v0;
+
+        if ( rp_ho ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
+            }
+        }
+        
+        return 0;
+    }
+    
+    template<typename T1, typename T2>
+    int Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const std::vector<sxyz<T1>>& Rx,
+                                    std::vector<T1>& traveltimes,
+                                    std::vector<std::vector<sxyz<T1>>>& r_data,
+                                    T1& v0,
+                                    std::vector<std::vector<sijv<T1>>>& m_data,
+                                    const size_t threadNo) const {
+        
+        int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        if ( check == 1 ) return 1;
+        
+        if ( r_data.size() != Rx.size() ) {
+            r_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+            r_data[ni].resize( 0 );
+        }
+        if ( m_data.size() != Rx.size() ) {
+            m_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<m_data.size(); ++ni ) {
+            m_data[ni].resize( 0 );
+        }
+        
+        v0 = 0.0;
+        for ( size_t n=0; n<Tx.size(); ++n ) {
+            v0 += this->computeSlowness( Tx[n] );
+        }
+        v0 = Tx.size() / v0;
+        
+        if ( rp_ho ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath_ho(Tx, Rx[n], r_data[n], m_data[n], n, threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath(Tx, Rx[n], r_data[n], m_data[n], n, threadNo);
+            }
+        }
+
+        return 0;
+    }
+
     
     template<typename T1, typename T2>
     void Grid3Duifs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
@@ -434,7 +534,7 @@ namespace ttcr {
                                 
                                 if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                                     this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                                    frozen[neibNo] = true;
+                                    //frozen[neibNo] = true;
                                 }
                             }
                         }
@@ -460,7 +560,7 @@ namespace ttcr {
                             std::cerr << "Error: no nodes found within source radius, aborting" << std::endl;
                             abort();
                         } else {
-                            std::cout << "(found " << nodes_added << " nodes arounf Tx point)\n";
+                            std::cout << "(found " << nodes_added << " nodes around Tx point)\n";
                         }
                     }
                     

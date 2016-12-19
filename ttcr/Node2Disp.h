@@ -190,6 +190,11 @@ namespace ttcr {
         
     };
     
+    template<typename T1, typename T2>
+    sxz<T1> operator+(const Node2Disp<T1,T2>& lhs, const Node2Disp<T1,T2>& rhs) {
+        return sxz<T1>( lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ() );
+    }
+    
 }
 
 #endif

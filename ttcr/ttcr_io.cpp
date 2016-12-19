@@ -207,6 +207,14 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.saveRaypaths;
             }
+            else if (par.find("save M") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.saveM;
+            }
+            else if (par.find("project Tx Rx") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.projectTxRx;
+            }
             else if (par.find("raypath high order") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.raypath_high_order;

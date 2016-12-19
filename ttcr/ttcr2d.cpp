@@ -54,16 +54,18 @@ int body(const input_parameters &par) {
 	
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
-	if ( par.nt == 0 ) {
+    size_t const min_per_thread=5;
+
+    if ( par.nt == 0 ) {
 		size_t const hardware_threads = thread::hardware_concurrency();
-		size_t const min_per_thread=5;
 		size_t const max_threads = (nTx+min_per_thread-1)/min_per_thread;
 		num_threads = min((hardware_threads!=0?hardware_threads:2), max_threads);
 	} else {
 		num_threads = par.nt < nTx ? par.nt : nTx;
 	}
 	
-    size_t const blk_size = (nTx%num_threads ? 1 : 0) + nTx/num_threads;
+    size_t blk_size = nTx/num_threads;
+    if ( blk_size == 0 ) blk_size++;
 	
 	string::size_type idx;
     
@@ -161,7 +163,7 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt, all_r_data);
                 
-                if ( par.saveGridTT ) {
+                if ( par.saveGridTT>0 ) {
                     
                     string srcname = par.srcfiles[n];
                     size_t pos = srcname.rfind("/");
@@ -171,7 +173,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, true);
+                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";
 //                    g->saveTTgrad(filename, 0, true);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";
@@ -258,7 +260,7 @@ int body(const input_parameters &par) {
 				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
 							all_tt);
                 
-                if ( par.saveGridTT ) {
+                if ( par.saveGridTT>0 ) {
                     
                     string srcname = par.srcfiles[n];
                     size_t pos = srcname.rfind("/");
@@ -268,7 +270,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, true);
+                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";
 //                    g->saveTTgrad(filename, 0, true);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";

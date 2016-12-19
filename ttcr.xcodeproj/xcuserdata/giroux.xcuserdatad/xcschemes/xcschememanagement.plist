@@ -64,6 +64,11 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>ttcrpy.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>12</integer>
+		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
@@ -128,6 +133,11 @@
 			<true/>
 		</dict>
 		<key>2BD0F4F318EED76000B3957F</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2BEAEF8A1DBBFB5F001AEA17</key>
 		<dict>
 			<key>primary</key>
 			<true/>

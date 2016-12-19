@@ -27,6 +27,9 @@
 		2BC7091218EDABD3004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */; };
 		2BD0F4FD18EED7E400B3957F /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
+		2BEAEF931DBBFBCE001AEA17 /* Grid3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D31DADABA700E26DEB /* Grid3Dttcr.cpp */; };
+		2BEAEF941DBBFBD3001AEA17 /* Mesh3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D41DADB33100E26DEB /* Mesh3Dttcr.cpp */; };
+		2BEAEF951DBBFBDD001AEA17 /* Grid2Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -134,16 +137,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
+		2BEAEF891DBBFB5F001AEA17 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2B04DD751AA75CC5000231E6 /* grid3duifs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = grid3duifs.m; sourceTree = "<group>"; };
 		2B04DD801AA75F6E000231E6 /* grid3duifs_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duifs_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B04DD821AA75FFD000231E6 /* grid3duifs_mex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = grid3duifs_mex.cpp; sourceTree = "<group>"; };
-		2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Grid2Dttcr.cpp; path = python/Grid2Dttcr.cpp; sourceTree = "<group>"; };
-		2B0B2DDC1D4A4C5600111F13 /* Grid2Dttcr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Grid2Dttcr.h; path = python/Grid2Dttcr.h; sourceTree = "<group>"; };
-		2B0B2DDD1D4A4C9B00111F13 /* setup.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = setup.py; path = python/setup.py; sourceTree = "<group>"; };
-		2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; fileEncoding = 4; name = cgrid2d.pyx; path = python/cgrid2d.pyx; sourceTree = "<group>"; };
+		2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Grid2Dttcr.cpp; sourceTree = "<group>"; };
+		2B0B2DDC1D4A4C5600111F13 /* Grid2Dttcr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dttcr.h; sourceTree = "<group>"; };
+		2B0B2DDD1D4A4C9B00111F13 /* setup.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = setup.py; sourceTree = "<group>"; };
+		2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; fileEncoding = 4; path = cgrid2d.pyx; sourceTree = "<group>"; };
 		2B0CC4051C30C0DC001BC581 /* Grid3Drifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drifs.h; sourceTree = "<group>"; };
 		2B11D19318FE1FD30075EAAC /* Grid2Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duifm.h; sourceTree = "<group>"; };
 		2B11D19418FE25940075EAAC /* Grid2Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duifs.h; sourceTree = "<group>"; };
@@ -151,7 +163,7 @@
 		2B17F25F1C2B535D00F9C97F /* Grid2Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid2Drc.h; sourceTree = "<group>"; };
 		2B17F2601C2B6A1300F9C97F /* Grid2Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drcfs.h; sourceTree = "<group>"; };
 		2B3323751CA450D2005F3C8D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
-		2B37D4BB1D4A4EFF00EA31E9 /* grid.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = grid.py; path = python/grid.py; sourceTree = "<group>"; };
+		2B37D4BB1D4A4EFF00EA31E9 /* grid.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = grid.py; sourceTree = "<group>"; };
 		2B39B6A518F860BD003985D6 /* Grid2Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dui.h; sourceTree = "<group>"; };
 		2B39B6A618F8808F003985D6 /* Grid2Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duisp.h; sourceTree = "<group>"; };
 		2B3CFD9E18FE137F005B4E1B /* Node2Di.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Node2Di.h; sourceTree = "<group>"; };
@@ -173,6 +185,7 @@
 		2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = msh2vtk_io.cpp; sourceTree = "<group>"; };
 		2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = msh2vtk_io.h; sourceTree = "<group>"; };
 		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
+		2B6D56201D50358C00075138 /* utils.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = utils.py; sourceTree = "<group>"; };
 		2B6F87A5190F3EDA002AC9DF /* grid2duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid2duisp_mex.cpp; sourceTree = "<group>"; };
 		2B6F87AE190F4016002AC9DF /* class_handle.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = class_handle.hpp; sourceTree = "<group>"; };
@@ -229,12 +242,20 @@
 		2BC7090318EDA83B004DA2C9 /* grids.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = grids.h; sourceTree = "<group>"; };
 		2BC7090918EDAAA0004DA2C9 /* ttcr2d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2d.cpp; sourceTree = "<group>"; };
+		2BCC7A251DAF1EB8006747EF /* mesh.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = mesh.py; sourceTree = "<group>"; };
 		2BD0F4F418EED76000B3957F /* ttcr2ds */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr2ds; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr2ds.cpp; sourceTree = "<group>"; };
+		2BDCA1D31DADABA700E26DEB /* Grid3Dttcr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Grid3Dttcr.cpp; sourceTree = "<group>"; };
+		2BDCA1D41DADB33100E26DEB /* Mesh3Dttcr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Mesh3Dttcr.cpp; sourceTree = "<group>"; };
+		2BDCA1D51DADB33100E26DEB /* Mesh3Dttcr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Mesh3Dttcr.h; sourceTree = "<group>"; };
+		2BDCA1D61DADCD6200E26DEB /* cmesh3d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; path = cmesh3d.pyx; sourceTree = "<group>"; };
 		2BDE233B19DBA63F0001FC4D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2BDE5D611C3EB25500223E26 /* Grid3Drisp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drisp.h; sourceTree = "<group>"; };
 		2BDE5D621C3EB2D800223E26 /* Grid3Drcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid3Drcsp.h; sourceTree = "<group>"; };
+		2BE42A541DAD06310084B97F /* Grid3Dttcr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Dttcr.h; sourceTree = "<group>"; };
+		2BEAEF8B1DBBFB5F001AEA17 /* ttcrpy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcrpy; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BF787831905A36200E80373 /* Grid3Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duisp.h; sourceTree = "<group>"; };
+		98CCBF011DA4473B00B719D8 /* Grid3Duigm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duigm.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -315,6 +336,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BEAEF881DBBFB5F001AEA17 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -341,22 +369,29 @@
 			path = ttcr_matlab;
 			sourceTree = "<group>";
 		};
-		2BB7D5BA1D07A801004730B9 /* python */ = {
+		2BB7D5BA1D07A801004730B9 /* ttcrpy */ = {
 			isa = PBXGroup;
 			children = (
+				2B6D56201D50358C00075138 /* utils.py */,
 				2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */,
+				2BDCA1D61DADCD6200E26DEB /* cmesh3d.pyx */,
 				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
-				2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */,
 				2B0B2DDC1D4A4C5600111F13 /* Grid2Dttcr.h */,
+				2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */,
+				2BE42A541DAD06310084B97F /* Grid3Dttcr.h */,
+				2BDCA1D31DADABA700E26DEB /* Grid3Dttcr.cpp */,
 				2B37D4BB1D4A4EFF00EA31E9 /* grid.py */,
+				2BDCA1D51DADB33100E26DEB /* Mesh3Dttcr.h */,
+				2BDCA1D41DADB33100E26DEB /* Mesh3Dttcr.cpp */,
+				2BCC7A251DAF1EB8006747EF /* mesh.py */,
 			);
-			name = python;
+			path = ttcrpy;
 			sourceTree = "<group>";
 		};
 		2BC708CA18EDA599004DA2C9 = {
 			isa = PBXGroup;
 			children = (
-				2BB7D5BA1D07A801004730B9 /* python */,
+				2BB7D5BA1D07A801004730B9 /* ttcrpy */,
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
 				2BC708D418EDA599004DA2C9 /* Products */,
@@ -377,6 +412,7 @@
 				2B3D86E51C5C054200AFFA2A /* grid3drcfs_mex.mexmaci64 */,
 				2B45CD351C5C38B40083644A /* grid2drcfs_mex.mexmaci64 */,
 				2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */,
+				2BEAEF8B1DBBFB5F001AEA17 /* ttcrpy */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -421,6 +457,7 @@
 				2B90ECD019053EC60015748B /* Grid3Dui.h */,
 				2B90ECD219054B400015748B /* Grid3Duifm.h */,
 				2B90ECD319054C3D0015748B /* Grid3Duifs.h */,
+				98CCBF011DA4473B00B719D8 /* Grid3Duigm.h */,
 				2BF787831905A36200E80373 /* Grid3Duisp.h */,
 				2BC708EE18EDA65F004DA2C9 /* Interface.h */,
 				2BC708EF18EDA65F004DA2C9 /* Interpolator.h */,
@@ -644,6 +681,23 @@
 			productReference = 2BD0F4F418EED76000B3957F /* ttcr2ds */;
 			productType = "com.apple.product-type.tool";
 		};
+		2BEAEF8A1DBBFB5F001AEA17 /* ttcrpy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BEAEF921DBBFB5F001AEA17 /* Build configuration list for PBXNativeTarget "ttcrpy" */;
+			buildPhases = (
+				2BEAEF871DBBFB5F001AEA17 /* Sources */,
+				2BEAEF881DBBFB5F001AEA17 /* Frameworks */,
+				2BEAEF891DBBFB5F001AEA17 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ttcrpy;
+			productName = ttcrpy;
+			productReference = 2BEAEF8B1DBBFB5F001AEA17 /* ttcrpy */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -667,6 +721,10 @@
 					};
 					2B46D14419F2B78C00E7ADFC = {
 						CreatedOnToolsVersion = 6.0.1;
+					};
+					2BEAEF8A1DBBFB5F001AEA17 = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -693,6 +751,7 @@
 				2B3D86E41C5C054200AFFA2A /* grid3drcfs_mex */,
 				2B45CD341C5C38B40083644A /* grid2drcfs_mex */,
 				2B45CD471C5C3F100083644A /* grid2drcsp_mex */,
+				2BEAEF8A1DBBFB5F001AEA17 /* ttcrpy */,
 			);
 		};
 /* End PBXProject section */
@@ -787,6 +846,16 @@
 			files = (
 				2BD0F4FD18EED7E400B3957F /* ttcr_io.cpp in Sources */,
 				2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BEAEF871DBBFB5F001AEA17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BEAEF941DBBFBD3001AEA17 /* Mesh3Dttcr.cpp in Sources */,
+				2BEAEF951DBBFBDD001AEA17 /* Grid2Dttcr.cpp in Sources */,
+				2BEAEF931DBBFBCE001AEA17 /* Grid3Dttcr.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1685,15 +1754,17 @@
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1704,15 +1775,17 @@
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1727,15 +1800,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK/include/vtk-6.1",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1746,15 +1819,15 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK/include/vtk-6.1",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1768,9 +1841,15 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1782,11 +1861,88 @@
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				DEPLOYMENT_LOCATION = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		2BEAEF8F1DBBFB5F001AEA17 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		2BEAEF901DBBFB5F001AEA17 /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_O;
+		};
+		2BEAEF911DBBFB5F001AEA17 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1852,15 +2008,17 @@
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				OTHER_LDFLAGS = (
-					"-lvtkIOXML-7.0.1",
-					"-lvtkCommonDataModel-7.0.1",
-					"-lvtkCommonCore-7.0.1",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug_O;
@@ -1875,15 +2033,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/usr/local/VTK/include/vtk-6.1",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug_O;
@@ -1897,9 +2055,15 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = (
-					/usr/local/VTK/lib,
+					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2083,6 +2247,16 @@
 				2BD0F4FA18EED76000B3957F /* Debug */,
 				2BF3B02519F82D3800A6C041 /* Debug_O */,
 				2BD0F4FB18EED76000B3957F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2BEAEF921DBBFB5F001AEA17 /* Build configuration list for PBXNativeTarget "ttcrpy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2BEAEF8F1DBBFB5F001AEA17 /* Debug */,
+				2BEAEF901DBBFB5F001AEA17 /* Debug_O */,
+				2BEAEF911DBBFB5F001AEA17 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

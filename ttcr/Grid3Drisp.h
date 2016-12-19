@@ -1050,8 +1050,9 @@ namespace ttcr {
                 bool found=false;
                 for (size_t nc=0; nc<l_data[n].size(); ++nc) {
                     if ( l_data[n][nc].i == cell.i ) {
-                        l_data[n][nc].v += cell.v;
+                        l_data[n][nc].v += cell.v;  // must add in case we pass through secondary nodes along edge
                         found = true;
+                        break;
                     }
                 }
                 if ( found == false ) {
@@ -1083,8 +1084,9 @@ namespace ttcr {
             bool found=false;
             for (size_t nc=0; nc<l_data[n].size(); ++nc) {
                 if ( l_data[n][nc].i == cell.i ) {
-                    l_data[n][nc].v += cell.v;
+                    l_data[n][nc].v += cell.v;  // must add in case we pass through secondary nodes along edge
                     found = true;
+                    break;
                 }
             }
             if ( found == false ) {
@@ -1172,6 +1174,8 @@ namespace ttcr {
             const Node3Disp<T1,T2>* source = queue.top();
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
+            frozen[ source->getGridIndex() ] = true;
+            
             for ( size_t no=0; no<source->getOwners().size(); ++no ) {
                 T2 cellNo = source->getOwners()[no];
                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {

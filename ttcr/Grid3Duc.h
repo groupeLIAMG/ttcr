@@ -267,13 +267,11 @@ namespace ttcr {
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
-                        const T1 tRx,
                         std::vector<sxyz<T1>> &r_data,
                         const size_t threadNo) const;
         
         void getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                            const sxyz<T1> &Rx,
-                           const T1 tRx,
                            std::vector<sxyz<T1>> &r_data,
                            const size_t threadNo) const;
         
@@ -488,7 +486,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             T2 nMax = nPrimary;
             if ( all == 1 ) {
                 nMax = static_cast<T2>(nodes.size());
@@ -851,21 +850,23 @@ namespace ttcr {
                 
                 // project point on AB
                 
-                k = dot(v_pt,v_c)/dot(v_c,v_c);
-                pt.x = vertexA->getX() + k*v_c.x;
-                pt.y = vertexA->getY() + k*v_c.y;
-                pt.z = vertexA->getZ() + k*v_c.z;
-                
-                T1 xi0 = vertexA->getDistance( pt )/c;
+//                k = dot(v_pt,v_c)/dot(v_c,v_c);
+//                pt.x = vertexA->getX() + k*v_c.x;
+//                pt.y = vertexA->getY() + k*v_c.y;
+//                pt.z = vertexA->getZ() + k*v_c.z;
+//                
+//                T1 xi0 = vertexA->getDistance( pt )/c;
+                T1 xi0 = dot(v_pt,v_c)/dot(v_c,v_c);
                 
                 // project point on AC
                 
-                k = dot(v_pt,v_b)/dot(v_b,v_b);
-                pt.x = vertexA->getX() + k*v_b.x;
-                pt.y = vertexA->getY() + k*v_b.y;
-                pt.z = vertexA->getZ() + k*v_b.z;
-                
-                T1 zeta0 = vertexA->getDistance( pt )/b;
+//                k = dot(v_pt,v_b)/dot(v_b,v_b);
+//                pt.x = vertexA->getX() + k*v_b.x;
+//                pt.y = vertexA->getY() + k*v_b.y;
+//                pt.z = vertexA->getZ() + k*v_b.z;
+//                
+//                T1 zeta0 = vertexA->getDistance( pt )/b;
+                T1 zeta0 = dot(v_pt,v_b)/dot(v_b,v_b);
                 
                 
                 T1 beta = u*b*b - v*d2;    // from eq 19
@@ -942,7 +943,8 @@ namespace ttcr {
         pt.z = vertexA->getZ() + k*v_c.z;
         
         T1 rho0 = vertexC->getDistance( pt );
-        T1 xi0 = vertexA->getDistance( pt )/c;
+//        T1 xi0 = vertexA->getDistance( pt )/c;
+        T1 xi0 = k;
         
         T1 xi = xi0 - u*rho0/(w*c);
         
@@ -1290,7 +1292,6 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
-                                          const T1 tRx,
                                           std::vector<sxyz<T1>> &r_data,
                                           const size_t threadNo) const {
         
@@ -1448,7 +1449,7 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
                     
-                    for ( size_t n1=0; n1<2; ++n1 ) {
+                    for ( size_t n1=0; n1<3; ++n1 ) {   // changed n1<2  -> n1<3
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
                             edgeNodes[0] = nb[n1];
@@ -1884,7 +1885,6 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                                              const sxyz<T1> &Rx,
-                                             const T1 tRx,
                                              std::vector<sxyz<T1>> &r_data,
                                              const size_t threadNo) const {
         

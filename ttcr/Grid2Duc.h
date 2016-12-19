@@ -105,32 +105,6 @@ namespace ttcr {
             nodes[nn].setTT(tt, nt);
         }
         
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<S>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<S>>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
-        virtual int raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<S>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<S>>*>& r_data,
-                             const size_t threadNo=0) const { return 0; }
-        
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return triangles.size(); }
         
@@ -359,7 +333,7 @@ namespace ttcr {
             }
             if ( found == false ) {
                 std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
+                << " outside the grid ("<< pts[n].x <<", "<< pts[n].y <<", "<< pts[n].z<<").\n";
                 return 1;
             }
         }
@@ -469,7 +443,8 @@ namespace ttcr {
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
         } else {
-            std::ofstream fout(fname.c_str());
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
             fout.precision(12);
             T2 nMax = nPrimary;
             if ( all == 1 ) {

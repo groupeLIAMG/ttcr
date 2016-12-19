@@ -552,8 +552,9 @@ namespace ttcr {
                 bool found=false;
                 for (size_t nc=0; nc<l_data[n].size(); ++nc) {
                     if ( l_data[n][nc].i == cell.i ) {
-                        l_data[n][nc].v += cell.v;
+                        l_data[n][nc].v += cell.v;  // must add in case we pass through secondary nodes along edge
                         found = true;
+                        break;
                     }
                 }
                 if ( found == false ) {
@@ -583,8 +584,9 @@ namespace ttcr {
             bool found=false;
             for (size_t nc=0; nc<l_data[n].size(); ++nc) {
                 if ( l_data[n][nc].i == cell.i ) {
-                    l_data[n][nc].v += cell.v;
+                    l_data[n][nc].v += cell.v;  // must add in case we pass through secondary nodes along edge
                     found = true;
+                    break;
                 }
             }
             if ( found == false ) {
@@ -665,6 +667,7 @@ namespace ttcr {
             const NODE* source = queue.top();
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
+            frozen[ source->getGridIndex() ] = true;
             
 #ifdef DEBUG
             char fname[80];
