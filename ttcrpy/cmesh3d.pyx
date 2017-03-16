@@ -116,7 +116,7 @@ cdef class Mesh3Dcpp:
             
             nTx = np.unique(Tx.view([('',Tx.dtype)]*Tx.shape[1])).view(Tx.dtype).reshape(-1,Tx.shape[1]).shape[0]   # get number of unique Tx
             
-            M = tuple([ [0.0] for i in range(nTx) ])
+            M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
             
             if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M) != 0:
                 raise RuntimeError()
