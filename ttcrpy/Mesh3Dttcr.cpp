@@ -449,11 +449,16 @@ namespace ttcr {
                         }
                     }
                 }
-                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
-                    indices_p[k] = nnodes+j;
-                    data_p[k] = 1.0;
-                    k++;
-                }
+
+                indices_p[k] = nnodes+ni;
+                data_p[k] = 1.0;
+                k++;
+                
+//                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
+//                    indices_p[k] = nnodes+j;
+//                    data_p[k] = 1.0;
+//                    k++;
+//                }
             }
             indptr_p[nRcv] = k;
             

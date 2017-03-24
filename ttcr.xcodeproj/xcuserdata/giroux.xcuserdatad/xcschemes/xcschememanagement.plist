@@ -49,6 +49,11 @@
 			<key>orderHint</key>
 			<integer>3</integer>
 		</dict>
+		<key>testM.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>13</integer>
+		</dict>
 		<key>ttcr2d.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -138,6 +143,11 @@
 			<true/>
 		</dict>
 		<key>2BEAEF8A1DBBFB5F001AEA17</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2BFC4AE81E7C605600F32C0A</key>
 		<dict>
 			<key>primary</key>
 			<true/>

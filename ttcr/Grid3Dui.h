@@ -2173,7 +2173,7 @@ namespace ttcr {
                 }
             }
         }
-		T1 v, ds;
+		T1 s, ds;
         while ( reachedTx == false ) {
             
             if ( onNode ) {
@@ -2217,8 +2217,8 @@ namespace ttcr {
                     if ( r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        v = computeSlowness(mid_pt);
-                        v *= v;
+                        s = computeSlowness(mid_pt);
+                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
 					}
 					
@@ -2267,7 +2267,7 @@ namespace ttcr {
 								size_t nn=0;
 								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 									m.j = *it;
-									m.v = -1.0 / v * ds * w[nn++]/sum_w;
+									m.v = -s * ds * w[nn++]/sum_w;
 									bool found = false;
 									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 										if ( m_data[nm].j == m.j ) {
@@ -2334,7 +2334,7 @@ namespace ttcr {
 								size_t nn=0;
 								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 									m.j = *it;
-									m.v = -1.0 / v * ds * w[nn++]/sum_w;
+									m.v = -s * ds * w[nn++]/sum_w;
 									bool found = false;
 									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 										if ( m_data[nm].j == m.j ) {
@@ -2397,7 +2397,7 @@ namespace ttcr {
 						size_t nn=0;
 						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 							m.j = *it;
-							m.v = -1.0 / v * ds * w[nn++]/sum_w;
+							m.v = -s * ds * w[nn++]/sum_w;
 							bool found = false;
 							for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 								if ( m_data[nm].j == m.j ) {
@@ -2488,8 +2488,8 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        v = computeSlowness(mid_pt);
-                        v *= v;
+                        s = computeSlowness(mid_pt);
+                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
 					}
                     
@@ -2538,7 +2538,7 @@ namespace ttcr {
 								size_t nn=0;
 								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 									m.j = *it;
-									m.v = -1.0 / v * ds * w[nn++]/sum_w;
+									m.v = -s * ds * w[nn++]/sum_w;
 									bool found = false;
 									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 										if ( m_data[nm].j == m.j ) {
@@ -2602,7 +2602,7 @@ namespace ttcr {
 							size_t nn=0;
 							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 								m.j = *it;
-								m.v = -1.0 / v * ds * w[nn++]/sum_w;
+								m.v = -s * ds * w[nn++]/sum_w;
 								bool found = false;
 								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 									if ( m_data[nm].j == m.j ) {
@@ -2663,7 +2663,7 @@ namespace ttcr {
 							size_t nn=0;
 							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 								m.j = *it;
-								m.v = -1.0 / v * ds * w[nn++]/sum_w;
+								m.v = -s * ds * w[nn++]/sum_w;
 								bool found = false;
 								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 									if ( m_data[nm].j == m.j ) {
@@ -2724,7 +2724,7 @@ namespace ttcr {
 							size_t nn=0;
 							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 								m.j = *it;
-								m.v = -1.0 / v * ds * w[nn++]/sum_w;
+								m.v = -s * ds * w[nn++]/sum_w;
 								bool found = false;
 								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 									if ( m_data[nm].j == m.j ) {
@@ -2789,7 +2789,7 @@ namespace ttcr {
 						size_t nn=0;
 						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 							m.j = *it;
-							m.v = -1.0 / v * ds * w[nn++]/sum_w;
+							m.v = -s * ds * w[nn++]/sum_w;
 							bool found = false;
 							for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 								if ( m_data[nm].j == m.j ) {
@@ -2860,8 +2860,8 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        v = computeSlowness(mid_pt);
-                        v *= v;
+                        s = computeSlowness(mid_pt);
+                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
                     
@@ -2910,7 +2910,7 @@ namespace ttcr {
 								size_t nn=0;
 								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 									m.j = *it;
-									m.v = -1.0 / v * ds * w[nn++]/sum_w;
+									m.v = -s * ds * w[nn++]/sum_w;
 									bool found = false;
 									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 										if ( m_data[nm].j == m.j ) {
@@ -2977,7 +2977,7 @@ namespace ttcr {
 								size_t nn=0;
 								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 									m.j = *it;
-									m.v = -1.0 / v * ds * w[nn++]/sum_w;
+									m.v = -s * ds * w[nn++]/sum_w;
 									bool found = false;
 									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 										if ( m_data[nm].j == m.j ) {
@@ -3040,7 +3040,7 @@ namespace ttcr {
 						size_t nn=0;
 						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 							m.j = *it;
-							m.v = -1.0 / v * ds * w[nn++]/sum_w;
+							m.v = -s * ds * w[nn++]/sum_w;
 							bool found = false;
 							for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 								if ( m_data[nm].j == m.j ) {
@@ -3099,8 +3099,8 @@ namespace ttcr {
                         if (r_tmp.size() > 1 ) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            v = computeSlowness(mid_pt);
-                            v *= v;
+                            s = computeSlowness(mid_pt);
+                            s *= s;
                             ds = curr_pt.getDistance( prev_pt );
                         }
                         
@@ -3149,7 +3149,7 @@ namespace ttcr {
 									size_t nn=0;
 									for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 										m.j = *it;
-										m.v = -1.0 / v * ds * w[nn++]/sum_w;
+										m.v = -s * ds * w[nn++]/sum_w;
 										bool found = false;
 										for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 											if ( m_data[nm].j == m.j ) {
@@ -3216,7 +3216,7 @@ namespace ttcr {
 									size_t nn=0;
 									for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 										m.j = *it;
-										m.v = -1.0 / v * ds * w[nn++]/sum_w;
+										m.v = -s * ds * w[nn++]/sum_w;
 										bool found = false;
 										for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 											if ( m_data[nm].j == m.j ) {
@@ -3279,7 +3279,7 @@ namespace ttcr {
 							size_t nn=0;
 							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
 								m.j = *it;
-								m.v = -1.0 / v * ds * w[nn++]/sum_w;
+								m.v = -s * ds * w[nn++]/sum_w;
 								bool found = false;
 								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
 									if ( m_data[nm].j == m.j ) {
@@ -3474,7 +3474,7 @@ namespace ttcr {
                 }
             }
         }
-        T1 v, ds;
+        T1 s, ds;
         while ( reachedTx == false ) {
             
             if ( onNode ) {
@@ -3501,19 +3501,21 @@ namespace ttcr {
                     }
                     std::sort(nb.begin(), nb.end());
                     
-                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], pt_i);
                     if ( !foundIntersection ) {
                         continue;
                     }
                     
                     prev_pt = curr_pt;
+                    curr_pt = pt_i;
                     r_tmp.push_back( curr_pt );
                     
                     if ( r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        v = computeSlowness(mid_pt);
-                        v *= v;
+                        s = computeSlowness(mid_pt);
+                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
                     
@@ -3562,7 +3564,7 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                    m.v = -s * ds * w[nn++]/sum_w;
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -3629,7 +3631,7 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                    m.v = -s * ds * w[nn++]/sum_w;
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -3692,7 +3694,7 @@ namespace ttcr {
                         size_t nn=0;
                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                             m.j = *it;
-                            m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                            m.v = -s * ds * w[nn++]/sum_w;
                             bool found = false;
                             for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                 if ( m_data[nm].j == m.j ) {
@@ -3779,8 +3781,8 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        v = computeSlowness(mid_pt);
-                        v *= v;
+                        s = computeSlowness(mid_pt);
+                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
                     
@@ -3829,7 +3831,7 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                    m.v = -s * ds * w[nn++]/sum_w;
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -3893,7 +3895,7 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                m.v = -s * ds * w[nn++]/sum_w;
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -3954,7 +3956,7 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                m.v = -s * ds * w[nn++]/sum_w;
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -4015,7 +4017,7 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                m.v = -s * ds * w[nn++]/sum_w;
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -4080,7 +4082,7 @@ namespace ttcr {
                         size_t nn=0;
                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                             m.j = *it;
-                            m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                            m.v = -s * ds * w[nn++]/sum_w;
                             bool found = false;
                             for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                 if ( m_data[nm].j == m.j ) {
@@ -4150,8 +4152,8 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        v = computeSlowness(mid_pt);
-                        v *= v;
+                        s = computeSlowness(mid_pt);
+                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
                     
@@ -4200,7 +4202,7 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                    m.v = -s * ds * w[nn++]/sum_w;
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -4267,7 +4269,7 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                    m.v = -s * ds * w[nn++]/sum_w;
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -4330,7 +4332,7 @@ namespace ttcr {
                         size_t nn=0;
                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                             m.j = *it;
-                            m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                            m.v = -s * ds * w[nn++]/sum_w;
                             bool found = false;
                             for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                 if ( m_data[nm].j == m.j ) {
@@ -4389,8 +4391,8 @@ namespace ttcr {
                         if (r_tmp.size() > 1 ) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            v = computeSlowness(mid_pt);
-                            v *= v;
+                            s = computeSlowness(mid_pt);
+                            s *= s;
                             ds = curr_pt.getDistance( prev_pt );
                         }
                         
@@ -4439,7 +4441,7 @@ namespace ttcr {
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                        m.v = -s * ds * w[nn++]/sum_w;
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -4506,7 +4508,7 @@ namespace ttcr {
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                        m.v = -s * ds * w[nn++]/sum_w;
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -4569,7 +4571,7 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -1.0 / v * ds * w[nn++]/sum_w;
+                                m.v = -s * ds * w[nn++]/sum_w;
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
