@@ -388,17 +388,51 @@ namespace ttcr {
         
         int t1, t2, t3, t4;
         
-        if ( fabs(D1)<small ) t1 = 1;
-        else t1 = (signum(D0)==signum(D1));
+        if ( fabs(D1)<small ) {
+            // points are coplanar, check if pt is inside triangle
+            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[1] ]),
+                                &(nodes[ tetrahedra[nt].i[2] ]),
+                                &(nodes[ tetrahedra[nt].i[3] ]), v))
+                return 1;
+            else
+                return 0;
+            
+        } else {
+            t1 = (signum(D0)==signum(D1));
+        }
         
-        if ( fabs(D2)<small ) t2 = 1;
-        else t2 = (signum(D0)==signum(D2));
+        if ( fabs(D2)<small ) {
+            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
+                                &(nodes[ tetrahedra[nt].i[2] ]),
+                                &(nodes[ tetrahedra[nt].i[3] ]), v))
+                return 1;
+            else
+                return 0;
+        } else {
+            t2 = (signum(D0)==signum(D2));
+        }
         
-        if ( fabs(D3)<small ) t3 = 1;
-        else t3 = (signum(D0)==signum(D3));
+        if ( fabs(D3)<small ) {
+            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
+                                &(nodes[ tetrahedra[nt].i[1] ]),
+                                &(nodes[ tetrahedra[nt].i[3] ]), v))
+                return 1;
+            else
+                return 0;
+        } else {
+            t3 = (signum(D0)==signum(D3));
+        }
         
-        if ( fabs(D4)<small ) t4 = 1;
-        else t4 = (signum(D0)==signum(D4));
+        if ( fabs(D4)<small ) {
+            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
+                                &(nodes[ tetrahedra[nt].i[1] ]),
+                                &(nodes[ tetrahedra[nt].i[2] ]), v))
+                return 1;
+            else
+                return 0;
+        } else {
+            t4 = (signum(D0)==signum(D4));
+        }
         
         return t1 && t2 && t3 && t4;
     }
