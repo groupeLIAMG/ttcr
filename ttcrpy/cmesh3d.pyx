@@ -73,7 +73,7 @@ cdef class Mesh3Dcpp:
         del self.mesh
 
     def raytrace(self, slowness, Tx, Rx, t0):
-        nout = nargout()
+        nout = 4#nargout()
 
         # assing model data
         cdef vector[double] slown
@@ -120,6 +120,7 @@ cdef class Mesh3Dcpp:
             
             if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M) != 0:
                 raise RuntimeError()
+            
             
             return tt, rays, v0, M
 
