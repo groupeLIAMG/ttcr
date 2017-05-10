@@ -16,7 +16,6 @@
 		2B45CD431C5C3E250083644A /* grid3drcsp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B3D86D21C5BE51100AFFA2A /* grid3drcsp.m */; };
 		2B45CD511C5C3FBC0083644A /* grid2drcsp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B45CD501C5C3FBC0083644A /* grid2drcsp_mex.cpp */; };
 		2B45CD531C5C42110083644A /* grid2drcsp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B45CD521C5C3FD70083644A /* grid2drcsp.m */; };
-		2B46D14C19F2B79C00E7ADFC /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
 		2B46D15019F2B84700E7ADFC /* msh2vtk_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */; };
 		2B6F87A8190F3EDA002AC9DF /* grid2duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */; };
 		2B8FC25B1AB0D30900EF9265 /* grid3duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */; };
@@ -30,6 +29,7 @@
 		2BEAEF931DBBFBCE001AEA17 /* Grid3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D31DADABA700E26DEB /* Grid3Dttcr.cpp */; };
 		2BEAEF941DBBFBD3001AEA17 /* Mesh3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D41DADB33100E26DEB /* Mesh3Dttcr.cpp */; };
 		2BEAEF951DBBFBDD001AEA17 /* Grid2Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */; };
+		981C7D571E36E0B600B1DD9C /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -801,7 +801,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B46D14C19F2B79C00E7ADFC /* msh2vtk.cpp in Sources */,
 				2B46D15019F2B84700E7ADFC /* msh2vtk_io.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -826,6 +825,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				981C7D571E36E0B600B1DD9C /* msh2vtk.cpp in Sources */,
 				2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */,
 				2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */,
 			);

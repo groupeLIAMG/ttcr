@@ -224,7 +224,10 @@ namespace ttcr {
         size_t nNodes;
         size_t nElements;
         
-        bool check_format(const bool constCells=true) const {
+        bool check_format() const {
+            
+            bool constCells = isConstCell();
+            
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());

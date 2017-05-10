@@ -1414,7 +1414,7 @@ namespace ttcr {
                         nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
                     }
                 }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo,curr_pt);
                 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -1503,7 +1503,7 @@ namespace ttcr {
                         nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
                     }
                 }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo,curr_pt);
                 
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {

@@ -34,6 +34,7 @@ namespace ttcr {
     
     const double small = 1.e-5;
     const double pi = 4.0*atan(1.0);
+    const double Vair=340.0;
     
     const size_t iLength[4][3]={{0,1,2},{1,3,4},{2,3,5},{0,4,5}};
     const size_t iNodes[4][3] = {
@@ -208,12 +209,13 @@ namespace ttcr {
         sxyz() : x(0), y(0), z(0) {}
         sxyz(const T x_, const T y_, const T z_) : x(x_), y(y_), z(z_) {}
         sxyz(const T v) : x(v), y(v), z(v) {}
+        sxyz(const sxyz& s) : x(s.x), y(s.y), z(s.z) {}
         template<typename NODE>
         sxyz(const NODE& n) : x(n.getX()), y(n.getY()), z(n.getZ()) {}
 
         bool operator==(const sxyz<T>& s) const {
-            //        return (fabs(x-a.x)<small && fabs(z-a.z)<small);
-            return x==s.x && y==s.y && z==s.z;
+            return (sqrt((x-s.x)*(x-s.x)+(y-s.y)*(y-s.y)+(z-s.z)*(z-s.z))<small);
+//            return x==s.x && y==s.y && z==s.z;
         }
         
         sxyz<T>& operator=(const sxyz<T>& s) {
