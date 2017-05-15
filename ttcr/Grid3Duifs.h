@@ -44,7 +44,7 @@ namespace ttcr {
                    const T1 eps, const int maxit, const bool rp=false,
                    const size_t nt=1) :
         Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt),
-        rp_ho(rp), epsilon(eps), nitermax(maxit), S()
+        rp_ho(rp), epsilon(eps), nitermax(maxit), S(), niter(0)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -56,7 +56,7 @@ namespace ttcr {
                    const bool rp=false,
                    const size_t nt=1) :
         Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt),
-        rp_ho(rp), epsilon(eps), nitermax(maxit), S()
+        rp_ho(rp), epsilon(eps), nitermax(maxit), S(), niter(0)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -67,6 +67,8 @@ namespace ttcr {
         }
         
         void initOrdering(const std::vector<sxyz<T1>>& refPts, const int order);
+        
+        const int get_niter() const { return niter; }
         
         int raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
@@ -116,6 +118,7 @@ namespace ttcr {
         T1 epsilon;
         int nitermax;
         std::vector<std::vector<Node3Di<T1,T2>*>> S;
+        mutable int niter;
         
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         
@@ -212,7 +215,7 @@ namespace ttcr {
         for ( size_t n=0; n<this->nodes.size(); ++n )
             times[n] = this->nodes[n].getTT( threadNo );
         
-        int niter=0;
+        niter=0;
         T1 change = std::numeric_limits<T1>::max();
         while ( change >= epsilon && niter<nitermax ) {
             
@@ -256,7 +259,7 @@ namespace ttcr {
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+        //std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
@@ -291,7 +294,7 @@ namespace ttcr {
         for ( size_t n=0; n<this->nodes.size(); ++n )
             times[n] = this->nodes[n].getTT( threadNo );
         
-        int niter=0;
+        niter=0;
         T1 change = std::numeric_limits<T1>::max();
         while ( change >= epsilon && niter<nitermax ) {
             
@@ -341,9 +344,8 @@ namespace ttcr {
                 
             }
             niter++;
-            std::cout << niter << std::endl;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+//        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
         
         
         if ( traveltimes.size() != Rx.size() ) {
@@ -473,6 +475,12 @@ namespace ttcr {
                                     const size_t threadNo) const {
         
         int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        
+        std::ofstream fout("tt.dat");
+        for ( size_t n=0; n<this->nodes.size(); ++n)
+            fout << this->nodes[n].getTT(threadNo) << '\n';
+        fout.close();
+        
         if ( check == 1 ) return 1;
         
         if ( r_data.size() != Rx.size() ) {
@@ -573,7 +581,6 @@ namespace ttcr {
                 if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
-                        
                         // compute dt
                         T1 dt = this->nodes[neibNo].getDistance(Tx[n])*this->nodes[neibNo].getNodeSlowness();
                         

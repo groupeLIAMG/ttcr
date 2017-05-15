@@ -441,9 +441,9 @@ namespace ttcr {
             A(i,0) = dx;
             A(i,1) = dy;
             A(i,2) = dz;
-            A(i,3) = dx*dx;
-            A(i,4) = dy*dy;
-            A(i,5) = dz*dz;
+            A(i,3) = 0.5*dx*dx;
+            A(i,4) = 0.5*dy*dy;
+            A(i,5) = 0.5*dz*dz;
             A(i,6) = dx*dy;
             A(i,7) = dx*dz;
             A(i,8) = dy*dz;

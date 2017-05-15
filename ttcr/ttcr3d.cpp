@@ -160,11 +160,46 @@ int body(const input_parameters &par) {
 	for ( size_t n=0; n<reflectors.size(); ++n ) {
         rfl2_r_data[n].resize( src.size() );
     }
+    vector<vector<vector<sijv<T>>>> m_data(src.size());
+    vector<T> v0(src.size());
+
 	
     // Computes the travel time
     if ( par.verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
 	if ( par.time ) { begin = chrono::high_resolution_clock::now(); }
-	if ( par.saveRaypaths && par.rcvfile != "" ) {
+    if ( par.saveM ) {
+        if ( num_threads == 1 ) {
+            for ( size_t n=0; n<src.size(); ++n ) {
+                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                            rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
+            }
+        } else {
+            // threaded jobs
+            
+            vector<thread> threads(num_threads-1);
+            size_t blk_start = 0;
+            for ( size_t i=0; i<num_threads-1; ++i ) {
+                
+                size_t blk_end = blk_start + blk_size;
+                
+                threads[i]=thread( [&g,&src,&rcv,&r_data,&v0,&m_data,blk_start,blk_end,i]{
+                    
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                    rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
+                    }
+                });
+                
+                blk_start = blk_end;
+            }
+            for ( size_t n=blk_start; n<nTx; ++n ) {
+                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                            rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
+            }
+            
+            for_each(threads.begin(),threads.end(), mem_fn(&thread::join));
+        }
+    } else if ( par.saveRaypaths && par.rcvfile != "" ) {
 		if ( num_threads == 1 ) {
 			for ( size_t n=0; n<src.size(); ++n ) {
 				
@@ -418,6 +453,18 @@ int body(const input_parameters &par) {
 				// TODO complete this...
 			}
 		}
+        
+        if ( par.saveM ) {
+            filename = par.basename+"_M.dat";
+            if ( par.verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
+            ofstream fout(filename);
+            for ( size_t n1=0; n1<m_data[0].size(); ++n1 )
+                for ( size_t n2=0; n2<m_data[0][n1].size(); ++n2 )
+                    fout << m_data[0][n1][n2].i << ' ' << m_data[0][n1][n2].j << ' ' << m_data[0][n1][n2].v << '\n';
+            fout.close();
+            if ( par.verbose ) cout << "done.\n";
+        }
+
 	} else {
         for ( size_t ns=0; ns<src.size(); ++ns ) {
             
@@ -467,7 +514,17 @@ int body(const input_parameters &par) {
 					if ( par.verbose ) cout << "done.\n";
 				}
             }
-			if ( par.verbose ) cout << '\n';
+            if ( par.saveM ) {
+                filename = par.basename+"_"+srcname+"_M.dat";
+                if ( par.verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
+                ofstream fout(filename);
+                for ( size_t n1=0; n1<m_data[ns].size(); ++n1 )
+                    for ( size_t n2=0; n2<m_data[ns][n1].size(); ++n2 )
+                        fout << m_data[ns][n1][n2].i << ' ' << m_data[ns][n1][n2].j << ' ' << m_data[ns][n1][n2].v << '\n';
+                fout.close();
+                if ( par.verbose ) cout << "done.\n";
+            }
+            if ( par.verbose ) cout << '\n';
         }
 		
 		if ( par.saveRaypaths && reflectors.size() > 0 ) {
@@ -551,6 +608,11 @@ int main(int argc, char * argv[])
     }
     get_params(fname, par);
 	
+    if ( par.saveM && par.processReflectors ) {
+        cerr << "Cannot save matrix M and process reflectors simultaneously.  Aborting." << endl;
+        abort();
+    }
+    
     if ( par.verbose ) {
         switch (par.method) {
             case SHORTEST_PATH:

@@ -19,21 +19,31 @@ namespace ttcr {
                            const double eps, const int maxit, const bool rp=false,
                            const size_t nt=1) {
         // find mesh "corners"
-        size_t ic[] = {0, 0, 0, 0, 0, 0, 0, 0};
+        double xmin = no[0].x;
+        double xmax = no[0].x;
+        double ymin = no[0].y;
+        double ymax = no[0].y;
+        double zmin = no[0].z;
+        double zmax = no[0].z;
         for ( size_t n=1; n<no.size(); ++n ) {
-            if ( no[n].x<no[ic[0]].x && no[n].y<no[ic[0]].y && no[n].z<no[ic[0]].z ) ic[0] = n;
-            if ( no[n].x<no[ic[1]].x && no[n].y<no[ic[1]].y && no[n].z>no[ic[1]].z ) ic[1] = n;
-            if ( no[n].x<no[ic[2]].x && no[n].y>no[ic[2]].y && no[n].z<no[ic[2]].z ) ic[2] = n;
-            if ( no[n].x<no[ic[3]].x && no[n].y>no[ic[3]].y && no[n].z>no[ic[3]].z ) ic[3] = n;
-            if ( no[n].x>no[ic[4]].x && no[n].y<no[ic[4]].y && no[n].z<no[ic[4]].z ) ic[4] = n;
-            if ( no[n].x>no[ic[5]].x && no[n].y<no[ic[5]].y && no[n].z>no[ic[5]].z ) ic[5] = n;
-            if ( no[n].x>no[ic[6]].x && no[n].y>no[ic[6]].y && no[n].z<no[ic[6]].z ) ic[6] = n;
-            if ( no[n].x>no[ic[7]].x && no[n].y>no[ic[7]].y && no[n].z>no[ic[7]].z ) ic[7] = n;
+            xmin = xmin < no[n].x ? xmin : no[n].x;
+            xmax = xmax > no[n].x ? xmax : no[n].x;
+            ymin = ymin < no[n].y ? ymin : no[n].y;
+            ymax = ymax > no[n].y ? ymax : no[n].y;
+            zmin = zmin < no[n].z ? zmin : no[n].z;
+            zmax = zmax > no[n].z ? zmax : no[n].z;
         }
+        
         // use corners as ref pts
         std::vector<sxyz<double>> refPts;
-        for ( size_t n=0; n<8; ++n )
-            refPts.push_back( no[ic[n]] );
+        refPts.push_back( {xmin, ymin, zmin} );
+        refPts.push_back( {xmin, ymin, zmax} );
+        refPts.push_back( {xmin, ymax, zmin} );
+        refPts.push_back( {xmin, ymax, zmax} );
+        refPts.push_back( {xmax, ymin, zmin} );
+        refPts.push_back( {xmax, ymin, zmax} );
+        refPts.push_back( {xmax, ymax, zmin} );
+        refPts.push_back( {xmax, ymax, zmax} );
         mesh_instance = new mesh(no, tet, eps, maxit, refPts, 2, rp, nt);
     }
     
@@ -379,7 +389,7 @@ namespace ttcr {
             std::for_each(threads.begin(),threads.end(),
                           std::mem_fn(&std::thread::join));
         }
-        
+
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
@@ -406,7 +416,7 @@ namespace ttcr {
                 PyTuple_SetItem(rays, iTx[nv][ni], ray);
             }
         }
-        
+
         // data for matrix M
         // M is a tuple of tuples
         // first element of tuple contains data, size is nnz
@@ -449,11 +459,16 @@ namespace ttcr {
                         }
                     }
                 }
-                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
-                    indices_p[k] = nnodes+j;
-                    data_p[k] = 1.0;
-                    k++;
-                }
+
+                indices_p[k] = nnodes+ni;
+                data_p[k] = 1.0;
+                k++;
+                
+//                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
+//                    indices_p[k] = nnodes+j;
+//                    data_p[k] = 1.0;
+//                    k++;
+//                }
             }
             indptr_p[nRcv] = k;
             
