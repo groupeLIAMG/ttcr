@@ -245,7 +245,7 @@ namespace ttcr {
         r.resize(n+1,1);
         Eigen::Matrix<T, 3, 1> s;
         size_t nItration=20;
-        double alpha=1000;
+        double alpha=10;
         for(size_t i=0;i<nItration;++i){
             r.block(0,0,n,1)=A*x-b;
             r(n,0)=((x(0,0)*x(0,0)+x(1,0)*x(1,0)+x(2,0)*x(2,0))-Norm*Norm)*alpha;
@@ -395,9 +395,9 @@ namespace ttcr {
         A(3,2) = n3.getZ() - cent.z;
         b(3,0) = 1000.0*t - n3.getTT(nt)*1000.0;
         
-        // solve Ax = b with least squares
-        //x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
-        x=solveSystem(A, b, 0.5);
+        //solve Ax = b with least squares
+        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        //x=solveSystem(A, b, 0.5);
         //	Eigen::Matrix<T, 4, 1> e = b-A*x;
         
         g.x = x[0];

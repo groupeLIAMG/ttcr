@@ -34,7 +34,8 @@ namespace ttcr {
         std::vector<sxyz<double>> refPts;
         for ( size_t n=0; n<8; ++n )
             refPts.push_back( no[ic[n]] );
-        mesh_instance = new mesh(no, tet, eps, maxit, refPts, 2, rp, nt);
+        //mesh_instance = new mesh(no, tet, eps, maxit, refPts, 2, rp, nt);
+        mesh_instance = new mesh(no, tet, eps,maxit,true, nt);
     }
     
     void Mesh3Dttcr::setSlowness(const std::vector<double>& slowness) {
@@ -90,6 +91,12 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
+                // add secondary nodes
+                std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                mesh_instance->initOrdering(refPts,2);
+                
                 if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
                     throw runtime_error("Problem while raytracing.");
                 }
@@ -332,6 +339,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
+                std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                mesh_instance->initOrdering(refPts,2);
                 
                 if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 ) {
                     throw runtime_error("Problem while raytracing.");
@@ -357,6 +368,11 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
+                        std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                        mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                        mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                        mesh_instance->initOrdering(refPts,2);
+                        
                         if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 ) {
                             throw runtime_error("Problem while raytracing.");
                         }

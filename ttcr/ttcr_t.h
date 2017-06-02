@@ -336,7 +336,13 @@ namespace ttcr {
         s2.normalize();
         return s2;
     }
-    
+    template<typename T>
+    class Comparesxyz_norm {
+    public:
+        bool operator()(const sxyz<T> pt1, const sxyz<T> pt2) const {
+            return norm(pt1) < norm(pt2);
+        }
+    };
     
     
     
