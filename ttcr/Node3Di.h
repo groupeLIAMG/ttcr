@@ -136,7 +136,7 @@ namespace ttcr {
         }
 
         T1 getDistance( const sxyz<T1>& node ) const {
-            return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
+            return (sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) ));
         }
 
         // operator to test if same location

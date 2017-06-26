@@ -16,26 +16,45 @@ namespace ttcr {
     
     Mesh3Dttcr::Mesh3Dttcr(const std::vector<sxyz<double>>& no,
                            const std::vector<tetrahedronElem<uint32_t>>& tet,
-                           const double eps, const int maxit, const bool rp=false,
+                           const double eps, const int maxit, const bool rp, const bool Second_Nodes=false,
                            const size_t nt=1) {
         // find mesh "corners"
-        size_t ic[] = {0, 0, 0, 0, 0, 0, 0, 0};
+        double xmin = no[0].x;
+        double xmax = no[0].x;
+        double ymin = no[0].y;
+        double ymax = no[0].y;
+        double zmin = no[0].z;
+        double zmax = no[0].z;
         for ( size_t n=1; n<no.size(); ++n ) {
-            if ( no[n].x<no[ic[0]].x && no[n].y<no[ic[0]].y && no[n].z<no[ic[0]].z ) ic[0] = n;
-            if ( no[n].x<no[ic[1]].x && no[n].y<no[ic[1]].y && no[n].z>no[ic[1]].z ) ic[1] = n;
-            if ( no[n].x<no[ic[2]].x && no[n].y>no[ic[2]].y && no[n].z<no[ic[2]].z ) ic[2] = n;
-            if ( no[n].x<no[ic[3]].x && no[n].y>no[ic[3]].y && no[n].z>no[ic[3]].z ) ic[3] = n;
-            if ( no[n].x>no[ic[4]].x && no[n].y<no[ic[4]].y && no[n].z<no[ic[4]].z ) ic[4] = n;
-            if ( no[n].x>no[ic[5]].x && no[n].y<no[ic[5]].y && no[n].z>no[ic[5]].z ) ic[5] = n;
-            if ( no[n].x>no[ic[6]].x && no[n].y>no[ic[6]].y && no[n].z<no[ic[6]].z ) ic[6] = n;
-            if ( no[n].x>no[ic[7]].x && no[n].y>no[ic[7]].y && no[n].z>no[ic[7]].z ) ic[7] = n;
+            xmin = xmin < no[n].x ? xmin : no[n].x;
+            xmax = xmax > no[n].x ? xmax : no[n].x;
+            ymin = ymin < no[n].y ? ymin : no[n].y;
+            ymax = ymax > no[n].y ? ymax : no[n].y;
+            zmin = zmin < no[n].z ? zmin : no[n].z;
+            zmax = zmax > no[n].z ? zmax : no[n].z;
         }
         // use corners as ref pts
-        std::vector<sxyz<double>> refPts;
-        for ( size_t n=0; n<8; ++n )
-            refPts.push_back( no[ic[n]] );
-        //mesh_instance = new mesh(no, tet, eps, maxit, refPts, 2, rp, nt);
-        mesh_instance = new mesh(no, tet, eps,maxit,true, nt);
+        refPts.push_back( {xmin, ymin, zmin} );
+        refPts.push_back( {xmin, ymin, zmax} );
+        refPts.push_back( {xmin, ymax, zmin} );
+        refPts.push_back( {xmin, ymax, zmax} );
+        refPts.push_back( {xmax, ymin, zmin} );
+        refPts.push_back( {xmax, ymin, zmax} );
+        refPts.push_back( {xmax, ymax, zmin} );
+        refPts.push_back( {xmax, ymax, zmax} );
+        std::vector<sxyz<double>> nodes;
+        for (size_t n=0;n<no.size();++n){
+            nodes.push_back({no[n].x-xmin,no[n].y-ymin,no[n].z-zmin});
+        }
+        SecondNodes=Second_Nodes;
+        if (SecondNodes==true){
+             mesh_instance = new mesh(nodes, tet, eps,maxit,rp, nt);
+        }else{
+            std::vector<sxyz<double >> refPts2;
+            for (size_t rr=0;rr<refPts.size();++rr)
+                refPts2.push_back(refPts[rr]-refPts[0]);
+            mesh_instance = new mesh(nodes, tet, eps,maxit,refPts2,2,rp, nt);
+        }
     }
     
     void Mesh3Dttcr::setSlowness(const std::vector<double>& slowness) {
@@ -44,10 +63,53 @@ namespace ttcr {
         }
     }
 
+    int Mesh3Dttcr::ComputeD(const std::vector<sxyz<double>>& Pnts,
+                 PyObject* D)const{
+        
+        std::vector<std::vector<sijv<double>>> d_data(Pnts.size());
+        mesh_instance->computeD(Pnts,d_data);
+        D = PyTuple_New(3);
+        size_t nnz = 0;
+        for ( size_t np=0; np<d_data.size(); ++np ) {
+            nnz += d_data[np].size();
+        }
+        npy_intp dims[] = {static_cast<npy_intp>(nnz)};
+        double* data_p = new double[nnz];
+        PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);
+        
+        int64_t* indices_p = new int64_t[nnz];
+        PyObject* indices = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indices_p);
+        
+        dims[0] = d_data.size()+1;
+        int64_t* indptr_p = new int64_t[d_data.size()+1];
+        PyObject* indptr = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indptr_p);
+        
+        //size_t nnodes(mesh_instance->getNumberOfNodes());
+        size_t k = 0;
+        for ( size_t np=0; np<d_data.size(); ++np ) {
+            indptr_p[np] = k;
+                for ( size_t n=0; n<d_data[np].size(); ++n) {
+                    if(d_data[np][n].i==np){
+                    indices_p[k] =  d_data[np][n].j;
+                        data_p[k] = d_data[np][n].v;
+                        k++;
+                    }
+            }
+        }
+        indptr_p[d_data.size()+1] = k;
+        
+        PyTuple_SetItem(D, 0, data);
+        PyTuple_SetItem(D, 1, indices);
+        PyTuple_SetItem(D, 2, indptr);
+        return 0;
+    }
+
+
     int Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
                              const std::vector<double>& tTx,
                              const std::vector<sxyz<double>>& Rx,
                              double* traveltimes) const {
+
         /*
          Looking for redundants Tx pts
          */
@@ -89,16 +151,24 @@ namespace ttcr {
                 
                 vRx.resize( 0 );
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back( Rx[ iTx[nv][ni] ]-refPts[0]);
                 }
-                // add secondary nodes
-                std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
-                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-                mesh_instance->initOrdering(refPts,2);
-                
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                vTx[nv][0]=vTx[nv][0]-refPts[0];
+                if (SecondNodes){
+                    // add secondary nodes
+                    std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    std::vector<sxyz<double >> refPts2;
+                    for (size_t rr=0;rr<refPts.size();++rr)
+                        refPts2.push_back(refPts[rr]-refPts[0]);
+                    mesh_instance->initOrdering(refPts2,2);
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 )
+                        throw runtime_error("Problem while raytracing.");
+                    mesh_instance->delateCells(DelatedCellsTx);
+                }else{
+                    if (mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 )
+                        throw runtime_error("Problem while raytracing.");
                 }
             }
         } else {
@@ -112,18 +182,35 @@ namespace ttcr {
                 
                 size_t blk_end = blk_start + blk_size;
                 mesh *mesh_ref = mesh_instance;
-                threads[i]=thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
+                std::vector<sxyz<double>> refPts_ref=refPts;
+                bool SecondNodes_ref=SecondNodes;
+                threads[i]=thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,&refPts_ref,&SecondNodes_ref,
                                     blk_start,blk_end,i]{
                     
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
                         
                         vector<sxyz<double>> vRx;
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                            vRx.push_back( Rx[ iTx[nv][ni] ] );
+                            vRx.push_back( Rx[ iTx[nv][ni] ] -refPts_ref[0]);
                         }
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        vTx[nv][0]=vTx[nv][0]-refPts_ref[0];
+                        if(SecondNodes_ref){
+                            // add secondary nodes
+                            std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                            mesh_ref->addNodes(vTx[nv][0],DelatedCellsTx,mesh_ref->getNthreads());
+                            mesh_ref->addNodes(vTx[nv][0],DelatedCellsTx,mesh_ref->getNthreads());
+                            std::vector<sxyz<double >> refPts2;
+                            for (size_t rr=0;rr<refPts_ref.size();++rr)
+                                refPts2.push_back(refPts_ref[rr]-refPts_ref[0]);
+                            mesh_ref->initOrdering(refPts2,2);
+                            if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 )
+                                throw runtime_error("Problem while raytracing.");
+                            mesh_ref->delateCells(DelatedCellsTx);
+                        }else{
+                            if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 )
+                                throw runtime_error("Problem while raytracing.");
                         }
+                        
                     }
                 });
                 
@@ -133,10 +220,24 @@ namespace ttcr {
             for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
                 vector<sxyz<double>> vRx;
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back( Rx[ iTx[nv][ni] ] -refPts[0]);
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                vTx[nv][0]=vTx[nv][0]-refPts[0];
+                if (SecondNodes){
+                    // add secondary nodes
+                    std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    std::vector<sxyz<double >> refPts2;
+                    for (size_t rr=0;rr<refPts.size();++rr)
+                        refPts2.push_back(refPts[rr]-refPts[0]);
+                    mesh_instance->initOrdering(refPts2,2);
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 )
+                        throw runtime_error("Problem while raytracing.");
+                    mesh_instance->delateCells(DelatedCellsTx);
+                }else{
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 )
+                        throw runtime_error("Problem while raytracing.");
                 }
             }
             
@@ -204,11 +305,26 @@ namespace ttcr {
                 
                 vRx.resize( 0 );
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back({Rx[iTx[nv][ni]].x -refPts[0].x,Rx[iTx[nv][ni]].y -refPts[0].y,Rx[iTx[nv][ni]].z -refPts[0].z} );
                 }
-                
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                vTx[nv][0].x=vTx[nv][0].x-refPts[0].x;
+                vTx[nv][0].y=vTx[nv][0].y-refPts[0].y;
+                vTx[nv][0].z=vTx[nv][0].z-refPts[0].z;
+                if (SecondNodes){
+                    // add secondary nodes
+                    std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    std::vector<sxyz<double >> refPts2;
+                    for (size_t rr=0;rr<refPts.size();++rr)
+                        refPts2.push_back(refPts[rr]-refPts[0]);
+                    mesh_instance->initOrdering(refPts2,2);
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]) == 1 )
+                        throw runtime_error("Problem while raytracing.");
+                    mesh_instance->delateCells(DelatedCellsTx);
+                }else{
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]) == 1 )
+                        throw runtime_error("Problem while raytracing.");
                 }
             }
         } else {
@@ -222,17 +338,33 @@ namespace ttcr {
                 
                 size_t blk_end = blk_start + blk_size;
                 mesh *mesh_ref = mesh_instance;
-                threads[i]=thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
+                std::vector<sxyz<double>> refPts_ref=refPts;
+                bool SecondNodes_ref=SecondNodes;
+                threads[i]=thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,&refPts_ref,&SecondNodes_ref,
                                     &r_data,&v0,blk_start,blk_end,i]{
                     
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
                         
                         vector<sxyz<double>> vRx;
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                            vRx.push_back( Rx[ iTx[nv][ni] ] );
+                            vRx.push_back( Rx[ iTx[nv][ni] ] -refPts_ref[0]);
                         }
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        vTx[nv][0]=vTx[nv][0]-refPts_ref[0];
+                        if (SecondNodes_ref){
+                            // add secondary nodes
+                            std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                            mesh_ref->addNodes(vTx[nv][0],DelatedCellsTx,mesh_ref->getNthreads());
+                            mesh_ref->addNodes(vTx[nv][0],DelatedCellsTx,mesh_ref->getNthreads());
+                            std::vector<sxyz<double >> refPts2;
+                            for (size_t rr=0;rr<refPts_ref.size();++rr)
+                                refPts2.push_back(refPts_ref[rr]-refPts_ref[0]);
+                            mesh_ref->initOrdering(refPts2,2);
+                            if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1) == 1 )
+                                throw runtime_error("Problem while raytracing.");
+                            mesh_ref->delateCells(DelatedCellsTx);
+                        }else{
+                            if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1) == 1 )
+                                throw runtime_error("Problem while raytracing.");
                         }
                     }
                 });
@@ -243,10 +375,25 @@ namespace ttcr {
             for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
                 vector<sxyz<double>> vRx;
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back( Rx[ iTx[nv][ni] ] -refPts[0]);
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                vTx[nv][0]=vTx[nv][0]-refPts[0];
+                if (SecondNodes){
+                    // add secondary nodes
+                    std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    std::vector<sxyz<double >> refPts2;
+                    for (size_t rr=0;rr<refPts.size();++rr)
+                        refPts2.push_back(refPts[rr]-refPts[0]);
+                    mesh_instance->initOrdering(refPts2,2);
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 )
+                        throw runtime_error("Problem while raytracing.");
+                    mesh_instance->delateCells(DelatedCellsTx);
+
+                }else{
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 )
+                        throw runtime_error("Problem while raytracing.");
                 }
             }
             
@@ -272,9 +419,9 @@ namespace ttcr {
                 PyObject* ray = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, ray_p);
                 
                 for ( size_t np=0; np<npts; ++np ) {
-                    ray_p[3*np] = r_data[nv][ni][np].x;
-                    ray_p[3*np+1] = r_data[nv][ni][np].y;
-                    ray_p[3*np+2] = r_data[nv][ni][np].z;
+                    ray_p[3*np] = r_data[nv][ni][np].x+refPts[0].x;
+                    ray_p[3*np+1] = r_data[nv][ni][np].y+refPts[0].y;
+                    ray_p[3*np+2] =r_data[nv][ni][np].z+refPts[0].z;
                 }
                 
                 PyTuple_SetItem(rays, iTx[nv][ni], ray);
@@ -337,15 +484,27 @@ namespace ttcr {
                 
                 vRx.resize( 0 );
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back( Rx[ iTx[nv][ni] ]-refPts[0]);
                 }
-                std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
-                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-                mesh_instance->initOrdering(refPts,2);
-                
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                vTx[nv][0]=vTx[nv][0]-refPts[0];
+                if (SecondNodes){
+                    while(mesh_instance->getCellNo(vTx[nv][0])==std::numeric_limits<uint32_t>::max()){
+                        vTx[nv][0].z-=0.1;
+                    }
+                    // add secondary nodes
+                    std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                     std::vector<sxyz<double >> refPts2;
+                    for (size_t rr=0;rr<refPts.size();++rr)
+                        refPts2.push_back(refPts[rr]-refPts[0]);
+                    mesh_instance->initOrdering(refPts2,2);
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 )
+                        throw runtime_error("Problem while raytracing.");
+                    mesh_instance->delateCells(DelatedCellsTx);
+                }else{
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 )
+                        throw runtime_error("Problem while raytracing.");
                 }
             }
         } else {
@@ -359,22 +518,34 @@ namespace ttcr {
                 
                 size_t blk_end = blk_start + blk_size;
                 mesh *mesh_ref = mesh_instance;
-                threads[i]=thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
+                std::vector<sxyz<double>> refPts_ref=refPts;
+                bool SecondNodes_ref=SecondNodes;
+                threads[i]=thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,&refPts_ref,&SecondNodes_ref,
                                     &r_data,&v0,&m_data,blk_start,blk_end,i]{
                     
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
                         
                         vector<sxyz<double>> vRx;
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                            vRx.push_back( Rx[ iTx[nv][ni] ] );
+                            vRx.push_back( Rx[ iTx[nv][ni] ] -refPts_ref[0]);
+                            vTx[nv][ni]=vTx[nv][ni]-refPts_ref[0];
                         }
-                        std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
-                        mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-                        mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-                        mesh_instance->initOrdering(refPts,2);
-                        
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        vTx[nv][0]=vTx[nv][0]-refPts_ref[0];
+                        if (SecondNodes_ref){
+                            // add secondary nodes
+                            std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                            mesh_ref->addNodes(vTx[nv][0],DelatedCellsTx,mesh_ref->getNthreads());
+                            mesh_ref->addNodes(vTx[nv][0],DelatedCellsTx,mesh_ref->getNthreads());
+                            std::vector<sxyz<double >> refPts2;
+                            for (size_t rr=0;rr<refPts_ref.size();++rr)
+                                refPts2.push_back(refPts_ref[rr]-refPts_ref[0]);
+                            mesh_ref->initOrdering(refPts2,2);
+                            if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 )
+                                throw runtime_error("Problem while raytracing.");
+                            mesh_ref->delateCells(DelatedCellsTx);
+                        }else{
+                            if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 )
+                                throw runtime_error("Problem while raytracing.");
                         }
                     }
                 });
@@ -385,10 +556,24 @@ namespace ttcr {
             for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
                 vector<sxyz<double>> vRx;
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back( Rx[ iTx[nv][ni] ] -refPts[0]);
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                vTx[nv][0]=vTx[nv][0]-refPts[0];
+                if (SecondNodes){
+                    // add secondary nodes
+                    std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                    std::vector<sxyz<double >> refPts2;
+                    for (size_t rr=0;rr<refPts.size();++rr)
+                        refPts2.push_back(refPts[rr]-refPts[0]);
+                    mesh_instance->initOrdering(refPts2,2);
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
+                        throw runtime_error("Problem while raytracing.");
+                    mesh_instance->delateCells(DelatedCellsTx);
+                }else{
+                    if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
+                        throw runtime_error("Problem while raytracing.");
                 }
             }
             
@@ -414,9 +599,9 @@ namespace ttcr {
                 PyObject* ray = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, ray_p);
                 
                 for ( size_t np=0; np<npts; ++np ) {
-                    ray_p[3*np] = r_data[nv][ni][np].x;
-                    ray_p[3*np+1] = r_data[nv][ni][np].y;
-                    ray_p[3*np+2] = r_data[nv][ni][np].z;
+                    ray_p[3*np] = r_data[nv][ni][np].x+refPts[0].x;
+                    ray_p[3*np+1] = r_data[nv][ni][np].y+refPts[0].y;
+                    ray_p[3*np+2] = r_data[nv][ni][np].z+refPts[0].z;
                 }
                 
                 PyTuple_SetItem(rays, iTx[nv][ni], ray);
@@ -465,11 +650,9 @@ namespace ttcr {
                         }
                     }
                 }
-                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
-                    indices_p[k] = nnodes+j;
-                    data_p[k] = 1.0;
-                    k++;
-                }
+                indices_p[k] = nnodes+ni;
+                data_p[k] = 1.0;
+                k++;
             }
             indptr_p[nRcv] = k;
             

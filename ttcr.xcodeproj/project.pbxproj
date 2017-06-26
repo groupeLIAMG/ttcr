@@ -20,7 +20,6 @@
 		2B6F87A8190F3EDA002AC9DF /* grid2duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */; };
 		2B8FC25B1AB0D30900EF9265 /* grid3duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */; };
 		2BA2D8CB191D556500923EF6 /* grid2duisp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2duisp.m */; };
-		2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
 		2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */; };
 		2BC7091218EDABD3004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
@@ -30,6 +29,7 @@
 		2BEAEF941DBBFBD3001AEA17 /* Mesh3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D41DADB33100E26DEB /* Mesh3Dttcr.cpp */; };
 		2BEAEF951DBBFBDD001AEA17 /* Grid2Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */; };
 		980DD3C31EC398FC00065EB8 /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
+		9842D6DD1EE5386600168E97 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -827,7 +827,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */,
-				2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */,
+				9842D6DD1EE5386600168E97 /* ttcr3d.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

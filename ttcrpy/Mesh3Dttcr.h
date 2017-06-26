@@ -24,7 +24,7 @@ namespace ttcr {
     public:
         Mesh3Dttcr(const std::vector<sxyz<double>>&,
                    const std::vector<tetrahedronElem<uint32_t>>&,
-                   const double, const int, const bool,
+                   const double, const int, const bool,const bool ,
                    const size_t);
         
         ~Mesh3Dttcr() {
@@ -52,10 +52,13 @@ namespace ttcr {
                      PyObject* rays,
                      double* v0,
                      PyObject* M) const;
+        int ComputeD(const std::vector<sxyz<double>>& Pts,
+                     PyObject* D)const;
 
     private:
         mesh *mesh_instance;
-        
+        std::vector<sxyz<double>> refPts;
+        bool SecondNodes;
         Mesh3Dttcr() {}
     };
 }

@@ -43,7 +43,7 @@ cdef extern from "ttcr_t.h" namespace "ttcr":
 cdef extern from "Mesh3Dttcr.h" namespace "ttcr":
     cdef cppclass Mesh3Dttcr:
         Mesh3Dttcr(vector[sxyz[double]]&, vector[tetrahedronElem[uint32_t]]&,
-                   double, int, bool rp, size_t) except +
+                   double, int, bool rp,bool Second_nodes, size_t) except +
         void setSlowness(const vector[double]&) except +
         int raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
@@ -57,23 +57,32 @@ cdef extern from "Mesh3Dttcr.h" namespace "ttcr":
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
                      double*, object, double*, object)
+        int ComputeD(const vector[sxyz[double]]& Pts,
+                     object)
 
 cdef class Mesh3Dcpp:
     cdef Mesh3Dttcr* mesh
-    def __cinit__(self, nodes, tetra, const double eps, const int maxit, const bool rp, const size_t nt):
+    def __cinit__(self, nodes, tetra, const double eps, const int maxit, 
+                  const bool rp, const bool Second_nodes,const size_t nt):
         cdef vector[sxyz[double]] nod
         for no in nodes:
             nod.push_back(sxyz[double](no[0], no[1], no[2]))
         cdef vector[tetrahedronElem[uint32_t]] tet
         for t in tetra:
             tet.push_back(tetrahedronElem[uint32_t](t[0], t[1], t[2], t[3]))
-        self.mesh = new Mesh3Dttcr(nod, tet, eps, maxit, rp, nt)
+        self.mesh = new Mesh3Dttcr(nod, tet, eps, maxit, rp,Second_nodes, nt)
 
     def __dealloc__(self):
         del self.mesh
-
-    def raytrace(self, slowness, Tx, Rx, t0):
-        nout = nargout()
+    def ComputeD(self,Points):
+        cdef vector[sxyz[double]] Pnts
+        for P in Points:
+            Pnts.push_back(sxyz[double](P[0],P[1],P[2]))
+        D=(0.0,0.0,0.0)
+        if(self.mesh.ComputeD(Pnts,D)!=0):
+            raise RuntimeError()
+        return D
+    def raytrace1(self, slowness, Tx, Rx, t0):
 
         # assing model data
         cdef vector[double] slown
@@ -85,42 +94,57 @@ cdef class Mesh3Dcpp:
         cdef vector[sxyz[double]] cTx
         for t in Tx:
             cTx.push_back(sxyz[double](t[0], t[1], t[2]))
-        
+
         cdef vector[sxyz[double]] cRx
         for r in Rx:
             cRx.push_back(sxyz[double](r[0], r[1], r[2]))
-        
+
         cdef vector[double] ct0
         for tmp in t0:
             ct0.push_back(tmp)
-        
+
         # instantiate output variables
         cdef np.ndarray tt = np.empty([Rx.shape[0],], dtype=np.double)  # tt should be the right size
         cdef np.ndarray v0 = np.empty([Rx.shape[0],], dtype=np.double)
-    
-        if nout == 1:
-            if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt)) != 0:
-                raise RuntimeError()
-            return tt
+        rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
 
-        elif nout == 3:
-            rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
-            
-            if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0)) != 0:
-                raise RuntimeError()
+        nTx = np.unique(Tx.view([('',Tx.dtype)]*Tx.shape[1])).view(Tx.dtype).reshape(-1,Tx.shape[1]).shape[0]   # get number of unique Tx
 
-            return tt, rays, v0
+        M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
 
-        elif nout == 4:
-            rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
-            
-            nTx = np.unique(Tx.view([('',Tx.dtype)]*Tx.shape[1])).view(Tx.dtype).reshape(-1,Tx.shape[1]).shape[0]   # get number of unique Tx
-            
-            M = tuple([ [0.0] for i in range(nTx) ])
-            
-            if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M) != 0:
-                raise RuntimeError()
-            
-            return tt, rays, v0, M
+        if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M) != 0:
+            raise RuntimeError()
 
+        return tt, rays, v0, M
+        
+    def raytrace2(self, slowness, Tx, Rx, t0):
+        # assing model data
+        cdef vector[double] slown
+        for tmp in slowness:
+            slown.push_back(tmp)
+        self.mesh.setSlowness(slown)
+
+        # create C++ input variables
+        cdef vector[sxyz[double]] cTx
+        for t in Tx:
+            cTx.push_back(sxyz[double](t[0], t[1], t[2]))
+
+        cdef vector[sxyz[double]] cRx
+        for r in Rx:
+            cRx.push_back(sxyz[double](r[0], r[1], r[2]))
+
+        cdef vector[double] ct0
+        for tmp in t0:
+            ct0.push_back(tmp)
+
+        # instantiate output variables
+        cdef np.ndarray tt = np.empty([Rx.shape[0],], dtype=np.double)  # tt should be the right size
+        cdef np.ndarray v0 = np.empty([Rx.shape[0],], dtype=np.double)
+        rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
+
+        if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0)) != 0:
+            raise RuntimeError()
+
+        return (tt,rays,v0)
+        
 

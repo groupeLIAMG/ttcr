@@ -26,38 +26,54 @@ int main(int argc, const char * argv[]) {
     
 
 
-    std::vector<Src<long double >> src;
-    src.push_back( Src<long double >("Src.dat") );
+    std::vector<Src<double >> src;
+    size_t N=83;
+//    for(size_t i=0;i<25;i++){
+//    
+//        src.push_back( Src<double >("Src"+to_string(i+1+N)+".dat") );
+//        src[i].init();
+//    }
+    std::string Numero=to_string(N);
+   src.push_back( Src<double >("Src"+Numero+".dat") );
     src[0].init();
-//   src.push_back( Src<long double >("Src15.dat") );
-//    src[1].init();
-//    src.push_back( Src<long double >("Src3.dat") );
+//    src.push_back( Src<double >("Src3.dat") );
 //    src[2].init();
-//    src.push_back( Src<long double >("Src4.dat") );
+//    src.push_back( Src<double >("Src4.dat") );
 //    src[3].init();
-//    src.push_back( Src<long double >("Src5.dat") );
+//    src.push_back( Src<double >("Src5.dat") );
 //    src[4].init();
-//    src.push_back( Src<long double >("Src6.dat") );
+//    src.push_back( Src<double >("Src6.dat") );
 //    src[5].init();
-//    src.push_back( Src<long double >("Src7.dat") );
+//    src.push_back( Src<double >("Src7.dat") );
 //    src[6].init();
-//    src.push_back( Src<long double >("Src8.dat") );
+//    src.push_back( Src<double >("Src8.dat") );
 //    src[7].init();
-//    src.push_back( Src<long double >("Src9.dat") );
+//    src.push_back( Src<double >("Src9.dat") );
 //    src[8].init();
-//    src.push_back( Src<long double >("Src10.dat") );
+//    src.push_back( Src<double >("Src10.dat") );
 //    src[9].init();
-    std::vector<sxyz<long double >> Ttx;
-    std::vector<sxyz<long double >> s;
+//    src.push_back( Src<double >("Src11.dat") );
+//    src[10].init();
+//    src.push_back( Src<double >("Src12.dat") );
+//    src[11].init();
+//    src.push_back( Src<double >("Src13.dat") );
+//    src[12].init();
+//    src.push_back( Src<double >("Src14.dat") );
+//    src[13].init();
+//    src.push_back( Src<double >("Src15.dat") );
+//    src[14].init();
+    bool SecondNodes =true;
+    std::vector<sxyz<double >> Ttx;
+    std::vector<sxyz<double >> s;
     for (size_t i=0;i<src.size();i++){
         s=src[i].get_coord();
         Ttx.push_back(s.back());
     }
-    std::vector<Rcv<long double >> R;
-    R.push_back( Rcv<long double >("rcv.dat") );
+    std::vector<Rcv<double >> R;
+    R.push_back( Rcv<double >("rcv.dat") );
     //Rx.init(1);
     R[0].init(src.size());
-    std::vector<sxyz<long double >> Rrx;
+    std::vector<sxyz<double >> Rrx;
     for(size_t i=0;i<R.size();i++){
         for(size_t j=0;j<R[i].get_coord().size();j++){
             Rrx.push_back(R[i].get_coord()[j]);
@@ -65,8 +81,8 @@ int main(int argc, const char * argv[]) {
     }
     size_t nTtx=Ttx.size();
     size_t nRrx=Rrx.size();
-    std::vector<sxyz<long double >> Tx(nTtx*nRrx);
-    std::vector<sxyz<long double >> Rx(nTtx*nRrx);
+    std::vector<sxyz<double >> Tx(nTtx*nRrx);
+    std::vector<sxyz<double >> Rx(nTtx*nRrx);
     for (unsigned i=0; i<nTtx;i++){
         for(size_t j=0; j<nRrx;j++){
             Tx[i*nRrx+j]=Ttx[i];
@@ -76,14 +92,14 @@ int main(int argc, const char * argv[]) {
     MSHReader reader( "Model1.msh" );
     std::vector<sxyz<double >> node(reader.getNumberOfNodes());
     std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfTetra());
-    std::vector<long double > slowness(reader.getNumberOfNodes());
+    std::vector<double > slowness(reader.getNumberOfNodes());
 
     reader.readNodes3D(node);
-    std::vector <sxyz<long double>> nodes;
+    std::vector <sxyz<double>> nodes;
     for ( size_t n=0; n<node.size(); ++n ) {
-        nodes.push_back(sxyz<long double>(node[n].x,node[n].y,node[n].z));
+        nodes.push_back(sxyz<double>(node[n].x,node[n].y,node[n].z));
     }
-    sxyz<long double> PP(nodes[0]);
+    sxyz<double> PP(nodes[0]);
     reader.readTetrahedronElements(tetrahedra);
 
     std::ifstream fin( "Model1.slo" );
@@ -98,7 +114,7 @@ int main(int argc, const char * argv[]) {
         tmp1.push_back( dtmp );
         fin >> dtmp;
     }
-    std::vector<long double> tmp(tmp1.begin(),tmp1.end());
+    std::vector<double> tmp(tmp1.begin(),tmp1.end());
     fin.close();
 
     // find mesh "corners"
@@ -117,7 +133,7 @@ int main(int argc, const char * argv[]) {
         zmax = zmax > nodes[n].z ? zmax : nodes[n].z;
     }
     // use corners as ref pts
-    std::vector<sxyz<long double >> refPts;
+    std::vector<sxyz<double >> refPts;
     refPts.push_back( {xmin, ymin, zmin} );
     refPts.push_back( {xmin, ymin, zmax} );
     refPts.push_back( {xmin, ymax, zmin} );
@@ -126,30 +142,36 @@ int main(int argc, const char * argv[]) {
     refPts.push_back( {xmax, ymin, zmax} );
     refPts.push_back( {xmax, ymax, zmin} );
     refPts.push_back( {xmax, ymax, zmax} );
-    double eps(1.e-15);
+    double eps(1.e-20);
+    std::vector<sxyz<double>> no;
     for (size_t n=0;n<nodes.size();++n){
-        nodes[n]=nodes[n]-refPts[0];
+        no.push_back({nodes[n].x-xmin,nodes[n].y-ymin,nodes[n].z-zmin});
     }
-    for (size_t n=0;n<Rx.size();++n){
-        Rx[n]=Rx[n]-refPts[0];
+    std::vector<sxyz<double >> refPts2;
+    for (size_t rr=0;rr<refPts.size();++rr)
+        refPts2.push_back(refPts[rr]-refPts[0]);
+    Grid3Duifs<double , uint32_t>* mesh_instance;
+    if (SecondNodes==true){
+       mesh_instance = new Grid3Duifs<double , uint32_t>(no, tetrahedra, eps,20,true, 1);
+    }else{
+        std::vector<sxyz<double >> refPts2;
+        for (size_t rr=0;rr<refPts.size();++rr)
+            refPts2.push_back(refPts[rr]-refPts[0]);
+       mesh_instance = new Grid3Duifs<double , uint32_t>(no, tetrahedra, eps,30,refPts2,2,true, 1);
     }
-    for (size_t n=0;n<Tx.size();++n){
-        Tx[n]=Tx[n]-refPts[0];
-    }
-    Grid3Duifs<long double , uint32_t>*mesh_instance = new Grid3Duifs<long double , uint32_t>(nodes, tetrahedra, eps,20,true, 1);
     mesh_instance->setSlowness(tmp);
-    mesh_instance-> setSourceRadius(0.0);
+    
 
 
     //////////////
 
     size_t nTx = Tx.size();
     size_t nRx=Rx.size();
-    std::vector<std::vector<sxyz<long double >>> vTx;
-    std::vector<std::vector<long double >> t0;
+    std::vector<std::vector<sxyz<double >>> vTx;
+    std::vector<std::vector<double >> t0;
     std::vector<std::vector<size_t>> iTx;
-    vTx.push_back( std::vector<sxyz<long double >>(1,Tx[0]) );
-    t0.push_back(std::vector<long double >(1,0) );
+    vTx.push_back( std::vector<sxyz<double >>(1,Tx[0]) );
+    t0.push_back(std::vector<double >(1,0) );
     iTx.push_back(std::vector<size_t>(1, 0) );  // indices of Rx corresponding to current Tx
     for ( size_t ntx=1; ntx<nTx; ++ntx ) {
         bool found = false;
@@ -162,46 +184,65 @@ int main(int argc, const char * argv[]) {
             }
         }
         if ( !found ) {
-            vTx.push_back( std::vector<sxyz<long double >>(1, Tx[ntx]) );
-            t0.push_back( std::vector<long double >(1,0) );
+            vTx.push_back( std::vector<sxyz<double >>(1, Tx[ntx]) );
+            t0.push_back( std::vector<double >(1,0) );
             iTx.push_back(std::vector<size_t>(1, ntx) );
         }
     }
     /*
      Looping over all non redundant Tx
      */
-//    std::vector<std::vector<sijv<long double>>> d_data;
+//    std::vector<std::vector<sijv<double>>> d_data;
 //    mesh_instance->computeD(Rx, d_data);
 
-    std::vector<sxyz<long double >> vRx;
-    std::vector<std::vector<long double >> tt( vTx.size() );
-    std::vector<std::vector<std::vector<sxyz<long double >>>> r_data( vTx.size() );
-    std::vector<long double > v0( vTx.size() );
-    std::vector<std::vector<std::vector<sijv<long double >>>> m_data( vTx.size() );
+    std::vector<sxyz<double >> vRx;
+    std::vector<std::vector<double >> tt( vTx.size() );
+    std::vector<std::vector<std::vector<sxyz<double >>>> r_data( vTx.size() );
+    std::vector<double > v0( vTx.size() );
+    std::vector<std::vector<std::vector<sijv<double >>>> m_data( vTx.size() );
     
     if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()<= vTx.size() ) {
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+            
             vRx.resize( 0 );
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                vRx.push_back( Rx[ iTx[nv][ni] ] );
+                vRx.push_back( Rx[ iTx[nv][ni] ]-refPts[0]);
             }
-           //  add new nodes arround  sources ans receivers
-            std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
-            mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-            mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
-            mesh_instance->initOrdering(refPts,2);
-            if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 ) {
-                throw std::runtime_error("Problem while raytracing.");
+            vTx[nv][0]=vTx[nv][0]-refPts[0];
+            if (SecondNodes){
+//                while(mesh_instance->getCellNo(vTx[nv][0])==std::numeric_limits<uint32_t>::max()){
+//                    vTx[nv][0].z-=0.1;
+//                }
+                while(mesh_instance->checkPts(vTx[nv])==1){
+                    vTx[nv][0].z-=0.1;
+                }
+                // add secondary nodes
+                std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
+                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
+                std::vector<sxyz<double >> refPts2;
+                for (size_t rr=0;rr<refPts.size();++rr)
+                    refPts2.push_back(refPts[rr]-refPts[0]);
+                mesh_instance->initOrdering(refPts2,2);
+                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
+                    throw std::runtime_error("Problem while raytracing.");
+                mesh_instance->delateCells(DelatedCellsTx);
+            }else{
+                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
+                    throw std::runtime_error("Problem while raytracing.");
             }
-            mesh_instance->delateCells(DelatedCellsTx);
             
             for (size_t ii=0;ii<r_data[nv].size();ii++){
-                cout<<" size r_data["<<ii<<"] :"<< r_data[nv][ii].size()<<endl;
+                std::cout<<" size r_data["<<ii<<"] :"<< r_data[nv][ii].size()<<std::endl;
+                if (r_data[nv][ii].size()>498)
+                    std::cout<<"Infinit loop"<<std::endl;
             }
+            std::cout<<"\n"<<std::endl;
             for (size_t ii=0;ii<m_data[nv].size();ii++){
                 //for (size_t jj=0;jj<m_data[nv][ii].size();++jj)
-                    cout<<" size m_data["<<ii<<"] :"<< m_data[nv][ii].size()<<endl;
+                std::cout<<" size m_data["<<ii<<"] :"<< m_data[nv][ii].size()<<std::endl;
             }
+             std::cout<<"\n"<<std::endl;
 
         }
     } else {
@@ -214,13 +255,13 @@ int main(int argc, const char * argv[]) {
         for ( size_t i=0; i<num_threads-1; ++i ) {
 
             size_t blk_end = blk_start + blk_size;
-            Grid3Duifs<long double , uint32_t> *mesh_ref = mesh_instance;
+            Grid3Duifs<double , uint32_t> *mesh_ref = mesh_instance;
             threads[i]=std::thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
                                      &r_data,&v0,&m_data,blk_start,blk_end,i]{
 
                 for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
 
-                    std::vector<sxyz<long double >> vRx;
+                    std::vector<sxyz<double >> vRx;
                     for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                         vRx.push_back( Rx[ iTx[nv][ni] ] );
                     }
@@ -234,7 +275,7 @@ int main(int argc, const char * argv[]) {
         }
 
         for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
-            std::vector<sxyz<long double >> vRx;
+            std::vector<sxyz<double >> vRx;
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                 vRx.push_back( Rx[ iTx[nv][ni] ] );
             }
@@ -264,19 +305,35 @@ int main(int argc, const char * argv[]) {
 
 //    for (size_t i=0;i<r_data.size();++i){
 //        size_t half_size (r_data[i].size()/2);
-//       std::vector<std::vector<sxyz<long double >>> r_data1(r_data[i].begin(),r_data[i].begin()+half_size);
-//       std::vector<std::vector<sxyz<long double >>> r_data2(r_data[i].begin()+half_size,r_data[i].end());
+//       std::vector<std::vector<sxyz<double >>> r_data1(r_data[i].begin(),r_data[i].begin()+half_size);
+//       std::vector<std::vector<sxyz<double >>> r_data2(r_data[i].begin()+half_size,r_data[i].end());
 //        std::string filename="Sourcea.vtp";//+to_string(i+11)+".vtp";
 //        saveRayPaths(filename, r_data1);
 //        filename="Sourceb.vtp";//+to_string(i+11)+".vtp";
 //        saveRayPaths(filename, r_data2);
 //    }
 //
+//    std::vector<std::vector<std::vector<sxyz<double >>>> MM_data(vTx.size(),std::vector<std::vector<sxyz<double>>>(m_data[0].size(),
+//                                                                        std::vector<sxyz<double>>(m_data[0][0].size())));
+//    for (size_t nv=0;nv<m_data.size();++nv){
+//        for(size_t i=0;i<m_data[nv].size();++i){
+//            for (size_t jj=0;jj<m_data[nv][i].size();++jj){
+//                size_t Point=m_data[nv][i][jj].j;
+//                sxyz<double> P=nodes[Point];
+//                MM_data[nv][i][jj]=P;
+//            }
+//        }
+//    }
         for (size_t i=0;i<r_data.size();++i){
-            std::string filename="Src"+to_string(i+1)+".vtp";
+            std::string filename="Src"+to_string(N)+".vtp";
             saveRayPaths(filename, r_data[i]);
         }
-    // insert code here...
+
+//    for (size_t i=0;i<MM_data.size();++i){
+//        std::string filename="Points"+to_string(i+1)+".vtp";
+//        saveRayPaths(filename, MM_data[i]);
+//    }
+    
     std::cout << "Hello, World!\n";
     return 0;
 }

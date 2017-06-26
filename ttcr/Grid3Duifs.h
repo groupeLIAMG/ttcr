@@ -60,6 +60,7 @@ namespace ttcr {
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
+            this->initOrdering(refPts, order);
         }
 
         ~Grid3Duifs() {
