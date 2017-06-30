@@ -1025,7 +1025,7 @@ namespace ttcr {
         T2 cellParentRx;
         
         for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
+            traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx, cellParentRx,
                                                  threadNo);
             
             // Rx are in nodes (not txNodes)
@@ -1064,7 +1064,7 @@ namespace ttcr {
                 child.x = (*node_p)[iChild].getX();
                 child.y = (*node_p)[iChild].getY();
                 child.z = (*node_p)[iChild].getZ();
-                cell.i = (*node_p)[iChild].getCellParent();
+                cell.i = (*node_p)[iChild].getCellParent(threadNo);
                 
                 // grand'pa is now papa
                 iParent = (*node_p)[iChild].getNodeParent(threadNo);

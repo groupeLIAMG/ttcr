@@ -744,8 +744,8 @@ namespace ttcr {
                                     const size_t threadNo) const {
         
         //	std::cout << "   running in thread no " << threadNo << std::endl;
-        if ( checkPts(Tx) == 1 ) return 1;
-        if ( checkPts(Rx) == 1 ) return 1;
+        if ( this->checkPts(Tx) == 1 ) return 1;
+        if ( this->checkPts(Rx) == 1 ) return 1;
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
