@@ -202,6 +202,7 @@
 		2B90ECD219054B400015748B /* Grid3Duifm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifm.h; sourceTree = "<group>"; };
 		2B90ECD319054C3D0015748B /* Grid3Duifs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Duifs.h; sourceTree = "<group>"; };
 		2B98A47519070C6D00816CF1 /* Grid2Dri.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dri.h; sourceTree = "<group>"; };
+		2B9963541F067641004FED9D /* cgrid3d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; path = cgrid3d.pyx; sourceTree = "<group>"; };
 		2BC708D318EDA599004DA2C9 /* ttcr3d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr3d.cpp; sourceTree = "<group>"; };
 		2BC708DF18EDA65F004DA2C9 /* Grad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grad.h; sourceTree = "<group>"; };
@@ -374,6 +375,7 @@
 			children = (
 				2B6D56201D50358C00075138 /* utils.py */,
 				2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */,
+				2B9963541F067641004FED9D /* cgrid3d.pyx */,
 				2BDCA1D61DADCD6200E26DEB /* cmesh3d.pyx */,
 				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
 				2B0B2DDC1D4A4C5600111F13 /* Grid2Dttcr.h */,

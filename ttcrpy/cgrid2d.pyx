@@ -28,8 +28,6 @@ cimport numpy as np
 
 from scipy.sparse import csr_matrix
 
-from utils import nargout
-
 cdef extern from "ttcr_t.h" namespace "ttcr":
     cdef cppclass sxz[T]:
         sxz(T, T) except +
@@ -64,9 +62,8 @@ cdef class Grid2Dcpp:
     def getType(self):
         return self.grid.getType()
 
-    def raytrace(self, slowness, xi, theta, Tx, Rx, t0):
+    def raytrace(self, slowness, xi, theta, Tx, Rx, t0, nout):
 
-        nout = nargout()
         # check if types are consistent with input data
         if len(xi) != 0:
             if len(theta) != 0:

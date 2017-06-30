@@ -41,27 +41,27 @@ namespace ttcr {
                              const std::vector<T1>& t0,
                              const std::vector<sxyz<T1>>& Rx,
                              std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
+                             const size_t threadNo=0) const { return 1; }
         
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                              std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t=0) const { return 0; }
+                             const size_t=0) const { return 1; }
         
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<sxyz<T1>>& Rx,
                              std::vector<T1>& traveltimes,
                              std::vector<std::vector<sxyz<T1>>>& r_data,
-                             const size_t threadNo=0) const { return 0; }
+                             const size_t threadNo=0) const { return 1; }
         
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                              std::vector<std::vector<T1>*>& traveltimes,
                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                             const size_t=0) const { return 0; }
+                             const size_t=0) const { return 1; }
         
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
@@ -69,7 +69,7 @@ namespace ttcr {
                              std::vector<T1>& traveltimes,
                              std::vector<std::vector<sxyz<T1>>>& r_data,
                              T1& v0,
-                             const size_t threadNo=0) const { return 0; }
+                             const size_t threadNo=0) const { return 1; }
         
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
@@ -78,28 +78,44 @@ namespace ttcr {
                              std::vector<std::vector<sxyz<T1>>>& r_data,
                              T1& v0,
                              std::vector<std::vector<sijv<T1>>>& m_data,
-                             const size_t threadNo=0) const { return 0; }
+                             const size_t threadNo=0) const { return 1; }
 
-        virtual int setSlowness(const std::vector<T1>& s) { return 0; }
+        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<sxyz<T1>>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<siv<T1>>>& l_data,
+                             const size_t threadNo=0) const { return 1; }
+
+        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+                             const std::vector<T1>& t0,
+                             const std::vector<sxyz<T1>>& Rx,
+                             std::vector<T1>& traveltimes,
+                             std::vector<std::vector<sxyz<T1>>>& r_data,
+                             std::vector<std::vector<siv<T1>>>& l_data,
+                             const size_t threadNo=0) const { return 1; }
+
+        virtual int setSlowness(const std::vector<T1>& s) { return 1; }
         
         virtual void setSourceRadius(const double) {}
         
-        virtual size_t getNumberOfNodes() const { return 0; }
+        virtual size_t getNumberOfNodes() const { return 1; }
+        virtual size_t getNumberOfCells() const { return 1; }
         
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const bool vtkFormat=0) const {}
         
-        virtual const T1 getXmin() const { return 0; }
-        virtual const T1 getXmax() const { return 0; }
-        virtual const T1 getYmin() const { return 0; }
-        virtual const T1 getYmax() const { return 0; }
-        virtual const T1 getZmin() const { return 0; }
-        virtual const T1 getZmax() const { return 0; }
+        virtual const T1 getXmin() const { return 1; }
+        virtual const T1 getXmax() const { return 1; }
+        virtual const T1 getYmin() const { return 1; }
+        virtual const T1 getYmax() const { return 1; }
+        virtual const T1 getZmin() const { return 1; }
+        virtual const T1 getZmax() const { return 1; }
         
-        virtual const int get_niter() const { return 0; }
-        virtual const int get_niterw() const { return 0; }
+        virtual const int get_niter() const { return 1; }
+        virtual const int get_niterw() const { return 1; }
         
-        virtual const size_t getNthreads() const { return 0; }
+        virtual const size_t getNthreads() const { return 1; }
         
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,
