@@ -144,7 +144,7 @@ cdef class Grid3Dcpp:
 
             rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
 
-            nTx = np.unique(Tx.view([('',Tx.dtype)]*Tx.shape[1])).view(Tx.dtype).reshape(-1,Tx.shape[1]).shape[0]   # get number of unique Tx
+            nTx = np.unique(Tx, axis=0).shape[0]
 
             M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
 
