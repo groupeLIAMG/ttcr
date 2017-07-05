@@ -31,15 +31,15 @@ using namespace std;
 
 namespace ttcr {
 
-    Grid3Dttcr::Grid3Dttcr(std::string& _type,
+    Grid3Dttcr::Grid3Dttcr(std::string& t,
                            const uint32_t nx, const uint32_t ny, const uint32_t nz,
                            const double ddx,
                            const double minx, const double miny, const double minz,
                            const double eps, const int maxit, const bool w,
-                           const size_t nt=1) {
-        if ( type.compare("node") )
+                           const size_t nt=1) : type(t) {
+        if ( type.compare("node") == 0 )
           grid_instance = new gridi(ny, ny, nz, ddx, minx, miny, minz, eps, maxit, w, nt);
-        else if ( type.compare("cell") )
+        else if ( type.compare("cell") == 0 )
           grid_instance = new gridc(ny, ny, nz, ddx, minx, miny, minz, eps, maxit, w, nt);
         else
           // error: type not defined
