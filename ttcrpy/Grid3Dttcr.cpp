@@ -38,9 +38,9 @@ namespace ttcr {
                            const double eps, const int maxit, const bool w,
                            const size_t nt=1) : type(t) {
         if ( type.compare("node") == 0 )
-          grid_instance = new gridi(ny, ny, nz, ddx, minx, miny, minz, eps, maxit, w, nt);
+          grid_instance = new gridi(nx, ny, nz, ddx, minx, miny, minz, eps, maxit, w, nt);
         else if ( type.compare("cell") == 0 )
-          grid_instance = new gridc(ny, ny, nz, ddx, minx, miny, minz, eps, maxit, w, nt);
+          grid_instance = new gridc(nx, ny, nz, ddx, minx, miny, minz, eps, maxit, w, nt);
         else
           // error: type not defined
           throw bad_cast();
