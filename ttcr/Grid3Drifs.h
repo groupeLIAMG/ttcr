@@ -58,6 +58,23 @@ namespace ttcr {
         
         int raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
+                     const std::vector<sxyz<T1>>& Rx,
+                     std::vector<T1>& traveltimes,
+                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                     T1& v0,
+                     const size_t threadNo=0) const;
+        
+        int raytrace(const std::vector<sxyz<T1>>& Tx,
+                     const std::vector<T1>& t0,
+                     const std::vector<sxyz<T1>>& Rx,
+                     std::vector<T1>& traveltimes,
+                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                     T1& v0,
+                     std::vector<std::vector<sijv<T1>>>& m_data,
+                     const size_t threadNo=0) const;
+
+        int raytrace(const std::vector<sxyz<T1>>& Tx,
+                     const std::vector<T1>& t0,
                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                      std::vector<std::vector<T1>*>& traveltimes,
                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
@@ -400,6 +417,76 @@ namespace ttcr {
     template<typename T1, typename T2>
     int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
+                                    const std::vector<sxyz<T1>>& Rx,
+                                    std::vector<T1>& traveltimes,
+                                    std::vector<std::vector<sxyz<T1>>>& r_data,
+                                    T1& v0,
+                                    const size_t threadNo) const {
+        
+        int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        if ( check == 1 ) return 1;
+        
+        if ( r_data.size() != Rx.size() ) {
+            r_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+            r_data[ni].resize( 0 );
+        }
+        
+        v0 = 0.0;
+        for ( size_t n=0; n<Tx.size(); ++n ) {
+            v0 += this->computeSlowness( Tx[n] );
+        }
+        v0 = Tx.size() / v0;
+
+        for (size_t n=0; n<Rx.size(); ++n) {
+            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
+        }
+        return 0;
+    }
+    
+    template<typename T1, typename T2>
+    int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const std::vector<sxyz<T1>>& Rx,
+                                    std::vector<T1>& traveltimes,
+                                    std::vector<std::vector<sxyz<T1>>>& r_data,
+                                    T1& v0,
+                                    std::vector<std::vector<sijv<T1>>>& m_data,
+                                    const size_t threadNo) const {
+        
+        int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        if ( check == 1 ) return 1;
+        
+        if ( r_data.size() != Rx.size() ) {
+            r_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+            r_data[ni].resize( 0 );
+        }
+        if ( m_data.size() != Rx.size() ) {
+            m_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<m_data.size(); ++ni ) {
+            m_data[ni].resize( 0 );
+        }
+        
+        v0 = 0.0;
+        for ( size_t n=0; n<Tx.size(); ++n ) {
+            v0 += this->computeSlowness( Tx[n] );
+        }
+        v0 = Tx.size() / v0;
+
+        for (size_t n=0; n<Rx.size(); ++n) {
+            this->getRaypath(Tx, Rx[n], r_data[n], m_data[n], n, threadNo);
+        }
+        return 0;
+    }
+    
+
+    template<typename T1, typename T2>
+    int Grid3Drifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                    const std::vector<T1>& t0,
                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                     std::vector<std::vector<T1>*>& traveltimes,
                                     std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
@@ -455,7 +542,7 @@ namespace ttcr {
             this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
             
             for (size_t ns=0; ns<r_data[n].size()-1; ++ns) {
-                sxyz<T1> m = 0.5*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
+                sxyz<T1> m = static_cast<T1>(0.5)*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
                 cell.i = this->getCellNo( m );
                 cell.v = r_data[n][ns].getDistance( r_data[n][ns+1] );
                 

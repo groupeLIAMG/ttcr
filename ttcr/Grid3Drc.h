@@ -80,6 +80,7 @@ namespace ttcr {
         }
         
         size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfCells() const { return ncx*ncy*ncz; }
         
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,

@@ -268,11 +268,10 @@ class Grid2D(Grid):
     """
     Class for 2D grids
 
-
     Important: the raytracing codes are based on a column-major order
             for the slowness vector (Z is the "fast" axis).
             To visualize the slowness model with Z axis vertical and X horizontal,
-            the vector should be reshaped as 
+            the vector should be reshaped as
             slowness.reshape(nx,nz).T
 
     """
@@ -302,13 +301,13 @@ class Grid2D(Grid):
                                 self.Tx_Z_water, self.Rx_Z_water, self.in_vect,
                                 self.nthreads, self.nsnx, self.nsnz, self.flip,
                                 self.borehole_x0, self.x0, self.type))
-        
+
     @staticmethod
     def rebuild(grx, grz, cont, Tx, Rx, TxCosDir, RxCosDir, border, Tx_Z_water,
                 Rx_Z_water, in_vect, nthreads, nsnx, nsnz, flip, borehole_x0, x0, _type):
-        
+
         g = Grid2D(grx, grz, nthreads)
-        
+
         g.cont = cont
         g.Tx = Tx
         g.Rx = Rx
@@ -324,9 +323,9 @@ class Grid2D(Grid):
         g.borehole_x0 = borehole_x0
         g.x0 = x0
         g.type = _type
-        
+
         return g
-        
+
 
     def raytrace(self, slowness, Tx, Rx, t0=(), xi=(), theta=()):
         """
@@ -394,10 +393,10 @@ class Grid2D(Grid):
                                            self.nsnx,self.nsnz,self.nthreads)
 
         if nout==2:
-            tt,L = self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
+            tt,L = self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0,nout)
             return tt,L
         elif nout==3:
-            tt,L,rays = self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0)
+            tt,L,rays = self.cgrid.raytrace(slowness,xi,theta,Tx,Rx,t0,nout)
             return tt,L,rays
 
 
@@ -487,12 +486,12 @@ class Grid2D(Grid):
     def derivative(self, order, normalize = False):
         """
         Compute spatial derivative operators for grid _cells_
-        
+
         For 1st order:
             forward operator is (u_{i+1} - u_i)/dx
             centered operator is (u_{i+1} - u_{i-1})/(2dx)
             backward operator is (u_i - u_{i-1})/dx
-            
+
         For 2nd order:
             forward operator is (u_i - 2u_{i+1} + u_{i+2})/dx^2
             centered operator is (u_{i-1} - 2u_i + u_{i+1})/dx^2
@@ -506,7 +505,7 @@ class Grid2D(Grid):
 
         nx = len(self.grx) - 1
         nz = len(self.grz) - 1
-        
+
         if order == 1:
 
             # forward operator is (u_{i+1} - u_i)/dx
@@ -519,25 +518,25 @@ class Grid2D(Grid):
             i = np.kron(np.arange(nx*nz),np.ones((2,)))
             j = np.zeros((nz * nx * 2,))
             v = np.zeros((nz * nx * 2,))
-            
-                            
+
+
             jj = np.vstack((np.arange(nz),nz+np.arange(nz))).T
             jj = jj.flatten()
             j[:2*nz] = jj
             vd = idx * np.tile(np.array([-1,1]),(nz,))
             v[:2*nz] = vd
-            
+
             jj = np.vstack((-nz+np.arange(nz),nz+np.arange(nz))).T
             jj = jj.flatten()
             for n in range(1,nx-1):
                 j[n*2*nz:(n+1)*2*nz] = n*nz + jj
                 v[n*2*nz:(n+1)*2*nz] = 0.5*vd
-            
+
             jj = np.vstack((-nz+np.arange(nz),np.arange(nz))).T
             jj = jj.flatten()
             j[(nx-1)*2*nz:nx*2*nz] = (nx-1)*nz + jj
             v[(nx-1)*2*nz:nx*2*nz] = vd
-            
+
             Dx = csr_matrix((v,(i,j)))
 
 
@@ -546,86 +545,86 @@ class Grid2D(Grid):
             jj = jj.flatten()
             vd = idz*np.hstack((np.array([-1,1]),
                                 np.tile(np.array([-0.5,0.5]),(nz-2,)),np.array([-1,1])))
-            
+
             for n in range(nx):
                 j[n*2*nz:(n+1)*2*nz] = n*nz + jj
                 v[n*2*nz:(n+1)*2*nz] = vd
 
             Dz = csr_matrix((v,(i,j)))
         else:  # 2nd order
-        
+
             # forward operator is (u_i - 2u_{i+1} + u_{i+2})/dx^2
             # centered operator is (u_{i-1} - 2u_i + u_{i+1})/dx^2
             # backward operator is (u_{i-2} - 2u_{i-1} + u_i)/dx^2
-            
+
             idx2 = 1/(dx*dx)
             idz2 = 1/(dz*dz)
-            
+
             i = np.kron(np.arange(nx*nz),np.ones((3,)))
             j = np.zeros((nz * nx * 3,))
             v = np.zeros((nz * nx * 3,))
-            
+
             jj = np.vstack((np.arange(nz),nz+np.arange(nz),2*nz+np.arange(nz))).T
             jj = jj.flatten()
             j[:3*nz] = jj
             vd = idx2*np.tile(np.array([1.0,-2.0,1.0]),(nz,))
             v[:3*nz] = vd
-            
+
             for n in range(1,nx-1):
                 j[n*3*nz:(n+1)*3*nz] = (n-1)*nz + jj
                 v[n*3*nz:(n+1)*3*nz] = vd
-                
+
             j[(nx-1)*3*nz:nx*3*nz] = (nx-3)*nz + jj
             v[(nx-1)*3*nz:nx*3*nz] = vd
 
             Dx = csr_matrix((v,(i,j)))
-            
-            
+
+
             jj = np.vstack((np.hstack((0,np.arange(nz-2),nz-3)),
                             np.hstack((1,np.arange(1,nz-1), nz-2)),
                             np.hstack((2,np.arange(2,nz), nz-1)))).T
             jj = jj.flatten()
             vd = vd*idz2/idx2
-            
+
             for n in range(nx):
                 j[n*3*nz:(n+1)*3*nz] = n*nz + jj
                 v[n*3*nz:(n+1)*3*nz] = vd
-                        
+
             Dz = csr_matrix((v,(i,j)))
-            
+
         # no derivative along y, empty Dy matrix
         Dy = csr_matrix(Dx.shape)
-        
+
         return Dx,Dy,Dz
-        
+
     def preFFTMA(self, cm):
         """
         Compute matrix G for FFT-MA simulations
-        
+
         INPUT
             cm: list of covariance models
-            
+
         OUTPUT
             G: covariance matrix in spectral domain
         """
         small = 1.0e-6
         Nx = 2*self.grx.size
         Nz = 2*self.grz.size
-        
+
         Nx2 = Nx/2
         Nz2 = Nz/2
-        
+
         x = self.dx * np.hstack((np.arange(Nx2), np.arange(-Nx2+1,1)))
         z = self.dz * np.hstack((np.arange(Nz2), np.arange(-Nz2+1,1)))
 
         x = np.kron(x,np.ones((Nz,)))
         z = np.kron(z,np.ones((1,Nx)).T).flatten()
-        
+
         d = 0
         for c in cm:
             d = d + c.compute(np.vstack((x,z)).T, np.zeros((1,2)))
         K = d.reshape(Nx,Nz)
-        
+
         mk = True
         while mk:
             mk = False
@@ -633,49 +632,49 @@ class Grid2D(Grid):
                 # Enlarge grid to make sure that covariance falls to zero
                 Nz = 2*Nz
                 mk = True
-            
+
             if np.min(K[:,0])>small:
                 Nx = 2*Nx
                 mk = True
-            
+
             if mk:
                 Nx2 = Nx/2
                 Nz2 = Nz/2
-        
+
                 x = self.dx * np.hstack((np.arange(Nx2), np.arange(-Nx2+1,1)))
                 z = self.dz * np.hstack((np.arange(Nz2), np.arange(-Nz2+1,1)))
 
                 x = np.kron(x,np.ones((Nz,)))
                 z = np.kron(z,np.ones((1,Nx)).T).flatten()
-        
+
                 d = 0
                 for c in cm:
                     d = d + c.compute(np.vstack((x,z)).T, np.zeros((1,2)))
                 K = d.reshape(Nx,Nz)
-            
+
         return np.sqrt(np.fft.fft2(K))
-        
+
     def FFTMA(self, G):
         """
         Perform FFT-MA simulation using pre-computed spectral matrix
-        
+
         INPUT
             G: covariance matrix in spectral domain as return by preFFTMA
-            
+
         OUTPUT
             Z: simulated field of size nx x nz
         """
         Nx,Nz = G.shape
         U = np.random.randn(G.shape[0], G.shape[1])
         Z = np.real(np.fft.ifft2(G*U))
-        
+
         return Z[int(round((Nx+2)/2)):(int(round((Nx+2)/2))+self.grx.size-1),
                  int(round((Nz+2)/2)):(int(round((Nz+2)/2))+self.grz.size-1)]
-        
+
     def toXdmf(self, field, fieldname, filename):
         """
         Save a field in xdmf format
-        
+
         INPUT
             field: data array of size equal to the number of cells in the grid
             fieldname: name to be assinged to the data (string)
@@ -685,7 +684,7 @@ class Grid2D(Grid):
         nz = self.grz.size-1
         ox = self.grx[0] + self.dx/2
         oz = self.grz[0] + self.dz/2
-        
+
         f = open(filename,'w')
 
         f.write('<?xml version="1.0" ?>\n')
@@ -710,9 +709,9 @@ class Grid2D(Grid):
         f.write('   </Grid>\n')
         f.write(' </Domain>\n')
         f.write('</Xdmf>\n')
-        
+
         f.close()
-        
+
         h5f = h5py.File(filename+'.h5', 'w')
         h5f.create_dataset(fieldname, data=field.reshape((nx,nz)).T.astype(np.float32))
         h5f.close()
@@ -794,7 +793,7 @@ if __name__ == '__main__':
         plt.matshow(Lsr.toarray())
 
         plt.show()
-        
+
     if testRaytrace2:
         grx = np.linspace(0,10,num=21)
         grz = np.linspace(0,15,num=31)
@@ -808,27 +807,27 @@ if __name__ == '__main__':
 
         plt.matshow(slowness.T)
         plt.show()
-        
+
         s = slowness.flatten()
         print(s[8:13])
-        
+
         z = np.arange(1,15)
-        
+
         Tx = np.vstack((np.ones(z.size), np.zeros(z.size),z)).T
         Rx = np.vstack((9+np.ones(z.size), np.zeros(z.size),z)).T
-        
+
         grid.Tx = Tx
         grid.Rx = Rx
 
         Lsr = grid.getForwardStraightRays()
         ttsr = Lsr*s
-        
+
         print(ttsr)
-        
+
         tt1,L1,rays1 = grid.raytrace(s, Tx, Rx)
-        
-        
-        
+
+
+
     if testStatic:
 
         class Borehole:
@@ -926,22 +925,22 @@ if __name__ == '__main__':
         nz=len(grz)-1
 
         grid = Grid2D(grx,grz)
-        
+
         Dx,Dy,Dz = grid.derivative(1)
-        
+
         plt.matshow(Dx.toarray())
         plt.title('Dx')
         plt.show()
-        
+
         nc = grid.getNumberOfCells()
         s = np.ones((nc,))
         s[0] = 2
         s[27] = 2
         s[-1] = 2
-        
+
         dsx = Dx*s
         dsz = Dz*s
-        
+
         plt.matshow(s.reshape((nx,nz)).T)
         plt.title('s')
         plt.colorbar()
@@ -951,41 +950,41 @@ if __name__ == '__main__':
         plt.title('dsx')
         plt.colorbar()
         plt.show()
-        
+
         plt.matshow(Dz.toarray())
         plt.title('Dz')
         plt.show()
-        
+
         plt.matshow(dsz.reshape((nx,nz)).T)
         plt.title('dsz')
         plt.colorbar()
         plt.show()
-        
-        
-        
+
+
+
         Dx,Dy,Dz = grid.derivative(2)
-        
+
         plt.matshow(Dx.toarray())
         plt.title('Dx O2')
         plt.show()
-        
+
         dsx = Dx*s
         dsz = Dz*s
-        
+
         plt.matshow(dsx.reshape((nx,nz)).T)
         plt.title('dsx O2')
         plt.colorbar()
         plt.show()
-        
+
         plt.matshow(Dz.toarray())
         plt.title('Dz O2')
         plt.show()
-        
+
         plt.matshow(dsz.reshape((nx,nz)).T)
         plt.title('dsz O2')
         plt.colorbar()
         plt.show()
-        
+
     if testFFTMA:
         grx = np.linspace(0,3,num=50)
         grz = np.linspace(0,6,num=100)
@@ -993,80 +992,80 @@ if __name__ == '__main__':
         nz=len(grz)-1
 
         grid = Grid2D(grx,grz)
-        
+
         cm = [covar.CovarianceExponential(np.array([5.0,2.0]), np.array([0]), 2.5)]
 
         G = grid.preFFTMA(cm)
-        
+
         Z = grid.FFTMA(G)
-        
+
         plt.matshow(Z.T)
         plt.show()
-        
+
         grid.toXdmf(Z,'fftma','test.xmf')
-        
+
     if testPickle:
         import pickle
-        
+
         grx = np.linspace(0,10,num=21)
         grz = np.linspace(0,15,num=31)
 
         grid = Grid2D(grx,grz)
-        
+
         z = np.arange(1,15)
-        
+
         Tx = np.vstack((np.ones(z.size), np.zeros(z.size),z)).T
         Rx = np.vstack((9+np.ones(z.size), np.zeros(z.size),z)).T
-        
+
         grid.Tx = Tx
         grid.Rx = Rx
-        
+
         nc = grid.getNumberOfCells()
         slowness = np.ones((nc,))
         slowness = slowness.reshape((20,30))
         slowness[:,:10] = 0.5
-       
+
         s = slowness.flatten()
 
 
         Lsr = grid.getForwardStraightRays()
-        ttsr = Lsr*s        
-        
+        ttsr = Lsr*s
+
         with open('/tmp/data.pickle', 'wb') as f:
             # Pickle the 'data' dictionary using the highest protocol available.
             pickle.dump(grid, f, pickle.HIGHEST_PROTOCOL)
-            
-            
+
+
         del grid
-        
+
         with open('/tmp/data.pickle', 'rb') as f:
             # The protocol version used is detected automatically, so we do not
             # have to specify it.
             grid = pickle.load(f)
-            
-            
+
+
 
         Lsr1 = grid.getForwardStraightRays()
         ttsr1 = Lsr1*s
-        
+
         tt1,L1,rays1 = grid.raytrace(s, Tx, Rx)
-        
-        
+
+
         with open('/tmp/data.pickle', 'wb') as f:
             # Pickle the 'data' dictionary using the highest protocol available.
             pickle.dump(grid, f, pickle.HIGHEST_PROTOCOL)
-            
-            
+
+
         del grid
-        
+
         with open('/tmp/data.pickle', 'rb') as f:
             # The protocol version used is detected automatically, so we do not
             # have to specify it.
             grid = pickle.load(f)
-            
+
         Lsr2 = grid.getForwardStraightRays()
         ttsr2 = Lsr2*s
-        
+
         tt2,L2,rays2 = grid.raytrace(s, Tx, Rx)
 
         print(ttsr)
@@ -1074,4 +1073,3 @@ if __name__ == '__main__':
         print(ttsr2)
         print(tt1)
         print(tt2)
-        

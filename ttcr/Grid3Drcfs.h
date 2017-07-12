@@ -66,6 +66,13 @@ namespace ttcr {
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
                      std::vector<T1>& traveltimes,
+                     std::vector<std::vector<siv<T1>>>& l_data,
+                     const size_t threadNo=0) const;
+        
+        int raytrace(const std::vector<sxyz<T1>>& Tx,
+                     const std::vector<T1>& t0,
+                     const std::vector<sxyz<T1>>& Rx,
+                     std::vector<T1>& traveltimes,
                      std::vector<std::vector<sxyz<T1>>>& r_data,
                      std::vector<std::vector<siv<T1>>>& l_data,
                      const size_t threadNo=0) const;
@@ -519,6 +526,54 @@ namespace ttcr {
                                     const std::vector<T1>& t0,
                                     const std::vector<sxyz<T1>>& Rx,
                                     std::vector<T1>& traveltimes,
+                                    std::vector<std::vector<siv<T1>>>& l_data,
+                                    const size_t threadNo) const {
+        
+        int check = raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        if ( check == 1 ) return 1;
+        
+        std::vector<sxyz<T1>> r_data;
+        
+        if ( l_data.size() != Rx.size() ) {
+            l_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
+            l_data[ni].resize( 0 );
+        }
+        
+        siv<T1> cell;
+        for (size_t n=0; n<Rx.size(); ++n) {
+            this->getRaypath(Tx, Rx[n], r_data, threadNo);
+            
+            for (size_t ns=0; ns<r_data.size()-1; ++ns) {
+                sxyz<T1> m = static_cast<T1>(0.5)*(r_data[ns]+r_data[ns+1]);  // ps @ middle of segment
+                cell.i = this->getCellNo( m );
+                cell.v = r_data[ns].getDistance( r_data[ns+1] );
+                
+                bool found=false;
+                for (size_t nc=0; nc<l_data[n].size(); ++nc) {
+                    if ( l_data[n][nc].i == cell.i ) {
+                        l_data[n][nc].v += cell.v;  // must add in case we pass through secondary nodes along edge
+                        found = true;
+                        break;
+                    }
+                }
+                if ( found == false ) {
+                    l_data[n].push_back( cell );
+                }
+            }
+            //  must be sorted to build matrix L
+            sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
+            
+        }
+        return 0;
+    }
+ 
+    template<typename T1, typename T2>
+    int Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const std::vector<sxyz<T1>>& Rx,
+                                    std::vector<T1>& traveltimes,
                                     std::vector<std::vector<sxyz<T1>>>& r_data,
                                     std::vector<std::vector<siv<T1>>>& l_data,
                                     const size_t threadNo) const {
@@ -544,7 +599,7 @@ namespace ttcr {
             this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
             
             for (size_t ns=0; ns<r_data[n].size()-1; ++ns) {
-                sxyz<T1> m = 0.5*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
+                sxyz<T1> m = static_cast<T1>(0.5)*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
                 cell.i = this->getCellNo( m );
                 cell.v = r_data[n][ns].getDistance( r_data[n][ns+1] );
                 

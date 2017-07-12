@@ -33,44 +33,66 @@
 #include <vector>
 
 #include "Cell.h"
+#include "Grid3Drifs.h"
 #include "Grid3Drcfs.h"
-#include "Grid3Duifs.h"
 
 namespace ttcr {
 
-    typedef Grid3Drcfs<double,uint32_t> grid;
-    
+    typedef Grid3D<double,uint32_t> grid;
+    typedef Grid3Drifs<double,uint32_t> gridi;
+    typedef Grid3Drcfs<double,uint32_t> gridc;
+
     class Grid3Dttcr {
     public:
-        Grid3Dttcr(const uint32_t, const uint32_t, const uint32_t, const double,
+        Grid3Dttcr(std::string&, const uint32_t, const uint32_t, const uint32_t, const double,
                    const double, const double, const double,
                    const double, const int, const bool,
                    const size_t);
-        
-        
+
         ~Grid3Dttcr() {
             delete grid_instance;
         }
-        
+        std::string getType() const { return type; }
+
         void setSlowness(const std::vector<double>& slowness);
-        
+
+        int raytrace(const std::vector<sxyz<double>>& Tx,
+                     const std::vector<double>& tTx,
+                     const std::vector<sxyz<double>>& Rx,
+                     double* traveltimes) const;
+
         int raytrace(const std::vector<sxyz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxyz<double>>& Rx,
                      double* traveltimes,
                      PyObject* rays,
-                     PyObject* L) const;
-        
+                     double* v0) const;
+
         int raytrace(const std::vector<sxyz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxyz<double>>& Rx,
                      double* traveltimes,
-                     PyObject* L) const;
+                     PyObject* rays,
+                     double* v0,
+                     PyObject* M) const;
 
-        
+       int raytrace(const std::vector<sxyz<double>>& Tx,
+                    const std::vector<double>& tTx,
+                    const std::vector<sxyz<double>>& Rx,
+                    double* traveltimes,
+                    PyObject* rays,
+                    PyObject* L) const;
+
+       int raytrace(const std::vector<sxyz<double>>& Tx,
+                    const std::vector<double>& tTx,
+                    const std::vector<sxyz<double>>& Rx,
+                    double* traveltimes,
+                    PyObject* L) const;
+
     private:
+        const std::string type;
         grid *grid_instance;
-        
+
         Grid3Dttcr() {}
     };
 

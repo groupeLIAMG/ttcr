@@ -209,6 +209,8 @@ namespace ttcr {
                         const NODE &n3,
                         const size_t nt);
         
+        sxyz<T> ls_grad(const sxyz<T> &pt, const std::set<NODE*> &nodes,
+                        const size_t nt);
         sxyz<T> ls_grad(const std::set<NODE*> &nodes,
                         const size_t nt);
         
@@ -294,6 +296,70 @@ namespace ttcr {
     
     
     template <typename T, typename NODE>
+    sxyz<T> Grad3D<T,NODE>::ls_grad(const sxyz<T> &pt,
+                                    const std::set<NODE*> &nodes,
+                                    const size_t nt) {
+        
+        assert(nodes.size()>=4);
+        
+        T t = 0.0;
+        T den = 0.0;
+        
+        int remove = 0;
+        std::vector<T> d( nodes.size() );
+        size_t nn=0;
+        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+            d[nn] = sqrt(((*n)->getX()-pt.x)*((*n)->getX()-pt.x) +
+                         ((*n)->getY()-pt.y)*((*n)->getY()-pt.y) +
+                         ((*n)->getZ()-pt.z)*((*n)->getZ()-pt.z) );
+            if ( d[nn] == 0.0 ) {
+                remove++;
+                nn++;
+                continue;
+            }
+            T w = 1./d[nn];
+            t += w*(*n)->getTT(nt);
+            den += w;
+            nn++;
+        }
+        t /= den;
+        
+        A.resize( nodes.size()-remove, 3 );
+        b.resize( nodes.size()-remove, 1 );
+        
+        size_t i=0;
+        nn=0;
+        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+            if ( d[nn] == 0.0 ) {
+                nn++;
+                continue;
+            }
+            A(i,0) = (*n)->getX()-pt.x;
+            A(i,1) = (*n)->getY()-pt.y;
+            A(i,2) = (*n)->getZ()-pt.z;
+            
+            b(i,0) = t - (*n)->getTT(nt);
+            i++;
+            nn++;
+        }
+        
+        // solve Ax = b with least squares
+        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        
+        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
+        
+        //	if ( isnan(x[0]) || isnan(x[1]) || isnan(x[2]) ) {
+        //		g.x = g.y = g.z = 0;
+        //	}
+        
+        g.x = x[0];
+        g.y = x[1];
+        g.z = x[2];
+        
+        return g;
+    }
+    
+    template <typename T, typename NODE>
     sxyz<T> Grad3D<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
                                     const size_t nt) {
         
@@ -374,6 +440,8 @@ namespace ttcr {
     public:
         Grad3D_ho() {}
         
+        sxyz<T> ls_grad(const sxyz<T> &pt, const std::set<NODE*> &nodes,
+                        const size_t nt);
         sxyz<T> ls_grad(const std::set<NODE*> &nodes,
                         const size_t nt);
         
@@ -386,9 +454,79 @@ namespace ttcr {
     
     
     template <typename T, typename NODE>
+    sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const sxyz<T> &pt,
+                                       const std::set<NODE*> &nodes,
+                                       const size_t nt) {
+        // evaluate gradient are center of gravity
+        assert(nodes.size()>=9);
+        
+        T t = 0.0;
+        T den = 0.0;
+        
+        int remove = 0;
+        std::vector<T> d( nodes.size() );
+        size_t nn=0;
+        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+            d[nn] = sqrt(((*n)->getX()-pt.x)*((*n)->getX()-pt.x) +
+                         ((*n)->getY()-pt.y)*((*n)->getY()-pt.y) +
+                         ((*n)->getZ()-pt.z)*((*n)->getZ()-pt.z) );
+            if ( d[nn] == 0.0 ) {
+                remove++;
+                nn++;
+                continue;
+            }
+            T w = 1./d[nn];
+            t += w*(*n)->getTT(nt);
+            den += w;
+            nn++;
+        }
+        t /= den;
+        
+        A.resize( nodes.size()-remove, 9 );
+        b.resize( nodes.size()-remove, 1 );
+        
+        size_t i=0;
+        nn=0;
+        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+            if ( d[nn] == 0.0 ) {
+                nn++;
+                continue;
+            }
+            T dx = (*n)->getX()-pt.x;
+            T dy = (*n)->getY()-pt.y;
+            T dz = (*n)->getZ()-pt.z;
+            
+            A(i,0) = dx;
+            A(i,1) = dy;
+            A(i,2) = dz;
+            A(i,3) = 0.5*dx*dx;
+            A(i,4) = 0.5*dy*dy;
+            A(i,5) = 0.5*dz*dz;
+            A(i,6) = dx*dy;
+            A(i,7) = dx*dz;
+            A(i,8) = dy*dz;
+            
+            b(i,0) = t - (*n)->getTT(nt);
+            i++;
+            nn++;
+        }
+        
+        // solve Ax = b with least squares
+        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        
+        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
+        
+        g.x = x[0];
+        g.y = x[1];
+        g.z = x[2];
+        
+        return g;
+    }
+    
+    template <typename T, typename NODE>
     sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
                                        const size_t nt) {
-        
+        // evaluate gradient are center of gravity
         assert(nodes.size()>=9);
         
         sxyz<T> cent = { 0.0, 0.0, 0.0 };
