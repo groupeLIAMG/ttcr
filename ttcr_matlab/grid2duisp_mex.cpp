@@ -509,6 +509,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 }
             }
         }
+        
+//       TOTO : remove elements for static corrections
         if ( nlhs >= 4 ) {
             // for this to work, Tx & Rx data should be ordered so that redundant Tx should be contiguous
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {

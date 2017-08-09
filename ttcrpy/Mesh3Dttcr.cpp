@@ -430,7 +430,7 @@ namespace ttcr {
             PyObject* tuple = PyTuple_New(3);
             
             size_t nRcv = m_data[nv].size();
-            size_t nnz = nRcv;
+            size_t nnz = 0;
             for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
                 nnz += m_data[nv][ni].size();
             }
@@ -459,16 +459,6 @@ namespace ttcr {
                         }
                     }
                 }
-
-                indices_p[k] = nnodes+ni;
-                data_p[k] = 1.0;
-                k++;
-                
-//                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
-//                    indices_p[k] = nnodes+j;
-//                    data_p[k] = 1.0;
-//                    k++;
-//                }
             }
             indptr_p[nRcv] = k;
             
