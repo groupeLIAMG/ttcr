@@ -456,10 +456,10 @@ namespace ttcr {
         T i[4];
         T physical_entity;
         
-        tetrahedronElem() : i{ {0},{0},{0},{0} }, physical_entity(0) {}
-        tetrahedronElem(const T i0, const T i1, const T i2, const T i3, const T pe=0) : i{ {i0},{i1},{i2},{i3} }, physical_entity(pe) {}
+        tetrahedronElem() : i{ 0,0,0,0 }, physical_entity(0) {}
+        tetrahedronElem(const T i0, const T i1, const T i2, const T i3, const T pe=0) : i{ i0,i1,i2,i3 }, physical_entity(pe) {}
         
-        tetrahedronElem(const tetrahedronElem& tet) : i{ {tet.i[0]},{tet.i[1]},{tet.i[2]},{tet.i[3]} }, physical_entity(tet.physical_entity) {}
+        tetrahedronElem(const tetrahedronElem& tet) : i{ tet.i[0],tet.i[1],tet.i[2],tet.i[3] }, physical_entity(tet.physical_entity) {}
     };
     
     template<typename T1, typename T2>
