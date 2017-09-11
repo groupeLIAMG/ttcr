@@ -92,7 +92,7 @@ namespace ttcr {
         vector<sxyz<double>> vRx;
         vector<vector<double>> tt( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -200,7 +200,7 @@ namespace ttcr {
         vector<vector<vector<sxyz<double>>>> r_data( vTx.size() );
         vector<double> v0( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -332,7 +332,7 @@ namespace ttcr {
         vector<double> v0( vTx.size() );
         vector<vector<vector<sijv<double>>>> m_data( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -517,7 +517,7 @@ namespace ttcr {
         vector<vector<siv<double>>> L_data(nTx);
         vector<vector<vector<siv<double>>>> l_data( vTx.size() );
         
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );

@@ -128,7 +128,7 @@ namespace ttcr {
         vector<vector<siv2<double>>> L_data(nTx);
         vector<vector<vector<siv2<double>>>> l_data( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -348,7 +348,7 @@ namespace ttcr {
         vector<vector<siv2<double>>> L_data(nTx);
         vector<vector<vector<siv2<double>>>> l_data( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || vTx.size()<=grid_instance->getNthreads() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
