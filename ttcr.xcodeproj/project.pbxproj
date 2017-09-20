@@ -185,7 +185,6 @@
 		2B46D14D19F2B80E00E7ADFC /* structs_msh2vtk.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = structs_msh2vtk.h; sourceTree = "<group>"; };
 		2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = msh2vtk_io.cpp; sourceTree = "<group>"; };
 		2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = msh2vtk_io.h; sourceTree = "<group>"; };
-		2B4CC10D18F5CDCC00D0B195 /* README.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = README.rtf; sourceTree = "<group>"; };
 		2B6D56201D50358C00075138 /* utils.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = utils.py; sourceTree = "<group>"; };
 		2B6F87A5190F3EDA002AC9DF /* grid2duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid2duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid2duisp_mex.cpp; sourceTree = "<group>"; };
@@ -485,7 +484,6 @@
 				2BC708F918EDA67F004DA2C9 /* ttcr_t.h */,
 				2BC708FA18EDA67F004DA2C9 /* utils.h */,
 				2BC708FB18EDA67F004DA2C9 /* VTUReader.h */,
-				2B4CC10D18F5CDCC00D0B195 /* README.rtf */,
 				2BDE233B19DBA63F0001FC4D /* CMakeLists.txt */,
 				2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */,
 				2B46D14D19F2B80E00E7ADFC /* structs_msh2vtk.h */,
