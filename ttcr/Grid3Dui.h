@@ -260,6 +260,13 @@ namespace ttcr {
                            std::vector<sxyz<T1>> &r_data,
                            const size_t threadNo) const;
         
+        void update_m_data(std::vector<sijv<T1>>& m_data,
+                           sijv<T1>& m,
+                           const std::set<T2>& allNodes,
+                           const sxyz<T1>& mid_pt,
+                           const T1 s,
+                           const T1 ds) const ;
+        
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
@@ -2090,6 +2097,38 @@ namespace ttcr {
             r_data[nn] = r_tmp[ npts-1-nn ];
         }
     }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dui<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
+                                             sijv<T1>& m,
+                                             const std::set<T2>& allNodes,
+                                             const sxyz<T1>& mid_pt,
+                                             const T1 s,
+                                             const T1 ds) const {
+        std::vector<T1> w;
+        T1 sum_w = 0.0;
+        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
+            sum_w += w.back();
+        }
+        size_t nn=0;
+        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+            m.j = *it;
+            m.v = -s * ds * w[nn++]/sum_w;
+            bool found = false;
+            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                if ( m_data[nm].j == m.j ) {
+                    m_data[nm].v += m.v;
+                    found = true;
+                    break;
+                }
+            }
+            if ( found == false ) {
+                m_data.push_back(m);
+            }
+        }
+    }
+    
     
     template<typename T1, typename T2, typename NODE>
     void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -2227,6 +2266,9 @@ namespace ttcr {
                 }
                 sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
                 
+                nodeNoPrev = nodeNo;
+                onNodePrev = onNode;
+
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
                 for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
@@ -2259,8 +2301,6 @@ namespace ttcr {
                     bool break_flag = false;
                     for ( n=0; n<3; ++n ) {
                         if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
-							nodeNoPrev = nodeNo;
-							onNodePrev = onNode;
 							onEdgePrev = onEdge;
 							onFacePrev = onFace;
 							
@@ -2271,49 +2311,10 @@ namespace ttcr {
 							
 							if ( r_tmp.size() > 1) {
 								std::set<T2> allNodes;
-								if (onNodePrev) allNodes.insert(nodeNoPrev);
-								if (onNode) allNodes.insert(nodeNo);
-								if (onEdgePrev) {
-									allNodes.insert( edgeNodesPrev[0] );
-									allNodes.insert( edgeNodesPrev[1] );
-								}
-								if (onEdge) {
-									allNodes.insert( edgeNodes[0] );
-									allNodes.insert( edgeNodes[1] );
-								}
-								if (onFacePrev) {
-									allNodes.insert( faceNodesPrev[0] );
-									allNodes.insert( faceNodesPrev[1] );
-									allNodes.insert( faceNodesPrev[2] );
-								}
-								if (onFace) {
-									allNodes.insert( faceNodes[0] );
-									allNodes.insert( faceNodes[1] );
-									allNodes.insert( faceNodes[2] );
-								}
+								allNodes.insert(nodeNoPrev);
+								allNodes.insert(nodeNo);
 								
-								std::vector<T1> w;
-								T1 sum_w = 0.0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-									sum_w += w.back();
-								}
-								size_t nn=0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									m.j = *it;
-									m.v = -s * ds * w[nn++]/sum_w;
-									bool found = false;
-									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-										if ( m_data[nm].j == m.j ) {
-											m_data[nm].v += m.v;
-											found = true;
-											break;
-										}
-									}
-									if ( found == false ) {
-										m_data.push_back(m);
-									}
-								}
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 							}
 
 							break_flag = true;
@@ -2326,7 +2327,6 @@ namespace ttcr {
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
 							edgeNodesPrev = edgeNodes;
-							onNodePrev = onNode;
 							onEdgePrev = onEdge;
 							onFacePrev = onFace;
 							
@@ -2338,49 +2338,11 @@ namespace ttcr {
 							
 							if ( r_tmp.size() > 1) {
 								std::set<T2> allNodes;
-								if (onNodePrev) allNodes.insert(nodeNoPrev);
-								if (onNode) allNodes.insert(nodeNo);
-								if (onEdgePrev) {
-									allNodes.insert( edgeNodesPrev[0] );
-									allNodes.insert( edgeNodesPrev[1] );
-								}
-								if (onEdge) {
-									allNodes.insert( edgeNodes[0] );
-									allNodes.insert( edgeNodes[1] );
-								}
-								if (onFacePrev) {
-									allNodes.insert( faceNodesPrev[0] );
-									allNodes.insert( faceNodesPrev[1] );
-									allNodes.insert( faceNodesPrev[2] );
-								}
-								if (onFace) {
-									allNodes.insert( faceNodes[0] );
-									allNodes.insert( faceNodes[1] );
-									allNodes.insert( faceNodes[2] );
-								}
-								
-								std::vector<T1> w;
-								T1 sum_w = 0.0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-									sum_w += w.back();
-								}
-								size_t nn=0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									m.j = *it;
-									m.v = -s * ds * w[nn++]/sum_w;
-									bool found = false;
-									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-										if ( m_data[nm].j == m.j ) {
-											m_data[nm].v += m.v;
-											found = true;
-											break;
-										}
-									}
-									if ( found == false ) {
-										m_data.push_back(m);
-									}
-								}
+								allNodes.insert(nodeNoPrev);
+                                allNodes.insert( edgeNodes[0] );
+                                allNodes.insert( edgeNodes[1] );
+																
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 							}
 
                             break_flag = true;
@@ -2389,7 +2351,6 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
 					
-					onNodePrev = onNode;
 					onEdgePrev = onEdge;
 					onFacePrev = onFace;
 					onNode = false;
@@ -2401,49 +2362,12 @@ namespace ttcr {
 					
 					if ( r_tmp.size() > 1) {
 						std::set<T2> allNodes;
-						if (onNodePrev) allNodes.insert(nodeNoPrev);
-						if (onNode) allNodes.insert(nodeNo);
-						if (onEdgePrev) {
-							allNodes.insert( edgeNodesPrev[0] );
-							allNodes.insert( edgeNodesPrev[1] );
-						}
-						if (onEdge) {
-							allNodes.insert( edgeNodes[0] );
-							allNodes.insert( edgeNodes[1] );
-						}
-						if (onFacePrev) {
-							allNodes.insert( faceNodesPrev[0] );
-							allNodes.insert( faceNodesPrev[1] );
-							allNodes.insert( faceNodesPrev[2] );
-						}
-						if (onFace) {
-							allNodes.insert( faceNodes[0] );
-							allNodes.insert( faceNodes[1] );
-							allNodes.insert( faceNodes[2] );
-						}
+						allNodes.insert(nodeNoPrev);
+                        allNodes.insert( faceNodes[0] );
+                        allNodes.insert( faceNodes[1] );
+                        allNodes.insert( faceNodes[2] );
 						
-						std::vector<T1> w;
-						T1 sum_w = 0.0;
-						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-							w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-							sum_w += w.back();
-						}
-						size_t nn=0;
-						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-							m.j = *it;
-							m.v = -s * ds * w[nn++]/sum_w;
-							bool found = false;
-							for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-								if ( m_data[nm].j == m.j ) {
-									m_data[nm].v += m.v;
-									found = true;
-									break;
-								}
-							}
-							if ( found == false ) {
-								m_data.push_back(m);
-							}
-						}
+                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 					}
 
                     // find next cell
@@ -2482,6 +2406,9 @@ namespace ttcr {
                     }
                 }
                 sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                
+                edgeNodesPrev = edgeNodes;
+                onEdgePrev = onEdge;
                 
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
@@ -2531,71 +2458,30 @@ namespace ttcr {
                     for ( size_t n2=0; n2<4; ++n2 ) {
                         if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
 							onNodePrev = onNode;
-							onEdgePrev = onEdge;
 							onFacePrev = onFace;
-							nodeNo = neighbors[cellNo][n2];
-							
+
+                            nodeNo = neighbors[cellNo][n2];
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            break_flag = true;
 							
 							if ( r_tmp.size() > 1) {
 								std::set<T2> allNodes;
-								if (onNodePrev) allNodes.insert(nodeNoPrev);
-								if (onNode) allNodes.insert(nodeNo);
-								if (onEdgePrev) {
-									allNodes.insert( edgeNodesPrev[0] );
-									allNodes.insert( edgeNodesPrev[1] );
-								}
-								if (onEdge) {
-									allNodes.insert( edgeNodes[0] );
-									allNodes.insert( edgeNodes[1] );
-								}
-								if (onFacePrev) {
-									allNodes.insert( faceNodesPrev[0] );
-									allNodes.insert( faceNodesPrev[1] );
-									allNodes.insert( faceNodesPrev[2] );
-								}
-								if (onFace) {
-									allNodes.insert( faceNodes[0] );
-									allNodes.insert( faceNodes[1] );
-									allNodes.insert( faceNodes[2] );
-								}
+								allNodes.insert(nodeNo);
+                                allNodes.insert( edgeNodesPrev[0] );
+                                allNodes.insert( edgeNodesPrev[1] );
 								
-								std::vector<T1> w;
-								T1 sum_w = 0.0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-									sum_w += w.back();
-								}
-								size_t nn=0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									m.j = *it;
-									m.v = -s * ds * w[nn++]/sum_w;
-									bool found = false;
-									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-										if ( m_data[nm].j == m.j ) {
-											m_data[nm].v += m.v;
-											found = true;
-											break;
-										}
-									}
-									if ( found == false ) {
-										m_data.push_back(m);
-									}
-								}
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 							}
 							
+                            break_flag = true;
 							break;
                         }
                     }
                     if ( break_flag ) break;
                     
                     if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
-						edgeNodesPrev = edgeNodes;
 						onNodePrev = onNode;
-						onEdgePrev = onEdge;
 						onFacePrev = onFace;
 						
 						edgeNodes[0] = itmpNode;
@@ -2606,57 +2492,18 @@ namespace ttcr {
 						
 						if ( r_tmp.size() > 1) {
 							std::set<T2> allNodes;
-							if (onNodePrev) allNodes.insert(nodeNoPrev);
-							if (onNode) allNodes.insert(nodeNo);
-							if (onEdgePrev) {
-								allNodes.insert( edgeNodesPrev[0] );
-								allNodes.insert( edgeNodesPrev[1] );
-							}
-							if (onEdge) {
-								allNodes.insert( edgeNodes[0] );
-								allNodes.insert( edgeNodes[1] );
-							}
-							if (onFacePrev) {
-								allNodes.insert( faceNodesPrev[0] );
-								allNodes.insert( faceNodesPrev[1] );
-								allNodes.insert( faceNodesPrev[2] );
-							}
-							if (onFace) {
-								allNodes.insert( faceNodes[0] );
-								allNodes.insert( faceNodes[1] );
-								allNodes.insert( faceNodes[2] );
-							}
+                            allNodes.insert( edgeNodesPrev[0] );
+                            allNodes.insert( edgeNodesPrev[1] );
+                            allNodes.insert( edgeNodes[0] );
+                            allNodes.insert( edgeNodes[1] );
 							
-							std::vector<T1> w;
-							T1 sum_w = 0.0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-								sum_w += w.back();
-							}
-							size_t nn=0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								m.j = *it;
-								m.v = -s * ds * w[nn++]/sum_w;
-								bool found = false;
-								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-									if ( m_data[nm].j == m.j ) {
-										m_data[nm].v += m.v;
-										found = true;
-										break;
-									}
-								}
-								if ( found == false ) {
-									m_data.push_back(m);
-								}
-							}
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 						}
 						
 						break_flag = true;
                         break;
                     } else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
-						edgeNodesPrev = edgeNodes;
 						onNodePrev = onNode;
-						onEdgePrev = onEdge;
 						onFacePrev = onFace;
 						
 						edgeNodes[0] = itmpNode;
@@ -2667,57 +2514,18 @@ namespace ttcr {
 						
 						if ( r_tmp.size() > 1) {
 							std::set<T2> allNodes;
-							if (onNodePrev) allNodes.insert(nodeNoPrev);
-							if (onNode) allNodes.insert(nodeNo);
-							if (onEdgePrev) {
-								allNodes.insert( edgeNodesPrev[0] );
-								allNodes.insert( edgeNodesPrev[1] );
-							}
-							if (onEdge) {
-								allNodes.insert( edgeNodes[0] );
-								allNodes.insert( edgeNodes[1] );
-							}
-							if (onFacePrev) {
-								allNodes.insert( faceNodesPrev[0] );
-								allNodes.insert( faceNodesPrev[1] );
-								allNodes.insert( faceNodesPrev[2] );
-							}
-							if (onFace) {
-								allNodes.insert( faceNodes[0] );
-								allNodes.insert( faceNodes[1] );
-								allNodes.insert( faceNodes[2] );
-							}
+                            allNodes.insert( edgeNodesPrev[0] );
+                            allNodes.insert( edgeNodesPrev[1] );
+                            allNodes.insert( edgeNodes[0] );
+                            allNodes.insert( edgeNodes[1] );
 							
-							std::vector<T1> w;
-							T1 sum_w = 0.0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-								sum_w += w.back();
-							}
-							size_t nn=0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								m.j = *it;
-								m.v = -s * ds * w[nn++]/sum_w;
-								bool found = false;
-								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-									if ( m_data[nm].j == m.j ) {
-										m_data[nm].v += m.v;
-										found = true;
-										break;
-									}
-								}
-								if ( found == false ) {
-									m_data.push_back(m);
-								}
-							}
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 						}
 						
 						break_flag = true;
                         break;
                     } else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
-						edgeNodesPrev = edgeNodes;
 						onNodePrev = onNode;
-						onEdgePrev = onEdge;
 						onFacePrev = onFace;
 						
 						edgeNodes[0] = edgeNodes2[0];
@@ -2728,49 +2536,12 @@ namespace ttcr {
 						
 						if ( r_tmp.size() > 1) {
 							std::set<T2> allNodes;
-							if (onNodePrev) allNodes.insert(nodeNoPrev);
-							if (onNode) allNodes.insert(nodeNo);
-							if (onEdgePrev) {
-								allNodes.insert( edgeNodesPrev[0] );
-								allNodes.insert( edgeNodesPrev[1] );
-							}
-							if (onEdge) {
-								allNodes.insert( edgeNodes[0] );
-								allNodes.insert( edgeNodes[1] );
-							}
-							if (onFacePrev) {
-								allNodes.insert( faceNodesPrev[0] );
-								allNodes.insert( faceNodesPrev[1] );
-								allNodes.insert( faceNodesPrev[2] );
-							}
-							if (onFace) {
-								allNodes.insert( faceNodes[0] );
-								allNodes.insert( faceNodes[1] );
-								allNodes.insert( faceNodes[2] );
-							}
+                            allNodes.insert( edgeNodesPrev[0] );
+                            allNodes.insert( edgeNodesPrev[1] );
+                            allNodes.insert( edgeNodes[0] );
+                            allNodes.insert( edgeNodes[1] );
 							
-							std::vector<T1> w;
-							T1 sum_w = 0.0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-								sum_w += w.back();
-							}
-							size_t nn=0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								m.j = *it;
-								m.v = -s * ds * w[nn++]/sum_w;
-								bool found = false;
-								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-									if ( m_data[nm].j == m.j ) {
-										m_data[nm].v += m.v;
-										found = true;
-										break;
-									}
-								}
-								if ( found == false ) {
-									m_data.push_back(m);
-								}
-							}
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 						}
 						
 						break_flag = true;
@@ -2779,7 +2550,6 @@ namespace ttcr {
                     if ( break_flag ) break;
                     
 					onNodePrev = onNode;
-					onEdgePrev = onEdge;
 					onFacePrev = onFace;
 					onNode = false;
                     onEdge = false;
@@ -2793,49 +2563,13 @@ namespace ttcr {
 					
 					if ( r_tmp.size() > 1) {
 						std::set<T2> allNodes;
-						if (onNodePrev) allNodes.insert(nodeNoPrev);
-						if (onNode) allNodes.insert(nodeNo);
-						if (onEdgePrev) {
-							allNodes.insert( edgeNodesPrev[0] );
-							allNodes.insert( edgeNodesPrev[1] );
-						}
-						if (onEdge) {
-							allNodes.insert( edgeNodes[0] );
-							allNodes.insert( edgeNodes[1] );
-						}
-						if (onFacePrev) {
-							allNodes.insert( faceNodesPrev[0] );
-							allNodes.insert( faceNodesPrev[1] );
-							allNodes.insert( faceNodesPrev[2] );
-						}
-						if (onFace) {
-							allNodes.insert( faceNodes[0] );
-							allNodes.insert( faceNodes[1] );
-							allNodes.insert( faceNodes[2] );
-						}
+                        allNodes.insert( edgeNodesPrev[0] );
+                        allNodes.insert( edgeNodesPrev[1] );
+                        allNodes.insert( faceNodes[0] );
+                        allNodes.insert( faceNodes[1] );
+                        allNodes.insert( faceNodes[2] );
 						
-						std::vector<T1> w;
-						T1 sum_w = 0.0;
-						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-							w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-							sum_w += w.back();
-						}
-						size_t nn=0;
-						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-							m.j = *it;
-							m.v = -s * ds * w[nn++]/sum_w;
-							bool found = false;
-							for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-								if ( m_data[nm].j == m.j ) {
-									m_data[nm].v += m.v;
-									found = true;
-									break;
-								}
-							}
-							if ( found == false ) {
-								m_data.push_back(m);
-							}
-						}
+                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 					}
 					
                     // find next cell
@@ -2875,6 +2609,9 @@ namespace ttcr {
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
                 
+                onFacePrev = onFace;
+                faceNodesPrev = faceNodes;
+
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
                     if ( ind[n] == faceNodes ) continue;
@@ -2905,7 +2642,6 @@ namespace ttcr {
 							nodeNoPrev = nodeNo;
 							onNodePrev = onNode;
 							onEdgePrev = onEdge;
-							onFacePrev = onFace;
 							
 							nodeNo = ind[n][n2];
                             onNode = true;
@@ -2914,49 +2650,12 @@ namespace ttcr {
 							
 							if ( r_tmp.size() > 1) {
 								std::set<T2> allNodes;
-								if (onNodePrev) allNodes.insert(nodeNoPrev);
-								if (onNode) allNodes.insert(nodeNo);
-								if (onEdgePrev) {
-									allNodes.insert( edgeNodesPrev[0] );
-									allNodes.insert( edgeNodesPrev[1] );
-								}
-								if (onEdge) {
-									allNodes.insert( edgeNodes[0] );
-									allNodes.insert( edgeNodes[1] );
-								}
-								if (onFacePrev) {
-									allNodes.insert( faceNodesPrev[0] );
-									allNodes.insert( faceNodesPrev[1] );
-									allNodes.insert( faceNodesPrev[2] );
-								}
-								if (onFace) {
-									allNodes.insert( faceNodes[0] );
-									allNodes.insert( faceNodes[1] );
-									allNodes.insert( faceNodes[2] );
-								}
+                                allNodes.insert(nodeNo);
+                                allNodes.insert( faceNodesPrev[0] );
+                                allNodes.insert( faceNodesPrev[1] );
+                                allNodes.insert( faceNodesPrev[2] );
 								
-								std::vector<T1> w;
-								T1 sum_w = 0.0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-									sum_w += w.back();
-								}
-								size_t nn=0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									m.j = *it;
-									m.v = -s * ds * w[nn++]/sum_w;
-									bool found = false;
-									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-										if ( m_data[nm].j == m.j ) {
-											m_data[nm].v += m.v;
-											found = true;
-											break;
-										}
-									}
-									if ( found == false ) {
-										m_data.push_back(m);
-									}
-								}
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 							}
 
 							break_flag = true;
@@ -2971,7 +2670,6 @@ namespace ttcr {
 							edgeNodesPrev = edgeNodes;
 							onNodePrev = onNode;
 							onEdgePrev = onEdge;
-							onFacePrev = onFace;
 							
 							edgeNodes[0] = ind[n][n1];
                             edgeNodes[1] = ind[n][n2];
@@ -2981,49 +2679,13 @@ namespace ttcr {
 							
 							if ( r_tmp.size() > 1) {
 								std::set<T2> allNodes;
-								if (onNodePrev) allNodes.insert(nodeNoPrev);
-								if (onNode) allNodes.insert(nodeNo);
-								if (onEdgePrev) {
-									allNodes.insert( edgeNodesPrev[0] );
-									allNodes.insert( edgeNodesPrev[1] );
-								}
-								if (onEdge) {
-									allNodes.insert( edgeNodes[0] );
-									allNodes.insert( edgeNodes[1] );
-								}
-								if (onFacePrev) {
-									allNodes.insert( faceNodesPrev[0] );
-									allNodes.insert( faceNodesPrev[1] );
-									allNodes.insert( faceNodesPrev[2] );
-								}
-								if (onFace) {
-									allNodes.insert( faceNodes[0] );
-									allNodes.insert( faceNodes[1] );
-									allNodes.insert( faceNodes[2] );
-								}
+                                allNodes.insert( edgeNodes[0] );
+                                allNodes.insert( edgeNodes[1] );
+                                allNodes.insert( faceNodesPrev[0] );
+                                allNodes.insert( faceNodesPrev[1] );
+                                allNodes.insert( faceNodesPrev[2] );
 								
-								std::vector<T1> w;
-								T1 sum_w = 0.0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-									sum_w += w.back();
-								}
-								size_t nn=0;
-								for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-									m.j = *it;
-									m.v = -s * ds * w[nn++]/sum_w;
-									bool found = false;
-									for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-										if ( m_data[nm].j == m.j ) {
-											m_data[nm].v += m.v;
-											found = true;
-											break;
-										}
-									}
-									if ( found == false ) {
-										m_data.push_back(m);
-									}
-								}
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 							}
 
 							break_flag = true;
@@ -3034,59 +2696,22 @@ namespace ttcr {
                     
 					onNodePrev = onNode;
 					onEdgePrev = onEdge;
-					onFacePrev = onFace;
 					onNode = false;
                     onEdge = false;
                     onFace = true;
 					
-					faceNodesPrev = faceNodes;
                     faceNodes = ind[n];
 					
 					if ( r_tmp.size() > 1) {
 						std::set<T2> allNodes;
-						if (onNodePrev) allNodes.insert(nodeNoPrev);
-						if (onNode) allNodes.insert(nodeNo);
-						if (onEdgePrev) {
-							allNodes.insert( edgeNodesPrev[0] );
-							allNodes.insert( edgeNodesPrev[1] );
-						}
-						if (onEdge) {
-							allNodes.insert( edgeNodes[0] );
-							allNodes.insert( edgeNodes[1] );
-						}
-						if (onFacePrev) {
-							allNodes.insert( faceNodesPrev[0] );
-							allNodes.insert( faceNodesPrev[1] );
-							allNodes.insert( faceNodesPrev[2] );
-						}
-						if (onFace) {
-							allNodes.insert( faceNodes[0] );
-							allNodes.insert( faceNodes[1] );
-							allNodes.insert( faceNodes[2] );
-						}
+                        allNodes.insert( faceNodesPrev[0] );
+                        allNodes.insert( faceNodesPrev[1] );
+                        allNodes.insert( faceNodesPrev[2] );
+                        allNodes.insert( faceNodes[0] );
+                        allNodes.insert( faceNodes[1] );
+                        allNodes.insert( faceNodes[2] );
 						
-						std::vector<T1> w;
-						T1 sum_w = 0.0;
-						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-							w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-							sum_w += w.back();
-						}
-						size_t nn=0;
-						for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-							m.j = *it;
-							m.v = -s * ds * w[nn++]/sum_w;
-							bool found = false;
-							for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-								if ( m_data[nm].j == m.j ) {
-									m_data[nm].v += m.v;
-									found = true;
-									break;
-								}
-							}
-							if ( found == false ) {
-								m_data.push_back(m);
-							}
-						}
+                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 					}
 
                     // find next cell
@@ -3144,7 +2769,6 @@ namespace ttcr {
 								nodeNoPrev = nodeNo;
 								onNodePrev = onNode;
 								onEdgePrev = onEdge;
-								onFacePrev = onFace;
 								
 								nodeNo = ind[n][n2];
                                 onNode = true;
@@ -3153,49 +2777,12 @@ namespace ttcr {
 								
 								if ( r_tmp.size() > 1) {
 									std::set<T2> allNodes;
-									if (onNodePrev) allNodes.insert(nodeNoPrev);
-									if (onNode) allNodes.insert(nodeNo);
-									if (onEdgePrev) {
-										allNodes.insert( edgeNodesPrev[0] );
-										allNodes.insert( edgeNodesPrev[1] );
-									}
-									if (onEdge) {
-										allNodes.insert( edgeNodes[0] );
-										allNodes.insert( edgeNodes[1] );
-									}
-									if (onFacePrev) {
-										allNodes.insert( faceNodesPrev[0] );
-										allNodes.insert( faceNodesPrev[1] );
-										allNodes.insert( faceNodesPrev[2] );
-									}
-									if (onFace) {
-										allNodes.insert( faceNodes[0] );
-										allNodes.insert( faceNodes[1] );
-										allNodes.insert( faceNodes[2] );
-									}
-									
-									std::vector<T1> w;
-									T1 sum_w = 0.0;
-									for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-										w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-										sum_w += w.back();
-									}
-									size_t nn=0;
-									for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-										m.j = *it;
-										m.v = -s * ds * w[nn++]/sum_w;
-										bool found = false;
-										for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-											if ( m_data[nm].j == m.j ) {
-												m_data[nm].v += m.v;
-												found = true;
-												break;
-											}
-										}
-										if ( found == false ) {
-											m_data.push_back(m);
-										}
-									}
+                                    allNodes.insert(nodeNo);
+                                    allNodes.insert( faceNodesPrev[0] );
+                                    allNodes.insert( faceNodesPrev[1] );
+                                    allNodes.insert( faceNodesPrev[2] );
+                                	
+                                    update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 								}
 								
 								break_flag = true;
@@ -3210,7 +2797,6 @@ namespace ttcr {
 								edgeNodesPrev = edgeNodes;
 								onNodePrev = onNode;
 								onEdgePrev = onEdge;
-								onFacePrev = onFace;
 								
 								edgeNodes[0] = ind[n][n1];
                                 edgeNodes[1] = ind[n][n2];
@@ -3220,49 +2806,13 @@ namespace ttcr {
 								
 								if ( r_tmp.size() > 1) {
 									std::set<T2> allNodes;
-									if (onNodePrev) allNodes.insert(nodeNoPrev);
-									if (onNode) allNodes.insert(nodeNo);
-									if (onEdgePrev) {
-										allNodes.insert( edgeNodesPrev[0] );
-										allNodes.insert( edgeNodesPrev[1] );
-									}
-									if (onEdge) {
-										allNodes.insert( edgeNodes[0] );
-										allNodes.insert( edgeNodes[1] );
-									}
-									if (onFacePrev) {
-										allNodes.insert( faceNodesPrev[0] );
-										allNodes.insert( faceNodesPrev[1] );
-										allNodes.insert( faceNodesPrev[2] );
-									}
-									if (onFace) {
-										allNodes.insert( faceNodes[0] );
-										allNodes.insert( faceNodes[1] );
-										allNodes.insert( faceNodes[2] );
-									}
+                                    allNodes.insert( edgeNodes[0] );
+                                    allNodes.insert( edgeNodes[1] );
+                                    allNodes.insert( faceNodesPrev[0] );
+                                    allNodes.insert( faceNodesPrev[1] );
+                                    allNodes.insert( faceNodesPrev[2] );
 									
-									std::vector<T1> w;
-									T1 sum_w = 0.0;
-									for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-										w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-										sum_w += w.back();
-									}
-									size_t nn=0;
-									for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-										m.j = *it;
-										m.v = -s * ds * w[nn++]/sum_w;
-										bool found = false;
-										for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-											if ( m_data[nm].j == m.j ) {
-												m_data[nm].v += m.v;
-												found = true;
-												break;
-											}
-										}
-										if ( found == false ) {
-											m_data.push_back(m);
-										}
-									}
+									update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 								}
 								
 								break_flag = true;
@@ -3273,59 +2823,22 @@ namespace ttcr {
                         
 						onNodePrev = onNode;
 						onEdgePrev = onEdge;
-						onFacePrev = onFace;
 						onNode = false;
                         onEdge = false;
                         onFace = true;
 						
-						faceNodesPrev = faceNodes;
                         faceNodes = ind[n];
                         
 						if ( r_tmp.size() > 1) {
 							std::set<T2> allNodes;
-							if (onNodePrev) allNodes.insert(nodeNoPrev);
-							if (onNode) allNodes.insert(nodeNo);
-							if (onEdgePrev) {
-								allNodes.insert( edgeNodesPrev[0] );
-								allNodes.insert( edgeNodesPrev[1] );
-							}
-							if (onEdge) {
-								allNodes.insert( edgeNodes[0] );
-								allNodes.insert( edgeNodes[1] );
-							}
-							if (onFacePrev) {
-								allNodes.insert( faceNodesPrev[0] );
-								allNodes.insert( faceNodesPrev[1] );
-								allNodes.insert( faceNodesPrev[2] );
-							}
-							if (onFace) {
-								allNodes.insert( faceNodes[0] );
-								allNodes.insert( faceNodes[1] );
-								allNodes.insert( faceNodes[2] );
-							}
+                            allNodes.insert( faceNodesPrev[0] );
+                            allNodes.insert( faceNodesPrev[1] );
+                            allNodes.insert( faceNodesPrev[2] );
+                            allNodes.insert( faceNodes[0] );
+                            allNodes.insert( faceNodes[1] );
+                            allNodes.insert( faceNodes[2] );
 							
-							std::vector<T1> w;
-							T1 sum_w = 0.0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-								sum_w += w.back();
-							}
-							size_t nn=0;
-							for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-								m.j = *it;
-								m.v = -s * ds * w[nn++]/sum_w;
-								bool found = false;
-								for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-									if ( m_data[nm].j == m.j ) {
-										m_data[nm].v += m.v;
-										found = true;
-										break;
-									}
-								}
-								if ( found == false ) {
-									m_data.push_back(m);
-								}
-							}
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
 						}
 						
                         // find next cell
@@ -3522,6 +3035,9 @@ namespace ttcr {
                 // compute gradient with nodes from all common cells
                 sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
                 
+                nodeNoPrev = nodeNo;
+                onNodePrev = onNode;
+                
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
                 for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
@@ -3556,8 +3072,6 @@ namespace ttcr {
                     bool break_flag = false;
                     for ( n=0; n<3; ++n ) {
                         if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
-                            nodeNoPrev = nodeNo;
-                            onNodePrev = onNode;
                             onEdgePrev = onEdge;
                             onFacePrev = onFace;
                             
@@ -3568,49 +3082,10 @@ namespace ttcr {
                             
                             if ( r_tmp.size() > 1) {
                                 std::set<T2> allNodes;
-                                if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                if (onNode) allNodes.insert(nodeNo);
-                                if (onEdgePrev) {
-                                    allNodes.insert( edgeNodesPrev[0] );
-                                    allNodes.insert( edgeNodesPrev[1] );
-                                }
-                                if (onEdge) {
-                                    allNodes.insert( edgeNodes[0] );
-                                    allNodes.insert( edgeNodes[1] );
-                                }
-                                if (onFacePrev) {
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-                                }
-                                if (onFace) {
-                                    allNodes.insert( faceNodes[0] );
-                                    allNodes.insert( faceNodes[1] );
-                                    allNodes.insert( faceNodes[2] );
-                                }
+                                allNodes.insert(nodeNoPrev);
+                                allNodes.insert(nodeNo);
                                 
-                                std::vector<T1> w;
-                                T1 sum_w = 0.0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                    sum_w += w.back();
-                                }
-                                size_t nn=0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
-                                    bool found = false;
-                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                        if ( m_data[nm].j == m.j ) {
-                                            m_data[nm].v += m.v;
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if ( found == false ) {
-                                        m_data.push_back(m);
-                                    }
-                                }
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                             }
                             
                             break_flag = true;
@@ -3623,7 +3098,6 @@ namespace ttcr {
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
                             edgeNodesPrev = edgeNodes;
-                            onNodePrev = onNode;
                             onEdgePrev = onEdge;
                             onFacePrev = onFace;
                             
@@ -3635,49 +3109,11 @@ namespace ttcr {
                             
                             if ( r_tmp.size() > 1) {
                                 std::set<T2> allNodes;
-                                if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                if (onNode) allNodes.insert(nodeNo);
-                                if (onEdgePrev) {
-                                    allNodes.insert( edgeNodesPrev[0] );
-                                    allNodes.insert( edgeNodesPrev[1] );
-                                }
-                                if (onEdge) {
-                                    allNodes.insert( edgeNodes[0] );
-                                    allNodes.insert( edgeNodes[1] );
-                                }
-                                if (onFacePrev) {
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-                                }
-                                if (onFace) {
-                                    allNodes.insert( faceNodes[0] );
-                                    allNodes.insert( faceNodes[1] );
-                                    allNodes.insert( faceNodes[2] );
-                                }
+                                allNodes.insert(nodeNoPrev);
+                                allNodes.insert( edgeNodes[0] );
+                                allNodes.insert( edgeNodes[1] );
                                 
-                                std::vector<T1> w;
-                                T1 sum_w = 0.0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                    sum_w += w.back();
-                                }
-                                size_t nn=0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
-                                    bool found = false;
-                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                        if ( m_data[nm].j == m.j ) {
-                                            m_data[nm].v += m.v;
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if ( found == false ) {
-                                        m_data.push_back(m);
-                                    }
-                                }
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                             }
 
                             break_flag = true;
@@ -3686,7 +3122,6 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
                     
-                    onNodePrev = onNode;
                     onEdgePrev = onEdge;
                     onFacePrev = onFace;
                     onNode = false;
@@ -3698,49 +3133,12 @@ namespace ttcr {
                     
                     if ( r_tmp.size() > 1) {
                         std::set<T2> allNodes;
-                        if (onNodePrev) allNodes.insert(nodeNoPrev);
-                        if (onNode) allNodes.insert(nodeNo);
-                        if (onEdgePrev) {
-                            allNodes.insert( edgeNodesPrev[0] );
-                            allNodes.insert( edgeNodesPrev[1] );
-                        }
-                        if (onEdge) {
-                            allNodes.insert( edgeNodes[0] );
-                            allNodes.insert( edgeNodes[1] );
-                        }
-                        if (onFacePrev) {
-                            allNodes.insert( faceNodesPrev[0] );
-                            allNodes.insert( faceNodesPrev[1] );
-                            allNodes.insert( faceNodesPrev[2] );
-                        }
-                        if (onFace) {
-                            allNodes.insert( faceNodes[0] );
-                            allNodes.insert( faceNodes[1] );
-                            allNodes.insert( faceNodes[2] );
-                        }
+                        allNodes.insert(nodeNoPrev);
+                        allNodes.insert( faceNodes[0] );
+                        allNodes.insert( faceNodes[1] );
+                        allNodes.insert( faceNodes[2] );
                         
-                        std::vector<T1> w;
-                        T1 sum_w = 0.0;
-                        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                            sum_w += w.back();
-                        }
-                        size_t nn=0;
-                        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                            m.j = *it;
-                            m.v = -s * ds * w[nn++]/sum_w;
-                            bool found = false;
-                            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                if ( m_data[nm].j == m.j ) {
-                                    m_data[nm].v += m.v;
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if ( found == false ) {
-                                m_data.push_back(m);
-                            }
-                        }
+                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                     }
                     
                     // find next cell
@@ -3775,6 +3173,9 @@ namespace ttcr {
                     }
                 }
                 sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                
+                edgeNodesPrev = edgeNodes;
+                onEdgePrev = onEdge;
                 
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
@@ -3824,71 +3225,30 @@ namespace ttcr {
                     for ( size_t n2=0; n2<4; ++n2 ) {
                         if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
                             onNodePrev = onNode;
-                            onEdgePrev = onEdge;
                             onFacePrev = onFace;
                             
                             nodeNo = neighbors[cellNo][n2];
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            break_flag = true;
                             
                             if ( r_tmp.size() > 1) {
                                 std::set<T2> allNodes;
-                                if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                if (onNode) allNodes.insert(nodeNo);
-                                if (onEdgePrev) {
-                                    allNodes.insert( edgeNodesPrev[0] );
-                                    allNodes.insert( edgeNodesPrev[1] );
-                                }
-                                if (onEdge) {
-                                    allNodes.insert( edgeNodes[0] );
-                                    allNodes.insert( edgeNodes[1] );
-                                }
-                                if (onFacePrev) {
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-                                }
-                                if (onFace) {
-                                    allNodes.insert( faceNodes[0] );
-                                    allNodes.insert( faceNodes[1] );
-                                    allNodes.insert( faceNodes[2] );
-                                }
+                                allNodes.insert(nodeNo);
+                                allNodes.insert( edgeNodesPrev[0] );
+                                allNodes.insert( edgeNodesPrev[1] );
                                 
-                                std::vector<T1> w;
-                                T1 sum_w = 0.0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                    sum_w += w.back();
-                                }
-                                size_t nn=0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
-                                    bool found = false;
-                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                        if ( m_data[nm].j == m.j ) {
-                                            m_data[nm].v += m.v;
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if ( found == false ) {
-                                        m_data.push_back(m);
-                                    }
-                                }
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                             }
                             
+                            break_flag = true;
                             break;
                         }
                     }
                     if ( break_flag ) break;
                     
                     if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
-                        edgeNodesPrev = edgeNodes;
                         onNodePrev = onNode;
-                        onEdgePrev = onEdge;
                         onFacePrev = onFace;
                         
                         edgeNodes[0] = itmpNode;
@@ -3899,57 +3259,18 @@ namespace ttcr {
                         
                         if ( r_tmp.size() > 1) {
                             std::set<T2> allNodes;
-                            if (onNodePrev) allNodes.insert(nodeNoPrev);
-                            if (onNode) allNodes.insert(nodeNo);
-                            if (onEdgePrev) {
-                                allNodes.insert( edgeNodesPrev[0] );
-                                allNodes.insert( edgeNodesPrev[1] );
-                            }
-                            if (onEdge) {
-                                allNodes.insert( edgeNodes[0] );
-                                allNodes.insert( edgeNodes[1] );
-                            }
-                            if (onFacePrev) {
-                                allNodes.insert( faceNodesPrev[0] );
-                                allNodes.insert( faceNodesPrev[1] );
-                                allNodes.insert( faceNodesPrev[2] );
-                            }
-                            if (onFace) {
-                                allNodes.insert( faceNodes[0] );
-                                allNodes.insert( faceNodes[1] );
-                                allNodes.insert( faceNodes[2] );
-                            }
+                            allNodes.insert( edgeNodesPrev[0] );
+                            allNodes.insert( edgeNodesPrev[1] );
+                            allNodes.insert( edgeNodes[0] );
+                            allNodes.insert( edgeNodes[1] );
                             
-                            std::vector<T1> w;
-                            T1 sum_w = 0.0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                sum_w += w.back();
-                            }
-                            size_t nn=0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
-                                bool found = false;
-                                for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                    if ( m_data[nm].j == m.j ) {
-                                        m_data[nm].v += m.v;
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if ( found == false ) {
-                                    m_data.push_back(m);
-                                }
-                            }
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                         }
                         
                         break_flag = true;
                         break;
                     } else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
-                        edgeNodesPrev = edgeNodes;
                         onNodePrev = onNode;
-                        onEdgePrev = onEdge;
                         onFacePrev = onFace;
                         
                         edgeNodes[0] = itmpNode;
@@ -3960,57 +3281,18 @@ namespace ttcr {
                         
                         if ( r_tmp.size() > 1) {
                             std::set<T2> allNodes;
-                            if (onNodePrev) allNodes.insert(nodeNoPrev);
-                            if (onNode) allNodes.insert(nodeNo);
-                            if (onEdgePrev) {
-                                allNodes.insert( edgeNodesPrev[0] );
-                                allNodes.insert( edgeNodesPrev[1] );
-                            }
-                            if (onEdge) {
-                                allNodes.insert( edgeNodes[0] );
-                                allNodes.insert( edgeNodes[1] );
-                            }
-                            if (onFacePrev) {
-                                allNodes.insert( faceNodesPrev[0] );
-                                allNodes.insert( faceNodesPrev[1] );
-                                allNodes.insert( faceNodesPrev[2] );
-                            }
-                            if (onFace) {
-                                allNodes.insert( faceNodes[0] );
-                                allNodes.insert( faceNodes[1] );
-                                allNodes.insert( faceNodes[2] );
-                            }
+                            allNodes.insert( edgeNodesPrev[0] );
+                            allNodes.insert( edgeNodesPrev[1] );
+                            allNodes.insert( edgeNodes[0] );
+                            allNodes.insert( edgeNodes[1] );
                             
-                            std::vector<T1> w;
-                            T1 sum_w = 0.0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                sum_w += w.back();
-                            }
-                            size_t nn=0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
-                                bool found = false;
-                                for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                    if ( m_data[nm].j == m.j ) {
-                                        m_data[nm].v += m.v;
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if ( found == false ) {
-                                    m_data.push_back(m);
-                                }
-                            }
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                         }
                         
                         break_flag = true;
                         break;
                     } else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
-                        edgeNodesPrev = edgeNodes;
                         onNodePrev = onNode;
-                        onEdgePrev = onEdge;
                         onFacePrev = onFace;
                         
                         edgeNodes[0] = edgeNodes2[0];
@@ -4021,49 +3303,12 @@ namespace ttcr {
                         
                         if ( r_tmp.size() > 1) {
                             std::set<T2> allNodes;
-                            if (onNodePrev) allNodes.insert(nodeNoPrev);
-                            if (onNode) allNodes.insert(nodeNo);
-                            if (onEdgePrev) {
-                                allNodes.insert( edgeNodesPrev[0] );
-                                allNodes.insert( edgeNodesPrev[1] );
-                            }
-                            if (onEdge) {
-                                allNodes.insert( edgeNodes[0] );
-                                allNodes.insert( edgeNodes[1] );
-                            }
-                            if (onFacePrev) {
-                                allNodes.insert( faceNodesPrev[0] );
-                                allNodes.insert( faceNodesPrev[1] );
-                                allNodes.insert( faceNodesPrev[2] );
-                            }
-                            if (onFace) {
-                                allNodes.insert( faceNodes[0] );
-                                allNodes.insert( faceNodes[1] );
-                                allNodes.insert( faceNodes[2] );
-                            }
-                            
-                            std::vector<T1> w;
-                            T1 sum_w = 0.0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                sum_w += w.back();
-                            }
-                            size_t nn=0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
-                                bool found = false;
-                                for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                    if ( m_data[nm].j == m.j ) {
-                                        m_data[nm].v += m.v;
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if ( found == false ) {
-                                    m_data.push_back(m);
-                                }
-                            }
+                            allNodes.insert( edgeNodesPrev[0] );
+                            allNodes.insert( edgeNodesPrev[1] );
+                            allNodes.insert( edgeNodes[0] );
+                            allNodes.insert( edgeNodes[1] );
+
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                         }
                         
                         break_flag = true;
@@ -4072,7 +3317,6 @@ namespace ttcr {
                     if ( break_flag ) break;
                     
                     onNodePrev = onNode;
-                    onEdgePrev = onEdge;
                     onFacePrev = onFace;
                     onNode = false;
                     onEdge = false;
@@ -4086,49 +3330,13 @@ namespace ttcr {
                     
                     if ( r_tmp.size() > 1) {
                         std::set<T2> allNodes;
-                        if (onNodePrev) allNodes.insert(nodeNoPrev);
-                        if (onNode) allNodes.insert(nodeNo);
-                        if (onEdgePrev) {
-                            allNodes.insert( edgeNodesPrev[0] );
-                            allNodes.insert( edgeNodesPrev[1] );
-                        }
-                        if (onEdge) {
-                            allNodes.insert( edgeNodes[0] );
-                            allNodes.insert( edgeNodes[1] );
-                        }
-                        if (onFacePrev) {
-                            allNodes.insert( faceNodesPrev[0] );
-                            allNodes.insert( faceNodesPrev[1] );
-                            allNodes.insert( faceNodesPrev[2] );
-                        }
-                        if (onFace) {
-                            allNodes.insert( faceNodes[0] );
-                            allNodes.insert( faceNodes[1] );
-                            allNodes.insert( faceNodes[2] );
-                        }
+                        allNodes.insert( edgeNodesPrev[0] );
+                        allNodes.insert( edgeNodesPrev[1] );
+                        allNodes.insert( faceNodes[0] );
+                        allNodes.insert( faceNodes[1] );
+                        allNodes.insert( faceNodes[2] );
                         
-                        std::vector<T1> w;
-                        T1 sum_w = 0.0;
-                        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                            sum_w += w.back();
-                        }
-                        size_t nn=0;
-                        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                            m.j = *it;
-                            m.v = -s * ds * w[nn++]/sum_w;
-                            bool found = false;
-                            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                if ( m_data[nm].j == m.j ) {
-                                    m_data[nm].v += m.v;
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if ( found == false ) {
-                                m_data.push_back(m);
-                            }
-                        }
+                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                     }
                     
                     // find next cell
@@ -4167,6 +3375,9 @@ namespace ttcr {
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
                 
+                onFacePrev = onFace;
+                faceNodesPrev = faceNodes;
+
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
                     if ( ind[n] == faceNodes ) continue;
@@ -4197,7 +3408,6 @@ namespace ttcr {
                             nodeNoPrev = nodeNo;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             
                             nodeNo = ind[n][n2];
                             onNode = true;
@@ -4206,49 +3416,12 @@ namespace ttcr {
                             
                             if ( r_tmp.size() > 1) {
                                 std::set<T2> allNodes;
-                                if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                if (onNode) allNodes.insert(nodeNo);
-                                if (onEdgePrev) {
-                                    allNodes.insert( edgeNodesPrev[0] );
-                                    allNodes.insert( edgeNodesPrev[1] );
-                                }
-                                if (onEdge) {
-                                    allNodes.insert( edgeNodes[0] );
-                                    allNodes.insert( edgeNodes[1] );
-                                }
-                                if (onFacePrev) {
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-                                }
-                                if (onFace) {
-                                    allNodes.insert( faceNodes[0] );
-                                    allNodes.insert( faceNodes[1] );
-                                    allNodes.insert( faceNodes[2] );
-                                }
+                                allNodes.insert(nodeNo);
+                                allNodes.insert( faceNodesPrev[0] );
+                                allNodes.insert( faceNodesPrev[1] );
+                                allNodes.insert( faceNodesPrev[2] );
                                 
-                                std::vector<T1> w;
-                                T1 sum_w = 0.0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                    sum_w += w.back();
-                                }
-                                size_t nn=0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
-                                    bool found = false;
-                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                        if ( m_data[nm].j == m.j ) {
-                                            m_data[nm].v += m.v;
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if ( found == false ) {
-                                        m_data.push_back(m);
-                                    }
-                                }
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                             }
                             
                             break_flag = true;
@@ -4263,7 +3436,6 @@ namespace ttcr {
                             edgeNodesPrev = edgeNodes;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             
                             edgeNodes[0] = ind[n][n1];
                             edgeNodes[1] = ind[n][n2];
@@ -4273,49 +3445,13 @@ namespace ttcr {
                             
                             if ( r_tmp.size() > 1) {
                                 std::set<T2> allNodes;
-                                if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                if (onNode) allNodes.insert(nodeNo);
-                                if (onEdgePrev) {
-                                    allNodes.insert( edgeNodesPrev[0] );
-                                    allNodes.insert( edgeNodesPrev[1] );
-                                }
-                                if (onEdge) {
-                                    allNodes.insert( edgeNodes[0] );
-                                    allNodes.insert( edgeNodes[1] );
-                                }
-                                if (onFacePrev) {
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-                                }
-                                if (onFace) {
-                                    allNodes.insert( faceNodes[0] );
-                                    allNodes.insert( faceNodes[1] );
-                                    allNodes.insert( faceNodes[2] );
-                                }
+                                allNodes.insert( edgeNodes[0] );
+                                allNodes.insert( edgeNodes[1] );
+                                allNodes.insert( faceNodesPrev[0] );
+                                allNodes.insert( faceNodesPrev[1] );
+                                allNodes.insert( faceNodesPrev[2] );
                                 
-                                std::vector<T1> w;
-                                T1 sum_w = 0.0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                    sum_w += w.back();
-                                }
-                                size_t nn=0;
-                                for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                    m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
-                                    bool found = false;
-                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                        if ( m_data[nm].j == m.j ) {
-                                            m_data[nm].v += m.v;
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if ( found == false ) {
-                                        m_data.push_back(m);
-                                    }
-                                }
+                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                             }
                             
                             break_flag = true;
@@ -4326,59 +3462,22 @@ namespace ttcr {
                     
                     onNodePrev = onNode;
                     onEdgePrev = onEdge;
-                    onFacePrev = onFace;
                     onNode = false;
                     onEdge = false;
                     onFace = true;
                     
-                    faceNodesPrev = faceNodes;
                     faceNodes = ind[n];
                     
                     if ( r_tmp.size() > 1) {
                         std::set<T2> allNodes;
-                        if (onNodePrev) allNodes.insert(nodeNoPrev);
-                        if (onNode) allNodes.insert(nodeNo);
-                        if (onEdgePrev) {
-                            allNodes.insert( edgeNodesPrev[0] );
-                            allNodes.insert( edgeNodesPrev[1] );
-                        }
-                        if (onEdge) {
-                            allNodes.insert( edgeNodes[0] );
-                            allNodes.insert( edgeNodes[1] );
-                        }
-                        if (onFacePrev) {
-                            allNodes.insert( faceNodesPrev[0] );
-                            allNodes.insert( faceNodesPrev[1] );
-                            allNodes.insert( faceNodesPrev[2] );
-                        }
-                        if (onFace) {
-                            allNodes.insert( faceNodes[0] );
-                            allNodes.insert( faceNodes[1] );
-                            allNodes.insert( faceNodes[2] );
-                        }
+                        allNodes.insert( faceNodesPrev[0] );
+                        allNodes.insert( faceNodesPrev[1] );
+                        allNodes.insert( faceNodesPrev[2] );
+                        allNodes.insert( faceNodes[0] );
+                        allNodes.insert( faceNodes[1] );
+                        allNodes.insert( faceNodes[2] );
                         
-                        std::vector<T1> w;
-                        T1 sum_w = 0.0;
-                        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                            sum_w += w.back();
-                        }
-                        size_t nn=0;
-                        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                            m.j = *it;
-                            m.v = -s * ds * w[nn++]/sum_w;
-                            bool found = false;
-                            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                if ( m_data[nm].j == m.j ) {
-                                    m_data[nm].v += m.v;
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if ( found == false ) {
-                                m_data.push_back(m);
-                            }
-                        }
+                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                     }
                     
                     // find next cell
@@ -4436,7 +3535,6 @@ namespace ttcr {
                                 nodeNoPrev = nodeNo;
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
-                                onFacePrev = onFace;
                                 
                                 nodeNo = ind[n][n2];
                                 onNode = true;
@@ -4445,49 +3543,12 @@ namespace ttcr {
                                 
                                 if ( r_tmp.size() > 1) {
                                     std::set<T2> allNodes;
-                                    if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                    if (onNode) allNodes.insert(nodeNo);
-                                    if (onEdgePrev) {
-                                        allNodes.insert( edgeNodesPrev[0] );
-                                        allNodes.insert( edgeNodesPrev[1] );
-                                    }
-                                    if (onEdge) {
-                                        allNodes.insert( edgeNodes[0] );
-                                        allNodes.insert( edgeNodes[1] );
-                                    }
-                                    if (onFacePrev) {
-                                        allNodes.insert( faceNodesPrev[0] );
-                                        allNodes.insert( faceNodesPrev[1] );
-                                        allNodes.insert( faceNodesPrev[2] );
-                                    }
-                                    if (onFace) {
-                                        allNodes.insert( faceNodes[0] );
-                                        allNodes.insert( faceNodes[1] );
-                                        allNodes.insert( faceNodes[2] );
-                                    }
+                                    allNodes.insert(nodeNo);
+                                    allNodes.insert( faceNodesPrev[0] );
+                                    allNodes.insert( faceNodesPrev[1] );
+                                    allNodes.insert( faceNodesPrev[2] );
                                     
-                                    std::vector<T1> w;
-                                    T1 sum_w = 0.0;
-                                    for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                        w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                        sum_w += w.back();
-                                    }
-                                    size_t nn=0;
-                                    for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                        m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
-                                        bool found = false;
-                                        for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                            if ( m_data[nm].j == m.j ) {
-                                                m_data[nm].v += m.v;
-                                                found = true;
-                                                break;
-                                            }
-                                        }
-                                        if ( found == false ) {
-                                            m_data.push_back(m);
-                                        }
-                                    }
+                                    update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                                 }
                                 
                                 break_flag = true;
@@ -4502,7 +3563,6 @@ namespace ttcr {
                                 edgeNodesPrev = edgeNodes;
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
-                                onFacePrev = onFace;
                                 
                                 edgeNodes[0] = ind[n][n1];
                                 edgeNodes[1] = ind[n][n2];
@@ -4512,49 +3572,13 @@ namespace ttcr {
                                 
                                 if ( r_tmp.size() > 1) {
                                     std::set<T2> allNodes;
-                                    if (onNodePrev) allNodes.insert(nodeNoPrev);
-                                    if (onNode) allNodes.insert(nodeNo);
-                                    if (onEdgePrev) {
-                                        allNodes.insert( edgeNodesPrev[0] );
-                                        allNodes.insert( edgeNodesPrev[1] );
-                                    }
-                                    if (onEdge) {
-                                        allNodes.insert( edgeNodes[0] );
-                                        allNodes.insert( edgeNodes[1] );
-                                    }
-                                    if (onFacePrev) {
-                                        allNodes.insert( faceNodesPrev[0] );
-                                        allNodes.insert( faceNodesPrev[1] );
-                                        allNodes.insert( faceNodesPrev[2] );
-                                    }
-                                    if (onFace) {
-                                        allNodes.insert( faceNodes[0] );
-                                        allNodes.insert( faceNodes[1] );
-                                        allNodes.insert( faceNodes[2] );
-                                    }
+                                    allNodes.insert( edgeNodes[0] );
+                                    allNodes.insert( edgeNodes[1] );
+                                    allNodes.insert( faceNodesPrev[0] );
+                                    allNodes.insert( faceNodesPrev[1] );
+                                    allNodes.insert( faceNodesPrev[2] );
                                     
-                                    std::vector<T1> w;
-                                    T1 sum_w = 0.0;
-                                    for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                        w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                        sum_w += w.back();
-                                    }
-                                    size_t nn=0;
-                                    for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                        m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
-                                        bool found = false;
-                                        for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                            if ( m_data[nm].j == m.j ) {
-                                                m_data[nm].v += m.v;
-                                                found = true;
-                                                break;
-                                            }
-                                        }
-                                        if ( found == false ) {
-                                            m_data.push_back(m);
-                                        }
-                                    }
+                                    update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                                 }
                                 
                                 break_flag = true;
@@ -4565,59 +3589,22 @@ namespace ttcr {
                         
                         onNodePrev = onNode;
                         onEdgePrev = onEdge;
-                        onFacePrev = onFace;
                         onNode = false;
                         onEdge = false;
                         onFace = true;
                         
-                        faceNodesPrev = faceNodes;
                         faceNodes = ind[n];
                         
                         if ( r_tmp.size() > 1) {
                             std::set<T2> allNodes;
-                            if (onNodePrev) allNodes.insert(nodeNoPrev);
-                            if (onNode) allNodes.insert(nodeNo);
-                            if (onEdgePrev) {
-                                allNodes.insert( edgeNodesPrev[0] );
-                                allNodes.insert( edgeNodesPrev[1] );
-                            }
-                            if (onEdge) {
-                                allNodes.insert( edgeNodes[0] );
-                                allNodes.insert( edgeNodes[1] );
-                            }
-                            if (onFacePrev) {
-                                allNodes.insert( faceNodesPrev[0] );
-                                allNodes.insert( faceNodesPrev[1] );
-                                allNodes.insert( faceNodesPrev[2] );
-                            }
-                            if (onFace) {
-                                allNodes.insert( faceNodes[0] );
-                                allNodes.insert( faceNodes[1] );
-                                allNodes.insert( faceNodes[2] );
-                            }
+                            allNodes.insert( faceNodesPrev[0] );
+                            allNodes.insert( faceNodesPrev[1] );
+                            allNodes.insert( faceNodesPrev[2] );
+                            allNodes.insert( faceNodes[0] );
+                            allNodes.insert( faceNodes[1] );
+                            allNodes.insert( faceNodes[2] );
                             
-                            std::vector<T1> w;
-                            T1 sum_w = 0.0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-                                sum_w += w.back();
-                            }
-                            size_t nn=0;
-                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
-                                bool found = false;
-                                for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                                    if ( m_data[nm].j == m.j ) {
-                                        m_data[nm].v += m.v;
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if ( found == false ) {
-                                    m_data.push_back(m);
-                                }
-                            }
+                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                         }
                         
                         // find next cell

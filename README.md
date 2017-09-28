@@ -227,6 +227,10 @@ rcv.dat        # rcvfile,
 1              # saveRayPaths,
 ```
 
+### Examples
+
+Look at the files in the examples directory for some samples.
+
 ### Compiling
 
 The programs are coded in C++ and follow the C++11 standard.  You must have VTK (http://vtk.org) installed on your system, as well as the eigen3 (http://eigen.tuxfamily.org) and boost (http://www.boost.org) libraries.  These codes were compiled and tested on macs with the default compiler (clang).  They were also tested to some extent under linux with g++ version 4.8.

@@ -1,0 +1,8 @@
+*~
+*cpython*.so
+cgrid2d.cpp
+cgrid3d.cpp
+cmesh3d.cpp
+build/
+debug_tt_mex/
+

@@ -61,10 +61,16 @@ cdef extern from "Grid3Dttcr.h" namespace "ttcr":
 
 
 cdef class Grid3Dcpp:
+    cdef uint32_t nx
+    cdef uint32_t ny
+    cdef uint32_t nz
     cdef Grid3Dttcr* grid
     def __cinit__(self, gridType, uint32_t nx, uint32_t ny, uint32_t nz, double dx,
                   double xmin, double ymin, double zmin,
                   double eps, int maxit, bool weno, size_t nthreads):
+        self.nx = nx
+        self.ny = ny
+        self.nz = nz
         self.grid = new Grid3Dttcr(gridType, nx, ny, nz, dx, xmin, ymin, zmin, eps, maxit, weno, nthreads)
 
     def __dealloc__(self):
@@ -76,9 +82,22 @@ cdef class Grid3Dcpp:
     def raytrace(self, slowness, Tx, Rx, t0, nout):
 
         # assing model data
-        cdef vector[double] slown# = slowness.tolist()
-        for tmp in slowness:
-            slown.push_back(tmp)
+        cdef vector[double] slown
+        if self.grid.getType() == b'node':
+            nx = self.nx+1
+            ny = self.ny+1
+            nz = self.nz+1
+            for k in range(nz):
+                for j in range(ny):
+                    for i in range(nx):
+                        # slowness is in 'C' order and we must pass it in 'F' order
+                        slown.push_back(slowness[(i*ny + j)*nz + k])
+        elif self.grid.getType() == b'cell':
+            for k in range(self.nz):
+                for j in range(self.ny):
+                    for i in range(self.nx):
+                        # slowness is in 'C' order and we must pass it in 'F' order
+                        slown.push_back(slowness[(i*self.ny + j)*self.nz + k])
         self.grid.setSlowness(slown)
 
         # create C++ input variables

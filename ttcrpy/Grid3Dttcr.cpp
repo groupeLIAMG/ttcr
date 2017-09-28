@@ -92,7 +92,7 @@ namespace ttcr {
         vector<sxyz<double>> vRx;
         vector<vector<double>> tt( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -200,7 +200,7 @@ namespace ttcr {
         vector<vector<vector<sxyz<double>>>> r_data( vTx.size() );
         vector<double> v0( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -332,7 +332,7 @@ namespace ttcr {
         vector<double> v0( vTx.size() );
         vector<vector<vector<sijv<double>>>> m_data( vTx.size() );
 
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
 
                 vRx.resize( 0 );
@@ -427,7 +427,7 @@ namespace ttcr {
             PyObject* tuple = PyTuple_New(3);
 
             size_t nRcv = m_data[nv].size();
-            size_t nnz = nRcv;
+            size_t nnz = 0;
             for ( size_t ni=0; ni<m_data[nv].size(); ++ni ) {
                 nnz += m_data[nv][ni].size();
             }
@@ -456,16 +456,6 @@ namespace ttcr {
                         }
                     }
                 }
-
-                indices_p[k] = nnodes+ni;
-                data_p[k] = 1.0;
-                k++;
-
-//                for ( size_t j=0; j<nRcv; ++j ) {  // derivative of t w/r to static correction
-//                    indices_p[k] = nnodes+j;
-//                    data_p[k] = 1.0;
-//                    k++;
-//                }
             }
             indptr_p[nRcv] = k;
 
@@ -527,7 +517,7 @@ namespace ttcr {
         vector<vector<siv<double>>> L_data(nTx);
         vector<vector<vector<siv<double>>>> l_data( vTx.size() );
         
-        if ( grid_instance->getNthreads() == 1 || grid_instance->getNthreads()<= vTx.size() ) {
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );
