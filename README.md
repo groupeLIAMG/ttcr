@@ -188,7 +188,7 @@ It is possible to define slowness at grid nodes rather than for mesh cells.  Thi
 
 ### Src and Rcv files
 
-These are simple ascii file holding the coordinates of the source points and initial time (t0) at the points, and the coordinates of the receivers.  Note that files used by ttcr2d should not have y coordinates.  The following are two examples for ttcr3d.  
+These are simple ascii file holding the coordinates of the source points and initial time (t0) at the points, and the coordinates of the receivers.  *Note that files used by ttcr2d should not have y coordinates.*  The following are two examples for ttcr3d.  
 
 Example `src1.dat`
 ```
