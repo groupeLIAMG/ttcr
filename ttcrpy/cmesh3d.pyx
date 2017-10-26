@@ -59,6 +59,7 @@ cdef extern from "Mesh3Dttcr.h" namespace "ttcr":
                      double*, object, double*, object)
         int ComputeD(const vector[sxyz[double]]& Pts,
                      object)
+        bool CheckPoint(const vector[sxyz[double]] & Point)
 
 cdef class Mesh3Dcpp:
     cdef Mesh3Dttcr* mesh
@@ -82,6 +83,10 @@ cdef class Mesh3Dcpp:
         if(self.mesh.ComputeD(Pnts,D)!=0):
             raise RuntimeError()
         return D
+    def CheckPoint(self,Point):
+        cdef vector [sxyz[double]] Pnts
+        Pnts.push_back(sxyz[double](Point[0],Point[1],Point[2]))
+        return self.mesh.CheckPoint(Pnts)
     def raytrace1(self, slowness, Tx, Rx, t0):
 
         # assing model data

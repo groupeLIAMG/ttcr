@@ -56,7 +56,13 @@ namespace ttcr {
             mesh_instance = new mesh(nodes, tet, eps,maxit,refPts2,2,rp, nt);
         }
     }
-    
+    bool Mesh3Dttcr::CheckPoint(const std::vector <sxyz<double>>& Points) const{
+        std::vector<sxyz<double>> Pnts_Relative;
+        for (auto p=Points.begin();p!=Points.end();++p){
+            Pnts_Relative.push_back((*p)-refPts[0]);
+        }
+        return (!mesh_instance->checkPts(Pnts_Relative));
+    }
     void Mesh3Dttcr::setSlowness(const std::vector<double>& slowness) {
         if ( mesh_instance->setSlowness(slowness) == 1 ) {
             throw out_of_range("Slowness values must be defined for each mesh node.");
@@ -146,7 +152,7 @@ namespace ttcr {
         vector<sxyz<double>> vRx;
         vector<vector<double>> tt( vTx.size() );
         
-        if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()<= vTx.size() ) {
+        if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()>= vTx.size() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );
@@ -300,7 +306,7 @@ namespace ttcr {
         vector<vector<vector<sxyz<double>>>> r_data( vTx.size() );
         vector<double> v0( vTx.size() );
         
-        if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()<= vTx.size() ) {
+        if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()>= vTx.size() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );
@@ -479,7 +485,7 @@ namespace ttcr {
         vector<double> v0( vTx.size() );
         vector<vector<vector<sijv<double>>>> m_data( vTx.size() );
         
-        if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()<= vTx.size() ) {
+        if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()>= vTx.size() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 
                 vRx.resize( 0 );
@@ -488,9 +494,6 @@ namespace ttcr {
                 }
                 vTx[nv][0]=vTx[nv][0]-refPts[0];
                 if (SecondNodes){
-                    while(mesh_instance->getCellNo(vTx[nv][0])==std::numeric_limits<uint32_t>::max()){
-                        vTx[nv][0].z-=0.1;
-                    }
                     // add secondary nodes
                     std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
                     mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
@@ -645,7 +648,7 @@ namespace ttcr {
                     for ( size_t n=0; n<m_data[nv][ni].size(); ++n) {
                         if ( m_data[nv][ni][n].j == j && m_data[nv][ni][n].i == ni ) {
                             indices_p[k] = j;
-                            data_p[k] = m_data[nv][ni][n].v;
+                            data_p[k] =m_data[nv][ni][n].v;
                             k++;
                         }
                     }

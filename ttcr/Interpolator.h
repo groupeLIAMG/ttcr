@@ -135,6 +135,8 @@ namespace ttcr {
             T w;
             
             for ( size_t n=0; n<inodes.size(); ++n ) {
+                if (inodes[n]->getDistance( node )<small*small)
+                    return inodes[n]->getNodeSlowness();
                 w = 1./inodes[n]->getDistance( node );
                 num += w*inodes[n]->getNodeSlowness();
                 den += w;
@@ -152,6 +154,8 @@ namespace ttcr {
             T w;
             
             for ( size_t n=0; n<inodes.size(); ++n ) {
+                if (inodes[n]->getDistance( node )<small*small)
+                    return inodes[n]->getNodeSlowness();
                 w = 1./inodes[n]->getDistance( node );
                 num += w*inodes[n]->getNodeSlowness();
                 den += w;

@@ -485,9 +485,6 @@ namespace ttcr {
                         const size_t nt);
         sxyz<T> ls_grad(const std::set<NODE*> &nodes,
                         const size_t nt, const sxyz<T>& NOD);
-        Eigen::Matrix<T, 9, 1> solveSystem(const Eigen::Matrix<T, Eigen::Dynamic, 9>& A,
-                                           const Eigen::Matrix<T, Eigen::Dynamic, 1>& b,
-                                           const T & Norm) const;
         
     private:
         sxyz<T> g;
@@ -495,40 +492,6 @@ namespace ttcr {
         Eigen::Matrix<T, 9, 1> x;
         Eigen::Matrix<T, Eigen::Dynamic, 1> b;
     };
-    template <typename T, typename NODE>
-    Eigen::Matrix<T, 9, 1> Grad3D_ho<T,NODE>::solveSystem(const Eigen::Matrix<T, Eigen::Dynamic, 9>& A,
-                                       const Eigen::Matrix<T, Eigen::Dynamic, 1>& b,const T & Norm) const{
-        size_t n=A.rows();
-        Eigen::Matrix<T, 9, 1> x;
-        Eigen::Matrix<T, Eigen::Dynamic, 9> J;
-        J.resize(n+1, 9);
-        J.block(0,0,n,9)=A;
-        for (size_t i=0;i<9;++i){
-            x(i,0)=0;
-            J(n,i)=0;
-        }
-        Eigen::Matrix<T, Eigen::Dynamic, 1> r;
-        r.resize(n+1,1);
-        Eigen::Matrix<T, 9, 1> s;
-        size_t nItration=20;
-        double alpha=1000;
-        for(size_t i=0;i<nItration;++i){
-            r.block(0,0,n,1)=A*x-b;
-            r(n,0)=((x(0,0)*x(0,0)+x(1,0)*x(1,0)+x(2,0)*x(2,0))-Norm*Norm)*alpha;
-            //std::cout<<"\n r: \n"<<r<<std::endl;
-            J(n,0)=2*x(0,0)*alpha;
-            J(n,1)=2*x(1,0)*alpha;
-            J(n,2)=2*x(2,0)*alpha;
-            s=(J.transpose()*J).inverse()*(J.transpose()*r);
-            if ((s.norm()/x.norm())*100>0.01){
-                x=x-s;
-                //std::cout<<"\n x: \n"<<x<<std::endl;
-            }else{
-                break;
-            }
-        }
-        return x;
-    }
     template <typename T, typename NODE>
     sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
                                        const size_t nt) {
@@ -660,7 +623,7 @@ sxyz<T>  Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
             A(i,8) = dy*dz;
 //            
             //b(i,0) = pow(1000.0*t,2)-pow(((*n)->getTT(nt))*1000.0,2);// a verifie
-           b(i,0) = (t-(*n)->getTT(nt))*1000.0;
+           b(i,0) = (t-(*n)->getTT(nt));
             i++;
             nn++;
         }

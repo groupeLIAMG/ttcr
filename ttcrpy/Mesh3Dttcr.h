@@ -54,6 +54,7 @@ namespace ttcr {
                      PyObject* M) const;
         int ComputeD(const std::vector<sxyz<double>>& Pts,
                      PyObject* D)const;
+        bool CheckPoint(const std::vector<sxyz<double>>& Point) const;
 
     private:
         mesh *mesh_instance;

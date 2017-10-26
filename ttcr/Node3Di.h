@@ -141,7 +141,7 @@ namespace ttcr {
 
         // operator to test if same location
         bool operator==( const sxyz<T1>& node ) const {
-            return fabs(x-node.x)<small && fabs(y-node.y)<small && fabs(z-node.z)<small;
+            return fabs(x-node.x)<small*1.e-3 && fabs(y-node.y)<small*1.e-3 && fabs(z-node.z)<small*1.e-3;
         }
 
         size_t getSize() const {
@@ -180,7 +180,7 @@ namespace ttcr {
         T2 gridIndex;                   // index of this node in the list of the grid
         std::vector<T2> owners;         // indices of cells touching the node
         T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp
-        size_t primary;
+        size_t primary;                 // if 5 the node is pramiry, if 10, the node is secondary
         mutable std::vector<T2> PrincipalNodes;
     };
 

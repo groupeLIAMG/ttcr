@@ -20,16 +20,13 @@
 		2B6F87A8190F3EDA002AC9DF /* grid2duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2duisp_mex.cpp */; };
 		2B8FC25B1AB0D30900EF9265 /* grid3duisp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B8FC2501AB0D1E700EF9265 /* grid3duisp_mex.cpp */; };
 		2BA2D8CB191D556500923EF6 /* grid2duisp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2duisp.m */; };
-		2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */; };
-		2BC7091218EDABD3004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
-		2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */; };
-		2BD0F4FD18EED7E400B3957F /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BEAEF931DBBFBCE001AEA17 /* Grid3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D31DADABA700E26DEB /* Grid3Dttcr.cpp */; };
 		2BEAEF941DBBFBD3001AEA17 /* Mesh3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D41DADB33100E26DEB /* Mesh3Dttcr.cpp */; };
 		2BEAEF951DBBFBDD001AEA17 /* Grid2Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */; };
-		980DD3C31EC398FC00065EB8 /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
-		9842D6DD1EE5386600168E97 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
+		986C36CE1F5E2A0C0087F051 /* msh2vtk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B46D14019F2B76700E7ADFC /* msh2vtk.cpp */; };
+		98B614711F60872900E8F059 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
+		98B614721F6088A500E8F059 /* ttcr2ds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -802,7 +799,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B46D15019F2B84700E7ADFC /* msh2vtk_io.cpp in Sources */,
-				980DD3C31EC398FC00065EB8 /* msh2vtk.cpp in Sources */,
+				986C36CE1F5E2A0C0087F051 /* msh2vtk.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -826,8 +823,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */,
-				9842D6DD1EE5386600168E97 /* ttcr3d.cpp in Sources */,
+				98B614711F60872900E8F059 /* ttcr3d.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -835,7 +831,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BC7091218EDABD3004DA2C9 /* ttcr_io.cpp in Sources */,
 				2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -844,8 +839,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BD0F4FD18EED7E400B3957F /* ttcr_io.cpp in Sources */,
-				2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */,
+				98B614721F6088A500E8F059 /* ttcr2ds.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1751,6 +1745,7 @@
 		2BC708DD18EDA599004DA2C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULE_DEBUGGING = YES;
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
@@ -1760,6 +1755,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
+				LD_QUOTE_LINKER_ARGUMENTS_FOR_COMPILER_DRIVER = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -1772,6 +1768,7 @@
 		2BC708DE18EDA599004DA2C9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULE_DEBUGGING = YES;
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
@@ -1781,6 +1778,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
+				LD_QUOTE_LINKER_ARGUMENTS_FOR_COMPILER_DRIVER = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -2005,6 +2003,7 @@
 		2BF3B02319F82D3800A6C041 /* Debug_O */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULE_DEBUGGING = YES;
 				CURRENT_PROJECT_VERSION = 1.0;
 				DSTROOT = /;
 				GCC_WARN_PEDANTIC = NO;
@@ -2014,6 +2013,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 				);
+				LD_QUOTE_LINKER_ARGUMENTS_FOR_COMPILER_DRIVER = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",

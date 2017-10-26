@@ -23,46 +23,19 @@ using namespace ttcr;
 
 
 int main(int argc, const char * argv[]) {
-    
 
 
     std::vector<Src<double >> src;
-    size_t N=83;
-//    for(size_t i=0;i<25;i++){
-//    
+    size_t N=0;
+//    for(size_t i=0;i<15;i++){
+//
 //        src.push_back( Src<double >("Src"+to_string(i+1+N)+".dat") );
 //        src[i].init();
 //    }
-    std::string Numero=to_string(N);
-   src.push_back( Src<double >("Src"+Numero+".dat") );
+    src.push_back( Src<double >("Src1.dat") );
     src[0].init();
-//    src.push_back( Src<double >("Src3.dat") );
-//    src[2].init();
-//    src.push_back( Src<double >("Src4.dat") );
-//    src[3].init();
-//    src.push_back( Src<double >("Src5.dat") );
-//    src[4].init();
-//    src.push_back( Src<double >("Src6.dat") );
-//    src[5].init();
-//    src.push_back( Src<double >("Src7.dat") );
-//    src[6].init();
-//    src.push_back( Src<double >("Src8.dat") );
-//    src[7].init();
-//    src.push_back( Src<double >("Src9.dat") );
-//    src[8].init();
-//    src.push_back( Src<double >("Src10.dat") );
-//    src[9].init();
-//    src.push_back( Src<double >("Src11.dat") );
-//    src[10].init();
-//    src.push_back( Src<double >("Src12.dat") );
-//    src[11].init();
-//    src.push_back( Src<double >("Src13.dat") );
-//    src[12].init();
-//    src.push_back( Src<double >("Src14.dat") );
-//    src[13].init();
-//    src.push_back( Src<double >("Src15.dat") );
-//    src[14].init();
-    bool SecondNodes =true;
+    
+    bool SecondNodes =false;
     std::vector<sxyz<double >> Ttx;
     std::vector<sxyz<double >> s;
     for (size_t i=0;i<src.size();i++){
@@ -70,7 +43,7 @@ int main(int argc, const char * argv[]) {
         Ttx.push_back(s.back());
     }
     std::vector<Rcv<double >> R;
-    R.push_back( Rcv<double >("rcv.dat") );
+    R.push_back( Rcv<double >("rcv1.dat") );
     //Rx.init(1);
     R[0].init(src.size());
     std::vector<sxyz<double >> Rrx;
@@ -117,6 +90,8 @@ int main(int argc, const char * argv[]) {
     std::vector<double> tmp(tmp1.begin(),tmp1.end());
     fin.close();
 
+    ///////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////
     // find mesh "corners"
     double xmin = nodes[0].x;
     double xmax = nodes[0].x;
@@ -157,13 +132,11 @@ int main(int argc, const char * argv[]) {
         std::vector<sxyz<double >> refPts2;
         for (size_t rr=0;rr<refPts.size();++rr)
             refPts2.push_back(refPts[rr]-refPts[0]);
-       mesh_instance = new Grid3Duifs<double , uint32_t>(no, tetrahedra, eps,30,refPts2,2,true, 1);
+       mesh_instance = new Grid3Duifs<double , uint32_t>(no, tetrahedra, eps,20,refPts2,2,true, 1);
     }
     mesh_instance->setSlowness(tmp);
-    
-
-
-    //////////////
+    //mesh_instance->setSourceRadius(20.0*1.e-3);
+    /////////
 
     size_t nTx = Tx.size();
     size_t nRx=Rx.size();
@@ -177,7 +150,7 @@ int main(int argc, const char * argv[]) {
         bool found = false;
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-            if ( vTx[nv][0].getDistance(Tx[ntx])<0.000001) {
+            if ( vTx[nv][0].getDistance(Tx[ntx])<0.00000001) {
                 found = true;
                 iTx[nv].push_back( ntx ) ;
                 break;
@@ -203,19 +176,12 @@ int main(int argc, const char * argv[]) {
     
     if ( mesh_instance->getNthreads() == 1 || mesh_instance->getNthreads()<= vTx.size() ) {
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-            
             vRx.resize( 0 );
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                 vRx.push_back( Rx[ iTx[nv][ni] ]-refPts[0]);
             }
             vTx[nv][0]=vTx[nv][0]-refPts[0];
             if (SecondNodes){
-//                while(mesh_instance->getCellNo(vTx[nv][0])==std::numeric_limits<uint32_t>::max()){
-//                    vTx[nv][0].z-=0.1;
-//                }
-                while(mesh_instance->checkPts(vTx[nv])==1){
-                    vTx[nv][0].z-=0.1;
-                }
                 // add secondary nodes
                 std::vector<tetrahedronElem<uint32_t>> DelatedCellsTx;
                 mesh_instance->addNodes(vTx[nv][0],DelatedCellsTx,mesh_instance->getNthreads());
@@ -224,12 +190,16 @@ int main(int argc, const char * argv[]) {
                 for (size_t rr=0;rr<refPts.size();++rr)
                     refPts2.push_back(refPts[rr]-refPts[0]);
                 mesh_instance->initOrdering(refPts2,2);
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
+//                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
+//                    throw std::runtime_error("Problem while raytracing.");
+                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 )
                     throw std::runtime_error("Problem while raytracing.");
                 mesh_instance->delateCells(DelatedCellsTx);
             }else{
                 if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 )
                     throw std::runtime_error("Problem while raytracing.");
+//                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 )
+//                    throw std::runtime_error("Problem while raytracing.");
             }
             
             for (size_t ii=0;ii<r_data[nv].size();ii++){
@@ -303,36 +273,11 @@ int main(int argc, const char * argv[]) {
     }
 
 
-//    for (size_t i=0;i<r_data.size();++i){
-//        size_t half_size (r_data[i].size()/2);
-//       std::vector<std::vector<sxyz<double >>> r_data1(r_data[i].begin(),r_data[i].begin()+half_size);
-//       std::vector<std::vector<sxyz<double >>> r_data2(r_data[i].begin()+half_size,r_data[i].end());
-//        std::string filename="Sourcea.vtp";//+to_string(i+11)+".vtp";
-//        saveRayPaths(filename, r_data1);
-//        filename="Sourceb.vtp";//+to_string(i+11)+".vtp";
-//        saveRayPaths(filename, r_data2);
-//    }
-//
-//    std::vector<std::vector<std::vector<sxyz<double >>>> MM_data(vTx.size(),std::vector<std::vector<sxyz<double>>>(m_data[0].size(),
-//                                                                        std::vector<sxyz<double>>(m_data[0][0].size())));
-//    for (size_t nv=0;nv<m_data.size();++nv){
-//        for(size_t i=0;i<m_data[nv].size();++i){
-//            for (size_t jj=0;jj<m_data[nv][i].size();++jj){
-//                size_t Point=m_data[nv][i][jj].j;
-//                sxyz<double> P=nodes[Point];
-//                MM_data[nv][i][jj]=P;
-//            }
-//        }
-//    }
         for (size_t i=0;i<r_data.size();++i){
-            std::string filename="Src"+to_string(N)+".vtp";
+            std::string filename="Src"+to_string(N+1+i)+".vtp";
             saveRayPaths(filename, r_data[i]);
         }
 
-//    for (size_t i=0;i<MM_data.size();++i){
-//        std::string filename="Points"+to_string(i+1)+".vtp";
-//        saveRayPaths(filename, MM_data[i]);
-//    }
     
     std::cout << "Hello, World!\n";
     return 0;

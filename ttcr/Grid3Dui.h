@@ -635,7 +635,7 @@ namespace ttcr {
                         nodes[faces[0]].getZ()-nodes[faces[2]].getZ()};
         sxyz<T1> Normal=cross(Vect1,Vect2);
         sxyz<T1> g1Normal=dot(Normal,g1)*Normal/(norm(Normal)*norm(Normal));
-        g1Normal*=1.001;
+        g1Normal*=1.05;
         return (g1-g1Normal);
     }
     template<typename T1, typename T2, typename NODE>
@@ -1890,7 +1890,7 @@ namespace ttcr {
 
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist* minDist) {
                         reachedTx = true;
                         break;
                     }
@@ -1937,7 +1937,6 @@ namespace ttcr {
                                              const sxyz<T1> &Rx,
                                              std::vector<sxyz<T1>> &r_data,
                                              const size_t threadNo) const {
-
         T1 minDist = small;
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
@@ -1984,8 +1983,8 @@ namespace ttcr {
         }
         
         T2 cellNo, nodeNo, nodeNoPrev;
-        sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
-        
+        sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
+
         bool InLimits=false;
         bool onNode = false;
         bool onEdge = false;
@@ -2049,10 +2048,10 @@ namespace ttcr {
             onFace=true;
         }
         sxyz<T1> g;
-        std::vector<std::array<T2,3> > All_faces;
         T2 N=0;
         while ( reachedTx == false && N<500) {
             ++N;
+            //            }
             if ( onNode ) {
                 bool foundIntersection = false;
                 if (!InLimits){// if the current point is not on the limitis of mesh
@@ -2099,7 +2098,7 @@ namespace ttcr {
                                 onNode = true;
                                 onEdge = false;
                                 onFace = false;
-                                
+
                                 break_flag = true;
                                 break;
                             }
@@ -2108,7 +2107,7 @@ namespace ttcr {
                         
                         for ( size_t n1=0; n1<3; ++n1 ) {
                             size_t n2 = (n1+1)%3;
-                            if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
+                            if (nodes[nb[n1]].getDistance(curr_pt)+nodes[nb[n2]].getDistance(curr_pt)-nodes[nb[n2]].getDistance(nodes[nb[n1]])<minDist*minDist) {
                                 edgeNodesPrev = edgeNodes;
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
@@ -2119,7 +2118,6 @@ namespace ttcr {
                                 onNode = false;
                                 onEdge = true;
                                 onFace = false;
-                                
                                 break_flag = true;
                                 break;
                             }
@@ -2135,7 +2133,6 @@ namespace ttcr {
                         
                         faceNodesPrev = faceNodes;
                         faceNodes = nb;
-                        
                         // find next cell
                         T2 PrevCell=cellNo;
                         cellNo = findAdjacentCell1(faceNodes, nodeNo);
@@ -2149,7 +2146,7 @@ namespace ttcr {
                 }else{// cuurent point is in the limit of mesh
                     // we project gradient onto all the bordering faces
                     std::priority_queue<sxyz<T1>,std::vector<sxyz<T1>>,Comparesxyz_norm<T1>> ProjectedGradients;
-                    plotCell(cellNo, curr_pt, g);
+                    //plotCell(cellNo, curr_pt, g);
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ){
                         std::array<T2,3> InBorderFace;
                         for(T2 nn=0;nn<4;++nn){
@@ -2167,7 +2164,7 @@ namespace ttcr {
                         ProjectedGradients.pop();
                         // find cell for which gradient intersect opposing face
                         for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                            plotCell(*nc, curr_pt, g_reflected);
+                            //plotCell(*nc, curr_pt, g_reflected);
                             std::array<T2,3> nb;
                             size_t n=0;
                             for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
@@ -2200,8 +2197,6 @@ namespace ttcr {
                                     onNode = true;
                                     onEdge = false;
                                     onFace = false;
-                                    
-                                    
                                     break_flag = true;
                                     break;
                                 }
@@ -2210,7 +2205,7 @@ namespace ttcr {
                             
                             for ( size_t n1=0; n1<3; ++n1 ) {
                                 size_t n2 = (n1+1)%3;
-                                if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
+                                if (nodes[nb[n1]].getDistance(curr_pt)+nodes[nb[n2]].getDistance(curr_pt)-nodes[nb[n2]].getDistance(nodes[nb[n1]])<minDist*minDist) {
                                     edgeNodesPrev = edgeNodes;
                                     onNodePrev = onNode;
                                     onEdgePrev = onEdge;
@@ -2221,7 +2216,6 @@ namespace ttcr {
                                     onNode = false;
                                     onEdge = true;
                                     onFace = false;
-                                    
                                     break_flag = true;
                                     break;
                                 }
@@ -2237,7 +2231,6 @@ namespace ttcr {
                             
                             faceNodesPrev = faceNodes;
                             faceNodes = nb;
-                            
                             // find next cell
                             T2 PrevCell=cellNo;
                             cellNo = findAdjacentCell1(faceNodes, nodeNo);
@@ -2287,9 +2280,9 @@ namespace ttcr {
                                     T2 iA =neighbors[(*nc)][((iD+1)%4)];
                                     T2 iB =neighbors[(*nc)][((iD+2)%4)];
                                     T2 iC =neighbors[(*nc)][((iD+3)%4)];
-                                    if ((nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iB])<minDist*1e-3)||
-                                        (nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iC])<minDist*1e-3)||
-                                        (nodes[iB].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*1e-3)){
+                                    if ((nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iB])<minDist*minDist)||
+                                        (nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iC])<minDist*minDist)||
+                                        (nodes[iB].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist)){
                                         if (std::find(cells.begin(),cells.end(),(*nc))==cells.end())
                                             cells.push_back( (*nc) );
                                         getNeighborNodes(*nc, nnodes);
@@ -2301,6 +2294,21 @@ namespace ttcr {
                 }
                 if (!InLimits){
                     g= grad3d.ls_grad(nnodes, threadNo,curr_pt);
+                    for(size_t nt=0;nt<Tx.size();++nt){
+                        for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].end();++n){
+                            bool Find=false;
+                            for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
+                                if(*nc==cellNo){
+                                    g=Tx[nt]-curr_pt;
+                                    Find=true;
+                                    break;
+                                }
+                            }
+                            if (Find)
+                                break;
+                        }
+                        
+                    }
                     Gradients.push_back(g);
                 }else{
                     std::array<T2,3> InBorderFace;
@@ -2323,9 +2331,9 @@ namespace ttcr {
                         }
                     }
                 }
-                g=Gradients[0];
                 bool foundIntersection=false;
                 for(T2 ng=0; ng<Gradients.size();++ng){
+                     g=Gradients[ng];
                     for (size_t n=0; n<cells.size(); ++n ) {
                         cellNo = cells[n];
                         // there are 2 faces that might be intersected
@@ -2367,7 +2375,7 @@ namespace ttcr {
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
                                 onFacePrev = onFace;
-                                
+                                edgeNodesPrev = edgeNodes;
                                 nodeNo = neighbors[cellNo][n2];
                                 onNode = true;
                                 onEdge = false;
@@ -2378,7 +2386,7 @@ namespace ttcr {
                         }
                         if ( break_flag ) break;
                         
-                        if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
+                        if ((nodes[itmpNode].getDistance(curr_pt)+nodes[edgeNodes2[0]].getDistance(curr_pt)-nodes[ itmpNode].getDistance(nodes[edgeNodes2[0]])<minDist*minDist)) {
                             edgeNodesPrev = edgeNodes;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
@@ -2389,10 +2397,10 @@ namespace ttcr {
                             onNode = false;
                             onEdge = true;
                             onFace = false;
-                            
+   
                             break_flag = true;
                             break;
-                        } else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
+                        } else if((nodes[itmpNode].getDistance(curr_pt)+nodes[edgeNodes2[1]].getDistance(curr_pt)-nodes[ itmpNode].getDistance(nodes[edgeNodes2[1]])<minDist*minDist)){
                             edgeNodesPrev = edgeNodes;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
@@ -2403,10 +2411,10 @@ namespace ttcr {
                             onNode = false;
                             onEdge = true;
                             onFace = false;
-
+             
                             break_flag = true;
                             break;
-                        } else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
+                        } else if ((nodes[edgeNodes2[1]].getDistance(curr_pt)+nodes[edgeNodes2[0]].getDistance(curr_pt)-nodes[edgeNodes2[1]].getDistance(nodes[edgeNodes2[0]])<minDist*minDist)){
                             edgeNodesPrev = edgeNodes;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
@@ -2417,7 +2425,6 @@ namespace ttcr {
                             onNode = false;
                             onEdge = true;
                             onFace = false;
-                            
                             break_flag = true;
                             break;
                         }
@@ -2430,13 +2437,12 @@ namespace ttcr {
                         onEdge = false;
                         onFace = true;
                         
-                        faceNodesPrev = faceNodes;
+                        //faceNodesPrev = faceNodes;
+                        edgeNodesPrev = edgeNodes;
                         faceNodes[0] = itmpNode;
                         faceNodes[1] = edgeNodes2[0];
                         faceNodes[2] = edgeNodes2[1];
-                        All_faces.push_back(faceNodes);
                         std::sort(faceNodes.begin(), faceNodes.end());
-
                         // find next cell
                         T2 PrevCell(cellNo);
                         cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
@@ -2470,11 +2476,25 @@ namespace ttcr {
                 if (!InLimits){
                     getNeighborNodes(cellNo, nnodes);
                     g = grad3d.ls_grad(nnodes,threadNo,curr_pt);
+                    for(size_t nt=0;nt<Tx.size();++nt){
+                        for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].end();++n){
+                            bool Find=false;
+                            for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
+                                if(*nc==cellNo){
+                                    g=Tx[nt]-curr_pt;
+                                    Find=true;
+                                    break;
+                                }
+                            }
+                            if (Find)
+                                break;
+                        }
+                        
+                    }
                 }else{
                     g=reflectedGradient(g, faceNodes,cellNo);
                 }
                 //std::cout<<"nomr g : "<<norm(g)<<std::endl;
-                
                 std::array<T2,3> ind[4] = {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
@@ -2503,7 +2523,7 @@ namespace ttcr {
                     bool break_flag = false;
                     for ( size_t n2=0; n2<3; ++n2 ) {
                         if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
-                            nodeNoPrev = nodeNo;
+                            //nodeNoPrev = nodeNo;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
                             onFacePrev = onFace;
@@ -2512,6 +2532,8 @@ namespace ttcr {
                             onNode = true;
                             onEdge = false;
                             onFace = false;
+                            faceNodesPrev = faceNodes;
+
                             break_flag = true;
                             break;
                         }
@@ -2520,8 +2542,8 @@ namespace ttcr {
                     
                     for ( size_t n1=0; n1<3; ++n1 ) {
                         size_t n2 = (n1+1)%3;
-                        if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
-                            edgeNodesPrev = edgeNodes;
+                        if (nodes[ind[n][n1]].getDistance(curr_pt)+nodes[ind[n][n2]].getDistance(curr_pt)-nodes[ind[n][n1]].getDistance(nodes[ind[n][n2]])<minDist*minDist) {
+                            //edgeNodesPrev = edgeNodes;
                             onNodePrev = onNode;
                             onEdgePrev = onEdge;
                             onFacePrev = onFace;
@@ -2531,6 +2553,8 @@ namespace ttcr {
                             onNode = false;
                             onEdge = true;
                             onFace = false;
+                            faceNodesPrev = faceNodes;
+ 
                             break_flag = true;
                             break;
                         }
@@ -2587,11 +2611,11 @@ namespace ttcr {
                         prev_pt = curr_pt;
                         InLimits=false;
                         curr_pt = pt_i;
-                        
+                        r_tmp.push_back( curr_pt );
                         bool break_flag = false;
                         for ( size_t n2=0; n2<3; ++n2 ) {
                             if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
-                                nodeNoPrev = nodeNo;
+                                //nodeNoPrev = nodeNo;
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
                                 onFacePrev = onFace;
@@ -2600,6 +2624,7 @@ namespace ttcr {
                                 onNode = true;
                                 onEdge = false;
                                 onFace = false;
+                                faceNodesPrev = faceNodes;
                                 break_flag = true;
                                 break;
                             }
@@ -2608,8 +2633,8 @@ namespace ttcr {
                         
                         for ( size_t n1=0; n1<3; ++n1 ) {
                             size_t n2 = (n1+1)%3;
-                            if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
-                                edgeNodesPrev = edgeNodes;
+                            if (nodes[ind[n][n1]].getDistance(curr_pt)+nodes[ind[n][n2]].getDistance(curr_pt)-nodes[ind[n][n1]].getDistance(nodes[ind[n][n2]])<minDist*minDist) {
+                                //edgeNodesPrev = edgeNodes;
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
                                 onFacePrev = onFace;
@@ -2619,6 +2644,7 @@ namespace ttcr {
                                 onNode = false;
                                 onEdge = true;
                                 onFace = false;
+                                faceNodesPrev = faceNodes;
                                 break_flag = true;
                                 break;
                             }
@@ -2634,7 +2660,6 @@ namespace ttcr {
                         
                         faceNodesPrev = faceNodes;
                         faceNodes = ind[n];
-                        All_faces.push_back(faceNodes);
                         // find next cell
                         T2 PrevCell(cellNo);
                         cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
@@ -2658,13 +2683,13 @@ namespace ttcr {
             }
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist*minDist ) {
                         reachedTx = true;
                         break;
                     }
                     for(size_t n=0;n<neighbors[txCell[nt]].size();++n){
                         sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
-                        if (curr_pt.getDistance(NearTx)< minDist){
+                        if (curr_pt.getDistance(NearTx)< minDist*minDist){
                             reachedTx = true;
                             r_tmp.push_back( Tx[nt] );
                             break;
@@ -2707,6 +2732,7 @@ namespace ttcr {
         for ( size_t nn=0; nn<npts; ++nn ) {
             r_data[nn] = r_tmp[ npts-1-nn ];
         }
+
 
     }
 
@@ -4139,9 +4165,8 @@ namespace ttcr {
         T2 N=0;
         while ( reachedTx == false && N<500) {
             ++N;
-//            if (N==65){
-//                std::cout<<"arrter"<<std::endl;
-//            }
+            if (N==37)
+                std::cout<<"stop"<<std::endl;
             if ( onNode ) {
                 bool foundIntersection = false;
                 if (!InLimits){// if the current point is not on the limitis of mesh
@@ -4176,10 +4201,10 @@ namespace ttcr {
                         InLimits=false;
                         r_tmp.push_back( curr_pt );
                         ds = curr_pt.getDistance( prev_pt );
-                        if ( r_tmp.size() > 1 && ds>0.01) {
+                        if ( r_tmp.size() > 1 && ds>minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s = computeSlowness(mid_pt);
+                            s=computeSlowness(mid_pt,cellNo );
                             s *= s;
                         }
                         
@@ -4261,7 +4286,7 @@ namespace ttcr {
                         for ( size_t n1=0; n1<3; ++n1 ) {
                             size_t n2 = (n1+1)%3;
                             if (nodes[nb[n1]].getDistance(curr_pt)+nodes[nb[n2]].getDistance(curr_pt)-nodes[nb[n2]].getDistance(nodes[nb[n1]])<minDist*minDist) {
-                                edgeNodesPrev = edgeNodes;
+                                nodeNoPrev = nodeNo;
                                 onNodePrev = onNode;
                                 onEdgePrev = onEdge;
                                 onFacePrev = onFace;
@@ -4272,7 +4297,7 @@ namespace ttcr {
                                 onEdge = true;
                                 onFace = false;
                                 
-                                if ( r_tmp.size() > 1 && ds>0.01) {
+                                if ( r_tmp.size() > 1 && ds>minDist) {
                                     std::set<T2> allNodes;
                                     if (onNodePrev) allNodes.insert(nodeNoPrev);
                                     if (onNode) allNodes.insert(nodeNo);
@@ -4341,9 +4366,9 @@ namespace ttcr {
                         onEdge = false;
                         onFace = true;
                         
-                        faceNodesPrev = faceNodes;
+                        nodeNoPrev = nodeNo;
                         faceNodes = nb;
-                        if ( r_tmp.size() > 1 && ds>0.01) {
+                        if ( r_tmp.size() > 1 && ds>minDist) {
                             std::set<T2> allNodes;
                             if (onNodePrev) allNodes.insert(nodeNoPrev);
                             if (onNode) allNodes.insert(nodeNo);
@@ -4412,7 +4437,7 @@ namespace ttcr {
                 }else{// cuurent point is in the limit of mesh
                     // we project gradient onto all the bordering faces
                     std::priority_queue<sxyz<T1>,std::vector<sxyz<T1>>,Comparesxyz_norm<T1>> ProjectedGradients;
-                    plotCell(cellNo, curr_pt, g);
+                    //plotCell(cellNo, curr_pt, g);
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ){
                         std::array<T2,3> InBorderFace;
                         for(T2 nn=0;nn<4;++nn){
@@ -4430,7 +4455,7 @@ namespace ttcr {
                         ProjectedGradients.pop();
                         // find cell for which gradient intersect opposing face
                         for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                            plotCell(*nc, curr_pt, g_reflected);
+                            //plotCell(*nc, curr_pt, g_reflected);
                             std::array<T2,3> nb;
                             size_t n=0;
                             for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
@@ -4451,10 +4476,10 @@ namespace ttcr {
                             InLimits=false;
                             r_tmp.push_back( curr_pt );
                             ds = curr_pt.getDistance( prev_pt );
-                            if ( r_tmp.size() > 1 && ds>0.01) {
+                            if ( r_tmp.size() > 1 && ds>minDist) {
                                 // compute terms of matrix M
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                                s = computeSlowness(mid_pt);
+                                s=computeSlowness(mid_pt,cellNo );
                                 s *= s;
                             }
                             
@@ -4471,7 +4496,7 @@ namespace ttcr {
                                     onEdge = false;
                                     onFace = false;
                                     
-                                    if ( r_tmp.size() > 1 && ds>0.01) {
+                                    if ( r_tmp.size() > 1 && ds>minDist) {
                                         std::set<T2> allNodes;
                                         if (onNodePrev) allNodes.insert(nodeNoPrev);
                                         if (onNode) allNodes.insert(nodeNo);
@@ -4536,7 +4561,7 @@ namespace ttcr {
                             for ( size_t n1=0; n1<3; ++n1 ) {
                                 size_t n2 = (n1+1)%3;
                                 if (nodes[nb[n1]].getDistance(curr_pt)+nodes[nb[n2]].getDistance(curr_pt)-nodes[nb[n2]].getDistance(nodes[nb[n1]])<minDist*minDist) {
-                                    edgeNodesPrev = edgeNodes;
+                                    nodeNoPrev = nodeNo;
                                     onNodePrev = onNode;
                                     onEdgePrev = onEdge;
                                     onFacePrev = onFace;
@@ -4547,7 +4572,7 @@ namespace ttcr {
                                     onEdge = true;
                                     onFace = false;
                                     
-                                    if ( r_tmp.size() > 1 && ds>0.01) {
+                                    if ( r_tmp.size() > 1 && ds>minDist) {
                                         std::set<T2> allNodes;
                                         if (onNodePrev) allNodes.insert(nodeNoPrev);
                                         if (onNode) allNodes.insert(nodeNo);
@@ -4615,10 +4640,8 @@ namespace ttcr {
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            
-                            faceNodesPrev = faceNodes;
                             faceNodes = nb;
-                            if ( r_tmp.size() > 1 && ds>0.01) {
+                            if ( r_tmp.size() > 1 && ds>minDist) {
                                 std::set<T2> allNodes;
                                 if (onNodePrev) allNodes.insert(nodeNoPrev);
                                 if (onNode) allNodes.insert(nodeNo);
@@ -4723,9 +4746,9 @@ namespace ttcr {
                                     T2 iA =neighbors[(*nc)][((iD+1)%4)];
                                     T2 iB =neighbors[(*nc)][((iD+2)%4)];
                                     T2 iC =neighbors[(*nc)][((iD+3)%4)];
-                                    if ((nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iB])<minDist*1e-3)||
-                                        (nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iC])<minDist*1e-3)||
-                                        (nodes[iB].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*1e-3)){
+                                    if ((nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iB])<minDist*minDist)||
+                                        (nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iA].getDistance(nodes[iC])<minDist*minDist)||
+                                        (nodes[iB].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist)){
                                         if (std::find(cells.begin(),cells.end(),(*nc))==cells.end())
                                             cells.push_back( (*nc) );
                                         getNeighborNodes(*nc, nnodes);
@@ -4737,6 +4760,21 @@ namespace ttcr {
                 }
                 if (!InLimits){
                     g= grad3d.ls_grad(nnodes, threadNo,curr_pt);
+                    for(size_t nt=0;nt<Tx.size();++nt){
+                        for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].end();++n){
+                            bool Find=false;
+                            for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
+                                if(*nc==cellNo){
+                                    g=Tx[nt]-curr_pt;
+                                    Find=true;
+                                    break;
+                                }
+                            }
+                            if (Find)
+                                break;
+                        }
+                        
+                    }
                     Gradients.push_back(g);
                 }else{
                     std::array<T2,3> InBorderFace;
@@ -4759,17 +4797,17 @@ namespace ttcr {
                         }
                     }
                 }
-                g=Gradients[0];
                 bool foundIntersection=false;
                 for(T2 ng=0; ng<Gradients.size();++ng){
+                    g=Gradients[ng];
                     for (size_t n=0; n<cells.size(); ++n ) {
                         cellNo = cells[n];
                         // there are 2 faces that might be intersected
                         size_t n2=0;
                         size_t n1=0;
                         for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); nn++ ) {
-                            if ((*nn)==edgeNodes[0] || (*nn)==edgeNodes[1]||
-                                areCollinear(sxyz<T1>(nodes[*nn]), edgeNodes[0], edgeNodes[1])){
+                            if ((*nn)==edgeNodes[0] || (*nn)==edgeNodes[1]||nodes[edgeNodes[0]].getDistance(nodes[*nn])+
+                                nodes[edgeNodes[1]].getDistance(nodes[*nn])-nodes[edgeNodes[0]].getDistance(nodes[edgeNodes[1]])<minDist*minDist){
                                 edgeNodes1[n1++] = *nn;// Edge contains current point
                             }else{
                                 edgeNodes2[n2++] = *nn; // opposite edge
@@ -4798,10 +4836,10 @@ namespace ttcr {
                         curr_pt = pt_i;
                         ds = curr_pt.getDistance( prev_pt );
                         r_tmp.push_back( curr_pt );
-                        if (r_tmp.size() > 1 && ds >0.01) {
+                        if (r_tmp.size() > 1 && ds >minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s = computeSlowness(mid_pt);
+                            s=computeSlowness(mid_pt,cellNo );
                             s *= s;
                         }
                         
@@ -4817,7 +4855,7 @@ namespace ttcr {
                                 onEdge = false;
                                 onFace = false;
                                 break_flag = true;
-                                if ( r_tmp.size() > 1 && ds>0.01) {
+                                if ( r_tmp.size() > 1 && ds>minDist) {
                                     std::set<T2> allNodes;
                                     allNodes.insert(nodeNo);
                                     
@@ -4874,7 +4912,7 @@ namespace ttcr {
                             onEdge = true;
                             onFace = false;
                             
-                            if ( r_tmp.size() > 1 && ds>0.01) {
+                            if ( r_tmp.size() > 1 && ds>minDist) {
                                 std::set<T2> allNodes;
                                 allNodes.insert( edgeNodesPrev[0] );
                                 allNodes.insert( edgeNodesPrev[1] );
@@ -4929,7 +4967,7 @@ namespace ttcr {
                             onEdge = true;
                             onFace = false;
                             
-                            if ( r_tmp.size() > 1  && ds>0.01) {
+                            if ( r_tmp.size() > 1  && ds>minDist) {
                                 std::set<T2> allNodes;
                                 allNodes.insert( edgeNodesPrev[0] );
                                 allNodes.insert( edgeNodesPrev[1] );
@@ -4984,7 +5022,7 @@ namespace ttcr {
                             onEdge = true;
                             onFace = false;
                             
-                            if ( r_tmp.size() > 1 && ds>0.01) {
+                            if ( r_tmp.size() > 1 && ds>minDist) {
                                 std::set<T2> allNodes;
                                 allNodes.insert( edgeNodesPrev[0] );
                                 allNodes.insert( edgeNodesPrev[1] );
@@ -5044,7 +5082,7 @@ namespace ttcr {
                         faceNodes[2] = edgeNodes2[1];
                         std::sort(faceNodes.begin(), faceNodes.end());
                         
-                        if ( r_tmp.size() > 1 && ds>0.01) {
+                        if ( r_tmp.size() > 1 && ds>minDist) {
                             std::set<T2> allNodes;
                             allNodes.insert( edgeNodesPrev[0] );
                             allNodes.insert( edgeNodesPrev[1] );
@@ -5090,6 +5128,13 @@ namespace ttcr {
                         
                         // find next cell
                         T2 PrevCell(cellNo);
+//                        std::cout<<" begin ---------------------------------"<<std::endl;
+//                        for (T2 n=0; n<4;++n){
+//                            for (T2 n2=0;n2<nodes[neighbors[cellNo][n]].getOwners().size();++n2){
+//                                plotCell(nodes[neighbors[cellNo][n]].getOwners()[n2], curr_pt, g);
+//                            }
+//
+//                        }
                         cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
                         
                         if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -5121,8 +5166,30 @@ namespace ttcr {
                 if (!InLimits){
                     getNeighborNodes(cellNo, nnodes);
                     g = grad3d.ls_grad(nnodes,threadNo,curr_pt);
+                    for(size_t nt=0;nt<Tx.size();++nt){
+                        for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].end();++n){
+                            bool Find=false;
+                            for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
+                                if(*nc==cellNo){
+                                    g=Tx[nt]-curr_pt;
+                                    Find=true;
+                                    break;
+                                }
+                            }
+                            if (Find)
+                                break;
+                        }
+
+                    }
                 }else{
                     g=reflectedGradient(g, faceNodes,cellNo);
+                    std::cout<<" begin ---------------------------------"<<std::endl;
+                     for (T2 n=0; n<4;++n){
+                          for (T2 n2=0;n2<nodes[neighbors[cellNo][n]].getOwners().size();++n2){
+                               plotCell(nodes[neighbors[cellNo][n]].getOwners()[n2], curr_pt, g);
+                                 }
+                    
+                        }
                 }
                 //std::cout<<"nomr g : "<<norm(g)<<std::endl;
 
@@ -5143,7 +5210,7 @@ namespace ttcr {
                     foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
                                                              ind[n][1], ind[n][2],
                                                              pt_i);
-
+                    
                     if ( !foundIntersection )
                         continue;
                     InLimits=false;
@@ -5151,10 +5218,10 @@ namespace ttcr {
                     curr_pt = pt_i;
                     ds = curr_pt.getDistance( prev_pt );
                     r_tmp.push_back( curr_pt );
-                    if (r_tmp.size() > 1 && ds>0.01) {
+                    if (r_tmp.size() > 1 && ds>minDist) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s = computeSlowness(mid_pt);
+                        s=computeSlowness(mid_pt,cellNo );
                         s *= s;
 
                     }
@@ -5172,7 +5239,7 @@ namespace ttcr {
                             onEdge = false;
                             onFace = false;
                             faceNodesPrev = faceNodes;
-                            if ( r_tmp.size() > 1 && ds>0.01) {
+                            if ( r_tmp.size() > 1 && ds>minDist) {
                                 std::set<T2> allNodes;
                                 allNodes.insert(nodeNo);
                                 allNodes.insert( faceNodesPrev[0] );
@@ -5232,7 +5299,7 @@ namespace ttcr {
                             onEdge = true;
                             onFace = false;
                             faceNodesPrev = faceNodes;
-                            if ( r_tmp.size() > 1 && ds>0.01) {
+                            if ( r_tmp.size() > 1 && ds>minDist) {
                                 std::set<T2> allNodes;
                                 allNodes.insert( edgeNodes[0] );
                                 allNodes.insert( edgeNodes[1] );
@@ -5289,7 +5356,7 @@ namespace ttcr {
                     faceNodesPrev = faceNodes;
                     
                     faceNodes = ind[n];
-                    if ( r_tmp.size() > 1 && ds>0.01) {
+                    if ( r_tmp.size() > 1 && ds>minDist) {
                         std::set<T2> allNodes;
                         if (r_tmp.size()>2){
                             allNodes.insert( faceNodesPrev[0] );
@@ -5378,11 +5445,11 @@ namespace ttcr {
                         InLimits=false;
                         curr_pt = pt_i;
                         ds = curr_pt.getDistance( prev_pt );
-                        if (r_tmp.size() > 1 && ds>0.001) {
-                             r_tmp.push_back( curr_pt );
+                        r_tmp.push_back( curr_pt );
+                        if (r_tmp.size() > 1 && ds>minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s = computeSlowness(mid_pt);
+                            s = computeSlowness(mid_pt,cellNo);
                             s *= s;
                         }
 
@@ -5399,7 +5466,7 @@ namespace ttcr {
                                 onEdge = false;
                                 onFace = false;
                                 faceNodesPrev = faceNodes;
-                                if ( r_tmp.size() > 1 && ds>0.01) {
+                                if ( r_tmp.size() > 1 && ds>minDist) {
                                     std::set<T2> allNodes;
                                     allNodes.insert(nodeNo);
                                     allNodes.insert( faceNodesPrev[0] );
@@ -5459,7 +5526,7 @@ namespace ttcr {
                                 onEdge = true;
                                 onFace = false;
                                 faceNodesPrev = faceNodes;
-                                if ( r_tmp.size() > 1 && ds>0.01) {
+                                if ( r_tmp.size() > 1 && ds>minDist) {
                                     std::set<T2> allNodes;
                                     allNodes.insert( edgeNodes[0] );
                                     allNodes.insert( edgeNodes[1] );
@@ -5516,7 +5583,7 @@ namespace ttcr {
 
                         faceNodesPrev = faceNodes;
                         faceNodes = ind[n];
-                        if ( r_tmp.size() > 1 && ds>0.01) {
+                        if ( r_tmp.size() > 1 && ds>minDist) {
                             std::set<T2> allNodes;
                             allNodes.insert( faceNodesPrev[0] );
                             allNodes.insert( faceNodesPrev[1] );
@@ -5580,17 +5647,25 @@ namespace ttcr {
                     reachedTx = true;
                 }
             }
+            for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                if ( curr_pt.getDistance( Tx[nt] ) < minDist*minDist) {
+                    reachedTx = true;
+                    break;
+                }
+            }
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist*minDist ) {
                         reachedTx = true;
                         break;
                     }
                     for(size_t n=0;n<neighbors[txCell[nt]].size();++n){
                         sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
-                        if (curr_pt.getDistance(NearTx)< minDist){
+                        if (curr_pt.getDistance(NearTx)< minDist*minDist){
                             reachedTx = true;
                             r_tmp.push_back( Tx[nt] );
+                            prev_pt=curr_pt;
+                            curr_pt=Tx[nt];
                             break;
                         }
                     }
@@ -5604,6 +5679,8 @@ namespace ttcr {
                             if ( cellNo == *nc ) {
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
+                                prev_pt=curr_pt;
+                                curr_pt=Tx[nt];
                                 break;
                             }
                         }
@@ -5611,17 +5688,79 @@ namespace ttcr {
                         if ( cellNo == txCell[nt] ) {
                             r_tmp.push_back( Tx[nt] );
                             reachedTx = true;
-                        } else {
+                            prev_pt=curr_pt;
+                            curr_pt=Tx[nt];
+                        }
+                        
+                        else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
-                                    r_tmp.push_back( Tx[nt] );
-                                    reachedTx = true;
-                                    break;
+                                    bool find=false;
+                                    for (T2 i=0;i<4;++i){
+                                        T2 iA=neighbors[txCell[nt]][(i+1)%4];
+                                        T2 iB=neighbors[txCell[nt]][(i+2)%4];
+                                        T2 iC=neighbors[txCell[nt]][(i+3)%4];
+                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+                                            find=true;
+                                            break;
+                                        }
+                                    }
+                                    if (find){
+                                        r_tmp.push_back( Tx[nt] );
+                                        prev_pt=curr_pt;
+                                        curr_pt=Tx[nt];
+                                        reachedTx = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                    if ( reachedTx ) break;
+                    if ( reachedTx ){
+                        if (r_tmp.size() > 1 && ds>minDist) {
+                            // compute terms of matrix M
+                            mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
+                            s = computeSlowness(mid_pt,cellNo);
+                            s *= s;
+                        }
+                        if ( r_tmp.size() > 1 && ds>minDist) {
+                            std::set<T2> allNodes;
+                            for (T2 i=0;i<4;++i)
+                                allNodes.insert(neighbors[cellNo][i]);
+                            if (secondNodes){
+                                auto no=--allNodes.end();
+                                while (no!=allNodes.begin()) {
+                                    if(nodes[*no].getprimary()==10){
+                                        std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
+                                        allNodes.erase(no);
+                                    }
+                                    --no;
+                                }
+                            }
+                            std::vector<T1> w;
+                            T1 sum_w = 0.0;
+                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+                                w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
+                                sum_w += w.back();
+                            }
+                            size_t nn=0;
+                            for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+                                m.j = *it;
+                                m.v = -s * ds * w[nn++]/sum_w;
+                                bool found = false;
+                                for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                                    if ( m_data[nm].j == m.j ) {
+                                        m_data[nm].v += m.v;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if ( found == false ) {
+                                    m_data.push_back(m);
+                                }
+                            }
+                        }
+                        break;}
                 }
             }
         }
@@ -5678,7 +5817,7 @@ namespace ttcr {
 
         sxyz<T1> vec(vect);
         vec/=norm(vec);
-        vec*=20;
+        vec*=10;
         sxyz<T1> OA = {nodes[iA].getX()-O.x, nodes[iA].getY()-O.y, nodes[iA].getZ()-O.z};
         // check if counterclockwise
         sxyz<T1> AB = {nodes[iB].getX()-nodes[iA].getX(),
@@ -5695,11 +5834,11 @@ namespace ttcr {
 
         T1 u, v, w;
         u = tripleScalar(vec, OC, OB);
-        if ( -u > small) return false;
+        if ( -u > small*small) return false;
         v = tripleScalar(vec, OA, OC);
-        if ( -v > small) return false;
+        if ( -v > small*small) return false;
         w = tripleScalar(vec, OB, OA);
-        if ( -w > small) return false;
+        if ( -w > small*small) return false;
 
         T1 den = 1./(u+v+w);
         u *= den;
@@ -5722,7 +5861,7 @@ namespace ttcr {
         sxyz<T1> v1 = {pt.x-nodes[i0].getX(), pt.y-nodes[i0].getY(), pt.z-nodes[i0].getZ()};
         sxyz<T1> v2 = {pt.x-nodes[i1].getX(), pt.y-nodes[i1].getY(), pt.z-nodes[i1].getZ()};
         sxyz<T1> v3 = cross(v1, v2);
-        return norm(v3)<small*1.e-3;
+        return norm(v3)<small*small;
 
     }
 
@@ -5735,12 +5874,12 @@ namespace ttcr {
         sxyz<T1> x3 = {nodes[i1].getX(), nodes[i1].getY(), nodes[i1].getZ()};
         sxyz<T1> x4 = {nodes[i2].getX(), nodes[i2].getY(), nodes[i2].getZ()};
 
-        return fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small;
+        return fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small*small;
     }
     template<typename T1, typename T2, typename NODE>
     bool Grid3Dui<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const sxyz<T1> &x2
                                            , const sxyz<T1> &x3, const sxyz<T1> &x4) const {
-        return fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small;
+        return fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small*small;
     }
 
 
@@ -5937,7 +6076,7 @@ namespace ttcr {
             return false;
         T1 u, v, w;
         barycentric(vertexA, vertexB, vertexC, E, u, v, w);
-        return (v+small) >=0 && (w +small)>= 0 && (v + w) <= 1.0+small;
+        return (v) >=0 && (w )>= 0 && (v + w) <= 1.0;
     }
 
     template<typename T1, typename T2, typename NODE>
@@ -5988,7 +6127,6 @@ namespace ttcr {
         //Calculate the slowness of any point that is not on a node
 
         T2 cellNo = this->getCellNo( Rx );
-
         //We calculate the Slowness at the point
         std::vector<T2> list;
 
@@ -5998,7 +6136,6 @@ namespace ttcr {
             }
         }
 
-        std::vector<size_t>::iterator it;
 
         std::vector<NODE*> interpNodes;
 
@@ -6023,8 +6160,6 @@ namespace ttcr {
         for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
                 list.push_back(neighbors[ cellNo ][n3]);
         }
-        
-        std::vector<size_t>::iterator it;
         
         std::vector<NODE*> interpNodes;
         
