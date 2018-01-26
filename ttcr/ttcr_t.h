@@ -562,7 +562,6 @@ namespace ttcr {
         return v3;
     }
     
-    
     template<typename T>
     T norm(const sxz<T>& v) {
         return sqrt( v.x*v.x + v.z*v.z );
@@ -581,6 +580,47 @@ namespace ttcr {
     template<typename T>
     T norm2(const sxyz<T>& v) {
         return v.x*v.x + v.y*v.y + v.z*v.z;
+    }
+    
+    template<typename T>
+    void projNorm(const sxyz<T>& b, const sxyz<T>& c, const sxyz<T>& p, T& xi0, T& zeta0) {
+        //                B
+        //                o
+        //              /   \
+        //           /          \
+        //        /       o P       \
+        //    A o----------------------o  C
+        //
+        // b is _unit_ vector AC
+        // c is _unit_ vector AB
+        // p is vector AP
+        // xi0 & zeta0 are normalized coordinates of P in plane ABC (Lelièvre et al, 2011, GJI 184, 885-896)
+        
+        // solved using xi*c + zeta*b = p
+        
+        if ( c.x != 0.0 && c.x*b.y != c.y*b.x) {
+            zeta0 = (p.y - c.y/c.x*p.x) / (b.y - c.y/c.x*b.x);
+            xi0 = (p.x - zeta0*b.x)/c.x;
+        } else if ( c.x != 0.0 && c.x*b.z != c.z*b.x) {
+            zeta0 = (p.z - c.z/c.x*p.x) / (b.z - c.z/c.x*b.x);
+            xi0 = (p.x - zeta0*b.x)/c.x;
+        } else if ( c.y != 0.0 && c.y*b.x != c.x*b.y ) {
+            zeta0 = (p.x - c.x/c.y*p.y) / (p.x - c.x/c.y*p.y);
+            xi0 = (p.y - zeta0*b.y)/c.y;
+        } else if ( c.y != 0.0 && c.y*b.z != c.z*b.y ) {
+            zeta0 = (p.z - c.z/c.y*p.y) / (p.z - c.z/c.y*p.y);
+            xi0 = (p.y - zeta0*b.y)/c.y;
+        } else if ( c.z != 0.0 && c.z*b.x != c.x*b.z ) {
+            zeta0 = (p.x - c.x/c.z*p.z) / (b.x - c.x/c.z*b.z);
+            xi0 = (p.z - zeta0*b.z)/c.z;
+        } else if ( c.z != 0.0 && c.z*b.y != c.y*b.z ) {
+            zeta0 = (p.y - c.y/c.z*p.z) / (b.y - c.y/c.z*b.z);
+            xi0 = (p.z - zeta0*b.z)/c.z;
+        } else {
+            // error -> return negative values for both xi & zeta
+            xi0 = -1.0;
+            zeta0 = -1.0;
+        }
     }
     
 #ifndef _MSC_VER

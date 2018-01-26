@@ -621,7 +621,11 @@ namespace ttcr {
                 std::swap(iA, iC);
                 std::swap(vertexA, vertexC);
             }
-            
+            if ( vertexB->getTT(threadNo) > vertexC->getTT(threadNo) ) {
+                std::swap(iB, iC);
+                std::swap(vertexB, vertexC);
+            }
+
             if ( vertexA->getTT(threadNo) == std::numeric_limits<T1>::max() ) {
                 continue;
             }
@@ -641,6 +645,7 @@ namespace ttcr {
                     vertexB->getY() - vertexA->getY(),
                     vertexB->getZ() - vertexA->getZ() };
                 
+                // vector normal to plane
                 sxyz<T1> v_n = cross(v_b, v_c);
                 
                 T1 b = norm( v_b );
@@ -651,9 +656,11 @@ namespace ttcr {
                 
                 T1 phi = c*b*sin(alpha);
                 
+                // TODO check for negative value
                 T1 w_tilde = sqrt( vertexD->getNodeSlowness()*vertexD->getNodeSlowness()*phi*phi -
                                   u*u*b*b - v*v*c*c + 2.*u*v*d2 );
                 
+                // Point (ξ_0 , ζ_0 ) is the normalized projection of node D onto face ABC
                 // project D on plane
                 
                 T1 d_tmp = -vertexA->getX()*v_n.x - vertexA->getY()*v_n.y - vertexA->getZ()*v_n.z;
@@ -661,7 +668,7 @@ namespace ttcr {
                 T1 k = -(d_tmp + v_n.x*vertexD->getX() + v_n.y*vertexD->getY() + v_n.z*vertexD->getZ())/
                 norm2(v_n);
                 
-                sxyz<T1> pt;
+                sxyz<T1> pt;   // -> Point (ξ_0 , ζ_0 ) 
                 pt.x = vertexD->getX() + k*v_n.x;
                 pt.y = vertexD->getY() + k*v_n.y;
                 pt.z = vertexD->getZ() + k*v_n.z;
@@ -669,26 +676,10 @@ namespace ttcr {
                 T1 rho0 = vertexD->getDistance( pt );
                 
                 sxyz<T1> v_pt = {pt.x-vertexA->getX(), pt.y-vertexA->getY(), pt.z-vertexA->getZ()};
-                
-                // project point on AB
-                
-//                k = dot(v_pt,v_c)/dot(v_c,v_c);
-//                pt.x = vertexA->getX() + k*v_c.x;
-//                pt.y = vertexA->getY() + k*v_c.y;
-//                pt.z = vertexA->getZ() + k*v_c.z;
-//                
-//                T1 xi0 = vertexA->getDistance( pt )/c;
-                T1 xi0 = dot(v_pt,v_c)/dot(v_c,v_c);
-                
-                // project point on AC
-                
-//                k = dot(v_pt,v_b)/dot(v_b,v_b);
-//                pt.x = vertexA->getX() + k*v_b.x;
-//                pt.y = vertexA->getY() + k*v_b.y;
-//                pt.z = vertexA->getZ() + k*v_b.z;
-//                
-//                T1 zeta0 = vertexA->getDistance( pt )/b;
-                T1 zeta0 = dot(v_pt,v_b)/dot(v_b,v_b);
+
+                T1 xi0;
+                T1 zeta0;
+                projNorm(v_b/b, v_c/c, v_pt, xi0, zeta0);
                 
                 T1 beta = u*b*b - v*d2;
                 T1 gamma = v*c*c - u*d2;
