@@ -656,42 +656,46 @@ namespace ttcr {
                 
                 T1 phi = c*b*sin(alpha);
                 
-                // TODO check for negative value
-                T1 w_tilde = sqrt( vertexD->getNodeSlowness()*vertexD->getNodeSlowness()*phi*phi -
-                                  u*u*b*b - v*v*c*c + 2.*u*v*d2 );
+                // check for negative value
+                T1 w_tilde = vertexD->getNodeSlowness()*vertexD->getNodeSlowness()*phi*phi -
+                                  u*u*b*b - v*v*c*c + 2.*u*v*d2;
+                if ( w_tilde > 0.0 ) {
                 
-                // Point (ξ_0 , ζ_0 ) is the normalized projection of node D onto face ABC
-                // project D on plane
-                
-                T1 d_tmp = -vertexA->getX()*v_n.x - vertexA->getY()*v_n.y - vertexA->getZ()*v_n.z;
-                
-                T1 k = -(d_tmp + v_n.x*vertexD->getX() + v_n.y*vertexD->getY() + v_n.z*vertexD->getZ())/
-                norm2(v_n);
-                
-                sxyz<T1> pt;   // -> Point (ξ_0 , ζ_0 ) 
-                pt.x = vertexD->getX() + k*v_n.x;
-                pt.y = vertexD->getY() + k*v_n.y;
-                pt.z = vertexD->getZ() + k*v_n.z;
-                
-                T1 rho0 = vertexD->getDistance( pt );
-                
-                sxyz<T1> v_pt = {pt.x-vertexA->getX(), pt.y-vertexA->getY(), pt.z-vertexA->getZ()};
-
-                T1 xi0;
-                T1 zeta0;
-                projNorm(v_b/b, v_c/c, v_pt, xi0, zeta0);
-                
-                T1 beta = u*b*b - v*d2;
-                T1 gamma = v*c*c - u*d2;
-                
-                T1 xi_tilde = -fabs(beta)*rho0/(phi*w_tilde);
-                T1 zeta_tilde = -fabs(gamma)*rho0/(phi*w_tilde);
-                
-                T1 xi = xi_tilde + xi0;
-                T1 zeta = zeta_tilde + zeta0;
-                
-                if ( 0.<xi && xi<1. && 0.<zeta && zeta<1. && 0.<(xi+zeta) && (xi+zeta)<1. ) {
-                    tABC = vertexA->getTT(threadNo) + u*xi0 + v*zeta0 + w_tilde*rho0/phi;
+                    w_tilde = sqrt( w_tilde );
+                    
+                    // Point (ξ_0 , ζ_0 ) is the normalized projection of node D onto face ABC
+                    // project D on plane
+                    
+                    T1 d_tmp = -vertexA->getX()*v_n.x - vertexA->getY()*v_n.y - vertexA->getZ()*v_n.z;
+                    
+                    T1 k = -(d_tmp + v_n.x*vertexD->getX() + v_n.y*vertexD->getY() + v_n.z*vertexD->getZ())/
+                    norm2(v_n);
+                    
+                    sxyz<T1> pt;   // -> Point (ξ_0 , ζ_0 )
+                    pt.x = vertexD->getX() + k*v_n.x;
+                    pt.y = vertexD->getY() + k*v_n.y;
+                    pt.z = vertexD->getZ() + k*v_n.z;
+                    
+                    T1 rho0 = vertexD->getDistance( pt );
+                    
+                    sxyz<T1> v_pt = {pt.x-vertexA->getX(), pt.y-vertexA->getY(), pt.z-vertexA->getZ()};
+                    
+                    T1 xi0;
+                    T1 zeta0;
+                    projNorm(v_b/b, v_c/c, v_pt, xi0, zeta0);
+                    
+                    T1 beta = u*b*b - v*d2;
+                    T1 gamma = v*c*c - u*d2;
+                    
+                    T1 xi_tilde = -fabs(beta)*rho0/(phi*w_tilde);
+                    T1 zeta_tilde = -fabs(gamma)*rho0/(phi*w_tilde);
+                    
+                    T1 xi = xi_tilde + xi0;
+                    T1 zeta = zeta_tilde + zeta0;
+                    
+                    if ( 0.<xi && xi<1. && 0.<zeta && zeta<1. && 0.<(xi+zeta) && (xi+zeta)<1. ) {
+                        tABC = vertexA->getTT(threadNo) + u*xi0 + v*zeta0 + w_tilde*rho0/phi;
+                    }
                 }
             }
             
