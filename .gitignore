@@ -6,4 +6,6 @@ cmesh3d.cpp
 build/
 debug_tt_mex/
 test_lelievre11.py
+ttcr_matlab/*.mex*
+xcuserdata/
 
