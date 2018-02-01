@@ -373,12 +373,12 @@
 		2BB7D5BA1D07A801004730B9 /* ttcrpy */ = {
 			isa = PBXGroup;
 			children = (
+				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
 				2B2BD5B21F561ACF00D710A0 /* setup_linux.py */,
 				2B6D56201D50358C00075138 /* utils.py */,
 				2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */,
 				2B9963541F067641004FED9D /* cgrid3d.pyx */,
 				2BDCA1D61DADCD6200E26DEB /* cmesh3d.pyx */,
-				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
 				2B0B2DDC1D4A4C5600111F13 /* Grid2Dttcr.h */,
 				2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */,
 				2BE42A541DAD06310084B97F /* Grid3Dttcr.h */,
