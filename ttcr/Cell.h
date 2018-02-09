@@ -505,6 +505,7 @@ namespace ttcr {
     public:
         CellElliptical3D(const size_t n) :
         slowness(std::vector<T>(n)),
+        chi(std::vector<T>(n)),
         xi(std::vector<T>(n)) {
         }
         
@@ -515,6 +516,17 @@ namespace ttcr {
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
+            }
+            return 0;
+        }
+        
+        int setChi(const std::vector<T>& s) {
+            if ( chi.size() != s.size() ) {
+                std::cerr << "Error: chi vectors of incompatible size.";
+                return 1;
+            }
+            for ( size_t n=0; n<chi.size(); ++n ) {
+                chi[n] = s[n]*s[n];
             }
             return 0;
         }
@@ -564,23 +576,22 @@ namespace ttcr {
                     const size_t cellNo) const {
             T lx = node.x - source.getX();
             T ly = node.y - source.getY();
-            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T lz = node.z - source.getZ();
-            return slowness[cellNo] * std::sqrt( lx*lx + xi[cellNo]*lz*lz );
+            return slowness[cellNo] * std::sqrt( lx*lx + chi[cellNo]*ly*ly + xi[cellNo]*lz*lz );
         }
         
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             T lx = node.getX() - source.getX();
-            T ly = node.y - source.getY();
-            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
+            T ly = node.getY() - source.getY();
             T lz = node.getZ() - source.getZ();
-            return slowness[cellNo] * std::sqrt( lx*lx + xi[cellNo]*lz*lz );
+            return slowness[cellNo] * std::sqrt( lx*lx + chi[cellNo]*ly*ly + xi[cellNo]*lz*lz );
         }
         
     private:
         std::vector<T> slowness;
-        std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
+        std::vector<T> chi;       // anisotropy ratio, chi = sy / sx, *** squared ***
+        std::vector<T> xi;        // anisotropy ratio, xi  = sz / sx, *** squared ***
     };
     
     
