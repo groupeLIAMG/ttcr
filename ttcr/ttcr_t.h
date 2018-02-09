@@ -598,28 +598,26 @@ namespace ttcr {
         
         // solved using xi*c + zeta*b = p
         
-        if ( c.x != 0.0 && c.x*b.y != c.y*b.x) {
-            zeta0 = (p.y - c.y/c.x*p.x) / (b.y - c.y/c.x*b.x);
-            xi0 = (p.x - zeta0*b.x)/c.x;
-        } else if ( c.x != 0.0 && c.x*b.z != c.z*b.x) {
-            zeta0 = (p.z - c.z/c.x*p.x) / (b.z - c.z/c.x*b.x);
-            xi0 = (p.x - zeta0*b.x)/c.x;
-        } else if ( c.y != 0.0 && c.y*b.x != c.x*b.y ) {
-            zeta0 = (p.x - c.x/c.y*p.y) / (p.x - c.x/c.y*p.y);
-            xi0 = (p.y - zeta0*b.y)/c.y;
-        } else if ( c.y != 0.0 && c.y*b.z != c.z*b.y ) {
-            zeta0 = (p.z - c.z/c.y*p.y) / (p.z - c.z/c.y*p.y);
-            xi0 = (p.y - zeta0*b.y)/c.y;
-        } else if ( c.z != 0.0 && c.z*b.x != c.x*b.z ) {
-            zeta0 = (p.x - c.x/c.z*p.z) / (b.x - c.x/c.z*b.z);
-            xi0 = (p.z - zeta0*b.z)/c.z;
-        } else if ( c.z != 0.0 && c.z*b.y != c.y*b.z ) {
-            zeta0 = (p.y - c.y/c.z*p.z) / (b.y - c.y/c.z*b.z);
-            xi0 = (p.z - zeta0*b.z)/c.z;
-        } else {
-            // error -> return negative values for both xi & zeta
+        //       | c.x b.x |                        | p.x |
+        //  A =  | c.y b.y |   x = |  xi0  |    b = | p.y |
+        //       | c.z b.z |       | zeta0 |        | p.z |
+        
+        // solve AT A x = AT b
+        
+        T ata11 = norm2(c);
+        T ata12 = b.x*c.x + b.y*c.y + b.z*c.z;
+        T ata21 = ata12;
+        T ata22 = norm2(b);
+        T atb1 = c.x*p.x + c.y*p.y + c.z*p.z;
+        T atb2 = b.x*p.x + b.y*p.y + b.z*p.z;
+        
+        T det = ata11*ata22 - ata12*ata21;
+        if ( det == 0.0 ) {
             xi0 = -1.0;
             zeta0 = -1.0;
+        } else {
+            xi0   = (atb1*ata22 - ata12*atb2) / det;
+            zeta0 = (ata11*atb2 - atb1*ata21) / det;
         }
     }
     

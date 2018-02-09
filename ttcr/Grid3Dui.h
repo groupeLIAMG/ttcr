@@ -683,6 +683,10 @@ namespace ttcr {
                     T1 xi0;
                     T1 zeta0;
                     projNorm(v_b/b, v_c/c, v_pt, xi0, zeta0);
+                    if ( xi0 < 0.0 || zeta0 < 0.0 ) {
+                        // this should not happen unless we have incorrect triangle
+                        continue;
+                    }
                     
                     T1 beta = u*b*b - v*d2;
                     T1 gamma = v*c*c - u*d2;
