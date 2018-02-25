@@ -162,7 +162,6 @@
 		2B150F0F1BB1E7D500475F01 /* Grid2Drisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drisp.h; sourceTree = "<group>"; };
 		2B17F25F1C2B535D00F9C97F /* Grid2Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid2Drc.h; sourceTree = "<group>"; };
 		2B17F2601C2B6A1300F9C97F /* Grid2Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drcfs.h; sourceTree = "<group>"; };
-		2B2BD5B21F561ACF00D710A0 /* setup_linux.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = setup_linux.py; sourceTree = "<group>"; };
 		2B3323751CA450D2005F3C8D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		2B37D4BB1D4A4EFF00EA31E9 /* grid.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = grid.py; sourceTree = "<group>"; };
 		2B39B6A518F860BD003985D6 /* Grid2Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dui.h; sourceTree = "<group>"; };
@@ -374,7 +373,6 @@
 			isa = PBXGroup;
 			children = (
 				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
-				2B2BD5B21F561ACF00D710A0 /* setup_linux.py */,
 				2B6D56201D50358C00075138 /* utils.py */,
 				2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */,
 				2B9963541F067641004FED9D /* cgrid3d.pyx */,

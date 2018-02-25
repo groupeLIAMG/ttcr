@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 """
+    2D grid for raytracing based on the shortest path method
+    
+    ---
     Copyright 2016 Bernard Giroux
     email: bernard.giroux@ete.inrs.ca
     
@@ -50,9 +53,27 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
 
 
 cdef class Grid2Dcpp:
+    """
+    Grid2Dcpp(type, nx, nz, dx, dz, xmin, zmin, nsnx, nsnz, nthreads)
+        
+    Parameters
+        type : type of media
+                 'iso'          isotorpic
+                 'elliptical'   elliptically anisotropic
+                 'tilted'       tilted elliptically anisotropic
+        nx : number of cells in x
+        nz : number of cells in z
+        dx : cell size in x
+        dz : cell size in z
+        xmin : origin inx
+        zmin : origin in z
+        nsnx : number of secondary nodes in x
+        nsnz : number of secondary nodes in z
+        nthreads : number of threads
+    """
     cdef Grid2Dttcr* grid
     def __cinit__(self, gridType, uint32_t nx, uint32_t nz, double dx, double dz,
-                  double xmin, double zmin,uint32_t nsnx, uint32_t nsnz,
+                  double xmin, double zmin, uint32_t nsnx, uint32_t nsnz,
                   size_t nthreads):
         self.grid = new Grid2Dttcr(gridType, nx, nz, dx, dz, xmin, zmin, nsnx, nsnz, nthreads)
 
@@ -63,6 +84,27 @@ cdef class Grid2Dcpp:
         return self.grid.getType()
 
     def raytrace(self, slowness, xi, theta, Tx, Rx, t0, nout):
+        """
+        raytrace(slowness, xi, theta, Tx, Rx, t0, nout) -> tt,L,rays
+        
+        Parameters
+            slowness : vector of slowness at grid cells
+            xi : vector of anisotropy ratio at grid cells
+            theta : vector of anisotropy angle at grid cells
+            Tx : source coordinates, nTx by 2
+                   1st column contains X coordinates,
+                   2nd contains Z coordinates
+            Rx : receiver coordinates, nTx by 2
+                   1st column contains X coordinates,
+                   2nd contains Z coordinates
+            t0 : origin time
+            nout : number of output variables (2 or 3)
+            
+        Returns
+            tt : travel times
+            L : data kernel matrix (tt = L*slowness)
+            rays : (if nout == 3) coordinates of rays
+        """
 
         # check if types are consistent with input data
         if len(xi) != 0:
@@ -142,6 +184,24 @@ cdef class Grid2Dcpp:
 
     @staticmethod
     def Lsr2d(Tx, Rx, grx, grz):
+        """
+        Lsr2d(Tx, Rx, grx, grz) -> L
+        
+        Raytracing with straight rays in 2D
+        
+        Parameters
+            Tx : source coordinates, nTx by 2
+                  1st column contains X coordinates,
+                  2nd contains Z coordinates
+            Rx : receiver coordinates, nTx by 2
+                  1st column contains X coordinates,
+                  2nd contains Z coordinates
+            grx : grid node coordinates along x
+            grz : grid node coordinates along z
+            
+        Returns
+            L : data kernel matrix (tt = L*slowness)
+        """
 
         cdef size_t nTx = Tx.shape[0]
         cdef size_t n_grx = grx.shape[0]
@@ -160,6 +220,24 @@ cdef class Grid2Dcpp:
 
     @staticmethod
     def Lsr2da(Tx, Rx, grx, grz):
+        """
+        Lsr2da(Tx, Rx, grx, grz) -> L
+            
+        Raytracing with straight rays in 2D elliptically anisotropic media
+            
+        Parameters
+            Tx : source coordinates, nTx by 2
+                   1st column contains X coordinates,
+                   2nd contains Z coordinates
+            Rx : receiver coordinates, nTx by 2
+                   1st column contains X coordinates,
+                   2nd contains Z coordinates
+            grx : grid node coordinates along x
+            grz : grid node coordinates along z
+            
+        Returns
+            L : data kernel matrix (tt = L*slowness)
+        """
 
         cdef size_t nTx = Tx.shape[0]
         cdef size_t n_grx = grx.shape[0]
