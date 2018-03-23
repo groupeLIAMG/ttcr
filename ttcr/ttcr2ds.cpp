@@ -126,8 +126,13 @@ int body(const input_parameters &par) {
     if ( par.saveM ) {
         if ( num_threads == 1 ) {
             for ( size_t n=0; n<src.size(); ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
             }
         } else {
             // threaded jobs
@@ -141,16 +146,26 @@ int body(const input_parameters &par) {
                 threads[i]=thread( [&g,&src,&rcv,&r_data,&v0,&m_data,blk_start,blk_end,i]{
                     
                     for ( size_t n=blk_start; n<blk_end; ++n ) {
-                        g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                    rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
+                        try {
+                            g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                        rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
+                        } catch (std::runtime_error& e) {
+                            std::cerr << e.what() << std::endl;
+                            abort();
+                        }
                     }
                 });
                 
                 blk_start = blk_end;
             }
             for ( size_t n=blk_start; n<nTx; ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
             }
             
             for_each(threads.begin(),threads.end(), mem_fn(&thread::join));
@@ -158,8 +173,13 @@ int body(const input_parameters &par) {
     } else if ( par.saveRaypaths ) {
 		if ( num_threads == 1 ) {
 			for ( size_t n=0; n<src.size(); ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                             rcv.get_tt(n), r_data[n]);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), r_data[n]);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
 			}
 		} else {
 			// threaded jobs
@@ -173,16 +193,26 @@ int body(const input_parameters &par) {
 				threads[i]=thread( [&g,&src,&rcv,&r_data,blk_start,blk_end,i]{
                     
 					for ( size_t n=blk_start; n<blk_end; ++n ) {
-                        g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                      rcv.get_tt(n), r_data[n], i+1);
+                        try {
+                            g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                        rcv.get_tt(n), r_data[n], i+1);
+                        } catch (std::runtime_error& e) {
+                            std::cerr << e.what() << std::endl;
+                            abort();
+                        }
 					}
 				});
 				
 				blk_start = blk_end;
 			}
 			for ( size_t n=blk_start; n<nTx; ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], 0);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), r_data[n], 0);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
 			}
 			
 			for_each(threads.begin(),threads.end(), mem_fn(&thread::join));
@@ -190,8 +220,13 @@ int body(const input_parameters &par) {
 	} else {
 		if ( num_threads == 1 ) {
 			for ( size_t n=0; n<src.size(); ++n ) {
-				g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-							rcv.get_tt(n));
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n));
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
 			}
 		} else {
 			// threaded jobs
@@ -205,16 +240,26 @@ int body(const input_parameters &par) {
 				threads[i]=thread( [&g,&src,&rcv,blk_start,blk_end,i]{
                     
 					for ( size_t n=blk_start; n<blk_end; ++n ) {
-						g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-									rcv.get_tt(n), i+1);
+                        try {
+                            g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                        rcv.get_tt(n), i+1);
+                        } catch (std::runtime_error& e) {
+                            std::cerr << e.what() << std::endl;
+                            abort();
+                        }
 					}
 				});
 				
 				blk_start = blk_end;
 			}
 			for ( size_t n=blk_start; n<nTx; ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), 0);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), 0);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
 			}
 			
 			for_each(threads.begin(),threads.end(), mem_fn(&thread::join));

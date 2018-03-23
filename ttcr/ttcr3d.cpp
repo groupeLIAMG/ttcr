@@ -170,8 +170,13 @@ int body(const input_parameters &par) {
     if ( par.saveM ) {
         if ( num_threads == 1 ) {
             for ( size_t n=0; n<src.size(); ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
             }
         } else {
             // threaded jobs
@@ -185,16 +190,26 @@ int body(const input_parameters &par) {
                 threads[i]=thread( [&g,&src,&rcv,&r_data,&v0,&m_data,blk_start,blk_end,i]{
                     
                     for ( size_t n=blk_start; n<blk_end; ++n ) {
-                        g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                    rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
+                        try {
+                            g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                        rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
+                        } catch (std::runtime_error& e) {
+                            std::cerr << e.what() << std::endl;
+                            abort();
+                        }
                     }
                 });
                 
                 blk_start = blk_end;
             }
             for ( size_t n=blk_start; n<nTx; ++n ) {
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                            rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
+                                rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
             }
             
             for_each(threads.begin(),threads.end(), mem_fn(&thread::join));
@@ -212,10 +227,14 @@ int body(const input_parameters &par) {
 					all_tt.push_back( &(reflectors[nr].get_tt(n)) );
                     all_r_data.push_back( &(rfl_r_data[nr][n]) );
 				}
-				
-				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
-							all_tt, all_r_data);
-                
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
+                                all_tt, all_r_data);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
+
                 if ( par.saveGridTT>0 ) {
                     
                     string srcname = par.srcfiles[n];
@@ -230,9 +249,14 @@ int body(const input_parameters &par) {
                 }
 				
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
-					g->raytrace(reflectors[nr].get_coord(),
-								reflectors[nr].get_tt(n), rcv.get_coord(),
-								rcv.get_tt(n,nr+1), rfl2_r_data[nr][n]);
+                    try {
+                        g->raytrace(reflectors[nr].get_coord(),
+                                    reflectors[nr].get_tt(n), rcv.get_coord(),
+                                    rcv.get_tt(n,nr+1), rfl2_r_data[nr][n]);
+                    } catch (std::runtime_error& e) {
+                        std::cerr << e.what() << std::endl;
+                        abort();
+                    }
 				}
 			}
 		} else {
@@ -258,14 +282,23 @@ int body(const input_parameters &par) {
 							all_tt.push_back( &(reflectors[nr].get_tt(n)) );
                             all_r_data.push_back( &(rfl_r_data[nr][n]) );
 						}
-						
-						g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
-									all_tt, all_r_data, i+1);
-						
+                        try {
+                            g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
+                                        all_tt, all_r_data, i+1);
+                        } catch (std::runtime_error& e) {
+                            std::cerr << e.what() << std::endl;
+                            abort();
+                        }
+
 						for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
-							g->raytrace(reflectors[nr].get_coord(),
-										reflectors[nr].get_tt(n), rcv.get_coord(),
-										rcv.get_tt(n,nr+1), rfl2_r_data[nr][n], i+1);
+                            try {
+                                g->raytrace(reflectors[nr].get_coord(),
+                                            reflectors[nr].get_tt(n), rcv.get_coord(),
+                                            rcv.get_tt(n,nr+1), rfl2_r_data[nr][n], i+1);
+                            } catch (std::runtime_error& e) {
+                                std::cerr << e.what() << std::endl;
+                                abort();
+                            }
 						}
 					}
 				});
@@ -282,14 +315,23 @@ int body(const input_parameters &par) {
                     all_tt.push_back( &(reflectors[nr].get_tt(n)) );
                     all_r_data.push_back( &(rfl_r_data[nr][n]) );
                 }
-                
-                g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
-                            all_tt, all_r_data, 0);
-                
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
+                                all_tt, all_r_data, 0);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
+
                 for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
-                    g->raytrace(reflectors[nr].get_coord(),
-                                reflectors[nr].get_tt(n), rcv.get_coord(),
-                                rcv.get_tt(n,nr+1), rfl2_r_data[nr][n], 0);
+                    try {
+                        g->raytrace(reflectors[nr].get_coord(),
+                                    reflectors[nr].get_tt(n), rcv.get_coord(),
+                                    rcv.get_tt(n,nr+1), rfl2_r_data[nr][n], 0);
+                    } catch (std::runtime_error& e) {
+                        std::cerr << e.what() << std::endl;
+                        abort();
+                    }
                 }
 			}
 			
@@ -306,10 +348,14 @@ int body(const input_parameters &par) {
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					all_tt.push_back( &(reflectors[nr].get_tt(n)) );
 				}
-				
-				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
-							all_tt);
-				
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
+                                all_tt);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
+
                 if ( par.saveGridTT>0 ) {
                     
                     string srcname = par.srcfiles[n];
@@ -324,9 +370,14 @@ int body(const input_parameters &par) {
                 }
 
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
-					g->raytrace(reflectors[nr].get_coord(),
-								reflectors[nr].get_tt(n), rcv.get_coord(),
-								rcv.get_tt(n,nr+1));
+                    try {
+                        g->raytrace(reflectors[nr].get_coord(),
+                                    reflectors[nr].get_tt(n), rcv.get_coord(),
+                                    rcv.get_tt(n,nr+1));
+                    } catch (std::runtime_error& e) {
+                        std::cerr << e.what() << std::endl;
+                        abort();
+                    }
 				}
 			}
 		} else {
@@ -349,14 +400,23 @@ int body(const input_parameters &par) {
 						for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 							all_tt.push_back( &(reflectors[nr].get_tt(n)) );
 						}
-						
-						g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
-									all_tt, i+1);
-						
+                        try {
+                            g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
+                                        all_tt, i+1);
+                        } catch (std::runtime_error& e) {
+                            std::cerr << e.what() << std::endl;
+                            abort();
+                        }
+
 						for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
-							g->raytrace(reflectors[nr].get_coord(),
-										reflectors[nr].get_tt(n), rcv.get_coord(),
-										rcv.get_tt(n,nr+1), i+1);
+                            try {
+                                g->raytrace(reflectors[nr].get_coord(),
+                                            reflectors[nr].get_tt(n), rcv.get_coord(),
+                                            rcv.get_tt(n,nr+1), i+1);
+                            } catch (std::runtime_error& e) {
+                                std::cerr << e.what() << std::endl;
+                                abort();
+                            }
 						}
 					}
 				});
@@ -371,14 +431,23 @@ int body(const input_parameters &par) {
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					all_tt.push_back( &(reflectors[nr].get_tt(n)) );
 				}
-				
-				g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
-                            all_tt, 0);
-				
+                try {
+                    g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
+                                all_tt, 0);
+                } catch (std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    abort();
+                }
+
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
-					g->raytrace(reflectors[nr].get_coord(),
-								reflectors[nr].get_tt(n), rcv.get_coord(),
-								rcv.get_tt(n,nr+1), 0);
+                    try {
+                        g->raytrace(reflectors[nr].get_coord(),
+                                    reflectors[nr].get_tt(n), rcv.get_coord(),
+                                    rcv.get_tt(n,nr+1), 0);
+                    } catch (std::runtime_error& e) {
+                        std::cerr << e.what() << std::endl;
+                        abort();
+                    }
 				}
 			}
 			
