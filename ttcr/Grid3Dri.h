@@ -214,7 +214,7 @@ namespace ttcr {
             k = static_cast<long long>( small + (pt.z-zmin)/dz );
         }
         
-        int checkPts(const std::vector<sxyz<T1>>&) const;
+        void checkPts(const std::vector<sxyz<T1>>&) const;
         
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2. * source.getDistance( node );
@@ -300,19 +300,15 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    int Grid3Dri<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Dri<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
         
         // Check if the points from a vector are in the grid
         for ( size_t n=0; n<pts.size(); ++n ) {
             if ( pts[n].x < xmin || pts[n].x > xmax ||
                 pts[n].y < ymin || pts[n].y > ymax ||
                 pts[n].z < zmin || pts[n].z > zmax ) {
-                std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
-                return 1;
-            }
+                throw std::range_error("Point outside grid.");            }
         }
-        return 0;
     }
     
     

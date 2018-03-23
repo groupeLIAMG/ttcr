@@ -178,8 +178,12 @@ namespace ttcr {
                                            std::vector<T1>& traveltimes,
                                            const size_t threadNo) const {
         
-        if ( this->checkPts(Tx) == 1 ) return 1;
-        if ( this->checkPts(Rx) == 1 ) return 1;
+        try {
+            this->checkPts(Tx);
+            this->checkPts(Rx);
+        } catch (...) {
+            throw;
+        }
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -214,10 +218,14 @@ namespace ttcr {
                                            std::vector<std::vector<T1>*>& traveltimes,
                                            const size_t threadNo) const {
         
-        if ( this->checkPts(Tx) == 1 ) return 1;
-        for ( size_t n=0; n<Rx.size(); ++n )
-            if ( this->checkPts(*Rx[n]) == 1 ) return 1;
-        
+        try {
+            this->checkPts(Tx);
+            for ( size_t n=0; n<Rx.size(); ++n )
+                this->checkPts(*Rx[n]);
+        } catch (...) {
+            throw;
+        }
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
@@ -255,9 +263,12 @@ namespace ttcr {
                                            std::vector<std::vector<S>>& r_data,
                                            const size_t threadNo) const {
         
-        //	std::cout << "   running in thread no " << threadNo << std::endl;
-        if ( this->checkPts(Tx) == 1 ) return 1;
-        if ( this->checkPts(Rx) == 1 ) return 1;
+        try {
+            this->checkPts(Tx);
+            this->checkPts(Rx);
+        } catch (...) {
+            throw;
+        }
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -360,10 +371,14 @@ namespace ttcr {
                                            std::vector<std::vector<std::vector<S>>*>& r_data,
                                            const size_t threadNo) const {
         
-        if ( this->checkPts(Tx) == 1 ) return 1;
-        for ( size_t n=0; n<Rx.size(); ++n )
-            if ( this->checkPts(*Rx[n]) == 1 ) return 1;
-        
+        try {
+            this->checkPts(Tx);
+            for ( size_t n=0; n<Rx.size(); ++n )
+                this->checkPts(*Rx[n]);
+        } catch (...) {
+            throw;
+        }
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
@@ -474,9 +489,12 @@ namespace ttcr {
                                            std::vector<std::vector<siv<T1>>>& l_data,
                                            const size_t threadNo) const {
         
-        //	std::cout << "   running in thread no " << threadNo << std::endl;
-        if ( this->checkPts(Tx) == 1 ) return 1;
-        if ( this->checkPts(Rx) == 1 ) return 1;
+        try {
+            this->checkPts(Tx);
+            this->checkPts(Rx);
+        } catch (...) {
+            throw;
+        }
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );

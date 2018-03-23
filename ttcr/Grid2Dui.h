@@ -189,8 +189,8 @@ namespace ttcr {
                          const size_t threadNo) const;
         
         
-        int checkPts(const std::vector<sxz<T1>>&) const;
-        int checkPts(const std::vector<sxyz<T1>>&) const;
+        void checkPts(const std::vector<sxz<T1>>&) const;
+        void checkPts(const std::vector<sxyz<T1>>&) const;
         
         bool insideTriangle(const sxz<T1>&, const T2) const;
         bool insideTriangle(const sxyz<T1>&, const T2) const;
@@ -333,7 +333,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
-    int Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
+    void Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
         
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -352,16 +352,13 @@ namespace ttcr {
                 }
             }
             if ( found == false ) {
-                std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
-                return 1;
+                throw std::range_error("Point outside grid.");
             }
         }
-        return 0;
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    int Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
         
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -380,12 +377,9 @@ namespace ttcr {
                 }
             }
             if ( found == false ) {
-                std::cerr << "Error: point no " << (n+1)
-                << " outside the grid ("<< pts[n].x <<", "<< pts[n].y <<", "<< pts[n].z<<").\n";
-                return 1;
+                throw std::range_error("Point outside grid.");
             }
         }
-        return 0;
     }
     
     

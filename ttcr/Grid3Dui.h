@@ -32,6 +32,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <stdexcept>
 #include <vector>
 
 #ifdef VTK
@@ -202,7 +203,7 @@ namespace ttcr {
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
         
-        int checkPts(const std::vector<sxyz<T1>>&) const;
+        void checkPts(const std::vector<sxyz<T1>>&) const;
         
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
         
@@ -333,7 +334,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    int Grid3Dui<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Dui<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
         
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -354,13 +355,9 @@ namespace ttcr {
                 }
             }
             if ( found == false ) {
-                std::cerr << "Error: point no " << (n+1)
-                << " outside the mesh (" << pts[n].x << "," << pts[n].y
-                << "," << pts[n].z << ").\n";
-                return 1;
+                throw std::range_error("Point outside grid.");
             }
         }
-        return 0;
     }
     
     

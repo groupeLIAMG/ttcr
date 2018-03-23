@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+#include <stdexcept>
 #include <vector>
 
 #ifdef VTK
@@ -109,7 +110,7 @@ namespace ttcr {
         
         void buildGridNeighbors();
         
-        int checkPts(const std::vector<sxz<T1>>&) const;
+        void checkPts(const std::vector<sxz<T1>>&) const;
         
         bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
         
@@ -202,16 +203,13 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename CELL>
-    int Grid2Drc<T1,T2,NODE,CELL>::checkPts(const std::vector<sxz<T1>>& pts) const {
+    void Grid2Drc<T1,T2,NODE,CELL>::checkPts(const std::vector<sxz<T1>>& pts) const {
         for (size_t n=0; n<pts.size(); ++n) {
             if ( pts[n].x < xmin || pts[n].x > xmax ||
                 pts[n].z < zmin || pts[n].z > zmax ) {
-                std::cerr << "Error: point no " << (n+1)
-                << " outside the grid.\n";
-                return 1;
+                throw std::range_error("Point outside grid.");
             }
         }
-        return 0;
     }
     
     
