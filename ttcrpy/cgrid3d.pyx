@@ -41,23 +41,23 @@ cdef extern from "Grid3Dttcr.h" namespace "ttcr":
         int raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
                      const vector[sxyz[double]]&,
-                     double*)
+                     double*) except +
         int raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
                      const vector[sxyz[double]]&,
-                     double*, object, double*)
+                     double*, object, double*) except +
         int raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
-                     double*, object, double*, object)
+                     double*, object, double*, object) except +
         int raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
-                     double*, object, object)
+                     double*, object, object) except +
         int raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
-                     double*, object)
+                     double*, object) except +
 
 
 cdef class Grid3Dcpp:

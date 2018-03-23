@@ -44,7 +44,7 @@ namespace ttcr {
 
     class Grid3Dttcr {
     public:
-        Grid3Dttcr(std::string&, const uint32_t, const uint32_t, const uint32_t, const double,
+        Grid3Dttcr(const std::string&, const uint32_t, const uint32_t, const uint32_t, const double,
                    const double, const double, const double,
                    const double, const int, const bool,
                    const size_t);

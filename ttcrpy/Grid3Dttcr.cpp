@@ -31,7 +31,7 @@ using namespace std;
 
 namespace ttcr {
 
-    Grid3Dttcr::Grid3Dttcr(std::string& t,
+    Grid3Dttcr::Grid3Dttcr(const std::string& t,
                            const uint32_t nx, const uint32_t ny, const uint32_t nz,
                            const double ddx,
                            const double minx, const double miny, const double minz,
