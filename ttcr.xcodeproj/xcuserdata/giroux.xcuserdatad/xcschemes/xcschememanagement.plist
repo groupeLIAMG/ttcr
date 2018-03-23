@@ -49,6 +49,11 @@
 			<key>orderHint</key>
 			<integer>3</integer>
 		</dict>
+		<key>testGrid3Dttcr.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>13</integer>
+		</dict>
 		<key>ttcr2d.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -73,6 +78,11 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>2B04DD761AA75F6E000231E6</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2B376293206438C900F5CC58</key>
 		<dict>
 			<key>primary</key>
 			<true/>

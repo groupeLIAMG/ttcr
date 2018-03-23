@@ -54,6 +54,16 @@ namespace ttcr {
             return 1;
         }
         
+        int setChi(const std::vector<T>& s) {
+            std::cerr << "Error: chi not defined for Cell.";
+            return 1;
+        }
+        
+        int setPsi(const std::vector<T>& s) {
+            std::cerr << "Error: psi not defined for Cell.";
+            return 1;
+        }
+        
         int setTiltAngle(const std::vector<T>& s) {
             std::cerr << "Error: TiltAngle not defined for Cell.";
             return 1;
@@ -270,7 +280,7 @@ namespace ttcr {
             T t1 = lx * ca[cellNo] + lz * sa[cellNo];
             T t2 = lz * ca[cellNo] - lx * sa[cellNo];
             
-            return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*xi[cellNo]*t2*t2 );
+            return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
         }
         
         T computeDt(const NODE& source, const NODE& node,
@@ -280,7 +290,7 @@ namespace ttcr {
             T t1 = lx * ca[cellNo] + lz * sa[cellNo];
             T t2 = lz * ca[cellNo] - lx * sa[cellNo];
             
-            return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*xi[cellNo]*t2*t2 );
+            return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
         }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
@@ -506,7 +516,7 @@ namespace ttcr {
         CellElliptical3D(const size_t n) :
         slowness(std::vector<T>(n)),
         chi(std::vector<T>(n)),
-        xi(std::vector<T>(n)) {
+        psi(std::vector<T>(n)) {
         }
         
         int setSlowness(const std::vector<T>& s) {
@@ -531,13 +541,13 @@ namespace ttcr {
             return 0;
         }
         
-        int setXi(const std::vector<T>& s) {
-            if ( xi.size() != s.size() ) {
-                std::cerr << "Error: xi vectors of incompatible size.";
+        int setPsi(const std::vector<T>& s) {
+            if ( psi.size() != s.size() ) {
+                std::cerr << "Error: psi vectors of incompatible size.";
                 return 1;
             }
-            for ( size_t n=0; n<xi.size(); ++n ) {
-                xi[n] = s[n]*s[n];
+            for ( size_t n=0; n<psi.size(); ++n ) {
+                psi[n] = s[n]*s[n];
             }
             return 0;
         }
@@ -577,7 +587,7 @@ namespace ttcr {
             T lx = node.x - source.getX();
             T ly = node.y - source.getY();
             T lz = node.z - source.getZ();
-            return slowness[cellNo] * std::sqrt( lx*lx + chi[cellNo]*ly*ly + xi[cellNo]*lz*lz );
+            return slowness[cellNo] * std::sqrt( chi[cellNo]*lx*lx + psi[cellNo]*ly*ly + lz*lz );
         }
         
         T computeDt(const NODE& source, const NODE& node,
@@ -585,13 +595,13 @@ namespace ttcr {
             T lx = node.getX() - source.getX();
             T ly = node.getY() - source.getY();
             T lz = node.getZ() - source.getZ();
-            return slowness[cellNo] * std::sqrt( lx*lx + chi[cellNo]*ly*ly + xi[cellNo]*lz*lz );
+            return slowness[cellNo] * std::sqrt( chi[cellNo]*lx*lx + psi[cellNo]*ly*ly + lz*lz );
         }
         
     private:
-        std::vector<T> slowness;
-        std::vector<T> chi;       // anisotropy ratio, chi = sy / sx, *** squared ***
-        std::vector<T> xi;        // anisotropy ratio, xi  = sz / sx, *** squared ***
+        std::vector<T> slowness;  // this vector contains sz
+        std::vector<T> chi;       // anisotropy ratio, chi = sx / sz, *** squared ***
+        std::vector<T> psi;       // anisotropy ratio, psi = sy / sz, *** squared ***
     };
     
     

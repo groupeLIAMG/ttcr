@@ -342,6 +342,8 @@ namespace ttcr {
         
         bool foundSlowness = false;
         std::vector<T> slowness;
+        std::vector<T> chi;
+        std::vector<T> psi;
         if ( pd->HasArray("P-wave velocity") ||
             pd->HasArray("Velocity") ||
             pd->HasArray("Slowness") ) {
@@ -437,9 +439,11 @@ namespace ttcr {
                 return 0;
             }
             
-        } else if ( cd->HasArray("P-wave velocity") ||
-                   cd->HasArray("Velocity") ||
+        } else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
                    cd->HasArray("Slowness") ) {
+            
+            bool foundChi = false;
+            bool foundPsi = false;
             for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
                     strcmp(cd->GetArrayName(na), "Velocity")==0 ) {
@@ -468,6 +472,40 @@ namespace ttcr {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                     foundSlowness = true;
+                    if ( cd->HasArray("chi") ) {
+                        
+                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
+                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("chi") );
+                        
+                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
+                            std::cout << "Problem with chi data (wrong size)" << std::endl;
+                            return nullptr;
+                        }
+                        
+                        chi.resize( x->GetSize() );
+                        for ( size_t n=0; n<x->GetSize(); ++n ) {
+                            chi[n] = x->GetComponent(n, 0);
+                        }
+                        foundChi = true;
+                        if ( par.verbose ) { cout << "Model contains anisotropy ratio chi\n"; }
+                    }
+                    if ( cd->HasArray("psi") ) {
+                        
+                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
+                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("psi") );
+                        
+                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
+                            std::cout << "Problem with psi data (wrong size)" << std::endl;
+                            return nullptr;
+                        }
+                        
+                        psi.resize( x->GetSize() );
+                        for ( size_t n=0; n<x->GetSize(); ++n ) {
+                            psi[n] = x->GetComponent(n, 0);
+                        }
+                        foundPsi = true;
+                        if ( par.verbose ) { cout << "Model contains anisotropy ratio xi\n"; }
+                    }
                     break;
                 }
             }
@@ -477,16 +515,33 @@ namespace ttcr {
                         
                         if ( par.verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
-                                                                                               d[0], d[1], d[2],
-                                                                                               xrange[0], yrange[0], zrange[0],
-                                                                                               par.nn[0], par.nn[1], par.nn[2], nt);
+                        if ( foundChi && foundPsi ) {
+                            g = new Grid3Drcsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                                                                                               d[0], d[1], d[2],
+                                                                                                               xrange[0], yrange[0], zrange[0],
+                                                                                                               par.nn[0], par.nn[1], par.nn[2], nt);
+                        } else {
+                            g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                                                                                   d[0], d[1], d[2],
+                                                                                                   xrange[0], yrange[0], zrange[0],
+                                                                                                   par.nn[0], par.nn[1], par.nn[2], nt);
+                        }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( par.verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
                         g->setSlowness( slowness );
+                        if ( foundChi && foundPsi ) {
+                            if ( g->setPsi( psi ) == 1 ) {
+                                std::cerr << "aborting";
+                                std::abort();
+                            }
+                            if ( g->setChi( chi ) == 1 ) {
+                                std::cerr << "aborting";
+                                std::abort();
+                            }
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         break;
                     case FAST_SWEEPING:

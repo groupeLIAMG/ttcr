@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		2B04DD841AA7603F000231E6 /* grid3duifs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B04DD821AA75FFD000231E6 /* grid3duifs_mex.cpp */; };
+		2B376297206438C900F5CC58 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B376296206438C900F5CC58 /* main.cpp */; };
+		2B37629E20643DFE00F5CC58 /* Grid3Dttcr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BDCA1D31DADABA700E26DEB /* Grid3Dttcr.cpp */; };
 		2B3D86E01C5BF12C00AFFA2A /* grid3drcsp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B3D86D31C5BF06100AFFA2A /* grid3drcsp_mex.cpp */; };
 		2B3D86EF1C5C065D00AFFA2A /* grid3drcfs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B3D86EE1C5C065D00AFFA2A /* grid3drcfs_mex.cpp */; };
 		2B45CD401C5C3A860083644A /* grid2drcfs_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B45CD3F1C5C3A860083644A /* grid2drcfs_mex.cpp */; };
@@ -41,6 +43,15 @@
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B376292206438C900F5CC58 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
 		};
 		2B3D86D61C5BF08400AFFA2A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -163,6 +174,8 @@
 		2B17F25F1C2B535D00F9C97F /* Grid2Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Grid2Drc.h; sourceTree = "<group>"; };
 		2B17F2601C2B6A1300F9C97F /* Grid2Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drcfs.h; sourceTree = "<group>"; };
 		2B3323751CA450D2005F3C8D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
+		2B376294206438C900F5CC58 /* testGrid3Dttcr */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = testGrid3Dttcr; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B376296206438C900F5CC58 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		2B37D4BB1D4A4EFF00EA31E9 /* grid.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = grid.py; sourceTree = "<group>"; };
 		2B39B6A518F860BD003985D6 /* Grid2Dui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dui.h; sourceTree = "<group>"; };
 		2B39B6A618F8808F003985D6 /* Grid2Duisp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Duisp.h; sourceTree = "<group>"; };
@@ -266,6 +279,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2B376291206438C900F5CC58 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2B3D86D51C5BF08400AFFA2A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -346,6 +366,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2B376295206438C900F5CC58 /* testGrid3Dttcr */ = {
+			isa = PBXGroup;
+			children = (
+				2B376296206438C900F5CC58 /* main.cpp */,
+			);
+			path = testGrid3Dttcr;
+			sourceTree = "<group>";
+		};
 		2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */ = {
 			isa = PBXGroup;
 			children = (
@@ -393,6 +421,7 @@
 			isa = PBXGroup;
 			children = (
 				2BB7D5BA1D07A801004730B9 /* ttcrpy */,
+				2B376295206438C900F5CC58 /* testGrid3Dttcr */,
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
 				2BC708D418EDA599004DA2C9 /* Products */,
@@ -414,6 +443,7 @@
 				2B45CD351C5C38B40083644A /* grid2drcfs_mex.mexmaci64 */,
 				2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */,
 				2BEAEF8B1DBBFB5F001AEA17 /* ttcrpy */,
+				2B376294206438C900F5CC58 /* testGrid3Dttcr */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -509,6 +539,23 @@
 			name = grid3duifs_mex;
 			productName = grid2duisp;
 			productReference = 2B04DD801AA75F6E000231E6 /* grid3duifs_mex.mexmaci64 */;
+			productType = "com.apple.product-type.tool";
+		};
+		2B376293206438C900F5CC58 /* testGrid3Dttcr */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B37629B206438C900F5CC58 /* Build configuration list for PBXNativeTarget "testGrid3Dttcr" */;
+			buildPhases = (
+				2B376290206438C900F5CC58 /* Sources */,
+				2B376291206438C900F5CC58 /* Frameworks */,
+				2B376292206438C900F5CC58 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = testGrid3Dttcr;
+			productName = testGrid3Dttcr;
+			productReference = 2B376294206438C900F5CC58 /* testGrid3Dttcr */;
 			productType = "com.apple.product-type.tool";
 		};
 		2B3D86D71C5BF08400AFFA2A /* grid3drcsp_mex */ = {
@@ -707,6 +754,10 @@
 				LastUpgradeCheck = 0830;
 				ORGANIZATIONNAME = "Bernard Giroux";
 				TargetAttributes = {
+					2B376293206438C900F5CC58 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Automatic;
+					};
 					2B3D86D71C5BF08400AFFA2A = {
 						CreatedOnToolsVersion = 7.2;
 					};
@@ -752,6 +803,7 @@
 				2B45CD341C5C38B40083644A /* grid2drcfs_mex */,
 				2B45CD471C5C3F100083644A /* grid2drcsp_mex */,
 				2BEAEF8A1DBBFB5F001AEA17 /* ttcrpy */,
+				2B376293206438C900F5CC58 /* testGrid3Dttcr */,
 			);
 		};
 /* End PBXProject section */
@@ -762,6 +814,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B04DD841AA7603F000231E6 /* grid3duifs_mex.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B376290206438C900F5CC58 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B376297206438C900F5CC58 /* main.cpp in Sources */,
+				2B37629E20643DFE00F5CC58 /* Grid3Dttcr.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -967,6 +1028,164 @@
 					"-lmat",
 				);
 				PRODUCT_NAME = grid3duifs_mex.mexmaci64;
+			};
+			name = Release;
+		};
+		2B376298206438C900F5CC58 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/Library/Frameworks,
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-7.1",
+					/opt/local/Library/Frameworks/Python.framework/Versions/3.6/include/python3.6m,
+					"/opt/local/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/numpy/core/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/local/lib,
+					/opt/local/Library/Frameworks/Python.framework/Versions/3.6/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
+					"-L/usr/local/VTK/lib",
+					"-lpython3.6",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		2B376299206438C900F5CC58 /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/Library/Frameworks,
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-7.1",
+					/opt/local/Library/Frameworks/Python.framework/Versions/3.6/include/python3.6m,
+					"/opt/local/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/numpy/core/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/local/lib,
+					/opt/local/Library/Frameworks/Python.framework/Versions/3.6/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
+					"-L/usr/local/VTK/lib",
+					"-lpython3.6",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_O;
+		};
+		2B37629A206438C900F5CC58 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/Library/Frameworks,
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-7.1",
+					/opt/local/Library/Frameworks/Python.framework/Versions/3.6/include/python3.6m,
+					"/opt/local/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/numpy/core/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/local/lib,
+					/opt/local/Library/Frameworks/Python.framework/Versions/3.6/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = (
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+					"-lvtkCommonCore-7.1.1",
+					"-L/usr/local/VTK/lib",
+					"-lpython3.6",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};
@@ -2158,6 +2377,16 @@
 				2B04DD7D1AA75F6E000231E6 /* Debug */,
 				2B04DD7E1AA75F6E000231E6 /* Debug_O */,
 				2B04DD7F1AA75F6E000231E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B37629B206438C900F5CC58 /* Build configuration list for PBXNativeTarget "testGrid3Dttcr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B376298206438C900F5CC58 /* Debug */,
+				2B376299206438C900F5CC58 /* Debug_O */,
+				2B37629A206438C900F5CC58 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

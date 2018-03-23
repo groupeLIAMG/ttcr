@@ -78,7 +78,13 @@ namespace ttcr {
         int setSlowness(const std::vector<T1>& s) {
             return cells.setSlowness( s );
         }
-        
+        int setChi(const std::vector<T1>& x) {
+            return cells.setChi( x );
+        }
+        int setPsi(const std::vector<T1>& x) {
+            return cells.setPsi( x );
+        }
+
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncy*ncz; }
         
