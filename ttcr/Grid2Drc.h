@@ -48,12 +48,12 @@ namespace ttcr {
             }
         }
         
-        int setXi(const std::vector<T1>& x) {
-            return cells.setXi( x );
+        void setXi(const std::vector<T1>& x) {
+            cells.setXi( x );
         }
         
-        int setTiltAngle(const std::vector<T1>& t) {
-            return cells.setTiltAngle( t );
+        void setTiltAngle(const std::vector<T1>& t) {
+            cells.setTiltAngle( t );
         }
         
         size_t getNumberOfNodes() const { return nodes.size(); }

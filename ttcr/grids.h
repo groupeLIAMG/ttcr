@@ -1535,13 +1535,19 @@ namespace ttcr {
                             return nullptr;
                         }
                         if ( foundTheta ) {
-                            if ( g->setTiltAngle( theta ) == 1 ) {
+                            try {
+                                g->setTiltAngle( theta );
+                            } catch (std::exception& e) {
+                                cerr << e.what() << endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
                         }
                         if ( foundXi ) {
-                            if ( g->setXi( xi ) == 1 ) {
+                            try {
+                                g->setXi( xi );
+                            } catch (std::exception& e) {
+                                cerr << e.what() << endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }

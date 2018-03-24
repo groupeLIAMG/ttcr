@@ -97,8 +97,8 @@ namespace ttcr {
         
         
         virtual void setSlowness(const std::vector<T1>& s) {}
-        virtual int setXi(const std::vector<T1>& x) { return 1; }
-        virtual int setTiltAngle(const std::vector<T1>& x) { return 1; }
+        virtual void setXi(const std::vector<T1>& x) {}
+        virtual void setTiltAngle(const std::vector<T1>& x) {}
         
         
         virtual size_t getNumberOfNodes() const { return 1; }

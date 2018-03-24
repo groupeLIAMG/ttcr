@@ -96,8 +96,8 @@ namespace ttcr {
                              const size_t threadNo=0) const { return 1; }
 
         virtual void setSlowness(const std::vector<T1>& s) {}
-        virtual int setChi(const std::vector<T1>& x) { return 1; }
-        virtual int setPsi(const std::vector<T1>& x) { return 1; }
+        virtual void setChi(const std::vector<T1>& x) {}
+        virtual void setPsi(const std::vector<T1>& x) {}
         
         virtual void setSourceRadius(const double) {}
         

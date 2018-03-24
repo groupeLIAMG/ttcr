@@ -85,11 +85,11 @@ namespace ttcr {
                 throw;
             }
         }
-        int setChi(const std::vector<T1>& x) {
-            return cells.setChi( x );
+        void setChi(const std::vector<T1>& x) {
+            cells.setChi( x );
         }
-        int setPsi(const std::vector<T1>& x) {
-            return cells.setPsi( x );
+        void setPsi(const std::vector<T1>& x) {
+            cells.setPsi( x );
         }
 
         size_t getNumberOfNodes() const { return nodes.size(); }

@@ -71,14 +71,18 @@ namespace ttcr {
     }
 
     void Grid2Dttcr::setXi(const std::vector<double>& xi) {
-        if ( grid_instance->setXi(xi) == 1 ) {
-            throw length_error("Xi values must be defined for each grid cell.");
+        try {
+            grid_instance->setXi(xi);
+        } catch (std::exception& e) {
+            throw;
         }
     }
 
     void Grid2Dttcr::setTheta(const std::vector<double>& theta) {
-        if ( grid_instance->setTiltAngle(theta) == 1 ) {
-            throw length_error("Theta values must be defined for each grid cell.");
+        try {
+            grid_instance->setTiltAngle(theta);
+        } catch (std::exception& e) {
+            throw;
         }
     }
 
