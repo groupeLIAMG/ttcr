@@ -207,7 +207,9 @@ namespace ttcr {
         for (size_t n=0; n<pts.size(); ++n) {
             if ( pts[n].x < xmin || pts[n].x > xmax ||
                 pts[n].z < zmin || pts[n].z > zmax ) {
-                throw std::range_error("Point outside grid.");
+                std::ostringstream msg;
+                msg << "Error: Point (" << pts[n].x << ", "<< pts[n] .z << ") outside grid.";
+                throw std::range_error(msg.str());
             }
         }
     }

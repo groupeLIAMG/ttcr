@@ -352,7 +352,9 @@ namespace ttcr {
                 }
             }
             if ( found == false ) {
-                throw std::range_error("Point outside grid.");
+                std::ostringstream msg;
+                msg << "Error: Point (" << pts[n].x << ", " << pts[n] .z << ") outside grid.";
+                throw std::range_error(msg.str());
             }
         }
     }
@@ -377,7 +379,9 @@ namespace ttcr {
                 }
             }
             if ( found == false ) {
-                throw std::range_error("Point outside grid.");
+                std::ostringstream msg;
+                msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
+                throw std::range_error(msg.str());
             }
         }
     }
