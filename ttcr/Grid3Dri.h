@@ -666,10 +666,7 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                std::cerr << "Error while computing raypaths: going outside grid!\n"
-                << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                return;
-                
+                throw std::runtime_error("Error while computing raypaths: going outside grid!");
             }
             
             r_data.push_back( curr_pt );
@@ -756,10 +753,7 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                std::cerr << "Error while computing raypaths: going outside grid!\n"
-                << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                return;
-                
+                throw std::runtime_error("Error while computing raypaths: going outside grid!");
             }
             
             prev_pt = r_data.back();
@@ -939,9 +933,7 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    std::cerr << "Error while computing raypaths: going outside grid!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
+                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -1008,9 +1000,7 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    std::cerr << "Error while computing raypaths: going outside grid!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
+                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
                 }
                 
                 iOut = i;
@@ -1082,9 +1072,7 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    std::cerr << "Error while computing raypaths: going outside grid!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
+                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -1156,9 +1144,7 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    std::cerr << "Error while computing raypaths: going outside grid!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
+                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -1213,9 +1199,7 @@ namespace ttcr {
                     
                     sxyz<T1> diff = normalize(gOut)-normalize(gIn);
                     if ( norm(diff) > small ) {
-                        std::cerr << "Error while computing raypaths: raypath not converging!\n"
-                        << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                        return;
+                        throw std::runtime_error("Error while computing raypaths: raypath not converging!");
                     }
                 }
                 
@@ -1228,9 +1212,7 @@ namespace ttcr {
                     (gOut.y<0.0 && jOut==0) || (gOut.y>0.0 && jOut==ncy+1) ||
                     (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
                     //  we are going oustide the grid!
-                    std::cerr << "Error while computing raypaths: going outside grid!\n"
-                    << "  Stopping calculations, raypaths will be incomplete.\n" << std::endl;
-                    return;
+                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
                 }
                 
                 // planes we will intersect

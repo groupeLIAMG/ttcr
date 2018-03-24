@@ -554,12 +554,11 @@ namespace ttcr {
                             return nullptr;
                         }
                         if ( foundChi && foundPsi ) {
-                            if ( g->setPsi( psi ) == 1 ) {
-                                std::cerr << "aborting";
-                                std::abort();
-                            }
-                            if ( g->setChi( chi ) == 1 ) {
-                                std::cerr << "aborting";
+                            try{
+                                g->setPsi( psi );
+                                g->setChi( chi );
+                            } catch (std::exception& e) {
+                                std::cerr << e.what() << "\naborting" << std::endl;
                                 std::abort();
                             }
                         }
