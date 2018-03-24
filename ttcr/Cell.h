@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 #include "ttcr_t.h"
@@ -38,15 +39,13 @@ namespace ttcr {
     public:
         Cell(const size_t n) : slowness(std::vector<T>(n)) { }
         
-        int setSlowness(const std::vector<T>& s) {
+        void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
             }
-            return 0;
         }
         
         int setXi(const std::vector<T>& s) {
@@ -123,15 +122,13 @@ namespace ttcr {
         xi(std::vector<T>(n,0.0)) {
         }
         
-        int setSlowness(const std::vector<T>& s) {
+        void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
             }
-            return 0;
         }
         
         int setXi(const std::vector<T>& s) {
@@ -213,15 +210,13 @@ namespace ttcr {
         sa(std::vector<T>(n,0.0)) {
         }
         
-        int setSlowness(const std::vector<T>& s) {
+        void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
             }
-            return 0;
         }
         
         int setXi(const std::vector<T>& s) {
@@ -519,15 +514,13 @@ namespace ttcr {
         psi(std::vector<T>(n)) {
         }
         
-        int setSlowness(const std::vector<T>& s) {
+        void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
             }
-            return 0;
         }
         
         int setChi(const std::vector<T>& s) {

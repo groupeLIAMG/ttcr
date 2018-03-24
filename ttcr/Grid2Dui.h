@@ -28,6 +28,8 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <sstream>
+#include <stdexcept>
 
 #include <boost/math/special_functions/sign.hpp>
 
@@ -62,26 +64,22 @@ namespace ttcr {
             }
         }
         
-        int setSlowness(const T1 *s, const size_t ns) {
+        void setSlowness(const T1 *s, const size_t ns) {
             if ( nodes.size() != ns ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 nodes[n].setSlowness( s[n] );
             }
-            return 0;
         }
         
-        virtual int setSlowness(const std::vector<T1>& s) {
+        virtual void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 nodes[n].setNodeSlowness( s[n] );
             }
-            return 0;
         }
         
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
@@ -354,7 +352,7 @@ namespace ttcr {
             if ( found == false ) {
                 std::ostringstream msg;
                 msg << "Error: Point (" << pts[n].x << ", " << pts[n] .z << ") outside grid.";
-                throw std::range_error(msg.str());
+                throw std::runtime_error(msg.str());
             }
         }
     }
@@ -381,7 +379,7 @@ namespace ttcr {
             if ( found == false ) {
                 std::ostringstream msg;
                 msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
-                throw std::range_error(msg.str());
+                throw std::runtime_error(msg.str());
             }
         }
     }

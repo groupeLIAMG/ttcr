@@ -9,6 +9,8 @@
 #ifndef Grid2Drcfs_h
 #define Grid2Drcfs_h
 
+#include <stdexcept>
+
 #include "Grid2Dri.h"
 #include "Node2Di.h"
 
@@ -24,7 +26,7 @@ namespace ttcr {
         virtual ~Grid2Drcfs() {
         }
         
-        int setSlowness(const std::vector<T1>& s);
+        void setSlowness(const std::vector<T1>& s);
         
         const int get_niter() const { return niter; }
         const int get_niterw() const { return niterw; }
@@ -96,11 +98,10 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    int Grid2Drcfs<T1,T2>::setSlowness(const std::vector<T1>& s) {
+    void Grid2Drcfs<T1,T2>::setSlowness(const std::vector<T1>& s) {
         
         if ( this->ncx*this->ncz != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
+            throw std::length_error("Error: slowness vectors of incompatible size.");
         }
         
         // interpolate slowness at grid nodes
@@ -132,24 +133,6 @@ namespace ttcr {
                                                               s[(i-1)*nz+j-1]));
             }
         }
-        
-        //    if ( false ) {
-        //        for ( size_t i=0; i<nx; ++i ) {
-        //            for ( size_t j=0; j<nz; ++j ) {
-        //                std::cout << (this->xmin+(i+0.5)*this->dx) << '\t' << (this->zmin+(j+0.5)*this->dz) << '\t' << s[i*nz+j] << '\n';
-        //            }
-        //        }
-        //        std::cout << '\n';
-        //        std::cout << '\n';
-        //
-        //        for ( size_t i=0; i<nx+1; ++i ) {
-        //            for ( size_t j=0; j<nz+1; ++j ) {
-        //                std::cout << this->nodes[i*(nz+1)+j].getX() << '\t' << this->nodes[i*(nz+1)+j].getZ() << '\t' << this->nodes[i*(nz+1)+j].getNodeSlowness() << '\n';
-        //            }
-        //        }
-        //    }
-        
-        return 0;
     }
     
     

@@ -44,11 +44,7 @@ namespace ttcr {
             
         }
         
-        int setSlowness(const std::vector<T1>& s);
-        
-        int linearInterpolation() const;
-        
-        int invDistInterpolation() const;
+        void setSlowness(const std::vector<T1>& s);
         
         int raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
@@ -97,7 +93,9 @@ namespace ttcr {
         T2 nsnz;                 // number of secondary nodes in z
         
         void buildGridNodes();
-        
+        void linearInterpolation() const;
+        void invDistInterpolation() const;
+
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node3Disp<T1,T2>*,
@@ -120,7 +118,6 @@ namespace ttcr {
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
                           size_t threadNo) const;
-        
         
     };
     
@@ -455,11 +452,10 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::setSlowness(const std::vector<T1>& s) {
+    void Grid3Drisp<T1,T2>::setSlowness(const std::vector<T1>& s) {
         
         if ( ((this->ncx+1)*(this->ncy+1)*(this->ncz+1)) != s.size() ) {
-            std::cerr << "Error: slowness vector of incompatible size.";
-            return 1;
+            throw std::length_error("Error: slowness vector of incompatible size.");
         }
         //Set the slowness for primary nodes
         size_t i=0;
@@ -469,16 +465,19 @@ namespace ttcr {
                 i++;
             }
         }
-        
-        if ( this->inverseDistance ) {
-            return invDistInterpolation();
-        } else {
-            return linearInterpolation();
+        try {
+            if ( this->inverseDistance ) {
+                invDistInterpolation();
+            } else {
+                linearInterpolation();
+            }
+        } catch (std::runtime_error& e) {
+            throw;
         }
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::linearInterpolation() const {
+    void Grid3Drisp<T1,T2>::linearInterpolation() const {
         
         std::vector<size_t> list;
         list.reserve(8);
@@ -509,11 +508,14 @@ namespace ttcr {
                 // list[6] = x_min, y_max, z_max
                 // list[7] = x_max, y_max, z_max
                 
-                switch (ind){
+                switch (ind) {
                     case 0:
-                        std::cerr << "Error: the node " << n
-                        << " is not set, check the grid construction.\n";
-                        return 1;
+                    {
+                        std::ostringstream msg;
+                        msg << "Error: node " << n
+                        << " is not set, check grid construction.";
+                        throw std::runtime_error(msg.str());
+                    }
                     case 25:
                     case 27:
                     case 45:
@@ -632,11 +634,10 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( Interpolator<T1>::bilinear(x, y, s) );
             }
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::invDistInterpolation() const {
+    void Grid3Drisp<T1,T2>::invDistInterpolation() const {
         
         std::vector<size_t>::iterator it;
         std::vector<size_t> list;
@@ -671,7 +672,6 @@ namespace ttcr {
                 
             }
         }
-        return 0;
     }
     
     

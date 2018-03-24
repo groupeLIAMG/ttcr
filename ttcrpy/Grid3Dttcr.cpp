@@ -47,8 +47,10 @@ namespace ttcr {
       }
 
     void Grid3Dttcr::setSlowness(const std::vector<double>& slowness) {
-        if ( grid_instance->setSlowness(slowness) == 1 ) {
-            throw out_of_range("Number of slowness values not consistent with grid.");
+        try {
+            grid_instance->setSlowness(slowness);
+        } catch (length_error& e) {
+            throw;
         }
     }
 

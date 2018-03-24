@@ -6,6 +6,7 @@
 //  Copyright © 2016 Bernard Giroux. All rights reserved.
 //
 
+#include <exception>
 #include <thread>
 
 #include "mex.h"
@@ -132,7 +133,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         vector<double> s(nSlowness);
         for ( size_t n=0; n<s.size(); ++n ) s[n] = slowness[n];
         
-        if ( grid_instance->setSlowness(s) == 1 ) {
+        try {
+            grid_instance->setSlowness(s);
+        } catch (std::exception& e) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         
@@ -168,7 +171,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         vector<double> s(nSlowness);
         for ( size_t n=0; n<s.size(); ++n ) s[n] = slowness[n];
-        if ( grid_instance->setSlowness(s) == 1 ) {
+        try {
+            grid_instance->setSlowness(s);
+        } catch (std::exception& e) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         

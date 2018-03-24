@@ -25,6 +25,7 @@
 #ifndef ttcr_u_grids_h
 #define ttcr_u_grids_h
 
+#include <exception>
 #include <chrono>
 #include <set>
 #include <string>
@@ -74,7 +75,6 @@
 #include "utils.h"
 
 namespace ttcr {
-    
     
     template<typename T>
     Grid3D<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt) {
@@ -283,7 +283,10 @@ namespace ttcr {
         }
         std::cout.flush();
         
-        if ( 1 == (g->setSlowness(slowness)) ) {
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
             delete g;
             return nullptr;
         }
@@ -397,7 +400,13 @@ namespace ttcr {
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         if ( par.verbose && par.inverseDistance )
                             std::cout << "  Inverse distance interpolation was used.\n";
@@ -417,7 +426,13 @@ namespace ttcr {
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         break;
                         
@@ -531,7 +546,13 @@ namespace ttcr {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( foundChi && foundPsi ) {
                             if ( g->setPsi( psi ) == 1 ) {
                                 std::cerr << "aborting";
@@ -557,7 +578,13 @@ namespace ttcr {
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         break;
                         
@@ -728,7 +755,13 @@ namespace ttcr {
         if ( par.time && par.method == SHORTEST_PATH ) {
             begin = std::chrono::high_resolution_clock::now();
         }
-        g->setSlowness(slowness);
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            delete g;
+            return nullptr;
+        }
         if ( par.verbose && par.method == SHORTEST_PATH ) {
             std::cout << "done.\n";
             std::cout.flush();
@@ -955,9 +988,14 @@ namespace ttcr {
         if ( par.time && par.method == SHORTEST_PATH ) {
             begin = std::chrono::high_resolution_clock::now();
         }
-        if ( g->setSlowness(slowness) ) {
-            abort();
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            delete g;
+            return nullptr;
         }
+
         if ( par.verbose && par.method == SHORTEST_PATH ) {
             std::cout << "done.\n";
             std::cout.flush();
@@ -1201,10 +1239,14 @@ namespace ttcr {
         }
         std::cout.flush();
         
-        if ( 1 == (g->setSlowness(slowness)) ) {
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
             delete g;
             return nullptr;
         }
+
         
         return g;
     }
@@ -1325,7 +1367,13 @@ namespace ttcr {
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
@@ -1353,7 +1401,13 @@ namespace ttcr {
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
@@ -1473,9 +1527,12 @@ namespace ttcr {
                             cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
-                        if ( g->setSlowness( slowness ) == 1 ) {
-                            std::cerr << "aborting";
-                            std::abort();
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
                         }
                         if ( foundTheta ) {
                             if ( g->setTiltAngle( theta ) == 1 ) {
@@ -1517,7 +1574,13 @@ namespace ttcr {
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
                         }
-                        g->setSlowness( slowness );
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
                         if ( par.verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
@@ -1671,7 +1734,10 @@ namespace ttcr {
             cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         cout.flush();
-        if ( 1 == (g->setSlowness(slowness)) ) {
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
             delete g;
             return nullptr;
         }
@@ -1868,7 +1934,13 @@ namespace ttcr {
             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         std::cout.flush();
-        g->setSlowness(slowness);
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            delete g;
+            return nullptr;
+        }
         
         if ( par.processReflectors ) {
             std::vector<std::string> reflector_names = reader.getPhysicalNames(1);
@@ -1999,7 +2071,10 @@ namespace ttcr {
             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         std::cout.flush();
-        if ( 1 == (g->setSlowness(slowness)) ) {
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
             delete g;
             return nullptr;
         }
@@ -2132,8 +2207,14 @@ namespace ttcr {
             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         std::cout.flush();
-        g->setSlowness(slowness);
-        
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            delete g;
+            return nullptr;
+        }
+
         if ( par.saveModelVTK ) {
 #ifdef VTK
             std::string filename = par.modelfile;

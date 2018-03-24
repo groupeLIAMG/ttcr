@@ -37,9 +37,11 @@
 
 #include <algorithm>
 #include <cstring>
+#include <exception>
 #include <iostream>
 #include <fstream>
 #include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 #include <ctime>
@@ -76,8 +78,12 @@ namespace ttcr {
         
         virtual ~Grid3Drc() {}
         
-        int setSlowness(const std::vector<T1>& s) {
-            return cells.setSlowness( s );
+        void setSlowness(const std::vector<T1>& s) {
+            try {
+                cells.setSlowness( s );
+            } catch (std::exception& e) {
+                throw;
+            }
         }
         int setChi(const std::vector<T1>& x) {
             return cells.setChi( x );
@@ -266,7 +272,7 @@ namespace ttcr {
                 pts[n].z < zmin || pts[n].z > zmax ) {
                 std::ostringstream msg;
                 msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
-                throw std::range_error(msg.str());
+                throw std::runtime_error(msg.str());
             }
         }
     }

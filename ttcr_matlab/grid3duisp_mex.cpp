@@ -22,6 +22,8 @@
  *
  */
 
+#include <exception>
+
 #include "mex.h"
 #include "class_handle.hpp"
 
@@ -161,7 +163,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
         
-        if ( grid_instance->setSlowness(slowness, nSlowness) == 1 ) {
+        try {
+            grid_instance->setSlowness(slowness, nSlowness);
+        } catch (std::exception& e) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         
@@ -196,7 +200,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
         
-        if ( grid_instance->setSlowness(slowness, nSlowness) == 1 ) {
+        try {
+            grid_instance->setSlowness(slowness, nSlowness);
+        } catch (std::exception& e) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
         

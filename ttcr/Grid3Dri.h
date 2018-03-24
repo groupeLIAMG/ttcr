@@ -31,6 +31,8 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 #include <ctime>
 
@@ -74,15 +76,13 @@ namespace ttcr {
         
         virtual ~Grid3Dri() {}
         
-        virtual int setSlowness(const std::vector<T1>& s) {
+        virtual void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 nodes[n].setNodeSlowness( s[n] );
             }
-            return 0;
         }
         
         size_t getNumberOfNodes() const { return nodes.size(); }
@@ -309,7 +309,7 @@ namespace ttcr {
                 pts[n].z < zmin || pts[n].z > zmax ) {
                 std::ostringstream msg;
                 msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
-                throw std::range_error(msg.str());
+                throw std::runtime_error(msg.str());
                 
             }
         }

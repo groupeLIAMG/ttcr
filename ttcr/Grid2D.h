@@ -96,7 +96,7 @@ namespace ttcr {
 
         
         
-        virtual int setSlowness(const std::vector<T1>& s) { return 1; }
+        virtual void setSlowness(const std::vector<T1>& s) {}
         virtual int setXi(const std::vector<T1>& x) { return 1; }
         virtual int setTiltAngle(const std::vector<T1>& x) { return 1; }
         

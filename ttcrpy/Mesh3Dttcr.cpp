@@ -48,8 +48,10 @@ namespace ttcr {
     }
     
     void Mesh3Dttcr::setSlowness(const std::vector<double>& slowness) {
-        if ( mesh_instance->setSlowness(slowness) == 1 ) {
-            throw out_of_range("Slowness values must be defined for each mesh node.");
+        try {
+            mesh_instance->setSlowness(slowness);
+        } catch (length_error& e) {
+            throw;
         }
     }
 

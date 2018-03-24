@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include <cstdint>
+#include <exception>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -146,8 +147,12 @@ int main(int argc, char * argv[])
 		if ( par.verbose ) {
 			cout << "done.\n";
 		}
-		g->setSlowness(slowness);
-		
+        try {
+            g->setSlowness(slowness);
+		} catch (std::exception& e) {
+            cerr << e.what() << endl;
+            abort();
+        }
 		
 		if ( par.rectilinear ) {
 			double d[] = { par.d, par.d, par.d };
@@ -308,7 +313,12 @@ int main(int argc, char * argv[])
 		if ( par.verbose ) {
 			cout << "done.\n";
 		}
-		g->setSlowness(slowness);
+        try {
+            g->setSlowness(slowness);
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            abort();
+        }
 		
 		if ( par.rectilinear ) {
 			double d[] = { par.d, par.d, par.d };

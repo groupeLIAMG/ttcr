@@ -31,6 +31,7 @@
 #include <iostream>
 #include <map>
 #include <queue>
+#include <stdexcept>
 #include <vector>
 
 #include "Grid3Dui.h"
@@ -55,29 +56,25 @@ namespace ttcr {
         ~Grid3Duisp() {
         }
         
-        int setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) {
             if ( this->nPrimary != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<this->nPrimary; ++n ) {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nsecondary>0 ) interpSlownessSecondary();
-            return 0;
         }
         
         
-        int setSlowness(const T1 *s, const size_t ns) {
+        void setSlowness(const T1 *s, const size_t ns) {
             if ( this->nPrimary != ns ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<this->nPrimary; ++n ) {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nsecondary>0 ) interpSlownessSecondary();
-            return 0;
         }
         
         

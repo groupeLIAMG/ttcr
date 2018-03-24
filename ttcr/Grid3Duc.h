@@ -32,6 +32,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -79,26 +80,22 @@ namespace ttcr {
             }
         }
         
-        int setSlowness(const T1 *s, const size_t ns) {
+        void setSlowness(const T1 *s, const size_t ns) {
             if ( slowness.size() != ns ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
             }
-            return 0;
         }
         
-        int setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) {
             if ( slowness.size() != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s[n];
             }
-            return 0;
         }
         
         void setSourceRadius(const double r) { source_radius = r; }
@@ -379,7 +376,7 @@ namespace ttcr {
             if ( found == false ) {
                 std::ostringstream msg;
                 msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
-                throw std::range_error(msg.str());
+                throw std::runtime_error(msg.str());
             }
         }
     }

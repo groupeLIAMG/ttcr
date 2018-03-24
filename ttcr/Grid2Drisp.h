@@ -9,6 +9,8 @@
 #ifndef Grid2Drisp_h
 #define Grid2Drisp_h
 
+#include <stdexcept>
+
 #include "Grid2Dri.h"
 #include "Node2Disp.h"
 
@@ -24,10 +26,9 @@ namespace ttcr {
         virtual ~Grid2Drisp() {
         }
         
-        int setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) {
             if ( nPrimary != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             size_t nn=0;
             for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -35,7 +36,6 @@ namespace ttcr {
                     this->nodes[n].setNodeSlowness( s[nn++] );
             }
             interpSlownessSecondary();
-            return 0;
         }
         
         

@@ -29,6 +29,7 @@
 #include <fstream>
 #include <queue>
 #include <set>
+#include <stdexcept>
 
 #include "Grid2Dui.h"
 
@@ -49,28 +50,24 @@ namespace ttcr {
         ~Grid2Duisp() {
         }
         
-        int setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) {
             if ( this->nPrimary != s.size() ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<this->nPrimary; ++n ) {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nsecondary>0 ) interpSlownessSecondary();
-            return 0;
         }
         
-        int setSlowness(const T1 *s, size_t ns) {
+        void setSlowness(const T1 *s, size_t ns) {
             if ( this->nPrimary != ns ) {
-                std::cerr << "Error: slowness vectors of incompatible size.";
-                return 1;
+                throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<this->nPrimary; ++n ) {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nsecondary>0 ) interpSlownessSecondary();
-            return 0;
         }
         
         int raytrace(const std::vector<S>&,

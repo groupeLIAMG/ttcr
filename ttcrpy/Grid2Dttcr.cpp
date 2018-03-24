@@ -63,20 +63,22 @@ namespace ttcr {
     }
 
     void Grid2Dttcr::setSlowness(const std::vector<double>& slowness) {
-        if ( grid_instance->setSlowness(slowness) == 1 ) {
-            throw out_of_range("Slowness values must be defined for each grid cell.");
+        try {
+            grid_instance->setSlowness(slowness);
+        } catch (length_error& e) {
+            throw;
         }
     }
 
     void Grid2Dttcr::setXi(const std::vector<double>& xi) {
         if ( grid_instance->setXi(xi) == 1 ) {
-            throw out_of_range("Xi values must be defined for each grid cell.");
+            throw length_error("Xi values must be defined for each grid cell.");
         }
     }
 
     void Grid2Dttcr::setTheta(const std::vector<double>& theta) {
         if ( grid_instance->setTiltAngle(theta) == 1 ) {
-            throw out_of_range("Theta values must be defined for each grid cell.");
+            throw length_error("Theta values must be defined for each grid cell.");
         }
     }
 

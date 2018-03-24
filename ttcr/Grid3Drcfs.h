@@ -9,6 +9,8 @@
 #ifndef Grid3Drcfs_h
 #define Grid3Drcfs_h
 
+#include <stdexcept>
+
 #include "Grid3Dri.h"
 #include "Node3Di.h"
 
@@ -31,7 +33,7 @@ namespace ttcr {
         virtual ~Grid3Drcfs() {
         }
         
-        int setSlowness(const std::vector<T1>& s);
+        void setSlowness(const std::vector<T1>& s);
         
         const int get_niter() const { return niter; }
         const int get_niterw() const { return niterw; }
@@ -95,11 +97,10 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    int Grid3Drcfs<T1,T2>::setSlowness(const std::vector<T1>& s) {
+    void Grid3Drcfs<T1,T2>::setSlowness(const std::vector<T1>& s) {
         
         if ( this->ncx*this->ncy*this->ncz != s.size() ) {
-            std::cerr << "Error: slowness vectors of incompatible size.";
-            return 1;
+            throw std::length_error("Error: slowness vectors of incompatible size.");
         }
         
         // interpolate slowness at grid nodes
@@ -179,7 +180,6 @@ namespace ttcr {
                 }
             }
         }
-        return 0;
     }
     
     

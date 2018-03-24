@@ -95,7 +95,7 @@ namespace ttcr {
                              std::vector<std::vector<siv<T1>>>& l_data,
                              const size_t threadNo=0) const { return 1; }
 
-        virtual int setSlowness(const std::vector<T1>& s) { return 1; }
+        virtual void setSlowness(const std::vector<T1>& s) {}
         virtual int setChi(const std::vector<T1>& x) { return 1; }
         virtual int setPsi(const std::vector<T1>& x) { return 1; }
         
