@@ -129,7 +129,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -149,7 +149,7 @@ int body(const input_parameters &par) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                         rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
-                        } catch (std::runtime_error& e) {
+                        } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
                         }
@@ -162,7 +162,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -176,7 +176,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), r_data[n]);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -196,7 +196,7 @@ int body(const input_parameters &par) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                         rcv.get_tt(n), r_data[n], i+1);
-                        } catch (std::runtime_error& e) {
+                        } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
                         }
@@ -209,7 +209,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), r_data[n], 0);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -223,7 +223,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n));
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -243,7 +243,7 @@ int body(const input_parameters &par) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                         rcv.get_tt(n), i+1);
-                        } catch (std::runtime_error& e) {
+                        } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
                         }
@@ -256,7 +256,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), 0);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }

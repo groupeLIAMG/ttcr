@@ -88,31 +88,31 @@ namespace ttcr {
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncy*ncz; }
         
-        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<sxyz<T1>>& Rx,
                              std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const { return 0; }
+                             const size_t threadNo=0) const {}
         
-        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                              std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t=0) const { return 0; }
+                             const size_t=0) const {}
         
-        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<sxyz<T1>>& Rx,
                              std::vector<T1>& traveltimes,
                              std::vector<std::vector<sxyz<T1>>>& r_data,
-                             const size_t threadNo=0) const { return 0; }
+                             const size_t threadNo=0) const {}
         
-        virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
+        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                              std::vector<std::vector<T1>*>& traveltimes,
                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                             const size_t=0) const { return 0; }
+                             const size_t=0) const {}
         
         void saveSlownessXYZ(const char filename[]) const {
             //Saves the Slowness of the primary nodes

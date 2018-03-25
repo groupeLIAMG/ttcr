@@ -33,19 +33,19 @@ namespace ttcr {
         
         void setSlowness(const std::vector<double>& slowness);
         
-        int raytrace(const std::vector<sxyz<double>>& Tx,
+        void raytrace(const std::vector<sxyz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxyz<double>>& Rx,
                      double* traveltimes) const;
 
-        int raytrace(const std::vector<sxyz<double>>& Tx,
+        void raytrace(const std::vector<sxyz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxyz<double>>& Rx,
                      double* traveltimes,
                      PyObject* rays,
                      double* v0) const;
 
-        int raytrace(const std::vector<sxyz<double>>& Tx,
+        void raytrace(const std::vector<sxyz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxyz<double>>& Rx,
                      double* traveltimes,

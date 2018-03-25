@@ -345,12 +345,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
             
             if ( nlhs == 2 ) {
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]) == 1 ) {
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]);
+                } catch (...) {
                     mexErrMsgTxt("Problem while raytracing.");
                 }
             }
             else {
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
+                } catch (...) {
                     mexErrMsgTxt("Problem while raytracing.");
                 }
             }

@@ -55,10 +55,10 @@ namespace ttcr {
         }
     }
 
-    int Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes) const {
+    void Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes) const {
         /*
          Looking for redundants Tx pts
          */
@@ -102,8 +102,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -126,8 +128,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -140,8 +144,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
             
@@ -154,16 +160,14 @@ namespace ttcr {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
-        
-        return 0;
     }
     
-    int Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes,
-                             PyObject* rays,
-                             double* V0) const {
+    void Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* rays,
+                              double* V0) const {
         // rays must be a pointer to a tuple object of size nRx
         
         /*
@@ -212,8 +216,10 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
                 
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -236,8 +242,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -250,8 +258,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
             
@@ -267,7 +277,7 @@ namespace ttcr {
         }
 
         // rays
-        import_array();  // to use PyArray_SimpleNewFromData
+//        import_array();  // to use PyArray_SimpleNewFromData
         
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -285,17 +295,15 @@ namespace ttcr {
                 PyTuple_SetItem(rays, iTx[nv][ni], ray);
             }
         }
-        
-        return 0;
     }
     
-    int Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes,
-                             PyObject* rays,
-                             double* V0,
-                             PyObject* M) const {
+    void Mesh3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* rays,
+                              double* V0,
+                              PyObject* M) const {
         // rays must be a pointer to a tuple object of size nRx
         
         /*
@@ -345,8 +353,10 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
                 
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -369,8 +379,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -383,8 +395,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    mesh_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
             
@@ -400,7 +414,7 @@ namespace ttcr {
         }
         
         // rays
-        import_array();  // to use PyArray_SimpleNewFromData
+//        import_array();  // to use PyArray_SimpleNewFromData
         
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -470,8 +484,6 @@ namespace ttcr {
             
             PyTuple_SetItem(M, nv, tuple);
         }
-        
-        return 0;
     }
 
 }

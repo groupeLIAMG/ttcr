@@ -52,8 +52,8 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
         void setSlowness(const vector[double]&) except +
         void setXi(const vector[double]&) except +
         void setTheta(const vector[double]&) except +
-        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object)
-        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object)
+        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object) except +
+        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object) except +
         @staticmethod
         int Lsr2d(double*,double*,size_t,double*,size_t,double*,size_t,object)
         @staticmethod
@@ -165,9 +165,8 @@ cdef class Grid2Dcpp:
         if nout==2:
             Ldata = ([0.0], [0.0], [0.0])
 
-            if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), Ldata) != 0:
-                raise RuntimeError()
-
+            self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), Ldata)
+            
             M = Rx.shape[0]
             N = len(slowness)
             if self.grid.getType() != b'iso':
@@ -181,8 +180,7 @@ cdef class Grid2Dcpp:
             rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
             Ldata = ([0.0], [0.0], [0.0])
 
-            if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, Ldata) != 0:
-                raise RuntimeError()
+            self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, Ldata)
 
             M = Rx.shape[0]
             N = len(slowness)

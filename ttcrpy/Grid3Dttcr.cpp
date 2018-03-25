@@ -54,10 +54,10 @@ namespace ttcr {
         }
     }
 
-    int Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes) const {
+    void Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes) const {
         /*
          Looking for redundants Tx pts
          */
@@ -101,8 +101,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -111,13 +113,14 @@ namespace ttcr {
             if ( blk_size == 0 ) blk_size++;
 
             vector<thread> threads(num_threads-1);
+            vector<exception_ptr> teptr(num_threads-1);
             size_t blk_start = 0;
             for ( size_t i=0; i<num_threads-1; ++i ) {
 
                 size_t blk_end = blk_start + blk_size;
                 grid *grid_ref = grid_instance;
                 threads[i]=thread( [&grid_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
-                                    blk_start,blk_end,i]{
+                                    &teptr,blk_start,blk_end,i]{
 
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
 
@@ -125,8 +128,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1);
+                        } catch (std::exception& e) {
+                            teptr[i] = std::current_exception();
                         }
                     }
                 });
@@ -139,13 +144,25 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
 
             std::for_each(threads.begin(),threads.end(),
                           std::mem_fn(&std::thread::join));
+            
+            try {
+                for ( auto ptr=teptr.begin(); ptr!=teptr.end(); ++ptr ) {
+                    if (*ptr) {
+                        std::rethrow_exception(*ptr);
+                    }
+                }
+            } catch (...) {
+                throw;
+            }
         }
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
@@ -153,15 +170,14 @@ namespace ttcr {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
-        return 0;
     }
 
-    int Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes,
-                             PyObject* rays,
-                             double* V0) const {
+    void Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* rays,
+                              double* V0) const {
         // rays must be a pointer to a tuple object of size nRx
 
         /*
@@ -210,8 +226,10 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
 
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -234,8 +252,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -248,8 +268,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
 
@@ -265,7 +287,7 @@ namespace ttcr {
         }
 
         // rays
-        import_array();  // to use PyArray_SimpleNewFromData
+//        import_array();  // to use PyArray_SimpleNewFromData
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -283,16 +305,15 @@ namespace ttcr {
                 PyTuple_SetItem(rays, iTx[nv][ni], ray);
             }
         }
-        return 0;
     }
 
-    int Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes,
-                             PyObject* rays,
-                             double* V0,
-                             PyObject* M) const {
+    void Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* rays,
+                              double* V0,
+                              PyObject* M) const {
         // rays must be a pointer to a tuple object of size nRx
 
         /*
@@ -342,8 +363,10 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
 
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -366,8 +389,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -380,8 +405,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv], m_data[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
 
@@ -397,7 +424,7 @@ namespace ttcr {
         }
 
         // rays
-        import_array();  // to use PyArray_SimpleNewFromData
+//        import_array();  // to use PyArray_SimpleNewFromData
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -467,16 +494,15 @@ namespace ttcr {
 
             PyTuple_SetItem(M, nv, tuple);
         }
-        return 0;
     }
     
     
-    int Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes,
-                             PyObject* rays,
-                             PyObject* L) const {
+    void Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* rays,
+                              PyObject* L) const {
         
         // rays must be a pointer to a tuple object of size nRx
         
@@ -527,8 +553,10 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
                 
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -551,8 +579,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -565,8 +595,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
             
@@ -581,7 +613,7 @@ namespace ttcr {
         }
         
         // rays
-        import_array();  // to use PyArray_SimpleNewFromData
+//        import_array();  // to use PyArray_SimpleNewFromData
         
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -650,15 +682,13 @@ namespace ttcr {
         PyTuple_SetItem(L, 0, data);
         PyTuple_SetItem(L, 1, indices);
         PyTuple_SetItem(L, 2, indptr);
-        
-        return 0;
     }
     
-    int Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
-                             const std::vector<double>& tTx,
-                             const std::vector<sxyz<double>>& Rx,
-                             double* traveltimes,
-                             PyObject* L) const {
+    void Grid3Dttcr::raytrace(const std::vector<sxyz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxyz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* L) const {
         
         /*
          Looking for redundants Tx pts
@@ -706,8 +736,10 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
                 
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv]) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv]);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
         } else {
@@ -730,8 +762,10 @@ namespace ttcr {
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
-                        if ( grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], i+1) == 1 ) {
-                            throw runtime_error("Problem while raytracing.");
+                        try {
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
                         }
                     }
                 });
@@ -744,8 +778,10 @@ namespace ttcr {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
-                if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], 0) == 1 ) {
-                    throw runtime_error("Problem while raytracing.");
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
                 }
             }
             
@@ -759,7 +795,7 @@ namespace ttcr {
             }
         }
         
-        import_array();  // to use PyArray_SimpleNewFromData
+//        import_array();  // to use PyArray_SimpleNewFromData
         
         // L
         // first element of tuple contains data, size is nnz
@@ -810,10 +846,6 @@ namespace ttcr {
         PyTuple_SetItem(L, 0, data);
         PyTuple_SetItem(L, 1, indices);
         PyTuple_SetItem(L, 2, indptr);
-        
-        
-        return 0;
     }
-
 
 }

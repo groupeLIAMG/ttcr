@@ -46,33 +46,33 @@ namespace ttcr {
         
         void setSlowness(const std::vector<T1>& s);
         
-        int raytrace(const std::vector<sxyz<T1>>& Tx,
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
                      std::vector<T1>& traveltimes,
                      const size_t threadNo=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>& Tx,
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                      std::vector<std::vector<T1>*>& traveltimes,
                      const size_t threadNo=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>& Tx,
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
                      std::vector<T1>& traveltimes,
                      std::vector<std::vector<sxyz<T1>>>& r_data,
                      const size_t threadNo=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>& Tx,
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                      std::vector<std::vector<T1>*>& traveltimes,
                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                      const size_t threadNo=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>& Tx,
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
                      std::vector<T1>& traveltimes,
@@ -677,20 +677,16 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<sxyz<T1>>& Rx,
-                                    std::vector<T1>& traveltimes,
-                                    const size_t threadNo) const {
+    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     const size_t threadNo) const {
         
         // Primary function
         
-        try {
-            this->checkPts(Tx);
-            this->checkPts(Rx);
-        } catch (...) {
-            throw;
-        }
+        this->checkPts(Tx);
+        this->checkPts(Rx);
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -717,24 +713,19 @@ namespace ttcr {
         for (size_t n=0; n<Rx.size(); ++n) {
             traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                    std::vector<std::vector<T1>*>& traveltimes,
-                                    const size_t threadNo) const {
+    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     std::vector<std::vector<T1>*>& traveltimes,
+                                     const size_t threadNo) const {
         
-        try {
-            this->checkPts(Tx);
-            for ( size_t n=0; n<Rx.size(); ++n )
-                this->checkPts(*Rx[n]);
-        } catch (...) {
-            throw;
-        }
-
+        this->checkPts(Tx);
+        for ( size_t n=0; n<Rx.size(); ++n )
+            this->checkPts(*Rx[n]);
+        
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
@@ -760,25 +751,20 @@ namespace ttcr {
             for (size_t n=0; n<Rx[nr]->size(); ++n)
                 (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<sxyz<T1>>& Rx,
-                                    std::vector<T1>& traveltimes,
-                                    std::vector<std::vector<sxyz<T1>>>& r_data,
-                                    const size_t threadNo) const {
+    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                                     const size_t threadNo) const {
         
         // Primary function
         
-        try {
-            this->checkPts(Tx);
-            this->checkPts(Rx);
-        } catch (...) {
-            throw;
-        }
+        this->checkPts(Tx);
+        this->checkPts(Rx);
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -864,26 +850,20 @@ namespace ttcr {
                 r_data[n][nn].y = r_tmp[ iParent-1-nn ].y;
                 r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
             }
-            
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                    std::vector<std::vector<T1>*>& traveltimes,
-                                    std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                                    const size_t threadNo) const {
+    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     std::vector<std::vector<T1>*>& traveltimes,
+                                     std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
+                                     const size_t threadNo) const {
         
-        try {
-            this->checkPts(Tx);
-            for ( size_t n=0; n<Rx.size(); ++n )
-                this->checkPts(*Rx[n]);
-        } catch (...) {
-            throw;
-        }
+        this->checkPts(Tx);
+        for ( size_t n=0; n<Rx.size(); ++n )
+            this->checkPts(*Rx[n]);
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -983,26 +963,21 @@ namespace ttcr {
                 }
             }
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<sxyz<T1>>& Rx,
-                                    std::vector<T1>& traveltimes,
-                                    std::vector<std::vector<sxyz<T1>>>& r_data,
-                                    std::vector<std::vector<siv<T1>>>& l_data,
-                                    const size_t threadNo) const {
+    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                                     std::vector<std::vector<siv<T1>>>& l_data,
+                                     const size_t threadNo) const {
         
         // Primary function
         
-        try {
-            this->checkPts(Tx);
-            this->checkPts(Rx);
-        } catch (...) {
-            throw;
-        }
+        this->checkPts(Tx);
+        this->checkPts(Rx);
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -1127,9 +1102,7 @@ namespace ttcr {
                 r_data[n][nn].y = r_tmp[ iParent-1-nn ].y;
                 r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
             }
-            
         }
-        return 0;
     }
     
     template<typename T1, typename T2>

@@ -173,7 +173,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -193,7 +193,7 @@ int body(const input_parameters &par) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                         rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
-                        } catch (std::runtime_error& e) {
+                        } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
                         }
@@ -206,7 +206,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
                                 rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -230,7 +230,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
                                 all_tt, all_r_data);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -253,7 +253,7 @@ int body(const input_parameters &par) {
                         g->raytrace(reflectors[nr].get_coord(),
                                     reflectors[nr].get_tt(n), rcv.get_coord(),
                                     rcv.get_tt(n,nr+1), rfl2_r_data[nr][n]);
-                    } catch (std::runtime_error& e) {
+                    } catch (std::exception& e) {
                         std::cerr << e.what() << std::endl;
                         abort();
                     }
@@ -285,7 +285,7 @@ int body(const input_parameters &par) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
                                         all_tt, all_r_data, i+1);
-                        } catch (std::runtime_error& e) {
+                        } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
                         }
@@ -295,7 +295,7 @@ int body(const input_parameters &par) {
                                 g->raytrace(reflectors[nr].get_coord(),
                                             reflectors[nr].get_tt(n), rcv.get_coord(),
                                             rcv.get_tt(n,nr+1), rfl2_r_data[nr][n], i+1);
-                            } catch (std::runtime_error& e) {
+                            } catch (std::exception& e) {
                                 std::cerr << e.what() << std::endl;
                                 abort();
                             }
@@ -318,7 +318,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
                                 all_tt, all_r_data, 0);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -328,7 +328,7 @@ int body(const input_parameters &par) {
                         g->raytrace(reflectors[nr].get_coord(),
                                     reflectors[nr].get_tt(n), rcv.get_coord(),
                                     rcv.get_tt(n,nr+1), rfl2_r_data[nr][n], 0);
-                    } catch (std::runtime_error& e) {
+                    } catch (std::exception& e) {
                         std::cerr << e.what() << std::endl;
                         abort();
                     }
@@ -351,7 +351,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
                                 all_tt);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -374,7 +374,7 @@ int body(const input_parameters &par) {
                         g->raytrace(reflectors[nr].get_coord(),
                                     reflectors[nr].get_tt(n), rcv.get_coord(),
                                     rcv.get_tt(n,nr+1));
-                    } catch (std::runtime_error& e) {
+                    } catch (std::exception& e) {
                         std::cerr << e.what() << std::endl;
                         abort();
                     }
@@ -403,7 +403,7 @@ int body(const input_parameters &par) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
                                         all_tt, i+1);
-                        } catch (std::runtime_error& e) {
+                        } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
                         }
@@ -413,7 +413,7 @@ int body(const input_parameters &par) {
                                 g->raytrace(reflectors[nr].get_coord(),
                                             reflectors[nr].get_tt(n), rcv.get_coord(),
                                             rcv.get_tt(n,nr+1), i+1);
-                            } catch (std::runtime_error& e) {
+                            } catch (std::exception& e) {
                                 std::cerr << e.what() << std::endl;
                                 abort();
                             }
@@ -434,7 +434,7 @@ int body(const input_parameters &par) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), all_rcv,
                                 all_tt, 0);
-                } catch (std::runtime_error& e) {
+                } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
                 }
@@ -444,7 +444,7 @@ int body(const input_parameters &par) {
                         g->raytrace(reflectors[nr].get_coord(),
                                     reflectors[nr].get_tt(n), rcv.get_coord(),
                                     rcv.get_tt(n,nr+1), 0);
-                    } catch (std::runtime_error& e) {
+                    } catch (std::exception& e) {
                         std::cerr << e.what() << std::endl;
                         abort();
                     }

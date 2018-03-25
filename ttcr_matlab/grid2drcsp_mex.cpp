@@ -315,15 +315,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 }
                 
                 if ( nlhs == 3 ) {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv]) == 1 ) {
+                    try {
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv]);
+                    } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 } else if ( nlhs == 2 ) {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]) == 1 ) {
+                    try {
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]);
+                    } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 } else {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]) == 1 ) {
+                    try {
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
+                    } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 }
@@ -352,15 +358,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             vRx.push_back( sxz_tmp );
                         }
                         if ( nlhs == 3 ) {
-                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], i+1) == 1 ) {
+                            try {
+                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], i+1);
+                            } catch (...) {
                                 mexErrMsgTxt("Problem while raytracing.");
                             }
                         } else if ( nlhs == 2 ) {
-                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i+1) == 1 ) {
+                            try {
+                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i+1);
+                            } catch (...) {
                                 mexErrMsgTxt("Problem while raytracing.");
                             }
                         } else {
-                            if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1) == 1 ) {
+                            try {
+                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1);
+                            } catch (...) {
                                 mexErrMsgTxt("Problem while raytracing.");
                             }
                         }
@@ -380,19 +392,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     vRx.push_back( sxz_tmp );
                 }
                 if ( nlhs == 3 ) {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], 0) == 1 ) {
+                    try {
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], 0);
+                    } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 } else if ( nlhs == 2 ) {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], 0) == 1 ) {
+                    try {
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], 0);
+                    } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 } else {
-                    if ( grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0) == 1 ) {
+                    try {
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0);
+                    } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 }
-                
             }
             
             std::for_each(threads.begin(),threads.end(),

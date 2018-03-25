@@ -50,26 +50,26 @@ namespace ttcr {
         ~Grid3Duifm() {
         }
         
-        int raytrace(const std::vector<sxyz<T1>>& Tx,
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
                      std::vector<T1>& traveltimes,
                      const size_t threadNo=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>&,
+        void raytrace(const std::vector<sxyz<T1>>&,
                      const std::vector<T1>&,
                      const std::vector<const std::vector<sxyz<T1>>*>&,
                      std::vector<std::vector<T1>*>&,
                      const size_t=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>&,
+        void raytrace(const std::vector<sxyz<T1>>&,
                      const std::vector<T1>& ,
                      const std::vector<sxyz<T1>>&,
                      std::vector<T1>&,
                      std::vector<std::vector<sxyz<T1>>>&,
                      const size_t=0) const;
         
-        int raytrace(const std::vector<sxyz<T1>>&,
+        void raytrace(const std::vector<sxyz<T1>>&,
                      const std::vector<T1>&,
                      const std::vector<const std::vector<sxyz<T1>>*>&,
                      std::vector<std::vector<T1>*>&,
@@ -144,18 +144,14 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<sxyz<T1>>& Rx,
-                                    std::vector<T1>& traveltimes,
-                                    const size_t threadNo) const {
+    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     const size_t threadNo) const {
         
-        try {
-            this->checkPts(Tx);
-            this->checkPts(Rx);
-        } catch (...) {
-            throw;
-        }
+        this->checkPts(Tx);
+        this->checkPts(Rx);
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -179,24 +175,19 @@ namespace ttcr {
         for (size_t n=0; n<Rx.size(); ++n) {
             traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                    std::vector<std::vector<T1>*>& traveltimes,
-                                    const size_t threadNo) const {
+    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     std::vector<std::vector<T1>*>& traveltimes,
+                                     const size_t threadNo) const {
         
-        try {
-            this->checkPts(Tx);
-            for ( size_t n=0; n<Rx.size(); ++n )
-                this->checkPts(*Rx[n]);
-        } catch (...) {
-            throw;
-        }
-
+        this->checkPts(Tx);
+        for ( size_t n=0; n<Rx.size(); ++n )
+            this->checkPts(*Rx[n]);
+        
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
@@ -221,23 +212,18 @@ namespace ttcr {
             for (size_t n=0; n<Rx[nr]->size(); ++n)
                 (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
         }
-        return 0;
     }
     
     template<typename T1, typename T2>
-    int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<sxyz<T1>>& Rx,
-                                    std::vector<T1>& traveltimes,
-                                    std::vector<std::vector<sxyz<T1>>>& r_data,
-                                    const size_t threadNo) const {
+    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     std::vector<std::vector<sxyz<T1>>>& r_data,
+                                     const size_t threadNo) const {
         
-        try {
-            this->checkPts(Tx);
-            this->checkPts(Rx);
-        } catch (...) {
-            throw;
-        }
+        this->checkPts(Tx);
+        this->checkPts(Rx);
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -275,27 +261,20 @@ namespace ttcr {
                 this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
             }
         }
-        
-        return 0;
     }
     
-    
     template<typename T1, typename T2>
-    int Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                    const std::vector<T1>& t0,
-                                    const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                    std::vector<std::vector<T1>*>& traveltimes,
-                                    std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                                    const size_t threadNo) const {
+    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     std::vector<std::vector<T1>*>& traveltimes,
+                                     std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
+                                     const size_t threadNo) const {
         
-        try {
-            this->checkPts(Tx);
-            for ( size_t n=0; n<Rx.size(); ++n )
-                this->checkPts(*Rx[n]);
-        } catch (...) {
-            throw;
-        }
-
+        this->checkPts(Tx);
+        for ( size_t n=0; n<Rx.size(); ++n )
+            this->checkPts(*Rx[n]);
+        
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
@@ -310,11 +289,6 @@ namespace ttcr {
         initBand(Tx, t0, narrow_band, inBand, frozen, threadNo);
         
         propagate(narrow_band, inBand, frozen, threadNo);
-        
-        //    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-        //        T1 t = this->slowness[0] * this->nodes[n].getDistance( Tx[0] );
-        //        this->nodes[n].setTT(t, threadNo);
-        //    }
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
@@ -342,7 +316,6 @@ namespace ttcr {
                 }
             }
         }
-        return 0;
     }
     
     template<typename T1, typename T2>

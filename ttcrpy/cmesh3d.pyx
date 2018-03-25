@@ -45,18 +45,18 @@ cdef extern from "Mesh3Dttcr.h" namespace "ttcr":
         Mesh3Dttcr(vector[sxyz[double]]&, vector[tetrahedronElem[uint32_t]]&,
                    double, int, bool rp, size_t) except +
         void setSlowness(const vector[double]&) except +
-        int raytrace(const vector[sxyz[double]]&,
+        void raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
                      const vector[sxyz[double]]&,
-                     double*)
-        int raytrace(const vector[sxyz[double]]&,
+                     double*) except +
+        void raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
                      const vector[sxyz[double]]&,
-                     double*, object, double*)
-        int raytrace(const vector[sxyz[double]]& Tx,
+                     double*, object, double*) except +
+        void raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
-                     double*, object, double*, object)
+                     double*, object, double*, object) except +
 
 cdef class Mesh3Dcpp:
     cdef Mesh3Dttcr* mesh
@@ -99,16 +99,13 @@ cdef class Mesh3Dcpp:
         cdef np.ndarray v0 = np.empty([Rx.shape[0],], dtype=np.double)
     
         if nout == 1:
-            if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt)) != 0:
-                raise RuntimeError()
+            self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt))
             return tt
 
         elif nout == 3:
             rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
             
-            if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0)) != 0:
-                raise RuntimeError()
-
+            self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0))
             return tt, rays, v0
 
         elif nout == 4:
@@ -118,10 +115,7 @@ cdef class Mesh3Dcpp:
             
             M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
             
-            if self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M) != 0:
-                raise RuntimeError()
-            
-            
+            self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M)
             return tt, rays, v0, M
 
 

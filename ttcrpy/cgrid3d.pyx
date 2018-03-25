@@ -38,23 +38,23 @@ cdef extern from "Grid3Dttcr.h" namespace "ttcr":
         Grid3Dttcr(string&, uint32_t, uint32_t, uint32_t, double, double, double, double, double, int, bool, size_t) except +
         string getType()
         void setSlowness(const vector[double]&) except +
-        int raytrace(const vector[sxyz[double]]&,
+        void raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
                      const vector[sxyz[double]]&,
                      double*) except +
-        int raytrace(const vector[sxyz[double]]&,
+        void raytrace(const vector[sxyz[double]]&,
                      const vector[double]&,
                      const vector[sxyz[double]]&,
                      double*, object, double*) except +
-        int raytrace(const vector[sxyz[double]]& Tx,
+        void raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
                      double*, object, double*, object) except +
-        int raytrace(const vector[sxyz[double]]& Tx,
+        void raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
                      double*, object, object) except +
-        int raytrace(const vector[sxyz[double]]& Tx,
+        void raytrace(const vector[sxyz[double]]& Tx,
                      const vector[double]& tTx,
                      const vector[sxyz[double]]& Rx,
                      double*, object) except +
@@ -118,8 +118,7 @@ cdef class Grid3Dcpp:
         cdef np.ndarray v0 = np.empty([Rx.shape[0],], dtype=np.double)
 
         if nout == 1:
-            if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt)) != 0:
-                raise RuntimeError()
+            self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt))
             return tt
 
         elif nout == 2:
@@ -128,8 +127,7 @@ cdef class Grid3Dcpp:
 
             Ldata = ([0.0], [0.0], [0.0])
 
-            if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), Ldata) != 0:
-                raise RuntimeError()
+            self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), Ldata)
 
             M = Rx.shape[0]
             N = len(slowness)
@@ -141,15 +139,13 @@ cdef class Grid3Dcpp:
             rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
             if self.grid.getType() == b'node':
 
-                if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0)) != 0:
-                    raise RuntimeError()
-
+                self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0))
                 return tt, rays, v0
+
             elif self.grid.getType() == b'cell':
                 Ldata = ([0.0], [0.0], [0.0])
 
-                if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, Ldata) != 0:
-                    raise RuntimeError()
+                self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, Ldata)
 
                 M = Rx.shape[0]
                 N = len(slowness)
@@ -167,7 +163,6 @@ cdef class Grid3Dcpp:
 
             M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
 
-            if self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M) != 0:
-                raise RuntimeError()
+            self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M)
 
             return tt, rays, v0, M
