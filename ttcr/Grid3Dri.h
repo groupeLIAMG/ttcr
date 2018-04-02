@@ -1956,7 +1956,7 @@ namespace ttcr {
                                         if ( ii>=0 && ii<=ncx && !(ii==i && jj==j && kk==k) ) {
                                             
                                             size_t nnn = (kk*(ncy+1)+jj)*(ncx+1)+ii;
-                                            T1 tt = nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
+                                            T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
                                             nodes[nnn].setTT( tt, threadNo );
                                             frozen[nnn] = true;
                                             
@@ -1987,7 +1987,7 @@ namespace ttcr {
                                     if ( ii>=0 && ii<=ncx && !(ii==i && jj==j && kk==k) ) {
                                         
                                         size_t nnn = (kk*(ncy+1)+jj)*(ncx+1)+ii;
-                                        T1 tt = nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
+                                        T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
                                         nodes[nnn].setTT( tt, threadNo );
                                         frozen[nnn] = true;
                                         
@@ -2000,7 +2000,6 @@ namespace ttcr {
             }
         }
     }
-    
 }
 
 #endif

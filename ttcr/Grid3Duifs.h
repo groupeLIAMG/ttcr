@@ -583,7 +583,6 @@ namespace ttcr {
             }
         }
     }
-    
 }
 
 #endif
