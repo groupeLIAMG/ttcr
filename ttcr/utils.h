@@ -1,6 +1,6 @@
 //
 //  utils.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-02-15.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_utils_h
-#define ttcr_u_utils_h
+#ifndef ttcr_utils_h
+#define ttcr_utils_h
 
 #include <iostream>
 #include <set>

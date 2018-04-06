@@ -1,5 +1,5 @@
 //
-//  Node3Di.h
+//  Node3Dn.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-21.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_Node3Di_h
-#define ttcr_Node3Di_h
+#ifndef ttcr_Node3Dn_h
+#define ttcr_Node3Dn_h
 
 #include <cmath>
 #include <limits>
@@ -34,9 +34,9 @@
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Node3Di : public Node<T1> {
+    class Node3Dn : public Node<T1> {
     public:
-        Node3Di(const size_t nt) :
+        Node3Dn(const size_t nt) :
         nThreads(nt),
         tt(new T1[nt]),
         x(0.0f), y(0.0f), z(0.0f),
@@ -49,7 +49,7 @@ namespace ttcr {
             }
         }
         
-        Node3Di(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
+        Node3Dn(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
                 const size_t i) :
         nThreads(nt),
         tt(new T1[nt]),
@@ -64,7 +64,7 @@ namespace ttcr {
             tt[i]=t;
         }
         
-        Node3Di(const T1 t, const sxyz<T1>& s, const size_t nt,
+        Node3Dn(const T1 t, const sxyz<T1>& s, const size_t nt,
                 const size_t i) :
         nThreads(nt),
         tt(new T1[nt]),
@@ -79,7 +79,7 @@ namespace ttcr {
             tt[i]=t;
         }
         
-        Node3Di(const Node3Di<T1,T2>& node) :
+        Node3Dn(const Node3Dn<T1,T2>& node) :
         nThreads(node.nThreads),
         tt(0),
         x(node.x), y(node.y), z(node.z),
@@ -94,7 +94,7 @@ namespace ttcr {
             }
         }
         
-        ~Node3Di() {
+        ~Node3Dn() {
             delete [] tt;
         }
         
@@ -131,7 +131,7 @@ namespace ttcr {
         void pushOwner(const T2 o) { owners.push_back(o); }
         const std::vector<T2>& getOwners() const { return owners; }
         
-        T1 getDistance( const Node3Di<T1,T2>& node ) const {
+        T1 getDistance( const Node3Dn<T1,T2>& node ) const {
             return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
         }
         

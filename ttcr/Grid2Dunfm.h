@@ -1,5 +1,5 @@
 //
-//  Grid2Duifm.h
+//  Grid2Dunfm.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-15.
@@ -22,30 +22,30 @@
  *
  */
 
-#ifndef ttcr_Grid2Duifm_h
-#define ttcr_Grid2Duifm_h
+#ifndef ttcr_Grid2Dunfm_h
+#define ttcr_Grid2Dunfm_h
 
 #include <fstream>
 #include <queue>
 
-#include "Grid2Dui.h"
+#include "Grid2Dun.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Duifm : public Grid2Dui<T1,T2,NODE,S> {
+    class Grid2Dunfm : public Grid2Dun<T1,T2,NODE,S> {
     public:
-        Grid2Duifm(const std::vector<S>& no,
+        Grid2Dunfm(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const size_t nt=1, const bool procObtuse=true) :
-        Grid2Dui<T1, T2,NODE,S>(no, tri, nt)
+        Grid2Dun<T1, T2,NODE,S>(no, tri, nt)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
             if ( procObtuse ) this->processObtuse();
         }
         
-        ~Grid2Duifm() {
+        ~Grid2Dunfm() {
         }
         
         void raytrace(const std::vector<S>& Tx,
@@ -97,7 +97,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    void Grid2Dunfm<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
                                                   const size_t nt) {
         
         // primary nodes
@@ -137,7 +137,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -172,7 +172,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -211,7 +211,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -254,7 +254,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -305,7 +305,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
+    void Grid2Dunfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             std::priority_queue<NODE*,
                                             std::vector<NODE*>,
@@ -371,7 +371,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifm<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
+    void Grid2Dunfm<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
                                              std::vector<NODE*>,
                                              CompareNodePtr<T1>>& narrow_band,
                                              std::vector<bool>& inNarrowBand,

@@ -17,11 +17,11 @@
 
 #include "MSHReader.h"
 #include "Node2Dc.h"
-#include "Node2Di.h"
+#include "Node2Dn.h"
 #include "Grid2Ducfm.h"
-#include "Grid2Duifm.h"
+#include "Grid2Dunfm.h"
 #include "Grid3Ducfm.h"
-#include "Grid3Duifm.h"
+#include "Grid3Dunfm.h"
 #include "Rcv2D.h"
 #include "Rcv.h"
 
@@ -142,7 +142,7 @@ int main(int argc, char * argv[])
 		if ( constCells )
 			g = new Grid2Ducfm<double,uint32_t, Node2Dc<double,uint32_t>,sxz<double>>(nodes, triangles);
 		else
-			g = new Grid2Duifm<double,uint32_t, Node2Di<double,uint32_t>,sxz<double>>(nodes, triangles);
+			g = new Grid2Dunfm<double,uint32_t, Node2Dn<double,uint32_t>,sxz<double>>(nodes, triangles);
 		
 		if ( par.verbose ) {
 			cout << "done.\n";
@@ -309,7 +309,7 @@ int main(int argc, char * argv[])
 		if ( constCells )
 			g = new Grid3Ducfm<double, uint32_t>(nodes, tetrahedra);
 		else
-			g = new Grid3Duifm<double, uint32_t>(nodes, tetrahedra);
+			g = new Grid3Dunfm<double, uint32_t>(nodes, tetrahedra);
 		if ( par.verbose ) {
 			cout << "done.\n";
 		}

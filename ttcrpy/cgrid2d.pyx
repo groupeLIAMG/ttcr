@@ -60,7 +60,6 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
         int Lsr2da(double*,double*,size_t,double*,size_t,double*,size_t,object)
 
 
-
 cdef class Grid2Dcpp:
     """
     Grid2Dcpp(type, nx, nz, dx, dz, xmin, zmin, nsnx, nsnz, nthreads)

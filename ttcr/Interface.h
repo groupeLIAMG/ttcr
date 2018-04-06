@@ -1,6 +1,6 @@
 //
 //  SrcRcv.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2013-01-19.
 //  Copyright (c) 2013 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_Interface_h
-#define ttcr_u_Interface_h
+#ifndef ttcr_Interface_h
+#define ttcr_Interface_h
 
 #include <string>
 #include <vector>

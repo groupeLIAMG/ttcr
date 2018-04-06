@@ -1,7 +1,7 @@
 //  Defines a class Src that contains the position of each sources
 //
 //  Src.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-11-20.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef ttcr_u_Src_h
-#define ttcr_u_Src_h
+#ifndef ttcr_Src_h
+#define ttcr_Src_h
 
 #include <fstream>
 #include <iostream>

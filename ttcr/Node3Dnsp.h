@@ -1,5 +1,5 @@
 //
-//  Node3Disp.h
+//  Node3Dnsp.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 12-08-14.
@@ -23,8 +23,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef __NODE3DI_H__
-#define __NODE3DI_H__
+#ifndef __Node3Dn_H__
+#define __Node3Dn_H__
 
 #include <cmath>
 #include <limits>
@@ -34,9 +34,9 @@
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Node3Disp : public Node<T1> {
+    class Node3Dnsp : public Node<T1> {
     public:
-        Node3Disp(const size_t nt) :
+        Node3Dnsp(const size_t nt) :
         nThreads(nt),
         tt(new T1[nt]),
         x(0.0f), y(0.0f), z(0.0f),
@@ -54,7 +54,7 @@ namespace ttcr {
             }
         }
         
-        Node3Disp(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
+        Node3Dnsp(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
                   const size_t i) :
         nThreads(nt),
         tt(new T1[nt]),
@@ -74,7 +74,7 @@ namespace ttcr {
             tt[i]=t;
         }
         
-        Node3Disp(const T1 t, const sxyz<T1>& s, const size_t nt,
+        Node3Dnsp(const T1 t, const sxyz<T1>& s, const size_t nt,
                   const size_t i) :
         nThreads(nt),
         tt(new T1[nt]),
@@ -94,7 +94,7 @@ namespace ttcr {
             tt[i]=t;
         }
         
-        Node3Disp(const Node3Disp<T1,T2>& node) :
+        Node3Dnsp(const Node3Dnsp<T1,T2>& node) :
         nThreads(node.nThreads),
         tt(0),
         x(node.x), y(node.y), z(node.z),
@@ -116,7 +116,7 @@ namespace ttcr {
             }
         }
         
-        ~Node3Disp() {
+        ~Node3Dnsp() {
             delete [] tt;
             delete [] nodeParent;
             delete [] cellParent;
@@ -164,7 +164,7 @@ namespace ttcr {
         void pushOwner(const T2 o) { owners.push_back(o); }
         const std::vector<T2>& getOwners() const { return owners; }
         
-        T1 getDistance( const Node3Disp<T1,T2>& node ) const {
+        T1 getDistance( const Node3Dnsp<T1,T2>& node ) const {
             return sqrt( (x-node.x)*(x-node.x) + (y-node.y)*(y-node.y) + (z-node.z)*(z-node.z) );
         }
         
@@ -204,7 +204,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2>
-    sxyz<T1> operator+(const Node3Disp<T1,T2>& lhs, const Node3Disp<T1,T2>& rhs) {
+    sxyz<T1> operator+(const Node3Dnsp<T1,T2>& lhs, const Node3Dnsp<T1,T2>& rhs) {
         return sxyz<T1>( lhs.getX()+rhs.getX(), lhs.getY()+rhs.getY(), lhs.getZ()+rhs.getZ() );
     }
 

@@ -15,10 +15,10 @@
 
 #include <vector>
 
-#include "Grid3Duifs.h"
+#include "Grid3Dunfs.h"
 
 namespace ttcr {
-    typedef Grid3Duifs<double,uint32_t> mesh;
+    typedef Grid3Dunfs<double,uint32_t> mesh;
 
     class Mesh3Dttcr {
     public:

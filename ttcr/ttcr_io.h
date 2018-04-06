@@ -1,6 +1,6 @@
 //
 //  ttcr_io.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-11-19.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef __ttcr_u__ttcr_io__
-#define __ttcr_u__ttcr_io__
+#ifndef __ttcr__ttcr_io__
+#define __ttcr__ttcr_io__
 
 #include <iostream>
 #include <string>
@@ -40,4 +40,4 @@ namespace ttcr {
     
 }
 
-#endif /* defined(__ttcr_u__spmrt_io__) */
+#endif /* defined(__ttcr__spmrt_io__) */

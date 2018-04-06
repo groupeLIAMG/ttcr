@@ -11,13 +11,13 @@
 
 #include <stdexcept>
 
-#include "Grid2Dri.h"
-#include "Node2Di.h"
+#include "Grid2Drn.h"
+#include "Node2Dn.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Grid2Drcfs : public Grid2Dri<T1,T2,Node2Di<T1,T2>> {
+    class Grid2Drcfs : public Grid2Drn<T1,T2,Node2Dn<T1,T2>> {
     public:
         Grid2Drcfs(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T1 eps, const int maxit,
@@ -89,7 +89,7 @@ namespace ttcr {
                                   const T1 minx, const T1 minz,
                                   const T1 eps, const int maxit, const bool w,
                                   const bool rt, const size_t nt) :
-    Grid2Dri<T1,T2,Node2Di<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
+    Grid2Drn<T1,T2,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
     epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w), rotated_template(rt)
     {
         buildGridNodes();

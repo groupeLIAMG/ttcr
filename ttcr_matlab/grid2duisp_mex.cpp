@@ -20,13 +20,13 @@
 #include "mex.h"
 #include "class_handle.hpp"
 
-#include "Grid2Duisp.h"
-#include "Node3Disp.h"
+#include "Grid2Dunsp.h"
+#include "Node3Dnsp.h"
 
 using namespace std;
 using namespace ttcr;
 
-typedef Grid2Duisp<double,uint32_t,Node3Disp<double,uint32_t>,sxyz<double>> grid;
+typedef Grid2Dunsp<double,uint32_t,Node3Dnsp<double,uint32_t>,sxyz<double>> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

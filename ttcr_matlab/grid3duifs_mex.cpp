@@ -12,12 +12,12 @@
 #include "mex.h"
 #include "class_handle.hpp"
 
-#include "Grid3Duifs.h"
+#include "Grid3Dunfs.h"
 
 using namespace std;
 using namespace ttcr;
 
-typedef Grid3Duifs<double,uint32_t> grid;
+typedef Grid3Dunfs<double,uint32_t> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

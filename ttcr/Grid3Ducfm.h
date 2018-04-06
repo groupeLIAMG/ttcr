@@ -1,6 +1,6 @@
 //
 //  Grid3Ducfm.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-02-13.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -42,8 +42,8 @@
 //	}
 //
 
-#ifndef ttcr_u_Grid3Ducfm_h
-#define ttcr_u_Grid3Ducfm_h
+#ifndef ttcr_Grid3Ducfm_h
+#define ttcr_Grid3Ducfm_h
 
 #include <cmath>
 #include <fstream>

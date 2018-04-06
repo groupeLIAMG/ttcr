@@ -1,6 +1,6 @@
 //
 //  Grid3Duc.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-02-24.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_Grid3Duc_h
-#define ttcr_u_Grid3Duc_h
+#ifndef ttcr_Grid3Duc_h
+#define ttcr_Grid3Duc_h
 
 #include <cassert>
 

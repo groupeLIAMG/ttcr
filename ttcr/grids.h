@@ -1,6 +1,6 @@
 //
 //  grids.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-01-23.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_grids_h
-#define ttcr_u_grids_h
+#ifndef ttcr_grids_h
+#define ttcr_grids_h
 
 #include <exception>
 #include <chrono>
@@ -44,26 +44,26 @@
 #include "Cell.h"
 #include "Grid2Drcfs.h"
 #include "Grid2Drcsp.h"
-#include "Grid2Drifs.h"
-#include "Grid2Drisp.h"
+#include "Grid2Drnfs.h"
+#include "Grid2Drnsp.h"
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
-#include "Grid2Duifm.h"
-#include "Grid2Duifs.h"
-#include "Grid2Duisp.h"
+#include "Grid2Dunfm.h"
+#include "Grid2Dunfs.h"
+#include "Grid2Dunsp.h"
 #include "Grid3Drcsp.h"
 #include "Grid3Drcfs.h"
-#include "Grid3Drisp.h"
-#include "Grid3Drifs.h"
+#include "Grid3Drnsp.h"
+#include "Grid3Drnfs.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
-#include "Grid3Duifm.h"
-#include "Grid3Duifs.h"
-#include "Grid3Duisp.h"
+#include "Grid3Dunfm.h"
+#include "Grid3Dunfs.h"
+#include "Grid3Dunsp.h"
 #include "Node2Dcsp.h"
-#include "Node2Disp.h"
+#include "Node2Dnsp.h"
 #include "MSHReader.h"
 #ifdef VTK
 #include "VTUReader.h"
@@ -226,7 +226,7 @@ namespace ttcr {
                                                                                            par.nn[0], par.nn[1], par.nn[2],
                                                                                            nt);
                 else
-                    g = new Grid3Drisp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                    g = new Grid3Drnsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], d[1], d[2],
                                                     min[0], min[1], min[2],
                                                     par.nn[0], par.nn[1], par.nn[2],
@@ -261,7 +261,7 @@ namespace ttcr {
                                                     par.weno3, nt);
                 }
                 else
-                    g = new Grid3Drifs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                    g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, nt);
@@ -387,9 +387,9 @@ namespace ttcr {
                 switch (par.method) {
                     case SHORTEST_PATH:
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drisp) ... "; std::cout.flush(); }
+                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drnsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid3Drisp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                        g = new Grid3Drnsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], d[1], d[2],
                                                         xrange[0], yrange[0], zrange[0],
                                                         par.nn[0], par.nn[1], par.nn[2],
@@ -414,9 +414,9 @@ namespace ttcr {
                         
                     case FAST_SWEEPING:
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drifs) ... "; std::cout.flush(); }
+                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid3Drifs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                        g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, nt);
@@ -565,7 +565,7 @@ namespace ttcr {
                         if ( par.verbose ) std::cout << "done.\n";
                         break;
                     case FAST_SWEEPING:
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drifs) ... "; std::cout.flush(); }
+                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
@@ -662,7 +662,7 @@ namespace ttcr {
                     g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
                                                     par.verbose);
                 else
-                    g = new Grid3Duisp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -684,7 +684,7 @@ namespace ttcr {
                     g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra,
                                                     par.raypath_high_order, nt);
                 else
-                    g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra,
+                    g = new Grid3Dunfm<T, uint32_t>(nodes, tetrahedra,
                                                     par.raypath_high_order, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -706,7 +706,7 @@ namespace ttcr {
                                                     par.nitermax,
                                                     par.raypath_high_order, nt);
                 else
-                    g = new Grid3Duifs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+                    g = new Grid3Dunfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
                                                     par.nitermax,
                                                     par.raypath_high_order, nt);
                 T xmin = g->getXmin();
@@ -728,7 +728,7 @@ namespace ttcr {
                 if ( constCells )
                     dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 else
-                    dynamic_cast<Grid3Duifs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid3Dunfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -888,7 +888,7 @@ namespace ttcr {
                     g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
                                                     par.verbose);
                 else
-                    g = new Grid3Duisp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -910,7 +910,7 @@ namespace ttcr {
                     g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra,
                                                     par.raypath_high_order, nt);
                 else
-                    g = new Grid3Duifm<T, uint32_t>(nodes, tetrahedra,
+                    g = new Grid3Dunfm<T, uint32_t>(nodes, tetrahedra,
                                                     par.raypath_high_order, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -938,7 +938,7 @@ namespace ttcr {
                                                     par.nitermax,
                                                     par.raypath_high_order, nt);
                 else
-                    g = new Grid3Duifs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+                    g = new Grid3Dunfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
                                                     par.nitermax,
                                                     par.raypath_high_order, nt);
                 
@@ -961,7 +961,7 @@ namespace ttcr {
                 if ( constCells )
                     dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 else
-                    dynamic_cast<Grid3Duifs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid3Dunfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -1182,7 +1182,7 @@ namespace ttcr {
                                                                                              par.nn[0], par.nn[2],
                                                                                              nt);
                 else
-                    g = new Grid2Drisp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drnsp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                     min[0], min[2],
                                                     par.nn[0], par.nn[2],
                                                     nt);
@@ -1216,7 +1216,7 @@ namespace ttcr {
                                                     par.rotated_template, nt);
                 }
                 else
-                    g = new Grid2Drifs<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drnfs<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                     min[0], min[2], par.epsilon,
                                                     par.nitermax, par.weno3,
                                                     par.rotated_template, nt);
@@ -1354,9 +1354,9 @@ namespace ttcr {
                 switch ( par.method ) {
                     case SHORTEST_PATH:
                     {
-                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drisp) ... "; std::cout.flush(); }
+                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drnsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid2Drisp<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                        g = new Grid2Drnsp<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0],
                                                        par.nn[0], par.nn[2],
                                                        nt);
@@ -1388,9 +1388,9 @@ namespace ttcr {
                             return nullptr;
                         }
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drifs) ... "; std::cout.flush(); }
+                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid2Drifs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                        g = new Grid2Drnfs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0], par.epsilon,
                                                        par.nitermax, par.weno3,
                                                        par.rotated_template, nt);
@@ -1665,7 +1665,7 @@ namespace ttcr {
                 if ( constCells )
                     g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
                 else
-                    g = new Grid2Duisp<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
+                    g = new Grid2Dunsp<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1685,7 +1685,7 @@ namespace ttcr {
                 if ( constCells )
                     g = new Grid2Ducfm<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 else
-                    g = new Grid2Duifm<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+                    g = new Grid2Dunfm<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -1705,7 +1705,7 @@ namespace ttcr {
                     g = new Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 else
-                    g = new Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+                    g = new Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 T xmin = g->getXmin();
                 T xmax = g->getXmax();
@@ -1720,7 +1720,7 @@ namespace ttcr {
                 if ( constCells )
                     dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 else
-                    dynamic_cast<Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -1864,7 +1864,7 @@ namespace ttcr {
                 if ( constCells )
                     g = new Grid2Ducsp<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
                 else
-                    g = new Grid2Duisp<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
+                    g = new Grid2Dunsp<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1884,7 +1884,7 @@ namespace ttcr {
                 if ( constCells )
                     g = new Grid2Ducfm<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 else
-                    g = new Grid2Duifm<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+                    g = new Grid2Dunfm<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -1904,7 +1904,7 @@ namespace ttcr {
                     g = new Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 else
-                    g = new Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+                    g = new Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 
                 T xmin = g->getXmin();
@@ -1920,7 +1920,7 @@ namespace ttcr {
                 if ( constCells )
                     dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 else
-                    dynamic_cast<Grid2Duifs<T, uint32_t, Node2Disp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -2063,7 +2063,7 @@ namespace ttcr {
         if ( constCells )
             g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
         else
-            g = new Grid2Duisp<T, uint32_t, Node3Disp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+            g = new Grid2Dunsp<T, uint32_t, Node3Dnsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
         if ( par.verbose ) {
             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -2199,7 +2199,7 @@ namespace ttcr {
         if ( constCells )
             g = new Grid2Ducsp<T, uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
         else
-            g = new Grid2Duisp<T, uint32_t, Node3Disp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
+            g = new Grid2Dunsp<T, uint32_t, Node3Dnsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
         if ( par.verbose ) {
             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()

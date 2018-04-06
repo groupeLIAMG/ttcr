@@ -1,6 +1,6 @@
 //
 //  Grid3Ducsp.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-09-22.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.

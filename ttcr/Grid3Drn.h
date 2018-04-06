@@ -1,5 +1,5 @@
 //
-//  Grid3Dri.h
+//  Grid3Drn.h
 //  ttcr.v2
 //
 //  Created by Giroux Bernard on 12-08-15.
@@ -52,16 +52,16 @@
 namespace ttcr {
     
     template<typename T1, typename T2, typename NODE>
-    class Grid3Dri : public Grid3D<T1,T2> {
+    class Grid3Drn : public Grid3D<T1,T2> {
     public:
         
         /* Constructor Format:
-         Grid3Dri<T1,T2>::Grid3Dri(nb cells in x, nb cells in y, nb cells in z,
+         Grid3Drn<T1,T2>::Grid3Drn(nb cells in x, nb cells in y, nb cells in z,
          x cells size, y cells size, z cells size,
          x origin, y origin, z origin,
          index of the thread)
          */
-        Grid3Dri(const T2 nx, const T2 ny, const T2 nz,
+        Grid3Drn(const T2 nx, const T2 ny, const T2 nz,
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
                  const size_t nt=1, const bool invDist=false) :
@@ -74,7 +74,7 @@ namespace ttcr {
         neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
         {    }
         
-        virtual ~Grid3Dri() {}
+        virtual ~Grid3Drn() {}
         
         virtual void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
@@ -279,16 +279,16 @@ namespace ttcr {
                      const size_t threadNo) const;
         
     private:
-        Grid3Dri() {}
-        Grid3Dri(const Grid3Dri<T1,T2,NODE>& g) {}
-        Grid3Dri<T1,T2,NODE>& operator=(const Grid3Dri<T1,T2,NODE>& g) { return *this; }
+        Grid3Drn() {}
+        Grid3Drn(const Grid3Drn<T1,T2,NODE>& g) {}
+        Grid3Drn<T1,T2,NODE>& operator=(const Grid3Drn<T1,T2,NODE>& g) { return *this; }
         
     };
     
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::buildGridNeighbors() {
+    void Grid3Drn<T1,T2,NODE>::buildGridNeighbors() {
         
         //Index the neighbors nodes of each cell
         for ( T2 n=0; n<nodes.size(); ++n ) {
@@ -300,7 +300,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Drn<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
         
         // Check if the points from a vector are in the grid
         for ( size_t n=0; n<pts.size(); ++n ) {
@@ -317,7 +317,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1> &pt, const size_t nt) const {
+    T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1> &pt, const size_t nt) const {
         
         static const size_t nnx = ncx+1;
         static const size_t nny = ncy+1;
@@ -456,7 +456,7 @@ namespace ttcr {
     }
     
     //template<typename T1, typename T2, typename NODE>
-    //T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+    //T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     //                                    const std::vector<NODE>& nodes,
     //                                    const size_t threadNo) const {
     //
@@ -487,7 +487,7 @@ namespace ttcr {
     //}
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+    T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
                                            T2& nodeParentRx, T2& cellParentRx,
                                            const size_t threadNo) const {
         
@@ -521,7 +521,7 @@ namespace ttcr {
     }
     
     //template<typename T1, typename T2, typename NODE>
-    //T1 Grid3Dri<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+    //T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     //                                       const std::vector<NODE>& nodes,
     //                                       T2& nodeParentRx, T2& cellParentRx,
     //                                       const size_t threadNo) const {
@@ -557,7 +557,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::grad(sxyz<T1>& g, const size_t i, const size_t j, const size_t k,
+    void Grid3Drn<T1,T2,NODE>::grad(sxyz<T1>& g, const size_t i, const size_t j, const size_t k,
                                     const size_t nt) const {
         
         // compute average gradient for voxel (i,j,k)
@@ -581,7 +581,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::grad(sxyz<T1>& g, const sxyz<T1> &pt,
+    void Grid3Drn<T1,T2,NODE>::grad(sxyz<T1>& g, const sxyz<T1> &pt,
                                     const size_t nt) const {
         
         // compute travel time gradient at point pt
@@ -604,7 +604,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drn<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
                                           const size_t threadNo) const {
@@ -683,7 +683,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drn<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
                                           std::vector<sijv<T1>>& m_data,
@@ -850,7 +850,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::getRaypath_old(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drn<T1,T2,NODE>::getRaypath_old(const std::vector<sxyz<T1>>& Tx,
                                               const sxyz<T1> &Rx,
                                               std::vector<sxyz<T1>> &r_data,
                                               const size_t threadNo) const {
@@ -1274,7 +1274,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dri<T1,T2,NODE>::computeSlowness(const sxyz<T1>& Rx) const {
+    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& Rx) const {
         
         
         // Calculate the slowness of any point that is not on a node
@@ -1332,7 +1332,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::saveTT(const std::string & fname, const int all,
+    void Grid3Drn<T1,T2,NODE>::saveTT(const std::string & fname, const int all,
                                       const size_t nt,
                                       const bool vtkFormat) const {
         
@@ -1402,7 +1402,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,
+    void Grid3Drn<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,
                                      const size_t threadNo) const {
         
         // sweep first direction
@@ -1488,7 +1488,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::update_node(const size_t i, const size_t j, const size_t k,
+    void Grid3Drn<T1,T2,NODE>::update_node(const size_t i, const size_t j, const size_t k,
                                            const size_t threadNo) const {
         T1 a1, a2, a3, t;
         
@@ -1548,7 +1548,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
+    void Grid3Drn<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
                                            const size_t threadNo) const {
         
         // sweep first direction
@@ -1634,7 +1634,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::update_node_weno3(const size_t i,
+    void Grid3Drn<T1,T2,NODE>::update_node_weno3(const size_t i,
                                                  const size_t j,
                                                  const size_t k,
                                                  const size_t threadNo) const {
@@ -1930,7 +1930,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dri<T1,T2,NODE>::initFSM(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drn<T1,T2,NODE>::initFSM(const std::vector<sxyz<T1>>& Tx,
                                        const std::vector<T1>& t0,
                                        std::vector<bool>& frozen,
                                        const int npts,

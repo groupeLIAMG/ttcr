@@ -1,5 +1,5 @@
 //
-//  Grid2Dui.h
+//  Grid2Dun.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-11.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_Grid2Dui_h
-#define ttcr_Grid2Dui_h
+#ifndef ttcr_Grid2Dun_h
+#define ttcr_Grid2Dun_h
 
 #include <iostream>
 #include <map>
@@ -40,9 +40,9 @@
 namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Dui : public Grid2D<T1,T2,S> {
+    class Grid2Dun : public Grid2D<T1,T2,S> {
     public:
-        Grid2Dui(const std::vector<S>& no,
+        Grid2Dun(const std::vector<S>& no,
                  const std::vector<triangleElem<T2>>& tri,
                  const size_t nt=1) :
         nThreads(nt),
@@ -56,7 +56,7 @@ namespace ttcr {
             }
         }
         
-        virtual ~Grid2Dui() {}
+        virtual ~Grid2Dun() {}
         
         void setSlowness(const T1 s) {
             for ( size_t n=0; n<nodes.size(); ++n ) {
@@ -213,7 +213,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dui<T1,T2,NODE,S>::getTraveltime(const S& Rx,
+    T1 Grid2Dun<T1,T2,NODE,S>::getTraveltime(const S& Rx,
                                              const std::vector<NODE>& nodes,
                                              const size_t threadNo) const {
         
@@ -242,7 +242,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dui<T1,T2,NODE,S>::getTraveltime(const S& Rx,
+    T1 Grid2Dun<T1,T2,NODE,S>::getTraveltime(const S& Rx,
                                              const std::vector<NODE>& nodes,
                                              T2& nodeParentRx, T2& cellParentRx,
                                              const size_t threadNo) const {
@@ -276,7 +276,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dui<T1,T2,NODE,S>::computeSlowness( const S& pt ) const {
+    T1 Grid2Dun<T1,T2,NODE,S>::computeSlowness( const S& pt ) const {
         
         //Calculate the slowness of any point that is not on a node
         
@@ -307,7 +307,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dui<T1,T2,NODE,S>::computeSlowness( const S& pt, const T2 cellNo ) const {
+    T1 Grid2Dun<T1,T2,NODE,S>::computeSlowness( const S& pt, const T2 cellNo ) const {
         
         //Calculate the slowness of any point that is not on a node
         
@@ -331,7 +331,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
+    void Grid2Dun<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
         
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -358,7 +358,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid2Dun<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
         
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -386,7 +386,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Dui<T1,T2,NODE,S>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
+    bool Grid2Dun<T1,T2,NODE,S>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
         
         
         // from http://mathworld.wolfram.com/TriangleInterior.html
@@ -405,7 +405,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Dui<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
+    bool Grid2Dun<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
         
         
         sxyz<T1> a = { nodes[ triangles[nt].i[0] ].getX(),
@@ -435,7 +435,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
+    void Grid2Dun<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
                                         const size_t nt, const bool vtkFormat) const {
         
         if (vtkFormat) {
@@ -503,7 +503,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    int Grid2Dui<T1,T2,NODE,S>::projectPts(std::vector<S>& pts) const {
+    int Grid2Dun<T1,T2,NODE,S>::projectPts(std::vector<S>& pts) const {
         
         std::vector<S> centroid( triangles.size() );
         
@@ -547,7 +547,7 @@ namespace ttcr {
     
 #ifdef VTK
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
+    void Grid2Dun<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
                                               const bool saveSlowness,
                                               const bool savePhysicalEntity) const {
         
@@ -615,7 +615,7 @@ namespace ttcr {
 #endif
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::processObtuse() {
+    void Grid2Dun<T1,T2,NODE,S>::processObtuse() {
         //
         //  WARNING processing obtuse angles this way is not going to work for undulated surfaces
         //
@@ -719,7 +719,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::localSolver(NODE *vertexC,
+    void Grid2Dun<T1,T2,NODE,S>::localSolver(NODE *vertexC,
                                              const size_t threadNo) const {
         
         static const double pi2 = pi / 2.;
@@ -798,7 +798,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
+    void Grid2Dun<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
                                                const sxz<T1> &Rx,
                                                std::vector<sxz<T1>> &r_data,
                                                const size_t threadNo) const {
@@ -1166,7 +1166,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Dui<T1,T2,NODE,S>::findIntersection(const T2 i0, const T2 i1,
+    bool Grid2Dun<T1,T2,NODE,S>::findIntersection(const T2 i0, const T2 i1,
                                                   const sxz<T1> &g,
                                                   sxz<T1> &curr_pt) const {
         
@@ -1236,7 +1236,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    T2 Grid2Dui<T1,T2,NODE,S>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
+    T2 Grid2Dun<T1,T2,NODE,S>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
         std::vector<T2> cells;
         for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
             if ( std::find(nodes[i1].getOwners().begin(),
@@ -1260,7 +1260,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    T2 Grid2Dui<T1,T2,NODE,S>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
+    T2 Grid2Dun<T1,T2,NODE,S>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
         std::vector<T2> cells;
         for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
             if ( std::find(nodes[i1].getOwners().begin(),
@@ -1282,7 +1282,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dui<T1,T2,NODE,S>::getNeighborNodes(const T2 cellNo,
+    void Grid2Dun<T1,T2,NODE,S>::getNeighborNodes(const T2 cellNo,
                                                   std::set<NODE*> &nnodes) const {
         
         for ( size_t n=0; n<3; ++n ) {

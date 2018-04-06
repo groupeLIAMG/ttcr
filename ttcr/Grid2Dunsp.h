@@ -1,5 +1,5 @@
 //
-//  Grid2Duisp.h
+//  Grid2Dunsp.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-11.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_Grid2Duisp_h
-#define ttcr_Grid2Duisp_h
+#ifndef ttcr_Grid2Dunsp_h
+#define ttcr_Grid2Dunsp_h
 
 #include <array>
 #include <fstream>
@@ -31,23 +31,23 @@
 #include <set>
 #include <stdexcept>
 
-#include "Grid2Dui.h"
+#include "Grid2Dun.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Duisp : public Grid2Dui<T1,T2,NODE,S> {
+    class Grid2Dunsp : public Grid2Dun<T1,T2,NODE,S> {
     public:
-        Grid2Duisp(const std::vector<S>& no,
+        Grid2Dunsp(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T2 ns, const size_t nt=1) :
-        Grid2Dui<T1,T2,NODE,S>(no, tri, nt), nsecondary(ns)
+        Grid2Dun<T1,T2,NODE,S>(no, tri, nt), nsecondary(ns)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
         }
         
-        ~Grid2Duisp() {
+        ~Grid2Dunsp() {
         }
         
         void setSlowness(const std::vector<T1>& s) {
@@ -151,7 +151,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    void Grid2Dunsp<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
                                                   const size_t nt) {
         
         // primary nodes
@@ -213,7 +213,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::interpSlownessSecondary() {
+    void Grid2Dunsp<T1,T2,NODE,S>::interpSlownessSecondary() {
         
         T2 nNodes = this->nPrimary;
         
@@ -255,7 +255,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -290,7 +290,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -329,7 +329,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -432,7 +432,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -544,7 +544,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -687,7 +687,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -798,7 +798,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -1008,7 +1008,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::initQueue(const std::vector<S>& Tx,
+    void Grid2Dunsp<T1,T2,NODE,S>::initQueue(const std::vector<S>& Tx,
                                              const std::vector<T1>& t0,
                                              std::priority_queue<NODE*,
                                              std::vector<NODE*>,
@@ -1048,7 +1048,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duisp<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
+    void Grid2Dunsp<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
                                              std::vector<NODE*>,
                                              CompareNodePtr<T1>>& queue,
                                              std::vector<bool>& inQueue,
@@ -1091,7 +1091,7 @@ namespace ttcr {
     }
  
     template<typename T1, typename T2, typename NODE, typename S>
-    int Grid2Duisp<T1,T2,NODE,S>::computeD(const std::vector<sxyz<T1>>& pts,
+    int Grid2Dunsp<T1,T2,NODE,S>::computeD(const std::vector<sxyz<T1>>& pts,
                                            std::vector<std::vector<siv<T1>>>& d_data) const{
         
         for ( size_t n=0; n<pts.size(); ++n ) {

@@ -1,6 +1,6 @@
 //
 //  VTUReader.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2013-01-10.
 //  Copyright (c) 2013 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_VTUReader_h
-#define ttcr_u_VTUReader_h
+#ifndef ttcr_VTUReader_h
+#define ttcr_VTUReader_h
 
 #include "vtkCellData.h"
 #include "vtkDoubleArray.h"

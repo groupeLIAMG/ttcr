@@ -1,5 +1,5 @@
 //
-//  Grid3Duifs.h
+//  Grid3Dunfs.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-21.
@@ -22,40 +22,40 @@
  *
  */
 
-#ifndef ttcr_Grid3Duifs_h
-#define ttcr_Grid3Duifs_h
+#ifndef ttcr_Grid3Dunfs_h
+#define ttcr_Grid3Dunfs_h
 
 #include <cmath>
 #include <fstream>
 #include <queue>
 #include <vector>
 
-#include "Grid3Dui.h"
-#include "Node3Di.h"
+#include "Grid3Dun.h"
+#include "Node3Dn.h"
 #include "Metric.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Grid3Duifs : public Grid3Dui<T1,T2,Node3Di<T1,T2>> {
+    class Grid3Dunfs : public Grid3Dun<T1,T2,Node3Dn<T1,T2>> {
     public:
-        Grid3Duifs(const std::vector<sxyz<T1>>& no,
+        Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps, const int maxit, const bool rp=false,
                    const size_t nt=1) :
-        Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt),
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, nt),
         rp_ho(rp), epsilon(eps), nitermax(maxit), S(), niter(0)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
         }
-        Grid3Duifs(const std::vector<sxyz<T1>>& no,
+        Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps, const int maxit,
                    const std::vector<sxyz<T1>>& refPts, const int order,
                    const bool rp=false,
                    const size_t nt=1) :
-        Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt),
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, nt),
         rp_ho(rp), epsilon(eps), nitermax(maxit), S(), niter(0)
         {
             buildGridNodes(no, nt);
@@ -63,7 +63,7 @@ namespace ttcr {
             this->initOrdering(refPts, order);
         }
         
-        ~Grid3Duifs() {
+        ~Grid3Dunfs() {
         }
         
         void initOrdering(const std::vector<sxyz<T1>>& refPts, const int order);
@@ -117,7 +117,7 @@ namespace ttcr {
         bool rp_ho;
         T1 epsilon;
         int nitermax;
-        std::vector<std::vector<Node3Di<T1,T2>*>> S;
+        std::vector<std::vector<Node3Dn<T1,T2>*>> S;
         mutable int niter;
         
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
@@ -127,16 +127,16 @@ namespace ttcr {
         
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
-                      std::priority_queue<Node3Di<T1,T2>*,
-                      std::vector<Node3Di<T1,T2>*>,
+                      std::priority_queue<Node3Dn<T1,T2>*,
+                      std::vector<Node3Dn<T1,T2>*>,
                       CompareNodePtr<T1>>&,
-                      std::vector<Node3Di<T1,T2>>&,
+                      std::vector<Node3Dn<T1,T2>>&,
                       std::vector<bool>&,
                       std::vector<bool>&,
                       const size_t) const;
         
-        void propagate(std::priority_queue<Node3Di<T1,T2>*,
-                       std::vector<Node3Di<T1,T2>*>,
+        void propagate(std::priority_queue<Node3Dn<T1,T2>*,
+                       std::vector<Node3Dn<T1,T2>*>,
                        CompareNodePtr<T1>>&,
                        std::vector<bool>&,
                        std::vector<bool>&,
@@ -145,7 +145,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
+    void Grid3Dunfs<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                            const size_t nt) {
         
         // primary nodes
@@ -166,7 +166,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::initOrdering(const std::vector<sxyz<T1>>& refPts,
+    void Grid3Dunfs<T1,T2>::initOrdering(const std::vector<sxyz<T1>>& refPts,
                                          const int order) {
         S.resize( refPts.size() );
         
@@ -195,7 +195,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -270,7 +270,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -349,7 +349,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -377,7 +377,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -409,7 +409,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -444,7 +444,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -487,7 +487,7 @@ namespace ttcr {
 
     
     template<typename T1, typename T2>
-    void Grid3Duifs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfs<T1,T2>::initTx(const std::vector<sxyz<T1>>& Tx,
                                    const std::vector<T1>& t0,
                                    std::vector<bool>& frozen,
                                    const size_t threadNo) const {
@@ -500,7 +500,7 @@ namespace ttcr {
                     this->nodes[nn].setTT( t0[n], threadNo );
                     frozen[nn] = true;
                     
-                    if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
+                    if ( Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius == 0.0 ) {
                         // populate around Tx
                         for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
                             
@@ -524,7 +524,7 @@ namespace ttcr {
                             if ( no == nn ) continue;
                             
                             T1 d = this->nodes[nn].getDistance( this->nodes[no] );
-                            if ( d <= Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius ) {
+                            if ( d <= Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius ) {
                                 
                                 T1 dt = this->computeDt(this->nodes[nn], this->nodes[no] );
                                 
@@ -548,7 +548,7 @@ namespace ttcr {
             if ( found==false ) {
                 
                 T2 cellNo = this->getCellNo(Tx[n]);
-                if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
+                if ( Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius == 0.0 ) {
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
                         // compute dt
@@ -563,7 +563,7 @@ namespace ttcr {
                     for ( size_t no=0; no<this->nodes.size(); ++no ) {
                         
                         T1 d = this->nodes[no].getDistance( Tx[n] );
-                        if ( d <= Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius ) {
+                        if ( d <= Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius ) {
                             
                             T1 dt = this->nodes[no].getDistance(Tx[n])*this->nodes[no].getNodeSlowness();
                             

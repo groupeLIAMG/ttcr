@@ -1,6 +1,6 @@
 //
 //  Rcv.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-11-20.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef __ttcr_u__Rcv__
-#define __ttcr_u__Rcv__
+#ifndef __ttcr__Rcv__
+#define __ttcr__Rcv__
 
 #include <fstream>
 #include <iostream>
@@ -178,4 +178,4 @@ namespace ttcr {
     
 }
 
-#endif /* defined(__ttcr_u__Rcv__) */
+#endif /* defined(__ttcr__Rcv__) */

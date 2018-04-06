@@ -1,5 +1,5 @@
 //
-//  Grid3Dui.h
+//  Grid3Dun.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-21.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_Grid3Dui_h
-#define ttcr_Grid3Dui_h
+#ifndef ttcr_Grid3Dun_h
+#define ttcr_Grid3Dun_h
 
 #include <cassert>
 
@@ -60,9 +60,9 @@
 namespace ttcr {
     
     template<typename T1, typename T2, typename NODE>
-    class Grid3Dui : public Grid3D<T1,T2> {
+    class Grid3Dun : public Grid3D<T1,T2> {
     public:
-        Grid3Dui(const std::vector<sxyz<T1>>& no,
+        Grid3Dun(const std::vector<sxyz<T1>>& no,
                  const std::vector<tetrahedronElem<T2>>& tet,
                  const size_t nt=1) :
         nThreads(nt),
@@ -73,7 +73,7 @@ namespace ttcr {
         tetrahedra(tet)
         {}
         
-        virtual ~Grid3Dui() {}
+        virtual ~Grid3Dun() {}
         
         void setSlowness(const T1 s) {
             for ( size_t n=0; n<nodes.size(); ++n ) {
@@ -300,7 +300,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dui<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+    T1 Grid3Dun<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
                                            const std::vector<NODE>& nodes,
                                            const size_t threadNo) const {
         
@@ -331,7 +331,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Dun<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
         
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -362,7 +362,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dui<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& v, const T2 nt) const {
+    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& v, const T2 nt) const {
         
         
         // from http://steve.hollasch.net/cgindex/geometry/ptintet.html
@@ -441,7 +441,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
+    void Grid3Dun<T1,T2,NODE>::saveTT(const std::string &fname, const int all,
                                       const size_t nt, const bool vtkFormat) const {
         
         if (vtkFormat) {
@@ -511,7 +511,7 @@ namespace ttcr {
     
 #ifdef VTK
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::saveModelVTU(const std::string &fname,
+    void Grid3Dun<T1,T2,NODE>::saveModelVTU(const std::string &fname,
                                             const bool saveSlowness,
                                             const bool savePhysicalEntity) const {
         
@@ -586,7 +586,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::localUpdate3D(NODE *vertexD,
+    void Grid3Dun<T1,T2,NODE>::localUpdate3D(NODE *vertexD,
                                              const size_t threadNo) const {
         
         // méthode of Lelievre et al. 2011
@@ -721,7 +721,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dui<T1,T2,NODE>::localUpdate2D(const NODE *vertexA,
+    T1 Grid3Dun<T1,T2,NODE>::localUpdate2D(const NODE *vertexA,
                                            const NODE *vertexB,
                                            const NODE *vertexC,
                                            const T2 tetNo,
@@ -771,7 +771,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::local3Dsolver(NODE *vertexD,
+    void Grid3Dun<T1,T2,NODE>::local3Dsolver(NODE *vertexD,
                                              const size_t threadNo) const {
         
         // Méthode de Qian et al. 2007
@@ -920,7 +920,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dui<T1,T2,NODE>::local2Dsolver(const NODE *vertexA,
+    T1 Grid3Dun<T1,T2,NODE>::local2Dsolver(const NODE *vertexA,
                                            const NODE *vertexB,
                                            const NODE *vertexC,
                                            const T2 tetraNo,
@@ -975,7 +975,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    int Grid3Dui<T1,T2,NODE>::solveEq23(const T1 a[], const T1 b[], T1 n[][3]) const {
+    int Grid3Dun<T1,T2,NODE>::solveEq23(const T1 a[], const T1 b[], T1 n[][3]) const {
         // returns 0 if no solution
         //         1 if solutions exist
         
@@ -1052,7 +1052,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dun<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
                                           const size_t threadNo) const {
@@ -1579,7 +1579,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dun<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                                              const sxyz<T1> &Rx,
                                              std::vector<sxyz<T1>> &r_data,
                                              const size_t threadNo) const {
@@ -2094,7 +2094,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
+    void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
                                              sijv<T1>& m,
                                              const std::set<T2>& allNodes,
                                              const sxyz<T1>& mid_pt,
@@ -2126,7 +2126,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dun<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
                                           std::vector<sijv<T1>>& m_data,
@@ -2902,7 +2902,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dun<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                                              const sxyz<T1>& Rx,
                                              std::vector<sxyz<T1>>& r_data,
                                              std::vector<sijv<T1>>& m_data,
@@ -3668,7 +3668,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dui<T1,T2,NODE>::intersectVecTriangle(const T2 iO, const sxyz<T1> &vec,
+    bool Grid3Dun<T1,T2,NODE>::intersectVecTriangle(const T2 iO, const sxyz<T1> &vec,
                                                     const T2 iA, T2 iB, T2 iC,
                                                     sxyz<T1> &pt_i) const {
         
@@ -3707,7 +3707,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dui<T1,T2,NODE>::intersectVecTriangle(const sxyz<T1> &O, const sxyz<T1> &vec,
+    bool Grid3Dun<T1,T2,NODE>::intersectVecTriangle(const sxyz<T1> &O, const sxyz<T1> &vec,
                                                     const T2 iA, T2 iB, T2 iC,
                                                     sxyz<T1> &pt_i) const {
         
@@ -3747,7 +3747,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dui<T1,T2,NODE>::areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const {
+    bool Grid3Dun<T1,T2,NODE>::areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const {
         
         // http://mathworld.wolfram.com/Collinear.html
         //
@@ -3759,7 +3759,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dui<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const T2 i0, const T2 i1, const T2 i2) const {
+    bool Grid3Dun<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const T2 i0, const T2 i1, const T2 i2) const {
         
         // http://mathworld.wolfram.com/Coplanar.html
         //
@@ -3771,7 +3771,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    T2 Grid3Dui<T1,T2,NODE>::findAdjacentCell1(const std::array<T2,3> &faceNodes,
+    T2 Grid3Dun<T1,T2,NODE>::findAdjacentCell1(const std::array<T2,3> &faceNodes,
                                                const T2 nodeNo) const {
         
         std::vector<T2> cells;
@@ -3794,7 +3794,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    T2 Grid3Dui<T1,T2,NODE>::findAdjacentCell2(const std::array<T2,3> &faceNodes,
+    T2 Grid3Dun<T1,T2,NODE>::findAdjacentCell2(const std::array<T2,3> &faceNodes,
                                                const T2 cellNo) const {
         
         std::vector<T2> cells;
@@ -3815,7 +3815,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const {
+    void Grid3Dun<T1,T2,NODE>::plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const {
         
         
         if ( true ) {
@@ -3841,7 +3841,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::getNeighborNodes(const T2 cellNo,
+    void Grid3Dun<T1,T2,NODE>::getNeighborNodes(const T2 cellNo,
                                                 std::set<NODE*> &nnodes) const {
         
         for ( size_t n=0; n<4; ++n ) {
@@ -3857,7 +3857,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dui<T1,T2,NODE>::testInTriangle(const NODE *vertexA,
+    bool Grid3Dun<T1,T2,NODE>::testInTriangle(const NODE *vertexA,
                                               const NODE *vertexB,
                                               const NODE *vertexC,
                                               const sxyz<T1> &E) const {
@@ -3868,7 +3868,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dui<T1,T2,NODE>::barycentric(const NODE *a,
+    void Grid3Dun<T1,T2,NODE>::barycentric(const NODE *a,
                                            const NODE *b,
                                            const NODE *c,
                                            const sxyz<T1> &p,
@@ -3910,7 +3910,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dui<T1,T2,NODE>::computeSlowness( const sxyz<T1>& Rx ) const {
+    T1 Grid3Dun<T1,T2,NODE>::computeSlowness( const sxyz<T1>& Rx ) const {
         
         //Calculate the slowness of any point that is not on a node
         

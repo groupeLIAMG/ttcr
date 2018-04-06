@@ -1,13 +1,13 @@
 //
-//  Grid3Drisp.h
+//  Grid3Drnsp.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2015-07-03.
 //  Copyright (c) 2015 Bernard Giroux. All rights reserved.
 //
 
-#ifndef ttcr_Grid3Drisp_h
-#define ttcr_Grid3Drisp_h
+#ifndef ttcr_Grid3Drnsp_h
+#define ttcr_Grid3Drnsp_h
 
 #include <algorithm>
 #include <array>
@@ -17,8 +17,8 @@
 #include <queue>
 #include <vector>
 
-#include "Grid3Dri.h"
-#include "Node3Disp.h"
+#include "Grid3Drn.h"
+#include "Node3Dnsp.h"
 #include "utils.h"
 
 #include "Interpolator.h"
@@ -26,21 +26,21 @@
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Grid3Drisp : public Grid3Dri<T1,T2,Node3Disp<T1,T2>> {
+    class Grid3Drnsp : public Grid3Drn<T1,T2,Node3Dnsp<T1,T2>> {
     public:
-        Grid3Drisp(const T2 nx, const T2 ny, const T2 nz,
+        Grid3Drnsp(const T2 nx, const T2 ny, const T2 nz,
                    const T1 ddx, const T1 ddy, const T1 ddz,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T2 nnx, const T2 nny, const T2 nnz,
                    const size_t nt=1, const bool invDist=false) :
-        Grid3Dri<T1,T2,Node3Disp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt, invDist),
+        Grid3Drn<T1,T2,Node3Dnsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt, invDist),
         nsnx(nnx), nsny(nny), nsnz(nnz)
         {
             buildGridNodes();
             this->buildGridNeighbors();
         }
         
-        ~Grid3Drisp() {
+        ~Grid3Drnsp() {
             
         }
         
@@ -98,22 +98,22 @@ namespace ttcr {
 
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,
-                       std::priority_queue<Node3Disp<T1,T2>*,
-                       std::vector<Node3Disp<T1,T2>*>,
+                       std::priority_queue<Node3Dnsp<T1,T2>*,
+                       std::vector<Node3Dnsp<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
-                       std::vector<Node3Disp<T1,T2>>& txNodes,
+                       std::vector<Node3Dnsp<T1,T2>>& txNodes,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
         
-        void propagate(std::priority_queue<Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        void propagate(std::priority_queue<Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        size_t threadNo) const;
         
-        void prepropagate(const Node3Disp<T1,T2>& node,
-                          std::priority_queue<Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        void prepropagate(const Node3Dnsp<T1,T2>& node,
+                          std::priority_queue<Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
                           CompareNodePtr<T1>>& queue,
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
@@ -123,7 +123,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::buildGridNodes() {
+    void Grid3Drnsp<T1,T2>::buildGridNodes() {
         
         this->nodes.resize(// secondary nodes on the edges
                            this->ncx*nsnx*((this->ncy+1)*(this->ncz+1)) +
@@ -135,7 +135,7 @@ namespace ttcr {
                            (nsny*nsnz)*(this->ncy*this->ncz*(this->ncx+1))+
                            // primary nodes
                            (this->ncx+1) * (this->ncy+1) * (this->ncz+1),
-                           Node3Disp<T1,T2>(this->nThreads));
+                           Node3Dnsp<T1,T2>(this->nThreads));
         
         // Create the grid, assign a number for each node, determine the type of the node and find the owners
         // Nodes and cells are first indexed in z, then y, and x.
@@ -452,7 +452,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::setSlowness(const std::vector<T1>& s) {
+    void Grid3Drnsp<T1,T2>::setSlowness(const std::vector<T1>& s) {
         
         if ( ((this->ncx+1)*(this->ncy+1)*(this->ncz+1)) != s.size() ) {
             throw std::length_error("Error: slowness vector of incompatible size.");
@@ -477,7 +477,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::linearInterpolation() const {
+    void Grid3Drnsp<T1,T2>::linearInterpolation() const {
         
         std::vector<size_t> list;
         list.reserve(8);
@@ -637,12 +637,12 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::invDistInterpolation() const {
+    void Grid3Drnsp<T1,T2>::invDistInterpolation() const {
         
         std::vector<size_t>::iterator it;
         std::vector<size_t> list;
         
-        std::vector<Node3Disp<T1,T2>*> interpNodes;
+        std::vector<Node3Dnsp<T1,T2>*> interpNodes;
         interpNodes.reserve(18);
         
         //Interpolation for the secondary nodes
@@ -677,7 +677,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drnsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -693,10 +693,10 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        std::priority_queue< Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
         CompareNodePtr<T1>> queue(cmp);
         // txNodes: Extra nodes if the sources points are not on an existing node
-        std::vector<Node3Disp<T1,T2>> txNodes;
+        std::vector<Node3Dnsp<T1,T2>> txNodes;
         // inQueue lists the nodes waiting in the queue
         std::vector<bool> inQueue( this->nodes.size(), false );
         // Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -716,7 +716,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drnsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -731,10 +731,10 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        std::priority_queue< Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
         
-        std::vector<Node3Disp<T1,T2>> txNodes;
+        std::vector<Node3Dnsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
         
@@ -754,7 +754,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drnsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -771,10 +771,10 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        std::priority_queue< Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
         CompareNodePtr<T1>> queue(cmp);
         // txNodes: Extra nodes if the sources points are not on an existing node
-        std::vector<Node3Disp<T1,T2>> txNodes;
+        std::vector<Node3Dnsp<T1,T2>> txNodes;
         // inQueue lists the nodes waiting in the queue
         std::vector<bool> inQueue( this->nodes.size(), false );
         // Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -801,7 +801,7 @@ namespace ttcr {
                                                  threadNo);
             
             // Rx are in nodes (not txNodes)
-            std::vector<Node3Disp<T1,T2>> *node_p;
+            std::vector<Node3Dnsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
             
             std::vector<sxyz<T1>> r_tmp;
@@ -854,7 +854,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drnsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -870,10 +870,10 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        std::priority_queue< Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
         
-        std::vector<Node3Disp<T1,T2>> txNodes;
+        std::vector<Node3Dnsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
         
@@ -919,7 +919,7 @@ namespace ttcr {
                 if ( flag ) continue;
                 
                 // Rx are in nodes (not txNodes)
-                std::vector<Node3Disp<T1,T2>> *node_p;
+                std::vector<Node3Dnsp<T1,T2>> *node_p;
                 node_p = &(this->nodes);
                 
                 std::vector<sxyz<T1>> r_tmp;
@@ -966,7 +966,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drnsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -984,10 +984,10 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
+        std::priority_queue< Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
         CompareNodePtr<T1>> queue(cmp);
         // txNodes: Extra nodes if the sources points are not on an existing node
-        std::vector<Node3Disp<T1,T2>> txNodes;
+        std::vector<Node3Dnsp<T1,T2>> txNodes;
         // inQueue lists the nodes waiting in the queue
         std::vector<bool> inQueue( this->nodes.size(), false );
         // Tx sources nodes are "frozen" and their traveltime can't be modified
@@ -1021,7 +1021,7 @@ namespace ttcr {
                                                  threadNo);
             
             // Rx are in nodes (not txNodes)
-            std::vector<Node3Disp<T1,T2>> *node_p;
+            std::vector<Node3Dnsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
             
             std::vector<sxyz<T1>> r_tmp;
@@ -1106,12 +1106,12 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Drnsp<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
-                                      std::priority_queue<Node3Disp<T1,T2>*,
-                                      std::vector<Node3Disp<T1,T2>*>,
+                                      std::priority_queue<Node3Dnsp<T1,T2>*,
+                                      std::vector<Node3Dnsp<T1,T2>*>,
                                       CompareNodePtr<T1>>& queue,
-                                      std::vector<Node3Disp<T1,T2>>& txNodes,
+                                      std::vector<Node3Dnsp<T1,T2>>& txNodes,
                                       std::vector<bool>& inQueue,
                                       std::vector<bool>& frozen,
                                       const size_t threadNo) const {
@@ -1135,7 +1135,7 @@ namespace ttcr {
             }
             if ( found==false ) {
                 // If Tx[n] is not on a node, we create a new node and initialize the queue:
-                txNodes.push_back( Node3Disp<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, this->nThreads, threadNo));
+                txNodes.push_back( Node3Dnsp<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, this->nThreads, threadNo));
                 txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
                 txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+txNodes.size()-1) );
                 frozen.push_back( true );
@@ -1153,15 +1153,15 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::propagate(std::priority_queue<Node3Disp<T1,T2>*,
-                                      std::vector<Node3Disp<T1,T2>*>,
+    void Grid3Drnsp<T1,T2>::propagate(std::priority_queue<Node3Dnsp<T1,T2>*,
+                                      std::vector<Node3Dnsp<T1,T2>*>,
                                       CompareNodePtr<T1>>& queue,
                                       std::vector<bool>& inQueue,
                                       std::vector<bool>& frozen,
                                       size_t threadNo) const {
         
         while ( !queue.empty() ) {
-            const Node3Disp<T1,T2>* source = queue.top();
+            const Node3Dnsp<T1,T2>* source = queue.top();
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
             frozen[ source->getGridIndex() ] = true;
@@ -1197,9 +1197,9 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::prepropagate(const Node3Disp<T1,T2>& node,
-                                         std::priority_queue<Node3Disp<T1,T2>*,
-                                         std::vector<Node3Disp<T1,T2>*>,
+    void Grid3Drnsp<T1,T2>::prepropagate(const Node3Dnsp<T1,T2>& node,
+                                         std::priority_queue<Node3Dnsp<T1,T2>*,
+                                         std::vector<Node3Dnsp<T1,T2>*>,
                                          CompareNodePtr<T1>>& queue,
                                          std::vector<bool>& inQueue,
                                          std::vector<bool>& frozen,
@@ -1239,7 +1239,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    void Grid3Drisp<T1,T2>::savePrimary(const char filename[], const size_t nt,
+    void Grid3Drnsp<T1,T2>::savePrimary(const char filename[], const size_t nt,
                                         const bool vtkFormat) const {
         
         if ( vtkFormat ) {

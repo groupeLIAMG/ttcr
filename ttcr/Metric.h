@@ -1,6 +1,6 @@
 //
 //  Metric.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-02-01.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_Metric_h
-#define ttcr_u_Metric_h
+#ifndef ttcr_Metric_h
+#define ttcr_Metric_h
 
 #include "Node.h"
 

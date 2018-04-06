@@ -1,6 +1,6 @@
 //
 //  Node2Dcsp.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-03-03.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_Node2Dcsp_h
-#define ttcr_u_Node2Dcsp_h
+#ifndef ttcr_Node2Dcsp_h
+#define ttcr_Node2Dcsp_h
 
 
 #include <cmath>

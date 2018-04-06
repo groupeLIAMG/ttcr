@@ -1,6 +1,6 @@
 //
 //  ttcr_io.cpp
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-11-19.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.

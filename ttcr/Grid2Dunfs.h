@@ -1,5 +1,5 @@
 //
-//  Grid2Duifs.h
+//  Grid2Dunfs.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-15.
@@ -22,25 +22,25 @@
  *
  */
 
-#ifndef ttcr_Grid2Duifs_h
-#define ttcr_Grid2Duifs_h
+#ifndef ttcr_Grid2Dunfs_h
+#define ttcr_Grid2Dunfs_h
 
 #include <fstream>
 #include <queue>
 
-#include "Grid2Dui.h"
+#include "Grid2Dun.h"
 #include "Metric.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Duifs : public Grid2Dui<T1,T2,NODE,S> {
+    class Grid2Dunfs : public Grid2Dun<T1,T2,NODE,S> {
     public:
-        Grid2Duifs(const std::vector<S>& no,
+        Grid2Dunfs(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T1 eps, const int maxit, const size_t nt=1,
                    const bool procObtuse=true) :
-        Grid2Dui<T1,T2,NODE,S>(no, tri, nt),
+        Grid2Dun<T1,T2,NODE,S>(no, tri, nt),
         epsilon(eps), nitermax(maxit), sorted()
         {
             buildGridNodes(no, nt);
@@ -48,7 +48,7 @@ namespace ttcr {
             if ( procObtuse ) this->processObtuse();
         }
         
-        ~Grid2Duifs() {
+        ~Grid2Dunfs() {
         }
         
         void initOrdering(const std::vector<S>& refPts, const int order);
@@ -94,7 +94,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    void Grid2Dunfs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
                                                   const size_t nt) {
         
         // primary nodes
@@ -136,7 +136,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
+    void Grid2Dunfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
                                                 const int order) {
         sorted.resize( refPts.size() );
         
@@ -166,7 +166,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -243,7 +243,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -329,7 +329,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -351,7 +351,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -378,7 +378,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duifs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
+    void Grid2Dunfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
                                           std::vector<bool>& frozen,
                                           const size_t threadNo) const {

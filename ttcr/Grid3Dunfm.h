@@ -1,5 +1,5 @@
 //
-//  Grid3Duifm.h
+//  Grid3Dunfm.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-21.
@@ -22,32 +22,32 @@
  *
  */
 
-#ifndef ttcr_Grid3Duifm_h
-#define ttcr_Grid3Duifm_h
+#ifndef ttcr_Grid3Dunfm_h
+#define ttcr_Grid3Dunfm_h
 
 #include <cmath>
 #include <fstream>
 #include <queue>
 #include <vector>
 
-#include "Grid3Dui.h"
-#include "Node3Di.h"
+#include "Grid3Dun.h"
+#include "Node3Dn.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Grid3Duifm : public Grid3Dui<T1,T2,Node3Di<T1,T2>> {
+    class Grid3Dunfm : public Grid3Dun<T1,T2,Node3Dn<T1,T2>> {
     public:
-        Grid3Duifm(const std::vector<sxyz<T1>>& no,
+        Grid3Dunfm(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const bool rp=false, const size_t nt=1) :
-        Grid3Dui<T1,T2,Node3Di<T1,T2>>(no, tet, nt), rp_ho(rp)
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, nt), rp_ho(rp)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
         }
         
-        ~Grid3Duifm() {
+        ~Grid3Dunfm() {
         }
         
         void raytrace(const std::vector<sxyz<T1>>& Tx,
@@ -83,15 +83,15 @@ namespace ttcr {
         
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
-                      std::priority_queue<Node3Di<T1,T2>*,
-                      std::vector<Node3Di<T1,T2>*>,
+                      std::priority_queue<Node3Dn<T1,T2>*,
+                      std::vector<Node3Dn<T1,T2>*>,
                       CompareNodePtr<T1>>&,
                       std::vector<bool>&,
                       std::vector<bool>&,
                       const size_t) const;
         
-        void propagate(std::priority_queue<Node3Di<T1,T2>*,
-                       std::vector<Node3Di<T1,T2>*>,
+        void propagate(std::priority_queue<Node3Dn<T1,T2>*,
+                       std::vector<Node3Dn<T1,T2>*>,
                        CompareNodePtr<T1>>&,
                        std::vector<bool>&,
                        std::vector<bool>&,
@@ -100,7 +100,7 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
+    void Grid3Dunfm<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                            const size_t nt) {
         
         // primary nodes
@@ -144,7 +144,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -158,7 +158,7 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+        std::priority_queue< Node3Dn<T1,T2>*, std::vector<Node3Dn<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
         
         std::vector<bool> inQueue( this->nodes.size(), false );
@@ -178,7 +178,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -193,7 +193,7 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+        std::priority_queue< Node3Dn<T1,T2>*, std::vector<Node3Dn<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
         
         std::vector<bool> inBand( this->nodes.size(), false );
@@ -215,7 +215,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -230,7 +230,7 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+        std::priority_queue< Node3Dn<T1,T2>*, std::vector<Node3Dn<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
         
         std::vector<bool> inQueue( this->nodes.size(), false );
@@ -264,7 +264,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -280,7 +280,7 @@ namespace ttcr {
         }
         
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Di<T1,T2>*, std::vector<Node3Di<T1,T2>*>,
+        std::priority_queue< Node3Dn<T1,T2>*, std::vector<Node3Dn<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
         
         std::vector<bool> inBand( this->nodes.size(), false );
@@ -319,10 +319,10 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Dunfm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
-                                     std::priority_queue<Node3Di<T1,T2>*,
-                                     std::vector<Node3Di<T1,T2>*>,
+                                     std::priority_queue<Node3Dn<T1,T2>*,
+                                     std::vector<Node3Dn<T1,T2>*>,
                                      CompareNodePtr<T1>>& narrow_band,
                                      std::vector<bool>& inBand,
                                      std::vector<bool>& frozen,
@@ -339,7 +339,7 @@ namespace ttcr {
                     frozen[nn] = true;
                     
                     if ( Tx.size()==1 ) {
-                        if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
+                        if ( Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius == 0.0 ) {
                             // populate around Tx
                             for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
                                 
@@ -369,7 +369,7 @@ namespace ttcr {
                                 if ( no == nn ) continue;
                                 
                                 T1 d = this->nodes[nn].getDistance( this->nodes[no] );
-                                if ( d <= Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius ) {
+                                if ( d <= Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius ) {
                                     
                                     T1 dt = this->computeDt(this->nodes[nn], this->nodes[no] );
                                     
@@ -401,7 +401,7 @@ namespace ttcr {
             if ( found==false ) {
                 
                 T2 cellNo = this->getCellNo(Tx[n]);
-                if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
+                if ( Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius == 0.0 ) {
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
                         
@@ -421,7 +421,7 @@ namespace ttcr {
                     for ( size_t no=0; no<this->nodes.size(); ++no ) {
                         
                         T1 d = this->nodes[no].getDistance( Tx[n] );
-                        if ( d <= Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius ) {
+                        if ( d <= Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius ) {
                             
                             T1 dt = this->nodes[no].getDistance(Tx[n])*this->nodes[no].getNodeSlowness();
                             
@@ -449,8 +449,8 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid3Duifm<T1,T2>::propagate(std::priority_queue<Node3Di<T1,T2>*,
-                                      std::vector<Node3Di<T1,T2>*>,
+    void Grid3Dunfm<T1,T2>::propagate(std::priority_queue<Node3Dn<T1,T2>*,
+                                      std::vector<Node3Dn<T1,T2>*>,
                                       CompareNodePtr<T1>>& narrow_band,
                                       std::vector<bool>& inNarrowBand,
                                       std::vector<bool>& frozen,
@@ -458,7 +458,7 @@ namespace ttcr {
         
         while ( !narrow_band.empty() ) {
             
-            const Node3Di<T1,T2>* source = narrow_band.top();
+            const Node3Dn<T1,T2>* source = narrow_band.top();
             narrow_band.pop();
             inNarrowBand[ source->getGridIndex() ] = false;
             frozen[ source->getGridIndex() ] = true;   // marked as known

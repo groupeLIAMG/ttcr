@@ -1,6 +1,6 @@
 //
 //  Grad.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-03-04.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ttcr_u_Grad_h
-#define ttcr_u_Grad_h
+#ifndef ttcr_Grad_h
+#define ttcr_Grad_h
 
 #include <cmath>
 #include <set>

@@ -27,12 +27,12 @@
 #include "mex.h"
 #include "class_handle.hpp"
 
-#include "Grid3Duisp.h"
+#include "Grid3Dunsp.h"
 
 using namespace std;
 using namespace ttcr;
 
-typedef Grid3Duisp<double,uint32_t> grid;
+typedef Grid3Dunsp<double,uint32_t> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

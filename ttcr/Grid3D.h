@@ -2,7 +2,7 @@
 // to perform raytracing
 //
 //  Grid.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2013-01-10.
 //  Copyright (c) 2013 Bernard Giroux. All rights reserved.
@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef ttcr_u_Grid3D_h
-#define ttcr_u_Grid3D_h
+#ifndef ttcr_Grid3D_h
+#define ttcr_Grid3D_h
 
 #include "ttcr_t.h"
 

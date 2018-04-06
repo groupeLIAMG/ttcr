@@ -51,9 +51,9 @@ cdef extern from "ttcr_t.h" namespace "ttcr":
         size_t j
         T v
 
-cdef extern from "Grid3Drifs.h" namespace "ttcr":
-    cdef cppclass Grid3Drifs[T1,T2]:
-        Grid3Drifs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, size_t) except +
+cdef extern from "Grid3Drnfs.h" namespace "ttcr":
+    cdef cppclass Grid3Drnfs[T1,T2]:
+        Grid3Drnfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, size_t) except +
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void raytrace(vector[sxyz[T1]]&,
@@ -124,14 +124,14 @@ cdef class Grid3Drn:
     cdef uint32_t nx
     cdef uint32_t ny
     cdef uint32_t nz
-    cdef Grid3Drifs[double, uint32_t]* grid
+    cdef Grid3Drnfs[double, uint32_t]* grid
     def __cinit__(self, uint32_t nx, uint32_t ny, uint32_t nz, double dx,
                   double xmin, double ymin, double zmin,
                   double eps, int maxit, bool weno, size_t nthreads):
         self.nx = nx
         self.ny = ny
         self.nz = nz
-        self.grid = new Grid3Drifs[double,uint32_t](nx, ny, nz, dx, xmin, ymin,
+        self.grid = new Grid3Drnfs[double,uint32_t](nx, ny, nz, dx, xmin, ymin,
                                   zmin, eps, maxit, weno, nthreads)
 
 

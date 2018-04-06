@@ -1,5 +1,5 @@
 //
-//  Grid2Drifs.h
+//  Grid2Drnfs.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2015-09-22.
@@ -53,22 +53,22 @@
  
  */
 
-#ifndef Grid2Drifs_h
-#define Grid2Drifs_h
+#ifndef Grid2Drnfs_h
+#define Grid2Drnfs_h
 
-#include "Grid2Dri.h"
-#include "Node2Di.h"
+#include "Grid2Drn.h"
+#include "Node2Dn.h"
 
 namespace ttcr {
     
     template<typename T1, typename T2>
-    class Grid2Drifs : public Grid2Dri<T1,T2,Node2Di<T1,T2>> {
+    class Grid2Drnfs : public Grid2Drn<T1,T2,Node2Dn<T1,T2>> {
     public:
-        Grid2Drifs(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+        Grid2Drnfs(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T1 eps, const int maxit,
                    const bool w, const bool rt, const size_t nt=1);
         
-        virtual ~Grid2Drifs() {
+        virtual ~Grid2Drnfs() {
         }
         
         const int get_niter() const { return niter; }
@@ -119,19 +119,19 @@ namespace ttcr {
         void buildGridNodes();
         
     private:
-        Grid2Drifs() {}
-        Grid2Drifs(const Grid2Drifs<T1,T2>& g) {}
-        Grid2Drifs<T1,T2>& operator=(const Grid2Drifs<T1,T2>& g) {}
+        Grid2Drnfs() {}
+        Grid2Drnfs(const Grid2Drnfs<T1,T2>& g) {}
+        Grid2Drnfs<T1,T2>& operator=(const Grid2Drnfs<T1,T2>& g) {}
         
     };
     
     template<typename T1, typename T2>
-    Grid2Drifs<T1,T2>::Grid2Drifs(const T2 nx, const T2 nz,
+    Grid2Drnfs<T1,T2>::Grid2Drnfs(const T2 nx, const T2 nz,
                                   const T1 ddx, const T1 ddz,
                                   const T1 minx, const T1 minz,
                                   const T1 eps, const int maxit, const bool w,
                                   const bool rt, const size_t nt) :
-    Grid2Dri<T1,T2,Node2Di<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
+    Grid2Drn<T1,T2,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
     epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w), rotated_template(rt)
     {
         buildGridNodes();
@@ -139,7 +139,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid2Drifs<T1,T2>::buildGridNodes() {
+    void Grid2Drnfs<T1,T2>::buildGridNodes() {
         
         T2 cell_upLeft = std::numeric_limits<T2>::max();
         T2 cell_upRight = std::numeric_limits<T2>::max();
@@ -206,7 +206,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2>
-    void Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+    void Grid2Drnfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -315,7 +315,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+    void Grid2Drnfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -427,7 +427,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+    void Grid2Drnfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -449,7 +449,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+    void Grid2Drnfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
@@ -475,7 +475,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
-    void Grid2Drifs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
+    void Grid2Drnfs<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
@@ -526,4 +526,4 @@ namespace ttcr {
     }
 }
 
-#endif /* Grid2Drifs_h */
+#endif /* Grid2Drnfs_h */

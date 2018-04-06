@@ -1,6 +1,6 @@
 //
 //  Grid2Ducfs.h
-//  ttcr_u
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-01-30.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
@@ -42,8 +42,8 @@
 
 
 
-#ifndef ttcr_u_Grid2Ducfs_h
-#define ttcr_u_Grid2Ducfs_h
+#ifndef ttcr_Grid2Ducfs_h
+#define ttcr_Grid2Ducfs_h
 
 #include <fstream>
 #include <queue>
