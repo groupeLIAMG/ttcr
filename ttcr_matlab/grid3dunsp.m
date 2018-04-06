@@ -1,10 +1,10 @@
-%GRID3DUISP class to perform raytracing in 3D with the Shortest-path method
+%GRID3DUNSP class to perform raytracing in 3D with the Shortest-path method
 %
 %  Usage:
 %
 %  Create and destroy instance of class
 %
-%    g = grid3duisp(nodes, tetrahedra, nsecondary)
+%    g = grid3dunsp(nodes, tetrahedra, nsecondary)
 %    clear g
 %
 %   Input for instantiation
@@ -47,29 +47,29 @@
 % 2014-04-26
 
 
-classdef grid3duisp < handle
+classdef grid3dunsp < handle
     properties (SetAccess = private, Hidden = true)
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
         %% Constructor - Create a new C++ class instance
-        function this = grid3duisp(varargin)
-            this.objectHandle = grid3duisp_mex('new', varargin{:});
+        function this = grid3dunsp(varargin)
+            this.objectHandle = grid3dunsp_mex('new', varargin{:});
         end
 
         %% Destructor - Destroy the C++ class instance
         function delete(this)
-            grid3duisp_mex('delete', this.objectHandle);
+            grid3dunsp_mex('delete', this.objectHandle);
         end
 
         %% setSlowness
         function varargout = setSlowness(this, varargin)
-            [varargout{1:nargout}] = grid3duisp_mex('setSlowness', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid3dunsp_mex('setSlowness', this.objectHandle, varargin{:});
         end
 
         %% raytrace
         function varargout = raytrace(this, varargin)
-            [varargout{1:nargout}] = grid3duisp_mex('raytrace', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid3dunsp_mex('raytrace', this.objectHandle, varargin{:});
         end
     end
 end

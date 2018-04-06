@@ -1,10 +1,10 @@
-%GRID2DUISP class to perform raytracing on undulated surfaces
+%GRID2DUNSP class to perform raytracing on undulated surfaces
 %
 %  Usage:
 %
 %  Create and destroy instance of class
 %
-%    g = grid2duisp(nodes, triangles, nsecondary, nthreads)
+%    g = grid2dunsp(nodes, triangles, nsecondary, nthreads)
 %    clear g
 %
 %  Input for instantiation
@@ -81,34 +81,34 @@
 % 2014-04-26
 
 
-classdef grid2duisp < handle
+classdef grid2dunsp < handle
     properties (SetAccess = private, Hidden = true)
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
         %% Constructor - Create a new C++ class instance 
-        function this = grid2duisp(varargin)
-            this.objectHandle = grid2duisp_mex('new', varargin{:});
+        function this = grid2dunsp(varargin)
+            this.objectHandle = grid2dunsp_mex('new', varargin{:});
         end
         
         %% Destructor - Destroy the C++ class instance
         function delete(this)
-            grid2duisp_mex('delete', this.objectHandle);
+            grid2dunsp_mex('delete', this.objectHandle);
         end
 
         %% setSlowness
         function varargout = setSlowness(this, varargin)
-            [varargout{1:nargout}] = grid2duisp_mex('setSlowness', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid2dunsp_mex('setSlowness', this.objectHandle, varargin{:});
         end
 
         %% raytrace
         function varargout = raytrace(this, varargin)
-            [varargout{1:nargout}] = grid2duisp_mex('raytrace', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid2dunsp_mex('raytrace', this.objectHandle, varargin{:});
         end
 
         %% computeD
         function varargout = computeD(this, varargin)
-            [varargout{1:nargout}] = grid2duisp_mex('computeD', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid2dunsp_mex('computeD', this.objectHandle, varargin{:});
         end
     end
 end

@@ -1,10 +1,10 @@
-%GRID3DUIFS class to perform raytracing in 3D with the fast sweeping method
+%GRID3DUNFS class to perform raytracing in 3D with the fast sweeping method
 %
 %  Usage:
 %
 %  Create and destroy instance of class
 %
-%    g = grid3duifs(nodes, tetrahedra, nthreads)
+%    g = grid3dunfs(nodes, tetrahedra, nthreads)
 %    clear g
 %
 %   Input for instantiation
@@ -69,29 +69,29 @@
 % 2015-03-04
 
 
-classdef grid3duifs < handle
+classdef grid3dunfs < handle
     properties (SetAccess = private, Hidden = true)
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
         %% Constructor - Create a new C++ class instance
-        function this = grid3duifs(varargin)
-            this.objectHandle = grid3duifs_mex('new', varargin{:});
+        function this = grid3dunfs(varargin)
+            this.objectHandle = grid3dunfs_mex('new', varargin{:});
         end
         
         %% Destructor - Destroy the C++ class instance
         function delete(this)
-            grid3duifs_mex('delete', this.objectHandle);
+            grid3dunfs_mex('delete', this.objectHandle);
         end
         
         %% setSlowness
         function varargout = setSlowness(this, varargin)
-            [varargout{1:nargout}] = grid3duifs_mex('setSlowness', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid3dunfs_mex('setSlowness', this.objectHandle, varargin{:});
         end
         
         %% raytrace
         function varargout = raytrace(this, varargin)
-            [varargout{1:nargout}] = grid3duifs_mex('raytrace', this.objectHandle, varargin{:});
+            [varargout{1:nargout}] = grid3dunfs_mex('raytrace', this.objectHandle, varargin{:});
         end
     end
 end
