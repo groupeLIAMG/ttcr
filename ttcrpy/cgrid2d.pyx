@@ -52,8 +52,9 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
         void setSlowness(const vector[double]&) except +
         void setXi(const vector[double]&) except +
         void setTheta(const vector[double]&) except +
-        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object) except +
-        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object) except +
+        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object) except +
+        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object) except +
+        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*) except +
         @staticmethod
         int Lsr2d(double*,double*,size_t,double*,size_t,double*,size_t,object)
         @staticmethod
@@ -108,12 +109,12 @@ cdef class Grid2Dcpp:
                1st column contains X coordinates,
                2nd contains Z coordinates
         t0 : origin time
-        nout : number of output variables (2 or 3)
+        nout : number of output variables (1, 2 or 3)
 
         Returns
         -------
         tt : travel times
-        L : data kernel matrix (tt = L*slowness)
+        L : (if nout > 1) data kernel matrix (tt = L*slowness)
         rays : (if nout == 3) coordinates of rays
         """
 
@@ -148,11 +149,11 @@ cdef class Grid2Dcpp:
         # create C++ input variables
         cdef vector[sxz[double]] cTx
         for t in Tx:
-            cTx.push_back(sxz[double](t[0], t[2]))
+            cTx.push_back(sxz[double](t[0], t[1]))
 
         cdef vector[sxz[double]] cRx
         for r in Rx:
-            cRx.push_back(sxz[double](r[0], r[2]))
+            cRx.push_back(sxz[double](r[0], r[1]))
 
         cdef vector[double] ct0# = t0.tolist()
         for tmp in t0:
@@ -161,11 +162,14 @@ cdef class Grid2Dcpp:
         # instantiate output variables
         cdef np.ndarray tt = np.empty([Rx.shape[0],], dtype=np.double)  # tt should be the right size
 
-        if nout==2:
-            Ldata = ([0.0], [0.0], [0.0])
+        if nout==1:
+            self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt))
+            return tt
 
+        elif nout==2:
+            Ldata = ([0.0], [0.0], [0.0])
             self.grid.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), Ldata)
-            
+
             M = Rx.shape[0]
             N = len(slowness)
             if self.grid.getType() != b'iso':

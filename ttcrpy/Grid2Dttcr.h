@@ -54,18 +54,23 @@ namespace ttcr {
         void setXi(const std::vector<double>& xi);
         void setTheta(const std::vector<double>& theta);
         
-        void raytrace(const std::vector<sxz<double>>& Tx,
+        int raytrace(const std::vector<sxz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxz<double>>& Rx,
                      double* traveltimes,
                      PyObject* rays,
                      PyObject* L) const;
         
-        void raytrace(const std::vector<sxz<double>>& Tx,
+        int raytrace(const std::vector<sxz<double>>& Tx,
                      const std::vector<double>& tTx,
                      const std::vector<sxz<double>>& Rx,
                      double* traveltimes,
                      PyObject* L) const;
+        
+        int raytrace(const std::vector<sxz<double>>& Tx,
+                      const std::vector<double>& tTx,
+                      const std::vector<sxz<double>>& Rx,
+                      double* traveltimes) const;
         
         static int Lsr2d(const double* Tx,
                           const double* Rx,

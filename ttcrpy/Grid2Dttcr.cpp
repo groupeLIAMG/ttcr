@@ -86,7 +86,7 @@ namespace ttcr {
         }
     }
 
-    void Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
+    int Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
                               const std::vector<double>& tTx,
                               const std::vector<sxz<double>>& Rx,
                               double* traveltimes,
@@ -100,7 +100,6 @@ namespace ttcr {
          */
 
         size_t nTx = Tx.size();
-        size_t nRx = Rx.size();
         vector<vector<sxz<double>>> vTx;
         vector<vector<double>> t0;
         vector<vector<size_t>> iTx;
@@ -159,7 +158,7 @@ namespace ttcr {
 
                 size_t blk_end = blk_start + blk_size;
                 grid *grid_ref = grid_instance;
-                threads[i]=thread( [&grid_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
+                threads[i]=thread( [&grid_ref,&vTx,&tt,&t0,&Rx,&iTx,
                                     &r_data,&l_data,blk_start,blk_end,i]{
 
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
@@ -202,7 +201,7 @@ namespace ttcr {
         }
 
         // rays
-//        import_array();  // to use PyArray_SimpleNewFromData
+        import_array();  // to use PyArray_SimpleNewFromData
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -312,20 +311,19 @@ namespace ttcr {
             PyTuple_SetItem(L, 1, indices);
             PyTuple_SetItem(L, 2, indptr);
         }
+        return 0;
     }
 
-    void Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
+    int Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
                               const std::vector<double>& tTx,
                               const std::vector<sxz<double>>& Rx,
-                              double* traveltimes,
-                              PyObject* L) const {
+                              double* traveltimes) const {
 
         /*
          Looking for redundants Tx pts
          */
 
         size_t nTx = Tx.size();
-        size_t nRx = Rx.size();
         vector<vector<sxz<double>>> vTx;
         vector<vector<double>> t0;
         vector<vector<size_t>> iTx;
@@ -355,8 +353,6 @@ namespace ttcr {
 
         vector<sxz<double>> vRx;
         vector<vector<double>> tt( vTx.size() );
-        vector<vector<siv2<double>>> L_data(nTx);
-        vector<vector<vector<siv2<double>>>> l_data( vTx.size() );
 
         if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
@@ -367,7 +363,7 @@ namespace ttcr {
                 }
 
                 try {
-                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv]);
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
                 } catch (std::exception& e) {
                     throw;
                 }
@@ -383,8 +379,8 @@ namespace ttcr {
 
                 size_t blk_end = blk_start + blk_size;
                 grid *grid_ref = grid_instance;
-                threads[i]=thread( [&grid_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
-                                    &l_data,blk_start,blk_end,i]{
+                threads[i]=thread( [&grid_ref,&vTx,&tt,&t0,&Rx,&iTx,
+                                    blk_start,blk_end,i]{
 
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
 
@@ -393,7 +389,7 @@ namespace ttcr {
                             vRx.push_back( Rx[ iTx[nv][ni] ] );
                         }
                         try {
-                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], i+1);
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i+1);
                         } catch (std::exception& e) {
                             throw;
                         }
@@ -409,7 +405,7 @@ namespace ttcr {
                     vRx.push_back( Rx[ iTx[nv][ni] ] );
                 }
                 try {
-                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], 0);
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0);
                 } catch (std::exception& e) {
                     throw;
                 }
@@ -424,41 +420,152 @@ namespace ttcr {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
+        return 0;
+    }
+    
+    int Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
+                              const std::vector<double>& tTx,
+                              const std::vector<sxz<double>>& Rx,
+                              double* traveltimes,
+                              PyObject* L) const {
+        
+        /*
+         Looking for redundants Tx pts
+         */
 
-//        import_array();  // to use PyArray_SimpleNewFromData
+        size_t nTx = Tx.size();
+        vector<vector<sxz<double>>> vTx;
+        vector<vector<double>> t0;
+        vector<vector<size_t>> iTx;
+        vTx.push_back( vector<sxz<double> >(1, Tx[0]) );
+        t0.push_back( vector<double>(1, tTx[0]) );
+        iTx.push_back( vector<size_t>(1, 0) );  // indices of Rx corresponding to current Tx
+        for ( size_t ntx=1; ntx<nTx; ++ntx ) {
+            bool found = false;
+            
+            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+                if ( vTx[nv][0]==Tx[ntx] ) {
+                    found = true;
+                    iTx[nv].push_back( ntx ) ;
+                    break;
+                }
+            }
+            if ( !found ) {
+                vTx.push_back( vector<sxz<double>>(1, Tx[ntx]) );
+                t0.push_back( vector<double>(1, tTx[ntx]) );
+                iTx.push_back( vector<size_t>(1, ntx) );
+            }
+        }
+
+        /*
+         Looping over all non redundant Tx
+         */
+        
+        vector<sxz<double>> vRx;
+        vector<vector<double>> tt( vTx.size() );
+        vector<vector<siv2<double>>> L_data(nTx);
+        vector<vector<vector<siv2<double>>>> l_data( vTx.size() );
+        
+        if ( grid_instance->getNthreads() == 1 || vTx.size() <= grid_instance->getNthreads() ) {
+            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+                
+                vRx.resize( 0 );
+                for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                }
+                
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv]);
+                } catch (std::exception& e) {
+                    throw;
+                }
+            }
+        } else {
+            size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
+            size_t blk_size = vTx.size()/num_threads;
+            if ( blk_size == 0 ) blk_size++;
+            
+            vector<thread> threads(num_threads-1);
+            size_t blk_start = 0;
+            for ( size_t i=0; i<num_threads-1; ++i ) {
+                
+                size_t blk_end = blk_start + blk_size;
+                grid *grid_ref = grid_instance;
+                threads[i]=thread( [&grid_ref,&vTx,&tt,&t0,&Rx,&iTx,
+                                    &l_data,blk_start,blk_end,i]{
+                    
+                    for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
+                        
+                        vector<sxz<double>> vRx;
+                        for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                            vRx.push_back( Rx[ iTx[nv][ni] ] );
+                        }
+                        try {
+                            grid_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], i+1);
+                        } catch (std::exception& e) {
+                            throw;
+                        }
+                    }
+                });
+                
+                blk_start = blk_end;
+            }
+            
+            for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
+                vector<sxz<double>> vRx;
+                for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                }
+                try {
+                    grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], l_data[nv], 0);
+                } catch (std::exception& e) {
+                    throw;
+                }
+            }
+            
+            std::for_each(threads.begin(),threads.end(),
+                          std::mem_fn(&std::thread::join));
+        }
+        
+        for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+            for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
+            }
+        }
+        import_array();  // to use PyArray_SimpleNewFromData
 
         // L
         // first element of tuple contains data, size is nnz
         // second element contains column indices for rows of the matrix, size is nnz
         // third element contains pointers for indices, size is nrow+1 (nTx+1)
-
+        
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                 L_data[ iTx[nv][ni] ] = l_data[nv][ni];
             }
         }
-
+        
         size_t nnz = 0;
         for ( size_t n=0; n<L_data.size(); ++n ) {
             nnz += L_data[n].size();
         }
         size_t ncell = grid_instance->getNumberOfCells();
-
+        
         if ( type.compare("iso")==0 ) {
             npy_intp dims[] = {static_cast<npy_intp>(nnz)};
             double* data_p = new double[nnz];
             PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);
             PyArray_ENABLEFLAGS((PyArrayObject*)data, NPY_ARRAY_OWNDATA);
-
+            
             int64_t* indices_p = new int64_t[nnz];
             PyObject* indices = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indices_p);
             PyArray_ENABLEFLAGS((PyArrayObject*)indices, NPY_ARRAY_OWNDATA);
-
+            
             dims[0] = nTx+1;
             int64_t* indptr_p = new int64_t[nTx+1];
             PyObject* indptr = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indptr_p);
             PyArray_ENABLEFLAGS((PyArrayObject*)indptr, NPY_ARRAY_OWNDATA);
-
+            
             size_t k = 0;
             for ( size_t i=0; i<nTx; ++i ) {
                 indptr_p[i] = k;
@@ -473,28 +580,28 @@ namespace ttcr {
                 }
             }
             indptr_p[nTx] = k;
-
+            
             PyTuple_SetItem(L, 0, data);
             PyTuple_SetItem(L, 1, indices);
             PyTuple_SetItem(L, 2, indptr);
-
+            
         } else {
             nnz *= 2;
-
+            
             npy_intp dims[] = {static_cast<npy_intp>(nnz)};
             double* data_p = new double[nnz];
             PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);
             PyArray_ENABLEFLAGS((PyArrayObject*)data, NPY_ARRAY_OWNDATA);
-
+            
             int64_t* indices_p = new int64_t[nnz];
             PyObject* indices = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indices_p);
             PyArray_ENABLEFLAGS((PyArrayObject*)indices, NPY_ARRAY_OWNDATA);
-
+            
             dims[0] = nTx+1;
             int64_t* indptr_p = new int64_t[nTx+1];
             PyObject* indptr = PyArray_SimpleNewFromData(1, dims, NPY_INT64, indptr_p);
             PyArray_ENABLEFLAGS((PyArrayObject*)indptr, NPY_ARRAY_OWNDATA);
-
+            
             size_t k = 0;
             for ( size_t i=0; i<nTx; ++i ) {
                 indptr_p[i] = k;
@@ -504,7 +611,7 @@ namespace ttcr {
                             indices_p[k] = j;
                             data_p[k] = L_data[i][n].v;
                             k++;
-                        }	else if ( L_data[i][n].i+ncell == j ) {
+                        }    else if ( L_data[i][n].i+ncell == j ) {
                             indices_p[k] = j;
                             data_p[k] = L_data[i][n].v2;
                             k++;
@@ -513,11 +620,12 @@ namespace ttcr {
                 }
             }
             indptr_p[nTx] = k;
-
+            
             PyTuple_SetItem(L, 0, data);
             PyTuple_SetItem(L, 1, indices);
             PyTuple_SetItem(L, 2, indptr);
         }
+        return 0;
     }
 
     int Grid2Dttcr::Lsr2d(const double* Tx,
