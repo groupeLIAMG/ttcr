@@ -44,7 +44,6 @@
 #include "Grid3Drc.h"
 #include "Node3Dcsp.h"
 
-
 namespace ttcr {
     
     template<typename T1, typename T2, typename CELL>
@@ -136,21 +135,27 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
         
-        void propagate(std::priority_queue<Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
+        void propagate(std::priority_queue<Node3Dcsp<T1,T2>*,
+                       std::vector<Node3Dcsp<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        size_t threadNo) const;
         
-        void prepropagate(const Node3Dcsp<T1,T2>& node,
-                          std::priority_queue<Node3Dcsp<T1,T2>*, std::vector<Node3Dcsp<T1,T2>*>,
+        void propagate_lw(std::priority_queue<Node3Dcsp<T1,T2>*,
+                          std::vector<Node3Dcsp<T1,T2>*>,
                           CompareNodePtr<T1>>& queue,
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
                           size_t threadNo) const;
         
-        
-        
+        void prepropagate(const Node3Dcsp<T1,T2>& node,
+                          std::priority_queue<Node3Dcsp<T1,T2>*,
+                          std::vector<Node3Dcsp<T1,T2>*>,
+                          CompareNodePtr<T1>>& queue,
+                          std::vector<bool>& inQueue,
+                          std::vector<bool>& frozen,
+                          size_t threadNo) const;
         
         void initQueue2(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
@@ -162,19 +167,20 @@ namespace ttcr {
                         std::vector<bool>& frozen,
                         const size_t threadNo) const;
         
-        void propagate2(std::priority_queue<Node3Dcsp<T1,T2>*, std::deque<Node3Dcsp<T1,T2>*>,
+        void propagate2(std::priority_queue<Node3Dcsp<T1,T2>*,
+                        std::deque<Node3Dcsp<T1,T2>*>,
                         CompareNodePtr<T1>>& queue,
                         std::vector<bool>& inQueue,
                         std::vector<bool>& frozen,
                         size_t threadNo) const;
         
         void prepropagate2(const Node3Dcsp<T1,T2>& node,
-                           std::priority_queue<Node3Dcsp<T1,T2>*, std::deque<Node3Dcsp<T1,T2>*>,
+                           std::priority_queue<Node3Dcsp<T1,T2>*,
+                           std::deque<Node3Dcsp<T1,T2>*>,
                            CompareNodePtr<T1>>& queue,
                            std::vector<bool>& inQueue,
                            std::vector<bool>& frozen,
                            size_t threadNo) const;
-        
     };
     
     
@@ -554,6 +560,46 @@ namespace ttcr {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+    
+    template<typename T1, typename T2, typename CELL>
+    void Grid3Drcsp<T1,T2,CELL>::propagate_lw(std::priority_queue<Node3Dcsp<T1,T2>*,
+                                              std::vector<Node3Dcsp<T1,T2>*>,
+                                              CompareNodePtr<T1>>& queue,
+                                              std::vector<bool>& inQueue,
+                                              std::vector<bool>& frozen,
+                                              size_t threadNo) const {
+        // lightweight method where cell/node parent are not stored
+        while ( !queue.empty() ) {
+            const Node3Dcsp<T1,T2>* source = queue.top();
+            queue.pop();
+            inQueue[ source->getGridIndex() ] = false;
+            frozen[ source->getGridIndex() ] = true;
+            
+            for ( size_t no=0; no<source->getOwners().size(); ++no ) {
+                T2 cellNo = source->getOwners()[no];
+                for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                    size_t neibNo = this->neighbors[cellNo][k];
+                    if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
+                        continue;
+                    }
+                    
+                    T1 ttsource= source->getTT( threadNo );
+//                    if (ttsource < this->nodes[neibNo].getTT(threadNo)){
+                        // Compute dt
+                        T1 dt = this->cells.computeDt(*source, this->nodes[neibNo], cellNo);
+                        
+                        if ( ttsource+dt < this->nodes[neibNo].getTT( threadNo ) ) {
+                            this->nodes[neibNo].setTT( ttsource+dt, threadNo );
+                            if ( !inQueue[neibNo] ) {
+                                queue.push( &(this->nodes[neibNo]) );
+                                inQueue[neibNo] = true;
+                            }
+                        }
+//                    }
                 }
             }
         }
