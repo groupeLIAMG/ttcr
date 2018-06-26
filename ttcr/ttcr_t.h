@@ -454,6 +454,9 @@ namespace ttcr {
     struct triangleElem {
         T i[3];
         T physical_entity;
+        
+        triangleElem() : i{ 0,0,0 }, physical_entity(0) {}
+        triangleElem(const T i0, const T i1, const T i2, const T pe=0) : i{ i0,i1,i2 }, physical_entity(pe) {}
     };
 
     template<typename T>

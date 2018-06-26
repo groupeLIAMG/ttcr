@@ -26,6 +26,7 @@
 #define ttcr_Grid2Duc_h
 
 #include <array>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stdexcept>
