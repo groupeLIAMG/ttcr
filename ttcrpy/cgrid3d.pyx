@@ -349,7 +349,7 @@ cdef class Grid3Drc:
 
         Parameters
         ----------
-            slowness : 1D array od slowness values in cells (can be None, but
+            slowness : 1D array of slowness values in cells (can be None, but
                        slowness should have been set before calling raytrace)
             Tx : coordinates of source points (npts x 3)
             Rx : coordinates of receivers (nrcv x 3)
@@ -440,7 +440,6 @@ cdef class Grid3Drc:
                     rays[n][nn, 0] = r_data[n][nn].x
                     rays[n][nn, 1] = r_data[n][nn].y
                     rays[n][nn, 2] = r_data[n][nn].z
-
 
             indptr = np.empty((Rx.shape[0]+1,), dtype=np.int64)
             indices = np.empty((l_data.size(),), dtype=np.int64)
