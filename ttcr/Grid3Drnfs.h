@@ -392,23 +392,19 @@ namespace ttcr {
                                      std::vector<T1>& traveltimes,
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
                                      const size_t threadNo) const {
-        std::cout << "raytrace 0, thread_no " << threadNo << '\n' << std::endl;
+
         raytrace(Tx, t0, Rx, traveltimes, threadNo);
         
-        std::cout << "raytrace 1, thread_no " << threadNo << '\n' << std::endl;
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
         }
-        std::cout << "raytrace 2, thread_no " << threadNo << '\n' << std::endl;
         for ( size_t ni=0; ni<r_data.size(); ++ni ) {
             r_data[ni].resize( 0 );
         }
         
-        std::cout << "raytrace 3, thread_no " << threadNo << '\n' << std::endl;
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
         }
-        std::cout << "raytrace 4, thread_no " << threadNo << '\n' << std::endl;
     }
     
     template<typename T1, typename T2>
