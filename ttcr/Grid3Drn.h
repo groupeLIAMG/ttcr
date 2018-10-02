@@ -588,14 +588,35 @@ namespace ttcr {
         
         T1 p1 = pt.x - dx/2.0;
         T1 p2 = p1 + dx;
+        if ( p1 <= xmin ) {  // check if on grid edge or out of grid
+            p1 = pt.x + dx/2.0;  // shift pt to allow interpolating in getTraveltime
+            p2 = p1 + dx;
+        } else if ( p2 >= xmax ) {
+            p2 = pt.x - dx/2.0;
+            p1 = p2 - dx;
+        }
         g.x = (getTraveltime({p2, pt.y, pt.z}, nt) - getTraveltime({p1, pt.y, pt.z}, nt)) / dx;
         
         p1 = pt.y - dy/2.0;
         p2 = p1 + dy;
+        if ( p1 <= ymin ) {
+            p1 = pt.y + dy/2.0;
+            p2 = p1 + dy;
+        } else if ( p2 >= ymax ) {
+            p2 = pt.y - dy/2.0;
+            p1 = p2 - dy;
+        }
         g.y = (getTraveltime({pt.x, p2, pt.z}, nt) - getTraveltime({pt.x, p1, pt.z}, nt)) / dy;
         
         p1 = pt.z - dz/2.0;
         p2 = p1 + dz;
+        if ( p1 <= zmin ) {
+            p1 = pt.z + dz/2.0;
+            p2 = p1 + dz;
+        } else if ( p2 >= zmax ) {
+            p2 = pt.z - dz/2.0;
+            p1 = p2 - dz;
+        }
         g.z = (getTraveltime({pt.x, pt.y, p2}, nt) - getTraveltime({pt.x, pt.y, p1}, nt)) / dz;
         
     }
