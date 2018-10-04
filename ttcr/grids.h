@@ -1642,7 +1642,7 @@ namespace ttcr {
             exit ( -1);
         }
         if ( d == 1 ) {
-            std::cout << "Warning: use Y in mesh for second dimension (Z expected)" << std::endl;
+            std::cout << "Warning: using Y in mesh for second dimension (Z expected)" << std::endl;
         }
         reader.readNodes2D(nodes, d);
         reader.readTriangleElements(triangles);
@@ -1786,7 +1786,7 @@ namespace ttcr {
             exit ( -1);
         }
         if ( d == 1 ) {
-            std::cout << "Warning: use Y in mesh for second dimension (Z expected)" << std::endl;
+            std::cout << "Warning: using Y in mesh for second dimension (Z expected)" << std::endl;
         }
 
         reader.readNodes2D(nodes, d);
