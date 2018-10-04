@@ -217,7 +217,7 @@ cdef class Grid3Drn:
 
         cdef vector[vector[sxyz[double]]] r_data
         cdef vector[vector[sijv[double]]] m_data
-        cdef double v0
+        cdef double v0 = 0.0
 
         if nout == 1:
             self.grid.raytrace(vTx, vt0, vRx, vtt, thread_no)
@@ -389,7 +389,7 @@ cdef class Grid3Drc:
 
         cdef vector[vector[siv[double]]] l_data
         cdef vector[vector[sxyz[double]]] r_data
-        cdef double v0
+        cdef double v0 = 0.0
 
         if nout == 1:
             self.grid.raytrace(vTx, vt0, vRx, vtt, thread_no)

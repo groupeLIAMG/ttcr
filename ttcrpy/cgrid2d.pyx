@@ -52,9 +52,9 @@ cdef extern from "Grid2Dttcr.h" namespace "ttcr":
         void setSlowness(const vector[double]&) except +
         void setXi(const vector[double]&) except +
         void setTheta(const vector[double]&) except +
-        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object) except +
-        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object) except +
-        int raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*) except +
+        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object,object) except +
+        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*,object) except +
+        void raytrace(vector[sxz[double]]&,vector[double]&,vector[sxz[double]]&,double*) except +
         @staticmethod
         int Lsr2d(double*,double*,size_t,double*,size_t,double*,size_t,object)
         @staticmethod

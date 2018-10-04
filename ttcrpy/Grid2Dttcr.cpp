@@ -22,6 +22,7 @@
  *
  */
 
+#include <functional>
 #include <thread>
 
 #include "Grid2Dttcr.h"
@@ -86,7 +87,7 @@ namespace ttcr {
         }
     }
 
-    int Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
+    void Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
                               const std::vector<double>& tTx,
                               const std::vector<sxz<double>>& Rx,
                               double* traveltimes,
@@ -201,7 +202,7 @@ namespace ttcr {
         }
 
         // rays
-        import_array();  // to use PyArray_SimpleNewFromData
+        //import_array();  // to use PyArray_SimpleNewFromData
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -311,10 +312,9 @@ namespace ttcr {
             PyTuple_SetItem(L, 1, indices);
             PyTuple_SetItem(L, 2, indptr);
         }
-        return 0;
     }
 
-    int Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
+    void Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
                               const std::vector<double>& tTx,
                               const std::vector<sxz<double>>& Rx,
                               double* traveltimes) const {
@@ -420,10 +420,9 @@ namespace ttcr {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
-        return 0;
     }
     
-    int Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
+    void Grid2Dttcr::raytrace(const std::vector<sxz<double>>& Tx,
                               const std::vector<double>& tTx,
                               const std::vector<sxz<double>>& Rx,
                               double* traveltimes,
@@ -532,7 +531,7 @@ namespace ttcr {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
-        import_array();  // to use PyArray_SimpleNewFromData
+        //import_array();  // to use PyArray_SimpleNewFromData
 
         // L
         // first element of tuple contains data, size is nnz
@@ -625,7 +624,6 @@ namespace ttcr {
             PyTuple_SetItem(L, 1, indices);
             PyTuple_SetItem(L, 2, indptr);
         }
-        return 0;
     }
 
     int Grid2Dttcr::Lsr2d(const double* Tx,

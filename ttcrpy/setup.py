@@ -12,9 +12,9 @@ if platform.system() == 'Darwin':
     include_dirs = ['../ttcr/','/opt/local/include','/opt/local/include/eigen3/',np.get_include()]
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
-    include_dirs = ['C:\\Users\\berna\OneDrive\Documents\\ttcr\\ttcr',
-    'C:\\Users\\berna\OneDrive\Documents\\boost_1_66_0',
-    'C:\\Users\\berna\OneDrive\Documents\eigen3',np.get_include()]
+    include_dirs = ['E:\\src\\ttcr\\ttcr',
+    'C:\\Users\\giroux\OneDrive\Documents\\boost_1_66_0',
+    'C:\\Users\\giroux\OneDrive\Documents\eigen3',np.get_include()]
 elif platform.system() == 'Linux':
     extra_compile_args = ['-std=c++11', '-O3']
     include_dirs = ['../ttcr/','/usr/include/eigen3/',np.get_include()]
@@ -29,6 +29,12 @@ extensions = [
               ),
     Extension('cgrid3d',
               sources=['cgrid3d.pyx'],  # additional source file(s)
+              include_dirs=include_dirs,
+              language='c++',             # generate C++ code
+              extra_compile_args=extra_compile_args,
+              ),
+    Extension('cmesh2d',
+              sources=['cmesh2d.pyx'],
               include_dirs=include_dirs,
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
