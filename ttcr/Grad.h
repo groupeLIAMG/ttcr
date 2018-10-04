@@ -187,6 +187,7 @@ namespace ttcr {
         }
         
         // solve Ax = b with least squares
+//        x = (A.transpose() * A).ldlt().solve(A.transpose() * b);
         x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
         
         //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;

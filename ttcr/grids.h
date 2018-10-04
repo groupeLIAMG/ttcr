@@ -1636,7 +1636,15 @@ namespace ttcr {
         else
             slowness.resize(reader.getNumberOfNodes());
         
-        reader.readNodes2D(nodes);
+        int d = reader.get2Ddim();
+        if ( d == 0 ) {
+            std::cout << "Error: mesh is 3D" << std::endl;
+            exit ( -1);
+        }
+        if ( d == 1 ) {
+            std::cout << "Warning: use Y in mesh for second dimension (Z expected)" << std::endl;
+        }
+        reader.readNodes2D(nodes, d);
         reader.readTriangleElements(triangles);
         reader.readSlowness(slowness, constCells);
         
@@ -1772,7 +1780,16 @@ namespace ttcr {
         std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfTriangles());
         std::vector<T> slowness(reader.getNumberOfTriangles());
         
-        reader.readNodes2D(nodes);
+        int d = reader.get2Ddim();
+        if ( d == 0 ) {
+            std::cout << "Error: mesh is 3D" << std::endl;
+            exit ( -1);
+        }
+        if ( d == 1 ) {
+            std::cout << "Warning: use Y in mesh for second dimension (Z expected)" << std::endl;
+        }
+
+        reader.readNodes2D(nodes, d);
         reader.readTriangleElements(triangles);
         if ( par.verbose ) std::cout << "done.\n";
         std::map<std::string, double> slownesses;

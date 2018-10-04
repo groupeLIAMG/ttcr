@@ -49,6 +49,47 @@ namespace ttcr {
         
         bool isValid() const { return valid; }
         
+        int get2Ddim() const {
+            vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+            vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+            reader->SetFileName(filename.c_str());
+            reader->Update();
+            double x[3];
+            double xmin=0.0;
+            double xmax=0.0;
+            double ymin=0.0;
+            double ymax=0.0;
+            double zmin=0.0;
+            double zmax=0.0;
+            
+            reader->GetOutput()->GetPoint(0, x);
+            xmin = xmax = x[0];
+            ymin = ymax = x[1];
+            zmin = zmax = x[2];
+            for ( size_t n=1; n<reader->GetOutput()->GetNumberOfPoints(); ++n ) {
+                reader->GetOutput()->GetPoint(n, x);
+                xmin = xmin<x[0] ? xmin : x[0];
+                xmax = xmax>x[0] ? xmax : x[0];
+                ymin = ymin<x[1] ? ymin : x[1];
+                ymax = ymax>x[1] ? ymax : x[1];
+                zmin = zmin<x[2] ? zmin : x[2];
+                zmax = zmax>x[2] ? zmax : x[2];
+            }
+            if ( xmin == xmax ) {
+                throw std::runtime_error("Error: mesh should vary in X");
+            }
+            if ( ymin == ymax && zmin == zmax) {
+                throw std::runtime_error("Error: mesh is 1D");
+            }
+            if ( ymin == ymax ) {
+                return 2;
+            } else if ( zmin == zmax ) {
+                return 1;
+            }
+            return 0;
+        }
+
+        
         size_t getNumberOfElements() {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -66,7 +107,7 @@ namespace ttcr {
         }
         
         template<typename T>
-        void readNodes2D(std::vector<sxz<T>>& nodes) {
+        void readNodes2D(std::vector<sxz<T>>& nodes, const int d) {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -77,7 +118,7 @@ namespace ttcr {
             for ( size_t n=0; n<reader->GetOutput()->GetNumberOfPoints(); ++n ) {
                 reader->GetOutput()->GetPoint(n, x);
                 nodes[n].x = x[0];
-                nodes[n].z = x[2];
+                nodes[n].z = x[d];
             }
         }
         

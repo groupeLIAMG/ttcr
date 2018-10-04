@@ -48,7 +48,8 @@ int main(int argc, char * argv[])
 	
 	map<string, double> slownesses;
 	
-	if ( reader.is2D() ) {
+    int d = reader.get2Ddim();
+	if ( d == 1 || d == 2 ) {
 		
 		if ( par.verbose ) {
 			cout << "Number of nodes: " << reader.getNumberOfNodes() << '\n';
@@ -60,8 +61,8 @@ int main(int argc, char * argv[])
 		vector<sxz<double> > nodes(reader.getNumberOfNodes());
 		vector<triangleElem<uint32_t> > triangles(reader.getNumberOfTriangles());
 		vector<double> slowness(reader.getNumberOfTriangles());
-		
-		reader.readNodes2D(nodes);
+        
+		reader.readNodes2D(nodes, d);
 		reader.readTriangleElements(triangles);
 
 		bool constCells = true;

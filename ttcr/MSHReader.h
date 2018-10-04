@@ -29,6 +29,7 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 #include "ttcr_t.h"
@@ -60,12 +61,56 @@ namespace ttcr {
             readNodes3D(nodes);
             double ymin=0.0;
             double ymax=0.0;
-            if ( nodes.size()> 1 ) ymin = ymax = nodes[0].y;
+            double zmin=0.0;
+            double zmax=0.0;
+            if ( nodes.size()> 1 ) {
+                ymin = ymax = nodes[0].y;
+                zmin = zmax = nodes[0].z;
+            }
             for ( size_t n=1; n<nodes.size(); ++n ) {
                 ymin = ymin<nodes[n].y ? ymin : nodes[n].y;
                 ymax = ymax>nodes[n].y ? ymax : nodes[n].y;
+                zmin = zmin<nodes[n].z ? zmin : nodes[n].z;
+                zmax = zmax>nodes[n].z ? zmax : nodes[n].z;
             }
-            return ymin == ymax;
+            if ( ymin == ymax && zmin == zmax) {
+                throw std::runtime_error("Error: mesh is 1D");
+            }
+            return ymin == ymax || zmin == zmax;
+        }
+        
+        int get2Ddim() const {
+            std::vector<sxyz<double>> nodes;
+            readNodes3D(nodes);
+            double xmin=0.0;
+            double xmax=0.0;
+            double ymin=0.0;
+            double ymax=0.0;
+            double zmin=0.0;
+            double zmax=0.0;
+            if ( nodes.size()> 1 ) {
+                xmin = xmax = nodes[0].x;
+                ymin = ymax = nodes[0].y;
+                zmin = zmax = nodes[0].z;
+            }
+            for ( size_t n=1; n<nodes.size(); ++n ) {
+                ymin = ymin<nodes[n].y ? ymin : nodes[n].y;
+                ymax = ymax>nodes[n].y ? ymax : nodes[n].y;
+                zmin = zmin<nodes[n].z ? zmin : nodes[n].z;
+                zmax = zmax>nodes[n].z ? zmax : nodes[n].z;
+            }
+            if ( xmin == xmax ) {
+                throw std::runtime_error("Error: mesh should vary in X");
+            }
+            if ( ymin == ymax && zmin == zmax) {
+                throw std::runtime_error("Error: mesh is 1D");
+            }
+            if ( ymin == ymax ) {
+                return 2;
+            } else if ( zmin == zmax ) {
+                return 1;
+            }
+            return 0;
         }
         
         size_t getNumberOfElements() {
@@ -129,10 +174,11 @@ namespace ttcr {
         
         
         template<typename T>
-        void readNodes2D(std::vector<sxz<T>>& nodes) const {
+        void readNodes2D(std::vector<sxz<T>>& nodes, const int d) const {
             std::ifstream fin(filename.c_str());
             std::string line;
             size_t nNodes;
+            T x[3];
             while ( fin ) {
                 getline( fin, line );
                 if ( line.find("$Nodes") != std::string::npos ) {
@@ -141,9 +187,9 @@ namespace ttcr {
                         nodes.resize( nNodes );
                     }
                     size_t index;
-                    T y;
                     for ( size_t n=0; n<nNodes; ++n ) {
-                        fin >> index >> nodes[n].x >> y >> nodes[n].z;
+                        fin >> index >> nodes[n].x >> x[1] >> x[2];
+                        nodes[n].z = x[d];
                     }
                     break;
                 }
