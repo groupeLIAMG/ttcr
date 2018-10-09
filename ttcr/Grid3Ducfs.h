@@ -46,7 +46,7 @@ namespace ttcr {
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, nt),
         rp_ho(rp), epsilon(eps), nitermax(maxit), S()
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
         }
         
@@ -87,8 +87,6 @@ namespace ttcr {
         int nitermax;
         std::vector<std::vector<Node3Dc<T1,T2>*>> S;
         
-        void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
-        
         void initTx(const std::vector<sxyz<T1>>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
         
@@ -110,27 +108,6 @@ namespace ttcr {
                        const size_t) const;
         
     };
-    
-    template<typename T1, typename T2>
-    void Grid3Ducfs<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
-                                           const size_t nt) {
-        
-        // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            this->nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
-        }
-        
-        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-            
-            // for each triangle
-            for ( T2 ntri=0; ntri<4; ++ntri ) {
-                
-                // push owner for primary nodes
-                this->nodes[ this->tetrahedra[ntet].i[ntri] ].pushOwner( ntet );
-                
-            }
-        }
-    }
     
     template<typename T1, typename T2>
     void Grid3Ducfs<T1,T2>::initOrdering(const std::vector<sxyz<T1>>& refPts,

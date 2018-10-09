@@ -47,7 +47,7 @@ namespace ttcr {
                    const int ns, const size_t nt=1, const int verbose=0) :
         Grid3Duc<T1,T2,Node3Dcsp<T1,T2>>(no, tet, nt)
         {
-            buildGridNodes(no, ns, nt, verbose);
+            this->buildGridNodes(no, ns, nt, verbose);
             this->buildGridNeighbors();
         }
         
@@ -91,9 +91,6 @@ namespace ttcr {
         
     private:
         
-        void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const int, const size_t, const int);
-        
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node3Dcsp<T1,T2>*,
@@ -119,188 +116,6 @@ namespace ttcr {
                        const size_t threadNo) const;
         
     };
-    
-    
-    template<typename T1, typename T2>
-    void Grid3Ducsp<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
-                                           const int nsecondary,
-                                           const size_t nt, const int verbose) {
-        
-        // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            this->nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
-        }
-        T2 nNodes = static_cast<T2>(this->nodes.size());
-        
-        size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nsecondary-1); ++n ) nFaceNodes += n;
-        
-        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
-        std::array<T2,2> lineKey;
-        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
-        
-        size_t estLineNo = (this->tetrahedra.size()+this->tetrahedra.size()/10) * 6/2;
-        size_t estFaceNo = (this->tetrahedra.size()+this->tetrahedra.size()/10) * 4/2;
-        this->nodes.reserve( nNodes + estLineNo*nsecondary + estFaceNo*nFaceNodes );
-        
-        
-        T2 iNodes[4][3] = {
-            {0,1,2},  // (relative) indices of nodes of 1st triangle
-            {1,2,3},  // (relative) indices of nodes of 2nd triangle
-            {0,2,3},  // (relative) indices of nodes of 3rd triangle
-            {0,1,3}   // (relative) indices of nodes of 4th triangle
-        };
-        
-        //
-        //              1
-        //            ,/|`\
-        //          ,/  |  `\
-        //        ,0    '.   `4
-        //      ,/       1     `\
-        //    ,/         |       `\
-        //   0-----5-----'.--------3
-        //    `\.         |      ,/
-        //       `\.      |     3
-        //          `2.   '. ,/
-        //             `\. |/
-        //                `2
-        //
-        //
-        //  triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
-        //               ---  ---  ---
-        //  triangle 1:  1-2  2-3  3-1
-        //                    ---  ---
-        //  triangle 2:  0-2  2-3  3-0
-        //                         ---
-        //  triangle 3:  0-1  1-3  3-0
-        
-        if ( verbose>1 && nsecondary > 0 ) {
-            std::cout << '\n';
-        }
-        
-        // edge nodes
-        Node3Dcsp<T1,T2> tmpNode(nt);
-        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-            
-            if ( verbose>1 && nsecondary > 0 ) {
-                std::cout << "\r  Building edge nodes: " << (100*ntet)/this->tetrahedra.size() << "%";
-                std::cout.flush();
-            }
-            
-            // for each triangle
-            for ( T2 ntri=0; ntri<4; ++ntri ) {
-                
-                // push owner for primary nodes
-                this->nodes[ this->tetrahedra[ntet].i[ntri] ].pushOwner( ntet );
-                
-                if ( nsecondary > 0 ) {
-                    // start from ntri to avoid redundancy
-                    for ( size_t nl=ntri; nl<3; ++nl ) {
-                        
-                        lineKey = {this->tetrahedra[ntet].i[ iNodes[ntri][nl] ],
-                            this->tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
-                        std::sort(lineKey.begin(), lineKey.end());
-                        
-                        lineIt = lineMap.find( lineKey );
-                        if ( lineIt == lineMap.end() ) {
-                            // not found, insert new pair
-                            lineMap[ lineKey ] = std::vector<T2>(nsecondary);
-                        } else {
-                            for ( size_t n=0; n<lineIt->second.size(); ++n ) {
-                                // setting owners
-                                this->nodes[ lineIt->second[n] ].pushOwner( ntet );
-                            }
-                            continue;
-                        }
-                        
-                        sxyz<T1> d = (no[lineKey[1]]-no[lineKey[0]])/static_cast<T1>(nsecondary+1);
-                        
-                        for ( size_t n2=0; n2<nsecondary; ++n2 ) {
-                            tmpNode.setXYZindex(no[lineKey[0]].x+(1+n2)*d.x,
-                                                no[lineKey[0]].y+(1+n2)*d.y,
-                                                no[lineKey[0]].z+(1+n2)*d.z,
-                                                nNodes );
-                            lineMap[lineKey][n2] = nNodes++;
-                            this->nodes.push_back( tmpNode );
-                            this->nodes.back().pushOwner( ntet );
-                        }
-                    }
-                }
-            }
-        }
-        
-        if ( verbose>1 && nsecondary > 0 ) {
-            std::cout << "\r  Building edge nodes: 100%\n";
-        }
-        
-        if ( nsecondary > 1 ) {
-            
-            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
-            std::array<T2,3> faceKey;
-            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
-            
-            int ncut = nsecondary - 1;
-            
-            for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-                
-                if ( verbose>1 ) {
-                    std::cout << "\r  Building face nodes: " << (100*ntet)/this->tetrahedra.size() << "%";
-                    std::cout.flush();
-                }
-                
-                // for each triangle
-                for ( T2 ntri=0; ntri<4; ++ntri ) {
-                    
-                    faceKey = {this->tetrahedra[ntet].i[ iNodes[ntri][0] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][1] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][2] ]};
-                    std::sort(faceKey.begin(), faceKey.end());
-                    
-                    
-                    faceIt = faceMap.find( faceKey );
-                    if ( faceIt == faceMap.end() ) {
-                        // not found, insert new pair
-                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
-                    } else {
-                        for ( size_t n=0; n<faceIt->second.size(); ++n ) {
-                            // setting owners
-                            this->nodes[ faceIt->second[n] ].pushOwner( ntet );
-                        }
-                        continue;
-                    }
-                    
-                    sxyz<T1> d1 = (no[faceKey[1]]-no[faceKey[0]])/static_cast<T1>(nsecondary+1);
-                    sxyz<T1> d2 = (no[faceKey[1]]-no[faceKey[2]])/static_cast<T1>(nsecondary+1);
-                    
-                    size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
-                        
-                        sxyz<T1> pt1 = no[faceKey[0]]+static_cast<T1>(1+n)*d1;
-                        sxyz<T1> pt2 = no[faceKey[2]]+static_cast<T1>(1+n)*d2;
-                        
-                        size_t nseg = ncut+1-n;
-                        
-                        sxyz<T1> d = (pt2-pt1)/static_cast<T1>(nseg);
-                        
-                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
-                            tmpNode.setXYZindex(pt1.x+(1+n2)*d.x,
-                                                pt1.y+(1+n2)*d.y,
-                                                pt1.z+(1+n2)*d.z,
-                                                nNodes );
-                            faceMap[faceKey][ifn++] = nNodes++;
-                            this->nodes.push_back( tmpNode );
-                            this->nodes.back().pushOwner( ntet );
-                        }
-                    }
-                }
-            }
-        }
-        if ( verbose>1 && nsecondary > 0 ) {
-            std::cout << "\r  Building face nodes: 100%\n";
-        }
-        
-        this->nodes.shrink_to_fit();
-    }
     
     
     

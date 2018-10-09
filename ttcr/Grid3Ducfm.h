@@ -63,7 +63,7 @@ namespace ttcr {
                    const bool rp=false, const size_t nt=1) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, nt), rp_ho(rp)
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
         }
         
@@ -99,8 +99,6 @@ namespace ttcr {
     private:
         bool rp_ho;
         
-        void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
-        
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       std::priority_queue<Node3Dc<T1,T2>*,
@@ -118,50 +116,6 @@ namespace ttcr {
                        const size_t) const;
         
     };
-    
-    template<typename T1, typename T2>
-    void Grid3Ducfm<T1,T2>::buildGridNodes(const std::vector<sxyz<T1>>& no,
-                                           const size_t nt) {
-        
-        // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            this->nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
-        }
-        
-        //
-        //              1
-        //            ,/|`\
-        //          ,/  |  `\
-        //        ,0    '.   `4
-        //      ,/       1     `\
-        //    ,/         |       `\
-        //   0-----5-----'.--------3
-        //    `\.         |      ,/
-        //       `\.      |     3
-        //          `2.   '. ,/
-        //             `\. |/
-        //                `2
-        //
-        //
-        //  triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
-        //               ---  ---  ---
-        //  triangle 1:  1-2  2-3  3-1
-        //                    ---  ---
-        //  triangle 2:  0-2  2-3  3-0
-        //                         ---
-        //  triangle 3:  0-1  1-3  3-0
-        
-        
-        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-            
-            // for each triangle
-            for ( T2 ntri=0; ntri<4; ++ntri ) {
-                
-                // push owner for primary nodes
-                this->nodes[ this->tetrahedra[ntet].i[ntri] ].pushOwner( ntet );
-            }
-        }
-    }
     
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
