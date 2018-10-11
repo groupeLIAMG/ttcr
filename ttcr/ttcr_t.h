@@ -510,18 +510,18 @@ namespace ttcr {
     template<typename T>
     T det(const sxz<T>& u, const sxz<T>& v) {
         return u.x*v.z - u.z*v.x;
-    };
+    }
 
     template<typename T>
     T det(const sxyz<T>& v1, const sxyz<T>& v2, const sxyz<T>& v3) {
         return -v1.z*v2.y*v3.x + v1.y*v2.z*v3.x + v1.z*v2.x*v3.y -
         v1.x*v2.z*v3.y - v1.y*v2.x*v3.z + v1.x*v2.y*v3.z;
-    };
+    }
 
     template<typename T>
     T tripleScalar(const sxyz<T>& v1, const sxyz<T>& v2, const sxyz<T>& v3) {
         return v1.x*(v2.y*v3.z-v3.y*v2.z) - v1.y*(v2.x*v3.z-v3.x*v2.z) + v1.z*(v2.x*v3.y-v3.x*v2.y);
-    };
+    }
 
     template<typename T>
     T det4(const sxyz<T>& v1, const sxyz<T>& v2,
@@ -532,7 +532,7 @@ namespace ttcr {
         v1.z*v2.x*v4.y + v1.x*v2.z*v4.y + v1.z*v3.x*v4.y - v2.z*v3.x*v4.y -
         v1.x*v3.z*v4.y + v2.x*v3.z*v4.y + v1.y*v2.x*v4.z - v1.x*v2.y*v4.z -
         v1.y*v3.x*v4.z + v2.y*v3.x*v4.z + v1.x*v3.y*v4.z - v2.x*v3.y*v4.z;
-    };
+    }
 
     template<typename T>
     T dot(const sxz<T>& v1, const sxz<T>& v2) {

@@ -605,7 +605,7 @@ namespace ttcr {
         }
         dataSet->Delete();
         return g;
-    };
+    }
     
     template<typename T>
     Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt)
@@ -1609,7 +1609,7 @@ namespace ttcr {
         }
         dataSet->Delete();
         return g;
-    };
+    }
     
     template<typename T>
     Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const size_t nt)
