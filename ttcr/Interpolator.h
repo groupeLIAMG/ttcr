@@ -24,7 +24,7 @@
 
 #ifndef ttcr_Interpolator_h
 #define ttcr_Interpolator_h
-
+#include "ttcr_t.h"
 namespace ttcr {
     
     template<class T> class Interpolator
@@ -55,7 +55,7 @@ namespace ttcr {
                     s[3]*(x[0]-x[1])*(y[0]-y[1]))
             /((x[2]-x[1])*(y[2]-y[1]));
         }
-        
+//
         inline static T trilinear(const T x[], const T y[], const T z[], const T s[]) {
             
             // evaluate s @ (x[0], y[0], z[0])
@@ -144,6 +144,157 @@ namespace ttcr {
             
             return num/den;
         }
+        template<typename NODE>
+        static T bilinearTriangle(const sxyz<T> &node,const NODE &node1,
+                                const NODE  &node2,NODE node3) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T S=norm(cross(AB,AC));
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            T w1=norm(cross(IB,IC))/S;
+            T w2=norm(cross(AC,IC))/S;
+            T w3=norm(cross(IB,AB))/S;
+            return (w1*node1.getNodeSlowness()+w2*node2.getNodeSlowness()+w3*node3.getNodeSlowness());
+        }
+        template<typename NODE>
+        static void  bilinearTriangleWeight(const sxyz<T> &node,const NODE &node1,
+                               const NODE  &node2,const NODE &node3, std::array<T, 3> & Weights) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T S=norm(cross(AB,AC));
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            Weights[0]=norm(cross(IB,IC))/S;
+            Weights[1]=norm(cross(AC,IC))/S;
+            Weights[2]=norm(cross(IB,AB))/S;
+        }
+        template<typename NODE>
+        static void  bilinearTriangleWeights2(const sxyz<T> & node,const NODE & node1,
+                                            const NODE  & node2,const NODE & node3, std::array<T, 3> & Weights) {
+            sxyz<T> v_c={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> v_b ={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T b = norm( v_b );
+            T c = norm( v_c );
+            T d2 = dot(v_b, v_c);
+            sxyz<T> v_pt = {node.x-node1.getX(), node.y-node1.getY(), node.z-node1.getZ()};
+            sxz<T> AtA_Vect1={b*b,d2};
+            sxz<T> AtA_Vect2={d2,c*c};
+            sxz<T> Atb={dot(v_b,v_pt),dot(v_c,v_pt)};
+            T DeT=det(AtA_Vect1,AtA_Vect2);
+            T xi0=det(AtA_Vect1,Atb)/DeT;
+            T zeta0=det(Atb,AtA_Vect2)/DeT;
+            Weights[0]=1.0-xi0-zeta0;
+            Weights[1]=xi0;
+            Weights[2]=zeta0;
+        }
+        template<typename NODE>
+        static T bilinearTriangle(const NODE &node,const NODE &node1,
+                                  const NODE  &node2,NODE node3) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T S=norm(cross(AB,AC));
+            sxyz<T> IB={node2.getX()-node.getX(),node2.getY()-node.getY(),node2.getZ()-node.getZ()};
+            sxyz<T> IC={node3.getX()-node.getX(),node3.getY()-node.getY(),node3.getZ()-node.getZ()};
+            T w1=norm(cross(IB,IC))/S;
+            T w2=norm(cross(AC,IC))/S;
+            T w3=norm(cross(IB,AB))/S;
+            return (w1*node1.getNodeSlowness()+w2*node2.getNodeSlowness()+w3*node3.getNodeSlowness());
+        }
+        template<typename NODE>
+        static T bilinearTriangleVel(const sxyz<T> &node,const NODE &node1,
+                                  const NODE  &node2,NODE node3) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T S=norm(cross(AB,AC));
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            T w1=norm(cross(IB,IC))/S;
+            T w2=norm(cross(AC,IC))/S;
+            T w3=norm(cross(IB,AB))/S;
+            return (1.0/(w1*1.0/node1.getNodeSlowness()+w2*1.0/node2.getNodeSlowness()+w3*1.0/node3.getNodeSlowness()));
+        }
+        template<typename NODE>
+        static T bilinearTriangleVel(const NODE &node,const NODE &node1,
+                                  const NODE  &node2,NODE node3) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T S=norm(cross(AB,AC));
+            sxyz<T> IB={node2.getX()-node.getX(),node2.getY()-node.getY(),node2.getZ()-node.getZ()};
+            sxyz<T> IC={node3.getX()-node.getX(),node3.getY()-node.getY(),node3.getZ()-node.getZ()};
+            T w1=norm(cross(IB,IC))/S;
+            T w2=norm(cross(AC,IC))/S;
+            T w3=norm(cross(IB,AB))/S;
+           return (1.0/(w1*1.0/node1.getNodeSlowness()+w2*1.0/node2.getNodeSlowness()+w3*1.0/node3.getNodeSlowness()));
+        }
+        template<typename NODE>
+        static T TrilinearTriangle(const sxyz<T> &node,const NODE &node1,
+                                  const NODE  &node2,const NODE &node3,const NODE &node4) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            sxyz<T> AD={node4.getX()-node1.getX(),node4.getY()-node1.getY(),node4.getZ()-node1.getZ()};
+            T V=abs(det(AB,AC,AD));
+            sxyz<T> IA={node1.getX()-node.x,node1.getY()-node.y,node1.getZ()-node.z};
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            sxyz<T> ID={node4.getX()-node.x,node4.getY()-node.y,node4.getZ()-node.z};
+            T w1=abs(det(IB,IC,ID))/V;
+            T w2=abs(det(IC,IA,ID))/V;
+            T w3=abs(det(IB,IA,ID))/V;
+            T w4=abs(det(IB,IA,IC))/V;
+            return (w1*node1.getNodeSlowness()+w2*node2.getNodeSlowness()+w3*node3.getNodeSlowness()+w4*node4.getNodeSlowness());
+        }
+        template<typename NODE>
+        static void TrilinearTriangleWeights(const sxyz<T> &node,const NODE &node1,
+                                             const NODE  &node2,const NODE &node3,const NODE &node4, std::array<T, 4> & Weights) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            sxyz<T> AD={node4.getX()-node1.getX(),node4.getY()-node1.getY(),node4.getZ()-node1.getZ()};
+            T V=abs(det(AB,AC,AD));
+            sxyz<T> IA={node1.getX()-node.x,node1.getY()-node.y,node1.getZ()-node.z};
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            sxyz<T> ID={node4.getX()-node.x,node4.getY()-node.y,node4.getZ()-node.z};
+            Weights[0]=abs(det(IB,IC,ID))/V;
+            Weights[1]=abs(det(IC,IA,ID))/V;
+            Weights[2]=abs(det(IB,IA,ID))/V;
+            Weights[3]=abs(det(IB,IA,IC))/V;
+        }
+
+        template<typename NODE>
+        static T TrilinearTriangleVel(const sxyz<T> &node,const NODE &node1,
+                                   const NODE  &node2,const NODE &node3,const NODE &node4) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            sxyz<T> AD={node4.getX()-node1.getX(),node4.getY()-node1.getY(),node4.getZ()-node1.getZ()};
+            T V=abs(det(AB,AC,AD));
+            sxyz<T> IA={node1.getX()-node.x,node1.getY()-node.y,node1.getZ()-node.z};
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            sxyz<T> ID={node4.getX()-node.x,node4.getY()-node.y,node4.getZ()-node.z};
+            T w1=abs(det(IB,IC,ID))/V;
+            T w2=abs(det(IC,IA,ID))/V;
+            T w3=abs(det(IB,IA,ID))/V;
+            T w4=abs(det(IB,IA,IC))/V;
+            return (1.0/(w1*1.0/node1.getNodeSlowness()+w2*1.0/node2.getNodeSlowness()+w3*1.0/node3.getNodeSlowness()+w4*1.0/node4.getNodeSlowness()));
+        }
+        template<typename NODE>
+        static T TrilinearTriangleVel(const NODE &node,const NODE &node1,
+                                   const NODE &node2,const NODE &node3, const NODE & node4) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            sxyz<T> AD={node4.getX()-node1.getX(),node4.getY()-node1.getY(),node4.getZ()-node1.getZ()};
+            T V=abs(det(AB,AC,AD));
+            sxyz<T> IA={node1.getX()-node.getX(),node1.getY()-node.getY(),node1.getZ()-node.getZ()};
+            sxyz<T> IB={node2.getX()-node.getX(),node2.getY()-node.getY(),node2.getZ()-node.getZ()};
+            sxyz<T> IC={node3.getX()-node.getX(),node3.getY()-node.getY(),node3.getZ()-node.getZ()};
+            sxyz<T> ID={node4.getX()-node.getX(),node4.getY()-node.getY(),node4.getZ()-node.getZ()};
+            T w1=abs(det(IB,IC,ID))/V;
+            T w2=abs(det(IC,IA,ID))/V;
+            T w3=abs(det(IB,IA,ID))/V;
+            T w4=abs(det(IB,IA,IC))/V;
+         return (1.0/(w1*1.0/node1.getNodeSlowness()+w2*1.0/node2.getNodeSlowness()+w3*1.0/node3.getNodeSlowness()+w4*1.0/node4.getNodeSlowness()));
+        }
         
         template<typename NODE, typename S>
         static T inverseDistance(const S& node,
@@ -163,6 +314,37 @@ namespace ttcr {
             
             return num/den;
         }
+        template<typename NODE>
+        static T bilinearTime(const sxyz<T> &node,const NODE &node1,
+                                     const NODE  &node2,NODE node3,const size_t & nt) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            T S=norm(cross(AB,AC));
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            T w1=norm(cross(IB,IC))/S;
+            T w2=norm(cross(AC,IC))/S;
+            T w3=norm(cross(IB,AB))/S;
+            return ((w1*node1.getTT(nt)+w2*node2.getTT(nt)+w3*node3.getTT(nt)));
+        }
+        template<typename NODE>
+        static T TrilinearTime(const sxyz<T> &node,const NODE &node1,
+                                      const NODE  &node2,const NODE &node3,const NODE &node4,const size_t & nt) {
+            sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};
+            sxyz<T> AC={node3.getX()-node1.getX(),node3.getY()-node1.getY(),node3.getZ()-node1.getZ()};
+            sxyz<T> AD={node4.getX()-node1.getX(),node4.getY()-node1.getY(),node4.getZ()-node1.getZ()};
+            T V=abs(det(AB,AC,AD));
+            sxyz<T> IA={node1.getX()-node.x,node1.getY()-node.y,node1.getZ()-node.z};
+            sxyz<T> IB={node2.getX()-node.x,node2.getY()-node.y,node2.getZ()-node.z};
+            sxyz<T> IC={node3.getX()-node.x,node3.getY()-node.y,node3.getZ()-node.z};
+            sxyz<T> ID={node4.getX()-node.x,node4.getY()-node.y,node4.getZ()-node.z};
+            T w1=abs(det(IB,IC,ID))/V;
+            T w2=abs(det(IC,IA,ID))/V;
+            T w3=abs(det(IB,IA,ID))/V;
+            T w4=abs(det(IB,IA,IC))/V;
+            return ((w1*node1.getTT(nt)+w2*node2.getTT(nt)+w3*node3.getTT(nt)+w4*node4.getTT(nt)));
+        }
+
         
     };
     

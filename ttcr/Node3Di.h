@@ -120,7 +120,7 @@ namespace ttcr {
         T1 getZ() const { return z; }
         void setZ(const T1 zz) { z = zz; }
 
-        int getPrimary() const { return 5; } // all nodes must be primary
+        int getPrimary() const { return primary; } // all nodes must be primary
 
         T2 getGridIndex() const { return gridIndex; }
         void setGridIndex(const T2 index) { gridIndex = index; }

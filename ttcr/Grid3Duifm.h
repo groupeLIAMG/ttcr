@@ -251,11 +251,24 @@ namespace ttcr {
         for ( size_t ni=0; ni<r_data.size(); ++ni ) {
             r_data[ni].resize( 0 );
         }
-        
+        ofstream myfile;
+        myfile.open ("CreatedSPM.dat");
+        myfile.close();
+
         if ( rp_ho ) {
             for (size_t n=0; n<Rx.size(); ++n) {
                 traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-                this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
+                //this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
+                for (size_t nt=0;nt <Tx.size();++nt){
+                    if(this->getCellNo(Rx[n])==this->getCellNo(Tx[nt])){
+                        traveltimes[n] =0.5*(this->computeSlowness(Rx[n])+this->computeSlowness(Tx[nt]))*Rx[n].getDistance(Tx[nt]);
+                    }
+                }
+                std::ofstream outfile;
+                outfile.open("CreatedSPM.dat", std::ios_base::app);
+                outfile << traveltimes[n]<<"\n";
+                outfile.close();
+
             }
         } else {
             for (size_t n=0; n<Rx.size(); ++n) {
@@ -412,12 +425,13 @@ namespace ttcr {
             if ( found==false ) {
                 
                 T2 cellNo = this->getCellNo(Tx[n]);
+                T1 s=Interpolator<T1>::TrilinearTriangle(Tx[n], this->nodes[this->neighbors[cellNo][0]], this->nodes[this->neighbors[cellNo][1]], this->nodes[this->neighbors[cellNo][2]], this->nodes[this->neighbors[cellNo][3]]);
                 if ( Grid3Dui<T1,T2,Node3Di<T1,T2>>::source_radius == 0.0 ) {
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
                         
                         // compute dt
-                        T1 dt = this->nodes[neibNo].getDistance(Tx[n])*this->nodes[neibNo].getNodeSlowness();
+                        T1 dt = 0.5*this->nodes[neibNo].getDistance(Tx[n])*(s+this->nodes[neibNo].getNodeSlowness());
                         
                         this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                         narrow_band.push( &(this->nodes[neibNo]) );
@@ -484,7 +498,7 @@ namespace ttcr {
                         continue;
                     }
                     
-                    //				this->local3Dsolver( &(this->nodes[neibNo]), threadNo );
+                                   // this->local3Dsolver( &(this->nodes[neibNo]), threadNo );
                     this->localUpdate3D( &(this->nodes[neibNo]), threadNo );
                     
                     if ( !inNarrowBand[neibNo] ) {
@@ -499,3 +513,4 @@ namespace ttcr {
 }
 
 #endif
+

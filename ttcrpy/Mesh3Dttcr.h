@@ -15,17 +15,17 @@
 
 #include <vector>
 
-#include "Grid3Duifs.h"
+#include "Grid3Duisp.h"
 
 namespace ttcr {
-    typedef Grid3Duifs<double,uint32_t> mesh;
-
+    typedef Grid3Duisp<double,uint32_t> mesh;
+    
     class Mesh3Dttcr {
     public:
-        Mesh3Dttcr(const std::vector<sxyz<double>>&,
-                   const std::vector<tetrahedronElem<uint32_t>>&,
-                   const double, const int, const bool,const bool ,
-                   const size_t);
+        Mesh3Dttcr(const std::vector<sxyz<double>>& ,
+                   const std::vector<tetrahedronElem<uint32_t>>& ,
+                   const int , const size_t , const int ,
+                   const size_t , const double ) ;
         
         ~Mesh3Dttcr() {
             delete mesh_instance;
@@ -58,9 +58,10 @@ namespace ttcr {
 
     private:
         mesh *mesh_instance;
-        std::vector<sxyz<double>> refPts;
-        bool SecondNodes;
+        size_t nst;
+        double Radius;
         Mesh3Dttcr() {}
+        sxyz<double> MinCorner;
     };
 }
 

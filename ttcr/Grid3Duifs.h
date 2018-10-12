@@ -255,9 +255,11 @@ namespace ttcr {
 
                 // ascending
                 for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
-                    if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
-                        this->localUpdate3D(*vertexC, threadNo);
+                    if ( !frozen[(*vertexC)->getGridIndex()] ){
+                        this->local3Dsolver(*vertexC, threadNo);
+                        //this->localUpdate3D(*vertexC, threadNo);
+                        
+                    }
                 }
 
                 change = 0.0;
@@ -267,15 +269,16 @@ namespace ttcr {
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
                 }
-                if ( change < epsilon ) {
-                    break;
-                }
+//                if ( change < epsilon ) {
+//                    break;
+//                }
 
                 // descending
                 for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
-                    if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
-                        this->localUpdate3D(*vertexC, threadNo);
+                    if ( !frozen[(*vertexC)->getGridIndex()] ){
+                        this->local3Dsolver(*vertexC, threadNo);
+                        //this->localUpdate3D(*vertexC, threadNo);
+                    }
                 }
 
                 change = 0.0;
@@ -285,13 +288,19 @@ namespace ttcr {
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
                 }
-                if ( change < epsilon ) {
-                    break;
-                }
             }
+//            if ( change < epsilon ) {
+//                break;
+//            }
             niter++;
         }
-        //std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+//        double Velocity=1.0/this->nodes[0].getNodeSlowness();
+//        for(size_t i=0;i<this->nodes.size();++i){
+//            T1 tTrue=-this->nodes[i].getDistance(Tx[0])/Velocity;
+//            this->nodes[i].setTT(100*(this->nodes[i].getTT(threadNo)-tTrue)/tTrue,threadNo);
+//        }
+        //this->saveTT("time",int(this->nodes.size()),threadNo,false);
+        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
 
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
@@ -335,8 +344,8 @@ namespace ttcr {
                 // ascending
                 for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
-                        this->localUpdate3D(*vertexC, threadNo);
+                           this->local3Dsolver(*vertexC, threadNo);
+                        //this->localUpdate3D(*vertexC, threadNo);
                 }
 
                 //			char fname[200];
@@ -357,11 +366,9 @@ namespace ttcr {
                 // descending
                 for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
-                        this->localUpdate3D(*vertexC, threadNo);
+                               this->local3Dsolver(*vertexC, threadNo);
+                       //this->localUpdate3D(*vertexC, threadNo);
                 }
-                //			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
-                //			saveTT(fname, threadNo);
 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -377,6 +384,7 @@ namespace ttcr {
             }
             niter++;
         }
+        
 //        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
 
 

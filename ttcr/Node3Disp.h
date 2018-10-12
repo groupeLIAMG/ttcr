@@ -45,7 +45,7 @@ namespace ttcr {
         cellParent(new T2[nt]),
         owners(std::vector<T2>(0)),
         slowness(0),
-        primary(0)
+        primary(5)
         {
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
@@ -185,7 +185,19 @@ namespace ttcr {
         int getDimension() const { return 3; }
         
         bool const isPrimary() const { return primary == 5; }
-        
+        size_t getprimary(){
+            return primary;
+        }
+        void SetPrincipals(const T2 & Principal){
+            if (primary==10 && std::find(PrincipalNodes.begin(),PrincipalNodes.end(),Principal)==PrincipalNodes.end()){
+                PrincipalNodes.push_back(Principal);
+            }
+        }
+        const std::vector<T2>& getPrincipals() const{
+            if (primary!=10 && PrincipalNodes.size()==0)
+                PrincipalNodes.push_back(gridIndex);
+            return (PrincipalNodes);
+        }
     private:
         size_t nThreads;
         T1 *tt;                         // travel time for the multiple source points
@@ -198,6 +210,7 @@ namespace ttcr {
         std::vector<T2> owners;         // indices of cells touching the node
         T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp
         int primary;					// indicate the order of the node: 5= primary,
+        mutable std::vector<T2> PrincipalNodes;
         //  (25:48)= secondary on edges,
         //  (50:71)= secondary on faces, only used by Grid3Dinterp
         
