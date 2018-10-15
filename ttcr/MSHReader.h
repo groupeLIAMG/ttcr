@@ -94,6 +94,8 @@ namespace ttcr {
                 zmin = zmax = nodes[0].z;
             }
             for ( size_t n=1; n<nodes.size(); ++n ) {
+                xmin = xmin<nodes[n].x ? xmin : nodes[n].x;
+                xmax = xmax>nodes[n].x ? xmax : nodes[n].x;
                 ymin = ymin<nodes[n].y ? ymin : nodes[n].y;
                 ymax = ymax>nodes[n].y ? ymax : nodes[n].y;
                 zmin = zmin<nodes[n].z ? zmin : nodes[n].z;
