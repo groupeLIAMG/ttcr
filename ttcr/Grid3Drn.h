@@ -1313,7 +1313,7 @@ namespace ttcr {
         std::vector<T2> list;
         
         for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
-            if ( nodes[neighbors[ cellNo ][n3] ].getPrimary() == 5 ){
+            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
                 list.push_back(neighbors[ cellNo ][n3]);
             }
         }

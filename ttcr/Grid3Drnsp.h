@@ -460,7 +460,7 @@ namespace ttcr {
         //Set the slowness for primary nodes
         size_t i=0;
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
-            if (this->nodes[n].getPrimary() == 5){
+            if (this->nodes[n].isPrimary()){
                 this->nodes[n].setNodeSlowness( s[i] );
                 i++;
             }
@@ -492,7 +492,7 @@ namespace ttcr {
                 list.resize(0);
                 T2 cellno = this->nodes[n].getOwners()[0];
                 for (size_t n3=0; n3 < this->neighbors[ cellno ].size(); n3++){
-                    if( this->nodes[this->neighbors[ cellno ][n3] ].getPrimary() == 5 ){
+                    if( this->nodes[this->neighbors[ cellno ][n3] ].isPrimary() ){
                         list.push_back(this->neighbors[ cellno ][n3]);
                     }
                 }
@@ -656,7 +656,7 @@ namespace ttcr {
                 for ( size_t n2=0; n2<this->nodes[n].getOwners().size(); ++n2) {
                     T2 cellno = this->nodes[n].getOwners()[n2];
                     for (size_t n3=0; n3 < this->neighbors[ cellno ].size(); n3++){
-                        if ( this->nodes[this->neighbors[ cellno ][n3] ].getPrimary() == 5 ) {
+                        if ( this->nodes[this->neighbors[ cellno ][n3] ].isPrimary() ) {
                             list.push_back(this->neighbors[ cellno ][n3]);
                         }
                     }

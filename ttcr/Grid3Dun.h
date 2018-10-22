@@ -307,6 +307,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
+            nodes[n].setPrimary(5);
         }
         
         //
@@ -2883,7 +2884,7 @@ namespace ttcr {
         std::vector<T2> list;
         
         for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
-            if ( nodes[neighbors[ cellNo ][n3] ].getPrimary() == 5 ){
+            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
                 list.push_back(neighbors[ cellNo ][n3]);
             }
         }
