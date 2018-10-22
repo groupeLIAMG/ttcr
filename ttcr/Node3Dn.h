@@ -164,6 +164,16 @@ namespace ttcr {
         T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp    
     };
     
+    template<typename T1, typename T2>
+    sxyz<T1> operator+(const Node3Dn<T1,T2>& lhs, const Node3Dn<T1,T2>& rhs) {
+        return sxyz<T1>( lhs.getX()+rhs.getX(), lhs.getY()+rhs.getY(), lhs.getZ()+rhs.getZ() );
+    }
+    
+    template<typename T1, typename T2>
+    sxyz<T1> operator-(const Node3Dn<T1,T2>& lhs, const Node3Dn<T1,T2>& rhs) {
+        return sxyz<T1>( lhs.getX()-rhs.getX(), lhs.getY()-rhs.getY(), lhs.getZ()-rhs.getZ() );
+    }
+    
 }
 
 #endif
