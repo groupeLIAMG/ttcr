@@ -26,6 +26,8 @@
 #ifndef ttcr_Grid2D_h
 #define ttcr_Grid2D_h
 
+#include <fstream>
+
 #include "ttcr_t.h"
 
 namespace ttcr {
@@ -128,6 +130,12 @@ namespace ttcr {
         virtual const size_t getNthreads() const { return 1; }
         
         virtual int projectPts(std::vector<S>&) const { return 1; }
+        
+        virtual void interpolateAtNodes(std::vector<T1> &) const {}
+        virtual void interpolateAtNodes(const std::vector<T1> &,
+                                        std::vector<T1> &) const {}
+        
+        virtual void dump_secondary(std::ofstream&) const {};
         
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

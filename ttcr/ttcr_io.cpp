@@ -45,6 +45,7 @@ namespace ttcr {
         << "  -k  Save model in VTK format\n"
         << "  -v  Verbose mode\n"
         << "  -t  Measure time to build grid and perform raytracing\n"
+        << "  -s  Dump secondary nodes to ascii file\n"
         << std::endl;
         exit (exit_code);
     }
@@ -55,7 +56,7 @@ namespace ttcr {
         string param_file;
         
         int next_option;
-        const char* const short_options = "hk†p:vt";
+        const char* const short_options = "hk†p:vts";
         bool no_option = true;
         do {
             next_option = getopt (argc, argv, short_options);
@@ -88,6 +89,11 @@ namespace ttcr {
                 case  't' :
                     no_option = false;
                     ip.time = true;
+                    break;
+                    
+                case  's' :
+                    no_option = false;
+                    ip.dump_secondary = true;
                     break;
                     
                 case  '?' : // The user specified an invalid option.

@@ -143,6 +143,18 @@ namespace ttcr {
         
         const size_t getNthreads() const { return nThreads; }
         
+        void calculateArea(std::vector<T1> &) const;
+        void interpolateAtNodes(std::vector<T1> &) const;
+        void interpolateAtNodes(const std::vector<T1> &,
+                                std::vector<T1> &) const;
+        
+        void dump_secondary(std::ofstream& os) const {
+            for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
+                os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
+            }
+        }
+
+        
     protected:
         const size_t nThreads;
         T2 nPrimary;
@@ -1712,6 +1724,75 @@ namespace ttcr {
         }
     }
     
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::calculateArea(std::vector<T1> &area) const {
+        if ( area.size() != slowness.size() ) {
+            area.resize( slowness.size() );
+        }
+        for ( size_t n=0; n<area.size(); ++n ) {
+            area[n] =  abs( 0.5 * (nodes[triangles[n].i[0]].getX()*(nodes[triangles[n].i[1]].getY()-nodes[triangles[n].i[2]].getY()) +
+                                   nodes[triangles[n].i[1]].getX()*(nodes[triangles[n].i[2]].getY()-nodes[triangles[n].i[0]].getY()) +
+                                   nodes[triangles[n].i[2]].getX()*(nodes[triangles[n].i[0]].getY()-nodes[triangles[n].i[1]].getY())));
+        }
+    }
+        
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::interpolateAtNodes(std::vector<T1> &interpolated) const {
+        // interpolated: values interpolated at nodes
+        
+        if ( interpolated.size() != nodes.size() ) {
+            interpolated.resize( nodes.size() );
+        }
+        
+        // calculate area of triangles
+        static std::vector<T1> area;
+        if ( area.size() == 0 ) {
+            std::cout << "Ici!!!\n";
+            this->calculateArea(area);
+        }
+        
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+            T1 totalArea = area[nodes[n].getOwners()[0]];
+            interpolated[n] = slowness[nodes[n].getOwners()[0]] * totalArea;
+            for ( size_t nn=1; nn<nodes[n].getOwners().size(); ++nn ) {
+                interpolated[n] += slowness[nodes[n].getOwners()[nn]] * area[nodes[n].getOwners()[nn]];
+                totalArea += area[nodes[n].getOwners()[nn]];
+            }
+            interpolated[n] /= totalArea;
+        }
+    }
+    
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::interpolateAtNodes(const std::vector<T1> &field,
+                                                    std::vector<T1> &interpolated) const {
+        // field: values defined at cells
+        // interpolated: values interpolated at nodes
+        
+        if ( field.size() != slowness.size() ) {
+            throw std::length_error("Error: field vector of incompatible size.");
+        }
+        if ( interpolated.size() != nodes.size() ) {
+            interpolated.resize( nodes.size() );
+        }
+        
+        // calculate area of triangles
+        static std::vector<T1> area;
+        if ( area.size() == 0 ) {
+            std::cout << "Ici!!!\n";
+            this->calculateArea(area);
+        }
+        
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+            T1 totalArea = area[nodes[n].getOwners()[0]];
+            interpolated[n] = field[nodes[n].getOwners()[0]] * totalArea;
+            for ( size_t nn=1; nn<nodes[n].getOwners().size(); ++nn ) {
+                interpolated[n] += field[nodes[n].getOwners()[nn]] * area[nodes[n].getOwners()[nn]];
+                totalArea += area[nodes[n].getOwners()[nn]];
+            }
+            interpolated[n] /= totalArea;
+        }
+    }
+
 }
 
 #endif

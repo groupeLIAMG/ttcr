@@ -27,6 +27,8 @@
 #ifndef ttcr_Grid3D_h
 #define ttcr_Grid3D_h
 
+#include <fstream>
+
 #include "ttcr_t.h"
 
 namespace ttcr {
@@ -118,6 +120,8 @@ namespace ttcr {
         virtual const int get_niterw() const { return 1; }
         
         virtual const size_t getNthreads() const { return 1; }
+        
+        virtual void dump_secondary(std::ofstream&) const {};
         
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

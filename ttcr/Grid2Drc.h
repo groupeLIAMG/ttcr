@@ -98,6 +98,13 @@ namespace ttcr {
         const T2 getNcx() const { return ncx; }
         const T2 getNcz() const { return ncz; }
         
+        void dump_secondary(std::ofstream& os) const {
+            size_t nPrimary = (ncx+1) * (ncz+1);
+            for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
+                os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
+            }
+        }
+
     protected:
         size_t nThreads;
         T1 dx;           // cell size in x

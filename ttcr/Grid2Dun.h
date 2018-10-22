@@ -139,6 +139,13 @@ namespace ttcr {
         
         const size_t getNthreads() const { return nThreads; }
         
+        void dump_secondary(std::ofstream& os) const {
+            for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
+                os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
+            }
+        }
+
+        
     protected:
         const size_t nThreads;
         T2 nPrimary;

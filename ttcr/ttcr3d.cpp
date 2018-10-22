@@ -119,6 +119,16 @@ int body(const input_parameters &par) {
 		return 1;
     }
     
+    if ( (par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH) and par.dump_secondary ) {
+        string sec_file = par.basename+"_sec.dat";
+        ofstream otmp(sec_file);
+        if ( par.verbose ) {
+            cout << "Dumping secondary node coordinates to " << sec_file << endl;
+        }
+        g->dump_secondary(otmp);
+        otmp.close();
+    }
+    
     if ( par.source_radius != 0.0 ) g->setSourceRadius( par.source_radius );
     
     // Load the receiver file into the Rcv object rcv

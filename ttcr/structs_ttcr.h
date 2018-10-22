@@ -50,6 +50,7 @@ namespace ttcr {
         bool raypath_high_order;
         bool rotated_template;
         bool weno3;
+        bool dump_secondary;
         double epsilon;
         double source_radius;
         raytracing_method method;

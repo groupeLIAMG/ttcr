@@ -105,6 +105,16 @@ int body(const input_parameters &par) {
 		return 1;
     }
     
+    if ( par.method == SHORTEST_PATH and par.dump_secondary ) {
+        string sec_file = par.basename+"_sec.dat";
+        ofstream otmp(sec_file);
+        if ( par.verbose ) {
+            cout << "Dumping secondary node coordinates to " << sec_file << endl;
+        }
+        g->dump_secondary(otmp);
+        otmp.close();
+    }
+    
 	Rcv2D<T> rcv( par.rcvfile );
     if ( par.rcvfile != "" ) {
         if ( par.verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";

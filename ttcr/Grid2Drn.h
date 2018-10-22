@@ -191,6 +191,13 @@ namespace ttcr {
         
         T1 getSlowness(const sxz<T1>& Rx) const;
         
+        void dump_secondary(std::ofstream& os) const {
+            size_t nPrimary = (ncx+1) * (ncz+1);
+            for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
+                os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
+            }
+        }
+        
     private:
         Grid2Drn() {}
         Grid2Drn(const Grid2Drn<T1,T2,NODE>& g) {}
