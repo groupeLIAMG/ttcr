@@ -347,6 +347,21 @@ namespace ttcr {
             fin.close();
         }
         
+        double getVersion() const {
+            std::ifstream fin(filename.c_str());
+            std::string line;
+            double version = 0.0;
+            int file_type;
+            while ( fin ) {
+                getline( fin, line );
+                if ( line.find("$MeshFormat") != std::string::npos ) {
+                    fin >> version >> file_type;
+                    break;
+                }
+            }
+            return version;
+        }
+        
     private:
         std::string filename;
         bool valid;
