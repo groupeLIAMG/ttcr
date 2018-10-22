@@ -262,12 +262,16 @@ namespace ttcr {
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
+                        const int order,
                         const size_t threadNo) const;
         
-        void getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
-                           const sxyz<T1> &Rx,
-                           std::vector<sxyz<T1>> &r_data,
-                           const size_t threadNo) const;
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const sxyz<T1> &Rx,
+                        std::vector<sxyz<T1>> &r_data,
+                        std::vector<sijv<T1>>& m_data,
+                        const size_t RxNo,
+                        const int order,
+                        const size_t threadNo) const;
         
         void update_m_data(std::vector<sijv<T1>>& m_data,
                            sijv<T1>& m,
@@ -275,20 +279,6 @@ namespace ttcr {
                            const sxyz<T1>& mid_pt,
                            const T1 s,
                            const T1 ds) const ;
-        
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
-                        std::vector<sijv<T1>>& m_data,
-                        const size_t RxNo,
-                        const size_t threadNo) const;
-        
-        void getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
-                           const sxyz<T1> &Rx,
-                           std::vector<sxyz<T1>> &r_data,
-                           std::vector<sijv<T1>>& m_data,
-                           const size_t RxNo,
-                           const size_t threadNo) const;
         
         bool intersectVecTriangle(const T2 iO, const sxyz<T1> &vec,
                                   const T2 iA, T2 iB, T2 iC,
@@ -303,7 +293,7 @@ namespace ttcr {
         T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
         
-        void getNeighborNodes(const T2 cellNo, std::set<NODE*> &nnodes) const;
+        void getNeighborNodes(const T2, std::set<NODE*>&, const int) const;
         
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
         
@@ -413,7 +403,7 @@ namespace ttcr {
         }
         
         // edge nodes
-        Node3Dnsp<T1,T2> tmpNode(nt);
+        NODE tmpNode(nt);
         for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
             
             if ( verbose>1 && nsecondary > 0 ) {
@@ -489,7 +479,6 @@ namespace ttcr {
                         tetrahedra[ntet].i[ iNodes[ntri][1] ],
                         tetrahedra[ntet].i[ iNodes[ntri][2] ]};
                     std::sort(faceKey.begin(), faceKey.end());
-                    
                     
                     faceIt = faceMap.find( faceKey );
                     if ( faceIt == faceMap.end() ) {
@@ -847,7 +836,7 @@ namespace ttcr {
     void Grid3Dun<T1,T2,NODE>::localUpdate3D(NODE *vertexD,
                                              const size_t threadNo) const {
         
-        // méthode of Lelievre et al. 2011
+        // method of Lelievre et al. 2011
         
         T2 iA, iB, iC, iD;
         NODE *vertexA, *vertexB, *vertexC;
@@ -1306,15 +1295,15 @@ namespace ttcr {
         }
         return 1;
     }
-    
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
+                                          const int order,
                                           const size_t threadNo) const {
-        
+
         T1 minDist = small;
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
@@ -1368,7 +1357,12 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes;
         std::array<T2,3> faceNodes;
-        Grad3D<T1,NODE> grad3d;
+        Grad3D<T1,NODE>* grad3d = nullptr;
+        if ( order == 0 ) {
+            grad3d = new Grad3D_ls_fo<T1,NODE>();
+        } else if ( order == 1 ) {
+            grad3d = new Grad3D_ls_so<T1,NODE>();
+        }
         bool reachedTx = false;
         
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
@@ -1424,19 +1418,13 @@ namespace ttcr {
             if ( onNode ) {
                 
                 // find cells common to edge
-                std::vector<T2> cells;
+                std::set<NODE*> nnodes;
                 for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    cells.push_back( *nc );
+                    getNeighborNodes(*nc, nnodes, order);
                 }
                 
                 // compute gradient with nodes from all common cells
-                std::set<NODE*> nnodes;
-                for (size_t n=0; n<cells.size(); ++n ) {
-                    for ( size_t no=0; no<4; ++no ) {
-                        nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
-                    }
-                }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d->compute(nnodes, threadNo);
                 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -1462,213 +1450,6 @@ namespace ttcr {
                     for ( n=0; n<3; ++n ) {
                         if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
                             nodeNo = nb[n];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    for ( size_t n1=0; n1<3; ++n1 ) {   // changed n1<2  -> n1<3
-                        size_t n2 = (n1+1)%3;
-                        if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
-                            edgeNodes[0] = nb[n1];
-                            edgeNodes[1] = nb[n2];
-                            onNode = false;
-                            onEdge = true;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes = nb;
-                    
-                    // find next cell
-                    cellNo = findAdjacentCell1(faceNodes, nodeNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-                
-                if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_tmp.resize(1);
-                    r_tmp[0] = Rx;
-                    reachedTx = true;
-                }
-                
-            } else if ( onEdge ) {
-                
-                // find cells common to edge
-                std::vector<T2> cells;
-                for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
-                    if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() )
-                        cells.push_back( *nc0 );
-                }
-                // compute gradient with nodes from all common cells
-                std::set<NODE*> nnodes;
-                for (size_t n=0; n<cells.size(); ++n ) {
-                    for ( size_t no=0; no<4; ++no ) {
-                        nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
-                    }
-                }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
-                
-                bool foundIntersection=false;
-                for (size_t n=0; n<cells.size(); ++n ) {
-                    
-                    cellNo = cells[n];
-                    
-                    // there are 2 faces that might be intersected
-                    std::array<T2,2> edgeNodes2;
-                    size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
-                        if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
-                            edgeNodes2[n2++] = *nn;
-                        }
-                    }
-                    
-                    sxyz<T1> pt_i;
-                    T2 itmpNode;
-                    foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                             edgeNodes[0],
-                                                             edgeNodes2[0],
-                                                             edgeNodes2[1], pt_i);
-                    itmpNode = edgeNodes[0];
-                    if ( !foundIntersection ) {
-                        foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                                 edgeNodes[1],
-                                                                 edgeNodes2[0],
-                                                                 edgeNodes2[1], pt_i);
-                        itmpNode = edgeNodes[1];
-                    }
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-                    
-                    curr_pt = pt_i;
-                    r_tmp.push_back( curr_pt );
-                    
-                    bool break_flag = false;
-                    for ( size_t n2=0; n2<4; ++n2 ) {
-                        if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
-                            nodeNo = neighbors[cellNo][n2];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
-                        edgeNodes[0] = itmpNode;
-                        edgeNodes[1] = edgeNodes2[0];
-                        onNode = false;
-                        onEdge = true;
-                        onFace = false;
-                        break_flag = true;
-                        break;
-                    } else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
-                        edgeNodes[0] = itmpNode;
-                        edgeNodes[1] = edgeNodes2[1];
-                        onNode = false;
-                        onEdge = true;
-                        onFace = false;
-                        break_flag = true;
-                        break;
-                    } else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
-                        edgeNodes[0] = edgeNodes2[0];
-                        edgeNodes[1] = edgeNodes2[1];
-                        onNode = false;
-                        onEdge = true;
-                        onFace = false;
-                        break_flag = true;
-                        break;
-                    }
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes[0] = itmpNode;
-                    faceNodes[1] = edgeNodes2[0];
-                    faceNodes[2] = edgeNodes2[1];
-                    std::sort(faceNodes.begin(), faceNodes.end());
-                    
-                    // find next cell
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-                if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_tmp.resize(1);
-                    r_tmp[0] = Rx;
-                    reachedTx = true;
-                }
-                
-            } else { // on Face
-                
-                assert(neighbors[cellNo].size()==4);
-                sxyz<T1> g = grad3d.ls_grad(nodes[ neighbors[cellNo][0] ],
-                                            nodes[ neighbors[cellNo][1] ],
-                                            nodes[ neighbors[cellNo][2] ],
-                                            nodes[ neighbors[cellNo][3] ],
-                                            threadNo);
-                
-                std::array<T2,3> ind[4] = {
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
-                };
-                for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
-                // there are 3 faces that might be intersected
-                
-                bool foundIntersection = false;
-                for ( size_t n=0; n<4; ++n ) {
-                    if ( ind[n] == faceNodes ) continue;
-                    
-                    sxyz<T1> pt_i;
-                    foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
-                                                             ind[n][1], ind[n][2],
-                                                             pt_i);
-                    
-                    if ( !foundIntersection )
-                        continue;
-                    
-                    curr_pt = pt_i;
-                    r_tmp.push_back( curr_pt );
-                    
-                    bool break_flag = false;
-                    for ( size_t n2=0; n2<3; ++n2 ) {
-                        if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
-                            nodeNo = ind[n][n2];
                             onNode = true;
                             onEdge = false;
                             onFace = false;
@@ -1679,320 +1460,6 @@ namespace ttcr {
                     if ( break_flag ) break;
                     
                     for ( size_t n1=0; n1<3; ++n1 ) {
-                        size_t n2 = (n1+1)%3;
-                        if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
-                            edgeNodes[0] = ind[n][n1];
-                            edgeNodes[1] = ind[n][n2];
-                            onNode = false;
-                            onEdge = true;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    onNode = false;
-                    onEdge = false;
-                    onFace = true;
-                    
-                    faceNodes = ind[n];
-                    
-                    // find next cell
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-                
-                if ( foundIntersection == false ) {
-                    
-                    // we must be on an face with gradient pointing slightly outward tetrahedron
-                    // return in other cell but keep gradient
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
-                    
-                    ind[0] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } };
-                    ind[1] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } };
-                    ind[2] = { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } };
-                    ind[3] = { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } };
-                    
-                    for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
-                    
-                    for ( size_t n=0; n<4; ++n ) {
-                        if ( ind[n] == faceNodes ) continue;
-                        
-                        sxyz<T1> pt_i;
-                        foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
-                                                                 ind[n][1], ind[n][2],
-                                                                 pt_i);
-                        
-                        if ( !foundIntersection ) {
-                            continue;
-                        }
-                        curr_pt = pt_i;
-                        r_tmp.push_back( curr_pt );
-                        
-                        bool break_flag = false;
-                        for ( size_t n2=0; n2<3; ++n2 ) {
-                            if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
-                                nodeNo = ind[n][n2];
-                                onNode = true;
-                                onEdge = false;
-                                onFace = false;
-                                break_flag = true;
-                                break;
-                            }
-                        }
-                        if ( break_flag ) break;
-                        
-                        for ( size_t n1=0; n1<3; ++n1 ) {
-                            size_t n2 = (n1+1)%3;
-                            if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
-                                edgeNodes[0] = ind[n][n1];
-                                edgeNodes[1] = ind[n][n2];
-                                onNode = false;
-                                onEdge = true;
-                                onFace = false;
-                                break_flag = true;
-                                break;
-                            }
-                        }
-                        if ( break_flag ) break;
-                        
-                        onNode = false;
-                        onEdge = false;
-                        onFace = true;
-                        
-                        faceNodes = ind[n];
-                        
-                        // find next cell
-                        cellNo = findAdjacentCell2(faceNodes, cellNo);
-                        if ( cellNo == std::numeric_limits<T2>::max() ) {
-                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                            << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                            r_tmp.resize(1);
-                            r_tmp[0] = Rx;
-                            reachedTx = true;
-                        }
-                        break;
-                    }
-                }
-                if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_tmp.resize(1);
-                    r_tmp[0] = Rx;
-                    reachedTx = true;
-                }
-            }
-            
-            if ( onNode ) {
-                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        reachedTx = true;
-                        break;
-                    }
-                }
-            } else {
-                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
-                            if ( cellNo == *nc ) {
-                                r_tmp.push_back( Tx[nt] );
-                                reachedTx = true;
-                                break;
-                            }
-                        }
-                    } else {
-                        if ( cellNo == txCell[nt] ) {
-                            r_tmp.push_back( Tx[nt] );
-                            reachedTx = true;
-                        } else {
-                            for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
-                                if ( cellNo == txNeighborCells[nt][nn] ) {
-                                    r_tmp.push_back( Tx[nt] );
-                                    reachedTx = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if ( reachedTx ) break;
-                }
-            }
-        }
-        // for inversion, the order should be from Tx to Rx, so we reorder...
-        size_t npts = r_tmp.size();
-        r_data.resize( npts );
-        for ( size_t nn=0; nn<npts; ++nn ) {
-            r_data[nn] = r_tmp[ npts-1-nn ];
-        }
-    }
-    
-    template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
-                                             const sxyz<T1> &Rx,
-                                             std::vector<sxyz<T1>> &r_data,
-                                             const size_t threadNo) const {
-        
-        T1 minDist = small;
-        std::vector<sxyz<T1>> r_tmp;
-        r_tmp.emplace_back( Rx );
-        
-        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-            if ( Rx == Tx[ns] ) {
-                return;
-            }
-        }
-        
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-                
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {neighbors[txCell[nt]][0], neighbors[txCell[nt]][1]},
-                    {neighbors[txCell[nt]][0], neighbors[txCell[nt]][2]},
-                    {neighbors[txCell[nt]][0], neighbors[txCell[nt]][3]},
-                    {neighbors[txCell[nt]][1], neighbors[txCell[nt]][2]},
-                    {neighbors[txCell[nt]][1], neighbors[txCell[nt]][3]},
-                    {neighbors[txCell[nt]][2], neighbors[txCell[nt]][3]} };
-                
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-            }
-        }
-        
-        T2 cellNo, nodeNo;
-        sxyz<T1> curr_pt( Rx );
-        
-        bool onNode = false;
-        bool onEdge = false;
-        bool onFace = false;
-        std::array<T2,2> edgeNodes;
-        std::array<T2,3> faceNodes;
-        Grad3D_ho<T1,NODE> grad3d;
-        bool reachedTx = false;
-        
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
-                nodeNo = nn;
-                onNode = true;
-                break;
-            }
-        }
-        if ( !onNode ) {
-            cellNo = getCellNo( curr_pt );
-            
-            T2 ind[6][2] = {
-                {neighbors[cellNo][0], neighbors[cellNo][1]},
-                {neighbors[cellNo][0], neighbors[cellNo][2]},
-                {neighbors[cellNo][0], neighbors[cellNo][3]},
-                {neighbors[cellNo][1], neighbors[cellNo][2]},
-                {neighbors[cellNo][1], neighbors[cellNo][3]},
-                {neighbors[cellNo][2], neighbors[cellNo][3]} };
-            
-            for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
-                    onEdge = true;
-                    edgeNodes[0] = ind[n][0];
-                    edgeNodes[1] = ind[n][1];
-                    break;
-                }
-            }
-            if ( !onEdge ) {
-                std::array<T2,3> ind[4] = {
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
-                };
-                for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
-                
-                for ( size_t n=0; n<4; ++n ) {
-                    if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
-                        onFace = true;
-                        faceNodes[0] = ind[n][0];
-                        faceNodes[1] = ind[n][1];
-                        faceNodes[2] = ind[n][2];
-                        break;
-                    }
-                }
-            }
-        }
-        
-        while ( reachedTx == false ) {
-            
-            if ( onNode ) {
-                
-                // find cells common to edge
-                std::set<NODE*> nnodes;
-                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    getNeighborNodes(*nc, nnodes);
-                }
-                
-                // compute gradient with nodes from all common cells
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
-                
-                // find cell for which gradient intersect opposing face
-                bool foundIntersection = false;
-                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    
-                    std::array<T2,3> nb;
-                    size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
-                        if ( *nn != nodeNo ) {
-                            nb[n++] = *nn;
-                        }
-                    }
-                    std::sort(nb.begin(), nb.end());
-                    
-                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-                    
-                    r_tmp.push_back( curr_pt );
-                    
-                    bool break_flag=false;
-                    for ( n=0; n<3; ++n ) {
-                        if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
-                            nodeNo = nb[n];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    for ( size_t n1=0; n1<2; ++n1 ) {
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
                             edgeNodes[0] = nb[n1];
@@ -2040,12 +1507,12 @@ namespace ttcr {
                 for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
                     if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() ) {
                         cells.push_back( *nc0 );
-                        getNeighborNodes(*nc0, nnodes);
+                        getNeighborNodes(*nc0, nnodes, order);
                     }
                 }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d->compute(nnodes, threadNo);
                 
-                bool foundIntersection=false;
+                bool foundIntersection = false;
                 for (size_t n=0; n<cells.size(); ++n ) {
                     
                     cellNo = cells[n];
@@ -2151,9 +1618,9 @@ namespace ttcr {
             } else { // on Face
                 
                 std::set<NODE*> nnodes;
-                getNeighborNodes(cellNo, nnodes);
+                getNeighborNodes(cellNo, nnodes, order);
                 
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d->compute(nnodes, threadNo);
                 
                 std::array<T2,3> ind[4] = {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
@@ -2349,823 +1816,18 @@ namespace ttcr {
         for ( size_t nn=0; nn<npts; ++nn ) {
             r_data[nn] = r_tmp[ npts-1-nn ];
         }
+        
+        delete grad3d;
     }
 
-    template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
-                                             sijv<T1>& m,
-                                             const std::set<T2>& allNodes,
-                                             const sxyz<T1>& mid_pt,
-                                             const T1 s,
-                                             const T1 ds) const {
-        std::vector<T1> w;
-        T1 sum_w = 0.0;
-        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-            sum_w += w.back();
-        }
-        size_t nn=0;
-        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-            m.j = *it;
-            m.v = -s * ds * w[nn++]/sum_w;
-            bool found = false;
-            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-                if ( m_data[nm].j == m.j ) {
-                    m_data[nm].v += m.v;
-                    found = true;
-                    break;
-                }
-            }
-            if ( found == false ) {
-                m_data.push_back(m);
-            }
-        }
-    }
-    
-    
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
                                           std::vector<sijv<T1>>& m_data,
                                           const size_t RxNo,
+                                          const int order,
                                           const size_t threadNo) const {
-        
-        T1 minDist = small;
-        std::vector<sxyz<T1>> r_tmp;
-        r_tmp.emplace_back( Rx );
-        
-        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-            if ( Rx == Tx[ns] ) {
-                return;
-            }
-        }
-        
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-                
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {neighbors[txCell[nt]][0], neighbors[txCell[nt]][1]},
-                    {neighbors[txCell[nt]][0], neighbors[txCell[nt]][2]},
-                    {neighbors[txCell[nt]][0], neighbors[txCell[nt]][3]},
-                    {neighbors[txCell[nt]][1], neighbors[txCell[nt]][2]},
-                    {neighbors[txCell[nt]][1], neighbors[txCell[nt]][3]},
-                    {neighbors[txCell[nt]][2], neighbors[txCell[nt]][3]} };
-                
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-            }
-        }
-        
-        T2 cellNo, nodeNo, nodeNoPrev;
-        sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
-        sijv<T1> m;
-        m.i = RxNo;
-        
-        bool onNode = false;
-        bool onEdge = false;
-        bool onFace = false;
-		bool onNodePrev = false;
-		bool onEdgePrev = false;
-		bool onFacePrev = false;
-        std::array<T2,2> edgeNodes, edgeNodesPrev;
-        std::array<T2,3> faceNodes, faceNodesPrev;
-        Grad3D<T1,NODE> grad3d;
-        bool reachedTx = false;
-        
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
-                nodeNo = nn;
-                onNode = true;
-                break;
-            }
-        }
-        if ( !onNode ) {
-            cellNo = getCellNo( curr_pt );
-            
-            T2 ind[6][2] = {
-                {neighbors[cellNo][0], neighbors[cellNo][1]},
-                {neighbors[cellNo][0], neighbors[cellNo][2]},
-                {neighbors[cellNo][0], neighbors[cellNo][3]},
-                {neighbors[cellNo][1], neighbors[cellNo][2]},
-                {neighbors[cellNo][1], neighbors[cellNo][3]},
-                {neighbors[cellNo][2], neighbors[cellNo][3]} };
-            
-            for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
-                    onEdge = true;
-                    edgeNodes[0] = ind[n][0];
-                    edgeNodes[1] = ind[n][1];
-                    break;
-                }
-            }
-            if ( !onEdge ) {
-                std::array<T2,3> ind[4] = {
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
-                };
-                for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
-                
-                for ( size_t n=0; n<4; ++n ) {
-                    if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
-                        onFace = true;
-                        faceNodes[0] = ind[n][0];
-                        faceNodes[1] = ind[n][1];
-                        faceNodes[2] = ind[n][2];
-                        break;
-                    }
-                }
-            }
-        }
-		T1 s, ds;
-        while ( reachedTx == false ) {
-            
-            if ( onNode ) {
-                
-                // find cells common to edge
-                std::vector<T2> cells;
-                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    cells.push_back( *nc );
-                }
-                
-                // compute gradient with nodes from all common cells
-                std::set<NODE*> nnodes;
-                for (size_t n=0; n<cells.size(); ++n ) {
-                    for ( size_t no=0; no<4; ++no ) {
-                        nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
-                    }
-                }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
-                
-                nodeNoPrev = nodeNo;
-                onNodePrev = onNode;
-
-                // find cell for which gradient intersect opposing face
-                bool foundIntersection = false;
-                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    
-                    std::array<T2,3> nb;
-                    size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
-                        if ( *nn != nodeNo ) {
-                            nb[n++] = *nn;
-                        }
-                    }
-                    std::sort(nb.begin(), nb.end());
-                    
-                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-                    
-                    prev_pt = curr_pt;
-                    r_tmp.push_back( curr_pt );
-                    
-                    if ( r_tmp.size() > 1 ) {
-                        // compute terms of matrix M
-                        mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s = computeSlowness(mid_pt);
-                        s *= s;
-                        ds = curr_pt.getDistance( prev_pt );
-					}
-					
-                    bool break_flag = false;
-                    for ( n=0; n<3; ++n ) {
-                        if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
-							onEdgePrev = onEdge;
-							onFacePrev = onFace;
-							
-                            nodeNo = nb[n];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-							
-							if ( r_tmp.size() > 1) {
-								std::set<T2> allNodes;
-								allNodes.insert(nodeNoPrev);
-								allNodes.insert(nodeNo);
-								
-                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-							}
-
-							break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-					
-                    for ( size_t n1=0; n1<3; ++n1 ) {   // changed n1<2  -> n1<3
-                        size_t n2 = (n1+1)%3;
-                        if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
-							edgeNodesPrev = edgeNodes;
-							onEdgePrev = onEdge;
-							onFacePrev = onFace;
-							
-							edgeNodes[0] = nb[n1];
-                            edgeNodes[1] = nb[n2];
-                            onNode = false;
-                            onEdge = true;
-                            onFace = false;
-							
-							if ( r_tmp.size() > 1) {
-								std::set<T2> allNodes;
-								allNodes.insert(nodeNoPrev);
-                                allNodes.insert( edgeNodes[0] );
-                                allNodes.insert( edgeNodes[1] );
-																
-                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-							}
-
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-					
-					onEdgePrev = onEdge;
-					onFacePrev = onFace;
-					onNode = false;
-                    onEdge = false;
-                    onFace = true;
-					
-					faceNodesPrev = faceNodes;
-                    faceNodes = nb;
-					
-					if ( r_tmp.size() > 1) {
-						std::set<T2> allNodes;
-						allNodes.insert(nodeNoPrev);
-                        allNodes.insert( faceNodes[0] );
-                        allNodes.insert( faceNodes[1] );
-                        allNodes.insert( faceNodes[2] );
-						
-                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-					}
-
-                    // find next cell
-                    cellNo = findAdjacentCell1(faceNodes, nodeNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-                
-                if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_tmp.resize(1);
-                    r_tmp[0] = Rx;
-                    reachedTx = true;
-                }
-                
-            } else if ( onEdge ) {
-                
-                // find cells common to edge
-                std::vector<T2> cells;
-                for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
-                    if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() )
-                        cells.push_back( *nc0 );
-                }
-                // compute gradient with nodes from all common cells
-                std::set<NODE*> nnodes;
-                for (size_t n=0; n<cells.size(); ++n ) {
-                    for ( size_t no=0; no<4; ++no ) {
-                        nnodes.insert( &(nodes[ neighbors[cells[n]][no] ]) );
-                    }
-                }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
-                
-                edgeNodesPrev = edgeNodes;
-                onEdgePrev = onEdge;
-                
-                bool foundIntersection=false;
-                for (size_t n=0; n<cells.size(); ++n ) {
-                    
-                    cellNo = cells[n];
-                    
-                    // there are 2 faces that might be intersected
-                    std::array<T2,2> edgeNodes2;
-                    size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
-                        if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
-                            edgeNodes2[n2++] = *nn;
-                        }
-                    }
-                    
-                    sxyz<T1> pt_i;
-                    T2 itmpNode;
-                    foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                             edgeNodes[0],
-                                                             edgeNodes2[0],
-                                                             edgeNodes2[1], pt_i);
-                    itmpNode = edgeNodes[0];
-                    if ( !foundIntersection ) {
-                        foundIntersection = intersectVecTriangle(curr_pt, g,
-                                                                 edgeNodes[1],
-                                                                 edgeNodes2[0],
-                                                                 edgeNodes2[1], pt_i);
-                        itmpNode = edgeNodes[1];
-                    }
-                    if ( !foundIntersection ) {
-                        continue;
-                    }
-                    
-                    prev_pt = curr_pt;
-                    curr_pt = pt_i;
-                    r_tmp.push_back( curr_pt );
-                    
-                    if (r_tmp.size() > 1 ) {
-                        // compute terms of matrix M
-                        mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s = computeSlowness(mid_pt);
-                        s *= s;
-                        ds = curr_pt.getDistance( prev_pt );
-					}
-                    
-                    bool break_flag = false;
-                    for ( size_t n2=0; n2<4; ++n2 ) {
-                        if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
-							onNodePrev = onNode;
-							onFacePrev = onFace;
-
-                            nodeNo = neighbors[cellNo][n2];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-							
-							if ( r_tmp.size() > 1) {
-								std::set<T2> allNodes;
-								allNodes.insert(nodeNo);
-                                allNodes.insert( edgeNodesPrev[0] );
-                                allNodes.insert( edgeNodesPrev[1] );
-								
-                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-							}
-							
-                            break_flag = true;
-							break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    if ( areCollinear(curr_pt, itmpNode, edgeNodes2[0]) ) {
-						onNodePrev = onNode;
-						onFacePrev = onFace;
-						
-						edgeNodes[0] = itmpNode;
-                        edgeNodes[1] = edgeNodes2[0];
-                        onNode = false;
-                        onEdge = true;
-                        onFace = false;
-						
-						if ( r_tmp.size() > 1) {
-							std::set<T2> allNodes;
-                            allNodes.insert( edgeNodesPrev[0] );
-                            allNodes.insert( edgeNodesPrev[1] );
-                            allNodes.insert( edgeNodes[0] );
-                            allNodes.insert( edgeNodes[1] );
-							
-                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-						}
-						
-						break_flag = true;
-                        break;
-                    } else if ( areCollinear(curr_pt, itmpNode, edgeNodes2[1]) ) {
-						onNodePrev = onNode;
-						onFacePrev = onFace;
-						
-						edgeNodes[0] = itmpNode;
-                        edgeNodes[1] = edgeNodes2[1];
-                        onNode = false;
-                        onEdge = true;
-                        onFace = false;
-						
-						if ( r_tmp.size() > 1) {
-							std::set<T2> allNodes;
-                            allNodes.insert( edgeNodesPrev[0] );
-                            allNodes.insert( edgeNodesPrev[1] );
-                            allNodes.insert( edgeNodes[0] );
-                            allNodes.insert( edgeNodes[1] );
-							
-                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-						}
-						
-						break_flag = true;
-                        break;
-                    } else if ( areCollinear(curr_pt, edgeNodes2[0], edgeNodes2[1]) ) {
-						onNodePrev = onNode;
-						onFacePrev = onFace;
-						
-						edgeNodes[0] = edgeNodes2[0];
-                        edgeNodes[1] = edgeNodes2[1];
-                        onNode = false;
-                        onEdge = true;
-                        onFace = false;
-						
-						if ( r_tmp.size() > 1) {
-							std::set<T2> allNodes;
-                            allNodes.insert( edgeNodesPrev[0] );
-                            allNodes.insert( edgeNodesPrev[1] );
-                            allNodes.insert( edgeNodes[0] );
-                            allNodes.insert( edgeNodes[1] );
-							
-                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-						}
-						
-						break_flag = true;
-                        break;
-                    }
-                    if ( break_flag ) break;
-                    
-					onNodePrev = onNode;
-					onFacePrev = onFace;
-					onNode = false;
-                    onEdge = false;
-                    onFace = true;
-					
-					faceNodesPrev = faceNodes;
-                    faceNodes[0] = itmpNode;
-                    faceNodes[1] = edgeNodes2[0];
-                    faceNodes[2] = edgeNodes2[1];
-                    std::sort(faceNodes.begin(), faceNodes.end());
-					
-					if ( r_tmp.size() > 1) {
-						std::set<T2> allNodes;
-                        allNodes.insert( edgeNodesPrev[0] );
-                        allNodes.insert( edgeNodesPrev[1] );
-                        allNodes.insert( faceNodes[0] );
-                        allNodes.insert( faceNodes[1] );
-                        allNodes.insert( faceNodes[2] );
-						
-                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-					}
-					
-                    // find next cell
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-                if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_tmp.resize(1);
-                    r_tmp[0] = Rx;
-                    reachedTx = true;
-                }
-                
-            } else { // on Face
-                
-                assert(neighbors[cellNo].size()==4);
-                sxyz<T1> g = grad3d.ls_grad(nodes[ neighbors[cellNo][0] ],
-                                            nodes[ neighbors[cellNo][1] ],
-                                            nodes[ neighbors[cellNo][2] ],
-                                            nodes[ neighbors[cellNo][3] ], threadNo);
-                
-                std::array<T2,3> ind[4] = {
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
-                };
-                for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
-                // there are 3 faces that might be intersected
-                
-                onFacePrev = onFace;
-                faceNodesPrev = faceNodes;
-
-                bool foundIntersection = false;
-                for ( size_t n=0; n<4; ++n ) {
-                    if ( ind[n] == faceNodes ) continue;
-                    
-                    sxyz<T1> pt_i;
-                    foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
-                                                             ind[n][1], ind[n][2],
-                                                             pt_i);
-                    
-                    if ( !foundIntersection )
-                        continue;
-                    
-                    prev_pt = curr_pt;
-                    curr_pt = pt_i;
-                    r_tmp.push_back( curr_pt );
-                    
-                    if (r_tmp.size() > 1 ) {
-                        // compute terms of matrix M
-                        mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s = computeSlowness(mid_pt);
-                        s *= s;
-                        ds = curr_pt.getDistance( prev_pt );
-                    }
-                    
-                    bool break_flag = false;
-                    for ( size_t n2=0; n2<3; ++n2 ) {
-                        if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
-							nodeNoPrev = nodeNo;
-							onNodePrev = onNode;
-							onEdgePrev = onEdge;
-							
-							nodeNo = ind[n][n2];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-							
-							if ( r_tmp.size() > 1) {
-								std::set<T2> allNodes;
-                                allNodes.insert(nodeNo);
-                                allNodes.insert( faceNodesPrev[0] );
-                                allNodes.insert( faceNodesPrev[1] );
-                                allNodes.insert( faceNodesPrev[2] );
-								
-                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-							}
-
-							break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    for ( size_t n1=0; n1<3; ++n1 ) {
-                        size_t n2 = (n1+1)%3;
-                        if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
-							edgeNodesPrev = edgeNodes;
-							onNodePrev = onNode;
-							onEdgePrev = onEdge;
-							
-							edgeNodes[0] = ind[n][n1];
-                            edgeNodes[1] = ind[n][n2];
-                            onNode = false;
-                            onEdge = true;
-                            onFace = false;
-							
-							if ( r_tmp.size() > 1) {
-								std::set<T2> allNodes;
-                                allNodes.insert( edgeNodes[0] );
-                                allNodes.insert( edgeNodes[1] );
-                                allNodes.insert( faceNodesPrev[0] );
-                                allNodes.insert( faceNodesPrev[1] );
-                                allNodes.insert( faceNodesPrev[2] );
-								
-                                update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-							}
-
-							break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-					onNodePrev = onNode;
-					onEdgePrev = onEdge;
-					onNode = false;
-                    onEdge = false;
-                    onFace = true;
-					
-                    faceNodes = ind[n];
-					
-					if ( r_tmp.size() > 1) {
-						std::set<T2> allNodes;
-                        allNodes.insert( faceNodesPrev[0] );
-                        allNodes.insert( faceNodesPrev[1] );
-                        allNodes.insert( faceNodesPrev[2] );
-                        allNodes.insert( faceNodes[0] );
-                        allNodes.insert( faceNodes[1] );
-                        allNodes.insert( faceNodes[2] );
-						
-                        update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-					}
-
-                    // find next cell
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        reachedTx = true;
-                    }
-                    break;
-                }
-                
-                if ( foundIntersection == false ) {
-                    
-                    // we must be on an face with gradient pointing slightly outward tetrahedron
-                    // return in other cell but keep gradient
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
-					
-                    ind[0] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } };
-                    ind[1] = { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } };
-                    ind[2] = { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } };
-                    ind[3] = { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } };
-            
-                    for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
-                    
-                    for ( size_t n=0; n<4; ++n ) {
-                        if ( ind[n] == faceNodes ) continue;
-                        
-                        sxyz<T1> pt_i;
-                        foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
-                                                                 ind[n][1], ind[n][2],
-                                                                 pt_i);
-                        
-                        if ( !foundIntersection ) {
-                            continue;
-                        }
-                        prev_pt = curr_pt;
-                        curr_pt = pt_i;
-                        r_tmp.push_back( curr_pt );
-                        
-                        if (r_tmp.size() > 1 ) {
-                            // compute terms of matrix M
-                            mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s = computeSlowness(mid_pt);
-                            s *= s;
-                            ds = curr_pt.getDistance( prev_pt );
-                        }
-                        
-                        bool break_flag = false;
-                        for ( size_t n2=0; n2<3; ++n2 ) {
-                            if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
-								nodeNoPrev = nodeNo;
-								onNodePrev = onNode;
-								onEdgePrev = onEdge;
-								
-								nodeNo = ind[n][n2];
-                                onNode = true;
-                                onEdge = false;
-                                onFace = false;
-								
-								if ( r_tmp.size() > 1) {
-									std::set<T2> allNodes;
-                                    allNodes.insert(nodeNo);
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-                                	
-                                    update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-								}
-								
-								break_flag = true;
-                                break;
-                            }
-                        }
-                        if ( break_flag ) break;
-                        
-                        for ( size_t n1=0; n1<3; ++n1 ) {
-                            size_t n2 = (n1+1)%3;
-                            if ( areCollinear(curr_pt, ind[n][n1], ind[n][n2]) ) {
-								edgeNodesPrev = edgeNodes;
-								onNodePrev = onNode;
-								onEdgePrev = onEdge;
-								
-								edgeNodes[0] = ind[n][n1];
-                                edgeNodes[1] = ind[n][n2];
-                                onNode = false;
-                                onEdge = true;
-                                onFace = false;
-								
-								if ( r_tmp.size() > 1) {
-									std::set<T2> allNodes;
-                                    allNodes.insert( edgeNodes[0] );
-                                    allNodes.insert( edgeNodes[1] );
-                                    allNodes.insert( faceNodesPrev[0] );
-                                    allNodes.insert( faceNodesPrev[1] );
-                                    allNodes.insert( faceNodesPrev[2] );
-									
-									update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-								}
-								
-								break_flag = true;
-                                break;
-                            }
-                        }
-                        if ( break_flag ) break;
-                        
-						onNodePrev = onNode;
-						onEdgePrev = onEdge;
-						onNode = false;
-                        onEdge = false;
-                        onFace = true;
-						
-                        faceNodes = ind[n];
-                        
-						if ( r_tmp.size() > 1) {
-							std::set<T2> allNodes;
-                            allNodes.insert( faceNodesPrev[0] );
-                            allNodes.insert( faceNodesPrev[1] );
-                            allNodes.insert( faceNodesPrev[2] );
-                            allNodes.insert( faceNodes[0] );
-                            allNodes.insert( faceNodes[1] );
-                            allNodes.insert( faceNodes[2] );
-							
-                            update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
-						}
-						
-                        // find next cell
-                        cellNo = findAdjacentCell2(faceNodes, cellNo);
-                        if ( cellNo == std::numeric_limits<T2>::max() ) {
-                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
-                            << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                            r_tmp.resize(1);
-                            r_tmp[0] = Rx;
-                            reachedTx = true;
-                        }
-                        break;
-                    }
-                }
-                if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_tmp.resize(1);
-                    r_tmp[0] = Rx;
-                    reachedTx = true;
-                }
-            }
-            
-            if ( onNode ) {
-                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        reachedTx = true;
-                        break;
-                    }
-                }
-            } else {
-                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
-                            if ( cellNo == *nc ) {
-                                r_tmp.push_back( Tx[nt] );
-                                reachedTx = true;
-                                break;
-                            }
-                        }
-                    } else {
-                        if ( cellNo == txCell[nt] ) {
-                            r_tmp.push_back( Tx[nt] );
-                            reachedTx = true;
-                        } else {
-                            for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
-                                if ( cellNo == txNeighborCells[nt][nn] ) {
-                                    r_tmp.push_back( Tx[nt] );
-                                    reachedTx = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if ( reachedTx ) break;
-                }
-            }
-        }
-        // for inversion, the order should be from Tx to Rx, so we reorder...
-        size_t npts = r_tmp.size();
-        r_data.resize( npts );
-        for ( size_t nn=0; nn<npts; ++nn ) {
-            r_data[nn] = r_tmp[ npts-1-nn ];
-        }
-    }
-    
-    template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
-                                             const sxyz<T1>& Rx,
-                                             std::vector<sxyz<T1>>& r_data,
-                                             std::vector<sijv<T1>>& m_data,
-                                             const size_t RxNo,
-                                             const size_t threadNo) const {
         
         T1 minDist = small;
         std::vector<sxyz<T1>> r_tmp;
@@ -3225,7 +1887,12 @@ namespace ttcr {
         bool onFacePrev = false;
         std::array<T2,2> edgeNodes, edgeNodesPrev;
         std::array<T2,3> faceNodes, faceNodesPrev;
-        Grad3D_ho<T1,NODE> grad3d;
+        Grad3D<T1,NODE>* grad3d = nullptr;
+        if ( order == 0 ) {
+            grad3d = new Grad3D_ls_fo<T1,NODE>();
+        } else if ( order == 1 ) {
+            grad3d = new Grad3D_ls_so<T1,NODE>();
+        }
         bool reachedTx = false;
         
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
@@ -3259,7 +1926,8 @@ namespace ttcr {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
                     { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3]} } };
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } }
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
@@ -3282,11 +1950,11 @@ namespace ttcr {
                 // find cells common to edge
                 std::set<NODE*> nnodes;
                 for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
-                    getNeighborNodes(*nc, nnodes);
+                    getNeighborNodes(*nc, nnodes, order);
                 }
                 
                 // compute gradient with nodes from all common cells
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d->compute(nnodes, threadNo);
                 
                 nodeNoPrev = nodeNo;
                 onNodePrev = onNode;
@@ -3322,7 +1990,7 @@ namespace ttcr {
                         ds = curr_pt.getDistance( prev_pt );
                     }
                     
-                    bool break_flag = false;
+                    bool break_flag=false;
                     for ( n=0; n<3; ++n ) {
                         if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
                             onEdgePrev = onEdge;
@@ -3368,7 +2036,7 @@ namespace ttcr {
                                 
                                 update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                             }
-
+                            
                             break_flag = true;
                             break;
                         }
@@ -3422,15 +2090,15 @@ namespace ttcr {
                 for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
                     if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() ) {
                         cells.push_back( *nc0 );
-                        getNeighborNodes(*nc0, nnodes);
+                        getNeighborNodes(*nc0, nnodes, order);
                     }
                 }
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d->compute(nnodes, threadNo);
                 
                 edgeNodesPrev = edgeNodes;
                 onEdgePrev = onEdge;
                 
-                bool foundIntersection=false;
+                bool foundIntersection = false;
                 for (size_t n=0; n<cells.size(); ++n ) {
                     
                     cellNo = cells[n];
@@ -3560,7 +2228,7 @@ namespace ttcr {
                             allNodes.insert( edgeNodesPrev[1] );
                             allNodes.insert( edgeNodes[0] );
                             allNodes.insert( edgeNodes[1] );
-
+                            
                             update_m_data(m_data, m, allNodes, mid_pt, s,  ds);
                         }
                         
@@ -3614,9 +2282,9 @@ namespace ttcr {
             } else { // on Face
                 
                 std::set<NODE*> nnodes;
-                getNeighborNodes(cellNo, nnodes);
+                getNeighborNodes(cellNo, nnodes, order);
                 
-                sxyz<T1> g = grad3d.ls_grad(nnodes, threadNo);
+                sxyz<T1> g = grad3d->compute(nnodes, threadNo);
                 
                 std::array<T2,3> ind[4] = {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
@@ -3630,7 +2298,7 @@ namespace ttcr {
                 
                 onFacePrev = onFace;
                 faceNodesPrev = faceNodes;
-
+                
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
                     if ( ind[n] == faceNodes ) continue;
@@ -3923,7 +2591,42 @@ namespace ttcr {
         for ( size_t nn=0; nn<npts; ++nn ) {
             r_data[nn] = r_tmp[ npts-1-nn ];
         }
+        
+        delete grad3d;
     }
+
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
+                                             sijv<T1>& m,
+                                             const std::set<T2>& allNodes,
+                                             const sxyz<T1>& mid_pt,
+                                             const T1 s,
+                                             const T1 ds) const {
+        std::vector<T1> w;
+        T1 sum_w = 0.0;
+        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
+            sum_w += w.back();
+        }
+        size_t nn=0;
+        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+            m.j = *it;
+            m.v = -s * ds * w[nn++]/sum_w;
+            bool found = false;
+            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                if ( m_data[nm].j == m.j ) {
+                    m_data[nm].v += m.v;
+                    found = true;
+                    break;
+                }
+            }
+            if ( found == false ) {
+                m_data.push_back(m);
+            }
+        }
+    }
+    
     
     template<typename T1, typename T2, typename NODE>
     bool Grid3Dun<T1,T2,NODE>::intersectVecTriangle(const T2 iO, const sxyz<T1> &vec,
@@ -4100,15 +2803,17 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::getNeighborNodes(const T2 cellNo,
-                                                std::set<NODE*> &nnodes) const {
+                                                std::set<NODE*> &nnodes,
+                                                const int order) const {
         
         for ( size_t n=0; n<4; ++n ) {
             T2 nodeNo = neighbors[cellNo][n];
             nnodes.insert( &(nodes[nodeNo]) );
-            
-            for ( auto nc=nodes[nodeNo].getOwners().cbegin(); nc!=nodes[nodeNo].getOwners().cend(); ++nc ) {
-                for ( size_t nn=0; nn<4; ++nn ) {
-                    nnodes.insert( &(nodes[ neighbors[*nc][nn] ]) );
+            if ( order == 1 ) {  // second-order
+                for ( auto nc=nodes[nodeNo].getOwners().cbegin(); nc!=nodes[nodeNo].getOwners().cend(); ++nc ) {
+                    for ( size_t nn=0; nn<4; ++nn ) {
+                        nnodes.insert( &(nodes[ neighbors[*nc][nn] ]) );
+                    }
                 }
             }
         }

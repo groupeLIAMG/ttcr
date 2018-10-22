@@ -35,16 +35,13 @@
 
 namespace ttcr {
     
+    // least-squares, first order
     template <typename T>
-    class Grad2D {
+    class Grad2D_ls_fo {
     public:
-        Grad2D() {}
+        Grad2D_ls_fo() {}
         
-        sxz<T> grad(const Node<T> &n0,
-                    const Node<T> &n1,
-                    const Node<T> &n2,
-                    const size_t nt);
-        sxz<T> ls_grad(const Node<T> &n0,
+        sxz<T> compute(const Node<T> &n0,
                        const Node<T> &n1,
                        const Node<T> &n2,
                        const size_t nt);
@@ -57,35 +54,10 @@ namespace ttcr {
     };
     
     template <typename T>
-    sxz<T> Grad2D<T>::grad(const Node<T> &n0,
-                           const Node<T> &n1,
-                           const Node<T> &n2,
-                           const size_t nt) {
-        T dx1 = n1.getX() - n0.getX();
-        T dz1 = n1.getZ() - n0.getZ();
-        T dt1 = n0.getTT(nt) - n1.getTT(nt);
-        T dx2 = n2.getX() - n0.getX();
-        T dz2 = n2.getZ() - n0.getZ();
-        T dt2 = n0.getTT(nt) - n2.getTT(nt);
-        
-        if ( dx1 == 0.0 ) {
-            g.z = dt1/dz1;
-            g.x = (dt2 - dz2*g.z) / dx2;
-        } else if ( dz2 == 0.0 ) {
-            g.x = dt2/dx2;
-            g.z = (dt1 - dx1*g.x) / dz1;
-        } else {
-            g.z = (dx1*dt2 - dx2*dt1) / (dx1*dz2);
-            g.x = (dt1 - dz1*g.z) / dx1;
-        }
-        return g;
-    }
-    
-    template <typename T>
-    sxz<T> Grad2D<T>::ls_grad(const Node<T> &n0,
-                              const Node<T> &n1,
-                              const Node<T> &n2,
-                              const size_t nt) {
+    sxz<T> Grad2D_ls_fo<T>::compute(const Node<T> &n0,
+                                    const Node<T> &n1,
+                                    const Node<T> &n2,
+                                    const size_t nt) {
         
         // find centroid of triangle
         sxz<T> cent = {(n0.getX()+n1.getX()+n2.getX())/static_cast<T>(3.),
@@ -125,13 +97,13 @@ namespace ttcr {
     }
     
     
-    // high order
+    // least-squares, second order
     template <typename T, typename NODE>
-    class Grad2D_ho {
+    class Grad2D_ls_so {
     public:
-        Grad2D_ho() {}
+        Grad2D_ls_so() {}
         
-        sxz<T> ls_grad(const std::set<NODE*> &nodes,
+        sxz<T> compute(const std::set<NODE*> &nodes,
                        const size_t nt);
         
     private:
@@ -143,8 +115,8 @@ namespace ttcr {
     
     
     template <typename T, typename NODE>
-    sxz<T> Grad2D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
-                                      const size_t nt) {
+    sxz<T> Grad2D_ls_so<T,NODE>::compute(const std::set<NODE*> &nodes,
+                                         const size_t nt) {
         
         assert(nodes.size()>=5);
         
@@ -198,21 +170,25 @@ namespace ttcr {
         return g;
     }
     
-    
     template <typename T, typename NODE>
     class Grad3D {
     public:
-        Grad3D() {}
+        virtual ~Grad3D() {}
+        virtual sxyz<T> compute(const sxyz<T> &pt, const std::set<NODE*> &nodes,
+                                const size_t nt) = 0;
+        virtual sxyz<T> compute(const std::set<NODE*> &nodes,
+                                const size_t nt) = 0;
+    };
+    
+    // least-squares, first order
+    template <typename T, typename NODE>
+    class Grad3D_ls_fo : public Grad3D<T, NODE> {
+    public:
+        Grad3D_ls_fo() {}
         
-        sxyz<T> ls_grad(const NODE &n0,
-                        const NODE &n1,
-                        const NODE &n2,
-                        const NODE &n3,
+        sxyz<T> compute(const sxyz<T> &pt, const std::set<NODE*> &nodes,
                         const size_t nt);
-        
-        sxyz<T> ls_grad(const sxyz<T> &pt, const std::set<NODE*> &nodes,
-                        const size_t nt);
-        sxyz<T> ls_grad(const std::set<NODE*> &nodes,
+        sxyz<T> compute(const std::set<NODE*> &nodes,
                         const size_t nt);
         
     private:
@@ -223,83 +199,11 @@ namespace ttcr {
         Eigen::Matrix<T, Eigen::Dynamic, 1> b;
     };
     
+   
     template <typename T, typename NODE>
-    sxyz<T> Grad3D<T,NODE>::ls_grad(const NODE &n0,
-                                    const NODE &n1,
-                                    const NODE &n2,
-                                    const NODE &n3,
-                                    const size_t nt) {
-        
-        sxyz<T> cent = {static_cast<T>(0.25)*(n0.getX()+n1.getX()+n2.getX()+n3.getX()),
-            static_cast<T>(0.25)*(n0.getY()+n1.getY()+n2.getY()+n3.getY()),
-            static_cast<T>(0.25)*(n0.getZ()+n1.getZ()+n2.getZ()+n3.getZ())};
-        
-        T w = 1./sqrt((n0.getX()-cent.x)*(n0.getX()-cent.x) +
-                      (n0.getY()-cent.y)*(n0.getY()-cent.y) +
-                      (n0.getZ()-cent.z)*(n0.getZ()-cent.z) );
-        T t = w*n0.getTT(nt);
-        T den = w;
-        
-        w = 1./sqrt((n1.getX()-cent.x)*(n1.getX()-cent.x) +
-                    (n1.getY()-cent.y)*(n1.getY()-cent.y) +
-                    (n1.getZ()-cent.z)*(n1.getZ()-cent.z) );
-        t += w*n1.getTT(nt);
-        den += w;
-        
-        w = 1./sqrt((n2.getX()-cent.x)*(n2.getX()-cent.x) +
-                    (n2.getY()-cent.y)*(n2.getY()-cent.y) +
-                    (n2.getZ()-cent.z)*(n2.getZ()-cent.z) );
-        t += w*n2.getTT(nt);
-        den += w;
-        
-        w = 1./sqrt((n3.getX()-cent.x)*(n3.getX()-cent.x) +
-                    (n3.getY()-cent.y)*(n3.getY()-cent.y) +
-                    (n3.getZ()-cent.z)*(n3.getZ()-cent.z) );
-        t += w*n3.getTT(nt);
-        den += w;
-        
-        t /= den;
-        
-        A.resize( 4, 3 );
-        b.resize( 4, 1 );
-        
-        A(0,0) = n0.getX() - cent.x;
-        A(0,1) = n0.getY() - cent.y;
-        A(0,2) = n0.getZ() - cent.z;
-        b(0,0) = t - n0.getTT(nt);
-        
-        A(1,0) = n1.getX() - cent.x;
-        A(1,1) = n1.getY() - cent.y;
-        A(1,2) = n1.getZ() - cent.z;
-        b(1,0) = t - n1.getTT(nt);
-        
-        A(2,0) = n2.getX() - cent.x;
-        A(2,1) = n2.getY() - cent.y;
-        A(2,2) = n2.getZ() - cent.z;
-        b(2,0) = t - n2.getTT(nt);
-        
-        A(3,0) = n3.getX() - cent.x;
-        A(3,1) = n3.getY() - cent.y;
-        A(3,2) = n3.getZ() - cent.z;
-        b(3,0) = t - n3.getTT(nt);
-        
-        // solve Ax = b with least squares
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
-        
-        //	Eigen::Matrix<T, 4, 1> e = b-A*x;
-        
-        g.x = x[0];
-        g.y = x[1];
-        g.z = x[2];
-        
-        return g;
-    }
-    
-    
-    template <typename T, typename NODE>
-    sxyz<T> Grad3D<T,NODE>::ls_grad(const sxyz<T> &pt,
-                                    const std::set<NODE*> &nodes,
-                                    const size_t nt) {
+    sxyz<T> Grad3D_ls_fo<T,NODE>::compute(const sxyz<T> &pt,
+                                          const std::set<NODE*> &nodes,
+                                          const size_t nt) {
         
         assert(nodes.size()>=4);
         
@@ -361,8 +265,8 @@ namespace ttcr {
     }
     
     template <typename T, typename NODE>
-    sxyz<T> Grad3D<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
-                                    const size_t nt) {
+    sxyz<T> Grad3D_ls_fo<T,NODE>::compute(const std::set<NODE*> &nodes,
+                                          const size_t nt) {
         
         assert(nodes.size()>=4);
         
@@ -435,15 +339,15 @@ namespace ttcr {
     }
     
     
-    // high order
+    // least-squares, second order
     template <typename T, typename NODE>
-    class Grad3D_ho {
+    class Grad3D_ls_so : public Grad3D<T, NODE> {
     public:
-        Grad3D_ho() {}
+        Grad3D_ls_so() {}
         
-        sxyz<T> ls_grad(const sxyz<T> &pt, const std::set<NODE*> &nodes,
+        sxyz<T> compute(const sxyz<T> &pt, const std::set<NODE*> &nodes,
                         const size_t nt);
-        sxyz<T> ls_grad(const std::set<NODE*> &nodes,
+        sxyz<T> compute(const std::set<NODE*> &nodes,
                         const size_t nt);
         
     private:
@@ -455,9 +359,9 @@ namespace ttcr {
     
     
     template <typename T, typename NODE>
-    sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const sxyz<T> &pt,
-                                       const std::set<NODE*> &nodes,
-                                       const size_t nt) {
+    sxyz<T> Grad3D_ls_so<T,NODE>::compute(const sxyz<T> &pt,
+                                          const std::set<NODE*> &nodes,
+                                          const size_t nt) {
         // evaluate gradient are center of gravity
         assert(nodes.size()>=9);
         
@@ -525,9 +429,9 @@ namespace ttcr {
     }
     
     template <typename T, typename NODE>
-    sxyz<T> Grad3D_ho<T,NODE>::ls_grad(const std::set<NODE*> &nodes,
-                                       const size_t nt) {
-        // evaluate gradient are center of gravity
+    sxyz<T> Grad3D_ls_so<T,NODE>::compute(const std::set<NODE*> &nodes,
+                                          const size_t nt) {
+        // evaluate gradient at center of gravity
         assert(nodes.size()>=9);
         
         sxyz<T> cent = { 0.0, 0.0, 0.0 };

@@ -859,7 +859,7 @@ namespace ttcr {
             cellNo = getCellNo( curr_pt );
         }
         
-        Grad2D<T1> grad2d;
+        Grad2D_ls_fo<T1> grad2d;
         
         bool reachedTx = false;
         bool onEdge = false;
@@ -883,7 +883,7 @@ namespace ttcr {
                     }
                     if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
                     
-                    sxz<T1> g = grad2d.ls_grad(nodes[ nodeNo ], nodes[ nb[0] ], nodes[ nb[1] ], threadNo);
+                    sxz<T1> g = grad2d.compute(nodes[ nodeNo ], nodes[ nb[0] ], nodes[ nb[1] ], threadNo);
                     
                     sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
                         nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
@@ -1018,7 +1018,7 @@ namespace ttcr {
                 
             } else {
                 
-                sxz<T1> g = grad2d.ls_grad(nodes[neighbors[cellNo][0]],
+                sxz<T1> g = grad2d.compute(nodes[neighbors[cellNo][0]],
                                            nodes[neighbors[cellNo][1]],
                                            nodes[neighbors[cellNo][2]], threadNo);
                 g.normalize();
@@ -1247,7 +1247,7 @@ namespace ttcr {
             cellNo = getCellNo( curr_pt );
         }
         
-        Grad2D_ho<T1,NODE> grad2d;
+        Grad2D_ls_so<T1,NODE> grad2d;
         
         bool reachedTx = false;
         bool onEdge = false;
@@ -1274,7 +1274,7 @@ namespace ttcr {
                     std::set<NODE*> nnodes;
                     getNeighborNodes(*nc, nnodes);
                     
-                    sxz<T1> g = grad2d.ls_grad(nnodes, threadNo);
+                    sxz<T1> g = grad2d.compute(nnodes, threadNo);
                     
                     sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
                         nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
@@ -1412,7 +1412,7 @@ namespace ttcr {
                 std::set<NODE*> nnodes;
                 getNeighborNodes(cellNo, nnodes);
                 
-                sxz<T1> g = grad2d.ls_grad(nnodes, threadNo);
+                sxz<T1> g = grad2d.compute(nnodes, threadNo);
                 
                 g.normalize();
                 //			std::cout << g.x << ' ' << g.z << '\n';

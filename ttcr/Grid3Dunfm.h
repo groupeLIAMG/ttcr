@@ -77,7 +77,7 @@ namespace ttcr {
                      const size_t=0) const;
         
     private:
-        bool rp_ho;
+        int rp_ho;
         
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
@@ -204,16 +204,9 @@ namespace ttcr {
             r_data[ni].resize( 0 );
         }
         
-        if ( rp_ho ) {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-                this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
-            }
-        } else {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-                this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
-            }
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            this->getRaypath(Tx, Rx[n], r_data[n], rp_ho, threadNo);
         }
     }
     
@@ -258,16 +251,9 @@ namespace ttcr {
                 (*r_data[nr])[ni].resize( 0 );
             }
             
-            if ( rp_ho ) {
-                for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-                    this->getRaypath_ho(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-                }
-            } else {
-                for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-                    this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-                }
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], rp_ho, threadNo);
             }
         }
     }

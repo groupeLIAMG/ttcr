@@ -44,7 +44,7 @@ namespace ttcr {
                    const T1 eps, const int maxit, const bool rp=false,
                    const size_t nt=1) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, nt),
-        rp_ho(rp), epsilon(eps), nitermax(maxit), S()
+        epsilon(eps), rp_ho(rp), nitermax(maxit), S()
         {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -82,8 +82,8 @@ namespace ttcr {
                      const size_t=0) const;
         
     private:
-        bool rp_ho;
         T1 epsilon;
+        int rp_ho;
         int nitermax;
         std::vector<std::vector<Node3Dc<T1,T2>*>> S;
         
@@ -312,14 +312,8 @@ namespace ttcr {
             r_data[ni].resize( 0 );
         }
         
-        if ( rp_ho ) {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
-            }
-        } else {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
-            }
+        for (size_t n=0; n<Rx.size(); ++n) {
+            this->getRaypath(Tx, Rx[n], r_data[n], rp_ho, threadNo);
         }
     }
     
@@ -343,14 +337,8 @@ namespace ttcr {
                 (*r_data[nr])[ni].resize( 0 );
             }
             
-            if ( rp_ho ) {
-                for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    this->getRaypath_ho(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-                }
-            } else {
-                for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-                }
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], rp_ho, threadNo);
             }
         }
     }
