@@ -263,6 +263,12 @@ namespace ttcr {
                 sin >> test;
                 if ( test == 1 ) ip.weno3 = true;
             }
+            else if (par.find("interpolate velocity") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                int test;
+                sin >> test;
+                if ( test == 1 ) ip.interpVel = true;
+            }
             fin.getline(parameter, 200);
         }
         fin.close();

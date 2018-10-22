@@ -49,7 +49,7 @@ namespace ttcr {
         bool time;
         bool processReflectors;
         bool projectTxRx;
-        bool raypath_high_order;
+        bool interpVel;
         bool rotated_template;
         bool weno3;
         bool dump_secondary;
@@ -64,10 +64,11 @@ namespace ttcr {
         std::vector<std::string> srcfiles;
         
         input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
-        inverseDistance(false),	singlePrecision(false), saveRaypaths(false),
-        saveModelVTK(false), saveM(false), saveGridTT(false), time(false),
-        processReflectors(false), projectTxRx(false), 
-        raypath_high_order(false), rotated_template(false), weno3(false),
+        nDynamic(3), raypath_high_order(1), inverseDistance(false),
+        singlePrecision(false), saveRaypaths(false), saveModelVTK(false),
+        saveM(false), saveGridTT(false), time(false), processReflectors(false),
+        projectTxRx(false), interpVel(false), rotated_template(false),
+        weno3(false), dump_secondary(false),
         epsilon(1.e-15), source_radius(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
         

@@ -664,7 +664,7 @@ namespace ttcr {
                     g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
                                                     par.verbose);
                 else
-                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], par.interpVel, nt,
                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -915,7 +915,7 @@ namespace ttcr {
                     g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
                                                     par.verbose);
                 else
-                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], par.interpVel, nt,
                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
