@@ -42,7 +42,7 @@ namespace ttcr {
         x(0.0f), y(0.0f), z(0.0f),
         gridIndex(std::numeric_limits<T2>::max()),
         owners(std::vector<T2>(0)),
-        slowness(0)
+        slowness(0), primary(0)
         {
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
@@ -56,7 +56,7 @@ namespace ttcr {
         x(xx), y(yy), z(zz),
         gridIndex(std::numeric_limits<T2>::max()),
         owners(std::vector<T2>(0)),
-        slowness(0)
+        slowness(0), primary(0)
         {
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
@@ -71,7 +71,7 @@ namespace ttcr {
         x(s.x), y(s.y), z(s.z),
         gridIndex(std::numeric_limits<T2>::max()),
         owners(std::vector<T2>(0)),
-        slowness(0)
+        slowness(0), primary(0)
         {
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
@@ -85,7 +85,8 @@ namespace ttcr {
         x(node.x), y(node.y), z(node.z),
         gridIndex(node.gridIndex),
         owners(node.owners),
-        slowness(node.slowness)
+        slowness(node.slowness),
+        primary(node.primary)
         {
             tt = new T1[nThreads];
             
@@ -102,6 +103,8 @@ namespace ttcr {
         void reinit(const size_t n) {
             tt[n] = std::numeric_limits<T1>::max();
         }
+        
+        const size_t getNThreads() const { return nThreads; }
         
         T1 getTT(const size_t n) const { return tt[n]; }
         void setTT(const T1 t, const size_t n ) { tt[n] = t; }
@@ -120,7 +123,8 @@ namespace ttcr {
         T1 getZ() const { return z; }
         void setZ(const T1 zz) { z = zz; }
         
-        int getPrimary() const { return 5; } // all nodes must be primary
+        int getPrimary() const { return primary; }
+        void setPrimary( const int o ) { primary = o; }
         
         T2 getGridIndex() const { return gridIndex; }
         void setGridIndex(const T2 index) { gridIndex = index; }
@@ -151,9 +155,9 @@ namespace ttcr {
         
         int getDimension() const { return 3; }
         
-        const bool isPrimary() const { return true; }
+        const bool isPrimary() const { return primary == 5; }
         
-    private:
+    protected:
         size_t nThreads;
         T1 *tt;                         // travel time for the multiple source points
         T1 x;                           // x coordinate [km]
@@ -161,7 +165,8 @@ namespace ttcr {
         T1 z;                           // z coordinate [km]
         T2 gridIndex;                   // index of this node in the list of the grid
         std::vector<T2> owners;         // indices of cells touching the node
-        T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp    
+        T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp
+        int primary;
     };
     
     template<typename T1, typename T2>
