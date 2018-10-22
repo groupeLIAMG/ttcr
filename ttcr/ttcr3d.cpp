@@ -703,6 +703,9 @@ int main(int argc, char * argv[])
             case FAST_MARCHING:
                 cout << "Fast marching method selected.\n";
                 break;
+            case DYNAMIC_SHORTEST_PATH:
+                cout << "Dynamic shortest path method selected.\n";
+                break;
             default:
                 break;
         }

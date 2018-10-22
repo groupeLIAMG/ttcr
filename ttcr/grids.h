@@ -59,9 +59,11 @@
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
+#include "Grid3Ducdsp.h"
 #include "Grid3Dunfm.h"
 #include "Grid3Dunfs.h"
 #include "Grid3Dunsp.h"
+#include "Grid3Dundsp.h"
 #include "Node2Dcsp.h"
 #include "Node2Dnsp.h"
 #include "MSHReader.h"
@@ -649,7 +651,7 @@ namespace ttcr {
         }
         
         std::chrono::high_resolution_clock::time_point begin, end;
-        Grid3D<T, uint32_t> *g;
+        Grid3D<T, uint32_t> *g = nullptr;
         switch (par.method) {
             case SHORTEST_PATH:
             {
@@ -734,6 +736,31 @@ namespace ttcr {
                     std::cout << "done.\n";
                     std::cout << "Initiated ordering with " << ptsRef.size() << " reference points and l-"
                     << par.order << " metric\n";
+                    std::cout.flush();
+                }
+                
+                break;
+            }
+            case DYNAMIC_SHORTEST_PATH:
+            {
+                if ( par.verbose ) {
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells )
+                    g = new Grid3Ducdsp<T, uint32_t>(nodes, tetrahedra,par.nn[0],
+                                                     par.nDynamic, par.source_radius,
+                                                     par.raypath_high_order, nt,
+                                                     par.verbose);
+                else
+                    g = new Grid3Dundsp<T, uint32_t>(nodes, tetrahedra, par.nn[0],
+                                                     par.nDynamic, par.source_radius, par.interpVel,
+                                                     par.raypath_high_order, nt, par.verbose);
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( par.verbose ) {
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    << "\n";
                     std::cout.flush();
                 }
                 
@@ -972,6 +999,31 @@ namespace ttcr {
                 
                 break;
             }
+            case DYNAMIC_SHORTEST_PATH:
+            {
+                if ( par.verbose ) {
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells )
+                    g = new Grid3Ducdsp<T, uint32_t>(nodes, tetrahedra, par.nn[0],
+                                                     par.nDynamic, par.source_radius,
+                                                     par.raypath_high_order, nt, par.verbose);
+                else
+                    g = new Grid3Dundsp<T, uint32_t>(nodes, tetrahedra, par.nn[0],
+                                                     par.nDynamic, par.source_radius, par.interpVel,
+                                                     par.raypath_high_order, nt, par.verbose);
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( par.verbose ) {
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    << "\n";
+                    std::cout.flush();
+                }
+                
+                break;
+            }
+
             default:
                 break;
         }
@@ -980,11 +1032,11 @@ namespace ttcr {
             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         std::cout.flush();
-        if ( par.verbose && par.method == SHORTEST_PATH ) {
+        if ( par.verbose && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) )  {
             std::cout << "Interpolating slowness at secondary nodes ... ";
             std::cout.flush();
         }
-        if ( par.time && par.method == SHORTEST_PATH ) {
+        if ( par.time && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) ) {
             begin = std::chrono::high_resolution_clock::now();
         }
         try {
@@ -995,11 +1047,11 @@ namespace ttcr {
             return nullptr;
         }
 
-        if ( par.verbose && par.method == SHORTEST_PATH ) {
+        if ( par.verbose && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) ) {
             std::cout << "done.\n";
             std::cout.flush();
         }
-        if ( par.time && par.method == SHORTEST_PATH ) {
+        if ( par.time && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) ) {
             end = std::chrono::high_resolution_clock::now();
             std::cout << "Time to interpolate slowness values: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }

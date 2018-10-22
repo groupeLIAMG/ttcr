@@ -181,6 +181,10 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nt;
             }
+            else if (par.find("number of dynamic nodes") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.nDynamic;
+            }
             else if (par.find("inverse distance") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.inverseDistance;
@@ -236,6 +240,12 @@ namespace ttcr {
                 int test;
                 sin >> test;
                 if ( test == 1 ) ip.method = FAST_SWEEPING;
+            }
+            else if (par.find("dynamic shortest path") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                int test;
+                sin >> test;
+                if ( test == 1 ) ip.method = DYNAMIC_SHORTEST_PATH;
             }
             else if (par.find("source radius") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();

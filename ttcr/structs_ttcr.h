@@ -30,7 +30,7 @@
 
 namespace ttcr {
     
-    enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING };
+    enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING, DYNAMIC_SHORTEST_PATH };
     
     struct input_parameters {
         uint32_t nn[3];
@@ -38,6 +38,8 @@ namespace ttcr {
         int verbose;
         int order;                    // order of l metric
         int nitermax;
+        int nDynamic;
+        int raypath_high_order;
         bool inverseDistance;
         bool singlePrecision;
         bool saveRaypaths;
