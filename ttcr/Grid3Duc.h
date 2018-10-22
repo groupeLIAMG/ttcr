@@ -218,6 +218,7 @@ namespace ttcr {
         void checkPts(const std::vector<sxyz<T1>>&) const;
         
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
+        bool insideTetrahedron_old(const sxyz<T1>&, const T2) const;
         
         T2 getCellNo(const sxyz<T1>& pt) const {
             for ( T2 n=0; n<tetrahedra.size(); ++n ) {
@@ -608,11 +609,33 @@ namespace ttcr {
             }
         }
     }
-    
+        
+    template<typename T1, typename T2, typename NODE>
+    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& p, const T2 nt) const {
+        
+        sxyz<T1> v1 = { nodes[ tetrahedra[nt].i[0] ].getX(),
+            nodes[ tetrahedra[nt].i[0] ].getY(),
+            nodes[ tetrahedra[nt].i[0] ].getZ() };
+        
+        sxyz<T1> v2 = { nodes[ tetrahedra[nt].i[1] ].getX(),
+            nodes[ tetrahedra[nt].i[1] ].getY(),
+            nodes[ tetrahedra[nt].i[1] ].getZ() };
+        
+        sxyz<T1> v3 = { nodes[ tetrahedra[nt].i[2] ].getX(),
+            nodes[ tetrahedra[nt].i[2] ].getY(),
+            nodes[ tetrahedra[nt].i[2] ].getZ() };
+        
+        sxyz<T1> v4 = { nodes[ tetrahedra[nt].i[3] ].getX(),
+            nodes[ tetrahedra[nt].i[3] ].getY(),
+            nodes[ tetrahedra[nt].i[3] ].getZ() };
+        
+        return sameSide(v1, v2, v3, v4, p) && sameSide(v2, v3, v4, v1, p) &&
+        sameSide(v3, v4, v1, v2, p) && sameSide(v4, v1, v2, v3, p);
+    }
     
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& v, const T2 nt) const {
+    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& v, const T2 nt) const {
         
         
         // from http://steve.hollasch.net/cgindex/geometry/ptintet.html

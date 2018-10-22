@@ -662,6 +662,16 @@ namespace ttcr {
         return signum(x, std::is_signed<T>());
     }
 #endif
+
+    template<typename T>
+    bool sameSide(const sxyz<T>& v1, const sxyz<T>& v2, const sxyz<T>& v3,
+                  const sxyz<T>& v4,  const sxyz<T>& p) {
+        sxyz<T> normal = cross(v2 - v1, v3 - v1);
+        T dotV4 = dot(normal, v4 - v1);
+        T dotP = dot(normal, p - v1);
+        return signum(dotV4) == signum(dotP);
+    }
+
 }
 
 #endif
