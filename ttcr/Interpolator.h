@@ -161,6 +161,21 @@ namespace ttcr {
         }
         
         template<typename NODE>
+        static T linear(const sxyz<T>& node,
+                        const NODE& node1,
+                        const NODE& node2) {
+            sxyz<T> AB = {node2.getX()-node1.getX(), node2.getY()-node1.getY(), node2.getZ()-node1.getZ()};
+            sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
+            sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
+            
+            T nAB = norm(AB);
+            T w1 = norm(IA)/nAB;
+            T w2 = norm(IB)/nAB;
+            
+            return w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness();
+        }
+        
+        template<typename NODE>
         static T bilinearTriangleVel(const sxyz<T>& node,
                                      const NODE& node1,
                                      const NODE& node2,
@@ -178,6 +193,26 @@ namespace ttcr {
             T w3 = norm(cross(IB,AB))/S;
             
             return (1.0/(w1/node1.getNodeSlowness() + w2/node2.getNodeSlowness() + w3/node3.getNodeSlowness()));
+        }
+        
+        template<typename NODE>
+        static T bilinearTriangle(const sxyz<T>& node,
+                                  const NODE& node1,
+                                  const NODE& node2,
+                                  const NODE& node3) {
+            sxyz<T> AB = {node2.getX()-node1.getX(), node2.getY()-node1.getY(), node2.getZ()-node1.getZ()};
+            sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
+            
+            T S = norm(cross(AB,AC));
+            
+            sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
+            sxyz<T> IC = {node3.getX()-node.x, node3.getY()-node.y, node3.getZ()-node.z};
+            
+            T w1 = norm(cross(IB,IC))/S;
+            T w2 = norm(cross(AC,IC))/S;
+            T w3 = norm(cross(IB,AB))/S;
+            
+            return w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness() + w3*node3.getNodeSlowness();
         }
         
         template<typename NODE>
@@ -235,6 +270,29 @@ namespace ttcr {
         }
         
         template<typename NODE>
+        static T trilinearTriangle(const sxyz<T>& node, const NODE& node1,
+                                   const NODE& node2, const NODE& node3,
+                                   const NODE& node4) {
+            sxyz<T> AB = {node2.getX()-node1.getX(), node2.getY()-node1.getY(), node2.getZ()-node1.getZ()};
+            sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
+            sxyz<T> AD = {node4.getX()-node1.getX(), node4.getY()-node1.getY(), node4.getZ()-node1.getZ()};
+            
+            T V = abs(det(AB, AC, AD));
+            
+            sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
+            sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
+            sxyz<T> IC = {node3.getX()-node.x, node3.getY()-node.y, node3.getZ()-node.z};
+            sxyz<T> ID = {node4.getX()-node.x, node4.getY()-node.y, node4.getZ()-node.z};
+            
+            T w1 = abs(det(IB, IC, ID))/V;
+            T w2 = abs(det(IC, IA, ID))/V;
+            T w3 = abs(det(IB, IA, ID))/V;
+            T w4 = abs(det(IB, IA, IC))/V;
+            
+            return (w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness() + w3*node3.getNodeSlowness() + w4*node4.getNodeSlowness());
+        }
+
+        template<typename NODE>
         static T trilinearTriangle(const NODE& node, const NODE& node1,
                                    const NODE& node2, const NODE& node3,
                                    const NODE& node4) {
@@ -256,7 +314,7 @@ namespace ttcr {
             
             return (w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness() + w3*node3.getNodeSlowness() + w4*node4.getNodeSlowness());
         }
-
+        
         template<typename NODE>
         static T trilinearTriangleVel(const NODE& node, const NODE& node1,
                                       const NODE& node2, const NODE& node3,
