@@ -1451,34 +1451,6 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
-                    r_tmp.push_back( curr_pt );
-                    
-                    bool break_flag=false;
-                    for ( n=0; n<3; ++n ) {
-                        if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
-                            nodeNo = nb[n];
-                            onNode = true;
-                            onEdge = false;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
-                    if ( break_flag ) break;
-                    
-                    for ( size_t n1=0; n1<3; ++n1 ) {
-                        size_t n2 = (n1+1)%3;
-                        if ( areCollinear(curr_pt, nb[n1], nb[n2]) ) {
-                            edgeNodes[0] = nb[n1];
-                            edgeNodes[1] = nb[n2];
-                            onNode = false;
-                            onEdge = true;
-                            onFace = false;
-                            break_flag = true;
-                            break;
-                        }
-                    }
                     if ( break_flag ) break;
                     
                     onNode = false;
@@ -3469,25 +3441,15 @@ namespace ttcr {
         //Calculate the slowness of any point that is not on a node
         
         T2 cellNo = this->getCellNo( Rx );
-        
-        //We calculate the Slowness at the point
-        std::vector<T2> list;
-        
-        for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
-            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
-                list.push_back(neighbors[ cellNo ][n3]);
-            }
-        }
-        
-        std::vector<size_t>::iterator it;
-        
+
         std::vector<NODE*> interpNodes;
         
-        for ( size_t nn=0; nn<list.size(); ++nn )
-            interpNodes.push_back( &(nodes[list[nn] ]) );
-        
-        return Interpolator<T1>::inverseDistance( Rx, interpNodes );
-        
+        for (size_t n=0; n < neighbors[ cellNo ].size(); n++){
+            if ( nodes[neighbors[ cellNo ][n] ].isPrimary() ){
+                interpNodes.push_back( &(nodes[neighbors[ cellNo ][n] ]) );
+            }
+        }
+        return Interpolator<T1>::trilinearTriangle( Rx, interpNodes );
     }
     
 }

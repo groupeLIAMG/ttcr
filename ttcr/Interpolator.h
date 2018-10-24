@@ -316,6 +316,30 @@ namespace ttcr {
         }
         
         template<typename NODE>
+        static T trilinearTriangle(const sxyz<T>& node,
+                                   const std::vector<NODE*> nodes) {
+            
+            assert(nodes.size()==4);
+            sxyz<T> AB = {nodes[1]->getX()-nodes[0]->getX(), nodes[1]->getY()-nodes[0]->getY(), nodes[1]->getZ()-nodes[0]->getZ()};
+            sxyz<T> AC = {nodes[2]->getX()-nodes[0]->getX(), nodes[2]->getY()-nodes[0]->getY(), nodes[2]->getZ()-nodes[0]->getZ()};
+            sxyz<T> AD = {nodes[3]->getX()-nodes[0]->getX(), nodes[3]->getY()-nodes[0]->getY(), nodes[3]->getZ()-nodes[0]->getZ()};
+            
+            T V = abs(det(AB, AC, AD));
+            
+            sxyz<T> IA = {nodes[0]->getX()-node.x, nodes[0]->getY()-node.y, nodes[0]->getZ()-node.z};
+            sxyz<T> IB = {nodes[1]->getX()-node.x, nodes[1]->getY()-node.y, nodes[1]->getZ()-node.z};
+            sxyz<T> IC = {nodes[2]->getX()-node.x, nodes[2]->getY()-node.y, nodes[2]->getZ()-node.z};
+            sxyz<T> ID = {nodes[3]->getX()-node.x, nodes[3]->getY()-node.y, nodes[3]->getZ()-node.z};
+            
+            T w1 = abs(det(IB, IC, ID))/V;
+            T w2 = abs(det(IC, IA, ID))/V;
+            T w3 = abs(det(IB, IA, ID))/V;
+            T w4 = abs(det(IB, IA, IC))/V;
+            
+            return (w1*nodes[0]->getNodeSlowness() + w2*nodes[1]->getNodeSlowness() + w3*nodes[2]->getNodeSlowness() + w4*nodes[3]->getNodeSlowness());
+        }
+        
+        template<typename NODE>
         static T trilinearTriangleVel(const NODE& node, const NODE& node1,
                                       const NODE& node2, const NODE& node3,
                                       const NODE& node4) {
