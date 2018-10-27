@@ -226,6 +226,12 @@ namespace ttcr {
         
     };
     
+    template<typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const Node3Dcsp<T1, T2> &n) {
+        os << n.getX() << ' ' << n.getY() << ' ' << n.getZ();
+        return os;
+    }
+
 }
 
 #endif

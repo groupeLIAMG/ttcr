@@ -179,6 +179,11 @@ namespace ttcr {
         return sxyz<T1>( lhs.getX()-rhs.getX(), lhs.getY()-rhs.getY(), lhs.getZ()-rhs.getZ() );
     }
     
+    template<typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const Node3Dn<T1, T2> &n) {
+        os << n.getX() << ' ' << n.getY() << ' ' << n.getZ();
+        return os;
+    }
 }
 
 #endif
