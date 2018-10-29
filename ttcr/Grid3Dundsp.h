@@ -887,8 +887,14 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
 
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
+        if ( this->rp_method < 3 ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath_blti(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
+            }
         }
     }
 
@@ -916,9 +922,16 @@ namespace ttcr {
             }
             traveltimes[nr]->resize( Rx[nr]->size() );
             
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
-                                 (*traveltimes[nr])[n], threadNo);
+            if ( this->rp_method < 3 ) {
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+                                     (*traveltimes[nr])[n], threadNo);
+                }
+            } else {
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    this->getRaypath_blti(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+                                          (*traveltimes[nr])[n], threadNo);
+                }
             }
         }
     }
