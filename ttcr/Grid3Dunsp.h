@@ -46,9 +46,10 @@ namespace ttcr {
     public:
         Grid3Dunsp(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const int ns, const bool iv, const size_t nt=1,
-                   const int verbose=0) :
-        Grid3Dun<T1,T2,Node3Dnsp<T1,T2>>(no, tet, nt), nSecondary(ns), interpVel(iv)
+                   const int ns, const bool iv, const bool rptt, const T1 md,
+                   const size_t nt=1, const int verbose=0) :
+        Grid3Dun<T1,T2,Node3Dnsp<T1,T2>>(no, tet, 1, iv, rptt, md, nt),
+        nSecondary(ns)
         {
             this->buildGridNodes(no, ns, nt, verbose);
             this->buildGridNeighbors();
@@ -65,7 +66,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( interpVel )
+                if ( this->interpVel )
                     interpVelocitySecondary();
                 else
                     interpSlownessSecondary();
@@ -81,7 +82,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( interpVel )
+                if ( this->interpVel )
                     interpVelocitySecondary();
                 else
                     interpSlownessSecondary();
@@ -127,7 +128,6 @@ namespace ttcr {
         
     private:
         T2 nSecondary;
-        bool interpVel;
         
         void interpSlownessSecondary();
         void interpVelocitySecondary();
@@ -388,8 +388,14 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            }
         }
     }
     
@@ -424,10 +430,18 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            }
         }
     }
     
@@ -824,7 +838,7 @@ namespace ttcr {
                 frozen.push_back( true );
                 
                 T1 s;
-                if ( interpVel )
+                if ( this->interpVel )
                     s = Interpolator<T1>::trilinearTriangleVel(txNodes.back(),
                                                                this->nodes[this->neighbors[cn][0]],
                                                                this->nodes[this->neighbors[cn][1]],

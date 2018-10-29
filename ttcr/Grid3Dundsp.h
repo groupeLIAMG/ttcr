@@ -44,10 +44,10 @@ namespace ttcr {
         Grid3Dundsp(const std::vector<sxyz<T1>>& no,
                     const std::vector<tetrahedronElem<T2>>& tet,
                     const int ns, const int nd, const T1 rad,
-                    const bool iv, const int rp=1, const size_t nt=1,
-                    const int verb=0) :
-        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, nt), nSecondary(ns),
-        nDynamic(nd), nPermanent(0), rp_ho(rp), interpVel(iv), verbose(verb),
+                    const bool iv, const int rp, const bool rptt, const T1 md,
+                    const size_t nt=1, const int verb=0) :
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
+        nSecondary(ns), nDynamic(nd), nPermanent(0), verbose(verb),
         tempNodes(std::vector<std::vector<Node3Dnd<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
         {
@@ -71,7 +71,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( interpVel )
+                if ( this->interpVel )
                     interpVelocitySecondary();
                 else
                     interpSlownessSecondary();
@@ -86,7 +86,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( interpVel )
+                if ( this->interpVel )
                     interpVelocitySecondary();
                 else
                     interpSlownessSecondary();
@@ -124,8 +124,6 @@ namespace ttcr {
         T2 nSecondary;
         T2 nDynamic;
         T2 nPermanent;
-        int rp_ho;
-        bool interpVel;
         bool verbose;
         
         // we will store temporary nodes in a separate container.  This is to
@@ -155,6 +153,16 @@ namespace ttcr {
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
+        
+        void raytrace(const std::vector<sxyz<T1>>&,
+                      const std::vector<T1>&,
+                      const std::vector<sxyz<T1>>&,
+                      const size_t=0) const;
+        
+        void raytrace(const std::vector<sxyz<T1>>&,
+                      const std::vector<T1>&,
+                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      const size_t=0) const;
 
     };
 
@@ -376,6 +384,8 @@ namespace ttcr {
         if ( verbose )
             std::cout << "\n  *** thread no " << threadNo << ": found " << txCells.size() << " cells within radius ***" << std::endl;
 
+        std::set<T2> adjacentCells(txCells.begin(), txCells.end());
+        
         T2 iNodes[4][3] = {
             {0,1,2},  // (relative) indices of nodes of 1st triangle
             {1,2,3},  // (relative) indices of nodes of 2nd triangle
@@ -398,6 +408,14 @@ namespace ttcr {
         T1 slope, islown;
 
         for ( auto cell=txCells.begin(); cell!=txCells.end(); cell++ ) {
+            
+            //  adjacent cells to the tetrahedron where new nodes will be added
+            for ( size_t i=0; i<4; ++i ) {
+                T2 vertex = this->neighbors[*cell][i];
+                for ( size_t c=0; c<this->nodes[vertex].getOwners().size(); ++c ) {
+                    adjacentCells.insert(this->nodes[vertex].getOwners()[c]);
+                }
+            }
             
             // for each triangle
             for ( T2 ntri=0; ntri<4; ++ntri ) {
@@ -423,7 +441,7 @@ namespace ttcr {
                     
                     sxyz<T1> d = (this->nodes[lineKey[1]]-this->nodes[lineKey[0]])/static_cast<T1>(nDynTot+nSecondary+1);
                     
-                    if ( interpVel )
+                    if ( this->interpVel )
                         slope = (1.0/this->nodes[lineKey[1]].getNodeSlowness() - 1.0/this->nodes[lineKey[0]].getNodeSlowness())/
                             this->nodes[lineKey[1]].getDistance(this->nodes[lineKey[0]]);
                     else
@@ -437,7 +455,7 @@ namespace ttcr {
                                                 this->nodes[lineKey[0]].getY()+(1+n2*(nDynamic+1)+n3)*d.y,
                                                 this->nodes[lineKey[0]].getZ()+(1+n2*(nDynamic+1)+n3)*d.z,
                                                 nPermanent+nTmpNodes );
-                            if ( interpVel )
+                            if ( this->interpVel )
                                 islown = 1.0/(1.0/this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]));
                             else
                                 islown = this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]);
@@ -504,7 +522,7 @@ namespace ttcr {
                                                 pt1.y+(1+n4)*d.y,
                                                 pt1.z+(1+n4)*d.z,
                                                 nPermanent+nTmpNodes );
-                            if ( interpVel )
+                            if ( this->interpVel )
                                 islown = Interpolator<T1>::bilinearTriangleVel(tmpNode, inodes);
                             else
                                 islown = Interpolator<T1>::bilinearTriangle(tmpNode, inodes);
@@ -532,7 +550,7 @@ namespace ttcr {
                                                 nPermanent+nTmpNodes );
                             n5++;
                             
-                            if ( interpVel )
+                            if ( this->interpVel )
                                 islown = Interpolator<T1>::bilinearTriangleVel(tmpNode, inodes);
                             else
                                 islown = Interpolator<T1>::bilinearTriangle(tmpNode, inodes);
@@ -548,9 +566,57 @@ namespace ttcr {
                 }
             }
         }
+        
+        for ( auto cell=txCells.begin(); cell!=txCells.end(); ++cell ) {
+            adjacentCells.erase(*cell);
+        }
+        for ( auto adj=adjacentCells.begin(); adj!=adjacentCells.end(); ++adj ) {
+            for ( T2 ntri=0; ntri<4; ++ntri ) {
+                for ( size_t nl=ntri; nl<3; ++nl ) {
+                    
+                    lineKey = {this->tetrahedra[*adj].i[ iNodes[ntri][nl] ],
+                        this->tetrahedra[*adj].i[ iNodes[ntri][(nl+1)%3] ]};
+                    std::sort(lineKey.begin(), lineKey.end());
+                    
+                    lineIt = lineMap.find( lineKey );
+                    if ( lineIt != lineMap.end() ) {
+                        // setting owners
+                        for ( size_t n=0; n<lineIt->second.size(); ++n ) {
+                            // setting owners
+                            tempNodes[threadNo][ lineIt->second[n] ].pushOwner( *adj );
+                        }
+                    }
+                }
+                
+                faceKey = {this->tetrahedra[*adj].i[ iNodes[ntri][0] ],
+                    this->tetrahedra[*adj].i[ iNodes[ntri][1] ],
+                    this->tetrahedra[*adj].i[ iNodes[ntri][2] ]};
+                std::sort(faceKey.begin(), faceKey.end());
+                
+                faceIt = faceMap.find( faceKey );
+                if ( faceIt != faceMap.end() ) {
+                    for ( size_t n=0; n<faceIt->second.size(); ++n ) {
+                        // setting owners
+                        tempNodes[threadNo][ faceIt->second[n] ].pushOwner( *adj );
+                    }
+                }
+            }
+        }
+        
+//        size_t noTot = 0;
 //        for ( size_t n=0; n<tempNodes[threadNo].size(); ++n ) {
-//            std::cout << tempNodes[threadNo][n].getX() << '\t' << tempNodes[threadNo][n].getY() << '\t' << tempNodes[threadNo][n].getZ() << '\t' << tempNodes[threadNo][n].getNodeSlowness() << '\n';
+//            std::cout << tempNodes[threadNo][n].getX() << '\t'
+//            << tempNodes[threadNo][n].getY() << '\t'
+//            << tempNodes[threadNo][n].getZ() << '\t'
+//            << tempNodes[threadNo][n].getNodeSlowness() << '\t'
+//            << tempNodes[threadNo][n].getOwners().size();
+//            for ( size_t no=0; no<tempNodes[threadNo][n].getOwners().size(); ++no ) {
+//                std::cout << '\t' << tempNodes[threadNo][n].getOwners()[no];
+//                noTot++;
+//            }
+//            std::cout << '\n';
 //        }
+//        std::cout << "noTot = " << noTot << '\n';
         
         for ( T2 n=0; n<tempNodes[threadNo].size(); ++n ) {
             for ( size_t n2=0; n2<tempNodes[threadNo][n].getOwners().size(); ++n2) {
@@ -607,7 +673,7 @@ namespace ttcr {
                                                              txNodes.size()-1) );
                 
                 T1 s;
-                if ( interpVel )
+                if ( this->interpVel )
                     s = Interpolator<T1>::trilinearTriangleVel(txNodes.back(),
                                                                this->nodes[this->neighbors[cn][0]],
                                                                this->nodes[this->neighbors[cn][1]],
@@ -701,7 +767,6 @@ namespace ttcr {
     void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
                                       const std::vector<sxyz<T1>>& Rx,
-                                      std::vector<T1>& traveltimes,
                                       const size_t threadNo) const {
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -715,7 +780,7 @@ namespace ttcr {
         CompareNodePtr<T1>> queue( cmp );
         
         addTemporaryNodes(Tx, threadNo);
-
+        
         std::vector<Node3Dn<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
@@ -723,22 +788,35 @@ namespace ttcr {
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
         
         propagate(queue, inQueue, frozen, threadNo);
+    }
+
+    template<typename T1, typename T2>
+    void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                      const std::vector<T1>& t0,
+                                      const std::vector<sxyz<T1>>& Rx,
+                                      std::vector<T1>& traveltimes,
+                                      const size_t threadNo) const {
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            }
         }
-
     }
 
     template<typename T1, typename T2>
     void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
                                       const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                      std::vector<std::vector<T1>*>& traveltimes,
                                       const size_t threadNo) const {
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
@@ -761,15 +839,32 @@ namespace ttcr {
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
         
         propagate(queue, inQueue, frozen, threadNo);
+    }
+
+    template<typename T1, typename T2>
+    void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                      const std::vector<T1>& t0,
+                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                      std::vector<std::vector<T1>*>& traveltimes,
+                                      const size_t threadNo) const {
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            }
         }
     }
 
@@ -780,7 +875,7 @@ namespace ttcr {
                                       std::vector<T1>& traveltimes,
                                       std::vector<std::vector<sxyz<T1>>>& r_data,
                                       const size_t threadNo) const {
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
@@ -788,9 +883,12 @@ namespace ttcr {
         for ( size_t ni=0; ni<r_data.size(); ++ni ) {
             r_data[ni].resize( 0 );
         }
-        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], rp_ho, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
     }
 
@@ -802,10 +900,13 @@ namespace ttcr {
                                       std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                       const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
         }
         
         for (size_t nr=0; nr<Rx.size(); ++nr) {
@@ -813,9 +914,11 @@ namespace ttcr {
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
+            traveltimes[nr]->resize( Rx[nr]->size() );
             
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], rp_ho, threadNo);
+                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+                                 (*traveltimes[nr])[n], threadNo);
             }
         }
     }

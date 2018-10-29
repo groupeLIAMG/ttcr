@@ -31,6 +31,7 @@
 namespace ttcr {
     
     enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING, DYNAMIC_SHORTEST_PATH };
+    enum gradient_method : int { LS_FO=0, LS_SO=1, AB=2 };
     
     struct input_parameters {
         uint32_t nn[3];
@@ -39,7 +40,7 @@ namespace ttcr {
         int order;                    // order of l metric
         int nitermax;
         int nDynamic;
-        int raypath_high_order;
+        int raypath_method;
         bool inverseDistance;
         bool singlePrecision;
         bool saveRaypaths;
@@ -53,8 +54,10 @@ namespace ttcr {
         bool rotated_template;
         bool weno3;
         bool dump_secondary;
+        bool tt_from_rp;
         double epsilon;
         double source_radius;
+        double min_distance_rp;
         raytracing_method method;
         std::string basename;
         std::string modelfile;
@@ -64,12 +67,13 @@ namespace ttcr {
         std::vector<std::string> srcfiles;
         
         input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
-        nDynamic(3), raypath_high_order(1), inverseDistance(false),
+        nDynamic(3), raypath_method(LS_SO), inverseDistance(false),
         singlePrecision(false), saveRaypaths(false), saveModelVTK(false),
         saveM(false), saveGridTT(false), time(false), processReflectors(false),
         projectTxRx(false), interpVel(false), rotated_template(false),
-        weno3(false), dump_secondary(false),
-        epsilon(1.e-15), source_radius(0.0), method(SHORTEST_PATH), basename(),
+        weno3(false), dump_secondary(false), tt_from_rp(false),
+        epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
+        method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
         
     };

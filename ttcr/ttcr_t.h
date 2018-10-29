@@ -33,6 +33,7 @@
 namespace ttcr {
 
     const double small = 1.e-5;
+    const double small2 = small*small;
     const double pi = 4.0*atan(1.0);
 
     const size_t iLength[4][3]={{0,1,2},{1,3,4},{2,3,5},{0,4,5}};

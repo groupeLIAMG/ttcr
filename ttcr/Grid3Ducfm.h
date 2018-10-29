@@ -60,8 +60,9 @@ namespace ttcr {
     public:
         Grid3Ducfm(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const bool rp=false, const size_t nt=1) :
-        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, nt), rp_ho(rp)
+                   const bool rp, const bool rptt, const T1 md,
+                   const size_t nt=1) :
+        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt)
         {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -97,7 +98,6 @@ namespace ttcr {
                      const size_t=0) const;
         
     private:
-        int rp_ho;
         
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
@@ -146,8 +146,14 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            }
         }
     }
     
@@ -181,10 +187,18 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            }
         }
     }
     
@@ -225,8 +239,7 @@ namespace ttcr {
         }
         
         for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-            this->getRaypath(Tx, Rx[n], r_data[n], rp_ho, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
     }
     
@@ -273,8 +286,8 @@ namespace ttcr {
             }
             
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], rp_ho, threadNo);
+                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+                                 (*traveltimes[nr])[n], threadNo);
             }
         }
     }

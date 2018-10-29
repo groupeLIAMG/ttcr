@@ -225,9 +225,10 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.projectTxRx;
             }
-            else if (par.find("raypath high order") < 200) {
+            else if (par.find("raypath high order") < 200 ||
+                     par.find("gradient method") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
-                sin >> ip.raypath_high_order;
+                sin >> ip.raypath_method;
             }
             else if (par.find("fast marching") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
@@ -255,19 +256,29 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
-                if ( test == 1 ) ip.rotated_template = true;
+                ip.rotated_template = (test == 1);
             }
             else if (par.find("fsm high order") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
-                if ( test == 1 ) ip.weno3 = true;
+                ip.weno3 = (test == 1);
             }
             else if (par.find("interpolate velocity") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
-                if ( test == 1 ) ip.interpVel = true;
+                ip.interpVel = (test == 1);
+            }
+            else if (par.find("traveltime from raypath") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                int test;
+                sin >> test;
+                ip.tt_from_rp = (test == 1);
+            }
+            else if (par.find("raypath minimum distance") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.min_distance_rp;
             }
             fin.getline(parameter, 200);
         }

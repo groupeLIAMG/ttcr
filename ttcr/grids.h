@@ -661,10 +661,21 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+                    g = new Grid3Ducsp<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.nn[0],
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt,
                                                     par.verbose);
                 else
-                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], par.interpVel, nt,
+                    g = new Grid3Dunsp<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.nn[0],
+                                                    par.interpVel,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt,
                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -683,11 +694,19 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra,
-                                                    par.raypath_high_order, nt);
+                    g = new Grid3Ducfm<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.raypath_method,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 else
                     g = new Grid3Dunfm<T, uint32_t>(nodes, tetrahedra,
-                                                    par.raypath_high_order, nt);
+                                                    par.raypath_method,
+                                                    par.interpVel,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -704,13 +723,24 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+                    g = new Grid3Ducfs<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.epsilon,
                                                     par.nitermax,
-                                                    par.raypath_high_order, nt);
+                                                    par.raypath_method,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 else
-                    g = new Grid3Dunfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+                    g = new Grid3Dunfs<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.epsilon,
                                                     par.nitermax,
-                                                    par.raypath_high_order, nt);
+                                                    par.raypath_method,
+                                                    par.interpVel,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 T xmin = g->getXmin();
                 T xmax = g->getXmax();
                 T ymin = g->getYmin();
@@ -749,14 +779,28 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducdsp<T, uint32_t>(nodes, tetrahedra,par.nn[0],
-                                                     par.nDynamic, par.source_radius,
-                                                     par.raypath_high_order, nt,
+                    g = new Grid3Ducdsp<T, uint32_t>(nodes,
+                                                     tetrahedra,
+                                                     par.nn[0],
+                                                     par.nDynamic,
+                                                     par.source_radius,
+                                                     par.raypath_method,
+                                                     par.tt_from_rp,
+                                                     par.min_distance_rp,
+                                                     nt,
                                                      par.verbose);
                 else
-                    g = new Grid3Dundsp<T, uint32_t>(nodes, tetrahedra, par.nn[0],
-                                                     par.nDynamic, par.source_radius, par.interpVel,
-                                                     par.raypath_high_order, nt, par.verbose);
+                    g = new Grid3Dundsp<T, uint32_t>(nodes,
+                                                     tetrahedra,
+                                                     par.nn[0],
+                                                     par.nDynamic,
+                                                     par.source_radius,
+                                                     par.interpVel,
+                                                     par.raypath_method,
+                                                     par.tt_from_rp,
+                                                     par.min_distance_rp,
+                                                     nt,
+                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -912,10 +956,21 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], nt,
+                    g = new Grid3Ducsp<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.nn[0],
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt,
                                                     par.verbose);
                 else
-                    g = new Grid3Dunsp<T, uint32_t>(nodes, tetrahedra,par.nn[0], par.interpVel, nt,
+                    g = new Grid3Dunsp<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.nn[0],
+                                                    par.interpVel,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt,
                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -934,11 +989,20 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfm<T, uint32_t>(nodes, tetrahedra,
-                                                    par.raypath_high_order, nt);
+                    g = new Grid3Ducfm<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.raypath_method,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 else
-                    g = new Grid3Dunfm<T, uint32_t>(nodes, tetrahedra,
-                                                    par.raypath_high_order, nt);
+                    g = new Grid3Dunfm<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.raypath_method,
+                                                    par.interpVel,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\n";
@@ -961,13 +1025,24 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+                    g = new Grid3Ducfs<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.epsilon,
                                                     par.nitermax,
-                                                    par.raypath_high_order, nt);
+                                                    par.raypath_method,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 else
-                    g = new Grid3Dunfs<T, uint32_t>(nodes, tetrahedra, par.epsilon,
+                    g = new Grid3Dunfs<T, uint32_t>(nodes,
+                                                    tetrahedra,
+                                                    par.epsilon,
                                                     par.nitermax,
-                                                    par.raypath_high_order, nt);
+                                                    par.raypath_method,
+                                                    par.interpVel,
+                                                    par.tt_from_rp,
+                                                    par.min_distance_rp,
+                                                    nt);
                 
                 T xmin = g->getXmin();
                 T xmax = g->getXmax();
@@ -1007,13 +1082,28 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducdsp<T, uint32_t>(nodes, tetrahedra, par.nn[0],
-                                                     par.nDynamic, par.source_radius,
-                                                     par.raypath_high_order, nt, par.verbose);
+                    g = new Grid3Ducdsp<T, uint32_t>(nodes,
+                                                     tetrahedra,
+                                                     par.nn[0],
+                                                     par.nDynamic,
+                                                     par.source_radius,
+                                                     par.raypath_method,
+                                                     par.tt_from_rp,
+                                                     par.min_distance_rp,
+                                                     nt,
+                                                     par.verbose);
                 else
-                    g = new Grid3Dundsp<T, uint32_t>(nodes, tetrahedra, par.nn[0],
-                                                     par.nDynamic, par.source_radius, par.interpVel,
-                                                     par.raypath_high_order, nt, par.verbose);
+                    g = new Grid3Dundsp<T, uint32_t>(nodes,
+                                                     tetrahedra,
+                                                     par.nn[0],
+                                                     par.nDynamic,
+                                                     par.source_radius,
+                                                     par.interpVel,
+                                                     par.raypath_method,
+                                                     par.tt_from_rp,
+                                                     par.min_distance_rp,
+                                                     nt,
+                                                     par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()

@@ -41,10 +41,10 @@ namespace ttcr {
     public:
         Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const T1 eps, const int maxit, const bool rp=false,
-                   const size_t nt=1) :
-        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, nt),
-        epsilon(eps), rp_ho(rp), nitermax(maxit), S(), niter(0)
+                   const T1 eps, const int maxit, const bool rp, const bool iv,
+                   const bool rptt, const T1 md, const size_t nt=1) :
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
+        epsilon(eps), nitermax(maxit), S(), niter(0)
         {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -53,10 +53,10 @@ namespace ttcr {
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps, const int maxit,
                    const std::vector<sxyz<T1>>& refPts, const int order,
-                   const bool rp=false,
+                   const bool rp, const bool iv, const bool rptt, const T1 md,
                    const size_t nt=1) :
-        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, nt),
-        epsilon(eps), rp_ho(rp), nitermax(maxit), S(), niter(0)
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
+        epsilon(eps), nitermax(maxit), S(), niter(0)
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -115,7 +115,6 @@ namespace ttcr {
 
     private:
         T1 epsilon;
-        int rp_ho;
         int nitermax;
         std::vector<std::vector<Node3Dn<T1,T2>*>> S;
         mutable int niter;
@@ -140,6 +139,16 @@ namespace ttcr {
                        std::vector<bool>&,
                        const size_t) const;
         
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      const size_t threadNo=0) const;
+        
+        void raytrace(const std::vector<sxyz<T1>>&,
+                      const std::vector<T1>&,
+                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      const size_t=0) const;
+
     };
     
     template<typename T1, typename T2>
@@ -175,7 +184,6 @@ namespace ttcr {
     void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
                                      const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -237,12 +245,29 @@ namespace ttcr {
             niter++;
         }
         
+    }
+    
+    template<typename T1, typename T2>
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     const size_t threadNo) const {
+        
+        raytrace(Tx, t0, Rx, threadNo);
+        
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            }
         }
     }
     
@@ -250,7 +275,6 @@ namespace ttcr {
     void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
                                      const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -313,18 +337,36 @@ namespace ttcr {
             }
             niter++;
         }
+    }
+
+    template<typename T1, typename T2>
+    void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     std::vector<std::vector<T1>*>& traveltimes,
+                                     const size_t threadNo) const {
+        
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            }
         }
     }
-    
+
     template<typename T1, typename T2>
     void Grid3Dunfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
@@ -333,8 +375,11 @@ namespace ttcr {
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
         }
@@ -343,7 +388,7 @@ namespace ttcr {
         }
         
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], rp_ho, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
     }
     
@@ -355,20 +400,25 @@ namespace ttcr {
                                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
         }
         
         for (size_t nr=0; nr<Rx.size(); ++nr) {
+            traveltimes[nr]->resize( Rx[nr]->size() );
             r_data[nr]->resize( Rx[nr]->size() );
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
             
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], rp_ho, threadNo);
+                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+                                 (*traveltimes[nr])[n], threadNo);
             }
         }
     }
@@ -382,8 +432,11 @@ namespace ttcr {
                                      T1& v0,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
         }
@@ -398,7 +451,7 @@ namespace ttcr {
         v0 = Tx.size() / v0;
 
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], rp_ho, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
     }
     
@@ -434,7 +487,7 @@ namespace ttcr {
         v0 = Tx.size() / v0;
         
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], m_data[n], n, rp_ho, threadNo);
+            this->getRaypath(Tx, Rx[n], r_data[n], m_data[n], n, threadNo);
         }
     }
 
@@ -500,12 +553,14 @@ namespace ttcr {
             }
             if ( found==false ) {
                 
+                T2 sTx = this->computeSlowness( Tx[n] );
+                
                 T2 cellNo = this->getCellNo(Tx[n]);
                 if ( Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius == 0.0 ) {
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
                         // compute dt
-                        T1 dt = this->nodes[neibNo].getDistance(Tx[n])*this->nodes[neibNo].getNodeSlowness();
+                        T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], sTx);
                         
                         this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                         frozen[neibNo] = true;
@@ -518,7 +573,7 @@ namespace ttcr {
                         T1 d = this->nodes[no].getDistance( Tx[n] );
                         if ( d <= Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius ) {
                             
-                            T1 dt = this->nodes[no].getDistance(Tx[n])*this->nodes[no].getNodeSlowness();
+                            T1 dt = this->computeDt(this->nodes[no], Tx[n], sTx);
                             
                             if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
                                 if ( this->nodes[no].getTT(threadNo) == std::numeric_limits<T1>::max() ) nodes_added++;

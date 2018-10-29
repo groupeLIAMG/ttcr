@@ -25,12 +25,15 @@
 #ifndef ttcr_Grad_h
 #define ttcr_Grad_h
 
+#include <array>
 #include <cmath>
 #include <set>
+#include <vector>
 
 #include <Eigen/Dense>
 
 #include "ttcr_t.h"
+#include "Interpolator.h"
 #include "Node.h"
 
 namespace ttcr {
@@ -174,9 +177,9 @@ namespace ttcr {
     class Grad3D {
     public:
         virtual ~Grad3D() {}
-        virtual sxyz<T> compute(const sxyz<T> &pt, const std::set<NODE*> &nodes,
-                                const size_t nt) = 0;
-        virtual sxyz<T> compute(const std::set<NODE*> &nodes,
+        virtual sxyz<T> compute(const sxyz<T> &pt,
+                                const T t,
+                                const std::set<NODE*> &nodes,
                                 const size_t nt) = 0;
     };
     
@@ -186,9 +189,9 @@ namespace ttcr {
     public:
         Grad3D_ls_fo() {}
         
-        sxyz<T> compute(const sxyz<T> &pt, const std::set<NODE*> &nodes,
-                        const size_t nt);
-        sxyz<T> compute(const std::set<NODE*> &nodes,
+        sxyz<T> compute(const sxyz<T> &pt,
+                        const T t,
+                        const std::set<NODE*> &nodes,
                         const size_t nt);
         
     private:
@@ -202,50 +205,23 @@ namespace ttcr {
    
     template <typename T, typename NODE>
     sxyz<T> Grad3D_ls_fo<T,NODE>::compute(const sxyz<T> &pt,
+                                          const T t,
                                           const std::set<NODE*> &nodes,
                                           const size_t nt) {
         
         assert(nodes.size()>=4);
         
-        T t = 0.0;
-        T den = 0.0;
-        
-        int remove = 0;
-        std::vector<T> d( nodes.size() );
-        size_t nn=0;
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            d[nn] = sqrt(((*n)->getX()-pt.x)*((*n)->getX()-pt.x) +
-                         ((*n)->getY()-pt.y)*((*n)->getY()-pt.y) +
-                         ((*n)->getZ()-pt.z)*((*n)->getZ()-pt.z) );
-            if ( d[nn] == 0.0 ) {
-                remove++;
-                nn++;
-                continue;
-            }
-            T w = 1./d[nn];
-            t += w*(*n)->getTT(nt);
-            den += w;
-            nn++;
-        }
-        t /= den;
-        
-        A.resize( nodes.size()-remove, 3 );
-        b.resize( nodes.size()-remove, 1 );
+        A.resize( nodes.size(), 3 );
+        b.resize( nodes.size(), 1 );
         
         size_t i=0;
-        nn=0;
         for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            if ( d[nn] == 0.0 ) {
-                nn++;
-                continue;
-            }
             A(i,0) = (*n)->getX()-pt.x;
             A(i,1) = (*n)->getY()-pt.y;
             A(i,2) = (*n)->getZ()-pt.z;
             
             b(i,0) = t - (*n)->getTT(nt);
             i++;
-            nn++;
         }
         
         // solve Ax = b with least squares
@@ -264,80 +240,7 @@ namespace ttcr {
         return g;
     }
     
-    template <typename T, typename NODE>
-    sxyz<T> Grad3D_ls_fo<T,NODE>::compute(const std::set<NODE*> &nodes,
-                                          const size_t nt) {
-        
-        assert(nodes.size()>=4);
-        
-        sxyz<T> cent = { 0.0, 0.0, 0.0 };
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            cent.x += (*n)->getX();
-            cent.y += (*n)->getY();
-            cent.z += (*n)->getZ();
-        }
-        T den = 1./nodes.size();
-        cent.x *= den;
-        cent.y *= den;
-        cent.z *= den;
-        
-        T t = 0.0;
-        den = 0.0;
-        
-        int remove = 0;
-        std::vector<T> d( nodes.size() );
-        size_t nn=0;
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            d[nn] = sqrt(((*n)->getX()-cent.x)*((*n)->getX()-cent.x) +
-                         ((*n)->getY()-cent.y)*((*n)->getY()-cent.y) +
-                         ((*n)->getZ()-cent.z)*((*n)->getZ()-cent.z) );
-            if ( d[nn] == 0.0 ) {
-                remove++;
-                nn++;
-                continue;
-            }
-            T w = 1./d[nn];
-            t += w*(*n)->getTT(nt);
-            den += w;
-            nn++;
-        }
-        t /= den;
-        
-        A.resize( nodes.size()-remove, 3 );
-        b.resize( nodes.size()-remove, 1 );
-        
-        size_t i=0;
-        nn=0;
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            if ( d[nn] == 0.0 ) {
-                nn++;
-                continue;
-            }
-            A(i,0) = (*n)->getX()-cent.x;
-            A(i,1) = (*n)->getY()-cent.y;
-            A(i,2) = (*n)->getZ()-cent.z;
-            
-            b(i,0) = t - (*n)->getTT(nt);
-            i++;
-            nn++;
-        }
-        
-        // solve Ax = b with least squares
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
-        
-        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
-        
-        //	if ( isnan(x[0]) || isnan(x[1]) || isnan(x[2]) ) {
-        //		g.x = g.y = g.z = 0;
-        //	}
-        
-        g.x = x[0];
-        g.y = x[1];
-        g.z = x[2];
-        
-        return g;
-    }
-    
+   
     
     // least-squares, second order
     template <typename T, typename NODE>
@@ -345,9 +248,9 @@ namespace ttcr {
     public:
         Grad3D_ls_so() {}
         
-        sxyz<T> compute(const sxyz<T> &pt, const std::set<NODE*> &nodes,
-                        const size_t nt);
-        sxyz<T> compute(const std::set<NODE*> &nodes,
+        sxyz<T> compute(const sxyz<T> &pt,
+                        const T t,
+                        const std::set<NODE*> &nodes,
                         const size_t nt);
         
     private:
@@ -360,43 +263,17 @@ namespace ttcr {
     
     template <typename T, typename NODE>
     sxyz<T> Grad3D_ls_so<T,NODE>::compute(const sxyz<T> &pt,
+                                          const T t,
                                           const std::set<NODE*> &nodes,
                                           const size_t nt) {
         // evaluate gradient are center of gravity
         assert(nodes.size()>=9);
         
-        T t = 0.0;
-        T den = 0.0;
-        
-        int remove = 0;
-        std::vector<T> d( nodes.size() );
-        size_t nn=0;
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            d[nn] = sqrt(((*n)->getX()-pt.x)*((*n)->getX()-pt.x) +
-                         ((*n)->getY()-pt.y)*((*n)->getY()-pt.y) +
-                         ((*n)->getZ()-pt.z)*((*n)->getZ()-pt.z) );
-            if ( d[nn] == 0.0 ) {
-                remove++;
-                nn++;
-                continue;
-            }
-            T w = 1./d[nn];
-            t += w*(*n)->getTT(nt);
-            den += w;
-            nn++;
-        }
-        t /= den;
-        
-        A.resize( nodes.size()-remove, 9 );
-        b.resize( nodes.size()-remove, 1 );
+        A.resize( nodes.size(), 9 );
+        b.resize( nodes.size(), 1 );
         
         size_t i=0;
-        nn=0;
         for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            if ( d[nn] == 0.0 ) {
-                nn++;
-                continue;
-            }
             T dx = (*n)->getX()-pt.x;
             T dy = (*n)->getY()-pt.y;
             T dz = (*n)->getZ()-pt.z;
@@ -413,7 +290,6 @@ namespace ttcr {
             
             b(i,0) = t - (*n)->getTT(nt);
             i++;
-            nn++;
         }
         
         // solve Ax = b with least squares
@@ -424,90 +300,148 @@ namespace ttcr {
         g.x = x[0];
         g.y = x[1];
         g.z = x[2];
+        
+        return g;
+    }
+    
+
+    // Averaging-based method
+    template <typename T, typename NODE>
+    class Grad3D_ab : public Grad3D<T, NODE> {
+    public:
+        Grad3D_ab() {}
+        
+        sxyz<T> compute(const sxyz<T> &pt,
+                        const std::vector<NODE*>& ref_pt,
+                        const std::vector<std::vector<std::array<NODE*,3>>>& opp_pts,
+                        const size_t nt);
+        
+        sxyz<T> compute(const sxyz<T> &pt,
+                        const T t,
+                        const std::set<NODE*> &nodes,
+                        const size_t nt) { return {0.0, 0.0, 0.0}; }  // should never be called
+        
+    private:
+        Eigen::Matrix<T, 3, 3> A;
+        Eigen::Matrix<T, 3, 1> x;
+        Eigen::Matrix<T, 3, 1> b;
+        
+        sxyz<T> solve(const NODE* n0,
+                      const NODE* n1,
+                      const NODE* n2,
+                      const NODE* n3,
+                      const size_t nt);
+    };
+    
+    template <typename T, typename NODE>
+    sxyz<T> Grad3D_ab<T,NODE>::compute(const sxyz<T> &pt,
+                                       const std::vector<NODE*>& ref_pt,
+                                       const std::vector<std::vector<std::array<NODE*,3>>>& opp_pts,
+                                       const size_t nt) {
+        sxyz<T> g = {0.0, 0.0, 0.0};
+        
+        if ( ref_pt.size() == 1 ) {
+            T sum_wi = 0.0;
+            for ( size_t n=0; n<opp_pts[0].size(); ++n ) {
+                sxyz<T> centroid = { static_cast<T>(0.25) * (ref_pt[0]->getX() + opp_pts[0][n][0]->getX() + opp_pts[0][n][1]->getX() + opp_pts[0][n][2]->getX()),
+                                     static_cast<T>(0.25) * (ref_pt[0]->getY() + opp_pts[0][n][0]->getY() + opp_pts[0][n][1]->getY() + opp_pts[0][n][2]->getY()),
+                                     static_cast<T>(0.25) * (ref_pt[0]->getZ() + opp_pts[0][n][0]->getZ() + opp_pts[0][n][1]->getZ() + opp_pts[0][n][2]->getZ()) };
+                T wi = 1.0 / ref_pt[0]->getDistance(centroid);
+                sum_wi += wi;
+                g += wi * solve(ref_pt[0], opp_pts[0][n][0], opp_pts[0][n][1], opp_pts[0][n][2], nt);
+            }
+            g /= sum_wi;
+        } else if ( ref_pt.size() == 2 ) {
+            
+            T AB = ref_pt[0]->getDistance( *(ref_pt[1]) );
+            std::array<T,2> weights = { ref_pt[0]->getDistance(pt)/AB,
+                ref_pt[1]->getDistance(pt)/AB };
+            
+            for ( size_t nr=0; nr<ref_pt.size(); ++nr ) {
+                T sum_wi = 0.0;
+                sxyz<T> g2 = {0.0, 0.0, 0.0};
+                for ( size_t n=0; n<opp_pts[nr].size(); ++n ) {
+                    sxyz<T> centroid = { static_cast<T>(0.25) * (ref_pt[nr]->getX() + opp_pts[nr][n][0]->getX() + opp_pts[nr][n][1]->getX() + opp_pts[nr][n][2]->getX()),
+                                         static_cast<T>(0.25) * (ref_pt[nr]->getY() + opp_pts[nr][n][0]->getY() + opp_pts[nr][n][1]->getY() + opp_pts[nr][n][2]->getY()),
+                                         static_cast<T>(0.25) * (ref_pt[nr]->getZ() + opp_pts[nr][n][0]->getZ() + opp_pts[nr][n][1]->getZ() + opp_pts[nr][n][2]->getZ()) };
+                    T wi = 1.0 / ref_pt[nr]->getDistance(centroid);
+                    sum_wi += wi;
+                    g2 += wi * solve(ref_pt[nr], opp_pts[nr][n][0], opp_pts[nr][n][1], opp_pts[nr][n][2], nt);
+                }
+                g2 /= sum_wi;
+                g += weights[nr] * g2;
+            }
+            
+        } else if ( ref_pt.size() == 3 ) {
+            
+            std::array<T,3> weights;
+            Interpolator<T>::bilinearTriangleWeight(pt, ref_pt[0], ref_pt[1], ref_pt[2], weights);
+            
+            for ( size_t nr=0; nr<ref_pt.size(); ++nr ) {
+                T sum_wi = 0.0;
+                sxyz<T> g2 = {0.0, 0.0, 0.0};
+                for ( size_t n=0; n<opp_pts[nr].size(); ++n ) {
+                    sxyz<T> centroid = { static_cast<T>(0.25) * (ref_pt[nr]->getX() + opp_pts[nr][n][0]->getX() + opp_pts[nr][n][1]->getX() + opp_pts[nr][n][2]->getX()),
+                                         static_cast<T>(0.25) * (ref_pt[nr]->getY() + opp_pts[nr][n][0]->getY() + opp_pts[nr][n][1]->getY() + opp_pts[nr][n][2]->getY()),
+                                         static_cast<T>(0.25) * (ref_pt[nr]->getZ() + opp_pts[nr][n][0]->getZ() + opp_pts[nr][n][1]->getZ() + opp_pts[nr][n][2]->getZ()) };
+                    T wi = 1.0 / ref_pt[nr]->getDistance(centroid);
+                    sum_wi += wi;
+                    g2 += wi * solve(ref_pt[nr], opp_pts[nr][n][0], opp_pts[nr][n][1], opp_pts[nr][n][2], nt);
+                }
+                g2 /= sum_wi;
+                g += weights[nr] * g2;
+            }
+            
+        } else if ( ref_pt.size() == 4 ) {
+            
+            std::array<T,4> weights;
+            Interpolator<T>::trilinearTriangleWeight(pt, ref_pt[0], ref_pt[1], ref_pt[2], ref_pt[3], weights);
+            
+            for ( size_t nr=0; nr<ref_pt.size(); ++nr ) {
+                T sum_wi = 0.0;
+                sxyz<T> g2 = {0.0, 0.0, 0.0};
+                for ( size_t n=0; n<opp_pts[nr].size(); ++n ) {
+                    sxyz<T> centroid = { static_cast<T>(0.25) * (ref_pt[nr]->getX() + opp_pts[nr][n][0]->getX() + opp_pts[nr][n][1]->getX() + opp_pts[nr][n][2]->getX()),
+                                         static_cast<T>(0.25) * (ref_pt[nr]->getY() + opp_pts[nr][n][0]->getY() + opp_pts[nr][n][1]->getY() + opp_pts[nr][n][2]->getY()),
+                                         static_cast<T>(0.25) * (ref_pt[nr]->getZ() + opp_pts[nr][n][0]->getZ() + opp_pts[nr][n][1]->getZ() + opp_pts[nr][n][2]->getZ()) };
+                    T wi = 1.0 / ref_pt[nr]->getDistance(centroid);
+                    sum_wi += wi;
+                    g2 += wi * solve(ref_pt[nr], opp_pts[nr][n][0], opp_pts[nr][n][1], opp_pts[nr][n][2], nt);
+                }
+                g2 /= sum_wi;
+                g += weights[nr] * g2;
+            }
+            
+        }
         
         return g;
     }
     
     template <typename T, typename NODE>
-    sxyz<T> Grad3D_ls_so<T,NODE>::compute(const std::set<NODE*> &nodes,
-                                          const size_t nt) {
-        // evaluate gradient at center of gravity
-        assert(nodes.size()>=9);
+    sxyz<T> Grad3D_ab<T,NODE>::solve(const NODE* n0,
+                                     const NODE* n1,
+                                     const NODE* n2,
+                                     const NODE* n3,
+                                     const size_t nt) {
+        A(0,0) = n1->getX()-n0->getX();
+        A(0,1) = n1->getY()-n0->getY();
+        A(0,2) = n1->getZ()-n0->getZ();
+        b(0,0) = n0->getTT(nt)-n1->getTT(nt);
         
-        sxyz<T> cent = { 0.0, 0.0, 0.0 };
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            cent.x += (*n)->getX();
-            cent.y += (*n)->getY();
-            cent.z += (*n)->getZ();
-        }
-        T den = 1./nodes.size();
-        cent.x *= den;
-        cent.y *= den;
-        cent.z *= den;
+        A(1,0) = n2->getX()-n0->getX();
+        A(1,1) = n2->getY()-n0->getY();
+        A(1,2) = n2->getZ()-n0->getZ();
+        b(1,0) = n0->getTT(nt)-n2->getTT(nt);
         
-        T t = 0.0;
-        den = 0.0;
+        A(2,0) = n3->getX()-n0->getX();
+        A(2,1) = n3->getY()-n0->getY();
+        A(2,2) = n3->getZ()-n0->getZ();
+        b(2,0) = n0->getTT(nt)-n3->getTT(nt);
         
-        int remove = 0;
-        std::vector<T> d( nodes.size() );
-        size_t nn=0;
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            d[nn] = sqrt(((*n)->getX()-cent.x)*((*n)->getX()-cent.x) +
-                         ((*n)->getY()-cent.y)*((*n)->getY()-cent.y) +
-                         ((*n)->getZ()-cent.z)*((*n)->getZ()-cent.z) );
-            if ( d[nn] == 0.0 ) {
-                remove++;
-                nn++;
-                continue;
-            }
-            T w = 1./d[nn];
-            t += w*(*n)->getTT(nt);
-            den += w;
-            nn++;
-        }
-        t /= den;
-        
-        A.resize( nodes.size()-remove, 9 );
-        b.resize( nodes.size()-remove, 1 );
-        
-        size_t i=0;
-        nn=0;
-        for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-            if ( d[nn] == 0.0 ) {
-                nn++;
-                continue;
-            }
-            T dx = (*n)->getX()-cent.x;
-            T dy = (*n)->getY()-cent.y;
-            T dz = (*n)->getZ()-cent.z;
-            
-            A(i,0) = dx;
-            A(i,1) = dy;
-            A(i,2) = dz;
-            A(i,3) = 0.5*dx*dx;
-            A(i,4) = 0.5*dy*dy;
-            A(i,5) = 0.5*dz*dz;
-            A(i,6) = dx*dy;
-            A(i,7) = dx*dz;
-            A(i,8) = dy*dz;
-            
-            b(i,0) = t - (*n)->getTT(nt);
-            i++;
-            nn++;
-        }
-        
-        // solve Ax = b with least squares
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
-        
-        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
-        
-        g.x = x[0];
-        g.y = x[1];
-        g.z = x[2];
-        
-        return g;
-    }
+        x = A.colPivHouseholderQr().solve(b);
     
+        return {x[0], x[1], x[2]};
+    }
 }
 
 #endif
