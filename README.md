@@ -21,6 +21,7 @@ Each program is invoked with the same following options:
 -k  Save model in VTK format
 -v  Verbose mode
 -t  Measure time to build grid and perform raytracing
+-s  Dump secondary node coordinates to ascii file ((D)SPM method only)
 ```
 
 ### Parameter file
@@ -46,11 +47,14 @@ The keywords are :
 -  **saveGridTT** : save traveltime over whole grid, in ASCII file if 1 or in VTK format if 2.
 -  **single precision** : work with float rather than double
 -  **fast marching** : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)
--  **fast sweeping**: use fast sweeping method if value == 1
+-  **fast sweeping** : use fast sweeping method if value == 1
+- **dynamic shortest path** : use dynamic shortest path method if value == 1 (currently implemented on 3D unstructured meshes only)
+- **number of dynamic nodes** : number of temporary nodes to use with DSPM
 -  **process reflectors** :
 -  **saveRayPaths** :
 -  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
 -  **fsm high order** : use 3rd order weighted essentially non-oscillatory (WENO) operator with fast sweeping in rectilinear grid if value == 1 (default is 0)
+- **traveltime from raypath** : use backward raytracing step to compute traveltimes (currently implemented on 3D unstructured meshes only)
 
 An example is shown below (note that keywords *must* be comprised between a hashtag and a comma):
 ```
@@ -271,6 +275,32 @@ Please report bugs to bernard dot giroux at ete.inrs.ca
 
 ## References
 ```
+
+@inbook{nasr18,
+  author = { Maher Nasr  and  Bernard Giroux  and  J. Christian Dupuis },
+  title = {An optimized approach to compute traveltimes in 3D unstructured meshes},
+  booktitle = {SEG Technical Program Expanded Abstracts 2018},
+  chapter = {},
+  pages = {5073-5077},
+  year = {2018},
+  doi = {10.1190/segam2018-2997918.1},
+  URL = {https://library.seg.org/doi/abs/10.1190/segam2018-2997918.1},
+  eprint = {https://library.seg.org/doi/pdf/10.1190/segam2018-2997918.1}
+}
+
+@InProceedings{giroux14,
+  Title = {Comparison of grid-based methods for raytracing on unstructured meshes},
+  Author = {Bernard Giroux},
+  Booktitle = {SEG Technical Program Expanded Abstracts},
+  Year = {2014},
+  Pages = {3388-3392},
+  Chapter = {649},
+  DOI = {10.1190/segam2014-1197.1},
+  Eprint = {http://library.seg.org/doi/pdf/10.1190/segam2014-1197.1},
+  URL = {http://dx.doi.org/10.1190/segam2014-1197.1}
+}
+
+
 @ARTICLE{giroux13,
   author = {Bernard Giroux and Beno\^{\i}t Larouche},
   title = {Task-parallel implementation of {3D} shortest path raytracing for
