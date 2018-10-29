@@ -269,24 +269,24 @@ namespace ttcr {
         
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
-                                    const sxyz<T1> &Rx,
+                                    const sxyz<T1>& Rx,
                                     const size_t threadNo) const;
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
+                        const sxyz<T1>& Rx,
+                        std::vector<sxyz<T1>>& r_data,
                         const size_t threadNo) const;
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
+                        const sxyz<T1>& Rx,
+                        std::vector<sxyz<T1>>& r_data,
                         T1 &tt,
                         const size_t threadNo) const;
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
+                        const sxyz<T1>& Rx,
+                        std::vector<sxyz<T1>>& r_data,
                         std::vector<sijv<T1>>& m_data,
                         const size_t RxNo,
                         const size_t threadNo) const;
@@ -326,6 +326,8 @@ namespace ttcr {
         
         bool areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const;
         bool areCoplanar(const sxyz<T1> &pt, const T2 i0, const T2 i1, const T2 i2) const;
+        bool areCoplanar(const sxyz<T1> &pt1, const sxyz<T1> &pt2,
+                         const sxyz<T1> &pt3, const sxyz<T1> &pt4) const;
         
         T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
@@ -673,7 +675,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& p, const T2 nt) const {
+    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& p, const T2 nt) const {
         
         sxyz<T1> v1 = { nodes[ tetrahedra[nt].i[0] ].getX(),
             nodes[ tetrahedra[nt].i[0] ].getY(),
@@ -696,7 +698,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& v, const T2 nt) const {
+    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& v, const T2 nt) const {
         
         
         // from http://steve.hollasch.net/cgindex/geometry/ptintet.html
@@ -725,7 +727,7 @@ namespace ttcr {
         
         int t1, t2, t3, t4;
         
-        if ( fabs(D1)<small ) {
+        if ( fabs(D1)<small2 ) {
             // points are coplanar, check if pt is inside triangle
             if ( testInTriangle(&(nodes[ tetrahedra[nt].i[1] ]),
                                 &(nodes[ tetrahedra[nt].i[2] ]),
@@ -738,7 +740,7 @@ namespace ttcr {
             t1 = (signum(D0)==signum(D1));
         }
         
-        if ( fabs(D2)<small ) {
+        if ( fabs(D2)<small2 ) {
             if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
                                 &(nodes[ tetrahedra[nt].i[2] ]),
                                 &(nodes[ tetrahedra[nt].i[3] ]), v))
@@ -749,7 +751,7 @@ namespace ttcr {
             t2 = (signum(D0)==signum(D2));
         }
         
-        if ( fabs(D3)<small ) {
+        if ( fabs(D3)<small2 ) {
             if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
                                 &(nodes[ tetrahedra[nt].i[1] ]),
                                 &(nodes[ tetrahedra[nt].i[3] ]), v))
@@ -760,7 +762,7 @@ namespace ttcr {
             t3 = (signum(D0)==signum(D3));
         }
         
-        if ( fabs(D4)<small ) {
+        if ( fabs(D4)<small2 ) {
             if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
                                 &(nodes[ tetrahedra[nt].i[1] ]),
                                 &(nodes[ tetrahedra[nt].i[2] ]), v))
@@ -2823,7 +2825,6 @@ namespace ttcr {
                 }
             }
             if ( !onEdge ) {
-                std::array<T2,4> itmp = getPrimary(cellNo);
                 std::array<T2,3> ind[4] = {
                     { { itmp[0], itmp[1], itmp[2] } },
                     { { itmp[0], itmp[1], itmp[3] } },
@@ -4476,6 +4477,13 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
+    bool Grid3Dun<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const sxyz<T1> &x2,
+                                           const sxyz<T1> &x3, const sxyz<T1> &x4) const {
+        return (fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
+    }
+
+    
+    template<typename T1, typename T2, typename NODE>
     T2 Grid3Dun<T1,T2,NODE>::findAdjacentCell1(const std::array<T2,3> &faceNodes,
                                                const T2 nodeNo) const {
         
@@ -4590,7 +4598,14 @@ namespace ttcr {
                                               const NODE *vertexB,
                                               const NODE *vertexC,
                                               const sxyz<T1> &E) const {
-        
+        if (vertexA->getDistance(E)+vertexB->getDistance(E)-vertexA->getDistance(*vertexB)<small2)
+            return true;
+        if (vertexA->getDistance(E)+vertexC->getDistance(E)-vertexA->getDistance(*vertexC)<small2)
+            return true;
+        if (vertexC->getDistance(E)+vertexB->getDistance(E)-vertexC->getDistance(*vertexB)<small2)
+            return true;
+        if (!areCoplanar(sxyz<T1>((*vertexA)), sxyz<T1>((*vertexB)), sxyz<T1>((*vertexC)), E))
+            return false;
         T1 u, v, w;
         barycentric(vertexA, vertexB, vertexC, E, u, v, w);
         return v >= 0.0 && w >= 0.0 && (v + w) <= 1.0;

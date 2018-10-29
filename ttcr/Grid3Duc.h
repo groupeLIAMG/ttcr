@@ -323,7 +323,9 @@ namespace ttcr {
         
         bool areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const;
         bool areCoplanar(const sxyz<T1> &pt, const T2 i0, const T2 i1, const T2 i2) const;
-        
+        bool areCoplanar(const sxyz<T1> &pt1, const sxyz<T1> &pt2,
+                         const sxyz<T1> &pt3, const sxyz<T1> &pt4) const;
+
         T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
         
@@ -679,7 +681,7 @@ namespace ttcr {
     }
         
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& p, const T2 nt) const {
+    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& p, const T2 nt) const {
         
         sxyz<T1> v1 = { nodes[ tetrahedra[nt].i[0] ].getX(),
             nodes[ tetrahedra[nt].i[0] ].getY(),
@@ -703,7 +705,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& v, const T2 nt) const {
+    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron(const sxyz<T1>& v, const T2 nt) const {
         
         
         // from http://steve.hollasch.net/cgindex/geometry/ptintet.html
@@ -732,16 +734,16 @@ namespace ttcr {
         
         int t1, t2, t3, t4;
         
-        if ( fabs(D1)<small ) t1 = 1;
+        if ( fabs(D1)<small2 ) t1 = 1;
         else t1 = (signum(D0)==signum(D1));
         
-        if ( fabs(D2)<small ) t2 = 1;
+        if ( fabs(D2)<small2 ) t2 = 1;
         else t2 = (signum(D0)==signum(D2));
         
-        if ( fabs(D3)<small ) t3 = 1;
+        if ( fabs(D3)<small2 ) t3 = 1;
         else t3 = (signum(D0)==signum(D3));
         
-        if ( fabs(D4)<small ) t4 = 1;
+        if ( fabs(D4)<small2 ) t4 = 1;
         else t4 = (signum(D0)==signum(D4));
         
         return t1 && t2 && t3 && t4;
@@ -3471,6 +3473,12 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
+    bool Grid3Duc<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const sxyz<T1> &x2
+                                           , const sxyz<T1> &x3, const sxyz<T1> &x4) const {
+        return (fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
+    }
+    
+    template<typename T1, typename T2, typename NODE>
     T2 Grid3Duc<T1,T2,NODE>::findAdjacentCell1(const std::array<T2,3> &faceNodes,
                                                const T2 nodeNo) const {
         
@@ -3585,7 +3593,14 @@ namespace ttcr {
                                               const NODE *vertexB,
                                               const NODE *vertexC,
                                               const sxyz<T1> &E) const {
-        
+        if (vertexA->getDistance(E)+vertexB->getDistance(E)-vertexA->getDistance(*vertexB)<small2)
+            return true;
+        if (vertexA->getDistance(E)+vertexC->getDistance(E)-vertexA->getDistance(*vertexC)<small2)
+            return true;
+        if (vertexC->getDistance(E)+vertexB->getDistance(E)-vertexC->getDistance(*vertexB)<small2)
+            return true;
+        if (!areCoplanar(sxyz<T1>((*vertexA)), sxyz<T1>((*vertexB)), sxyz<T1>((*vertexC)), E))
+            return false;
         T1 u, v, w;
         barycentric(vertexA, vertexB, vertexC, E, u, v, w);
         return v >= 0.0 && w >= 0.0 && (v + w) <= 1.0;
