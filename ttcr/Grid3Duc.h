@@ -2103,6 +2103,35 @@ namespace ttcr {
                         break;
                     }
                 }
+            } if ( onEdge ) {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( txOnNode[nt] ) {
+                        if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
+                            tt += slowness[txCell[nt]] * prev_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    } else {
+                        std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                        // find adjacent cells
+                        const T2 ind[6][2] = {
+                            {itmp[0], itmp[1]},
+                            {itmp[0], itmp[2]},
+                            {itmp[0], itmp[3]},
+                            {itmp[1], itmp[2]},
+                            {itmp[1], itmp[3]},
+                            {itmp[2], itmp[3]} };
+                        for ( size_t ne=0; ne<6; ++ne ) {
+                            if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
+                                (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
+                                
+                                tt += slowness[txCell[nt]] * prev_pt.getDistance( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
@@ -2122,19 +2151,32 @@ namespace ttcr {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
                                     std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                                    
+                                    std::array<T2,3> ind[4] = {
+                                        { { itmp[0], itmp[1], itmp[2] } },
+                                        { { itmp[0], itmp[1], itmp[3] } },
+                                        { { itmp[0], itmp[2], itmp[3] } },
+                                        { { itmp[1], itmp[2], itmp[3] } }
+                                    };
+
                                     bool found = false;
-                                    for ( T2 i=0; i<4; ++i ) {
-                                        T2 iA = itmp[(i+1)%4];
-                                        T2 iB = itmp[(i+2)%4];
-                                        T2 iC = itmp[(i+3)%4];
-                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+                                    for ( size_t n=0; n<4; ++n ) {
+                                        std::sort( ind[n].begin(), ind[n].end() );
+                                        if ( faceNodes == ind[n] ) {
                                             found = true;
                                             break;
                                         }
                                     }
+//                                    for ( T2 i=0; i<4; ++i ) {
+//                                        T2 iA = itmp[(i+1)%4];
+//                                        T2 iB = itmp[(i+2)%4];
+//                                        T2 iC = itmp[(i+3)%4];
+//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
+//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
+//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+//                                            found = true;
+//                                            break;
+//                                        }
+//                                    }
                                     if ( found ) {
                                         tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
                                         reachedTx = true;
@@ -2655,6 +2697,34 @@ namespace ttcr {
                         break;
                     }
                 }
+            } if ( onEdge ) {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( txOnNode[nt] ) {
+                        if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    } else {
+                        std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                        // find adjacent cells
+                        const T2 ind[6][2] = {
+                            {itmp[0], itmp[1]},
+                            {itmp[0], itmp[2]},
+                            {itmp[0], itmp[3]},
+                            {itmp[1], itmp[2]},
+                            {itmp[1], itmp[3]},
+                            {itmp[2], itmp[3]} };
+                        for ( size_t ne=0; ne<6; ++ne ) {
+                            if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
+                                (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
+                                r_data.push_back( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
@@ -2674,19 +2744,32 @@ namespace ttcr {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
                                     std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                                    
+                                    std::array<T2,3> ind[4] = {
+                                        { { itmp[0], itmp[1], itmp[2] } },
+                                        { { itmp[0], itmp[1], itmp[3] } },
+                                        { { itmp[0], itmp[2], itmp[3] } },
+                                        { { itmp[1], itmp[2], itmp[3] } }
+                                    };
+
                                     bool found = false;
-                                    for ( T2 i=0; i<4; ++i ) {
-                                        T2 iA = itmp[(i+1)%4];
-                                        T2 iB = itmp[(i+2)%4];
-                                        T2 iC = itmp[(i+3)%4];
-                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+                                    for ( size_t n=0; n<4; ++n ) {
+                                        std::sort( ind[n].begin(), ind[n].end() );
+                                        if ( faceNodes == ind[n] ) {
                                             found = true;
                                             break;
                                         }
                                     }
+//                                    for ( T2 i=0; i<4; ++i ) {
+//                                        T2 iA = itmp[(i+1)%4];
+//                                        T2 iB = itmp[(i+2)%4];
+//                                        T2 iC = itmp[(i+3)%4];
+//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
+//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
+//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+//                                            found = true;
+//                                            break;
+//                                        }
+//                                    }
                                     if ( found ) {
                                         r_data.push_back( Tx[nt] );
                                         reachedTx = true;
@@ -3218,6 +3301,35 @@ namespace ttcr {
                         break;
                     }
                 }
+            } if ( onEdge ) {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( txOnNode[nt] ) {
+                        if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
+                            tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    } else {
+                        std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                        // find adjacent cells
+                        const T2 ind[6][2] = {
+                            {itmp[0], itmp[1]},
+                            {itmp[0], itmp[2]},
+                            {itmp[0], itmp[3]},
+                            {itmp[1], itmp[2]},
+                            {itmp[1], itmp[3]},
+                            {itmp[2], itmp[3]} };
+                        for ( size_t ne=0; ne<6; ++ne ) {
+                            if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
+                                (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
+                                
+                                tt += t0[nt] + slowness[txCell[nt]] * r_data.back().getDistance( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
@@ -3239,19 +3351,32 @@ namespace ttcr {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
                                     std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                                    
+                                    std::array<T2,3> ind[4] = {
+                                        { { itmp[0], itmp[1], itmp[2] } },
+                                        { { itmp[0], itmp[1], itmp[3] } },
+                                        { { itmp[0], itmp[2], itmp[3] } },
+                                        { { itmp[1], itmp[2], itmp[3] } }
+                                    };
+
                                     bool found = false;
-                                    for ( T2 i=0; i<4; ++i ) {
-                                        T2 iA = itmp[(i+1)%4];
-                                        T2 iB = itmp[(i+2)%4];
-                                        T2 iC = itmp[(i+3)%4];
-                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+                                    for ( size_t n=0; n<4; ++n ) {
+                                        std::sort( ind[n].begin(), ind[n].end() );
+                                        if ( faceNodes == ind[n] ) {
                                             found = true;
                                             break;
                                         }
                                     }
+//                                    for ( T2 i=0; i<4; ++i ) {
+//                                        T2 iA = itmp[(i+1)%4];
+//                                        T2 iB = itmp[(i+2)%4];
+//                                        T2 iC = itmp[(i+3)%4];
+//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
+//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
+//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+//                                            found = true;
+//                                            break;
+//                                        }
+//                                    }
                                     if ( found ) {
                                         tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                                         r_data.push_back( Tx[nt] );
