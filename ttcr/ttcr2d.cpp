@@ -187,7 +187,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
+                    g->saveTT(filename, 0, 0, par.saveGridTT);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";
 //                    g->saveTTgrad(filename, 0, true);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";
@@ -311,7 +311,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
+                    g->saveTT(filename, 0, 0, par.saveGridTT);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";
 //                    g->saveTTgrad(filename, 0, true);
 //                    filename = par.basename+"_"+srcname+"_tt_grad";

@@ -255,7 +255,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
+                    g->saveTT(filename, 0, 0, par.saveGridTT);
                 }
 				
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
@@ -376,7 +376,7 @@ int body(const input_parameters &par) {
                     srcname.erase(pos, len);
                     
                     string filename = par.basename+"_"+srcname+"_all_tt";
-                    g->saveTT(filename, 0, 0, par.saveGridTT==2);
+                    g->saveTT(filename, 0, 0, par.saveGridTT);
                 }
 
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {

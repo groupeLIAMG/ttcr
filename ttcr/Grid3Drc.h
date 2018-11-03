@@ -139,7 +139,7 @@ namespace ttcr {
         }
         
         void saveTT(const std::string &, const int, const size_t nt=0,
-                    const bool vtkFormat=0) const;
+                    const int format=1) const;
         
         //    size_t getSlownessSize() const {
         //        return slowness.size()*sizeof(T1);
@@ -347,10 +347,25 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename CELL>
-    void Grid3Drc<T1,T2,NODE,CELL>::saveTT(const std::string &fname, const int all,
-                                           const size_t nt, const bool vtkFormat) const {
+    void Grid3Drc<T1,T2,NODE,CELL>::saveTT(const std::string &fname,
+                                           const int all,
+                                           const size_t nt,
+                                           const int format) const {
         
-        if (vtkFormat) {
+        if ( format == 1 ) {
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
+            fout.precision(12);
+            for ( T2 n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() == true || all==1 ) {
+                    fout << nodes[n].getX() << '\t'
+                    << nodes[n].getY() << '\t'
+                    << nodes[n].getZ() << '\t'
+                    << nodes[n].getTT(nt) << '\n';
+                }
+            }
+            fout.close();
+        } else if ( format == 2 ) {
 #ifdef VTK
             
             std::string filename = fname+".vtr";
@@ -397,19 +412,18 @@ namespace ttcr {
 #else
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
-        } else {
-            std::string filename = fname+".dat";
-            std::ofstream fout(filename.c_str());
-            fout.precision(12);
+        } else if ( format == 3 ) {
+            std::string filename = fname+".bin";
+            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::app);
             for ( T2 n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() == true || all==1 ) {
-                    fout << nodes[n].getX() << '\t'
-                    << nodes[n].getY() << '\t'
-                    << nodes[n].getZ() << '\t'
-                    << nodes[n].getTT(nt) << '\n';
+                    T1 tmp[] = { nodes[n].getX(), nodes[n].getY(), nodes[n].getZ(), nodes[n].getTT(nt) };
+                    fout.write( (char*)tmp, 4*sizeof(T1) );
                 }
             }
             fout.close();
+        } else {
+            throw std::runtime_error("Unsupported format for saving traveltimes");
         }
     }
     

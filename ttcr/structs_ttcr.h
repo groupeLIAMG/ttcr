@@ -41,12 +41,12 @@ namespace ttcr {
         int nitermax;
         int nDynamic;
         int raypath_method;
+        int saveGridTT;
         bool inverseDistance;
         bool singlePrecision;
         bool saveRaypaths;
         bool saveModelVTK;
         bool saveM;
-        bool saveGridTT;
         bool time;
         bool processReflectors;
         bool projectTxRx;
@@ -67,9 +67,9 @@ namespace ttcr {
         std::vector<std::string> srcfiles;
         
         input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
-        nDynamic(3), raypath_method(LS_SO), inverseDistance(false),
-        singlePrecision(false), saveRaypaths(false), saveModelVTK(false),
-        saveM(false), saveGridTT(false), time(false), processReflectors(false),
+        nDynamic(3), raypath_method(LS_SO), saveGridTT(0),
+        inverseDistance(false), singlePrecision(false), saveRaypaths(false),
+        saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), interpVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
         epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),

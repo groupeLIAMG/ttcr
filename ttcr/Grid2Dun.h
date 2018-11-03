@@ -124,7 +124,7 @@ namespace ttcr {
         }
         
         void saveTT(const std::string &, const int, const size_t nt=0,
-                    const bool vtkFormat=0) const;
+                    const int format=1) const;
         
         int projectPts(std::vector<S>&) const;
         
@@ -443,9 +443,22 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Dun<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
-                                        const size_t nt, const bool vtkFormat) const {
-        
-        if (vtkFormat) {
+                                        const size_t nt, const int format) const {
+        if ( format == 1 ) {
+            std::string filename = fname+".dat";
+            std::ofstream fout(filename.c_str());
+            fout.precision(12);
+            T2 nMax = nPrimary;
+            if ( all == 1 ) {
+                nMax = static_cast<T2>(nodes.size());
+            }
+            for ( T2 n=0; n<nMax; ++n ) {
+                fout << nodes[n].getX() << '\t'
+                << nodes[n].getZ() << '\t'
+                << nodes[n].getTT(nt) << '\n';
+            }
+            fout.close();
+        } else if ( format == 2 ) {
 #ifdef VTK
             std::string filename = fname+".vtu";
             
@@ -492,20 +505,20 @@ namespace ttcr {
 #else
             std::cerr << "VTK not included during compilation.\nNothing saved.\n";
 #endif
-        } else {
-            std::string filename = fname+".dat";
-            std::ofstream fout(filename.c_str());
-            fout.precision(12);
+        } else if ( format == 3 ){
+            std::string filename = fname+".bin";
+            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::app);
             T2 nMax = nPrimary;
             if ( all == 1 ) {
                 nMax = static_cast<T2>(nodes.size());
             }
             for ( T2 n=0; n<nMax; ++n ) {
-                fout << nodes[n].getX() << '\t'
-                << nodes[n].getZ() << '\t'
-                << nodes[n].getTT(nt) << '\n';
+                T1 tmp[] = { nodes[n].getX(), nodes[n].getZ(), nodes[n].getTT(nt) };
+                fout.write( (char*)tmp, 3*sizeof(T1) );
             }
             fout.close();
+        } else {
+            throw std::runtime_error("Unsupported format for saving traveltimes");
         }
     }
     

@@ -44,7 +44,7 @@ The keywords are :
 -  **metric order** : metric used to built sweeping ordering (FSM, see Qian et al. 2007) default is 2
 -  **epsilon** : convergence criterion (FSM, see Qian et al. 2007) default is 1.e-15
 -  **max number of iteration** : max number of sweeping iterations (FSM) default is 20
--  **saveGridTT** : save traveltime over whole grid, in ASCII file if 1 or in VTK format if 2.
+-  **saveGridTT** : save traveltime over whole grid, in ASCII file if 1, in VTK format if 2, or in binary format if 3.
 -  **single precision** : work with float rather than double
 -  **fast marching** : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)
 -  **fast sweeping** : use fast sweeping method if value == 1

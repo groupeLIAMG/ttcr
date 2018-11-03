@@ -107,7 +107,7 @@ namespace ttcr {
         virtual size_t getNumberOfCells() const { return 1; }
         
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
-                            const bool vtkFormat=0) const {}
+                            const int format=1) const {}
         
         virtual void saveTTgrad(const std::string &, const size_t nt=0,
                                 const bool vtkFormat=0) const {}
