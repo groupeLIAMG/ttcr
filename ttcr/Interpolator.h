@@ -25,6 +25,8 @@
 #ifndef ttcr_Interpolator_h
 #define ttcr_Interpolator_h
 
+#include <cmath>
+
 namespace ttcr {
     
     template<class T> class Interpolator
@@ -328,17 +330,17 @@ namespace ttcr {
             sxyz<T> AC = {node3->getX()-node1->getX(), node3->getY()-node1->getY(), node3->getZ()-node1->getZ()};
             sxyz<T> AD = {node4->getX()-node1->getX(), node4->getY()-node1->getY(), node4->getZ()-node1->getZ()};
 
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {node1->getX()-node.x, node1->getY()-node.y, node1->getZ()-node.z};
             sxyz<T> IB = {node2->getX()-node.x, node2->getY()-node.y, node2->getZ()-node.z};
             sxyz<T> IC = {node3->getX()-node.x, node3->getY()-node.y, node3->getZ()-node.z};
             sxyz<T> ID = {node4->getX()-node.x, node4->getY()-node.y, node4->getZ()-node.z};
             
-            w[0] = abs(det(IB, IC, ID))/V;
-            w[1] = abs(det(IC, IA, ID))/V;
-            w[2] = abs(det(IB, IA, ID))/V;
-            w[3] = abs(det(IB, IA, IC))/V;
+            w[0] = std::abs(det(IB, IC, ID))/V;
+            w[1] = std::abs(det(IC, IA, ID))/V;
+            w[2] = std::abs(det(IB, IA, ID))/V;
+            w[3] = std::abs(det(IB, IA, IC))/V;
         }
         
         template<typename NODE>
@@ -349,17 +351,17 @@ namespace ttcr {
             sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
             sxyz<T> AD = {node4.getX()-node1.getX(), node4.getY()-node1.getY(), node4.getZ()-node1.getZ()};
             
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
             sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
             sxyz<T> IC = {node3.getX()-node.x, node3.getY()-node.y, node3.getZ()-node.z};
             sxyz<T> ID = {node4.getX()-node.x, node4.getY()-node.y, node4.getZ()-node.z};
             
-            T w1 = abs(det(IB, IC, ID))/V;
-            T w2 = abs(det(IC, IA, ID))/V;
-            T w3 = abs(det(IB, IA, ID))/V;
-            T w4 = abs(det(IB, IA, IC))/V;
+            T w1 = std::abs(det(IB, IC, ID))/V;
+            T w2 = std::abs(det(IC, IA, ID))/V;
+            T w3 = std::abs(det(IB, IA, ID))/V;
+            T w4 = std::abs(det(IB, IA, IC))/V;
             
             return (w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness() + w3*node3.getNodeSlowness() + w4*node4.getNodeSlowness());
         }
@@ -372,17 +374,17 @@ namespace ttcr {
             sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
             sxyz<T> AD = {node4.getX()-node1.getX(), node4.getY()-node1.getY(), node4.getZ()-node1.getZ()};
             
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
             sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
             sxyz<T> IC = {node3.getX()-node.x, node3.getY()-node.y, node3.getZ()-node.z};
             sxyz<T> ID = {node4.getX()-node.x, node4.getY()-node.y, node4.getZ()-node.z};
             
-            T w1 = abs(det(IB, IC, ID))/V;
-            T w2 = abs(det(IC, IA, ID))/V;
-            T w3 = abs(det(IB, IA, ID))/V;
-            T w4 = abs(det(IB, IA, IC))/V;
+            T w1 = std::abs(det(IB, IC, ID))/V;
+            T w2 = std::abs(det(IC, IA, ID))/V;
+            T w3 = std::abs(det(IB, IA, ID))/V;
+            T w4 = std::abs(det(IB, IA, IC))/V;
             
             return 1.0/(w1/node1.getNodeSlowness() + w2/node2.getNodeSlowness() + w3/node3.getNodeSlowness() + w4/node4.getNodeSlowness());
         }
@@ -395,17 +397,17 @@ namespace ttcr {
             sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
             sxyz<T> AD = {node4.getX()-node1.getX(), node4.getY()-node1.getY(), node4.getZ()-node1.getZ()};
             
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {node1.getX()-node.getX(), node1.getY()-node.getY(), node1.getZ()-node.getZ()};
             sxyz<T> IB = {node2.getX()-node.getX(), node2.getY()-node.getY(), node2.getZ()-node.getZ()};
             sxyz<T> IC = {node3.getX()-node.getX(), node3.getY()-node.getY(), node3.getZ()-node.getZ()};
             sxyz<T> ID = {node4.getX()-node.getX(), node4.getY()-node.getY(), node4.getZ()-node.getZ()};
             
-            T w1 = abs(det(IB, IC, ID))/V;
-            T w2 = abs(det(IC, IA, ID))/V;
-            T w3 = abs(det(IB, IA, ID))/V;
-            T w4 = abs(det(IB, IA, IC))/V;
+            T w1 = std::abs(det(IB, IC, ID))/V;
+            T w2 = std::abs(det(IC, IA, ID))/V;
+            T w3 = std::abs(det(IB, IA, ID))/V;
+            T w4 = std::abs(det(IB, IA, IC))/V;
             
             return (w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness() + w3*node3.getNodeSlowness() + w4*node4.getNodeSlowness());
         }
@@ -419,17 +421,17 @@ namespace ttcr {
             sxyz<T> AC = {nodes[2]->getX()-nodes[0]->getX(), nodes[2]->getY()-nodes[0]->getY(), nodes[2]->getZ()-nodes[0]->getZ()};
             sxyz<T> AD = {nodes[3]->getX()-nodes[0]->getX(), nodes[3]->getY()-nodes[0]->getY(), nodes[3]->getZ()-nodes[0]->getZ()};
             
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {nodes[0]->getX()-node.x, nodes[0]->getY()-node.y, nodes[0]->getZ()-node.z};
             sxyz<T> IB = {nodes[1]->getX()-node.x, nodes[1]->getY()-node.y, nodes[1]->getZ()-node.z};
             sxyz<T> IC = {nodes[2]->getX()-node.x, nodes[2]->getY()-node.y, nodes[2]->getZ()-node.z};
             sxyz<T> ID = {nodes[3]->getX()-node.x, nodes[3]->getY()-node.y, nodes[3]->getZ()-node.z};
             
-            T w1 = abs(det(IB, IC, ID))/V;
-            T w2 = abs(det(IC, IA, ID))/V;
-            T w3 = abs(det(IB, IA, ID))/V;
-            T w4 = abs(det(IB, IA, IC))/V;
+            T w1 = std::abs(det(IB, IC, ID))/V;
+            T w2 = std::abs(det(IC, IA, ID))/V;
+            T w3 = std::abs(det(IB, IA, ID))/V;
+            T w4 = std::abs(det(IB, IA, IC))/V;
             
             return (w1*nodes[0]->getNodeSlowness() + w2*nodes[1]->getNodeSlowness() + w3*nodes[2]->getNodeSlowness() + w4*nodes[3]->getNodeSlowness());
         }
@@ -443,17 +445,17 @@ namespace ttcr {
             sxyz<T> AC = {nodes[2]->getX()-nodes[0]->getX(), nodes[2]->getY()-nodes[0]->getY(), nodes[2]->getZ()-nodes[0]->getZ()};
             sxyz<T> AD = {nodes[3]->getX()-nodes[0]->getX(), nodes[3]->getY()-nodes[0]->getY(), nodes[3]->getZ()-nodes[0]->getZ()};
             
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {nodes[0]->getX()-node.x, nodes[0]->getY()-node.y, nodes[0]->getZ()-node.z};
             sxyz<T> IB = {nodes[1]->getX()-node.x, nodes[1]->getY()-node.y, nodes[1]->getZ()-node.z};
             sxyz<T> IC = {nodes[2]->getX()-node.x, nodes[2]->getY()-node.y, nodes[2]->getZ()-node.z};
             sxyz<T> ID = {nodes[3]->getX()-node.x, nodes[3]->getY()-node.y, nodes[3]->getZ()-node.z};
             
-            T w1 = abs(det(IB, IC, ID))/V;
-            T w2 = abs(det(IC, IA, ID))/V;
-            T w3 = abs(det(IB, IA, ID))/V;
-            T w4 = abs(det(IB, IA, IC))/V;
+            T w1 = std::abs(det(IB, IC, ID))/V;
+            T w2 = std::abs(det(IC, IA, ID))/V;
+            T w3 = std::abs(det(IB, IA, ID))/V;
+            T w4 = std::abs(det(IB, IA, IC))/V;
             
             return 1.0/(w1/nodes[0]->getNodeSlowness() + w2/nodes[1]->getNodeSlowness() + w3/nodes[2]->getNodeSlowness() + w4/nodes[3]->getNodeSlowness());
         }
@@ -466,17 +468,17 @@ namespace ttcr {
             sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
             sxyz<T> AD = {node4.getX()-node1.getX(), node4.getY()-node1.getY(), node4.getZ()-node1.getZ()};
             
-            T V = abs(det(AB, AC, AD));
+            T V = std::abs(det(AB, AC, AD));
             
             sxyz<T> IA = {node1.getX()-node.getX(), node1.getY()-node.getY(), node1.getZ()-node.getZ()};
             sxyz<T> IB = {node2.getX()-node.getX(), node2.getY()-node.getY(), node2.getZ()-node.getZ()};
             sxyz<T> IC = {node3.getX()-node.getX(), node3.getY()-node.getY(), node3.getZ()-node.getZ()};
             sxyz<T> ID = {node4.getX()-node.getX(), node4.getY()-node.getY(), node4.getZ()-node.getZ()};
             
-            T w1 = abs(det(IB, IC, ID))/V;
-            T w2 = abs(det(IC, IA, ID))/V;
-            T w3 = abs(det(IB, IA, ID))/V;
-            T w4 = abs(det(IB, IA, IC))/V;
+            T w1 = std::abs(det(IB, IC, ID))/V;
+            T w2 = std::abs(det(IC, IA, ID))/V;
+            T w3 = std::abs(det(IB, IA, ID))/V;
+            T w4 = std::abs(det(IB, IA, IC))/V;
             
             return 1.0/(w1/node1.getNodeSlowness() + w2/node2.getNodeSlowness() + w3/node3.getNodeSlowness() + w4/node4.getNodeSlowness());
         }
@@ -489,17 +491,17 @@ namespace ttcr {
             sxyz<T> AC = {node3.getX()-node1.getX(), node3.getY()-node1.getY(), node3.getZ()-node1.getZ()};
             sxyz<T> AD = {node4.getX()-node1.getX(), node4.getY()-node1.getY(), node4.getZ()-node1.getZ()};
             
-            T V = abs(det(AB,AC,AD));
+            T V = std::abs(det(AB,AC,AD));
             
             sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
             sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
             sxyz<T> IC = {node3.getX()-node.x, node3.getY()-node.y, node3.getZ()-node.z};
             sxyz<T> ID = {node4.getX()-node.x, node4.getY()-node.y, node4.getZ()-node.z};
             
-            T w1 = abs(det(IB,IC,ID))/V;
-            T w2 = abs(det(IC,IA,ID))/V;
-            T w3 = abs(det(IB,IA,ID))/V;
-            T w4 = abs(det(IB,IA,IC))/V;
+            T w1 = std::abs(det(IB,IC,ID))/V;
+            T w2 = std::abs(det(IC,IA,ID))/V;
+            T w3 = std::abs(det(IB,IA,ID))/V;
+            T w4 = std::abs(det(IB,IA,IC))/V;
             
             return w1*node1.getTT(nt) + w2*node2.getTT(nt) + w3*node3.getTT(nt) + w4*node4.getTT(nt);
         }
