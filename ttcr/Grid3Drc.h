@@ -414,7 +414,7 @@ namespace ttcr {
 #endif
         } else if ( format == 3 ) {
             std::string filename = fname+".bin";
-            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
             for ( T2 n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() == true || all==1 ) {
                     T1 tmp[] = { nodes[n].getX(), nodes[n].getY(), nodes[n].getZ(), nodes[n].getTT(nt) };

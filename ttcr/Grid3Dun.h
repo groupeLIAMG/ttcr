@@ -876,7 +876,7 @@ namespace ttcr {
 #endif
         } else if ( format == 3 ) {
             std::string filename = fname+".bin";
-            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
             T2 nMax = nPrimary;
             if ( all == 1 ) {
                 nMax = static_cast<T2>(nodes.size());

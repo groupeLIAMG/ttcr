@@ -213,7 +213,7 @@ namespace ttcr {
 #endif
         } else if ( format == 3 ) {
             std::string filename = fname+".bin";
-            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+            std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
             for ( T2 n=0; n<nodes.size(); ++n ) {
                 T1 tmp[] = { nodes[n].getX(), nodes[n].getZ(), nodes[n].getTT(nt) };
                 fout.write( (char*)tmp, 3*sizeof(T1) );
