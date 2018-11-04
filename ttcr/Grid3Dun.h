@@ -4,6 +4,7 @@
 //
 //  Created by Bernard Giroux on 2014-04-21.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.
+//  Copyright (c) 2018 Bernard Giroux, Maher Nasr. All rights reserved.
 //
 
 /*
@@ -217,11 +218,17 @@ namespace ttcr {
         void checkPts(const std::vector<sxyz<T1>>&) const;
         
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
-        bool insideTetrahedron_old(const sxyz<T1>&, const T2) const;
+        bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
         
         T2 getCellNo(const sxyz<T1>& pt) const {
             for ( T2 n=0; n<tetrahedra.size(); ++n ) {
                 if ( insideTetrahedron(pt, n) ) {
+                    return n;
+                }
+            }
+            // do a pass with other fct as first might miss
+            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
+                if ( insideTetrahedron2(pt, n) ) {
                     return n;
                 }
             }
@@ -707,7 +714,7 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& p, const T2 nt) const {
+    bool Grid3Dun<T1,T2,NODE>::insideTetrahedron2(const sxyz<T1>& p, const T2 nt) const {
         
         sxyz<T1> v1 = { nodes[ tetrahedra[nt].i[0] ].getX(),
             nodes[ tetrahedra[nt].i[0] ].getY(),
@@ -4484,7 +4491,7 @@ namespace ttcr {
         
         T1 minDist = small;
         T1 tt = 0.0;
-        T1 s1, s2;
+        T1 tt_s1, tt_s2;
         bool atRx = true;
         
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
@@ -4546,7 +4553,7 @@ namespace ttcr {
             if ( nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
-                s1 = nodes[nodeNo].getNodeSlowness();
+                tt_s1 = nodes[nodeNo].getNodeSlowness();
                 break;
             }
         }
@@ -4569,11 +4576,11 @@ namespace ttcr {
                     edgeNodes[1] = ind[n][1];
                     
                     if ( interpVel )
-                        s1 = Interpolator<T1>::linearVel(curr_pt,
+                        tt_s1 = Interpolator<T1>::linearVel(curr_pt,
                                                          nodes[edgeNodes[0]],
                                                          nodes[edgeNodes[1]]);
                     else
-                        s1 = Interpolator<T1>::linear(curr_pt,
+                        tt_s1 = Interpolator<T1>::linear(curr_pt,
                                                       nodes[edgeNodes[0]],
                                                       nodes[edgeNodes[1]]);
 
@@ -4599,12 +4606,12 @@ namespace ttcr {
                         faceNodes[2] = ind[n][2];
                         
                         if ( interpVel )
-                            s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
+                            tt_s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
                                                                        nodes[faceNodes[0]],
                                                                        nodes[faceNodes[1]],
                                                                        nodes[faceNodes[2]]);
                         else
-                            s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
+                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
                                                                     nodes[faceNodes[0]],
                                                                     nodes[faceNodes[1]],
                                                                     nodes[faceNodes[2]]);
@@ -4624,13 +4631,13 @@ namespace ttcr {
                                                  nodes[itmp[3]], threadNo);
             
             if ( interpVel )
-                s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
+                tt_s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
                                                             nodes[itmp[0]],
                                                             nodes[itmp[1]],
                                                             nodes[itmp[2]],
                                                             nodes[itmp[3]]);
             else
-                s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
+                tt_s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
                                                          nodes[itmp[0]],
                                                          nodes[itmp[1]],
                                                          nodes[itmp[2]],
@@ -4640,19 +4647,19 @@ namespace ttcr {
             if (getCellNo( Rx )==txCell[nt]){
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( interpVel )
-                    s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                    tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                 nodes[itmp[0]],
                                                                 nodes[itmp[1]],
                                                                 nodes[itmp[2]],
                                                                 nodes[itmp[3]]);
                 else
-                    s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                              nodes[itmp[0]],
                                                              nodes[itmp[1]],
                                                              nodes[itmp[2]],
                                                              nodes[itmp[3]]);
                 
-                tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
+                tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                 reachedTx=true;
                 break;
             }
@@ -4831,10 +4838,12 @@ namespace ttcr {
                 prev_pt = curr_pt;
                 atRx = false;
                 curr_pt = pt_i;
-                s2 = computeSlowness(curr_pt);
+                tt_s2 = computeSlowness(curr_pt);
+//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+//                                     faceNodes);
                 
-                tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
-                s1 = s2;
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onNode){
                     nodeNoPrev=nodeNo;
@@ -5027,10 +5036,12 @@ namespace ttcr {
                 prev_pt = curr_pt;
                 atRx = false;
                 curr_pt = pt_i;
-                s2 = computeSlowness(curr_pt);
-                
-                tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
-                s1 = s2;
+                tt_s2 = computeSlowness(curr_pt);
+//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+//                                     faceNodes);
+
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
             } else{ // on Face
                 //////////////////////////
@@ -5046,8 +5057,8 @@ namespace ttcr {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
                     { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
                     { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    {{ neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][2] }},
-                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][3]}},
+                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][2] } },
+                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][3] } },
                     { { neighbors[cellNo1][0], neighbors[cellNo1][2], neighbors[cellNo1][3] } },
                     { { neighbors[cellNo1][1], neighbors[cellNo1][2], neighbors[cellNo1][3] } }
                 };
@@ -5235,10 +5246,11 @@ namespace ttcr {
                 prev_pt = curr_pt;
                 atRx = false;
                 curr_pt = pt_i;
-                s2 = computeSlowness(curr_pt);
-                
-                tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
-                s1 = s2;
+                tt_s2 = computeSlowness(curr_pt);
+//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+//                                     faceNodes);
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onFace){
                     faceNodesPrev = faceNodes;
@@ -5285,19 +5297,19 @@ namespace ttcr {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
                                 
                                 if ( interpVel )
-                                    s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                    tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                                 nodes[itmp[0]],
                                                                                 nodes[itmp[1]],
                                                                                 nodes[itmp[2]],
                                                                                 nodes[itmp[3]]);
                                 else
-                                    s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                              nodes[itmp[0]],
                                                                              nodes[itmp[1]],
                                                                              nodes[itmp[2]],
                                                                              nodes[itmp[3]]);
                                 
-                                tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
+                                tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                                 reachedTx = true;
                                 break;
                             }
@@ -5306,38 +5318,38 @@ namespace ttcr {
                         if ( cellNo == txCell[nt] ) {
                             std::array<T2,4> itmp = getPrimary(cellNo);
                             if ( interpVel )
-                                s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                             nodes[itmp[0]],
                                                                             nodes[itmp[1]],
                                                                             nodes[itmp[2]],
                                                                             nodes[itmp[3]]);
                             else
-                                s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                          nodes[itmp[0]],
                                                                          nodes[itmp[1]],
                                                                          nodes[itmp[2]],
                                                                          nodes[itmp[3]]);
                             
-                            tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
+                            tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                         } else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
                                     std::array<T2,4> itmp = getPrimary(cellNo);
                                     if ( interpVel )
-                                        s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                        tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                                     nodes[itmp[0]],
                                                                                     nodes[itmp[1]],
                                                                                     nodes[itmp[2]],
                                                                                     nodes[itmp[3]]);
                                     else
-                                        s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                        tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                                  nodes[itmp[0]],
                                                                                  nodes[itmp[1]],
                                                                                  nodes[itmp[2]],
                                                                                  nodes[itmp[3]]);
                                     
-                                    tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
+                                    tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                                     reachedTx = true;
                                     break;
                                 }
@@ -5364,7 +5376,7 @@ namespace ttcr {
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
         tt = 0.0;
-        T1 s1, s2;
+        T1 tt_s1, tt_s2;
         
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -5425,7 +5437,7 @@ namespace ttcr {
             if ( nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
-                s1 = nodes[nodeNo].getNodeSlowness();
+                tt_s1 = nodes[nodeNo].getNodeSlowness();
                 break;
             }
         }
@@ -5448,11 +5460,11 @@ namespace ttcr {
                     edgeNodes[1] = ind[n][1];
                     
                     if ( interpVel )
-                        s1 = Interpolator<T1>::linearVel(r_tmp.back(),
+                        tt_s1 = Interpolator<T1>::linearVel(r_tmp.back(),
                                                          nodes[edgeNodes[0]],
                                                          nodes[edgeNodes[1]]);
                     else
-                        s1 = Interpolator<T1>::linear(r_tmp.back(),
+                        tt_s1 = Interpolator<T1>::linear(r_tmp.back(),
                                                       nodes[edgeNodes[0]],
                                                       nodes[edgeNodes[1]]);
                     
@@ -5478,12 +5490,12 @@ namespace ttcr {
                         faceNodes[2] = ind[n][2];
                         
                         if ( interpVel )
-                            s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
+                            tt_s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
                                                                        nodes[faceNodes[0]],
                                                                        nodes[faceNodes[1]],
                                                                        nodes[faceNodes[2]]);
                         else
-                            s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
+                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
                                                                     nodes[faceNodes[0]],
                                                                     nodes[faceNodes[1]],
                                                                     nodes[faceNodes[2]]);
@@ -5503,13 +5515,13 @@ namespace ttcr {
                                                  nodes[itmp[3]], threadNo);
             
             if ( interpVel )
-                s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
+                tt_s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
                                                             nodes[itmp[0]],
                                                             nodes[itmp[1]],
                                                             nodes[itmp[2]],
                                                             nodes[itmp[3]]);
             else
-                s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
+                tt_s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
                                                          nodes[itmp[0]],
                                                          nodes[itmp[1]],
                                                          nodes[itmp[2]],
@@ -5519,19 +5531,19 @@ namespace ttcr {
             if (getCellNo( Rx )==txCell[nt]){
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( interpVel )
-                    s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                    tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                 nodes[itmp[0]],
                                                                 nodes[itmp[1]],
                                                                 nodes[itmp[2]],
                                                                 nodes[itmp[3]]);
                 else
-                    s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                              nodes[itmp[0]],
                                                              nodes[itmp[1]],
                                                              nodes[itmp[2]],
                                                              nodes[itmp[3]]);
                 
-                tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                 r_tmp.push_back(Tx[nt]);
                 reachedTx=true;
                 break;
@@ -5710,10 +5722,11 @@ namespace ttcr {
                 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                s2 = computeSlowness(curr_pt);
-                
-                tt += 0.5*(s1 + s2) * r_tmp.back().getDistance( curr_pt );
-                s1 = s2;
+                tt_s2 = computeSlowness(curr_pt);
+//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+//                                     faceNodes);
+                tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
+                tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onNode){
@@ -5912,10 +5925,11 @@ namespace ttcr {
                 }
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                s2 = computeSlowness(curr_pt);
-                
-                tt += 0.5*(s1 + s2) * r_tmp.back().getDistance( curr_pt );
-                s1 = s2;
+                tt_s2 = computeSlowness(curr_pt);
+//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+//                                     faceNodes);
+                tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
+                tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
             } else{ // on Face
@@ -6123,10 +6137,11 @@ namespace ttcr {
                 }
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                s2 = computeSlowness(curr_pt);
-                
-                tt += 0.5*(s1 + s2) * r_tmp.back().getDistance( curr_pt );
-                s1 = s2;
+                tt_s2 = computeSlowness(curr_pt);
+//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+//                                     faceNodes);
+                tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
+                tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onFace){
@@ -6177,19 +6192,19 @@ namespace ttcr {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
                                 
                                 if ( interpVel )
-                                    s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                    tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                                 nodes[itmp[0]],
                                                                                 nodes[itmp[1]],
                                                                                 nodes[itmp[2]],
                                                                                 nodes[itmp[3]]);
                                 else
-                                    s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                              nodes[itmp[0]],
                                                                              nodes[itmp[1]],
                                                                              nodes[itmp[2]],
                                                                              nodes[itmp[3]]);
                                 
-                                tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                                tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
                                 break;
@@ -6199,19 +6214,19 @@ namespace ttcr {
                         if ( cellNo == txCell[nt] ) {
                             std::array<T2,4> itmp = getPrimary(cellNo);
                             if ( interpVel )
-                                s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                             nodes[itmp[0]],
                                                                             nodes[itmp[1]],
                                                                             nodes[itmp[2]],
                                                                             nodes[itmp[3]]);
                             else
-                                s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                          nodes[itmp[0]],
                                                                          nodes[itmp[1]],
                                                                          nodes[itmp[2]],
                                                                          nodes[itmp[3]]);
                             
-                            tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                            tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                             r_tmp.push_back( Tx[nt] );
                             reachedTx = true;
                         } else {
@@ -6219,19 +6234,19 @@ namespace ttcr {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
                                     std::array<T2,4> itmp = getPrimary(cellNo);
                                     if ( interpVel )
-                                        s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                        tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
                                                                                     nodes[itmp[0]],
                                                                                     nodes[itmp[1]],
                                                                                     nodes[itmp[2]],
                                                                                     nodes[itmp[3]]);
                                     else
-                                        s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                        tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                                  nodes[itmp[0]],
                                                                                  nodes[itmp[1]],
                                                                                  nodes[itmp[2]],
                                                                                  nodes[itmp[3]]);
                                     
-                                    tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                                    tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                                     r_tmp.push_back( Tx[nt] );
                                     reachedTx = true;
                                     break;

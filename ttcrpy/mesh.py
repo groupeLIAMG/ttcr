@@ -375,9 +375,9 @@ class MeshTetrahedra(Mesh):
 
         if self.cmesh == None:
             eps = 1.0e-15
-            rp_ho = True
+            rp_method = 1
             maxit = 20
-            self.cmesh = cmesh3d.Mesh3Dcpp(self.nodes, self.cells, eps, maxit, rp_ho, self.nthreads)
+            self.cmesh = cmesh3d.Mesh3Dcpp(self.nodes, self.cells, eps, maxit, rp_method, self.nthreads)
 
         if nout == 1:
             tt = self.cmesh.raytrace(slowness, Tx, Rx, t0)

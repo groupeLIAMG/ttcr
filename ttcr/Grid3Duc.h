@@ -228,11 +228,17 @@ namespace ttcr {
         void checkPts(const std::vector<sxyz<T1>>&) const;
         
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
-        bool insideTetrahedron_old(const sxyz<T1>&, const T2) const;
+        bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
         
         T2 getCellNo(const sxyz<T1>& pt) const {
             for ( T2 n=0; n<tetrahedra.size(); ++n ) {
                 if ( insideTetrahedron(pt, n) ) {
+                    return n;
+                }
+            }
+            // do a pass with other fct as first might miss
+            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
+                if ( insideTetrahedron2(pt, n) ) {
                     return n;
                 }
             }
@@ -681,7 +687,7 @@ namespace ttcr {
     }
         
     template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron_old(const sxyz<T1>& p, const T2 nt) const {
+    bool Grid3Duc<T1,T2,NODE>::insideTetrahedron2(const sxyz<T1>& p, const T2 nt) const {
         
         sxyz<T1> v1 = { nodes[ tetrahedra[nt].i[0] ].getX(),
             nodes[ tetrahedra[nt].i[0] ].getY(),
