@@ -25,6 +25,8 @@
 #ifndef ttcr_Metric_h
 #define ttcr_Metric_h
 
+#include <cmath>
+
 #include "Node.h"
 
 namespace ttcr {
@@ -42,10 +44,10 @@ namespace ttcr {
     class Metric1 : public Metric<T> {
     public:
         T l(const Node<T>& n, const sxz<T>& s) const {
-            return fabs(n.getX()-s.x) + fabs(n.getZ()-s.z);
+            return std::abs(n.getX()-s.x) + std::abs(n.getZ()-s.z);
         }
         T l(const Node<T>& n, const sxyz<T>& s) const {
-            return fabs(n.getX()-s.x) + fabs(n.getY()-s.y) + fabs(n.getZ()-s.z);
+            return std::abs(n.getX()-s.x) + std::abs(n.getY()-s.y) + std::abs(n.getZ()-s.z);
         }
         ~Metric1() {}
     };

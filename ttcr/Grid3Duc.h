@@ -26,6 +26,7 @@
 #define ttcr_Grid3Duc_h
 
 #include <cassert>
+#include <cmath>
 
 #include <algorithm>
 #include <array>
@@ -740,16 +741,16 @@ namespace ttcr {
         
         int t1, t2, t3, t4;
         
-        if ( fabs(D1)<small2 ) t1 = 1;
+        if ( std::abs(D1)<small2 ) t1 = 1;
         else t1 = (signum(D0)==signum(D1));
         
-        if ( fabs(D2)<small2 ) t2 = 1;
+        if ( std::abs(D2)<small2 ) t2 = 1;
         else t2 = (signum(D0)==signum(D2));
         
-        if ( fabs(D3)<small2 ) t3 = 1;
+        if ( std::abs(D3)<small2 ) t3 = 1;
         else t3 = (signum(D0)==signum(D3));
         
-        if ( fabs(D4)<small2 ) t4 = 1;
+        if ( std::abs(D4)<small2 ) t4 = 1;
         else t4 = (signum(D0)==signum(D4));
         
         return t1 && t2 && t3 && t4;
@@ -1209,8 +1210,8 @@ namespace ttcr {
                 T1 beta = u*b*b - v*d2;    // from eq 19
                 T1 gamma = v*c*c - u*d2;
                 
-                T1 xi_tilde = -fabs(beta)*rho0/(phi*w_tilde);      // eq 22a
-                T1 zeta_tilde = -fabs(gamma)*rho0/(phi*w_tilde);   // eq 22b
+                T1 xi_tilde = -std::abs(beta)*rho0/(phi*w_tilde);      // eq 22a
+                T1 zeta_tilde = -std::abs(gamma)*rho0/(phi*w_tilde);   // eq 22b
                 
                 T1 xi = xi_tilde + xi0;         // defined in text between eq 13 & eq 14
                 T1 zeta = zeta_tilde + zeta0;
@@ -1337,8 +1338,8 @@ namespace ttcr {
             
             bool apply2Dsolvers = true;
             
-            if (fabs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))<=AB*slowness[tetNo] &&
-                fabs(vertexC->getTT(threadNo)-vertexA->getTT(threadNo))<=AC*slowness[tetNo]) {
+            if (std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))<=AB*slowness[tetNo] &&
+                std::abs(vertexC->getTT(threadNo)-vertexA->getTT(threadNo))<=AC*slowness[tetNo]) {
                 
                 // Qian et al, 2007, eq 2.3
                 
@@ -1426,7 +1427,7 @@ namespace ttcr {
                         //
                         //					T1 EBC = 0.5 * norm(v3);
                         //
-                        //					if ( fabs(EAB+EAC+EBC-ABC)<small ) {
+                        //					if ( std::abs(EAB+EAC+EBC-ABC)<small ) {
                         
                         if ( testInTriangle(vertexA, vertexB, vertexC, E) ) {
                             
@@ -1462,9 +1463,9 @@ namespace ttcr {
                             
                             T1 d2 = vertexD->getDistance( E );
                             T1 d3 = vertexD->getDistance( pt );
-                            T1 d4 = fabs( AD.x*n[ns][0] + AD.y*n[ns][1] + AD.z*n[ns][2] );
+                            T1 d4 = std::abs( AD.x*n[ns][0] + AD.y*n[ns][1] + AD.z*n[ns][2] );
                             
-                            if ( fabs(d3-d4)>small ) {
+                            if ( std::abs(d3-d4)>small ) {
                                 std::cout << " d3 ne d4: " << d3 << '\t' << d4 << '\t' << d2 << '\n';
                             }
                             
@@ -1514,9 +1515,9 @@ namespace ttcr {
         T1 a = vertexB->getDistance( *vertexC );
         T1 b = vertexA->getDistance( *vertexC );
         T1 c = vertexA->getDistance( *vertexB );
-        if ( fabs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))<= c*slowness[tetraNo] ) {
+        if ( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))<= c*slowness[tetraNo] ) {
             
-            T1 theta = asin( fabs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))/
+            T1 theta = asin( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))/
                             (c*slowness[tetraNo]) );
             
             T1 gamma = acos((a*a + b*b - c*c)/(2.*a*b));
@@ -3614,13 +3615,13 @@ namespace ttcr {
         sxyz<T1> x3 = {nodes[i1].getX(), nodes[i1].getY(), nodes[i1].getZ()};
         sxyz<T1> x4 = {nodes[i2].getX(), nodes[i2].getY(), nodes[i2].getZ()};
         
-        return fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2;
+        return std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2;
     }
     
     template<typename T1, typename T2, typename NODE>
     bool Grid3Duc<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const sxyz<T1> &x2
                                            , const sxyz<T1> &x3, const sxyz<T1> &x4) const {
-        return (fabs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
+        return (std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
     }
     
     template<typename T1, typename T2, typename NODE>
@@ -3768,7 +3769,7 @@ namespace ttcr {
         T1 nu, nv, ood;
         
         // Absolute components for determining projection plane
-        T1 x = fabs(m.x), y = fabs(m.y), z = fabs(m.z);
+        T1 x = std::abs(m.x), y = std::abs(m.y), z = std::abs(m.z);
         
         // Compute areas in plane of largest projection
         if (x >= y && x >= z) {

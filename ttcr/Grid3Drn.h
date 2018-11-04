@@ -27,6 +27,7 @@
 
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -336,13 +337,13 @@ namespace ttcr {
         
         getIJK(pt, i, j, k);
         
-        if ( fabs(pt.x - (xmin+i*dx))<small &&
-            fabs(pt.y - (ymin+j*dy))<small &&
-            fabs(pt.z - (zmin+k*dz))<small ) {
+        if ( std::abs(pt.x - (xmin+i*dx))<small &&
+            std::abs(pt.y - (ymin+j*dy))<small &&
+            std::abs(pt.z - (zmin+k*dz))<small ) {
             // on node
             return nodes[(k*nny+j)*nnx+i].getTT(nt);
-        } else if ( fabs(pt.x - (xmin+i*dx))<small &&
-                   fabs(pt.y - (ymin+j*dy))<small ) {
+        } else if ( std::abs(pt.x - (xmin+i*dx))<small &&
+                   std::abs(pt.y - (ymin+j*dy))<small ) {
             // on edge
             T1 t1 = nodes[(    k*nny+j)*nnx+i].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j)*nnx+i].getTT(nt);
@@ -352,8 +353,8 @@ namespace ttcr {
             
             tt = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.x - (xmin+i*dx))<small &&
-                   fabs(pt.z - (zmin+k*dz))<small ) {
+        } else if ( std::abs(pt.x - (xmin+i*dx))<small &&
+                   std::abs(pt.z - (zmin+k*dz))<small ) {
             // on edge
             T1 t1 = nodes[(k*nny+j  )*nnx+i].getTT(nt);
             T1 t2 = nodes[(k*nny+j+1)*nnx+i].getTT(nt);
@@ -363,8 +364,8 @@ namespace ttcr {
             
             tt = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.y - (ymin+j*dy))<small &&
-                   fabs(pt.z - (zmin+k*dz))<small ) {
+        } else if ( std::abs(pt.y - (ymin+j*dy))<small &&
+                   std::abs(pt.z - (zmin+k*dz))<small ) {
             // on edge
             T1 t1 = nodes[(k*nny+j)*nnx+i  ].getTT(nt);
             T1 t2 = nodes[(k*nny+j)*nnx+i+1].getTT(nt);
@@ -374,7 +375,7 @@ namespace ttcr {
             
             tt = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        } else if ( std::abs(pt.x - (xmin+i*dx))<small ) {
             // on YZ face
             T1 t1 = nodes[(    k*nny+j  )*nnx+i].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j  )*nnx+i].getTT(nt);
@@ -392,7 +393,7 @@ namespace ttcr {
             
             tt = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.y - (ymin+j*dy))<small ) {
+        } else if ( std::abs(pt.y - (ymin+j*dy))<small ) {
             // on XZ face
             T1 t1 = nodes[(    k*nny+j)*nnx+i  ].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j)*nnx+i  ].getTT(nt);
@@ -410,7 +411,7 @@ namespace ttcr {
             
             tt = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.z - (zmin+k*dz))<small ) {
+        } else if ( std::abs(pt.z - (zmin+k*dz))<small ) {
             // on XY face
             T1 t1 = nodes[(k*nny+j  )*nnx+i  ].getTT(nt);
             T1 t2 = nodes[(k*nny+j+1)*nnx+i  ].getTT(nt);
@@ -664,13 +665,13 @@ namespace ttcr {
             T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
             T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
             
-            if ( fabs(xp-curr_pt.x)<small) {
+            if ( std::abs(xp-curr_pt.x)<small) {
                 xp += dx*boost::math::sign(g.x);
             }
-            if ( fabs(yp-curr_pt.y)<small) {
+            if ( std::abs(yp-curr_pt.y)<small) {
                 yp += dy*boost::math::sign(g.y);
             }
-            if ( fabs(zp-curr_pt.z)<small) {
+            if ( std::abs(zp-curr_pt.z)<small) {
                 zp += dz*boost::math::sign(g.z);
             }
             
@@ -751,13 +752,13 @@ namespace ttcr {
             T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
             T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
             
-            if ( fabs(xp-curr_pt.x)<small) {
+            if ( std::abs(xp-curr_pt.x)<small) {
                 xp += dx*boost::math::sign(g.x);
             }
-            if ( fabs(yp-curr_pt.y)<small) {
+            if ( std::abs(yp-curr_pt.y)<small) {
                 yp += dy*boost::math::sign(g.y);
             }
-            if ( fabs(zp-curr_pt.z)<small) {
+            if ( std::abs(zp-curr_pt.z)<small) {
                 zp += dz*boost::math::sign(g.z);
             }
             
@@ -802,9 +803,9 @@ namespace ttcr {
                         size_t iv = ix+ii;
                         size_t jv = iy+jj;
                         size_t kv = iz+kk;
-                        T1 dvdv = (1. - fabs(mid_pt.x - iv*dx)/dx) *
-                        (1. - fabs(mid_pt.y - jv*dy)/dy) *
-                        (1. - fabs(mid_pt.z - kv*dz)/dz);
+                        T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
+                        (1. - std::abs(mid_pt.y - jv*dy)/dy) *
+                        (1. - std::abs(mid_pt.z - kv*dz)/dz);
                         
                         m.j = (kv*nny+jv)*nnx+iv;
                         m.v = -s * ds * dvdv;
@@ -846,9 +847,9 @@ namespace ttcr {
                                 size_t iv = ix+ii;
                                 size_t jv = iy+jj;
                                 size_t kv = iz+kk;
-                                T1 dvdv = (1. - fabs(mid_pt.x - iv*dx)/dx) *
-                                (1. - fabs(mid_pt.y - jv*dy)/dy) *
-                                (1. - fabs(mid_pt.z - kv*dz)/dz);
+                                T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
+                                (1. - std::abs(mid_pt.y - jv*dy)/dy) *
+                                (1. - std::abs(mid_pt.z - kv*dz)/dz);
                                 
                                 m.j = (kv*nny+jv)*nnx+iv;
                                 m.v = -s * ds * dvdv;
@@ -908,18 +909,18 @@ namespace ttcr {
             bool onEdgeY=false;
             bool onEdgeZ=false;
             
-            if ( fabs(remainder(curr_pt.x,dx))<small &&
-                fabs(remainder(curr_pt.y,dy))<small &&
-                fabs(remainder(curr_pt.z,dz))<small ) {
+            if ( std::abs(remainder(curr_pt.x,dx))<small &&
+                std::abs(remainder(curr_pt.y,dy))<small &&
+                std::abs(remainder(curr_pt.z,dz))<small ) {
                 onNode = true;
-            } else if ( fabs(remainder(curr_pt.y,dy))<small &&
-                       fabs(remainder(curr_pt.z,dz))<small ) {
+            } else if ( std::abs(remainder(curr_pt.y,dy))<small &&
+                       std::abs(remainder(curr_pt.z,dz))<small ) {
                 onEdgeX = true;
-            } else if ( fabs(remainder(curr_pt.x,dx))<small &&
-                       fabs(remainder(curr_pt.z,dz))<small ) {
+            } else if ( std::abs(remainder(curr_pt.x,dx))<small &&
+                       std::abs(remainder(curr_pt.z,dz))<small ) {
                 onEdgeY = true;
-            } else if ( fabs(remainder(curr_pt.x,dx))<small &&
-                       fabs(remainder(curr_pt.y,dy))<small ) {
+            } else if ( std::abs(remainder(curr_pt.x,dx))<small &&
+                       std::abs(remainder(curr_pt.y,dy))<small ) {
                 onEdgeZ = true;
             }
             
@@ -1040,7 +1041,7 @@ namespace ttcr {
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y));
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
                 
-                if ( fabs(xp-curr_pt.x)<small) {
+                if ( std::abs(xp-curr_pt.x)<small) {
                     xp += dx*boost::math::sign(gOut.x);
                     iOut += boost::math::sign(gOut.x);
                 }
@@ -1112,7 +1113,7 @@ namespace ttcr {
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y)>0.0 ? 1.0 : 0.0);
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
                 
-                if ( fabs(yp-curr_pt.y)<small) {
+                if ( std::abs(yp-curr_pt.y)<small) {
                     yp += dy*boost::math::sign(gOut.y);
                     jOut += boost::math::sign(gOut.y);
                 }
@@ -1184,7 +1185,7 @@ namespace ttcr {
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y));
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0);
                 
-                if ( fabs(zp-curr_pt.z)<small) {
+                if ( std::abs(zp-curr_pt.z)<small) {
                     zp += dz*boost::math::sign(gOut.z);
                     kOut += boost::math::sign(gOut.z);
                 }
@@ -1248,15 +1249,15 @@ namespace ttcr {
                 T1 yp = ymin + dy*(jIn + boost::math::sign(gOut.y)>0.0 ? 1.0 : 0.0);
                 T1 zp = zmin + dz*(kIn + boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0);
                 
-                if ( fabs(xp-curr_pt.x)<small) {
+                if ( std::abs(xp-curr_pt.x)<small) {
                     xp += dx*boost::math::sign(gOut.x);
                     iOut += boost::math::sign(gOut.x);
                 }
-                if ( fabs(yp-curr_pt.y)<small) {
+                if ( std::abs(yp-curr_pt.y)<small) {
                     yp += dy*boost::math::sign(gOut.y);
                     jOut += boost::math::sign(gOut.y);
                 }
-                if ( fabs(zp-curr_pt.z)<small) {
+                if ( std::abs(zp-curr_pt.z)<small) {
                     zp += dz*boost::math::sign(gOut.z);
                     kOut += boost::math::sign(gOut.z);
                 }

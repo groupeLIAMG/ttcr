@@ -26,6 +26,7 @@
 #define ttcr_Grid2Drn_h
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -289,10 +290,10 @@ namespace ttcr {
         
         getIJ(pt, i, j);
         
-        if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+        if ( std::abs(pt.x - (xmin+i*dx))<small && std::abs(pt.z - (zmin+j*dz))<small ) {
             // on node
             return nodes[i*(ncz+1)+j].getTT(nt);
-        } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        } else if ( std::abs(pt.x - (xmin+i*dx))<small ) {
             
             // on edge
             T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
@@ -303,7 +304,7 @@ namespace ttcr {
             
             tt = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+        } else if ( std::abs(pt.z - (zmin+j*dz))<small ) {
             
             // on edge
             T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
@@ -771,10 +772,10 @@ namespace ttcr {
             T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
             T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
             
-            if ( fabs(xp-curr_pt.x)<small) {
+            if ( std::abs(xp-curr_pt.x)<small) {
                 xp += dx*boost::math::sign(g.x);
             }
-            if ( fabs(zp-curr_pt.z)<small) {
+            if ( std::abs(zp-curr_pt.z)<small) {
                 zp += dz*boost::math::sign(g.z);
             }
             
@@ -838,8 +839,8 @@ namespace ttcr {
             
             bool onNode=false;
             
-            if ( fabs(remainder(curr_pt.x,dx))<small &&
-                fabs(remainder(curr_pt.z,dz))<small ) {
+            if ( std::abs(remainder(curr_pt.x,dx))<small &&
+                std::abs(remainder(curr_pt.z,dz))<small ) {
                 onNode = true;
             }
             
@@ -930,11 +931,11 @@ namespace ttcr {
                 T1 xp = xmin + dx*(iIn + (boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0));
                 T1 zp = zmin + dz*(kIn + (boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0));
                 
-                if ( fabs(xp-curr_pt.x)<small) {
+                if ( std::abs(xp-curr_pt.x)<small) {
                     xp += dx*boost::math::sign(gOut.x);
                     iOut += boost::math::sign(gOut.x);
                 }
-                if ( fabs(zp-curr_pt.z)<small) {
+                if ( std::abs(zp-curr_pt.z)<small) {
                     zp += dz*boost::math::sign(gOut.z);
                     kOut += boost::math::sign(gOut.z);
                 }
@@ -993,7 +994,7 @@ namespace ttcr {
         static const T1 maxDist = sqrt( dx*dx + dz*dz );
         
         bool onNode=false;
-        if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+        if ( std::abs(remainder(curr_pt.x,dx))<small && std::abs(remainder(curr_pt.z,dz))<small ) {
             onNode = true;
         }
         
@@ -1132,7 +1133,7 @@ namespace ttcr {
             }
             
             onNode = false;
-            if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+            if ( std::abs(remainder(curr_pt.x,dx))<small && std::abs(remainder(curr_pt.z,dz))<small ) {
                 onNode = true;
             }
             
@@ -1307,7 +1308,7 @@ namespace ttcr {
                     // check if gIn is significantly different from gOut
                     
                     T1 thetaOut = atan2( gOut.z, gOut.x );
-                    if ( fabs(theta-thetaOut) < pi/180. ) {
+                    if ( std::abs(theta-thetaOut) < pi/180. ) {
                         // less that 1 degree difference, OK
                         gOut = gIn;
                     } else {
@@ -1433,7 +1434,7 @@ namespace ttcr {
                 }
                 
                 onNode = false;
-                if ( fabs(remainder(curr_pt.x,dx))<small && fabs(remainder(curr_pt.z,dz))<small ) {
+                if ( std::abs(remainder(curr_pt.x,dx))<small && std::abs(remainder(curr_pt.z,dz))<small ) {
                     onNode = true;
                 }
                 
@@ -1724,7 +1725,7 @@ namespace ttcr {
         
         T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
         
-        if ( fabs(a-b) >= fh )
+        if ( std::abs(a-b) >= fh )
             t = (a<b ? a : b) + fh;
         else
             t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
@@ -1786,7 +1787,7 @@ namespace ttcr {
         
         T1 fh = 1.414213562373095 * nodes[i*(ncz+1)+j].getNodeSlowness() *
         dx;
-        if ( fabs(a-b) >= fh )
+        if ( std::abs(a-b) >= fh )
             t = (a<b ? a : b) + fh;
         else
             t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
@@ -1980,7 +1981,7 @@ namespace ttcr {
         
         T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
         
-        if ( fabs(a-b) >= fh )
+        if ( std::abs(a-b) >= fh )
             t = (a<b ? a : b) + fh;
         else
             t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
@@ -2207,10 +2208,10 @@ namespace ttcr {
         
         getIJ(pt, i, j);
         
-        if ( fabs(pt.x - (xmin+i*dx))<small && fabs(pt.z - (zmin+j*dz))<small ) {
+        if ( std::abs(pt.x - (xmin+i*dx))<small && std::abs(pt.z - (zmin+j*dz))<small ) {
             // on node
             return nodes[i*(ncz+1)+j].getNodeSlowness();
-        } else if ( fabs(pt.x - (xmin+i*dx))<small ) {
+        } else if ( std::abs(pt.x - (xmin+i*dx))<small ) {
             
             // on edge
             T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();
@@ -2221,7 +2222,7 @@ namespace ttcr {
             
             s = t1*w1 + t2*w2;
             
-        } else if ( fabs(pt.z - (zmin+j*dz))<small ) {
+        } else if ( std::abs(pt.z - (zmin+j*dz))<small ) {
             
             // on edge
             T1 t1 = nodes[i*(ncz+1)+j].getNodeSlowness();

@@ -182,7 +182,7 @@ namespace ttcr {
                 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                     
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
@@ -200,7 +200,7 @@ namespace ttcr {
                 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                     
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
@@ -275,7 +275,7 @@ namespace ttcr {
                 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                     
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
@@ -293,7 +293,7 @@ namespace ttcr {
                 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                     
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);

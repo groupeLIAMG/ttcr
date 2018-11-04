@@ -25,6 +25,7 @@
 #ifndef ttcr_Grid2Dun_h
 #define ttcr_Grid2Dun_h
 
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <set>
@@ -784,9 +785,9 @@ namespace ttcr {
                 beta = triangles[triangleNo].a[i1];
             }
             
-            if ( fabs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo)) <= c*vertexC->getNodeSlowness()) {
+            if ( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo)) <= c*vertexC->getNodeSlowness()) {
                 
-                T1 theta = asin( fabs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))/
+                T1 theta = asin( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))/
                                 (c*vertexC->getNodeSlowness()) );
                 
                 if ( ((0.>alpha-pi2?0.:alpha-pi2)<=theta && theta<=(pi2-beta) ) ||
@@ -1058,7 +1059,7 @@ namespace ttcr {
                     
                     if ( onEdge && ind[ns][0]==edgeNodes[0] && ind[ns][1]==edgeNodes[1] ) {
                         
-                        if ( fabs(m1-m2)<small ) {
+                        if ( std::abs(m1-m2)<small ) {
                             // curr_pt is on an edge and gradient is along the edge
                             // den is the direction of vector P0->P1 along x
                             if ( boost::math::sign(den) == boost::math::sign(g.x) ) {

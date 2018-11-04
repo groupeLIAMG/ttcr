@@ -170,8 +170,8 @@ namespace ttcr {
         }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
-            cell.v  = fabs(node.x - source.getX());
-            cell.v2 = fabs(node.z - source.getZ());
+            cell.v  = std::abs(node.x - source.getX());
+            cell.v2 = std::abs(node.z - source.getZ());
         }
         
     private:
@@ -263,8 +263,8 @@ namespace ttcr {
         }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
-            cell.v  = fabs(node.x - source.getX());
-            cell.v2 = fabs(node.z - source.getZ());
+            cell.v  = std::abs(node.x - source.getX());
+            cell.v2 = std::abs(node.z - source.getZ());
         }
         
     private:

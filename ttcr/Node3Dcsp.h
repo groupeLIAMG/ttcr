@@ -199,7 +199,7 @@ namespace ttcr {
         
         // operator to test if same location
         bool operator==( const sxyz<T1>& node ) const {
-            return fabs(x-node.x)<small && fabs(y-node.y)<small && fabs(z-node.z)<small;
+            return std::abs(x-node.x)<small && std::abs(y-node.y)<small && std::abs(z-node.z)<small;
         }
         
         size_t getSize() const {

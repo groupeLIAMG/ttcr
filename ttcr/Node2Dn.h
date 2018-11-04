@@ -125,16 +125,16 @@ namespace ttcr {
         }
         
         T1 getDistanceX( const sxz<T1>& node ) const {
-            return fabs( x-node.x );
+            return std::abs( x-node.x );
         }
         
         T1 getDistanceZ( const sxz<T1>& node ) const {
-            return fabs( z-node.z );
+            return std::abs( z-node.z );
         }
         
         // operator to test if same location
         bool operator==( const sxz<T1>& node ) const {
-            return fabs(x-node.x)<small && fabs(z-node.z)<small;
+            return std::abs(x-node.x)<small && std::abs(z-node.z)<small;
         }
         
         int getDimension() const { return 2; }

@@ -84,7 +84,7 @@ namespace ttcr {
         sxz(const NODE& n) : x(n.getX()), z(n.getZ()) {}
 
         bool operator==(const sxz<T>& s) const {
-            //        return (fabs(x-a.x)<small && fabs(z-a.z)<small);
+            //        return (std::abs(x-a.x)<small && std::abs(z-a.z)<small);
             return x==s.x && z==s.z;
         }
 
@@ -213,7 +213,7 @@ namespace ttcr {
         sxyz(const NODE& n) : x(n.getX()), y(n.getY()), z(n.getZ()) {}
 
         bool operator==(const sxyz<T>& s) const {
-            //        return (fabs(x-a.x)<small && fabs(z-a.z)<small);
+            //        return (std::abs(x-a.x)<small && std::abs(z-a.z)<small);
             return x==s.x && y==s.y && z==s.z;
         }
 

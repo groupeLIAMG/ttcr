@@ -9,6 +9,7 @@
 #ifndef Grid2Drcfs_h
 #define Grid2Drcfs_h
 
+#include <cmath>
 #include <stdexcept>
 
 #include "Grid2Drn.h"
@@ -237,7 +238,7 @@ namespace ttcr {
                     this->sweep_xz(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -249,7 +250,7 @@ namespace ttcr {
                     this->sweep_weno3_xz(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -261,7 +262,7 @@ namespace ttcr {
                     this->sweep(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -273,7 +274,7 @@ namespace ttcr {
                     this->sweep_weno3(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -295,7 +296,7 @@ namespace ttcr {
                 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                     
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
@@ -351,7 +352,7 @@ namespace ttcr {
                     this->sweep_xz(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -363,7 +364,7 @@ namespace ttcr {
                     this->sweep_weno3_xz(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -375,7 +376,7 @@ namespace ttcr {
                     this->sweep(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -387,7 +388,7 @@ namespace ttcr {
                     this->sweep_weno3(frozen, threadNo);
                     change = 0.0;
                     for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                         
                         change += dt;
                         times[n] = this->nodes[n].getTT(threadNo);
@@ -409,7 +410,7 @@ namespace ttcr {
                 
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = fabs( times[n] - this->nodes[n].getTT(threadNo) );
+                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
                     
                     change += dt;
                     times[n] = this->nodes[n].getTT(threadNo);
