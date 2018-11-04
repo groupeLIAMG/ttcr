@@ -3,7 +3,8 @@
 //  ttcr.v2
 //
 //  Created by Bernard Giroux on 2012-11-23.
-//  Copyright (c) 2012 INRS-ETE. All rights reserved.
+//  Copyright (c) 2012 Bernard Giroux. All rights reserved.
+//  Copyright (c) 2018 Bernard Giroux, Maher Nasr. All rights reserved.
 //
 
 /*

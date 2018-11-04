@@ -3,7 +3,7 @@
 //  ttcr
 //
 //  Created by Bernard Giroux on 18-10-09.
-//  Copyright © 2018 Bernard Giroux. All rights reserved.
+//  Copyright © 2018 Bernard Giroux, Maher Nasr. All rights reserved.
 //
 
 /*
