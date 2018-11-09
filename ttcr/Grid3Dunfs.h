@@ -58,7 +58,7 @@ namespace ttcr {
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
         epsilon(eps), nitermax(maxit), S(), niter(0)
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
             this->initOrdering(refPts, order);
         }

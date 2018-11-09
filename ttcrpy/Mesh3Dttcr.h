@@ -45,13 +45,13 @@ namespace ttcr {
                      PyObject* rays,
                      double* v0) const;
 
-        void raytrace(const std::vector<sxyz<double>>& Tx,
-                     const std::vector<double>& tTx,
-                     const std::vector<sxyz<double>>& Rx,
-                     double* traveltimes,
-                     PyObject* rays,
-                     double* v0,
-                     PyObject* M) const;
+//        void raytrace(const std::vector<sxyz<double>>& Tx,
+//                     const std::vector<double>& tTx,
+//                     const std::vector<sxyz<double>>& Rx,
+//                     double* traveltimes,
+//                     PyObject* rays,
+//                     double* v0,
+//                     PyObject* M) const;
 
     private:
         mesh *mesh_instance;

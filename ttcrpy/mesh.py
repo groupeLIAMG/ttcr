@@ -125,13 +125,15 @@ class MSHReader:
             print("Unexpected error:", sys.exc_info()[0])
             raise
 
-    def readTriangleElements(self):
+    def readTriangleElements(self, get_physical_entity=False):
         try:
             f = open(self.filename, 'r')
             for line in f:
                 if line.startswith('$Elements'):
                     nelem = int(f.readline())
                     triangles = np.ndarray((nelem,3), dtype = np.int64)
+                    if get_physical_entity:
+                        physical_entity = np.ndarray((nelem,), dtype = np.int64)
                     nt = 0
                     for n in np.arange(nelem):
                         tmp = re.split(r' ', f.readline())
@@ -140,9 +142,17 @@ class MSHReader:
                             triangles[nt,0] = tmp[nTags+3]
                             triangles[nt,1] = tmp[nTags+4]
                             triangles[nt,2] = tmp[nTags+5]
+                            if get_physical_entity:
+                                if nTags > 1:
+                                    physical_entity[nt] = tmp[2] # By default, the first tag is the number of the physical entity to which the element belongs
+                                else:
+                                    physical_entity[nt] = np.nan
                             nt += 1
                     break
-            return triangles[:nt,:]-1  # indices start at 0 in python
+            if get_physical_entity:
+                return triangles[:nt,:]-1, physical_entity[:nt]-1  # indices start at 0 in python
+            else:
+                return triangles[:nt,:]-1  # indices start at 0 in python
 
         except OSError as err:
             print("OS error: {0}".format(err))
@@ -152,13 +162,15 @@ class MSHReader:
             print("Unexpected error:", sys.exc_info()[0])
             raise
 
-    def readTetraherdonElements(self):
+    def readTetraherdonElements(self, get_physical_entity=False):
         try:
             f = open(self.filename, 'r')
             for line in f:
                 if line.startswith('$Elements'):
                     nelem = int(f.readline())
                     tetrahedra = np.ndarray((nelem,4), dtype = np.int64)
+                    if get_physical_entity:
+                        physical_entity = np.ndarray((nelem,), dtype = np.int64)
                     nt = 0
                     for n in np.arange(nelem):
                         tmp = re.split(r' ', f.readline())
@@ -168,9 +180,17 @@ class MSHReader:
                             tetrahedra[nt,1] = tmp[nTags+4]
                             tetrahedra[nt,2] = tmp[nTags+5]
                             tetrahedra[nt,3] = tmp[nTags+6]
+                            if get_physical_entity:
+                                if nTags > 1:
+                                    physical_entity[nt] = tmp[2] # By default, the first tag is the number of the physical entity to which the element belongs
+                                else:
+                                    physical_entity[nt] = np.nan
                             nt += 1
                     break
-            return tetrahedra[:nt,:]-1  # indices start at 0 in python
+            if get_physical_entity:
+                return tetrahedra[:nt,:]-1, physical_entity[:nt]-1  # indices start at 0 in python
+            else:
+                return tetrahedra[:nt,:]-1  # indices start at 0 in python
 
         except OSError as err:
             print("OS error: {0}".format(err))
@@ -227,7 +247,11 @@ class meshTriangle3D(Mesh):
             # find second closest
             d[iclosest] *= 1e6
             isecond = np.argmin(d)
-            itri,jtri = np.nonzero(np.logical_or(self.cells == iclosest, self.cells == isecond))
+            # find next closest
+            d[isecond] *= 1e6
+            ithird = np.argmin(d)
+            itri,jtri = np.nonzero(np.logical_or(np.logical_or(self.cells == iclosest, self.cells == isecond),
+                                                 self.cells == ithird))
 
             for i in itri:
                 a = np.array(self.nodes[self.cells[i,0],:])
@@ -349,6 +373,42 @@ class MeshTetrahedra(Mesh):
             self.cells[i,j] = n
         self.nodes = np.array(nodes[itet,:])
 
+    def get_centroids(self):
+        cent = np.zeros((self.cells.shape[0], 3))
+        for nc in np.arange(self.cells.shape[0]):
+            cent[nc, :] = 0.25 * np.sum(self.nodes[self.cells[nc,:], :], axis=0)
+        return cent
+    
+    def get_volume(self):
+        vol = np.zeros((self.cells.shape[0], ))
+        cte = 1.0 / 6.0
+        for nc in np.arange(self.cells.shape[0]):
+            a = self.nodes[self.cells[nc, 1], :] - self.nodes[self.cells[nc, 0], :]
+            b = self.nodes[self.cells[nc, 2], :] - self.nodes[self.cells[nc, 0], :]
+            c = self.nodes[self.cells[nc, 3], :] - self.nodes[self.cells[nc, 0], :]
+            vol[nc] = cte * np.abs(np.dot(a, np.cross(b, c)))
+        return vol
+
+    def get_gamma(self):
+        gamma = np.zeros((self.cells.shape[0], ))
+        cte = 12.0*np.sqrt(3.0)
+        for nc in np.arange(self.cells.shape[0]):
+            P1 = self.nodes[self.cells[nc, 0], :]
+            P2 = self.nodes[self.cells[nc, 1], :]
+            P3 = self.nodes[self.cells[nc, 2], :]
+            P4 = self.nodes[self.cells[nc, 3], :]
+            a = P2 - P1
+            b = P3 - P1
+            c = P4 - P1
+            num = cte * np.abs(np.dot(a, np.cross(b, c)))
+            sum_l = np.sum( (P2-P1)**2 )
+            sum_l += np.sum( (P3-P1)**2 )
+            sum_l += np.sum( (P4-P1)**2 )
+            sum_l += np.sum( (P3-P2)**2 )
+            sum_l += np.sum( (P4-P2)**2 )
+            sum_l += np.sum( (P4-P3)**2 )
+            gamma[nc] = num / sum_l**1.5
+        return gamma
 
     def raytrace(self, slowness, Tx, Rx, t0=()):
         nout = nargout()
@@ -385,34 +445,48 @@ class MeshTetrahedra(Mesh):
         elif nout == 3:
             tt, rays, v0 = self.cmesh.raytrace(slowness, Tx, Rx, t0)
             return tt, rays, v0
-        elif nout == 4:
-            tt, rays, v0, M = self.cmesh.raytrace(slowness, Tx, Rx, t0)
-            return tt, rays, v0, M
+#        elif nout == 4:
+#            tt, rays, v0, M = self.cmesh.raytrace(slowness, Tx, Rx, t0)
+#            return tt, rays, v0, M
 
 
 
 
 
 if __name__ == '__main__':
-    reader = MSHReader('topo.msh')
+    
+    test_2d = True
+    test_3d = True
+    
+    if test_2d:
+        reader = MSHReader('/Users/giroux/CloudStation/Projets/ArcelorMittal/analyse_config/topo.msh')
+    
+        print(reader.is2D())
+        print(reader.getNumberOfElements())
+        print(reader.getNumberOfElements(2))
+    
+        nodes = reader.readNodes()
+        tri = reader.readTriangleElements()
+        print(tri.shape)
+    
+        import mayavi.mlab as mm
+        mm.figure()
+        mm.triangular_mesh(nodes[:,0], nodes[:,1], nodes[:,2], tri, color=(0, 0, 1))
+        mm.show()
 
-    print(reader.is2D())
-    print(reader.getNumberOfElements())
-    print(reader.getNumberOfElements(2))
+    
+        mesh = meshTriangle3D(nodes, tri)
+    
+        p = np.array([305105.0, 5723733.0, 100.0])
+    
+        mesh.projz(p)
 
-    nodes = reader.readNodes()
-    tri = reader.readTriangleElements()
-    print(tri.shape)
-
-    import mayavi.mlab as mm
-    mm.figure()
-    mm.triangular_mesh(nodes[:,0], nodes[:,1], nodes[:,2], tri, color=(0, 0, 1))
-    mm.show()
-
-
-
-    mesh = meshTriangle3D(nodes, tri)
-
-    p = np.array([305105.0, 5723733.0, 100.0])
-
-    mesh.projz(p)
+    if test_3d:
+        
+        msh = MeshTetrahedra()
+        msh.buildFromMSH('/Users/giroux/JacquesCloud/Projets/spm_fmm_fsm/dspm/fig01/Model1a.msh')
+        
+        cent = msh.get_centroids()
+        gamma = msh.get_gamma()
+        
+        

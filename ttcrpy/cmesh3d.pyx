@@ -53,10 +53,10 @@ cdef extern from "Mesh3Dttcr.h" namespace "ttcr":
                      const vector[double]&,
                      const vector[sxyz[double]]&,
                      double*, object, double*) except +
-        void raytrace(const vector[sxyz[double]]& Tx,
-                     const vector[double]& tTx,
-                     const vector[sxyz[double]]& Rx,
-                     double*, object, double*, object) except +
+#        void raytrace(const vector[sxyz[double]]& Tx,
+#                     const vector[double]& tTx,
+#                     const vector[sxyz[double]]& Rx,
+#                     double*, object, double*, object) except +
 
 cdef class Mesh3Dcpp:
     cdef Mesh3Dttcr* mesh
@@ -108,14 +108,14 @@ cdef class Mesh3Dcpp:
             self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0))
             return tt, rays, v0
 
-        elif nout == 4:
-            rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
-            
-            nTx = np.unique(Tx, axis=0).shape[0]
-            
-            M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
-            
-            self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M)
-            return tt, rays, v0, M
+#        elif nout == 4:
+#            rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
+#            
+#            nTx = np.unique(Tx, axis=0).shape[0]
+#            
+#            M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
+#            
+#            self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M)
+#            return tt, rays, v0, M
 
 
