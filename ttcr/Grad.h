@@ -354,8 +354,8 @@ namespace ttcr {
         } else if ( ref_pt.size() == 2 ) {
             
             T AB = ref_pt[0]->getDistance( *(ref_pt[1]) );
-            std::array<T,2> weights = { ref_pt[0]->getDistance(pt)/AB,
-                ref_pt[1]->getDistance(pt)/AB };
+            std::array<T,2> weights = { ref_pt[1]->getDistance(pt)/AB,
+                ref_pt[0]->getDistance(pt)/AB };
             
             for ( size_t nr=0; nr<ref_pt.size(); ++nr ) {
                 T sum_wi = 0.0;
