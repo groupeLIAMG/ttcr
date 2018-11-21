@@ -221,20 +221,7 @@ namespace ttcr {
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
         bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
         
-        T2 getCellNo(const sxyz<T1>& pt) const {
-            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
-                if ( insideTetrahedron(pt, n) ) {
-                    return n;
-                }
-            }
-            // do a pass with other fct as first might miss
-            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
-                if ( insideTetrahedron2(pt, n) ) {
-                    return n;
-                }
-            }
-            return -1;
-        }
+        T2 getCellNo(const sxyz<T1>& pt) const;
         
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         void buildGridNodes(const std::vector<sxyz<T1>>&,
@@ -415,6 +402,47 @@ namespace ttcr {
         
     };
     
+    template<typename T1, typename T2, typename NODE>
+    T2 Grid3Dun<T1,T2,NODE>::getCellNo(const sxyz<T1>& pt) const {
+        T2 closestNode = 0;
+        T1 distance = std::numeric_limits<T1>::max();
+        for (auto node=nodes.begin(); node!=nodes.begin()+nPrimary; ++node){
+            T1 dist = pt.getDistance(*node);
+            if (dist < distance) {
+                distance = dist;
+                closestNode = node->getGridIndex();
+            }
+        }
+        T1 minVolumeDiff = std::numeric_limits<T1>::max();
+        T2 cell;
+        
+        for (auto tet=nodes[closestNode].getOwners().begin(); tet!=nodes[closestNode].getOwners().end(); ++tet) {
+            T2 celli = *tet;
+            for (size_t n=0;n<4;++n){
+                T2 neighborNode = neighbors[celli][n];
+                for (auto tet2=nodes[neighborNode].getOwners().begin(); tet2!=nodes[neighborNode].getOwners().end(); ++tet2) {
+                    sxyz<T1> v1 = { nodes[ neighbors[*tet2][0] ]};
+                    sxyz<T1> v2 = { nodes[ neighbors[*tet2][1] ]};
+                    sxyz<T1> v3 = { nodes[ neighbors[*tet2][2] ]};
+                    sxyz<T1> v4 = { nodes[ neighbors[*tet2][3] ]};
+                    
+                    T1 D0 = 1.e6*det4(v1, v2, v3, v4);
+                    T1 D1 = 1.e6*det4(pt, v2, v3, v4);
+                    T1 D2 = 1.e6*det4(v1, pt, v3, v4);
+                    T1 D3 = 1.e6*det4(v1, v2, pt, v4);
+                    T1 D4 = 1.e6*det4(v1, v2, v3, pt);
+                    
+                    T1 VolumeDiff = std::abs(std::abs(D0)-std::abs(D1)-std::abs(D2)-std::abs(D3)-std::abs(D4));
+                    if (VolumeDiff < minVolumeDiff) {
+                        minVolumeDiff = VolumeDiff;
+                        cell = *tet2;
+                    }
+                }
+            }
+        }
+        return cell;
+    }
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                               const size_t nt) {
