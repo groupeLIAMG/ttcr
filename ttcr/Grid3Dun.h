@@ -4474,11 +4474,10 @@ namespace ttcr {
                                                   const std::vector<T1>& t0,
                                                   const sxyz<T1> &Rx,
                                                   const size_t threadNo) const {
-        
-        T1 minDist = small;
+        T1 minDist = min_dist;
         T1 tt = 0.0;
         T1 tt_s1, tt_s2;
-        bool atRx = true;
+        
         
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -4522,26 +4521,34 @@ namespace ttcr {
             }
         }
         
-        T2 cellNo, nodeNo, nodeNoPrev;
+        T2 cellNo, nodeNo;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         bool onNode = false;
         bool onEdge = false;
         bool onFace = false;
-        bool onNodePrev = false;
-        bool onEdgePrev = false;
-        bool onFacePrev = false;
-        std::array<T2,2> edgeNodes, edgeNodesPrev;
+        std::array<T2,2> edgeNodes;
         std::array<T2,3> faceNodes={{0,0,0}};
         std::array<T2,3> faceNodesPrev={{0,0,0}};
         bool reachedTx = false;
-        
+        T1 Xmax=-std::numeric_limits<T1>::max();
+        T1 Xmin=std::numeric_limits<T1>::max();
+        T1 Ymax=-std::numeric_limits<T1>::max();
+        T1 Ymin=std::numeric_limits<T1>::max();
+        T1 Zmax=-std::numeric_limits<T1>::max();
+        T1 Zmin=std::numeric_limits<T1>::max();
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
             if ( nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
                 tt_s1 = nodes[nodeNo].getNodeSlowness();
-                break;
             }
+            Xmax=nodes[nn].getX()>Xmax?nodes[nn].getX():Xmax;
+            Ymax=nodes[nn].getY()>Ymax?nodes[nn].getY():Ymax;
+            Zmax=nodes[nn].getZ()>Zmax?nodes[nn].getZ():Zmax;
+            
+            Xmin=nodes[nn].getX()<Xmin?nodes[nn].getX():Xmin;
+            Ymin=nodes[nn].getY()<Ymin?nodes[nn].getY():Ymin;
+            Zmin=nodes[nn].getZ()<Zmin?nodes[nn].getZ():Zmin;
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
@@ -4556,20 +4563,20 @@ namespace ttcr {
                 {itmp[2], itmp[3]} };
             
             for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
+                if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
                     
                     if ( interpVel )
                         tt_s1 = Interpolator<T1>::linearVel(curr_pt,
-                                                         nodes[edgeNodes[0]],
-                                                         nodes[edgeNodes[1]]);
+                                                            nodes[edgeNodes[0]],
+                                                            nodes[edgeNodes[1]]);
                     else
                         tt_s1 = Interpolator<T1>::linear(curr_pt,
-                                                      nodes[edgeNodes[0]],
-                                                      nodes[edgeNodes[1]]);
-
+                                                         nodes[edgeNodes[0]],
+                                                         nodes[edgeNodes[1]]);
+                    
                     break;
                 }
             }
@@ -4580,12 +4587,12 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-
+                
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
                 for ( size_t n=0; n<4; ++n ) {
-                    if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                    if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                         onFace = true;
                         faceNodes[0] = ind[n][0];
                         faceNodes[1] = ind[n][1];
@@ -4593,68 +4600,60 @@ namespace ttcr {
                         
                         if ( interpVel )
                             tt_s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
+                                                                          nodes[faceNodes[0]],
+                                                                          nodes[faceNodes[1]],
+                                                                          nodes[faceNodes[2]]);
+                        else
+                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
                                                                        nodes[faceNodes[0]],
                                                                        nodes[faceNodes[1]],
                                                                        nodes[faceNodes[2]]);
-                        else
-                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
-                                                                    nodes[faceNodes[0]],
-                                                                    nodes[faceNodes[1]],
-                                                                    nodes[faceNodes[2]]);
                         break;
                     }
                 }
             }
         }
-        T1 time=std::numeric_limits<T1>::max();
+        
         if (!onEdge && ! onNode && ! onFace){
-            onFace=true;
             std::array<T2,4> itmp = getPrimary(cellNo);
-            time=Interpolator<T1>::trilinearTime(curr_pt,
-                                                 nodes[itmp[0]],
-                                                 nodes[itmp[1]],
-                                                 nodes[itmp[2]],
-                                                 nodes[itmp[3]], threadNo);
-            
             if ( interpVel )
                 tt_s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
+                                                               nodes[itmp[0]],
+                                                               nodes[itmp[1]],
+                                                               nodes[itmp[2]],
+                                                               nodes[itmp[3]]);
+            else
+                tt_s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
                                                             nodes[itmp[0]],
                                                             nodes[itmp[1]],
                                                             nodes[itmp[2]],
                                                             nodes[itmp[3]]);
-            else
-                tt_s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
-                                                         nodes[itmp[0]],
-                                                         nodes[itmp[1]],
-                                                         nodes[itmp[2]],
-                                                         nodes[itmp[3]]);
         }
         for(auto nt=0;nt<txCell.size();++nt){
             if (getCellNo( Rx )==txCell[nt]){
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( interpVel )
                     tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                   nodes[itmp[0]],
+                                                                   nodes[itmp[1]],
+                                                                   nodes[itmp[2]],
+                                                                   nodes[itmp[3]]);
+                else
+                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                 nodes[itmp[0]],
                                                                 nodes[itmp[1]],
                                                                 nodes[itmp[2]],
                                                                 nodes[itmp[3]]);
-                else
-                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                             nodes[itmp[0]],
-                                                             nodes[itmp[1]],
-                                                             nodes[itmp[2]],
-                                                             nodes[itmp[3]]);
                 
                 tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                 reachedTx=true;
                 break;
             }
         }
-        T2 N=0;
-        while ( reachedTx == false && N<500) {
-            ++N;
-            //            if (N==29   )
-            //               cout<<"stop";
+        
+        T1 time=std::numeric_limits<T1>::max();
+        bool inlimitD=false;
+        while ( reachedTx == false ) {
             sxyz<T1> NodeSource;
             bool NearSource=false;
             for(size_t nt=0;nt<Tx.size();++nt){
@@ -4669,7 +4668,7 @@ namespace ttcr {
                     if (NearSource)
                         break;
                 }
-                if (curr_pt.getDistance(Tx[nt])<50.0*1.e-3){
+                if (curr_pt.getDistance(Tx[nt])<=source_radius){
                     NearSource=true;
                     NodeSource=Tx[nt];
                     break;
@@ -4696,6 +4695,7 @@ namespace ttcr {
                     }
                     std::sort(ind.begin(), ind.end());
                     if (NearSource){
+                        bool flag=false;
                         std::array<T1,3> Barycenter;
                         if (blti_solver_around_source(NodeSource, curr_pt, ind, Barycenter)==true){
                             pt_i.x=Barycenter[0]*nodes[ind[0]].getX()+Barycenter[1]*nodes[ind[1]].getX()+Barycenter[2]*nodes[ind[2]].getX();
@@ -4705,70 +4705,68 @@ namespace ttcr {
                                 continue;
                             for(T2 ni=0;ni<3;++ni){
                                 if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
                                     onNode = true;
                                     onEdge = false;
                                     onFace = false;
-                                    nodeNoPrev=nodeNo;
                                     newNode=ind[ni];
                                     cellNo=cellNoi;
-                                    break;
-                                }
-                                if(std::abs(Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
-                                    onNode = false;
-                                    onEdge = true;
-                                    onFace = false;
-                                    nodeNoPrev=nodeNo;
-                                    edgeNodes[0] = ind[(ni+1)%3];
-                                    edgeNodes[1] = ind[(ni+2)%3];
-                                    cellNo=cellNoi;
+                                    flag=true;
                                     break;
                                 }
                             }
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
+                            if (flag)
+                                break;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(Barycenter[ni])<minDist*minDist){
+                                    onNode = false;
+                                    onEdge = true;
+                                    onFace = false;
+                                    edgeNodes[0] = ind[(ni+1)%3];
+                                    edgeNodes[1] = ind[(ni+2)%3];
+                                    cellNo=cellNoi;
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
+                            
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            nodeNoPrev=nodeNo;
+                            faceNodesPrev=faceNodes;
                             faceNodes=ind;
                             cellNo=cellNoi;
                             break;
                         }
                         continue;
                     }
+                    if ( ind == faceNodesPrev) continue;
                     T1 s=0.25*(nodes[neighbors[cellNoi][0]].getNodeSlowness()+
                                nodes[neighbors[cellNoi][1]].getNodeSlowness()+
                                nodes[neighbors[cellNoi][2]].getNodeSlowness()+
                                nodes[neighbors[cellNoi][3]].getNodeSlowness());
-                    std::array<T2,2> indEdges[3] = {{{ ind[0],ind[1]}},{{ind[0],ind[2]}},{{ ind[1],ind[2]}}};
-                    for (T2 i=0;i<4;++i){
-                        if (neighbors[cellNoi][i]==nodeNo)
+                    
+                    sxyz<T1> pt;
+                    if(blti_raytrace(curr_pt, ind, pt, threadNo, s)){
+                        T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[0]], nodes[ind[1]], nodes[ind[2]], threadNo);
+                        if (t>=time)
                             continue;
-                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
-                        if (t>time)
-                            continue;
-                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
-                            onNode = true;
+                            pt_i=pt;;
+                            onNode = false;
                             onEdge = false;
-                            onFace = false;
-                            newNode=neighbors[cellNoi][i];
+                            onFace = true;
+                            faceNodesPrev=faceNodes;
+                            faceNodes = ind;
                             cellNo=cellNoi;
                         }
                     }
+                    /////// minimum at each edges
+                    std::array<T2,2> indEdges[3] = {{{ ind[0],ind[1]}},{{ind[0],ind[2]}},{{ ind[1],ind[2]}}};
                     for(T2 n=0;n<3;++n){
                         
                         sxyz<T1> pt;
@@ -4776,71 +4774,61 @@ namespace ttcr {
                         T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
                         T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
                         T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i ){
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
-                            
                             edgeNodes[0] = indEdges[n][0];
                             edgeNodes[1] = indEdges[n][1];
                             onNode = false;
                             onEdge = true;
                             onFace = false;
-                            nodeNoPrev=nodeNo;
                             cellNo=cellNoi;
-                            
                         }
                         
                     }
-                    sxyz<T1> pt;
-                    if(blti_raytrace(curr_pt, ind, pt, threadNo, s)==false) continue;
-                    T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[0]], nodes[ind[1]], nodes[ind[2]], threadNo);
-                    if (t>time)
-                        continue;
-                    t+=curr_pt.getDistance(pt)*s;
-                    if (t<t_i){
-                        t_i=t;
-                        Slow=s;
-                        pt_i=pt;
-                        onNodePrev = onNode;
-                        onEdgePrev = onEdge;
-                        onFacePrev = onFace;
-                        onNode = false;
-                        onEdge = false;
-                        onFace = true;
-                        nodeNoPrev=nodeNo;
-                        faceNodes = ind;
-                        cellNo=cellNoi;
+                    ////// nodes
+                    for (T2 i=0;i<4;++i){
+                        if (neighbors[cellNoi][i]==nodeNo)
+                            continue;
+                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        if (t>=time)
+                            continue;
+                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        if (t<t_i){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            newNode=neighbors[cellNoi][i];
+                            cellNo=cellNoi;
+                        }
                     }
                     
                 }
                 
                 prev_pt = curr_pt;
-                atRx = false;
                 curr_pt = pt_i;
-                tt_s2 = computeSlowness(curr_pt);
-//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-//                                     faceNodes);
+                //tt_s2 = computeSlowness(curr_pt);
+                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+                if (onNode){
+                    nodeNo=newNode;
+                }
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                        faceNodes);
                 
                 tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
                 tt_s1 = tt_s2;
-                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
-                if (onNode){
-                    nodeNoPrev=nodeNo;
-                    nodeNo=newNode;
-                }
-                if (!NearSource){
-                    if ( t_i==std::numeric_limits<T1>::max()) {
-                        std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                    }
+                if (!NearSource && t_i==std::numeric_limits<T1>::max()){
+                    std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    reachedTx = true;
+                    
                 }
                 
             } else if ( onEdge ) {
@@ -4893,22 +4881,19 @@ namespace ttcr {
                                     continue;
                                 for(T2 ni=0;ni<3;++ni){
                                     if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
-                                        onNodePrev = onNode;
-                                        onEdgePrev = onEdge;
-                                        onFacePrev = onFace;
                                         onNode = true;
                                         onEdge = false;
                                         onFace = false;
-                                        edgeNodesPrev=edgeNodes;
                                         nodeNo=ind[n][ni];
                                         cellNo=cellNoi;
                                         flag=true;
                                         break;
                                     }
+                                }
+                                if (flag)
+                                    break;
+                                for(T2 ni=0;ni<3;++ni){
                                     if(std::abs(Barycenter[ni])<minDist*minDist){
-                                        onNodePrev = onNode;
-                                        onEdgePrev = onEdge;
-                                        onFacePrev = onFace;
                                         onNode = false;
                                         onEdge = true;
                                         onFace = false;
@@ -4919,13 +4904,12 @@ namespace ttcr {
                                         break;
                                     }
                                 }
-                                onNodePrev = onNode;
-                                onEdgePrev = onEdge;
-                                onFacePrev = onFace;
+                                if (flag)
+                                    break;
                                 onNode = false;
                                 onEdge = false;
                                 onFace = true;
-                                edgeNodesPrev=edgeNodes;
+                                faceNodesPrev=faceNodes;
                                 faceNodes=ind[n];
                                 cellNo=cellNoi;
                                 flag=true;
@@ -4933,23 +4917,22 @@ namespace ttcr {
                             }
                             continue;
                         }
+                        if ( ind[n] == faceNodesPrev) continue;
                         sxyz<T1> pt;
                         if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
                         T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
+                        
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            edgeNodesPrev = edgeNodes;
+                            faceNodesPrev=faceNodes;
                             faceNodes = ind[n];
                             cellNo=cellNoi;
                         }
@@ -4964,16 +4947,13 @@ namespace ttcr {
                         T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
                         T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
                         T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i ){
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             edgeNodestmp[0] = indEdges[n][0];
                             edgeNodestmp[1] = indEdges[n][1];
                             onNode = false;
@@ -4986,20 +4966,16 @@ namespace ttcr {
                     }
                     for (T2 i=0;i<4;++i){
                         T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
                             pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            edgeNodesPrev = edgeNodes;
                             nodeNo=neighbors[cellNoi][i];
                             cellNo=cellNoi;
                         }
@@ -5007,37 +4983,36 @@ namespace ttcr {
                     
                     // find next cell
                 }
-                if (!NearSource){
-                    if ( t_i==std::numeric_limits<T1>::max()) {
-                        std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                    }
+                if (!NearSource &&  t_i==std::numeric_limits<T1>::max()){
+                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    reachedTx = true;
+                    
                 }
                 if (onEdge){
-                    edgeNodesPrev = edgeNodes;
                     edgeNodes[0] = edgeNodestmp[0];
                     edgeNodes[1] = edgeNodestmp[1];
                 }
                 prev_pt = curr_pt;
-                atRx = false;
                 curr_pt = pt_i;
-                tt_s2 = computeSlowness(curr_pt);
-//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-//                                     faceNodes);
-
+                //tt_s2 = computeSlowness(curr_pt);
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                        faceNodes);
+                
                 tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
                 tt_s1 = tt_s2;
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
             } else{ // on Face
-                //////////////////////////
-                // cout<<N<<endl;
-                T2 cellNo1=findAdjacentCell2(faceNodes, cellNo,curr_pt);
-                if (atRx)
+      
+                
+                T2 cellNo1;
+                if (!onFace || inlimitD)
                     cellNo1=cellNo;
+                else
+                    cellNo1=findAdjacentCell2(faceNodes, cellNo,curr_pt);
+                
                 sxyz<T1> pt_i;
                 T1 Slow;
-                ///////////////////////////
                 std::array<T2,3> ind[8] = {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
@@ -5064,10 +5039,11 @@ namespace ttcr {
                             nodes[neighbors[cellNo1][3]].getNodeSlowness());
                 
                 for ( size_t n=0; n<8; ++n ) {
-                    if ( ind[n] == faceNodes) continue;
+                    if ( ind[n] == faceNodes ||   ind[n] == faceNodesPrev ) continue;
                     if (NearSource){
                         // plotCell(cellNo, curr_pt, NodeSource-curr_pt);
                         //plotCell(cellNo1, curr_pt, sxyz<T1>(0.0,0.0,0.0));
+                        bool flag=false;
                         std::array<T1,3> Barycenter;
                         if (blti_solver_around_source(NodeSource, curr_pt, ind[n], Barycenter)==true){
                             pt_i.x=Barycenter[0]*nodes[ind[n][0]].getX()+Barycenter[1]*nodes[ind[n][1]].getX()+Barycenter[2]*nodes[ind[n][2]].getX();
@@ -5078,64 +5054,58 @@ namespace ttcr {
                                 continue;
                             for(T2 ni=0;ni<3;++ni){
                                 if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
                                     onNode = true;
                                     onEdge = false;
                                     onFace = false;
-                                    faceNodesPrev = faceNodes;
                                     nodeNo=ind[n][ni];
-                                    break;
-                                }
-                                if(std::abs(Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
-                                    onNode = false;
-                                    onEdge = true;
-                                    onFace = false;
-                                    faceNodesPrev = faceNodes;
-                                    edgeNodes[0] = ind[n][(ni+1)%3];
-                                    edgeNodes[1] = ind[n][(ni+2)%3];
+                                    faceNodesPrev=faceNodes;
+                                    flag=true;
                                     break;
                                 }
                             }
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
+                            if (flag)
+                                break;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(Barycenter[ni])<minDist*minDist){
+                                    onNode = false;
+                                    onEdge = true;
+                                    onFace = false;
+                                    edgeNodes[0] = ind[n][(ni+1)%3];
+                                    edgeNodes[1] = ind[n][(ni+2)%3];
+                                    faceNodesPrev=faceNodes;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            faceNodesPrev = faceNodes;
                             face=static_cast<T1>(n);
                             break;
                         }
                         continue;
                     }
-                    if ( ind[n] == faceNodesPrev) continue;
                     T1 s;
                     sxyz<T1> pt;
                     s=(n<4)?s1:s2;
-                    if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
+                    
+                    if(blti_raytrace(curr_pt, ind[n], pt,threadNo, s)==false) continue;
                     T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
-                    if (t>time)
+                    if (t>=time)
                         continue;
                     t+=curr_pt.getDistance(pt)*s;
                     if (t<t_i){
                         t_i=t;
                         Slow=s;
-                        face=static_cast<T1>(n);
                         pt_i=pt;
-                        onNodePrev = onNode;
-                        onEdgePrev = onEdge;
-                        onFacePrev = onFace;
                         onNode = false;
                         onEdge = false;
                         onFace = true;
+                        face=static_cast<T1>(n);
                     }
                 }
-                if (!NearSource){
+                if (! NearSource){
                     std::array<T2,2> indEdges[9] = {
                         {{ neighbors[cellNo][0],neighbors[cellNo][1]}},
                         {{ neighbors[cellNo][0],neighbors[cellNo][2]}},
@@ -5165,23 +5135,19 @@ namespace ttcr {
                         T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
                         T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
                         T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i ){
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
-                            
                             edgeNodes[0] = indEdges[n][0];
                             edgeNodes[1] = indEdges[n][1];
+                            faceNodesPrev=faceNodes;
                             onNode = false;
                             onEdge = true;
-                            onFace = false;
-                            faceNodesPrev = faceNodes;
+                            onFace = false;;
                             
                         }
                         
@@ -5195,13 +5161,10 @@ namespace ttcr {
                                 t_i=t;
                                 Slow=s1;
                                 pt_i=sxyz<T1>(nodes[neighbors[cellNo][n]]);
-                                onNodePrev = onNode;
-                                onEdgePrev = onEdge;
-                                onFacePrev = onFace;
                                 onNode = true;
                                 onEdge = false;
                                 onFace = false;
-                                faceNodesPrev = faceNodes;
+                                faceNodesPrev=faceNodes;
                                 nodeNo=neighbors[cellNo][n];
                             }
                         }
@@ -5212,62 +5175,99 @@ namespace ttcr {
                             t_i=nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt);
                             Slow=s2;
                             pt_i=sxyz<T1>(nodes[neighbors[cellNo1][forthNode]]);
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            faceNodesPrev = faceNodes;
+                            faceNodesPrev=faceNodes;
                             nodeNo=neighbors[cellNo1][forthNode];
                         }
                     }
-                    if (t_i==std::numeric_limits<T1>::max()){
-                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        reachedTx = true;
-                        continue;
-                    }
                 }
+                if (t_i==std::numeric_limits<T1>::max() && ! NearSource){
+                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    reachedTx = true;
+                    continue;
+                }
+          
                 prev_pt = curr_pt;
-                atRx = false;
                 curr_pt = pt_i;
-                tt_s2 = computeSlowness(curr_pt);
-//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-//                                     faceNodes);
-                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
-                tt_s1 = tt_s2;
-                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+                //tt_s2 = computeSlowness(curr_pt);
+                inlimitD=false;
+                if (std::abs(curr_pt.x-Xmax)<=minDist*minDist ||std::abs(curr_pt.x-Xmin)<=minDist*minDist )
+                    inlimitD=true;
+                if (std::abs(curr_pt.y-Ymax)<=minDist*minDist ||std::abs(curr_pt.y-Ymin)<=minDist*minDist )
+                    inlimitD=true;
+                if (std::abs(curr_pt.z-Zmax)<=minDist*minDist ||std::abs(curr_pt.z-Zmin)<=minDist*minDist )
+                    inlimitD=true;
+
                 if (onFace){
-                    faceNodesPrev = faceNodes;
-                    
+                    faceNodesPrev=faceNodes;
                     faceNodes = ind[face];
-                    if (face<4)
-                        cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
-                    else
-                        cellNo=findAdjacentCell2(faceNodes, cellNo1,curr_pt);
-                    if ( cellNo==std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        tt = 0.0;
-                        reachedTx = true;
-                        continue;
+                    if (!inlimitD){
+                        if (face<4)
+                            cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
+                        
+                        else
+                            cellNo=findAdjacentCell2(faceNodes, cellNo1,curr_pt);
                     }
                 }
                 
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                        faceNodes);
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
+                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+                //                if ( cellNo==std::numeric_limits<T2>::max() ) {
+                //                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                //                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                //                    tt = 0.0;
+                //                    reachedTx = true;
+                //                    continue;
+                //                }
+                
             }
-            //            std::cout<<"distance= "<<1000.0*curr_pt.getDistance(prev_pt)<<endl;
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        tt += t0[nt];
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist*minDist ) {
+                        std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                        if ( interpVel )
+                            
+                            tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                           nodes[itmp[0]],
+                                                                           nodes[itmp[1]],
+                                                                           nodes[itmp[2]],
+                                                                           nodes[itmp[3]]);
+                        else
+                            tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                                                        nodes[itmp[0]],
+                                                                        nodes[itmp[1]],
+                                                                        nodes[itmp[2]],
+                                                                        nodes[itmp[3]]);
+                        
+                        tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                         reachedTx = true;
                         break;
                     }
                     for(size_t n=0;n<4;++n){
                         sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
-                        if (curr_pt.getDistance(NearTx)< minDist){
-                            tt += t0[nt];
+                        if (curr_pt.getDistance(NearTx)< minDist*minDist){
+                            std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                            if ( interpVel )
+                                
+                                tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                               nodes[itmp[0]],
+                                                                               nodes[itmp[1]],
+                                                                               nodes[itmp[2]],
+                                                                               nodes[itmp[3]]);
+                            else
+                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            
+                            tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                             break;
                         }
@@ -5284,16 +5284,16 @@ namespace ttcr {
                                 
                                 if ( interpVel )
                                     tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                                   nodes[itmp[0]],
+                                                                                   nodes[itmp[1]],
+                                                                                   nodes[itmp[2]],
+                                                                                   nodes[itmp[3]]);
+                                else
+                                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                                 nodes[itmp[0]],
                                                                                 nodes[itmp[1]],
                                                                                 nodes[itmp[2]],
                                                                                 nodes[itmp[3]]);
-                                else
-                                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                                             nodes[itmp[0]],
-                                                                             nodes[itmp[1]],
-                                                                             nodes[itmp[2]],
-                                                                             nodes[itmp[3]]);
                                 
                                 tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                                 reachedTx = true;
@@ -5305,35 +5305,35 @@ namespace ttcr {
                             std::array<T2,4> itmp = getPrimary(cellNo);
                             if ( interpVel )
                                 tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                               nodes[itmp[0]],
+                                                                               nodes[itmp[1]],
+                                                                               nodes[itmp[2]],
+                                                                               nodes[itmp[3]]);
+                            else
+                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                             nodes[itmp[0]],
                                                                             nodes[itmp[1]],
                                                                             nodes[itmp[2]],
                                                                             nodes[itmp[3]]);
-                            else
-                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                                         nodes[itmp[0]],
-                                                                         nodes[itmp[1]],
-                                                                         nodes[itmp[2]],
-                                                                         nodes[itmp[3]]);
                             
                             tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                         } else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
-                                    std::array<T2,4> itmp = getPrimary(cellNo);
+                                    std::array<T2,4> itmp = getPrimary(txCell[nt]);
                                     if ( interpVel )
                                         tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                                       nodes[itmp[0]],
+                                                                                       nodes[itmp[1]],
+                                                                                       nodes[itmp[2]],
+                                                                                       nodes[itmp[3]]);
+                                    else
+                                        tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                                     nodes[itmp[0]],
                                                                                     nodes[itmp[1]],
                                                                                     nodes[itmp[2]],
                                                                                     nodes[itmp[3]]);
-                                    else
-                                        tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                                                 nodes[itmp[0]],
-                                                                                 nodes[itmp[1]],
-                                                                                 nodes[itmp[2]],
-                                                                                 nodes[itmp[3]]);
                                     
                                     tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
                                     reachedTx = true;
@@ -5358,7 +5358,7 @@ namespace ttcr {
                                                T1& tt,
                                                const size_t threadNo) const {
         
-        T1 minDist = small;
+        T1 minDist = min_dist;
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
         tt = 0.0;
@@ -5366,6 +5366,7 @@ namespace ttcr {
         
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
                 return;
             }
         }
@@ -5406,26 +5407,34 @@ namespace ttcr {
             }
         }
         
-        T2 cellNo, nodeNo, nodeNoPrev;
+        T2 cellNo, nodeNo;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         bool onNode = false;
         bool onEdge = false;
         bool onFace = false;
-        bool onNodePrev = false;
-        bool onEdgePrev = false;
-        bool onFacePrev = false;
-        std::array<T2,2> edgeNodes, edgeNodesPrev;
+        std::array<T2,2> edgeNodes;
         std::array<T2,3> faceNodes={{0,0,0}};
         std::array<T2,3> faceNodesPrev={{0,0,0}};
         bool reachedTx = false;
-        
+        T1 Xmax=-std::numeric_limits<T1>::max();
+        T1 Xmin=std::numeric_limits<T1>::max();
+        T1 Ymax=-std::numeric_limits<T1>::max();
+        T1 Ymin=std::numeric_limits<T1>::max();
+        T1 Zmax=-std::numeric_limits<T1>::max();
+        T1 Zmin=std::numeric_limits<T1>::max();
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
             if ( nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
                 tt_s1 = nodes[nodeNo].getNodeSlowness();
-                break;
             }
+            Xmax=nodes[nn].getX()>Xmax?nodes[nn].getX():Xmax;
+            Ymax=nodes[nn].getY()>Ymax?nodes[nn].getY():Ymax;
+            Zmax=nodes[nn].getZ()>Zmax?nodes[nn].getZ():Zmax;
+            
+            Xmin=nodes[nn].getX()<Xmin?nodes[nn].getX():Xmin;
+            Ymin=nodes[nn].getY()<Ymin?nodes[nn].getY():Ymin;
+            Zmin=nodes[nn].getZ()<Zmin?nodes[nn].getZ():Zmin;
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
@@ -5440,7 +5449,7 @@ namespace ttcr {
                 {itmp[2], itmp[3]} };
             
             for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
+                if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
@@ -5469,7 +5478,7 @@ namespace ttcr {
                     std::sort( ind[n].begin(), ind[n].end() );
                 
                 for ( size_t n=0; n<4; ++n ) {
-                    if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                    if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                         onFace = true;
                         faceNodes[0] = ind[n][0];
                         faceNodes[1] = ind[n][1];
@@ -5477,29 +5486,22 @@ namespace ttcr {
                         
                         if ( interpVel )
                             tt_s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
+                                                                          nodes[faceNodes[0]],
+                                                                          nodes[faceNodes[1]],
+                                                                          nodes[faceNodes[2]]);
+                        else
+                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
                                                                        nodes[faceNodes[0]],
                                                                        nodes[faceNodes[1]],
                                                                        nodes[faceNodes[2]]);
-                        else
-                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
-                                                                    nodes[faceNodes[0]],
-                                                                    nodes[faceNodes[1]],
-                                                                    nodes[faceNodes[2]]);
                         break;
                     }
                 }
             }
         }
-        T1 time=std::numeric_limits<T1>::max();
+        
         if (!onEdge && ! onNode && ! onFace){
-            onFace=true;
             std::array<T2,4> itmp = getPrimary(cellNo);
-            time=Interpolator<T1>::trilinearTime(curr_pt,
-                                                 nodes[itmp[0]],
-                                                 nodes[itmp[1]],
-                                                 nodes[itmp[2]],
-                                                 nodes[itmp[3]], threadNo);
-            
             if ( interpVel )
                 tt_s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
                                                             nodes[itmp[0]],
@@ -5535,11 +5537,10 @@ namespace ttcr {
                 break;
             }
         }
-        T2 N=0;
-        while ( reachedTx == false && N<500) {
-            ++N;
-            //            if (N==29   )
-            //               cout<<"stop";
+
+        T1 time=std::numeric_limits<T1>::max();
+        bool inlimitD=false;
+        while ( reachedTx == false ) {
             sxyz<T1> NodeSource;
             bool NearSource=false;
             for(size_t nt=0;nt<Tx.size();++nt){
@@ -5581,6 +5582,7 @@ namespace ttcr {
                     }
                     std::sort(ind.begin(), ind.end());
                     if (NearSource){
+                        bool flag=false;
                         std::array<T1,3> Barycenter;
                         if (blti_solver_around_source(NodeSource, curr_pt, ind, Barycenter)==true){
                             pt_i.x=Barycenter[0]*nodes[ind[0]].getX()+Barycenter[1]*nodes[ind[1]].getX()+Barycenter[2]*nodes[ind[2]].getX();
@@ -5590,70 +5592,68 @@ namespace ttcr {
                                 continue;
                             for(T2 ni=0;ni<3;++ni){
                                 if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
                                     onNode = true;
                                     onEdge = false;
                                     onFace = false;
-                                    nodeNoPrev=nodeNo;
                                     newNode=ind[ni];
                                     cellNo=cellNoi;
-                                    break;
-                                }
-                                if(std::abs(Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
-                                    onNode = false;
-                                    onEdge = true;
-                                    onFace = false;
-                                    nodeNoPrev=nodeNo;
-                                    edgeNodes[0] = ind[(ni+1)%3];
-                                    edgeNodes[1] = ind[(ni+2)%3];
-                                    cellNo=cellNoi;
+                                    flag=true;
                                     break;
                                 }
                             }
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
+                            if (flag)
+                                break;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(Barycenter[ni])<minDist*minDist){
+                                    onNode = false;
+                                    onEdge = true;
+                                    onFace = false;
+                                    edgeNodes[0] = ind[(ni+1)%3];
+                                    edgeNodes[1] = ind[(ni+2)%3];
+                                    cellNo=cellNoi;
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
+                            
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            nodeNoPrev=nodeNo;
+                            faceNodesPrev=faceNodes;
                             faceNodes=ind;
                             cellNo=cellNoi;
                             break;
                         }
                         continue;
                     }
+                    if ( ind == faceNodesPrev) continue;
                     T1 s=0.25*(nodes[neighbors[cellNoi][0]].getNodeSlowness()+
                                nodes[neighbors[cellNoi][1]].getNodeSlowness()+
                                nodes[neighbors[cellNoi][2]].getNodeSlowness()+
                                nodes[neighbors[cellNoi][3]].getNodeSlowness());
-                    std::array<T2,2> indEdges[3] = {{{ ind[0],ind[1]}},{{ind[0],ind[2]}},{{ ind[1],ind[2]}}};
-                    for (T2 i=0;i<4;++i){
-                        if (neighbors[cellNoi][i]==nodeNo)
+
+                    sxyz<T1> pt;
+                    if(blti_raytrace(curr_pt, ind, pt, threadNo, s)){
+                        T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[0]], nodes[ind[1]], nodes[ind[2]], threadNo);
+                        if (t>=time)
                             continue;
-                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
-                        if (t>time)
-                            continue;
-                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
-                            onNode = true;
+                            pt_i=pt;;
+                            onNode = false;
                             onEdge = false;
-                            onFace = false;
-                            newNode=neighbors[cellNoi][i];
+                            onFace = true;
+                            faceNodesPrev=faceNodes;
+                            faceNodes = ind;
                             cellNo=cellNoi;
                         }
                     }
+                    /////// minimum at each edges
+                    std::array<T2,2> indEdges[3] = {{{ ind[0],ind[1]}},{{ind[0],ind[2]}},{{ ind[1],ind[2]}}};
                     for(T2 n=0;n<3;++n){
                         
                         sxyz<T1> pt;
@@ -5668,66 +5668,56 @@ namespace ttcr {
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
-                            
                             edgeNodes[0] = indEdges[n][0];
                             edgeNodes[1] = indEdges[n][1];
                             onNode = false;
                             onEdge = true;
                             onFace = false;
-                            nodeNoPrev=nodeNo;
                             cellNo=cellNoi;
-                            
                         }
                         
                     }
-                    sxyz<T1> pt;
-                    if(blti_raytrace(curr_pt, ind, pt, threadNo, s)==false) continue;
-                    T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[0]], nodes[ind[1]], nodes[ind[2]], threadNo);
-                    if (t>time)
-                        continue;
-                    t+=curr_pt.getDistance(pt)*s;
-                    if (t<t_i){
-                        t_i=t;
-                        Slow=s;
-                        pt_i=pt;
-                        onNodePrev = onNode;
-                        onEdgePrev = onEdge;
-                        onFacePrev = onFace;
-                        onNode = false;
-                        onEdge = false;
-                        onFace = true;
-                        nodeNoPrev=nodeNo;
-                        faceNodes = ind;
-                        cellNo=cellNoi;
+                    ////// nodes
+                    for (T2 i=0;i<4;++i){
+                        if (neighbors[cellNoi][i]==nodeNo)
+                            continue;
+                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        if (t>=time)
+                            continue;
+                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        if (t<t_i){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            newNode=neighbors[cellNoi][i];
+                            cellNo=cellNoi;
+                        }
                     }
                     
                 }
                 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                tt_s2 = computeSlowness(curr_pt);
-//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-//                                     faceNodes);
+//                tt_s2 = computeSlowness(curr_pt);
+                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+                if (onNode){
+                    nodeNo=newNode;
+                }
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                     faceNodes);
                 tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
                 tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
-                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
-                if (onNode){
-                    nodeNoPrev=nodeNo;
-                    nodeNo=newNode;
-                }
-                if (!NearSource){
-                    if ( t_i==std::numeric_limits<T1>::max()) {
+                if (!NearSource && t_i==std::numeric_limits<T1>::max()){
                         std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         tt = 0.0;
                         reachedTx = true;
-                    }
                 }
                 
             } else if ( onEdge ) {
@@ -5780,22 +5770,19 @@ namespace ttcr {
                                     continue;
                                 for(T2 ni=0;ni<3;++ni){
                                     if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
-                                        onNodePrev = onNode;
-                                        onEdgePrev = onEdge;
-                                        onFacePrev = onFace;
                                         onNode = true;
                                         onEdge = false;
                                         onFace = false;
-                                        edgeNodesPrev=edgeNodes;
                                         nodeNo=ind[n][ni];
                                         cellNo=cellNoi;
                                         flag=true;
                                         break;
                                     }
+                                }
+                                if (flag)
+                                    break;
+                                for(T2 ni=0;ni<3;++ni){
                                     if(std::abs(Barycenter[ni])<minDist*minDist){
-                                        onNodePrev = onNode;
-                                        onEdgePrev = onEdge;
-                                        onFacePrev = onFace;
                                         onNode = false;
                                         onEdge = true;
                                         onFace = false;
@@ -5806,13 +5793,12 @@ namespace ttcr {
                                         break;
                                     }
                                 }
-                                onNodePrev = onNode;
-                                onEdgePrev = onEdge;
-                                onFacePrev = onFace;
+                                if (flag)
+                                    break;
                                 onNode = false;
                                 onEdge = false;
                                 onFace = true;
-                                edgeNodesPrev=edgeNodes;
+                                faceNodesPrev=faceNodes;
                                 faceNodes=ind[n];
                                 cellNo=cellNoi;
                                 flag=true;
@@ -5820,23 +5806,22 @@ namespace ttcr {
                             }
                             continue;
                         }
+                        if ( ind[n] == faceNodesPrev) continue;
                         sxyz<T1> pt;
                         if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
                         T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
                         if (t>time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
+
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            edgeNodesPrev = edgeNodes;
+                            faceNodesPrev=faceNodes;
                             faceNodes = ind[n];
                             cellNo=cellNoi;
                         }
@@ -5858,9 +5843,6 @@ namespace ttcr {
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             edgeNodestmp[0] = indEdges[n][0];
                             edgeNodestmp[1] = indEdges[n][1];
                             onNode = false;
@@ -5880,13 +5862,9 @@ namespace ttcr {
                             t_i=t;
                             Slow=s;
                             pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            edgeNodesPrev = edgeNodes;
                             nodeNo=neighbors[cellNoi][i];
                             cellNo=cellNoi;
                         }
@@ -5894,39 +5872,38 @@ namespace ttcr {
                     
                     // find next cell
                 }
-                if (!NearSource){
-                    if ( t_i==std::numeric_limits<T1>::max()) {
+                if (!NearSource && t_i==std::numeric_limits<T1>::max()) {
                         std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         tt = 0.0;
                         reachedTx = true;
-                    }
                 }
                 if (onEdge){
-                    edgeNodesPrev = edgeNodes;
                     edgeNodes[0] = edgeNodestmp[0];
                     edgeNodes[1] = edgeNodestmp[1];
                 }
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                tt_s2 = computeSlowness(curr_pt);
-//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-//                                     faceNodes);
+//                tt_s2 = computeSlowness(curr_pt);
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                     faceNodes);
                 tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
                 tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
             } else{ // on Face
-                //////////////////////////
-                // cout<<N<<endl;
-                T2 cellNo1=findAdjacentCell2(faceNodes, cellNo,curr_pt);
-                if (r_tmp.size()==1)
+                
+                
+                T2 cellNo1;
+                if (!onFace || inlimitD)
                     cellNo1=cellNo;
+                else
+                    cellNo1=findAdjacentCell2(faceNodes, cellNo,curr_pt);
+
                 sxyz<T1> pt_i;
                 T1 Slow;
-                ///////////////////////////
                 std::array<T2,3> ind[8] = {
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
                     { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
@@ -5957,6 +5934,7 @@ namespace ttcr {
                     if (NearSource){
                         // plotCell(cellNo, curr_pt, NodeSource-curr_pt);
                         //plotCell(cellNo1, curr_pt, sxyz<T1>(0.0,0.0,0.0));
+                        bool flag=false;
                         std::array<T1,3> Barycenter;
                         if (blti_solver_around_source(NodeSource, curr_pt, ind[n], Barycenter)==true){
                             pt_i.x=Barycenter[0]*nodes[ind[n][0]].getX()+Barycenter[1]*nodes[ind[n][1]].getX()+Barycenter[2]*nodes[ind[n][2]].getX();
@@ -5967,45 +5945,42 @@ namespace ttcr {
                                 continue;
                             for(T2 ni=0;ni<3;++ni){
                                 if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
                                     onNode = true;
                                     onEdge = false;
                                     onFace = false;
-                                    faceNodesPrev = faceNodes;
+                                    faceNodesPrev=faceNodes;
                                     nodeNo=ind[n][ni];
-                                    break;
-                                }
-                                if(std::abs(Barycenter[ni])<minDist*minDist){
-                                    onNodePrev = onNode;
-                                    onEdgePrev = onEdge;
-                                    onFacePrev = onFace;
-                                    onNode = false;
-                                    onEdge = true;
-                                    onFace = false;
-                                    faceNodesPrev = faceNodes;
-                                    edgeNodes[0] = ind[n][(ni+1)%3];
-                                    edgeNodes[1] = ind[n][(ni+2)%3];
+                                    flag=true;
                                     break;
                                 }
                             }
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
+                            if (flag)
+                                break;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(Barycenter[ni])<minDist*minDist){
+                                    onNode = false;
+                                    onEdge = true;
+                                    onFace = false;
+                                    edgeNodes[0] = ind[n][(ni+1)%3];
+                                    edgeNodes[1] = ind[n][(ni+2)%3];
+                                    faceNodesPrev=faceNodes;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
                             onNode = false;
                             onEdge = false;
                             onFace = true;
-                            faceNodesPrev = faceNodes;
                             face=static_cast<T1>(n);
                             break;
                         }
                         continue;
                     }
-                    if ( ind[n] == faceNodesPrev) continue;
                     T1 s;
                     sxyz<T1> pt;
                     s=(n<4)?s1:s2;
+                    
                     if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
                     T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
                     if (t>time)
@@ -6014,14 +5989,11 @@ namespace ttcr {
                     if (t<t_i){
                         t_i=t;
                         Slow=s;
-                        face=static_cast<T1>(n);
                         pt_i=pt;
-                        onNodePrev = onNode;
-                        onEdgePrev = onEdge;
-                        onFacePrev = onFace;
                         onNode = false;
                         onEdge = false;
                         onFace = true;
+                        face=static_cast<T1>(n);
                     }
                 }
                 if (!NearSource){
@@ -6061,16 +6033,12 @@ namespace ttcr {
                             t_i=t;
                             Slow=s;
                             pt_i=pt;
-                            onNodePrev = onNode;
-                            onEdgePrev = onEdge;
-                            onFacePrev = onFace;
-                            
                             edgeNodes[0] = indEdges[n][0];
                             edgeNodes[1] = indEdges[n][1];
+                            faceNodesPrev=faceNodes;
                             onNode = false;
                             onEdge = true;
                             onFace = false;
-                            faceNodesPrev = faceNodes;
                             
                         }
                         
@@ -6084,13 +6052,10 @@ namespace ttcr {
                                 t_i=t;
                                 Slow=s1;
                                 pt_i=sxyz<T1>(nodes[neighbors[cellNo][n]]);
-                                onNodePrev = onNode;
-                                onEdgePrev = onEdge;
-                                onFacePrev = onFace;
                                 onNode = true;
                                 onEdge = false;
                                 onFace = false;
-                                faceNodesPrev = faceNodes;
+                                faceNodesPrev=faceNodes;
                                 nodeNo=neighbors[cellNo][n];
                             }
                         }
@@ -6104,60 +6069,61 @@ namespace ttcr {
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            faceNodesPrev = faceNodes;
+                            faceNodesPrev=faceNodes;
                             nodeNo=neighbors[cellNo1][forthNode];
                         }
                     }
-                    if (t_i==std::numeric_limits<T1>::max()){
-                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        tt = 0.0;
-                        reachedTx = true;
-                        continue;
-                    }
                 }
+                if (t_i==std::numeric_limits<T1>::max()){
+                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    r_tmp.resize(1);
+                    r_tmp[0] = Rx;
+                    tt = 0.0;
+                    reachedTx = true;
+                    continue;
+                }
+                
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                tt_s2 = computeSlowness(curr_pt);
-//                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-//                                     faceNodes);
+//                tt_s2 = computeSlowness(curr_pt);
+                inlimitD=false;
+                if (std::abs(curr_pt.x-Xmax)<=minDist*minDist ||std::abs(curr_pt.x-Xmin)<=minDist*minDist )
+                    inlimitD=true;
+                if (std::abs(curr_pt.y-Ymax)<=minDist*minDist ||std::abs(curr_pt.y-Ymin)<=minDist*minDist )
+                    inlimitD=true;
+                if (std::abs(curr_pt.z-Zmax)<=minDist*minDist ||std::abs(curr_pt.z-Zmin)<=minDist*minDist )
+                    inlimitD=true;
+                
+                if (onFace){
+                    faceNodesPrev=faceNodes;
+                    faceNodes = ind[face];
+                    if (!inlimitD){
+                        if (face<4)
+                            cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
+                        else
+                            cellNo=findAdjacentCell2(faceNodes, cellNo1,curr_pt);
+                    }
+                }
+                
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                        faceNodes);
                 tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
                 tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
-                if (onFace){
-                    faceNodesPrev = faceNodes;
-                    
-                    faceNodes = ind[face];
-                    if (face<4)
-                        cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
-                    else
-                        cellNo=findAdjacentCell2(faceNodes, cellNo1,curr_pt);
-                    if ( cellNo == std::numeric_limits<T2>::max() ) {
-                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        tt = 0.0;
-                        reachedTx = true;
-                        continue;
-                    }
-                }
-                
             }
             //            std::cout<<"distance= "<<1000.0*curr_pt.getDistance(prev_pt)<<endl;
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist*minDist ) {
                         tt += t0[nt];
                         reachedTx = true;
                         break;
                     }
                     for(size_t n=0;n<4;++n){
                         sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
-                        if (curr_pt.getDistance(NearTx)< minDist){
+                        if (curr_pt.getDistance(NearTx)< minDist*minDist){
                             tt += t0[nt];
                             reachedTx = true;
                             r_tmp.push_back( Tx[nt] );
@@ -6389,10 +6355,11 @@ namespace ttcr {
         sxyz<T1> m=cross(PQ,PC);
         T1 u=dot(PB,m);
         T1 v=-dot(PA,m);
-        if(signum(u)!=signum(v))
+        T1 relativeZero=min_dist;
+        if(signum(u)!=signum(v) && fabs(v)>relativeZero && fabs(u)>relativeZero)
             return false;
         T1 w=tripleScalar(PQ, PB, PA);
-        if(signum(u)!=signum(w))
+        if(signum(u)!=signum(w) && abs(w)>relativeZero && abs(u)>relativeZero)
             return false;
         T1 denom=1.0/(u+v+w);
         barycenters[0]=denom*u;
