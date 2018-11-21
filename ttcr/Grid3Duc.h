@@ -277,14 +277,6 @@ namespace ttcr {
         
         int solveEq23(const T1 a[], const T1 b[], T1 n[][3]) const;
         
-        bool testInTriangle(const NODE *vertexA,
-                            const NODE *vertexB,
-                            const NODE *vertexC,
-                            const sxyz<T1> &E) const;
-        
-        void barycentric(const NODE *a, const NODE *b, const NODE *c,
-                         const sxyz<T1> &p, T1 &u, T1 &v, T1 &w) const;
-        
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const sxyz<T1> &Rx,
@@ -328,11 +320,6 @@ namespace ttcr {
                                   const T2 iA, T2 iB, T2 iC,
                                   sxyz<T1> &pt_i) const;
         
-        bool areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const;
-        bool areCoplanar(const sxyz<T1> &pt, const T2 i0, const T2 i1, const T2 i2) const;
-        bool areCoplanar(const sxyz<T1> &pt1, const sxyz<T1> &pt2,
-                         const sxyz<T1> &pt3, const sxyz<T1> &pt4) const;
-
         T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
         
@@ -1719,7 +1706,7 @@ namespace ttcr {
                 {itmp[2], itmp[3]} };
             
             for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
+                if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
@@ -1738,7 +1725,7 @@ namespace ttcr {
                 std::sort( ind[n].begin(), ind[n].end() );
             
             for ( size_t n=0; n<4; ++n ) {
-                if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                     onFace = true;
                     //  faceNodes shoud not be assigned, face was not intersected
                     break;
@@ -2305,7 +2292,7 @@ namespace ttcr {
                 {itmp[2], itmp[3]} };
             
             for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
+                if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
@@ -2324,7 +2311,7 @@ namespace ttcr {
                 std::sort( ind[n].begin(), ind[n].end() );
             
             for ( size_t n=0; n<4; ++n ) {
-                if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                     onFace = true;
                     //  faceNodes shoud not be assigned, face was not intersected
                     break;
@@ -2902,7 +2889,7 @@ namespace ttcr {
                 {itmp[2], itmp[3]} };
             
             for ( size_t n=0; n<6; ++n ) {
-                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
+                if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
@@ -2921,7 +2908,7 @@ namespace ttcr {
                 std::sort( ind[n].begin(), ind[n].end() );
             
             for ( size_t n=0; n<4; ++n ) {
-                if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                     onFace = true;
                     //  faceNodes shoud not be assigned, face was not intersected
                     break;
@@ -3444,7 +3431,7 @@ namespace ttcr {
         
         for ( size_t n1=0; n1<3; ++n1 ) {
             size_t n2 = (n1+1)%3;
-            if ( areCollinear(curr_pt, ind[n1], ind[n2]) ) {
+            if ( areCollinear(curr_pt, nodes[ind[n1]], nodes[ind[n2]]) ) {
                 edgeNodes[0] = ind[n1];
                 edgeNodes[1] = ind[n2];
                 onNode = false;
@@ -3493,7 +3480,7 @@ namespace ttcr {
         
         for ( size_t n1=0; n1<3; ++n1 ) {
             size_t n2 = (n1+1)%3;
-            if ( areCollinear(curr_pt, ind2[n1], ind2[n2]) ) {
+            if ( areCollinear(curr_pt, nodes[ind2[n1]], nodes[ind2[n2]]) ) {
                 edgeNodes[0] = ind2[n1];
                 edgeNodes[1] = ind2[n2];
                 onNode = false;
@@ -3591,37 +3578,6 @@ namespace ttcr {
         pt_i.z = u*nodes[iA].getZ() + v*nodes[iB].getZ() + w*nodes[iC].getZ();
         
         return true;
-    }
-    
-    
-    template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::areCollinear(const sxyz<T1> &pt, const T2 i0, const T2 i1) const {
-        
-        // http://mathworld.wolfram.com/Collinear.html
-        //
-        sxyz<T1> v1 = {pt.x-nodes[i0].getX(), pt.y-nodes[i0].getY(), pt.z-nodes[i0].getZ()};
-        sxyz<T1> v2 = {pt.x-nodes[i1].getX(), pt.y-nodes[i1].getY(), pt.z-nodes[i1].getZ()};
-        sxyz<T1> v3 = cross(v1, v2);
-        return norm(v3)<small2;
-        
-    }
-    
-    template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const T2 i0, const T2 i1, const T2 i2) const {
-        
-        // http://mathworld.wolfram.com/Coplanar.html
-        //
-        sxyz<T1> x2 = {nodes[i0].getX(), nodes[i0].getY(), nodes[i0].getZ()};
-        sxyz<T1> x3 = {nodes[i1].getX(), nodes[i1].getY(), nodes[i1].getZ()};
-        sxyz<T1> x4 = {nodes[i2].getX(), nodes[i2].getY(), nodes[i2].getZ()};
-        
-        return std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2;
-    }
-    
-    template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::areCoplanar(const sxyz<T1> &x1, const sxyz<T1> &x2
-                                           , const sxyz<T1> &x3, const sxyz<T1> &x4) const {
-        return (std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
     }
     
     template<typename T1, typename T2, typename NODE>
@@ -3732,65 +3688,6 @@ namespace ttcr {
                 }
             }
         }
-    }
-    
-    template<typename T1, typename T2, typename NODE>
-    bool Grid3Duc<T1,T2,NODE>::testInTriangle(const NODE *vertexA,
-                                              const NODE *vertexB,
-                                              const NODE *vertexC,
-                                              const sxyz<T1> &E) const {
-        if (vertexA->getDistance(E)+vertexB->getDistance(E)-vertexA->getDistance(*vertexB)<small2)
-            return true;
-        if (vertexA->getDistance(E)+vertexC->getDistance(E)-vertexA->getDistance(*vertexC)<small2)
-            return true;
-        if (vertexC->getDistance(E)+vertexB->getDistance(E)-vertexC->getDistance(*vertexB)<small2)
-            return true;
-        if (!areCoplanar(sxyz<T1>((*vertexA)), sxyz<T1>((*vertexB)), sxyz<T1>((*vertexC)), E))
-            return false;
-        T1 u, v, w;
-        barycentric(vertexA, vertexB, vertexC, E, u, v, w);
-        return v >= 0.0 && w >= 0.0 && (v + w) <= 1.0;
-    }
-    
-    template<typename T1, typename T2, typename NODE>
-    void Grid3Duc<T1,T2,NODE>::barycentric(const NODE *a,
-                                           const NODE *b,
-                                           const NODE *c,
-                                           const sxyz<T1> &p,
-                                           T1 &u, T1 &v, T1 &w) const {
-        
-        sxyz<T1> ab = {b->getX()-a->getX(), b->getY()-a->getY(), b->getZ()-a->getZ()};
-        sxyz<T1> ac = {c->getX()-a->getX(), c->getY()-a->getY(), c->getZ()-a->getZ()};
-        
-        // Unnormalized triangle normal
-        sxyz<T1> m = cross(ab, ac);
-        
-        // Nominators and one-over-denominator for u and v ratios
-        T1 nu, nv, ood;
-        
-        // Absolute components for determining projection plane
-        T1 x = std::abs(m.x), y = std::abs(m.y), z = std::abs(m.z);
-        
-        // Compute areas in plane of largest projection
-        if (x >= y && x >= z) {
-            // x is largest, project to the yz plane
-            nu = triangleArea2D(p.y, p.z, b->getY(), b->getZ(), c->getY(), c->getZ()); // Area of PBC in yz plane
-            nv = triangleArea2D(p.y, p.z, c->getY(), c->getZ(), a->getY(), a->getZ()); // Area of PCA in yz plane
-            ood = 1.0 / m.x; // 1/(2*area of ABC in yz plane)
-        } else if (y >= x && y >= z) {
-            // y is largest, project to the xz plane
-            nu = triangleArea2D(p.x, p.z, b->getX(), b->getZ(), c->getX(), c->getZ());
-            nv = triangleArea2D(p.x, p.z, c->getX(), c->getZ(), a->getX(), a->getZ());
-            ood = 1.0 / -m.y;
-        } else {
-            // z is largest, project to the xy plane
-            nu = triangleArea2D(p.x, p.y, b->getX(), b->getY(), c->getX(), c->getY());
-            nv = triangleArea2D(p.x, p.y, c->getX(), c->getY(), a->getX(), a->getY());
-            ood = 1.0 / m.z;
-        }
-        u = nu * ood;
-        v = nv * ood;
-        w = 1.0 - u - v;
     }
     
 }

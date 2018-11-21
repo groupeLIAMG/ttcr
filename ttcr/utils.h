@@ -50,10 +50,153 @@ namespace ttcr {
     }
     
     template<typename T>
+    bool areCoplanar(const sxyz<T> &x1, const sxyz<T> &x2,
+                     const sxyz<T> &x3, const sxyz<T> &x4) {
+        return (std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
+    }
+    
+    template<typename T, typename NODE>
+    bool areCoplanar(const sxyz<T> &x1, const NODE &x2,
+                     const NODE &x3, const NODE &x4) {
+        return (std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
+    }
+    
+    template<typename T, typename NODE>
+    bool areCollinear(const sxyz<T> &pt, const NODE &n0, const NODE &n1) {
+        
+        // http://mathworld.wolfram.com/Collinear.html
+        //
+        sxyz<T> v = cross(pt-n0, pt-n1);
+        return norm(v)<small2;
+        
+    }
+    
+    template<typename T>
     T triangleArea2D(T x1, T y1, T x2, T y2, T x3, T y3) {
         return (x1-x2)*(y2-y3) - (x2-x3)*(y1-y2);
     }
     
+    template<typename T, typename NODE>
+    void barycentric(const NODE *a,
+                     const NODE *b,
+                     const NODE *c,
+                     const sxyz<T> &p,
+                     T &u, T &v, T &w) {
+        
+        sxyz<T> ab = {b->getX()-a->getX(), b->getY()-a->getY(), b->getZ()-a->getZ()};
+        sxyz<T> ac = {c->getX()-a->getX(), c->getY()-a->getY(), c->getZ()-a->getZ()};
+        
+        // Unnormalized triangle normal
+        sxyz<T> m = cross(ab, ac);
+        
+        // Nominators and one-over-denominator for u and v ratios
+        T nu, nv, ood;
+        
+        // Absolute components for determining projection plane
+        T x = std::abs(m.x), y = std::abs(m.y), z = std::abs(m.z);
+        
+        // Compute areas in plane of largest projection
+        if (x >= y && x >= z) {
+            // x is largest, project to the yz plane
+            nu = triangleArea2D(p.y, p.z, b->getY(), b->getZ(), c->getY(), c->getZ()); // Area of PBC in yz plane
+            nv = triangleArea2D(p.y, p.z, c->getY(), c->getZ(), a->getY(), a->getZ()); // Area of PCA in yz plane
+            ood = 1.0 / m.x; // 1/(2*area of ABC in yz plane)
+        } else if (y >= x && y >= z) {
+            // y is largest, project to the xz plane
+            nu = triangleArea2D(p.x, p.z, b->getX(), b->getZ(), c->getX(), c->getZ());
+            nv = triangleArea2D(p.x, p.z, c->getX(), c->getZ(), a->getX(), a->getZ());
+            ood = 1.0 / -m.y;
+        } else {
+            // z is largest, project to the xy plane
+            nu = triangleArea2D(p.x, p.y, b->getX(), b->getY(), c->getX(), c->getY());
+            nv = triangleArea2D(p.x, p.y, c->getX(), c->getY(), a->getX(), a->getY());
+            ood = 1.0 / m.z;
+        }
+        u = nu * ood;
+        v = nv * ood;
+        w = 1.0 - u - v;
+    }
+
+    template<typename T, typename NODE>
+    bool testInTriangleBoundingBox(const NODE *vertexA,
+                                   const NODE *vertexB,
+                                   const NODE *vertexC,
+                                   const sxyz<T> &E) {
+        T xMin = vertexA->getX() < vertexB->getX() ? vertexA->getX() : vertexB->getX();
+        xMin = xMin < vertexC->getX() ? xMin : vertexC->getX();
+        T xMax = vertexA->getX() > vertexB->getX() ? vertexA->getX() : vertexB->getX();
+        xMax = xMax > vertexC->getX() ? xMax : vertexC->getX();
+        
+        T yMin = vertexA->getY() < vertexB->getY() ? vertexA->getY() : vertexB->getY();
+        yMin = yMin < vertexC->getY() ? yMin : vertexC->getY();
+        T yMax = vertexA->getY() > vertexB->getY() ? vertexA->getY() : vertexB->getY();
+        yMax = yMax > vertexC->getY() ? yMax : vertexC->getY();
+        
+        T zMin = vertexA->getZ() < vertexB->getZ() ? vertexA->getZ() : vertexB->getZ();
+        zMin = zMin < vertexC->getZ() ? zMin : vertexC->getZ();
+        T zMax = vertexA->getZ() > vertexB->getZ() ? vertexA->getZ() : vertexB->getZ();
+        zMax = zMax > vertexC->getZ() ? zMax : vertexC->getZ();
+        
+        if ( E.x < xMin || xMax < E.x || E.y < yMin || yMax < E.y || E.z < zMin || zMax < E.z )
+            return false;
+        else
+            return true;
+    }
+    
+    template<typename T, typename NODE>
+    T distSqPointToSegment(const NODE *vertexA,
+                           const NODE *vertexB,
+                           const sxyz<T> &E) {
+        
+        T p1_p2_squareLength = (vertexB->getX() - vertexA->getX())*(vertexB->getX() - vertexA->getX()) +
+        (vertexB->getY() - vertexA->getY())*(vertexB->getY() - vertexA->getY()) +
+        (vertexB->getZ() - vertexA->getZ())*(vertexB->getZ() - vertexA->getZ());
+        
+        T dotProd = ((E.x - vertexA->getX())*(vertexB->getX() - vertexA->getX()) +
+                     (E.y - vertexA->getY())*(vertexB->getY() - vertexA->getY()) +
+                     (E.z - vertexA->getZ())*(vertexB->getZ() - vertexA->getZ())) / p1_p2_squareLength;
+        
+        if ( dotProd < 0.0 ) {
+            return (E.x-vertexA->getX())*(E.x-vertexA->getX()) +
+            (E.y-vertexA->getY())*(E.y-vertexA->getY()) +
+            (E.z-vertexA->getZ())*(E.z-vertexA->getZ());
+        } else if ( dotProd > 1.0 ) {
+            return (E.x-vertexB->getX())*(E.x-vertexB->getX()) +
+            (E.y-vertexB->getY())*(E.y-vertexB->getY()) +
+            (E.z-vertexB->getZ())*(E.z-vertexB->getZ());
+        } else {
+            T p_p1_squareLength = (vertexA->getX() - E.x)*(vertexA->getX() - E.x) +
+            (vertexA->getY() - E.y)*(vertexA->getY() - E.y) +
+            (vertexA->getZ() - E.z)*(vertexA->getZ() - E.z);
+            return p_p1_squareLength - dotProd * dotProd * p1_p2_squareLength;
+        }
+    }
+    
+    template<typename T, typename NODE>
+    bool testInTriangle(const NODE *vertexA,
+                        const NODE *vertexB,
+                        const NODE *vertexC,
+                        const sxyz<T> &E) {
+        
+        if ( ! testInTriangleBoundingBox(vertexA, vertexB, vertexC, E) )
+            return false;
+        
+        T u, v, w;
+        barycentric(vertexA, vertexB, vertexC, E, u, v, w);
+        if ( v >= 0.0 && w >= 0.0 && (v + w) <= 1.0 )
+            return true;
+        
+        if (distSqPointToSegment(vertexA, vertexB, E) <= small2)
+            return true;
+        if (distSqPointToSegment(vertexA, vertexC, E) <= small2)
+            return true;
+        if (distSqPointToSegment(vertexB, vertexC, E) <= small2)
+            return true;
+        
+        return false;
+    }
+    
+
     template<typename T>
     void buildReflectors(const MSHReader &reader,
                          const std::vector<sxyz<T>> &nodes,

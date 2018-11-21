@@ -151,7 +151,7 @@ int main(int argc, char * argv[])
         try {
             g->setSlowness(slowness);
 		} catch (std::exception& e) {
-            cerr << e.what() << endl;
+            cerr << e.what() << endl;
             abort();
         }
 		
@@ -308,9 +308,9 @@ int main(int argc, char * argv[])
 			cout.flush();
 		}
 		if ( constCells )
-			g = new Grid3Ducfm<double, uint32_t>(nodes, tetrahedra);
+			g = new Grid3Ducfm<double, uint32_t>(nodes, tetrahedra, false, false, false, 1.e-5);
 		else
-			g = new Grid3Dunfm<double, uint32_t>(nodes, tetrahedra);
+			g = new Grid3Dunfm<double, uint32_t>(nodes, tetrahedra, false, false, false, 1.e-5);
 		if ( par.verbose ) {
 			cout << "done.\n";
 		}

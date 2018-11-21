@@ -180,6 +180,16 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2>
+    sxyz<T1> operator-(const sxyz<T1>& lhs, const Node3Dn<T1,T2>& rhs) {
+        return sxyz<T1>( lhs.x-rhs.getX(), lhs.y-rhs.getY(), lhs.z-rhs.getZ() );
+    }
+    
+    template<typename T1, typename T2>
+    sxyz<T1> operator-(const Node3Dn<T1,T2>& lhs, const sxyz<T1>& rhs) {
+        return sxyz<T1>( lhs.getX()-rhs.x, lhs.getY()-rhs.y, lhs.getZ()-rhs.z );
+    }
+    
+    template<typename T1, typename T2>
     std::ostream& operator<< (std::ostream& os, const Node3Dn<T1, T2> &n) {
         os << n.getX() << ' ' << n.getY() << ' ' << n.getZ();
         return os;
