@@ -37,9 +37,10 @@ namespace ttcr {
                     const std::vector<tetrahedronElem<T2>>& tet,
                     const int ns, const int nd, const T1 rad,
                     const int rp, const bool rptt, const T1 md,
-                    const size_t nt=1, const int verb=0) :
+                    const T1 drad, const size_t nt=1, const int verb=0) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt),
         nSecondary(ns), nDynamic(nd), nPermanent(0), verbose(verb),
+        dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dc<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
         {
@@ -86,6 +87,7 @@ namespace ttcr {
         T2 nDynamic;
         T2 nPermanent;
         bool verbose;
+        T1 dyn_radius;
         
         // we will store temporary nodes in a separate container.  This is to
         // allow threaded computations with different Tx (location of temp
@@ -146,7 +148,7 @@ namespace ttcr {
             this->nodes[this->tetrahedra[nt].i[3]];
             cent *= 0.25;
             for (size_t n=0; n<Tx.size(); ++n) {
-                if ( cent.getDistance(Tx[n]) <= this->source_radius ) {
+                if ( cent.getDistance(Tx[n]) <= this->dyn_radius ) {
                     txCells.insert(static_cast<T2>(nt));
                 }
             }

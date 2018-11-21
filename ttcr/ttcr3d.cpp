@@ -150,7 +150,13 @@ int body(const input_parameters &par) {
 		cout << "Calculations will be done using " << num_threads
 		<< " threads with " << blk_size << " shots per threads.\n";
 	}
-	
+    if ( par.verbose && par.tt_from_rp ) {
+        cout << "Calculation of traveltimes will be done at backward step\n"
+        << "   (minimum distance: " << par.min_distance_rp << ").\n";
+    }
+    if ( par.verbose && par.method == DYNAMIC_SHORTEST_PATH ) {
+        cout << "Radius for temporary nodes: " << par.dyn_node_radius << '\n';
+    }
     
 	vector<const vector<sxyz<T>>*> all_rcv;
 	if ( par.rcvfile != "" )

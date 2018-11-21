@@ -787,6 +787,7 @@ namespace ttcr {
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
+                                                     par.dyn_node_radius,
                                                      nt,
                                                      par.verbose);
                 else
@@ -799,6 +800,7 @@ namespace ttcr {
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
+                                                     par.dyn_node_radius,
                                                      nt,
                                                      par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -1090,6 +1092,7 @@ namespace ttcr {
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
+                                                     par.dyn_node_radius,
                                                      nt,
                                                      par.verbose);
                 else
@@ -1102,6 +1105,7 @@ namespace ttcr {
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
+                                                     par.dyn_node_radius,
                                                      nt,
                                                      par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }

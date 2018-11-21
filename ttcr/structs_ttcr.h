@@ -58,6 +58,7 @@ namespace ttcr {
         double epsilon;
         double source_radius;
         double min_distance_rp;
+        double dyn_node_radius;
         raytracing_method method;
         std::string basename;
         std::string modelfile;
@@ -73,7 +74,7 @@ namespace ttcr {
         projectTxRx(false), interpVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
         epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
-        method(SHORTEST_PATH), basename(),
+        dyn_node_radius(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
         
     };
