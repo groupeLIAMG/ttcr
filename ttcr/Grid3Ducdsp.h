@@ -36,9 +36,9 @@ namespace ttcr {
         Grid3Ducdsp(const std::vector<sxyz<T1>>& no,
                     const std::vector<tetrahedronElem<T2>>& tet,
                     const int ns, const int nd, const T1 rad,
-                    const int rp, const bool rptt, const T1 md,
+                    const int rp, const bool rptt, const T1 min_dist,
                     const T1 drad, const size_t nt=1, const int verb=0) :
-        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt),
+        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, min_dist, nt),
         nSecondary(ns), nDynamic(nd), nPermanent(0), verbose(verb),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dc<T1,T2>>>(nt)),
@@ -94,8 +94,6 @@ namespace ttcr {
         // nodes vary from one Tx to the other)
         mutable std::vector<std::vector<Node3Dc<T1,T2>>> tempNodes;
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
-        
-        void interpSlownessSecondary();
         
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
         
@@ -156,6 +154,8 @@ namespace ttcr {
         if ( verbose )
             std::cout << "\n  *** thread no " << threadNo << ": found " << txCells.size() << " cells within radius ***" << std::endl;
         
+        std::set<T2> adjacentCells(txCells.begin(), txCells.end());
+
         T2 iNodes[4][3] = {
             {0,1,2},  // (relative) indices of nodes of 1st triangle
             {1,2,3},  // (relative) indices of nodes of 2nd triangle
@@ -177,6 +177,14 @@ namespace ttcr {
         
         for ( auto cell=txCells.begin(); cell!=txCells.end(); cell++ ) {
             
+            //  adjacent cells to the tetrahedron where new nodes will be added
+            for ( size_t i=0; i<4; ++i ) {
+                T2 vertex = this->neighbors[*cell][i];
+                for ( size_t c=0; c<this->nodes[vertex].getOwners().size(); ++c ) {
+                    adjacentCells.insert(this->nodes[vertex].getOwners()[c]);
+                }
+            }
+
             // for each triangle
             for ( T2 ntri=0; ntri<4; ++ntri ) {
                 
@@ -297,6 +305,43 @@ namespace ttcr {
                 }
             }
         }
+
+        for ( auto cell=txCells.begin(); cell!=txCells.end(); ++cell ) {
+            adjacentCells.erase(*cell);
+        }
+        for ( auto adj=adjacentCells.begin(); adj!=adjacentCells.end(); ++adj ) {
+            for ( T2 ntri=0; ntri<4; ++ntri ) {
+                for ( size_t nl=ntri; nl<3; ++nl ) {
+
+                    lineKey = {this->tetrahedra[*adj].i[ iNodes[ntri][nl] ],
+                        this->tetrahedra[*adj].i[ iNodes[ntri][(nl+1)%3] ]};
+                    std::sort(lineKey.begin(), lineKey.end());
+
+                    lineIt = lineMap.find( lineKey );
+                    if ( lineIt != lineMap.end() ) {
+                        // setting owners
+                        for ( size_t n=0; n<lineIt->second.size(); ++n ) {
+                            // setting owners
+                            tempNodes[threadNo][ lineIt->second[n] ].pushOwner( *adj );
+                        }
+                    }
+                }
+
+                faceKey = {this->tetrahedra[*adj].i[ iNodes[ntri][0] ],
+                    this->tetrahedra[*adj].i[ iNodes[ntri][1] ],
+                    this->tetrahedra[*adj].i[ iNodes[ntri][2] ]};
+                std::sort(faceKey.begin(), faceKey.end());
+
+                faceIt = faceMap.find( faceKey );
+                if ( faceIt != faceMap.end() ) {
+                    for ( size_t n=0; n<faceIt->second.size(); ++n ) {
+                        // setting owners
+                        tempNodes[threadNo][ faceIt->second[n] ].pushOwner( *adj );
+                    }
+                }
+            }
+        }
+
         for ( T2 n=0; n<tempNodes[threadNo].size(); ++n ) {
             for ( size_t n2=0; n2<tempNodes[threadNo][n].getOwners().size(); ++n2) {
                 tempNeighbors[threadNo][ tempNodes[threadNo][n].getOwners()[n2] ].push_back(n);
