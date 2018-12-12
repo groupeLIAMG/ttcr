@@ -32,8 +32,8 @@ namespace ttcr {
                    const T1 ddx, const T1 ddy, const T1 ddz,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T2 nnx, const T2 nny, const T2 nnz, const bool ttrp,
-                   const size_t nt=1, const bool invDist=false) :
-        Grid3Drn<T1,T2,Node3Dnsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt, invDist),
+                   const bool intVel, const size_t nt=1) :
+        Grid3Drn<T1,T2,Node3Dnsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, intVel, nt),
         nsnx(nnx), nsny(nny), nsnz(nnz)
         {
             buildGridNodes();
@@ -536,15 +536,8 @@ namespace ttcr {
                 i++;
             }
         }
-        try {
-            if ( this->inverseDistance ) {
-                invDistInterpolation();
-            } else {
-                linearInterpolation();
-            }
-        } catch (std::runtime_error& e) {
-            throw;
-        }
+        this->interpSecondary();
+
     }
     
     template<typename T1, typename T2>

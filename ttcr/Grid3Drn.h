@@ -65,13 +65,13 @@ namespace ttcr {
         Grid3Drn(const T2 nx, const T2 ny, const T2 nz,
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
-                 const bool ttrp, const size_t nt=1, const bool invDist=false) :
+                 const bool ttrp, const bool intVel, const size_t nt=1) :
         nThreads(nt),
         dx(ddx), dy(ddy), dz(ddz),
         xmin(minx), ymin(miny), zmin(minz),
         xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
         ncx(nx), ncy(ny), ncz(nz),
-        tt_from_rp(ttrp), inverseDistance(invDist),
+        tt_from_rp(ttrp), interpVel(intVel),
         nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt))),
         neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
         { }
@@ -185,12 +185,13 @@ namespace ttcr {
         T2 ncz;                  // number of cells in z
 
         bool tt_from_rp;
-        bool inverseDistance;
+        bool interpVel;
         
         mutable std::vector<NODE> nodes;
         std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
         
         void buildGridNeighbors();
+        void interpSecondary();
         
         T2 getCellNo(const sxyz<T1>& pt) const {
             T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
@@ -289,7 +290,7 @@ namespace ttcr {
                             std::vector<sxyz<T1>> &r_data,
                             const size_t threadNo=0) const;
         
-        T1 computeSlowness(const sxyz<T1>& Rx ) const;
+        T1 computeSlowness(const sxyz<T1>&) const;
         
         void sweep(const std::vector<bool>& frozen,
                    const size_t threadNo) const;
@@ -323,6 +324,15 @@ namespace ttcr {
                 T2 check = nodes[n].getOwners()[n2];
                 neighbors[ check ].push_back(n);
             }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::interpSecondary() {
+        T2 nPrimary = (ncx+1)*(ncy+1)*(ncz+1);
+        for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
+            nodes[n].setNodeSlowness( computeSlowness({nodes[n].getX(),
+                nodes[n].getY(), nodes[n].getZ()}) );
         }
     }
     
@@ -1596,61 +1606,228 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& Rx) const {
+    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& pt) const {
         
-        
-        // Calculate the slowness of any point that is not on a node
-        
-        T2 cellNo = getCellNo( Rx );
-        
-        //We calculate the Slowness at the point
-        std::vector<T2> list;
-        
-        for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
-            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
-                list.push_back(neighbors[ cellNo ][n3]);
+        static const size_t nnx = ncx+1;
+        static const size_t nny = ncy+1;
+        static const size_t nnz = ncz+1;
+
+        // are we on an node, an edge or a face?
+        ptrdiff_t onX = -1;
+        ptrdiff_t onY = -1;
+        ptrdiff_t onZ = -1;
+        for ( ptrdiff_t n=0; n<nnx; ++n ) {
+            if ( std::abs(pt.x - (xmin+n*dx)) < small2 ) {
+                onX = n;
+                break;
             }
         }
-        
-        if ( inverseDistance ) {
-            
-            std::vector<size_t>::iterator it;
-            
-            std::vector<NODE*> interpNodes;
-            
-            for ( size_t nn=0; nn<list.size(); ++nn )
-                interpNodes.push_back( &(nodes[list[nn] ]) );
-            
-            return Interpolator<T1>::inverseDistance( Rx, interpNodes );
-            
-        } else {
-            
-            // list elements are as following:
-            //
-            // list[0] = x_min, y_min, z_min
-            // list[1] = x_max, y_min, z_min
-            // list[2] = x_min, y_max, z_min
-            // list[3] = x_max, y_max, z_min
-            // list[4] = x_min, y_min, z_max
-            // list[5] = x_max, y_min, z_max
-            // list[6] = x_min, y_max, z_max
-            // list[7] = x_max, y_max, z_max
-            
-            T1 x[3] = { Rx.x, nodes[list[0]].getX(), nodes[list[1]].getX() };
-            T1 y[3] = { Rx.y, nodes[list[0]].getY(), nodes[list[2]].getY() };
-            T1 z[3] = { Rx.z, nodes[list[0]].getZ(), nodes[list[4]].getZ() };
-            
-            T1 s[8] = { nodes[list[0]].getNodeSlowness(),
-                nodes[list[4]].getNodeSlowness(),
-                nodes[list[2]].getNodeSlowness(),
-                nodes[list[6]].getNodeSlowness(),
-                nodes[list[1]].getNodeSlowness(),
-                nodes[list[5]].getNodeSlowness(),
-                nodes[list[3]].getNodeSlowness(),
-                nodes[list[7]].getNodeSlowness() };
-            
-            return Interpolator<T1>::trilinear(x, y, z, s);
+        for ( ptrdiff_t n=0; n<nny; ++n ) {
+            if ( std::abs(pt.y - (ymin+n*dy)) < small2 ) {
+                onY = n;
+                break;
+            }
         }
+        for ( ptrdiff_t n=0; n<nnz; ++n ) {
+            if ( std::abs(pt.z - (zmin+n*dz)) < small2 ) {
+                onZ = n;
+                break;
+            }
+        }
+
+        if ( onX!=-1 && onY!=-1 && onZ!=-1 ) {
+            return nodes[(onZ*nny+onY)*nnx+onX].getNodeSlowness();
+        } else if ( onX!=-1 && onY!=-1 ) {
+            T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            T1 s[2];
+            T1 x[3];
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[(k*nny+onY)*nnx+onX].getNodeSlowness();
+                s[1] = 1.0 / nodes[((k+1)*nny+onY)*nnx+onX].getNodeSlowness();
+            } else {
+                s[0] = nodes[(k*nny+onY)*nnx+onX].getNodeSlowness();
+                s[1] = nodes[((k+1)*nny+onY)*nnx+onX].getNodeSlowness();
+            }
+            x[0] = pt.z;
+            x[1] = zmin + k*dz;
+            x[2] = zmin + (k+1)*dz;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::linear(x, s);
+            else
+                return Interpolator<T1>::linear(x, s);
+
+        } else if ( onX!=-1 && onZ!=-1 ) {
+            T2 j = static_cast<T2>( small + (pt.y-ymin)/dy );
+            T1 s[2];
+            T1 x[3];
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[(onZ*nny+j)*nnx+onX].getNodeSlowness();
+                s[1] = 1.0 / nodes[(onZ*nny+j+1)*nnx+onX].getNodeSlowness();
+            } else {
+                s[0] = nodes[(onZ*nny+j)*nnx+onX].getNodeSlowness();
+                s[1] = nodes[(onZ*nny+j+1)*nnx+onX].getNodeSlowness();
+            }
+            x[0] = pt.y;
+            x[1] = ymin + j*dy;
+            x[2] = ymin + (j+1)*dy;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::linear(x, s);
+            else
+                return Interpolator<T1>::linear(x, s);
+
+        } else if ( onY!=-1 && onZ!=-1 ) {
+            T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            T1 s[2];
+            T1 x[3];
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[(onZ*nny+onY)*nnx+i].getNodeSlowness();
+                s[1] = 1.0 / nodes[(onZ*nny+onY)*nnx+i+1].getNodeSlowness();
+            } else {
+                s[0] = nodes[(onZ*nny+onY)*nnx+i].getNodeSlowness();
+                s[1] = nodes[(onZ*nny+onY)*nnx+i+1].getNodeSlowness();
+            }
+            x[0] = pt.x;
+            x[1] = xmin + i*dx;
+            x[2] = xmin + (i+1)*dx;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::linear(x, s);
+            else
+                return Interpolator<T1>::linear(x, s);
+        } else if ( onX!=-1 ) {
+            T2 j = static_cast<T2>( small + (pt.y-ymin)/dy );
+            T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            T1 s[4];
+            T1 x[3];
+            T1 y[3];
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[((k  )*nny+j  )*nnx+onX].getNodeSlowness();
+                s[1] = 1.0 / nodes[((k+1)*nny+j  )*nnx+onX].getNodeSlowness();
+                s[2] = 1.0 / nodes[((k  )*nny+j+1)*nnx+onX].getNodeSlowness();
+                s[3] = 1.0 / nodes[((k+1)*nny+j+1)*nnx+onX].getNodeSlowness();
+            } else {
+                s[0] = nodes[((k  )*nny+j  )*nnx+onX].getNodeSlowness();
+                s[1] = nodes[((k+1)*nny+j  )*nnx+onX].getNodeSlowness();
+                s[2] = nodes[((k  )*nny+j+1)*nnx+onX].getNodeSlowness();
+                s[3] = nodes[((k+1)*nny+j+1)*nnx+onX].getNodeSlowness();
+            }
+            x[0] = pt.y;
+            y[0] = pt.z;
+            x[1] = ymin + j*dy;
+            y[1] = zmin + k*dz;
+            x[2] = ymin + (j+1)*dy;
+            y[2] = zmin + (k+1)*dz;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::bilinear(x, y, s);
+            else
+                return Interpolator<T1>::bilinear(x, y, s);
+
+        } else if ( onY!=-1 ) {
+            T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            T1 s[4];
+            T1 x[3];
+            T1 y[3];
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[((k  )*nny+onY)*nnx+i  ].getNodeSlowness();
+                s[1] = 1.0 / nodes[((k+1)*nny+onY)*nnx+i  ].getNodeSlowness();
+                s[2] = 1.0 / nodes[((k  )*nny+onY)*nnx+i+1].getNodeSlowness();
+                s[3] = 1.0 / nodes[((k+1)*nny+onY)*nnx+i+1].getNodeSlowness();
+            } else {
+                s[0] = nodes[((k  )*nny+onY)*nnx+i  ].getNodeSlowness();
+                s[1] = nodes[((k+1)*nny+onY)*nnx+i  ].getNodeSlowness();
+                s[2] = nodes[((k  )*nny+onY)*nnx+i+1].getNodeSlowness();
+                s[3] = nodes[((k+1)*nny+onY)*nnx+i+1].getNodeSlowness();
+            }
+            x[0] = pt.x;
+            y[0] = pt.z;
+            x[1] = xmin + i*dx;
+            y[1] = zmin + k*dz;
+            x[2] = xmin + (i+1)*dx;
+            y[2] = zmin + (k+1)*dz;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::bilinear(x, y, s);
+            else
+                return Interpolator<T1>::bilinear(x, y, s);
+
+        } else if ( onZ!=-1 ) {
+            T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            T2 j = static_cast<T2>( small + (pt.y-ymin)/dy );
+            T1 s[4];
+            T1 x[3];
+            T1 y[3];
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[(onZ*nny+j  )*nnx+i  ].getNodeSlowness();
+                s[1] = 1.0 / nodes[(onZ*nny+j+1)*nnx+i  ].getNodeSlowness();
+                s[2] = 1.0 / nodes[(onZ*nny+j  )*nnx+i+1].getNodeSlowness();
+                s[3] = 1.0 / nodes[(onZ*nny+j+1)*nnx+i+1].getNodeSlowness();
+            } else {
+                s[0] = nodes[(onZ*nny+j  )*nnx+i  ].getNodeSlowness();
+                s[1] = nodes[(onZ*nny+j+1)*nnx+i  ].getNodeSlowness();
+                s[2] = nodes[(onZ*nny+j  )*nnx+i+1].getNodeSlowness();
+                s[3] = nodes[(onZ*nny+j+1)*nnx+i+1].getNodeSlowness();
+            }
+            x[0] = pt.x;
+            y[0] = pt.y;
+            x[1] = xmin + i*dx;
+            y[1] = ymin + j*dy;
+            x[2] = xmin + (i+1)*dx;
+            y[2] = ymin + (j+1)*dy;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::bilinear(x, y, s);
+            else
+                return Interpolator<T1>::bilinear(x, y, s);
+
+        } else {
+            T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            T2 j = static_cast<T2>( small + (pt.y-ymin)/dy );
+            T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            T1 s[8];
+            T1 x[3];
+            T1 y[3];
+            T1 z[3];
+
+            if ( interpVel ) {
+                s[0] = 1.0 / nodes[((k  )*nny+j  )*nnx+i  ].getNodeSlowness();
+                s[1] = 1.0 / nodes[((k+1)*nny+j  )*nnx+i  ].getNodeSlowness();
+                s[2] = 1.0 / nodes[((k  )*nny+j+1)*nnx+i  ].getNodeSlowness();
+                s[3] = 1.0 / nodes[((k+1)*nny+j+1)*nnx+i  ].getNodeSlowness();
+                s[4] = 1.0 / nodes[((k  )*nny+j  )*nnx+i+1].getNodeSlowness();
+                s[5] = 1.0 / nodes[((k+1)*nny+j  )*nnx+i+1].getNodeSlowness();
+                s[6] = 1.0 / nodes[((k  )*nny+j+1)*nnx+i+1].getNodeSlowness();
+                s[7] = 1.0 / nodes[((k+1)*nny+j+1)*nnx+i+1].getNodeSlowness();
+            } else {
+                s[0] = nodes[((k  )*nny+j  )*nnx+i  ].getNodeSlowness();
+                s[1] = nodes[((k+1)*nny+j  )*nnx+i  ].getNodeSlowness();
+                s[2] = nodes[((k  )*nny+j+1)*nnx+i  ].getNodeSlowness();
+                s[3] = nodes[((k+1)*nny+j+1)*nnx+i  ].getNodeSlowness();
+                s[4] = nodes[((k  )*nny+j  )*nnx+i+1].getNodeSlowness();
+                s[5] = nodes[((k+1)*nny+j  )*nnx+i+1].getNodeSlowness();
+                s[6] = nodes[((k  )*nny+j+1)*nnx+i+1].getNodeSlowness();
+                s[7] = nodes[((k+1)*nny+j+1)*nnx+i+1].getNodeSlowness();
+            }
+            x[0] = pt.x;
+            y[0] = pt.y;
+            z[0] = pt.z;
+            x[1] = xmin + i*dx;
+            y[1] = ymin + j*dy;
+            z[1] = zmin + k*dz;
+            x[2] = xmin + (i+1)*dx;
+            y[2] = ymin + (j+1)*dy;
+            z[2] = zmin + (k+1)*dz;
+
+            if ( interpVel )
+                return 1.0 / Interpolator<T1>::trilinear(x, y, z, s);
+            else
+                return Interpolator<T1>::trilinear(x, y, z, s);
+
+        }
+
     }
     
     template<typename T1, typename T2, typename NODE>

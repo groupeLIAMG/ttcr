@@ -23,8 +23,8 @@ namespace ttcr {
         Grid3Drnfs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T1 eps, const int maxit, const bool w,
-                   const bool ttrp, const size_t nt=1) :
-        Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, ttrp, nt),
+                   const bool ttrp, const bool intVel, const size_t nt=1) :
+        Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, ttrp, intVel, nt),
         epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w)
         {
             buildGridNodes();
