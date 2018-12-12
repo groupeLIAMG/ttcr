@@ -319,7 +319,7 @@ namespace ttcr {
                     }
                     
                     this->nodes[n].setXYZindex( x, y, z, n );
-                    this->nodes[n].setPrimary(true);
+                    this->nodes[n].setPrimary(5);
                 }
             }
         }
@@ -332,7 +332,7 @@ namespace ttcr {
 
                 T1 y = this->ymin + nj*this->dy;
 
-                for ( T2 ni=0; ni<=this->ncx; ++ni, ++n ){
+                for ( T2 ni=0; ni<=this->ncx; ++ni ){
 
                     T1 x = this->xmin + ni*this->dx;
 
