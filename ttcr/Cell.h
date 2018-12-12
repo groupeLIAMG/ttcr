@@ -84,6 +84,11 @@ namespace ttcr {
             throw std::logic_error("Error: gamma not defined for Cell.");
         }
         
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            return slowness[cellNo] * source.getDistance( node );
+        }
+        
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
@@ -514,7 +519,15 @@ namespace ttcr {
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for CellElliptical3D.");
         }
-        
+
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            T lx = node.x - source.x;
+            T ly = node.y - source.y;
+            T lz = node.z - source.z;
+            return slowness[cellNo] * std::sqrt( chi[cellNo]*lx*lx + psi[cellNo]*ly*ly + lz*lz );
+        }
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             T lx = node.x - source.getX();
