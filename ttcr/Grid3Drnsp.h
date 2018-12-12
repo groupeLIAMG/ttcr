@@ -31,9 +31,9 @@ namespace ttcr {
         Grid3Drnsp(const T2 nx, const T2 ny, const T2 nz,
                    const T1 ddx, const T1 ddy, const T1 ddz,
                    const T1 minx, const T1 miny, const T1 minz,
-                   const T2 nnx, const T2 nny, const T2 nnz,
+                   const T2 nnx, const T2 nny, const T2 nnz, const bool ttrp,
                    const size_t nt=1, const bool invDist=false) :
-        Grid3Drn<T1,T2,Node3Dnsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt, invDist),
+        Grid3Drn<T1,T2,Node3Dnsp<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt, invDist),
         nsnx(nnx), nsny(nny), nsnz(nnz)
         {
             buildGridNodes();
@@ -164,7 +164,7 @@ namespace ttcr {
                 
                 T1 y = this->ymin + nj*this->dy;
                 
-                for (T2 ni=0; ni<=this->ncx; ++ni){
+                for ( T2 ni=0; ni<=this->ncx; ++ni, ++n ){
                     
                     T1 x = this->xmin + ni*this->dx;
                     
@@ -256,9 +256,80 @@ namespace ttcr {
                     
                     this->nodes[n].setXYZindex( x, y, z, n );
                     this->nodes[n].setPrimary(5);
-                    
-                    ++n;
-                    
+                }
+            }
+        }
+
+        for ( T2 nk=0; nk<=this->ncz; ++nk ) {
+
+            T1 z = this->zmin + nk*this->dz;
+
+            for ( T2 nj=0; nj<=this->ncy; ++nj ) {
+
+                T1 y = this->ymin + nj*this->dy;
+
+                for ( T2 ni=0; ni<=this->ncx; ++ni, ++n ){
+
+                    T1 x = this->xmin + ni*this->dx;
+
+                    // Find the adjacent cells for each primary node
+
+                    if (ni < this->ncx && nj < this->ncy && nk < this->ncz){
+                        cell_XpYpZp = nj*this->ncx + nk*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cell_XpYpZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj < this->ncy && nk < this->ncz){
+                        cell_XmYpZp = nj*this->ncx + nk*(this->ncx*this->ncy) + ni - 1;
+                    }
+                    else {
+                        cell_XmYpZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni < this->ncx && nj > 0 && nk < this->ncz){
+                        cell_XpYmZp = (nj-1)*this->ncx + nk*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cell_XpYmZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj > 0 && nk < this->ncz){
+                        cell_XmYmZp = (nj-1)*this->ncx + nk*(this->ncx * this->ncy) + ni - 1;
+                    }
+                    else {
+                        cell_XmYmZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni < this->ncx && nj < this->ncy && nk > 0){
+                        cell_XpYpZm = nj*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cell_XpYpZm = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj < this->ncy && nk > 0){
+                        cell_XmYpZm = nj*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni - 1;
+                    }
+                    else {
+                        cell_XmYpZm = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni < this->ncx && nj > 0 && nk > 0){
+                        cell_XpYmZm = (nj-1)*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cell_XpYmZm = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj > 0 && nk > 0){
+                        cell_XmYmZm = (nj-1)*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni - 1;
+                    }
+                    else {
+                        cell_XmYmZm = std::numeric_limits<T2>::max();
+                    }
+
                     // Secondary nodes on x edge
                     if ( ni < this->ncx ) {
                         for (T2 ns=0; ns< this->nsnx; ++ns, ++n ) {
@@ -1117,7 +1188,7 @@ namespace ttcr {
                                       const size_t threadNo) const {
         
         //Find the starting nodes of the transmitters Tx and start the queue list
-        for(size_t n=0; n<Tx.size(); ++n){
+        for (size_t n=0; n<Tx.size(); ++n){
             bool found = false;
             for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
                 if ( this->nodes[nn] == Tx[n] ) {
