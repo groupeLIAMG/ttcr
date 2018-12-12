@@ -61,8 +61,8 @@ namespace ttcr {
                    const T1 ddx, const T1 ddy, const T1 ddz,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T2 nnx, const T2 nny, const T2 nnz,
-                   const size_t nt) :
-        Grid3Drc<T1,T2,Node3Dcsp<T1,T2>,CELL>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, nt),
+                   const bool ttrp, const size_t nt) :
+        Grid3Drc<T1,T2,Node3Dcsp<T1,T2>,CELL>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt),
         nsnx(nnx), nsny(nny), nsnz(nnz)
         {
             buildGridNodes();
@@ -228,7 +228,7 @@ namespace ttcr {
                 
                 T1 y = this->ymin + nj*this->dy;
                 
-                for (T2 ni=0; ni<=this->ncx; ++ni){
+                for ( T2 ni=0; ni<=this->ncx; ++ni, ++n ){
                     
                     T1 x = this->xmin + ni*this->dx;
                     
@@ -320,8 +320,79 @@ namespace ttcr {
                     
                     this->nodes[n].setXYZindex( x, y, z, n );
                     this->nodes[n].setPrimary(true);
-                    
-                    ++n;
+                }
+            }
+        }
+
+        for ( T2 nk=0; nk<=this->ncz; ++nk ) {
+
+            T1 z = this->zmin + nk*this->dz;
+
+            for ( T2 nj=0; nj<=this->ncy; ++nj ) {
+
+                T1 y = this->ymin + nj*this->dy;
+
+                for ( T2 ni=0; ni<=this->ncx; ++ni, ++n ){
+
+                    T1 x = this->xmin + ni*this->dx;
+
+                    // Find the adjacent cells for each primary node
+
+                    if (ni < this->ncx && nj < this->ncy && nk < this->ncz){
+                        cXpYpZp = nj*this->ncx + nk*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cXpYpZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj < this->ncy && nk < this->ncz){
+                        cXmYpZp = nj*this->ncx + nk*(this->ncx*this->ncy) + ni - 1;
+                    }
+                    else {
+                        cXmYpZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni < this->ncx && nj > 0 && nk < this->ncz){
+                        cXpYmZp = (nj-1)*this->ncx + nk*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cXpYmZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj > 0 && nk < this->ncz){
+                        cXmYmZp = (nj-1)*this->ncx + nk*(this->ncx * this->ncy) + ni - 1;
+                    }
+                    else {
+                        cXmYmZp = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni < this->ncx && nj < this->ncy && nk > 0){
+                        cXpYpZm = nj*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cXpYpZm = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj < this->ncy && nk > 0){
+                        cXmYpZm = nj*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni - 1;
+                    }
+                    else {
+                        cXmYpZm = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni < this->ncx && nj > 0 && nk > 0){
+                        cXpYmZm = (nj-1)*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni;
+                    }
+                    else {
+                        cXpYmZm = std::numeric_limits<T2>::max();
+                    }
+
+                    if (ni > 0 && nj > 0 && nk > 0){
+                        cXmYmZm = (nj-1)*this->ncx + (nk-1)*(this->ncx*this->ncy) + ni-1;
+                    }
+                    else {
+                        cXmYmZm = std::numeric_limits<T2>::max();
+                    }
                     
                     // Secondary nodes on x edge
                     if ( ni < this->ncx ) {
@@ -808,8 +879,14 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
+            }
         }
     }
     
@@ -844,10 +921,18 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            }
         }
     }
     
