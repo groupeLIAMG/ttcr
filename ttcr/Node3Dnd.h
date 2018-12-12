@@ -11,6 +11,9 @@
 
 #include "Node3Dn.h"
 
+
+// for temporary dynamic nodes
+
 namespace ttcr {
     
     template<typename T1, typename T2>
@@ -37,6 +40,7 @@ namespace ttcr {
         void setTT(const T1 t, const size_t n ) { this->tt[0] = t; }
         
     };
+    
     template<typename T1, typename T2>
     std::ostream& operator<< (std::ostream& os, const Node3Dnd<T1, T2> &n) {
         os << n.getX() << ' ' << n.getY() << ' ' << n.getZ();
