@@ -82,7 +82,7 @@ namespace ttcr {
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
             }
-            tt[i]=t;
+            tt[i] = t;
         }
         
         Node3Dc(const Node3Dc<T1,T2>& node) :
@@ -151,7 +151,7 @@ namespace ttcr {
         
         const bool isPrimary() const { return true; }
         
-    private:
+    protected:
         size_t nThreads;
         T1 x;                       // x coordinate [km]
         T1 y;						// y coordinate [km]
