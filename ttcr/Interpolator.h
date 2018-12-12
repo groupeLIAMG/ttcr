@@ -33,16 +33,16 @@ namespace ttcr {
     template<class T> class Interpolator
     {
     public:
-        inline static T linear(const T x[], const T y[], const T s[]) {
-            
+        inline static T linear(const T x[], const T s[]) {
+
             // evaluate s @ x[0]
             // with
             // s[0] @ x[1]
             // s[1] @ x[2]
-            
-            return (s[0]*(x[2]-x[0]) - s[1]*(x[1]-x[0]))/(x[1]-x[2]);
+
+            return (s[0]*(x[2]-x[0]) + s[1]*(x[0]-x[1]))/(x[2]-x[1]);
         }
-        
+
         inline static T bilinear(const T x[], const T y[], const T s[]) {
             
             // evaluate s @ (x[0], y[0])
