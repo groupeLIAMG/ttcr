@@ -414,7 +414,7 @@ namespace ttcr {
             std::ofstream fout(filename.c_str());
             fout.precision(12);
             for ( T2 n=0; n<nodes.size(); ++n ) {
-                if ( nodes[n].isPrimary() == true || all==1 ) {
+                if ( nodes[n].isPrimary() || all==1 ) {
                     
                     fout << nodes[n].getX() << '\t'
                     << nodes[n].getZ() << '\t'
@@ -453,7 +453,7 @@ namespace ttcr {
             
             
             for ( size_t n=0; n<nodes.size(); ++n ) {
-                if ( nodes[n].isPrimary() == true ) {
+                if ( nodes[n].isPrimary() ) {
                     vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
                     newScalars->SetTuple1(id, nodes[n].getTT(nt) );
                 }
@@ -474,7 +474,7 @@ namespace ttcr {
             std::string filename = fname+".bin";
             std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
             for ( T2 n=0; n<nodes.size(); ++n ) {
-                if ( nodes[n].isPrimary() == true || all==1 ) {
+                if ( nodes[n].isPrimary() || all==1 ) {
                     T1 tmp[] = { nodes[n].getX(), nodes[n].getZ(), nodes[n].getTT(nt) };
                     fout.write( (char*)tmp, 3*sizeof(T1) );
                 }
