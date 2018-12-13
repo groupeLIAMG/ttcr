@@ -205,23 +205,23 @@ namespace ttcr {
         
         
         T2 getCellNo(const sxyz<T1>& pt) const {
-            T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
-            T1 y = ymax-pt.y < small ? ymax-.5*dy : pt.y;
-            T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
-            T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-            T2 ny = static_cast<T2>( small + (y-ymin)/dy );
-            T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+            T1 x = xmax-pt.x < small2 ? xmax-.5*dx : pt.x;
+            T1 y = ymax-pt.y < small2 ? ymax-.5*dy : pt.y;
+            T1 z = zmax-pt.z < small2 ? zmax-.5*dz : pt.z;
+            T2 nx = static_cast<T2>( small2 + (x-xmin)/dx );
+            T2 ny = static_cast<T2>( small2 + (y-ymin)/dy );
+            T2 nz = static_cast<T2>( small2 + (z-zmin)/dz );
             return ny*ncx + nz*(ncx*ncy) + nx;
         }
         
         
         T2 getCellNo(const NODE& node) const {
-            T1 x = xmax-node.getX() < small ? xmax-.5*dx : node.getX();
-            T1 y = ymax-node.getY() < small ? ymax-.5*dy : node.getY();
-            T1 z = zmax-node.getZ() < small ? zmax-.5*dz : node.getZ();
-            T2 nx = static_cast<T2>( small + (x-xmin)/dx );
-            T2 ny = static_cast<T2>( small + (y-ymin)/dy );
-            T2 nz = static_cast<T2>( small + (z-zmin)/dz );
+            T1 x = xmax-node.getX() < small2 ? xmax-.5*dx : node.getX();
+            T1 y = ymax-node.getY() < small2 ? ymax-.5*dy : node.getY();
+            T1 z = zmax-node.getZ() < small2 ? zmax-.5*dz : node.getZ();
+            T2 nx = static_cast<T2>( small2 + (x-xmin)/dx );
+            T2 ny = static_cast<T2>( small2 + (y-ymin)/dy );
+            T2 nz = static_cast<T2>( small2 + (z-zmin)/dz );
             return ny*ncx + nz*(ncx*ncy) + nx;
         }
 
@@ -232,15 +232,15 @@ namespace ttcr {
         }
         
         void getIJK(const sxyz<T1>& pt, T2& i, T2& j, T2& k) const {
-            i = static_cast<T2>( small + (pt.x-xmin)/dx );
-            j = static_cast<T2>( small + (pt.y-ymin)/dy );
-            k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            i = static_cast<T2>( small2 + (pt.x-xmin)/dx );
+            j = static_cast<T2>( small2 + (pt.y-ymin)/dy );
+            k = static_cast<T2>( small2 + (pt.z-zmin)/dz );
         }
         
         void getIJK(const sxyz<T1>& pt, long long& i, long long& j, long long& k) const {
-            i = static_cast<long long>( small + (pt.x-xmin)/dx );
-            j = static_cast<long long>( small + (pt.y-ymin)/dy );
-            k = static_cast<long long>( small + (pt.z-zmin)/dz );
+            i = static_cast<long long>( small2 + (pt.x-xmin)/dx );
+            j = static_cast<long long>( small2 + (pt.y-ymin)/dy );
+            k = static_cast<long long>( small2 + (pt.z-zmin)/dz );
         }
         
         void checkPts(const std::vector<sxyz<T1>>&) const;
@@ -632,7 +632,7 @@ namespace ttcr {
             
             // are we close enough to one the Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-                T2 dist = curr_pt.getDistance( Tx[ns] );
+                T1 dist = curr_pt.getDistance( Tx[ns] );
                 if ( dist < maxDist ) {
                     
                     g = Tx[ns] - curr_pt;
@@ -670,8 +670,8 @@ namespace ttcr {
                         curr_pt.z = zp;
                     }
                     
-                    if ( curr_pt.getDistance(prev_pt) > dist ) {
-                        // we do not intersect a plane
+                    if ( curr_pt.getDistance(prev_pt) > dist ||  // we do not intersect a plane
+                        curr_pt == Tx[ns] ) {  // we have arrived
                         cellNo = getCellNo(Tx[ns]);
                         tt += cells.computeDt(Tx[ns], prev_pt, cellNo);
                     } else {
@@ -773,7 +773,7 @@ namespace ttcr {
             
             // are we close enough to one the Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-                T2 dist = curr_pt.getDistance( Tx[ns] );
+                T1 dist = curr_pt.getDistance( Tx[ns] );
                 if ( dist < maxDist ) {
                     
                     g = Tx[ns] - curr_pt;
@@ -811,8 +811,8 @@ namespace ttcr {
                         curr_pt.z = zp;
                     }
                     
-                    if ( curr_pt.getDistance(r_data.back()) > dist ) {
-                        // we do not intersect a plane
+                    if ( curr_pt.getDistance(r_data.back()) > dist ||  // we do not intersect a plane
+                        curr_pt == Tx[ns] ) {  // we have arrived
                         cellNo = getCellNo(Tx[ns]);
                         tt += cells.computeDt(Tx[ns], r_data.back(), cellNo);
                         r_data.push_back( Tx[ns] );
@@ -920,7 +920,7 @@ namespace ttcr {
 
             // are we close enough to one the Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-                T2 dist = curr_pt.getDistance( Tx[ns] );
+                T1 dist = curr_pt.getDistance( Tx[ns] );
                 if ( dist < maxDist ) {
 
                     g = Tx[ns] - curr_pt;
@@ -958,8 +958,8 @@ namespace ttcr {
                         curr_pt.z = zp;
                     }
 
-                    if ( curr_pt.getDistance(r_data.back()) > dist ) {
-                        // we do not intersect a plane
+                    if ( curr_pt.getDistance(r_data.back()) > dist ||  // we do not intersect a plane
+                        curr_pt == Tx[ns] ) {  // we have arrived
                         cell.i = getCellNo(Tx[ns]);
                         cell.v = Tx[ns].getDistance(r_data.back());
                         l_data.push_back(cell);
