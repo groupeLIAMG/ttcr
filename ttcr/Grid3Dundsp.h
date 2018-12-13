@@ -144,7 +144,7 @@ namespace ttcr {
                        std::priority_queue<Node3Dn<T1,T2>*,
                        std::vector<Node3Dn<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
-                       std::vector<Node3Dn<T1,T2>>& txNodes,
+                       std::vector<Node3Dnd<T1,T2>>& txNodes,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
@@ -636,7 +636,7 @@ namespace ttcr {
                                        std::priority_queue<Node3Dn<T1,T2>*,
                                        std::vector<Node3Dn<T1,T2>*>,
                                        CompareNodePtr<T1>>& queue,
-                                       std::vector<Node3Dn<T1,T2>>& txNodes,
+                                       std::vector<Node3Dnd<T1,T2>>& txNodes,
                                        std::vector<bool>& inQueue,
                                        std::vector<bool>& frozen,
                                        const size_t threadNo) const {
@@ -667,7 +667,7 @@ namespace ttcr {
             }
             if ( found==false ) {
                 // If Tx[n] is not on a node, we create a new node and initialize the queue:
-                txNodes.push_back( Node3Dn<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, 1, 0) );
+                txNodes.push_back( Node3Dnd<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, 1, 0) );
                 T2 cn = this->getCellNo(Tx[n]);
                 txNodes.back().pushOwner( cn );
                 txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+
@@ -783,7 +783,7 @@ namespace ttcr {
         
         addTemporaryNodes(Tx, threadNo);
         
-        std::vector<Node3Dn<T1,T2>> txNodes;
+        std::vector<Node3Dnd<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
         
@@ -840,7 +840,7 @@ namespace ttcr {
         
         addTemporaryNodes(Tx, threadNo);
         
-        std::vector<Node3Dn<T1,T2>> txNodes;
+        std::vector<Node3Dnd<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
         

@@ -27,6 +27,7 @@
 
 #include "Grid3Duc.h"
 #include "Node3Dc.h"
+#include "Node3Dcd.h"
 
 namespace ttcr {
     
@@ -41,7 +42,7 @@ namespace ttcr {
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, min_dist, nt),
         nSecondary(ns), nDynamic(nd), nPermanent(0), verbose(verb),
         dyn_radius(drad),
-        tempNodes(std::vector<std::vector<Node3Dc<T1,T2>>>(nt)),
+        tempNodes(std::vector<std::vector<Node3Dcd<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
         {
             this->buildGridNodes(no, ns, nt, verb);
@@ -92,7 +93,7 @@ namespace ttcr {
         // we will store temporary nodes in a separate container.  This is to
         // allow threaded computations with different Tx (location of temp
         // nodes vary from one Tx to the other)
-        mutable std::vector<std::vector<Node3Dc<T1,T2>>> tempNodes;
+        mutable std::vector<std::vector<Node3Dcd<T1,T2>>> tempNodes;
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
         
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
@@ -102,7 +103,7 @@ namespace ttcr {
                        std::priority_queue<Node3Dc<T1,T2>*,
                        std::vector<Node3Dc<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
-                       std::vector<Node3Dc<T1,T2>>& txNodes,
+                       std::vector<Node3Dcd<T1,T2>>& txNodes,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
@@ -172,7 +173,7 @@ namespace ttcr {
         
         // edge nodes
         T2 nTmpNodes = 0;
-        Node3Dc<T1,T2> tmpNode(1);
+        Node3Dcd<T1,T2> tmpNode;
         size_t nDynTot = (nSecondary+1) * nDynamic;  // total number of dynamic nodes on edges
         
         for ( auto cell=txCells.begin(); cell!=txCells.end(); cell++ ) {
@@ -369,7 +370,7 @@ namespace ttcr {
         
         addTemporaryNodes(Tx, threadNo);
         
-        std::vector<Node3Dc<T1,T2>> txNodes;
+        std::vector<Node3Dcd<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
         
@@ -420,7 +421,7 @@ namespace ttcr {
         
         addTemporaryNodes(Tx, threadNo);
         
-        std::vector<Node3Dc<T1,T2>> txNodes;
+        std::vector<Node3Dcd<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
         
@@ -520,7 +521,7 @@ namespace ttcr {
                                        std::priority_queue<Node3Dc<T1,T2>*,
                                        std::vector<Node3Dc<T1,T2>*>,
                                        CompareNodePtr<T1>>& queue,
-                                       std::vector<Node3Dc<T1,T2>>& txNodes,
+                                       std::vector<Node3Dcd<T1,T2>>& txNodes,
                                        std::vector<bool>& inQueue,
                                        std::vector<bool>& frozen,
                                        const size_t threadNo) const {
@@ -551,8 +552,7 @@ namespace ttcr {
             }
             if ( found==false ) {
                 // If Tx[n] is not on a node, we create a new node and initialize the queue:
-                txNodes.push_back( Node3Dc<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z,
-                                                  this->nThreads, threadNo));
+                txNodes.push_back( Node3Dcd<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, 1, 0));
                 txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
                 txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+
                                                              tempNodes.size()+
