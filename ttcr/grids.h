@@ -53,8 +53,10 @@
 #include "Grid2Dunfs.h"
 #include "Grid2Dunsp.h"
 #include "Grid3Drcsp.h"
+#include "Grid3Drcdsp.h"
 #include "Grid3Drcfs.h"
 #include "Grid3Drnsp.h"
+#include "Grid3Drndsp.h"
 #include "Grid3Drnfs.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
@@ -224,15 +226,16 @@ namespace ttcr {
                 if ( constCells )
                     g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                            d[0], d[1], d[2],
-                                                                                           min[0], min[1], min[0],
+                                                                                           min[0], min[1], min[2],
                                                                                            par.nn[0], par.nn[1], par.nn[2],
-                                                                                           nt);
+                                                                                           par.tt_from_rp, nt);
                 else
                     g = new Grid3Drnsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], d[1], d[2],
                                                     min[0], min[1], min[2],
                                                     par.nn[0], par.nn[1], par.nn[2],
-                                                    nt, par.inverseDistance);
+                                                    par.tt_from_rp,
+                                                    par.interpVel, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -260,13 +263,14 @@ namespace ttcr {
                     g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
-                                                    par.weno3, nt);
+                                                    par.weno3, par.tt_from_rp, nt);
                 }
                 else
                     g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
-                                                    par.weno3, nt);
+                                                    par.weno3, par.tt_from_rp,
+                                                    par.interpVel, nt);
                 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( par.verbose ) {
@@ -275,6 +279,45 @@ namespace ttcr {
                 }
                 
                 break;
+            }
+            case DYNAMIC_SHORTEST_PATH:
+            {
+                if ( par.verbose ) {
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells )
+                    g = new Grid3Drcdsp<T,uint32_t,Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                                                                        d[0], d[1], d[2],
+                                                                                        min[0], min[1], min[2],
+                                                                                        par.nn[0],
+                                                                                        par.tt_from_rp,
+                                                                                        par.nDynamic,
+                                                                                        par.dyn_node_radius,
+                                                                                        nt,
+                                                                                        par.verbose);
+                else {
+                    g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                     d[0], d[1], d[2],
+                                                     min[0], min[1], min[2],
+                                                     par.nn[0],
+                                                     par.tt_from_rp,
+                                                     par.nDynamic,
+                                                     par.dyn_node_radius,
+                                                     par.interpVel,
+                                                     nt,
+                                                     par.verbose);
+                }
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( par.verbose ) {
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    << "\n";
+                    std::cout.flush();
+                }
+                
+                break;
+
             }
             default:
                 break;
@@ -395,7 +438,7 @@ namespace ttcr {
                                                         d[0], d[1], d[2],
                                                         xrange[0], yrange[0], zrange[0],
                                                         par.nn[0], par.nn[1], par.nn[2],
-                                                        nt, par.inverseDistance);
+                                                        par.interpVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( par.verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -421,7 +464,7 @@ namespace ttcr {
                         g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
-                                                        par.weno3, nt);
+                                                        par.weno3, par.interpVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( par.verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -536,12 +579,12 @@ namespace ttcr {
                             g = new Grid3Drcsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                                                d[0], d[1], d[2],
                                                                                                                xrange[0], yrange[0], zrange[0],
-                                                                                                               par.nn[0], par.nn[1], par.nn[2], nt);
+                                                                                                               par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt);
                         } else {
                             g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                                    d[0], d[1], d[2],
                                                                                                    xrange[0], yrange[0], zrange[0],
-                                                                                                   par.nn[0], par.nn[1], par.nn[2], nt);
+                                                                                                   par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt);
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( par.verbose ) {
@@ -572,7 +615,7 @@ namespace ttcr {
                         g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
-                                                        par.weno3, nt);
+                                                        par.weno3, par.tt_from_rp, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( par.verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
