@@ -266,7 +266,7 @@ namespace ttcr {
 
                 T1 y = this->ymin + nj*this->dy;
 
-                for ( T2 ni=0; ni<=this->ncx; ++ni, ++n ){
+                for ( T2 ni=0; ni<=this->ncx; ++ni ){
 
                     T1 x = this->xmin + ni*this->dx;
 
@@ -573,8 +573,14 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
+            }
         }
     }
     
@@ -609,10 +615,18 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+            }
         }
     }
     
