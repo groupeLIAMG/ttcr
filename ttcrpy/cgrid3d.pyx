@@ -53,7 +53,7 @@ cdef extern from "ttcr_t.h" namespace "ttcr":
 
 cdef extern from "Grid3Drnfs.h" namespace "ttcr":
     cdef cppclass Grid3Drnfs[T1,T2]:
-        Grid3Drnfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, size_t) except +
+        Grid3Drnfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool, size_t) except +
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void raytrace(vector[sxyz[T1]]&,
@@ -79,7 +79,7 @@ cdef extern from "Grid3Drnfs.h" namespace "ttcr":
 
 cdef extern from "Grid3Drcfs.h" namespace "ttcr":
     cdef cppclass Grid3Drcfs[T1,T2]:
-        Grid3Drcfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, size_t) except +
+        Grid3Drcfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, size_t) except +
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void raytrace(vector[sxyz[T1]]&,
@@ -131,8 +131,10 @@ cdef class Grid3Drn:
         self.nx = nx
         self.ny = ny
         self.nz = nz
+        cdef bool ttrp = 1
+        cdef bool interpVel = 0
         self.grid = new Grid3Drnfs[double,uint32_t](nx, ny, nz, dx, xmin, ymin,
-                                  zmin, eps, maxit, weno, nthreads)
+                                  zmin, eps, maxit, weno, ttrp, interpVel, nthreads)
 
 
     def __dealloc__(self):
@@ -311,8 +313,9 @@ cdef class Grid3Drc:
         self.nx = nx
         self.ny = ny
         self.nz = nz
+        cdef bool ttrp = 1
         self.grid = new Grid3Drcfs[double,uint32_t](nx, ny, nz, dx, xmin, ymin,
-                                  zmin, eps, maxit, weno, nthreads)
+                                  zmin, eps, maxit, weno, ttrp, nthreads)
 
     def __dealloc__(self):
         del self.grid
