@@ -785,7 +785,6 @@ namespace ttcr {
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
                     }
 
-                    tt += t0[ns];
                     reachedTx = true;
                 }
             }
