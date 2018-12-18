@@ -699,7 +699,7 @@ namespace ttcr {
                                                std::vector<sxyz<T1>> &r_data,
                                                T1 &tt,
                                                const size_t threadNo) const {
-        
+        tt = 0.0;
         r_data.push_back( Rx );
         
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
@@ -844,6 +844,7 @@ namespace ttcr {
                                                T1 &tt,
                                                const size_t threadNo) const {
 
+        tt = 0.0;
         r_data.push_back( Rx );
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {

@@ -23,7 +23,7 @@ namespace ttcr {
         Grid3Drcfs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T1 eps, const int maxit, const bool w,
-                   const bool ttrp, const size_t nt=1) :
+                   const bool ttrp=true, const size_t nt=1) :
         Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, ttrp, nt),
         epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w)
         {
@@ -93,6 +93,16 @@ namespace ttcr {
         Grid3Drcfs() {}
         Grid3Drcfs(const Grid3Drcfs<T1,T2>& g) {}
         Grid3Drcfs<T1,T2>& operator=(const Grid3Drcfs<T1,T2>& g) {}
+        
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      const size_t threadNo=0) const;
+        
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                      const size_t threadNo=0) const;
         
     };
     
@@ -308,7 +318,6 @@ namespace ttcr {
     void Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
                                      const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -373,21 +382,12 @@ namespace ttcr {
                 niter++;
             }
         }
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
-        }
     }
     
     template<typename T1, typename T2>
     void Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
                                      const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -396,10 +396,6 @@ namespace ttcr {
         
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
-        }
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
         }
         
         // Set Tx pts
@@ -458,10 +454,55 @@ namespace ttcr {
             }
         }
         
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+    }
+
+    template<typename T1, typename T2>
+    void Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<T1>& traveltimes,
+                                     const size_t threadNo) const {
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        
+        if ( this->tt_from_rp ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+            }
+        } else {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
+            }
+        }
+    }
+    
+    template<typename T1, typename T2>
+    void Grid3Drcfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<T1>& t0,
+                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     std::vector<std::vector<T1>*>& traveltimes,
+                                     const size_t threadNo) const {
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        
+        if ( this->tt_from_rp ) {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+            }
+        } else {
+            for (size_t nr=0; nr<Rx.size(); ++nr) {
+                traveltimes[nr]->resize( Rx[nr]->size() );
+                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+            }
         }
     }
     
@@ -473,7 +514,7 @@ namespace ttcr {
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
@@ -481,9 +522,11 @@ namespace ttcr {
         for ( size_t ni=0; ni<r_data.size(); ++ni ) {
             r_data[ni].resize( 0 );
         }
-        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
     }
     
@@ -495,10 +538,13 @@ namespace ttcr {
                                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
         }
         
         for (size_t nr=0; nr<Rx.size(); ++nr) {
@@ -506,9 +552,11 @@ namespace ttcr {
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
+            traveltimes[nr]->resize( Rx[nr]->size() );
             
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
+                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+                                 (*traveltimes[nr])[n], threadNo);
             }
         }
     }
@@ -521,7 +569,7 @@ namespace ttcr {
                                      std::vector<std::vector<siv<T1>>>& l_data,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
         std::vector<sxyz<T1>> r_data;
         
@@ -534,7 +582,7 @@ namespace ttcr {
         
         siv<T1> cell;
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data, traveltimes[n], threadNo);
             
             for (size_t ns=0; ns<r_data.size()-1; ++ns) {
                 sxyz<T1> m = static_cast<T1>(0.5)*(r_data[ns]+r_data[ns+1]);  // ps @ middle of segment
@@ -567,7 +615,7 @@ namespace ttcr {
                                      std::vector<std::vector<siv<T1>>>& l_data,
                                      const size_t threadNo) const {
         
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        raytrace(Tx, t0, Rx, threadNo);
         
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
@@ -584,7 +632,7 @@ namespace ttcr {
         
         siv<T1> cell;
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
             
             for (size_t ns=0; ns<r_data[n].size()-1; ++ns) {
                 sxyz<T1> m = static_cast<T1>(0.5)*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
