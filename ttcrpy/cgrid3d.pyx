@@ -87,6 +87,12 @@ cdef extern from "Grid3Drcfs.h" namespace "ttcr":
                       vector[sxyz[T1]]&,
                       vector[T1]&,
                       size_t) except +
+        void raytrace2(vector[sxyz[T1]]&,
+                       vector[T1]&,
+                       vector[sxyz[T1]]&,
+                       vector[T1]&,
+                       vector[vector[sxyz[T1]]]&,
+                       size_t) except +
         void raytrace(vector[sxyz[T1]]&,
                       vector[T1]&,
                       vector[sxyz[T1]]&,
@@ -344,7 +350,7 @@ cdef class Grid3Drc:
                     slown.push_back(slowness[(i*self.ny + j)*self.nz + k])
         self.grid.setSlowness(slown)
 
-    def raytrace(self, slowness, Tx, Rx, t0, nout=1, thread_no=0):
+    def raytrace(self, slowness, Tx, Rx, t0, nout=None, thread_no=0, L=None, rays=None):
         """
         Perform raytracing for a single source
 
@@ -357,16 +363,23 @@ cdef class Grid3Drc:
             Tx : coordinates of source points (npts x 3)
             Rx : coordinates of receivers (nrcv x 3)
             t0 : time of source event
-            nout : number of parameters to return (see below)
+            nout : number of parameters to return (optional, see below)
             thread_no : thread/process number on which computation should be run
+            L : ray projection matrix (must be a csr_matrix)
+            rays : list holding coordinates of ray segments, for each rcv
 
         Returns
         -------
             tt : travel time are receivers
-            if nout == 2 or nout == 3:
-                L : ray projection matrix
-            if nout == 3:
+            if nout >= 2
                 rays : list holding coordinates of ray segments, for each rcv
+            if nout == 3:
+                L : ray projection matrix
+
+        Note
+        ----
+            if nout is given, input arguments L and rays are ignored, new intances
+            are created if needed
         """
         # assing model data
         cdef vector[double] slown
@@ -394,73 +407,164 @@ cdef class Grid3Drc:
         cdef vector[vector[sxyz[double]]] r_data
         cdef double v0 = 0.0
 
-        if nout == 1:
-            self.grid.raytrace(vTx, vt0, vRx, vtt, thread_no)
+        if nout is not None:
+            if nout == 1:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, thread_no)
 
-            tt = np.empty((Rx.shape[0],))
-            for n in range(Rx.shape[0]):
-                tt[n] = vtt[n]
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+                return tt
+            elif nout == 2:
+                self.grid.raytrace2(vTx, vt0, vRx, vtt, r_data, thread_no)
+
+                rays = [ [0.0] for i in range(Rx.shape[0]) ]
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+                    rays[n] = np.empty((r_data[n].size(), 3))
+                    for nn in range(r_data[n].size()):
+                        rays[n][nn, 0] = r_data[n][nn].x
+                        rays[n][nn, 1] = r_data[n][nn].y
+                        rays[n][nn, 2] = r_data[n][nn].z
+
+                return tt, rays
+            elif nout == 3:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data, thread_no)
+
+                rays = [ [0.0] for i in range(Rx.shape[0]) ]
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+                    rays[n] = np.empty((r_data[n].size(), 3))
+                    for nn in range(r_data[n].size()):
+                        rays[n][nn, 0] = r_data[n][nn].x
+                        rays[n][nn, 1] = r_data[n][nn].y
+                        rays[n][nn, 2] = r_data[n][nn].z
+
+                indptr = np.empty((Rx.shape[0]+1,), dtype=np.int64)
+                nval = 0
+                for i in range(l_data.size()):
+                    nval += l_data[i].size()
+                indices = np.empty((nval,), dtype=np.int64)
+                val = np.empty((nval,))
+
+                k = 0
+                M = Rx.shape[0]
+                N = self.nx*self.ny*self.nz
+                for i in range(M):
+                    indptr[i] = k
+                    for j in range(N):
+                        for n in range(l_data[i].size()):
+                            if l_data[i][n].i == j:
+                                indices[k] = j
+                                val[k] = l_data[i][n].v
+                                k += 1
+
+                indptr[M] = k
+                L = csr_matrix((val, indices, indptr), shape=(M,N))
+
+                return tt, rays, L
+        else:
+
+            if L is None and rays is None:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, thread_no)
+
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+
+            elif L is not None and rays is None:
+
+                if type(L) is not csr_matrix:
+                    raise TypeError('L should be csr_matrix')
+
+                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data, thread_no)
+
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+
+                indptr = np.empty((Rx.shape[0]+1,), dtype=np.int64)
+                nval = 0
+                for i in range(l_data.size()):
+                    nval += l_data[i].size()
+                indices = np.empty((nval,), dtype=np.int64)
+                val = np.empty((nval,))
+
+                k = 0
+                M = Rx.shape[0]
+                N = self.nx*self.ny*self.nz
+                for i in range(M):
+                    indptr[i] = k
+                    for j in range(N):
+                        for n in range(l_data[i].size()):
+                            if l_data[i][n].i == j:
+                                indices[k] = j
+                                val[k] = l_data[i][n].v
+                                k += 1
+
+                indptr[M] = k
+
+                L.data = val
+                L.indices = indices
+                L.indptr = indptr
+                L.reshape((M,N))
+
+            elif L is None and rays is not None:
+                self.grid.raytrace2(vTx, vt0, vRx, vtt, r_data, thread_no)
+
+                rays.clear()
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+                    rays.append(np.empty((r_data[n].size(), 3)))
+                    for nn in range(r_data[n].size()):
+                        rays[-1][nn, 0] = r_data[n][nn].x
+                        rays[-1][nn, 1] = r_data[n][nn].y
+                        rays[-1][nn, 2] = r_data[n][nn].z
+
+            elif L is not None and rays is not None:
+
+                if type(L) is not csr_matrix:
+                    raise TypeError('L should be csr_matrix')
+
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data, thread_no)
+
+                rays.clear()
+                tt = np.empty((Rx.shape[0],))
+                for n in range(Rx.shape[0]):
+                    tt[n] = vtt[n]
+                    rays.append(np.empty((r_data[n].size(), 3)))
+                    for nn in range(r_data[n].size()):
+                        rays[-1][nn, 0] = r_data[n][nn].x
+                        rays[-1][nn, 1] = r_data[n][nn].y
+                        rays[-1][nn, 2] = r_data[n][nn].z
+
+                indptr = np.empty((Rx.shape[0]+1,), dtype=np.int64)
+                nval = 0
+                for i in range(l_data.size()):
+                    nval += l_data[i].size()
+                indices = np.empty((nval,), dtype=np.int64)
+                val = np.empty((nval,))
+
+                k = 0
+                M = Rx.shape[0]
+                N = self.nx*self.ny*self.nz
+                for i in range(M):
+                    indptr[i] = k
+                    for j in range(N):
+                        for n in range(l_data[i].size()):
+                            if l_data[i][n].i == j:
+                                indices[k] = j
+                                val[k] = l_data[i][n].v
+                                k += 1
+
+                indptr[M] = k
+
+                L.data = val
+                L.indices = indices
+                L.indptr = indptr
+                L.reshape((M,N))
 
             return tt
-
-        elif nout == 2:
-            self.grid.raytrace(vTx, vt0, vRx, vtt, l_data, thread_no)
-
-            tt = np.empty((Rx.shape[0],))
-            for n in range(Rx.shape[0]):
-                tt[n] = vtt[n]
-
-            indptr = np.empty((Rx.shape[0]+1,), dtype=np.int64)
-            indices = np.empty((l_data.size(),), dtype=np.int64)
-            val = np.empty((l_data.size(),))
-
-            k = 0
-            M = Rx.shape[0]
-            N = self.nx*self.ny*self.nz
-            for i in range(M):
-                indptr[i] = k
-                for j in range(N):
-                    for n in range(l_data[i].size()):
-                        if l_data[i][n].i == j:
-                            indices[k] = j
-                            val[k] = l_data[i][n].v
-                            k += 1
-
-            indptr[M] = k
-            L = csr_matrix((val, indices, indptr), shape=(M,N))
-
-            return tt, L
-
-        elif nout == 3:
-            self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data, thread_no)
-
-            rays = [ [0.0] for i in range(Rx.shape[0]) ]
-            tt = np.empty((Rx.shape[0],))
-            for n in range(Rx.shape[0]):
-                tt[n] = vtt[n]
-                rays[n] = np.empty((r_data[n].size(), 3))
-                for nn in range(r_data[n].size()):
-                    rays[n][nn, 0] = r_data[n][nn].x
-                    rays[n][nn, 1] = r_data[n][nn].y
-                    rays[n][nn, 2] = r_data[n][nn].z
-
-            indptr = np.empty((Rx.shape[0]+1,), dtype=np.int64)
-            indices = np.empty((l_data.size(),), dtype=np.int64)
-            val = np.empty((l_data.size(),))
-
-            k = 0
-            M = Rx.shape[0]
-            N = self.nx*self.ny*self.nz
-            for i in range(M):
-                indptr[i] = k
-                for j in range(N):
-                    for n in range(l_data[i].size()):
-                        if l_data[i][n].i == j:
-                            indices[k] = j
-                            val[k] = l_data[i][n].v
-                            k += 1
-
-            indptr[M] = k
-            L = csr_matrix((val, indices, indptr), shape=(M,N))
-
-            return tt, L, rays

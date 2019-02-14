@@ -57,7 +57,18 @@ namespace ttcr {
                      std::vector<T1>& traveltimes,
                      std::vector<std::vector<sxyz<T1>>>& r_data,
                      const size_t threadNo=0) const;
-        
+
+        void raytrace2(const std::vector<sxyz<T1>>& Tx,
+                       const std::vector<T1>& t0,
+                       const std::vector<sxyz<T1>>& Rx,
+                       std::vector<T1>& traveltimes,
+                       std::vector<std::vector<sxyz<T1>>>& r_data,
+                       const size_t threadNo=0) const {
+            // this function created for cython, which does not take two methods with equal number of arguments
+            // (already using one with l_data)
+            raytrace(Tx, t0, Rx, traveltimes, r_data, threadNo);
+        }
+
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
