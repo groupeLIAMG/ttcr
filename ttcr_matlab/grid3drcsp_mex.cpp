@@ -45,6 +45,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         double        *dx, *dy, *dz, *nx_d, *ny_d, *nz_d;
         double        *nsx_d, *nsy_d, *nsz_d;
         uint32_t      nx, ny, nz, nsx, nsy, nsz;
+        bool          ttrp=false;
         size_t        nthreads;
         
         // ------------------------------------------------------
@@ -92,7 +93,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         plhs[0] = convertPtr2Mat<grid>(new grid(nx, ny, nz, *dx, *dy, *dz,
                                                 *xmin, *ymin, *zmin,
-                                                nsx, nsy, nsz, nthreads));
+                                                nsx, nsy, nsz, ttrp, nthreads));
         return;
     }
     

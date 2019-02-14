@@ -41,7 +41,7 @@ namespace ttcr {
     public:
         Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const T1 eps, const int maxit, const bool rp, const bool iv,
+                   const T1 eps, const int maxit, const int rp, const bool iv,
                    const bool rptt, const T1 md, const size_t nt=1) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
         epsilon(eps), nitermax(maxit), S(), niter(0)
@@ -53,7 +53,7 @@ namespace ttcr {
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps, const int maxit,
                    const std::vector<sxyz<T1>>& refPts, const int order,
-                   const bool rp, const bool iv, const bool rptt, const T1 md,
+                   const int rp, const bool iv, const bool rptt, const T1 md,
                    const size_t nt=1) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
         epsilon(eps), nitermax(maxit), S(), niter(0)

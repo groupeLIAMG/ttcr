@@ -127,7 +127,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         ptsRef.push_back( {xmax, ymax, zmin} );
         ptsRef.push_back( {xmax, ymax, zmax} );
         
-        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, 1.e-15, 20, ptsRef, order, true, nthreads));
+        int rp_method = 1;
+        bool invert_vel = false;
+        bool rp_from_tt = true;
+        double min_dist = 1.e-8;
+        
+        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, 1.e-15, 20,
+                                                ptsRef, order, rp_method,
+                                                invert_vel, rp_from_tt,
+                                                min_dist, nthreads));
         return;
     }
     
