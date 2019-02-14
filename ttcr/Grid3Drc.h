@@ -54,6 +54,8 @@
 #include "vtkXMLRectilinearGridWriter.h"
 #endif
 
+#include <boost/math/special_functions/sign.hpp>
+
 #include "Grid3D.h"
 
 namespace ttcr {
