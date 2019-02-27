@@ -1269,7 +1269,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-8.1",
+					"/usr/local/VTK/include/vtk-8.2",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
@@ -1277,9 +1277,9 @@
 				NEW_SETTING = "";
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-8.1",
-					"-lvtkCommonDataModel-8.1",
-					"-lvtkCommonCore-8.1",
+					"-lvtkIOXML-8.2",
+					"-lvtkCommonDataModel-8.2",
+					"-lvtkCommonCore-8.2",
 					"-L/usr/local/VTK/lib",
 				);
 				SDKROOT = macosx;
@@ -2130,7 +2130,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-8.1",
+					"/usr/local/VTK/include/vtk-8.2",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
@@ -2138,9 +2138,9 @@
 				NEW_SETTING = "";
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-8.1",
-					"-lvtkCommonDataModel-8.1",
-					"-lvtkCommonCore-8.1",
+					"-lvtkIOXML-8.2",
+					"-lvtkCommonDataModel-8.2",
+					"-lvtkCommonCore-8.2",
 					"-L/usr/local/VTK/lib",
 				);
 				SDKROOT = macosx;
@@ -2198,16 +2198,16 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-8.1",
+					"/usr/local/VTK/include/vtk-8.2",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				NEW_SETTING = "";
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-8.1",
-					"-lvtkCommonDataModel-8.1",
-					"-lvtkCommonCore-8.1",
+					"-lvtkIOXML-8.2",
+					"-lvtkCommonDataModel-8.2",
+					"-lvtkCommonCore-8.2",
 					"-L/usr/local/VTK/lib",
 				);
 				SDKROOT = macosx;
@@ -2495,7 +2495,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/opt/local/include,
 					/opt/local/include/eigen3,
-					"/usr/local/VTK/include/vtk-8.1",
+					"/usr/local/VTK/include/vtk-8.2",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
@@ -2503,9 +2503,9 @@
 				NEW_SETTING = "";
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-lvtkIOXML-8.1",
-					"-lvtkCommonDataModel-8.1",
-					"-lvtkCommonCore-8.1",
+					"-lvtkIOXML-8.2",
+					"-lvtkCommonDataModel-8.2",
+					"-lvtkCommonCore-8.2",
 					"-L/usr/local/VTK/lib",
 				);
 				SDKROOT = macosx;
