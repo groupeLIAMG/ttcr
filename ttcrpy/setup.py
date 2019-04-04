@@ -2,12 +2,16 @@
 # python setup.py build_ext --inplace
 
 import platform
+import os
 import numpy as np
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 
 if platform.system() == 'Darwin':
+    os.environ['CC'] = 'clang'
+    os.environ['CXX'] = 'clang++'
+    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
     extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3']
     include_dirs = ['../ttcr/','/opt/local/include','/opt/local/include/eigen3/',np.get_include()]
 elif platform.system() == 'Windows':
