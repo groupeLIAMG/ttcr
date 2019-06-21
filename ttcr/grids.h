@@ -415,7 +415,7 @@ namespace ttcr {
                     
                     if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-                        return 0;
+                        return nullptr;
                     }
                     
                     slowness.resize( slo->GetSize() );
@@ -486,7 +486,39 @@ namespace ttcr {
                         std::cerr.flush();
                         return nullptr;
                         break;
-                        
+
+                    case DYNAMIC_SHORTEST_PATH:
+
+                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drndsp) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+
+                        g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                         d[0], d[1], d[2],
+                                                         xrange[0], yrange[0], zrange[0],
+                                                         par.nn[0],
+                                                         par.tt_from_rp,
+                                                         par.nDynamic,
+                                                         par.dyn_node_radius,
+                                                         par.interpVel,
+                                                         nt,
+                                                         par.verbose);
+
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( par.verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( par.verbose ) std::cout << "done.\n";
+                        break;
+
                     default:
                         break;
                 }
@@ -496,7 +528,7 @@ namespace ttcr {
                 }
                 
             } else {
-                return 0;
+                return nullptr;
             }
             
         } else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
@@ -524,7 +556,7 @@ namespace ttcr {
                     
                     if ( slo->GetSize() != dataSet->GetNumberOfCells() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-                        return 0;
+                        return nullptr;
                     }
                     
                     slowness.resize( slo->GetSize() );
@@ -637,6 +669,35 @@ namespace ttcr {
                         std::cerr.flush();
                         return nullptr;
                         break;
+
+                    case DYNAMIC_SHORTEST_PATH:
+
+                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid3Drcdsp<T,uint32_t,Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                                                                            d[0], d[1], d[2],
+                                                                                            xrange[0], yrange[0], zrange[0],
+                                                                                            par.nn[0],
+                                                                                            par.tt_from_rp,
+                                                                                            par.nDynamic,
+                                                                                            par.dyn_node_radius,
+                                                                                            nt,
+                                                                                            par.verbose);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( par.verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid cells ... ";
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( par.verbose ) std::cout << "done.\n";
+                        break;
+
                     default:
                         break;
                 }
@@ -645,7 +706,7 @@ namespace ttcr {
                     std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
                 }
             } else {
-                return 0;
+                return nullptr;
             }
         }
         dataSet->Delete();
@@ -1528,7 +1589,7 @@ namespace ttcr {
                     
                     if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
-                        return 0;
+                        return nullptr;
                     }
                     
                     slowness.resize( slo->GetSize() );
