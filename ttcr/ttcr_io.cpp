@@ -181,6 +181,10 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nt;
             }
+            else if (par.find("min nb Tx per thread") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.min_per_thread;
+            }
             else if (par.find("number of dynamic nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nDynamic;

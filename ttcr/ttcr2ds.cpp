@@ -50,11 +50,10 @@ int body(const input_parameters &par) {
 	
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
-    size_t const min_per_thread=5;
 	if ( par.nt == 0 ) {
 		size_t const hardware_threads = std::thread::hardware_concurrency();
 		
-		size_t const max_threads = (nTx+min_per_thread-1)/min_per_thread;
+		size_t const max_threads = (nTx+par.min_per_thread-1)/par.min_per_thread;
 		num_threads = std::min((hardware_threads!=0?hardware_threads:2), max_threads);
 	} else {
 		num_threads = par.nt < nTx ? par.nt : nTx;

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -745,10 +745,11 @@
 				};
 			};
 			buildConfigurationList = 2BC708CE18EDA599004DA2C9 /* Build configuration list for PBXProject "ttcr" */;
-			compatibilityVersion = "Xcode 3.2";
+			compatibilityVersion = "Xcode 10.0";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 2BC708CA18EDA599004DA2C9;
@@ -2174,7 +2175,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEBUG_INFORMATION_FORMAT = "";
 				DEPLOYMENT_LOCATION = YES;
 				DSTROOT = /;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2204,6 +2205,7 @@
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				NEW_SETTING = "";
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lvtkIOXML-8.2",
 					"-lvtkCommonDataModel-8.2",

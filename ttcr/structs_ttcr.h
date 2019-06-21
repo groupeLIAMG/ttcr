@@ -42,6 +42,7 @@ namespace ttcr {
         int nDynamic;
         int raypath_method;
         int saveGridTT;
+        int min_per_thread;
         bool inverseDistance;
         bool singlePrecision;
         bool saveRaypaths;
@@ -68,7 +69,7 @@ namespace ttcr {
         std::vector<std::string> srcfiles;
         
         input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
-        nDynamic(3), raypath_method(LS_SO), saveGridTT(0),
+        nDynamic(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), interpVel(false), rotated_template(false),

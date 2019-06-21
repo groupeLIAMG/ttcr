@@ -54,11 +54,10 @@ int body(const input_parameters &par) {
 	
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
-    size_t const min_per_thread=5;
 
     if ( par.nt == 0 ) {
 		size_t const hardware_threads = thread::hardware_concurrency();
-		size_t const max_threads = (nTx+min_per_thread-1)/min_per_thread;
+		size_t const max_threads = (nTx+par.min_per_thread-1)/par.min_per_thread;
 		num_threads = min((hardware_threads!=0?hardware_threads:2), max_threads);
 	} else {
 		num_threads = par.nt < nTx ? par.nt : nTx;
@@ -121,7 +120,31 @@ int body(const input_parameters &par) {
         rcv.init( src.size(), reflectors.size() );
         if ( par.verbose ) cout << "done.\n";
     }
-    
+
+    if ( par.saveModelVTK ) {
+#ifdef VTK
+        std::string filename = par.rcvfile;
+        size_t i = filename.rfind(".dat");
+        filename.replace(i, 4, ".vtp");
+        
+        if ( par.verbose ) std::cout << "Saving receiver in " << filename << " ... ";
+        rcv.toVTK(filename);
+        if ( par.verbose ) std::cout << "done.\n";
+        
+        for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
+            filename = par.srcfiles[n];
+            i = filename.rfind(".dat");
+            filename.replace(i, 4, ".vtp");
+            if ( par.verbose ) std::cout << "Saving source in " << filename << " ... ";
+            src[n].toVTK(filename);
+            if ( par.verbose ) std::cout << "done.\n";
+        }
+#else
+        std::cerr << "Error: Program not compiled with VTK support" << std::endl;
+        return nullptr;
+#endif
+    }
+
     if ( par.verbose ) {
         if ( par.singlePrecision ) {
             cout << "Calculations will be done in single precision.\n";
