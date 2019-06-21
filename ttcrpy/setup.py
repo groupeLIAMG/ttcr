@@ -16,9 +16,9 @@ if platform.system() == 'Darwin':
     include_dirs = ['../ttcr/','/opt/local/include','/opt/local/include/eigen3/',np.get_include()]
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
-    include_dirs = ['E:\\src\\ttcr\\ttcr',
-    'C:\\Users\\giroux\OneDrive\Documents\\boost_1_66_0',
-    'C:\\Users\\giroux\OneDrive\Documents\eigen3',np.get_include()]
+    include_dirs = ['Z:\\src\\ttcr\\ttcr',
+    'C:\\Users\\berna\OneDrive\Documents\\boost_1_66_0',
+    'C:\\Users\\berna\OneDrive\Documents\eigen3',np.get_include()]
 elif platform.system() == 'Linux':
     extra_compile_args = ['-std=c++11', '-O3']
     include_dirs = ['../ttcr/','/usr/include/eigen3/',np.get_include()]

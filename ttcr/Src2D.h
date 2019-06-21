@@ -30,6 +30,13 @@
 #include <string>
 #include <vector>
 
+#ifdef VTK
+#include "vtkPoints.h"
+#include "vtkPolyData.h"
+#include "vtkSmartPointer.h"
+#include "vtkXMLPolyDataWriter.h"
+#endif
+
 #include "ttcr_t.h"
 
 namespace ttcr {
@@ -44,6 +51,7 @@ namespace ttcr {
         const std::vector<sxz<T>>& get_coord() const { return coord; }
         const std::vector<T>& get_t0() const { return t0; }
         
+        void toVTK(const std::string &) const;
     private:
         std::string filename;
         std::vector<sxz<T>> coord;
@@ -95,6 +103,25 @@ namespace ttcr {
         fin.close();
     }
     
+    template<typename T>
+    void Src2D<T>::toVTK(const std::string &fname) const {
+#ifdef VTK
+        vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
+        vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
+        
+        pts->SetNumberOfPoints(coord.size());
+        for ( size_t n=0; n<coord.size(); ++n ) {
+            pts->InsertPoint(n, coord[n].x, 0.0, coord[n].z);
+        }
+        polydata->SetPoints(pts);
+        
+        vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+        writer->SetFileName( fname.c_str() );
+        writer->SetInputData( polydata );
+        writer->SetDataModeToBinary();
+        writer->Update();
+#endif
+    }
 }
 
 #endif

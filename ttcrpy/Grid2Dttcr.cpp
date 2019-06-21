@@ -29,6 +29,7 @@
 
 using namespace std;
 
+#define import_array_throw() {if (_import_array() < 0) {PyErr_Print(); PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import"); throw NUMPY_IMPORT_ARRAY_RETVAL; } }
 
 namespace ttcr {
 
@@ -202,7 +203,7 @@ namespace ttcr {
         }
 
         // rays
-        //import_array();  // to use PyArray_SimpleNewFromData
+        import_array_throw();  // to use PyArray_SimpleNewFromData
 
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
@@ -531,7 +532,7 @@ namespace ttcr {
                 traveltimes[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
-        //import_array();  // to use PyArray_SimpleNewFromData
+        import_array_throw();  // to use PyArray_SimpleNewFromData
 
         // L
         // first element of tuple contains data, size is nnz

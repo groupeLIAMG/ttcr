@@ -137,6 +137,30 @@ int body(const input_parameters &par) {
         rcv.init( src.size() );
         if ( par.verbose ) cout << "done.\n";
     }
+
+    if ( par.saveModelVTK ) {
+#ifdef VTK
+        std::string filename = par.rcvfile;
+        size_t i = filename.rfind(".dat");
+        filename.replace(i, 4, ".vtp");
+        
+        if ( par.verbose ) std::cout << "Saving receiver in " << filename << " ... ";
+        rcv.toVTK(filename);
+        if ( par.verbose ) std::cout << "done.\n";
+        
+        for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
+            filename = par.srcfiles[n];
+            i = filename.rfind(".dat");
+            filename.replace(i, 4, ".vtp");
+            if ( par.verbose ) std::cout << "Saving source in " << filename << " ... ";
+            src[n].toVTK(filename);
+            if ( par.verbose ) std::cout << "done.\n";
+        }
+#else
+        std::cerr << "Error: Program not compiled with VTK support" << std::endl;
+        return nullptr;
+#endif
+    }    
     
     if ( par.verbose ) {
         if ( par.singlePrecision ) {
