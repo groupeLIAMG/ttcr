@@ -171,6 +171,20 @@ namespace ttcr {
             return p_p1_squareLength - dotProd * dotProd * p1_p2_squareLength;
         }
     }
+
+    template<typename T, typename NODE>
+    T distPointToPlane(const NODE *a,
+                       const NODE *b,
+                       const NODE *c,
+                       const sxyz<T> &pt) {
+        sxyz<T> ab = {b->getX()-a->getX(), b->getY()-a->getY(), b->getZ()-a->getZ()};
+        sxyz<T> ac = {c->getX()-a->getX(), c->getY()-a->getY(), c->getZ()-a->getZ()};
+
+        // triangle normal
+        sxyz<T> n = cross(ab, ac);
+        n.normalize();
+        return dot(n, {a->getX() - pt.x, a->getY() - pt.y, a->getZ() - pt.z});
+    }
     
     template<typename T, typename NODE>
     bool testInTriangle(const NODE *vertexA,
