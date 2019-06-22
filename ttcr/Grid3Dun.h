@@ -1785,13 +1785,14 @@ namespace ttcr {
                         nodeNo = edgeNodes[1];
                         pt_i = nodes[edgeNodes[1]];
                         onEdge = false;
+                    } else {
+                        onEdge = true;
+                        onNode = false;
                     }
 
                     curr_pt = pt_i;
-                    onEdge = true;
-                    onNode = false;
 #ifdef DEBUG_RP
-                    r_data[0].push_back(curr_pt);
+                    r_data.back().push_back(curr_pt);
 #endif
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
@@ -2659,12 +2660,13 @@ namespace ttcr {
                         nodeNo = edgeNodes[1];
                         pt_i = nodes[edgeNodes[1]];
                         onEdge = false;
+                    } else {
+                        onEdge = true;
+                        onNode = false;
                     }
                     
                     curr_pt = pt_i;
                     r_tmp.push_back( curr_pt );
-                    onEdge = true;
-                    onNode = false;
                 }
                 
             } else if ( onEdge ) {
@@ -3431,11 +3433,12 @@ namespace ttcr {
                         nodeNo = edgeNodes[1];
                         pt_i = nodes[edgeNodes[1]];
                         onEdge = false;
+                    } else {
+                        onEdge = true;
+                        onNode = false;
                     }
                     
                     curr_pt = pt_i;
-                    onEdge = true;
-                    onNode = false;
                     
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
