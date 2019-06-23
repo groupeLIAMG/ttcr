@@ -149,6 +149,9 @@ namespace ttcr {
         
         int getDimension() const { return 3; }
         
+        void setPrimary(const bool p) {
+            // do nothing, is here to be consistent with Node3Dcsp
+        }
         const bool isPrimary() const { return true; }
         
     protected:

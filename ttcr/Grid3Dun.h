@@ -1792,7 +1792,7 @@ namespace ttcr {
 
                     curr_pt = pt_i;
 #ifdef DEBUG_RP
-                    r_data.back().push_back(curr_pt);
+                    r_data[0].push_back(curr_pt);
 #endif
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
@@ -3573,9 +3573,6 @@ namespace ttcr {
                     }
                     
                     curr_pt = pt_i;
-#ifdef DEBUG_RP
-                    r_data[0].push_back(curr_pt);
-#endif
                     
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
@@ -3765,9 +3762,6 @@ namespace ttcr {
                         onFace = false;
                     }
                     curr_pt = pt_i;
-#ifdef DEBUG_RP
-                    r_data[0].push_back(curr_pt);
-#endif
                     
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
@@ -4033,6 +4027,8 @@ namespace ttcr {
                                           std::vector<sijv<T1>>& m_data,
                                           const size_t RxNo,
                                           const size_t threadNo) const {
+        std::cout << "*** WARNING ***\n method getRaypath still incomplete, should not be used" << std::endl;
+        // TODO : complete this function
         
         T1 minDist = small;
         std::vector<sxyz<T1>> r_tmp;
@@ -4157,6 +4153,7 @@ namespace ttcr {
         }
         
         T1 s, ds;
+        sxyz<T1> g;
         while ( reachedTx == false ) {
             
             if ( onNode ) {
@@ -4168,7 +4165,21 @@ namespace ttcr {
                 }
                 
                 // compute gradient with nodes from all common cells
-                sxyz<T1> g = grad3d->compute(curr_pt, nodes[nodeNo].getTT(threadNo), nnodes, threadNo);
+                if ( rp_method < 2 ) {
+                    // find cells common to edge
+                    std::set<NODE*> nnodes;
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                        getNeighborNodes(*nc, nnodes);
+                    }
+                    // compute gradient with nodes from all common cells
+                    g = grad3d->compute(curr_pt, nodes[nodeNo].getTT(threadNo), nnodes, threadNo);
+                } else {
+                    std::vector<NODE*> ref_pt(1);
+                    std::vector<std::vector<std::array<NODE*,3>>> opp_pts;
+                    ref_pt[0] = &(nodes[nodeNo]);
+                    getNeighborNodesAB(ref_pt, opp_pts);
+                    g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
+                }
                 checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 nodeNoPrev = nodeNo;
@@ -4308,11 +4319,24 @@ namespace ttcr {
                         getNeighborNodes(*nc0, nnodes);
                     }
                 }
-                T1 d01 = nodes[edgeNodes[0]].getDistance(nodes[edgeNodes[1]]);
-                T1 w0 = curr_pt.getDistance(nodes[edgeNodes[1]]) / d01;
-                T1 w1 = curr_pt.getDistance(nodes[edgeNodes[0]]) / d01;
-                T1 curr_t = nodes[edgeNodes[0]].getTT(threadNo)*w0 + nodes[edgeNodes[1]].getTT(threadNo)*w1;
-                sxyz<T1> g = grad3d->compute(curr_pt, curr_t, nnodes, threadNo);
+                if ( rp_method < 2 ) {
+                    std::set<NODE*> nnodes;
+                    for (size_t n=0; n<cells.size(); ++n ) {
+                        getNeighborNodes(cells[n], nnodes);
+                    }
+                    T1 d01 = nodes[edgeNodes[0]].getDistance(nodes[edgeNodes[1]]);
+                    T1 w0 = curr_pt.getDistance(nodes[edgeNodes[1]]) / d01;
+                    T1 w1 = curr_pt.getDistance(nodes[edgeNodes[0]]) / d01;
+                    T1 curr_t = nodes[edgeNodes[0]].getTT(threadNo)*w0 + nodes[edgeNodes[1]].getTT(threadNo)*w1;
+                    g = grad3d->compute(curr_pt, curr_t, nnodes, threadNo);
+                } else {
+                    std::vector<NODE*> ref_pt(2);
+                    std::vector<std::vector<std::array<NODE*,3>>> opp_pts;
+                    ref_pt[0] = &(nodes[edgeNodes[0]]);
+                    ref_pt[1] = &(nodes[edgeNodes[1]]);
+                    getNeighborNodesAB(ref_pt, opp_pts);
+                    g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
+                }
                 checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 edgeNodesPrev = edgeNodes;
@@ -4321,12 +4345,12 @@ namespace ttcr {
                 bool foundIntersection = false;
                 for (size_t n=0; n<cells.size(); ++n ) {
                     
-                    cellNo = cells[n];
+                    T2 testCellNo = cells[n];
                     
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
+                    for ( auto nn=neighbors[testCellNo].begin(); nn!= neighbors[testCellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -4350,6 +4374,7 @@ namespace ttcr {
                         continue;
                     }
                     
+                    cellNo = testCellNo;
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
                     r_tmp.push_back( curr_pt );
@@ -4505,13 +4530,41 @@ namespace ttcr {
                 getNeighborNodes(cellNo, nnodes);
                 
                 std::array<T2,4> itmp = getPrimary(cellNo);
-                T1 curr_t = Interpolator<T1>::trilinearTime(curr_pt,
-                                                            nodes[itmp[0]],
-                                                            nodes[itmp[1]],
-                                                            nodes[itmp[2]],
-                                                            nodes[itmp[3]],
-                                                            threadNo);
-                sxyz<T1> g = grad3d->compute(curr_pt, curr_t, nnodes, threadNo);
+                if ( rp_method < 2 ) {
+                    std::set<NODE*> nnodes;
+                    getNeighborNodes(cellNo, nnodes);
+                    T1 curr_t;
+                    if ( r_tmp.size() <= 1 ) {
+                        curr_t = Interpolator<T1>::trilinearTime(curr_pt,
+                                                                 nodes[itmp[0]],
+                                                                 nodes[itmp[1]],
+                                                                 nodes[itmp[2]],
+                                                                 nodes[itmp[3]],
+                                                                 threadNo);
+                    } else {
+                        curr_t = Interpolator<T1>::bilinearTime(curr_pt,
+                                                                nodes[faceNodes[0]],
+                                                                nodes[faceNodes[1]],
+                                                                nodes[faceNodes[2]],
+                                                                threadNo);
+                    }
+                    g = grad3d->compute(curr_pt, curr_t, nnodes, threadNo);
+                } else {
+                    std::vector<NODE*> ref_pt(3);
+                    if ( r_tmp.size() <= 1 ) {
+                        ref_pt[0] = &(nodes[itmp[0]]);
+                        ref_pt[1] = &(nodes[itmp[1]]);
+                        ref_pt[2] = &(nodes[itmp[2]]);
+                        ref_pt.push_back( &(nodes[itmp[3]]) );
+                    } else {
+                        ref_pt[0] = &(nodes[faceNodes[0]]);
+                        ref_pt[1] = &(nodes[faceNodes[1]]);
+                        ref_pt[2] = &(nodes[faceNodes[2]]);
+                    }
+                    std::vector<std::vector<std::array<NODE*,3>>> opp_pts;
+                    getNeighborNodesAB(ref_pt, opp_pts);
+                    g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
+                }
                 checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 std::array<T2,3> ind[4] = {
