@@ -131,7 +131,7 @@ namespace ttcr {
         nodeParent(nullptr),
         cellParent(nullptr),
         owners(node.owners),
-        primary(false)
+        primary(node.primary)
         {
             tt = new T1[nThreads];
             nodeParent = new T2[nThreads];
