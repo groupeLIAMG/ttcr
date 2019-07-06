@@ -35,6 +35,7 @@ namespace ttcr {
     const double small = 1.e-5;
     const double small2 = small*small;
     const double pi = 4.0*atan(1.0);
+    const double theta_cut = 65. * pi / 180.;  // for raytracing -> unstructured meshes
 
     const size_t iLength[4][3]={{0,1,2},{1,3,4},{2,3,5},{0,4,5}};
     const size_t iNodes[4][3] = {

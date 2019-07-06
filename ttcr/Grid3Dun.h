@@ -7524,7 +7524,7 @@ namespace ttcr {
                 std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='g')\n";
                 std::cout << "th = " << theta*180.0/3.14159 << '\n';
 #endif
-                bool test3 = theta < 1.0471975511965976;  // smaller than 60°
+                bool test3 = theta < theta_cut;  // defined in ttcr_t.h
                 
                 if ( test1 && test2 && test3 ) {
                     pt_i = pt_i0;
@@ -7579,7 +7579,7 @@ namespace ttcr {
                 std::cout << "plt.show()\n\n";
                 std::cout << "th = " << theta*180.0/3.14159 << '\n';
 #endif
-                test3 = theta < 1.0471975511965976;  // smaller than 60°
+                test3 = theta < theta_cut;  // defined in ttcr_t.h
                 
                 if ( test1 && test2 && test3 ) {
                     pt_i = pt_i0;
