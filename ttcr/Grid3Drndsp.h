@@ -24,7 +24,7 @@ namespace ttcr {
                     const T2 ns, const bool ttrp, const T2 nd, const T1 drad,
                     const bool intVel, const size_t nt=1, const int verb=0) :
         Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, intVel, nt),
-        nSecondary(ns), nDynamic(nd), nPermanent(0), verbose(verb),
+        nSecondary(ns), nTertiary(nd), nPermanent(0), verbose(verb),
         dynRadius(drad),
         tempNodes(std::vector<std::vector<Node3Dnd<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
@@ -71,7 +71,7 @@ namespace ttcr {
 
     private:
         T2 nSecondary;                 // number of permanent secondary
-        T2 nDynamic;                   // number of temporary secondary
+        T2 nTertiary;                   // number of temporary secondary
         T2 nPermanent;                 // total nb of primary & permanent secondary
         bool verbose;
         T1 dynRadius;
@@ -745,7 +745,7 @@ namespace ttcr {
 
         std::set<T2> adjacentCells(txCells.begin(), txCells.end());
 
-        T2 nTemp = nDynamic * (nSecondary+1);
+        T2 nTemp = nTertiary * (nSecondary+1);
 
         T1 dxDyn = this->dx / (nTemp + nSecondary + 1);
         T1 dyDyn = this->dy / (nTemp + nSecondary + 1);
@@ -831,8 +831,8 @@ namespace ttcr {
                         
                         size_t nd = 0;
                         for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                            for ( size_t n3=0; n3<nDynamic; ++n3 ) {
-                                tmpNode.setXYZindex(x0 + (1+n2*(nDynamic+1)+n3)*dxDyn,
+                            for ( size_t n3=0; n3<nTertiary; ++n3 ) {
+                                tmpNode.setXYZindex(x0 + (1+n2*(nTertiary+1)+n3)*dxDyn,
                                                     y0 + j*this->dy,
                                                     z0 + k*this->dz,
                                                     nPermanent+nTmpNodes );
@@ -872,9 +872,9 @@ namespace ttcr {
 
                         size_t nd = 0;
                         for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                            for ( size_t n3=0; n3<nDynamic; ++n3 ) {
+                            for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                                 tmpNode.setXYZindex(x0 + i*this->dx,
-                                                    y0 + (1+n2*(nDynamic+1)+n3)*dyDyn,
+                                                    y0 + (1+n2*(nTertiary+1)+n3)*dyDyn,
                                                     z0 + k*this->dz,
                                                     nPermanent+nTmpNodes );
                                 islown = this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]);
@@ -913,10 +913,10 @@ namespace ttcr {
 
                         size_t nd = 0;
                         for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                            for ( size_t n3=0; n3<nDynamic; ++n3 ) {
+                            for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                                 tmpNode.setXYZindex(x0 + i*this->dx,
                                                     y0 + j*this->dy,
-                                                    z0 + (1+n2*(nDynamic+1)+n3)*dzDyn,
+                                                    z0 + (1+n2*(nTertiary+1)+n3)*dzDyn,
                                                     nPermanent+nTmpNodes );
                                 islown = this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]);
                                 tmpNode.setNodeSlowness( islown );
@@ -939,7 +939,7 @@ namespace ttcr {
         std::map<std::array<T2,4>,std::vector<T2>> faceMap;
         std::array<T2,4> faceKey;
         typename std::map<std::array<T2,4>,std::vector<T2>>::iterator faceIt;
-        nTemp = (nDynamic * (nSecondary+1) + nSecondary) * (nDynamic * (nSecondary+1) + nSecondary) - nSecondary*nSecondary;
+        nTemp = (nTertiary * (nSecondary+1) + nSecondary) * (nTertiary * (nSecondary+1) + nSecondary) - nSecondary*nSecondary;
 
         for ( auto cell=txCells.begin(); cell!=txCells.end(); cell++ ) {
             this->getCellIJK(*cell, ind);
@@ -984,10 +984,10 @@ namespace ttcr {
 
                 size_t ifn = 0;
                 size_t n0 = 0;
-                while (n0 < nDynamic*(nSecondary+1)+nSecondary) {
-                    for ( size_t n1=0; n1<nDynamic; ++n1 ) {
+                while (n0 < nTertiary*(nSecondary+1)+nSecondary) {
+                    for ( size_t n1=0; n1<nTertiary; ++n1 ) {
                         y0 += dyDyn;
-                        for ( size_t n2=0; n2<nDynamic*(nSecondary+1)+nSecondary; ++n2 ) {
+                        for ( size_t n2=0; n2<nTertiary*(nSecondary+1)+nSecondary; ++n2 ) {
                             tmpNode.setXYZindex(x0 + (n2+1)*dxDyn,
                                                 y0,
                                                 z0,
@@ -1003,13 +1003,13 @@ namespace ttcr {
                         }
                         n0++;
                     }
-                    if (n0 == nDynamic*(nSecondary+1)+nSecondary) {
+                    if (n0 == nTertiary*(nSecondary+1)+nSecondary) {
                         break;
                     }
                     y0 += dyDyn;
                     for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                        for ( size_t n3=0; n3<nDynamic; ++n3 ) {
-                            tmpNode.setXYZindex(x0 + (1+n2*(nDynamic+1)+n3)*dxDyn,
+                        for ( size_t n3=0; n3<nTertiary; ++n3 ) {
+                            tmpNode.setXYZindex(x0 + (1+n2*(nTertiary+1)+n3)*dxDyn,
                                                 y0,
                                                 z0,
                                                 nPermanent+nTmpNodes );
@@ -1067,10 +1067,10 @@ namespace ttcr {
 
                 size_t ifn = 0;
                 size_t n0 = 0;
-                while (n0 < nDynamic*(nSecondary+1)+nSecondary) {
-                    for ( size_t n1=0; n1<nDynamic; ++n1 ) {
+                while (n0 < nTertiary*(nSecondary+1)+nSecondary) {
+                    for ( size_t n1=0; n1<nTertiary; ++n1 ) {
                         z0 += dzDyn;
-                        for ( size_t n2=0; n2<nDynamic*(nSecondary+1)+nSecondary; ++n2 ) {
+                        for ( size_t n2=0; n2<nTertiary*(nSecondary+1)+nSecondary; ++n2 ) {
                             tmpNode.setXYZindex(x0 + (n2+1)*dxDyn,
                                                 y0,
                                                 z0,
@@ -1086,13 +1086,13 @@ namespace ttcr {
                         }
                         n0++;
                     }
-                    if (n0 == nDynamic*(nSecondary+1)+nSecondary) {
+                    if (n0 == nTertiary*(nSecondary+1)+nSecondary) {
                         break;
                     }
                     z0 += dzDyn;
                     for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                        for ( size_t n3=0; n3<nDynamic; ++n3 ) {
-                            tmpNode.setXYZindex(x0 + (1+n2*(nDynamic+1)+n3)*dxDyn,
+                        for ( size_t n3=0; n3<nTertiary; ++n3 ) {
+                            tmpNode.setXYZindex(x0 + (1+n2*(nTertiary+1)+n3)*dxDyn,
                                                 y0,
                                                 z0,
                                                 nPermanent+nTmpNodes );
@@ -1150,10 +1150,10 @@ namespace ttcr {
 
                 size_t ifn = 0;
                 size_t n0 = 0;
-                while (n0 < nDynamic*(nSecondary+1)+nSecondary) {
-                    for ( size_t n1=0; n1<nDynamic; ++n1 ) {
+                while (n0 < nTertiary*(nSecondary+1)+nSecondary) {
+                    for ( size_t n1=0; n1<nTertiary; ++n1 ) {
                         z0 += dzDyn;
-                        for ( size_t n2=0; n2<nDynamic*(nSecondary+1)+nSecondary; ++n2 ) {
+                        for ( size_t n2=0; n2<nTertiary*(nSecondary+1)+nSecondary; ++n2 ) {
                             tmpNode.setXYZindex(x0,
                                                 y0 + (n2+1)*dyDyn,
                                                 z0,
@@ -1169,14 +1169,14 @@ namespace ttcr {
                         }
                         n0++;
                     }
-                    if (n0 == nDynamic*(nSecondary+1)+nSecondary) {
+                    if (n0 == nTertiary*(nSecondary+1)+nSecondary) {
                         break;
                     }
                     z0 += dzDyn;
                     for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                        for ( size_t n3=0; n3<nDynamic; ++n3 ) {
+                        for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                             tmpNode.setXYZindex(x0,
-                                                y0 + (1+n2*(nDynamic+1)+n3)*dyDyn,
+                                                y0 + (1+n2*(nTertiary+1)+n3)*dyDyn,
                                                 z0,
                                                 nPermanent+nTmpNodes );
                             x[0] = tmpNode.getY();

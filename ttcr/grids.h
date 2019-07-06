@@ -293,8 +293,8 @@ namespace ttcr {
                                                                                         min[0], min[1], min[2],
                                                                                         par.nn[0],
                                                                                         par.tt_from_rp,
-                                                                                        par.nDynamic,
-                                                                                        par.dyn_node_radius,
+                                                                                        par.nTertiary,
+                                                                                        par.radius_tertiary_nodes,
                                                                                         nt,
                                                                                         par.verbose);
                 else {
@@ -303,8 +303,8 @@ namespace ttcr {
                                                      min[0], min[1], min[2],
                                                      par.nn[0],
                                                      par.tt_from_rp,
-                                                     par.nDynamic,
-                                                     par.dyn_node_radius,
+                                                     par.nTertiary,
+                                                     par.radius_tertiary_nodes,
                                                      par.interpVel,
                                                      nt,
                                                      par.verbose);
@@ -498,8 +498,8 @@ namespace ttcr {
                                                          xrange[0], yrange[0], zrange[0],
                                                          par.nn[0],
                                                          par.tt_from_rp,
-                                                         par.nDynamic,
-                                                         par.dyn_node_radius,
+                                                         par.nTertiary,
+                                                         par.radius_tertiary_nodes,
                                                          par.interpVel,
                                                          nt,
                                                          par.verbose);
@@ -680,8 +680,8 @@ namespace ttcr {
                                                                                             xrange[0], yrange[0], zrange[0],
                                                                                             par.nn[0],
                                                                                             par.tt_from_rp,
-                                                                                            par.nDynamic,
-                                                                                            par.dyn_node_radius,
+                                                                                            par.nTertiary,
+                                                                                            par.radius_tertiary_nodes,
                                                                                             nt,
                                                                                             par.verbose);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -721,7 +721,7 @@ namespace ttcr {
         VTUReader reader( par.modelfile.c_str() );
         
         if ( !reader.isValid() ) {
-            std::cerr << "File par.modelfile not valid\n";
+            std::cerr << "File " << par.modelfile << " not valid\n";
             return nullptr;
         }
         
@@ -887,25 +887,25 @@ namespace ttcr {
                     g = new Grid3Ducdsp<T, uint32_t>(nodes,
                                                      tetrahedra,
                                                      par.nn[0],
-                                                     par.nDynamic,
+                                                     par.nTertiary,
                                                      par.source_radius,
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
-                                                     par.dyn_node_radius,
+                                                     par.radius_tertiary_nodes,
                                                      nt,
                                                      par.verbose);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
                                                      par.nn[0],
-                                                     par.nDynamic,
+                                                     par.nTertiary,
                                                      par.source_radius,
                                                      par.interpVel,
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
-                                                     par.dyn_node_radius,
+                                                     par.radius_tertiary_nodes,
                                                      nt,
                                                      par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -1192,25 +1192,25 @@ namespace ttcr {
                     g = new Grid3Ducdsp<T, uint32_t>(nodes,
                                                      tetrahedra,
                                                      par.nn[0],
-                                                     par.nDynamic,
+                                                     par.nTertiary,
                                                      par.source_radius,
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
-                                                     par.dyn_node_radius,
+                                                     par.radius_tertiary_nodes,
                                                      nt,
                                                      par.verbose);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
                                                      par.nn[0],
-                                                     par.nDynamic,
+                                                     par.nTertiary,
                                                      par.source_radius,
                                                      par.interpVel,
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
-                                                     par.dyn_node_radius,
+                                                     par.radius_tertiary_nodes,
                                                      nt,
                                                      par.verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }

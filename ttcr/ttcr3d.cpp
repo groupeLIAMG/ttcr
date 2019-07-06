@@ -178,7 +178,7 @@ int body(const input_parameters &par) {
         << "   (minimum distance: " << par.min_distance_rp << ").\n";
     }
     if ( par.verbose && par.method == DYNAMIC_SHORTEST_PATH ) {
-        cout << "Radius for temporary nodes: " << par.dyn_node_radius << '\n';
+        cout << "Radius for tertiary nodes: " << par.radius_tertiary_nodes << '\n';
     }
     
 	vector<const vector<sxyz<T>>*> all_rcv;

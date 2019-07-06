@@ -47,7 +47,7 @@ namespace ttcr {
                     const bool iv, const int rp, const bool rptt, const T1 md,
                     const T1 drad, const size_t nt=1, const int verb=0) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
-        nSecondary(ns), nDynamic(nd), nPermanent(0), verbose(verb),
+        nSecondary(ns), nTertiary(nd), nPermanent(0), verbose(verb),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dnd<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
@@ -123,7 +123,7 @@ namespace ttcr {
 
     private:
         T2 nSecondary;
-        T2 nDynamic;
+        T2 nTertiary;
         T2 nPermanent;
         bool verbose;
         T1 dyn_radius;
@@ -405,7 +405,7 @@ namespace ttcr {
         // edge nodes
         T2 nTmpNodes = 0;
         Node3Dnd<T1,T2> tmpNode;
-        size_t nDynTot = (nSecondary+1) * nDynamic;  // total number of dynamic nodes on edges
+        size_t nDynTot = (nSecondary+1) * nTertiary;  // total number of dynamic nodes on edges
         
         T1 slope, islown;
 
@@ -452,10 +452,10 @@ namespace ttcr {
                     
                     size_t nd = 0;
                     for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
-                        for ( size_t n3=0; n3<nDynamic; ++n3 ) {
-                            tmpNode.setXYZindex(this->nodes[lineKey[0]].getX()+(1+n2*(nDynamic+1)+n3)*d.x,
-                                                this->nodes[lineKey[0]].getY()+(1+n2*(nDynamic+1)+n3)*d.y,
-                                                this->nodes[lineKey[0]].getZ()+(1+n2*(nDynamic+1)+n3)*d.z,
+                        for ( size_t n3=0; n3<nTertiary; ++n3 ) {
+                            tmpNode.setXYZindex(this->nodes[lineKey[0]].getX()+(1+n2*(nTertiary+1)+n3)*d.x,
+                                                this->nodes[lineKey[0]].getY()+(1+n2*(nTertiary+1)+n3)*d.y,
+                                                this->nodes[lineKey[0]].getZ()+(1+n2*(nTertiary+1)+n3)*d.z,
                                                 nPermanent+nTmpNodes );
                             if ( this->interpVel )
                                 islown = 1.0/(1.0/this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]));
@@ -513,7 +513,7 @@ namespace ttcr {
                 size_t ifn = 0;
                 size_t n = 0;
                 for ( int n2=nSecondary; n2>-1; --n2 ) {
-                    for ( size_t n3=0; n3<nDynamic; ++n3 ) {
+                    for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                         sxyz<T1> pt1 = this->nodes[faceKey[0]]+static_cast<T1>(1+n)*d1;
                         sxyz<T1> pt2 = this->nodes[faceKey[2]]+static_cast<T1>(1+n)*d2;
                         
@@ -545,7 +545,7 @@ namespace ttcr {
                     sxyz<T1> d = (pt2-pt1)/static_cast<T1>(nseg);
                     size_t n5 = 0;
                     for ( size_t n4=0; n4<n2; ++n4 ) {
-                        for ( size_t n3=0; n3<nDynamic; ++n3 ) {
+                        for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                             tmpNode.setXYZindex(pt1.x+(1+n5)*d.x,
                                                 pt1.y+(1+n5)*d.y,
                                                 pt1.z+(1+n5)*d.z,

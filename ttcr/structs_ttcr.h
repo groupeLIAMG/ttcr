@@ -39,7 +39,7 @@ namespace ttcr {
         int verbose;
         int order;                    // order of l metric
         int nitermax;
-        int nDynamic;
+        int nTertiary;
         int raypath_method;
         int saveGridTT;
         int min_per_thread;
@@ -59,7 +59,7 @@ namespace ttcr {
         double epsilon;
         double source_radius;
         double min_distance_rp;
-        double dyn_node_radius;
+        double radius_tertiary_nodes;
         raytracing_method method;
         std::string basename;
         std::string modelfile;
@@ -69,13 +69,13 @@ namespace ttcr {
         std::vector<std::string> srcfiles;
         
         input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
-        nDynamic(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
+        nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), interpVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
         epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
-        dyn_node_radius(0.0), method(SHORTEST_PATH), basename(),
+        radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
         
     };

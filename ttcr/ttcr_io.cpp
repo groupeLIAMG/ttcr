@@ -187,7 +187,11 @@ namespace ttcr {
             }
             else if (par.find("number of dynamic nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
-                sin >> ip.nDynamic;
+                sin >> ip.nTertiary;
+            }
+            else if (par.find("tertiary nodes") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.nTertiary;
             }
             else if (par.find("inverse distance") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
@@ -256,9 +260,9 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.source_radius;
             }
-            else if (par.find("radius dynamic nodes") < 200) {
+            else if (par.find("src radius tertiary") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
-                sin >> ip.dyn_node_radius;
+                sin >> ip.radius_tertiary_nodes;
             }
             else if (par.find("rotated template") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
