@@ -229,21 +229,34 @@ namespace ttcr {
                     }
                 }
             } else {
-                if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 ) {
+                if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 &&
+                    reader->GetOutput()->GetPointData()->HasArray("Velocity") == 0 ) {
                     std::cerr << "No Slowness data in file " << filename << std::endl;
                     return 0;
                 }
-                
-                vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
-                pd = reader->GetOutput()->GetPointData();
-                vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
-                slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
-                
-                slowness.resize( slo->GetSize() );
-                for ( size_t n=0; n<slo->GetSize(); ++n ) {
-                    slowness[n] = slo->GetComponent(n, 0);
+
+                if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 1 ) {
+                    vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
+                    pd = reader->GetOutput()->GetPointData();
+                    vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
+                    slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
+
+                    slowness.resize( slo->GetSize() );
+                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                        slowness[n] = slo->GetComponent(n, 0);
+                    }
+                } else {
+                    vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
+                    pd = reader->GetOutput()->GetPointData();
+                    vtkSmartPointer<vtkDoubleArray> vel = vtkSmartPointer<vtkDoubleArray>::New();
+                    vel = vtkDoubleArray::SafeDownCast( pd->GetArray("Velocity") );
+
+                    slowness.resize( vel->GetSize() );
+                    for ( size_t n=0; n<vel->GetSize(); ++n ) {
+                        slowness[n] = 1./vel->GetComponent(n, 0);
+                    }
+
                 }
-                
             }
             
             return 1;
@@ -300,11 +313,24 @@ namespace ttcr {
                     
                 } else {  // slowness defined at grid nodes
                     
-                    if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 ) {
+                    if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 &&
+                        reader->GetOutput()->GetPointData()->HasArray( "Velocity") == 0 ) {
                         std::cerr << "No Slowness data in file " << filename << std::endl;
                         return false;
                     }
                     
+                    if ( reader->GetOutput()->GetPointData()->HasArray("Slowness") == 1 ) {
+                        if ( reader->GetOutput()->GetPointData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfPoints() ) {
+                            std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+                            return false;
+                        }
+                    } else {
+                        if ( reader->GetOutput()->GetPointData()->GetArray("Velocity")->GetSize() != reader->GetOutput()->GetNumberOfPoints() ) {
+                            std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
+                            return false;
+                        }
+                    }
+
                     return true;
                 }
             }
