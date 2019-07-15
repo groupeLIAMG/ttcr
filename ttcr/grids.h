@@ -438,6 +438,7 @@ namespace ttcr {
                                                         d[0], d[1], d[2],
                                                         xrange[0], yrange[0], zrange[0],
                                                         par.nn[0], par.nn[1], par.nn[2],
+                                                        par.tt_from_rp,
                                                         par.interpVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( par.verbose ) {
