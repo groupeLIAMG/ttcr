@@ -42,14 +42,14 @@ namespace ttcr {
         MSHReader(const char *fname) : filename(fname), valid(false),
         physicalNames(std::vector<std::vector<std::string>>(4)),
         physicalIndices(std::vector<std::vector<int>>(4)){
-            valid = check_format();
+            valid = checkFormat();
         }
         
         bool isValid() const { return valid; }
         
         void setFilename(const char *fname) {  // we reset the reader
             filename = fname;
-            valid = check_format();
+            valid = checkFormat();
             for ( auto it=physicalNames.begin(); it!=physicalNames.end(); ++it )
                 it->clear();
             for ( auto it = physicalIndices.begin(); it!=physicalIndices.end(); ++it )
@@ -368,11 +368,17 @@ namespace ttcr {
         mutable std::vector<std::vector<std::string>> physicalNames;
         mutable std::vector<std::vector<int>> physicalIndices;
         
-        bool check_format() const {
+        bool checkFormat() const {
             std::ifstream fin(filename.c_str());
+            try {
+                fin.exceptions(fin.failbit);
+            } catch (const std::ios_base::failure& e)
+            {
+                std::cerr << "Error: failed to open " << filename << std::endl;
+                return false;
+            }
             bool format_ok = false;
             std::string line;
-//            size_t tmp;
             while ( fin ) {
                 getline( fin, line );
                 if ( line.find("$MeshFormat") != std::string::npos ) {
@@ -383,19 +389,6 @@ namespace ttcr {
                         format_ok = true;
                     }
                 }
-//                if ( line.find("$Elements") != std::string::npos ) {
-//                    fin >> tmp;
-//                    size_t index;
-//                    int elm_type, nTags;
-//                    for ( size_t n=0; n<tmp; ++n ) {
-//                        fin >> index >> elm_type >> nTags;
-//                        if ( nTags == 0 ) {
-//                            format_ok = false;
-//                            fin.close();
-//                            return format_ok;
-//                        }
-//                    }
-//                }
             }
             fin.close();
             return format_ok;
