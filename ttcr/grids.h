@@ -962,7 +962,7 @@ namespace ttcr {
         MSHReader reader( par.modelfile.c_str() );
         
         if ( !reader.isValid() ) {
-            std::cerr << "File par.modelfile not valid\n";
+            std::cerr << "File " << par.modelfile << " not valid\n";
             return nullptr;
         }
         
@@ -1869,7 +1869,7 @@ namespace ttcr {
         VTUReader reader( par.modelfile.c_str() );
         
         if ( !reader.isValid() ) {
-            std::cerr << "File par.modelfile not valid\n";
+            std::cerr << "File " << par.modelfile << " not valid\n";
             return nullptr;
         }
         
@@ -2019,7 +2019,7 @@ namespace ttcr {
         MSHReader reader( par.modelfile.c_str() );
         
         if ( !reader.isValid() ) {
-            std::cerr << "File par.modelfile not valid\n";
+            std::cerr << "File " << par.modelfile << " not valid\n";
             return nullptr;
         }
         
@@ -2286,7 +2286,7 @@ namespace ttcr {
         VTUReader reader( par.modelfile.c_str() );
         
         if ( !reader.isValid() ) {
-            std::cerr << "File par.modelfile not valid\n";
+            std::cerr << "File " << par.modelfile << " not valid\n";
             return nullptr;
         }
         
@@ -2366,7 +2366,7 @@ namespace ttcr {
         MSHReader reader( par.modelfile.c_str() );
         
         if ( !reader.isValid() ) {
-            std::cerr << "File par.modelfile not valid\n";
+            std::cerr << "File " << par.modelfile << " not valid\n";
             return nullptr;
         }
         
