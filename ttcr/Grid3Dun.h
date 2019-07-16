@@ -26,6 +26,7 @@
 #ifndef ttcr_Grid3Dun_h
 #define ttcr_Grid3Dun_h
 
+#define NDEBUG
 #include <cassert>
 #include <cmath>
 
@@ -7359,6 +7360,7 @@ namespace ttcr {
                 }
             }
         }
+        assert(nnodes.size()>0);
     }
     
     template<typename T1, typename T2, typename NODE>
@@ -7444,11 +7446,38 @@ namespace ttcr {
                                                  std::array<T2,2>& edgeNodes,
                                                  const std::vector<T2> cells,
                                                  sxyz<T1>&  pt_i) const {
-        std::unordered_set<T2> edgeNodes2;
-        for (auto c=cells.begin(); c!=cells.end(); ++c) {
-            for ( auto nn=neighbors[*c].begin(); nn!= neighbors[*c].end(); ++nn ) {
-                if (nodes[*nn].isPrimary() && *nn != edgeNodes[0] && *nn != edgeNodes[1]) {
-                    edgeNodes2.insert(*nn);
+
+        // find all primary nodes of common cells
+        std::vector<std::array<T2,4>> primary(cells.size());
+        for (size_t nc=0; nc<cells.size(); ++nc) {
+            size_t np = 0;
+            for ( auto nn=neighbors[cells[nc]].begin(); nn!= neighbors[cells[nc]].end(); ++nn ) {
+                if (nodes[*nn].isPrimary()) {
+                    primary[nc][np++] = *nn;
+                }
+            }
+        }
+        // at the surface, the edge is common to two triangles
+        // we must have only two other nodes at the surface, which are not common to the cells
+        std::array<T2,2> edgeNodes2;
+        size_t ne = 0;
+        for (size_t nc=0; nc<cells.size(); ++nc) {
+            for (size_t np=0; np<4; ++np) {
+                if (primary[nc][np] == edgeNodes[0] || primary[nc][np] == edgeNodes[1]) {
+                    continue;
+                }
+                bool found=false;
+                for (size_t nc2=0; nc2<cells.size(); ++nc2) {
+                    if ( nc == nc2 ) {
+                        continue;
+                    }
+                    if ( std::find(primary[nc2].begin(), primary[nc2].end(), primary[nc][np])!=primary[nc2].end() ) {
+                        found = true;  // primary node is common to two cells
+                        break;
+                    }
+                }
+                if ( found == false ) {
+                    edgeNodes2[ne++] = primary[nc][np];
                 }
             }
         }

@@ -25,6 +25,9 @@
 #ifndef ttcr_Grad_h
 #define ttcr_Grad_h
 
+#define NDEBUG
+#include <cassert>
+
 #include <array>
 #include <cmath>
 #include <set>
@@ -268,7 +271,19 @@ namespace ttcr {
                                           const size_t nt) {
         // evaluate gradient are center of gravity
         assert(nodes.size()>=9);
-        
+//        if ( nodes.size() < 9 ) {
+//            // fall back to first order
+//            std::cout << "\n*** Warning: falling back to first order least-squares gradient computation at point "
+//            << pt.x << ", " << pt.y << ", " << pt.z << "\n";
+//            std::cout << "\tSurrounding nodes:\n";
+//            for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
+//                std::cout << "\t\t" << (*n)->getX() << ", " << (*n)->getY() << ", " << (*n)->getZ() << '\n';
+//            }
+//            std::cout << std::endl;
+//            Grad3D_ls_fo<T,NODE> g;
+//            return g.compute(pt, t, nodes, nt);
+//        }
+
         A.resize( nodes.size(), 9 );
         b.resize( nodes.size(), 1 );
         
