@@ -4205,24 +4205,50 @@ namespace ttcr {
                                                  std::array<T2,2>& edgeNodes,
                                                  const std::vector<T2> cells,
                                                  sxyz<T1>&  pt_i) const {
-        std::unordered_set<T2> edgeNodes2;
-        for (auto c=cells.begin(); c!=cells.end(); ++c) {
-            for ( auto nn=neighbors[*c].begin(); nn!= neighbors[*c].end(); ++nn ) {
-                if (nodes[*nn].isPrimary() && *nn != edgeNodes[0] && *nn != edgeNodes[1]) {
-                    edgeNodes2.insert(*nn);
+        // find all primary nodes of common cells
+        std::vector<std::array<T2,4>> primary(cells.size());
+        for (size_t nc=0; nc<cells.size(); ++nc) {
+            size_t np = 0;
+            for ( auto nn=neighbors[cells[nc]].begin(); nn!= neighbors[cells[nc]].end(); ++nn ) {
+                if (nodes[*nn].isPrimary()) {
+                    primary[nc][np++] = *nn;
+                }
+            }
+        }
+        // at the surface, the edge is common to two triangles
+        // we must have only two other nodes at the surface, which are not common to the cells
+        std::array<T2,2> edgeNodes2;
+        size_t ne = 0;
+        for (size_t nc=0; nc<cells.size(); ++nc) {
+            for (size_t np=0; np<4; ++np) {
+                if (primary[nc][np] == edgeNodes[0] || primary[nc][np] == edgeNodes[1]) {
+                    continue;
+                }
+                bool found=false;
+                for (size_t nc2=0; nc2<cells.size(); ++nc2) {
+                    if ( nc == nc2 ) {
+                        continue;
+                    }
+                    if ( std::find(primary[nc2].begin(), primary[nc2].end(), primary[nc][np])!=primary[nc2].end() ) {
+                        found = true;  // primary node is common to two cells
+                        break;
+                    }
+                }
+                if ( found == false ) {
+                    edgeNodes2[ne++] = primary[nc][np];
                 }
             }
         }
         
         sxyz<T1> g_proj;
         T1 minAngle = std::numeric_limits<T1>::max();
-        std::array<T2,2>& oldEdgeNodes = edgeNodes;
+        std::array<T2,2> oldEdgeNodes = edgeNodes;
         // find projection that is closest to current gradient
         for (auto en=edgeNodes2.begin(); en!=edgeNodes2.end(); ++en) {
             
-            edgeNodes = oldEdgeNodes;
+            std::array<T2,2> tmpEdgeNodes = oldEdgeNodes;
             
-            sxyz<T1> tmp = projectOnFace(g, {edgeNodes[0], edgeNodes[1], *en});
+            sxyz<T1> tmp = projectOnFace(g, {tmpEdgeNodes[0], tmpEdgeNodes[1], *en});
             T1 a2 = acos(dot(tmp, g)/(norm(tmp)*norm(g)));
             
 #ifdef DEBUG_RP
@@ -4250,9 +4276,9 @@ namespace ttcr {
             if ( a2 < minAngle ) {
                 // compute intersection point and check if within edge nodes
                 
-                sxyz<T1> x1 = {nodes[edgeNodes[0]].getX(),
-                    nodes[edgeNodes[0]].getY(),
-                    nodes[edgeNodes[0]].getZ()};
+                sxyz<T1> x1 = {nodes[tmpEdgeNodes[0]].getX(),
+                    nodes[tmpEdgeNodes[0]].getY(),
+                    nodes[tmpEdgeNodes[0]].getZ()};
                 sxyz<T1> x2 = {nodes[*en].getX(),
                     nodes[*en].getY(),
                     nodes[*en].getZ()};
@@ -4268,15 +4294,15 @@ namespace ttcr {
                 
                 sxyz<T1> mid_pt = static_cast<T1>(0.5) * ( curr_pt + pt_i0 );
                 
-                bool test1 = testInTriangle(&(nodes[ edgeNodes[0] ]),
-                                            &(nodes[ edgeNodes[1] ]),
+                bool test1 = testInTriangle(&(nodes[ tmpEdgeNodes[0] ]),
+                                            &(nodes[ tmpEdgeNodes[1] ]),
                                             &(nodes[ *en ]), mid_pt);
                 
                 // check if we are between x1 & x2
                 
                 b = pt_i0 - x1;
                 T1 dab = dot(a, b);
-                bool test2 = dab > 0.0 && dab <= norm2(a);
+                bool test2 = dab > 0.0 && norm2(b) <= norm2(a);
                 
                 // check if going in the same direction as g
                 
@@ -4293,6 +4319,7 @@ namespace ttcr {
                 
                 if ( test1 && test2 && test3 ) {
                     pt_i = pt_i0;
+                    edgeNodes[0] = tmpEdgeNodes[0];
                     edgeNodes[1] = *en;
                     g_proj = tmp;
                     minAngle = a2;
@@ -4313,9 +4340,9 @@ namespace ttcr {
                     continue;
                 }
                 
-                x1 = {nodes[edgeNodes[1]].getX(),
-                    nodes[edgeNodes[1]].getY(),
-                    nodes[edgeNodes[1]].getZ()};
+                x1 = {nodes[tmpEdgeNodes[1]].getX(),
+                    nodes[tmpEdgeNodes[1]].getY(),
+                    nodes[tmpEdgeNodes[1]].getZ()};
                 x2 = {nodes[*en].getX(),
                     nodes[*en].getY(),
                     nodes[*en].getZ()};
@@ -4330,8 +4357,8 @@ namespace ttcr {
                 
                 mid_pt = static_cast<T1>(0.5) * ( curr_pt + pt_i0 );
                 
-                test1 = testInTriangle(&(nodes[ edgeNodes[0] ]),
-                                       &(nodes[ edgeNodes[1] ]),
+                test1 = testInTriangle(&(nodes[ tmpEdgeNodes[0] ]),
+                                       &(nodes[ tmpEdgeNodes[1] ]),
                                        &(nodes[ *en ]), mid_pt);
                 
                 b = pt_i0 - x1;
@@ -4353,6 +4380,7 @@ namespace ttcr {
                 if ( test1 && test2 && test3 ) {
                     pt_i = pt_i0;
                     edgeNodes[0] = *en;
+                    edgeNodes[1] = tmpEdgeNodes[1];
                     g_proj = tmp;
                     minAngle = a2;
 #ifdef DEBUG_RP

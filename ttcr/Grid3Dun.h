@@ -7506,13 +7506,13 @@ namespace ttcr {
         
         sxyz<T1> g_proj;
         T1 minAngle = std::numeric_limits<T1>::max();
-        std::array<T2,2>& oldEdgeNodes = edgeNodes;
+        std::array<T2,2> oldEdgeNodes = edgeNodes;
         // find projection that is closest to current gradient
         for (auto en=edgeNodes2.begin(); en!=edgeNodes2.end(); ++en) {
             
-            edgeNodes = oldEdgeNodes;
+            std::array<T2,2> tmpEdgeNodes = oldEdgeNodes;
             
-            sxyz<T1> tmp = projectOnFace(g, {edgeNodes[0], edgeNodes[1], *en});
+            sxyz<T1> tmp = projectOnFace(g, {tmpEdgeNodes[0], tmpEdgeNodes[1], *en});
             T1 a2 = acos(dot(tmp, g)/(norm(tmp)*norm(g)));
             
 #ifdef DEBUG_RP
@@ -7540,9 +7540,9 @@ namespace ttcr {
             if ( a2 < minAngle ) {
                 // compute intersection point and check if within edge nodes
                 
-                sxyz<T1> x1 = {nodes[edgeNodes[0]].getX(),
-                    nodes[edgeNodes[0]].getY(),
-                    nodes[edgeNodes[0]].getZ()};
+                sxyz<T1> x1 = {nodes[tmpEdgeNodes[0]].getX(),
+                    nodes[tmpEdgeNodes[0]].getY(),
+                    nodes[tmpEdgeNodes[0]].getZ()};
                 sxyz<T1> x2 = {nodes[*en].getX(),
                     nodes[*en].getY(),
                     nodes[*en].getZ()};
@@ -7558,15 +7558,15 @@ namespace ttcr {
                 
                 sxyz<T1> mid_pt = static_cast<T1>(0.5) * ( curr_pt + pt_i0 );
                 
-                bool test1 = testInTriangle(&(nodes[ edgeNodes[0] ]),
-                                            &(nodes[ edgeNodes[1] ]),
+                bool test1 = testInTriangle(&(nodes[ tmpEdgeNodes[0] ]),
+                                            &(nodes[ tmpEdgeNodes[1] ]),
                                             &(nodes[ *en ]), mid_pt);
                 
                 // check if we are between x1 & x2
                 
                 b = pt_i0 - x1;
                 T1 dab = dot(a, b);
-                bool test2 = dab > 0.0 && dab <= norm2(a);
+                bool test2 = dab > 0.0 && norm2(b) <= norm2(a);
                 
                 // check if going in the same direction as g
                 
@@ -7583,6 +7583,7 @@ namespace ttcr {
                 
                 if ( test1 && test2 && test3 ) {
                     pt_i = pt_i0;
+                    edgeNodes[0] = tmpEdgeNodes[0];
                     edgeNodes[1] = *en;
                     g_proj = tmp;
                     minAngle = a2;
@@ -7603,9 +7604,9 @@ namespace ttcr {
                     continue;
                 }
                 
-                x1 = {nodes[edgeNodes[1]].getX(),
-                    nodes[edgeNodes[1]].getY(),
-                    nodes[edgeNodes[1]].getZ()};
+                x1 = {nodes[tmpEdgeNodes[1]].getX(),
+                    nodes[tmpEdgeNodes[1]].getY(),
+                    nodes[tmpEdgeNodes[1]].getZ()};
                 x2 = {nodes[*en].getX(),
                     nodes[*en].getY(),
                     nodes[*en].getZ()};
@@ -7620,8 +7621,8 @@ namespace ttcr {
                 
                 mid_pt = static_cast<T1>(0.5) * ( curr_pt + pt_i0 );
                 
-                test1 = testInTriangle(&(nodes[ edgeNodes[0] ]),
-                                       &(nodes[ edgeNodes[1] ]),
+                test1 = testInTriangle(&(nodes[ tmpEdgeNodes[0] ]),
+                                       &(nodes[ tmpEdgeNodes[1] ]),
                                        &(nodes[ *en ]), mid_pt);
                 
                 b = pt_i0 - x1;
@@ -7643,6 +7644,7 @@ namespace ttcr {
                 if ( test1 && test2 && test3 ) {
                     pt_i = pt_i0;
                     edgeNodes[0] = *en;
+                    edgeNodes[1] = tmpEdgeNodes[1];
                     g_proj = tmp;
                     minAngle = a2;
 #ifdef DEBUG_RP
@@ -7691,23 +7693,23 @@ namespace ttcr {
             faces.insert({nodeNo, tmpnodes[1], tmpnodes[2]});
         }
         
-        
+        bool found = false;
+
+        sxyz<T1> g_old = g;
+        T1 minAngle = 9999.9;
         // find projection that is closest to current gradient
         for ( auto fn=faces.begin(); fn!=faces.end(); ++fn ) {
-            sxyz<T1> gtmp = projectOnFace(g, *fn);
+            sxyz<T1> gtmp = projectOnFace(g_old, *fn);
             
             // find pt of intersection with opposing edge
-            
-            edgeNodes[0] = (*fn)[1];
-            edgeNodes[1] = (*fn)[2];
-            
-            sxyz<T1> x1 = {nodes[edgeNodes[0]].getX(),
-                nodes[edgeNodes[0]].getY(),
-                nodes[edgeNodes[0]].getZ()};
-            sxyz<T1> x2 = {nodes[edgeNodes[1]].getX(),
-                nodes[edgeNodes[1]].getY(),
-                nodes[edgeNodes[1]].getZ()};
-            sxyz<T1> x4 = curr_pt + static_cast<T1>(10.0)*x1.getDistance(x2) * gtmp;
+
+            sxyz<T1> x1 = {nodes[(*fn)[1]].getX(),
+                nodes[(*fn)[1]].getY(),
+                nodes[(*fn)[1]].getZ()};
+            sxyz<T1> x2 = {nodes[(*fn)[2]].getX(),
+                nodes[(*fn)[2]].getY(),
+                nodes[(*fn)[2]].getZ()};
+            sxyz<T1> x4 = curr_pt + static_cast<T1>(100.0)*x1.getDistance(x2) * gtmp;
             
             sxyz<T1> a = x2 - x1;
             sxyz<T1> b = x4 - curr_pt;
@@ -7715,22 +7717,29 @@ namespace ttcr {
             
             sxyz<T1> ab = cross(a, b);
             
-            pt_i = x1 + (dot(cross(c, b), ab) / norm2(ab)) * a;
-            
+            sxyz<T1> pt_i2 = x1 + (dot(cross(c, b), ab) / norm2(ab)) * a;
+
             // check if pt_i is between x1 and x2
-            
-            b = pt_i - x1;
+            b = pt_i2 - x1;
             T1 dab = dot(a, b);
             
             // check if going in the same direction as g
-            b = pt_i - curr_pt;
-            
-            if ( dab > 0.0 && dab <= norm2(a) && dot(b, g) > 0.0) {
+            c = pt_i2 - curr_pt;
+
+            T1 dcg = dot(c, g);
+            T1 angle = std::acos(dcg/(norm(c)*norm(g)));
+
+            if ( dab > 0.0 && norm2(b) <= norm2(a) && dcg > 0.0 && angle < minAngle ) {
                 g = gtmp;
-                return true;
+                pt_i = pt_i2;
+                edgeNodes[0] = (*fn)[1];
+                edgeNodes[1] = (*fn)[2];
+
+                minAngle = angle;
+                found = true;
             }
         }
-        return false;
+        return found;
     }
     
 }
