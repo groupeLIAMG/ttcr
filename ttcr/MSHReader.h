@@ -383,6 +383,7 @@ namespace ttcr {
                         fin >> version >> file_type;
                         if ( version == 2.2 && file_type == 0 ) {
                             format_ok = true;
+                            break;
                         }
                     }
                 }
@@ -390,6 +391,7 @@ namespace ttcr {
             }
             catch (std::ifstream::failure e) {
                 std::cerr << "Exception opening/reading/closing file " << filename << std::endl;
+                return false;
             }
             return format_ok;
         }
