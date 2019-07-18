@@ -4226,24 +4226,26 @@ namespace ttcr {
             T1 a2 = acos(dot(tmp, g)/(norm(tmp)*norm(g)));
             
 #ifdef DEBUG_RP
-            std::cout << "\n\n\n\n\n# In projectOnFace\n\n";
-            std::cout << "fig = plt.figure()\nax = fig.add_subplot(111, projection='3d')\n";
-            std::cout << "cpt = np.array([" << curr_pt.x << ", " << curr_pt.y << ", " << curr_pt.z << "])\n";
-            std::cout << "g = np.array([" << g.x << ", " << g.y << ", " << g.z << "])\n";
-            std::cout << "pt2 = cpt + 0.05*g\n";
-            std::cout << "c1 = np.array([" << nodes[edgeNodes[0]].getX() << ", " << nodes[edgeNodes[0]].getY() << ", " << nodes[edgeNodes[0]].getZ() << "])\n";
-            std::cout << "c2 = np.array([" << nodes[edgeNodes[1]].getX() << ", " << nodes[edgeNodes[1]].getY() << ", " << nodes[edgeNodes[1]].getZ() << "])\n";
-            std::cout << "g2 = np.array([" << tmp.x << ", " << tmp.y << ", " << tmp.z << "])\n";
-            std::cout << "c3 = np.array([" << nodes[*en].getX() << ", " << nodes[*en].getY() << ", " << nodes[*en].getZ() << "])\n";
-            std::cout << "a2 = " << a2 << "\n";
-            std::cout << "pt3 = cpt + 0.05*g2\n";
-            std::cout << "ax.plot([c1[0], c2[0], c3[0], c1[0]], [c1[1], c2[1], c3[1], c1[1]], [c1[2], c2[2], c3[2], c1[2]])\n";
-            std::cout << "ax.plot([cpt[0], pt2[0]], [cpt[1], pt2[1]], [cpt[2], pt2[2]], c='g')\n";
-            std::cout << "ax.plot([cpt[0], pt3[0]], [cpt[1], pt3[1]], [cpt[2], pt3[2]], c='k')\n";
-            std::cout << "ax.scatter(cpt[0], cpt[1], cpt[2], c='r')\n";
-            std::cout << "ax.scatter(c1[0], c1[1], c1[2], c='k')\n";
-            std::cout << "ax.scatter(c2[0], c2[1], c2[2], c='k')\n";
-            std::cout << "ax.scatter(pt2[0], pt2[1], pt2[2], c='g')\n";
+            if ( verbose > 1 ) {
+                std::cout << "\n\n\n\n\n# In projectOnFace\n\n";
+                std::cout << "fig = plt.figure()\nax = fig.add_subplot(111, projection='3d')\n";
+                std::cout << "cpt = np.array([" << curr_pt.x << ", " << curr_pt.y << ", " << curr_pt.z << "])\n";
+                std::cout << "g = np.array([" << g.x << ", " << g.y << ", " << g.z << "])\n";
+                std::cout << "pt2 = cpt + 0.05*g\n";
+                std::cout << "c1 = np.array([" << nodes[tmpEdgeNodes[0]].getX() << ", " << nodes[tmpEdgeNodes[0]].getY() << ", " << nodes[tmpEdgeNodes[0]].getZ() << "])\n";
+                std::cout << "c2 = np.array([" << nodes[tmpEdgeNodes[1]].getX() << ", " << nodes[tmpEdgeNodes[1]].getY() << ", " << nodes[tmpEdgeNodes[1]].getZ() << "])\n";
+                std::cout << "g2 = np.array([" << tmp.x << ", " << tmp.y << ", " << tmp.z << "])\n";
+                std::cout << "c3 = np.array([" << nodes[*en].getX() << ", " << nodes[*en].getY() << ", " << nodes[*en].getZ() << "])\n";
+                std::cout << "a2 = " << a2 << "\n";
+                std::cout << "pt3 = cpt + 0.05*g2\n";
+                std::cout << "ax.plot([c1[0], c2[0], c3[0], c1[0]], [c1[1], c2[1], c3[1], c1[1]], [c1[2], c2[2], c3[2], c1[2]])\n";
+                std::cout << "ax.plot([cpt[0], pt2[0]], [cpt[1], pt2[1]], [cpt[2], pt2[2]], c='g')\n";
+                std::cout << "ax.plot([cpt[0], pt3[0]], [cpt[1], pt3[1]], [cpt[2], pt3[2]], c='k')\n";
+                std::cout << "ax.scatter(cpt[0], cpt[1], cpt[2], c='r')\n";
+                std::cout << "ax.scatter(c1[0], c1[1], c1[2], c='k')\n";
+                std::cout << "ax.scatter(c2[0], c2[1], c2[2], c='k')\n";
+                std::cout << "ax.scatter(pt2[0], pt2[1], pt2[2], c='g')\n";
+            }
 #endif
             if ( a2 < minAngle ) {
                 // compute intersection point and check if within edge nodes
@@ -4281,9 +4283,11 @@ namespace ttcr {
                 b = pt_i0 - curr_pt;
                 T1 theta = acos(dot(b, g) / (norm(b)*norm(g)));
 #ifdef DEBUG_RP
-                std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
-                std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='g')\n";
-                std::cout << "th = " << theta*180.0/3.14159 << '\n';
+                if ( verbose > 1 ) {
+                    std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
+                    std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='g')\n";
+                    std::cout << "th = " << theta*180.0/3.14159 << '\n';
+                }
 #endif
                 bool test3 = theta < theta_cut;  // defined in ttcr_t.h
                 
@@ -4293,16 +4297,18 @@ namespace ttcr {
                     g_proj = tmp;
                     minAngle = a2;
 #ifdef DEBUG_RP
-                    std::cout << "\n\n\n\n\n# found\n\nfig = plt.figure()\nax = fig.add_subplot(111, projection='3d')\n";
-                    std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
-                    std::cout << "c1 = np.array([" << nodes[edgeNodes[0]].getX() << ", " << nodes[edgeNodes[0]].getY() << ", " << nodes[edgeNodes[0]].getZ() << "])\n";
-                    std::cout << "c2 = np.array([" << nodes[edgeNodes[1]].getX() << ", " << nodes[edgeNodes[1]].getY() << ", " << nodes[edgeNodes[1]].getZ() << "])\n";
-                    std::cout << "ax.plot([c1[0], c2[0]], [c1[1], c2[1]], [c1[2], c2[2]], 'k')\n";
-                    
-                    std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='r')\n";
-                    std::cout << "ax.scatter(c1[0], c1[1], c1[2], c='k')\n";
-                    std::cout << "ax.scatter(c2[0], c2[1], c2[2], c='k')\n";
-                    std::cout << "plt.show()\n\n\n\n\n\n";
+                    if ( verbose > 1 ) {
+                        std::cout << "\n\n\n\n\n# found\n\nfig = plt.figure()\nax = fig.add_subplot(111, projection='3d')\n";
+                        std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
+                        std::cout << "c1 = np.array([" << nodes[edgeNodes[0]].getX() << ", " << nodes[edgeNodes[0]].getY() << ", " << nodes[edgeNodes[0]].getZ() << "])\n";
+                        std::cout << "c2 = np.array([" << nodes[edgeNodes[1]].getX() << ", " << nodes[edgeNodes[1]].getY() << ", " << nodes[edgeNodes[1]].getZ() << "])\n";
+                        std::cout << "ax.plot([c1[0], c2[0]], [c1[1], c2[1]], [c1[2], c2[2]], 'k')\n";
+
+                        std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='r')\n";
+                        std::cout << "ax.scatter(c1[0], c1[1], c1[2], c='k')\n";
+                        std::cout << "ax.scatter(c2[0], c2[1], c2[2], c='k')\n";
+                        std::cout << "plt.show()\n\n\n\n\n\n";
+                    }
 #endif
                     continue;
                 }
@@ -4335,10 +4341,12 @@ namespace ttcr {
                 b = pt_i0 - curr_pt;
                 theta = acos(dot(b, g) / (norm(b)*norm(g)));
 #ifdef DEBUG_RP
-                std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
-                std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='k')\n";
-                std::cout << "plt.show()\n\n";
-                std::cout << "th = " << theta*180.0/3.14159 << '\n';
+                if ( verbose > 1 ) {
+                    std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
+                    std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='k')\n";
+                    std::cout << "plt.show()\n\n";
+                    std::cout << "th = " << theta*180.0/3.14159 << '\n';
+                }
 #endif
                 test3 = theta < theta_cut;  // defined in ttcr_t.h
                 
@@ -4348,15 +4356,17 @@ namespace ttcr {
                     g_proj = tmp;
                     minAngle = a2;
 #ifdef DEBUG_RP
-                    std::cout << "\n\n\n\n\n# found\n\nfig = plt.figure()\nax = fig.add_subplot(111, projection='3d')\n";
-                    std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
-                    std::cout << "c1 = np.array([" << nodes[edgeNodes[0]].getX() << ", " << nodes[edgeNodes[0]].getY() << ", " << nodes[edgeNodes[0]].getZ() << "])\n";
-                    std::cout << "c2 = np.array([" << nodes[edgeNodes[1]].getX() << ", " << nodes[edgeNodes[1]].getY() << ", " << nodes[edgeNodes[1]].getZ() << "])\n";
-                    std::cout << "ax.plot([c1[0], c2[0]], [c1[1], c2[1]], [c1[2], c2[2]], 'k')\n";
-                    std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='r')\n";
-                    std::cout << "ax.scatter(c1[0], c1[1], c1[2], c='k')\n";
-                    std::cout << "ax.scatter(c2[0], c2[1], c2[2], c='k')\n";
-                    std::cout << "plt.show()\n\n\n\n\n\n";
+                    if ( verbose > 1 ) {
+                        std::cout << "\n\n\n\n\n# found\n\nfig = plt.figure()\nax = fig.add_subplot(111, projection='3d')\n";
+                        std::cout << "pti = np.array([" << pt_i0.x << ", " << pt_i0.y << ", " << pt_i0.z << "])\n";
+                        std::cout << "c1 = np.array([" << nodes[edgeNodes[0]].getX() << ", " << nodes[edgeNodes[0]].getY() << ", " << nodes[edgeNodes[0]].getZ() << "])\n";
+                        std::cout << "c2 = np.array([" << nodes[edgeNodes[1]].getX() << ", " << nodes[edgeNodes[1]].getY() << ", " << nodes[edgeNodes[1]].getZ() << "])\n";
+                        std::cout << "ax.plot([c1[0], c2[0]], [c1[1], c2[1]], [c1[2], c2[2]], 'k')\n";
+                        std::cout << "ax.scatter(pti[0], pti[1], pti[2], c='r')\n";
+                        std::cout << "ax.scatter(c1[0], c1[1], c1[2], c='k')\n";
+                        std::cout << "ax.scatter(c2[0], c2[1], c2[2], c='k')\n";
+                        std::cout << "plt.show()\n\n\n\n\n\n";
+                    }
 #endif
                     continue;
                 }
@@ -4391,22 +4401,21 @@ namespace ttcr {
             faces.insert({nodeNo, tmpnodes[1], tmpnodes[2]});
         }
         
-        
+        bool found = false;
+        sxyz<T1> g_old = g;
+        T1 minAngle = 9999.9;
         // find projection that is closest to current gradient
         for ( auto fn=faces.begin(); fn!=faces.end(); ++fn ) {
-            sxyz<T1> gtmp = projectOnFace(g, *fn);
+            sxyz<T1> gtmp = projectOnFace(g_old, *fn);
             
             // find pt of intersection with opposing edge
             
-            edgeNodes[0] = (*fn)[1];
-            edgeNodes[1] = (*fn)[2];
-            
-            sxyz<T1> x1 = {nodes[edgeNodes[0]].getX(),
-                nodes[edgeNodes[0]].getY(),
-                nodes[edgeNodes[0]].getZ()};
-            sxyz<T1> x2 = {nodes[edgeNodes[1]].getX(),
-                nodes[edgeNodes[1]].getY(),
-                nodes[edgeNodes[1]].getZ()};
+            sxyz<T1> x1 = {nodes[(*fn)[1]].getX(),
+                nodes[(*fn)[1]].getY(),
+                nodes[(*fn)[1]].getZ()};
+            sxyz<T1> x2 = {nodes[(*fn)[2]].getX(),
+                nodes[(*fn)[2]].getY(),
+                nodes[(*fn)[2]].getZ()};
             sxyz<T1> x4 = curr_pt + static_cast<T1>(10.0)*x1.getDistance(x2) * gtmp;
             
             sxyz<T1> a = x2 - x1;
@@ -4415,22 +4424,30 @@ namespace ttcr {
             
             sxyz<T1> ab = cross(a, b);
             
-            pt_i = x1 + (dot(cross(c, b), ab) / norm2(ab)) * a;
+            sxyz<T1> pt_i2 = x1 + (dot(cross(c, b), ab) / norm2(ab)) * a;
             
             // check if pt_i is between x1 and x2
             
-            b = pt_i - x1;
+            b = pt_i2 - x1;
             T1 dab = dot(a, b);
             
             // check if going in the same direction as g
-            b = pt_i - curr_pt;
-            
-            if ( dab > 0.0 && dab <= norm2(a) && dot(b, g) > 0.0) {
+            c = pt_i2 - curr_pt;
+
+            T1 dcg = dot(c, g);
+            T1 angle = std::acos(dcg/(norm(c)*norm(g)));
+
+            if ( dab > 0.0 && norm2(b) <= norm2(a) && dcg > 0.0 && angle < minAngle ) {
                 g = gtmp;
-                return true;
+                pt_i = pt_i2;
+                edgeNodes[0] = (*fn)[1];
+                edgeNodes[1] = (*fn)[2];
+
+                minAngle = angle;
+                found = true;
             }
         }
-        return false;
+        return found;
     }
 }
 
