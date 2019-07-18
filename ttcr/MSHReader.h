@@ -369,28 +369,28 @@ namespace ttcr {
         mutable std::vector<std::vector<int>> physicalIndices;
         
         bool checkFormat() const {
-            std::ifstream fin(filename.c_str());
-            try {
-                fin.exceptions(fin.failbit);
-            } catch (const std::ios_base::failure& e)
-            {
-                std::cerr << "Error: failed to open " << filename << std::endl;
-                return false;
-            }
             bool format_ok = false;
-            std::string line;
-            while ( fin ) {
-                getline( fin, line );
-                if ( line.find("$MeshFormat") != std::string::npos ) {
-                    double version;
-                    int file_type;
-                    fin >> version >> file_type;
-                    if ( version == 2.2 && file_type == 0 ) {
-                        format_ok = true;
+            std::ifstream fin;
+            fin.exceptions ( std::ifstream::failbit | std::ifstream::badbit );
+            try {
+                fin.open(filename.c_str());
+                std::string line;
+                while ( fin ) {
+                    getline( fin, line );
+                    if ( line.find("$MeshFormat") != std::string::npos ) {
+                        double version;
+                        int file_type;
+                        fin >> version >> file_type;
+                        if ( version == 2.2 && file_type == 0 ) {
+                            format_ok = true;
+                        }
                     }
                 }
+                fin.close();
             }
-            fin.close();
+            catch (std::ifstream::failure e) {
+                std::cerr << "Exception opening/reading/closing file " << filename << std::endl;
+            }
             return format_ok;
         }
         
