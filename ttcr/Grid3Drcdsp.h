@@ -29,9 +29,9 @@ namespace ttcr {
                     const T1 ddx, const T1 ddy, const T1 ddz,
                     const T1 minx, const T1 miny, const T1 minz,
                     const T2 ns, const bool ttrp, const T2 nd, const T1 drad,
-                    const size_t nt=1, const int verb=0) :
+                    const size_t nt=1) :
         Grid3Drc<T1,T2,Node3Dc<T1,T2>,CELL>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt),
-        nSecondary(ns), nTertiary(nd), nPermanent(0), verbose(verb),
+        nSecondary(ns), nTertiary(nd), nPermanent(0),
         dynRadius(drad),
         tempNodes(std::vector<std::vector<Node3Dcd<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
@@ -86,7 +86,6 @@ namespace ttcr {
         T2 nSecondary;                 // number of permanent secondary
         T2 nTertiary;                   // number of temporary secondary
         T2 nPermanent;                 // total nb of primary & permanent secondary
-        bool verbose;
         T1 dynRadius;
 
         // we will store temporary nodes in a separate container.  This is to

@@ -40,12 +40,12 @@ namespace ttcr {
                     const int rp, const bool rptt, const T1 min_dist,
                     const T1 drad, const size_t nt=1, const int verb=0) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, min_dist, nt),
-        nSecondary(ns), nTertiary(nd), nPermanent(0), verbose(verb),
+        nSecondary(ns), nTertiary(nd), nPermanent(0),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dcd<T1,T2>>>(nt)),
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
         {
-            this->buildGridNodes(no, ns, nt, verb);
+            this->buildGridNodes(no, ns, nt);
             this->buildGridNeighbors();
             this->source_radius = rad;
             nPermanent = static_cast<T2>(this->nodes.size());
@@ -87,7 +87,6 @@ namespace ttcr {
         T2 nSecondary;
         T2 nTertiary;
         T2 nPermanent;
-        bool verbose;
         T1 dyn_radius;
         
         // we will store temporary nodes in a separate container.  This is to

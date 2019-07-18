@@ -180,11 +180,9 @@ namespace ttcr {
         void saveModelVTU(const std::string &, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
         void saveModelVTR(const std::string &, const double*,
-                          const bool saveSlowness=true,
-                          const int verbose=0) const;
+                          const bool saveSlowness=true) const;
 #endif
-        void saveModelCRT(const std::string &, const double*,
-                          const int verbose=0) const;
+        void saveModelCRT(const std::string &, const double*) const;
         
         void saveModelXYZ(const std::string &) const;
         
@@ -237,7 +235,7 @@ namespace ttcr {
 
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const int, const size_t, const int);
+                            const int, const size_t);
 
         void buildGridNeighbors() {
             // Index the neighbors nodes of each cell
@@ -478,7 +476,7 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                               const int nsecondary,
-                                              const size_t nt, const int verbose) {
+                                              const size_t nt) {
         
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
@@ -974,8 +972,8 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::saveModelVTR(const std::string &fname,
-                                            const double *d, const bool saveSlowness,
-                                            const int verbose) const {
+                                            const double *d,
+                                            const bool saveSlowness) const {
         
         double x[] = { nodes[0].getX(), nodes[0].getX(),
             nodes[0].getY(), nodes[0].getY(),
@@ -1079,8 +1077,7 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::saveModelCRT(const std::string &fname,
-                                            const double *d,
-                                            const int verbose) const {
+                                            const double *d) const {
         
         double x[] = { nodes[0].getX(), nodes[0].getX(),
             nodes[0].getY(), nodes[0].getY(),

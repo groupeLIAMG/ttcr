@@ -32,6 +32,8 @@
 
 namespace ttcr {
 
+    extern int verbose;
+
     const double small = 1.e-5;
     const double small2 = small*small;
     const double pi = 4.0*atan(1.0);

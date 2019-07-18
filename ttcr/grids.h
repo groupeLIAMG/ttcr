@@ -192,7 +192,7 @@ namespace ttcr {
         }
         
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             
             std::cout << "Reading model file " << par.modelfile
             << "\n  Rectilinear grid in file has"
@@ -218,7 +218,7 @@ namespace ttcr {
         switch (par.method) {
             case SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -237,7 +237,7 @@ namespace ttcr {
                                                     par.tt_from_rp,
                                                     par.interpVel, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -254,7 +254,7 @@ namespace ttcr {
             }
             case FAST_SWEEPING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -273,7 +273,7 @@ namespace ttcr {
                                                     par.interpVel, nt);
                 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout.flush();
                 }
@@ -282,7 +282,7 @@ namespace ttcr {
             }
             case DYNAMIC_SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -295,8 +295,7 @@ namespace ttcr {
                                                                                         par.tt_from_rp,
                                                                                         par.nTertiary,
                                                                                         par.radius_tertiary_nodes,
-                                                                                        nt,
-                                                                                        par.verbose);
+                                                                                        nt);
                 else {
                     g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                      d[0], d[1], d[2],
@@ -306,11 +305,10 @@ namespace ttcr {
                                                      par.nTertiary,
                                                      par.radius_tertiary_nodes,
                                                      par.interpVel,
-                                                     nt,
-                                                     par.verbose);
+                                                     nt);
                 }
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -369,7 +367,7 @@ namespace ttcr {
         d[1] = (yrange[1]-yrange[0])/(nnodes[1]-1);
         d[2] = (zrange[1]-zrange[0])/(nnodes[2]-1);
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile
             << "\n  Rectilinear grid in file has"
             << "\n    " << nnodes[0]*nnodes[1]*nnodes[2] << " nodes"
@@ -432,7 +430,7 @@ namespace ttcr {
                 switch (par.method) {
                     case SHORTEST_PATH:
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drnsp) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drnsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drnsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], d[1], d[2],
@@ -441,7 +439,7 @@ namespace ttcr {
                                                         par.tt_from_rp,
                                                         par.interpVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -453,14 +451,14 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
-                        if ( par.verbose && par.inverseDistance )
+                        if ( verbose ) std::cout << "done.\n";
+                        if ( verbose && par.inverseDistance )
                             std::cout << "  Inverse distance interpolation was used.\n";
                         break;
                         
                     case FAST_SWEEPING:
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drnfs) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
@@ -468,7 +466,7 @@ namespace ttcr {
                                                         par.weno3, par.tt_from_rp,
                                                         par.interpVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -480,7 +478,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         break;
                         
                     case FAST_MARCHING:
@@ -491,7 +489,7 @@ namespace ttcr {
 
                     case DYNAMIC_SHORTEST_PATH:
 
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drndsp) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drndsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 
                         g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
@@ -502,11 +500,10 @@ namespace ttcr {
                                                          par.nTertiary,
                                                          par.radius_tertiary_nodes,
                                                          par.interpVel,
-                                                         nt,
-                                                         par.verbose);
+                                                         nt);
 
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -518,7 +515,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         break;
 
                     default:
@@ -581,7 +578,7 @@ namespace ttcr {
                             chi[n] = x->GetComponent(n, 0);
                         }
                         foundChi = true;
-                        if ( par.verbose ) { cout << "Model contains anisotropy ratio chi\n"; }
+                        if ( verbose ) { cout << "Model contains anisotropy ratio chi\n"; }
                     }
                     if ( cd->HasArray("psi") ) {
                         
@@ -598,7 +595,7 @@ namespace ttcr {
                             psi[n] = x->GetComponent(n, 0);
                         }
                         foundPsi = true;
-                        if ( par.verbose ) { cout << "Model contains anisotropy ratio xi\n"; }
+                        if ( verbose ) { cout << "Model contains anisotropy ratio xi\n"; }
                     }
                     break;
                 }
@@ -607,7 +604,7 @@ namespace ttcr {
                 switch (par.method) {
                     case SHORTEST_PATH:
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         if ( foundChi && foundPsi ) {
                             g = new Grid3Drcsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
@@ -621,7 +618,7 @@ namespace ttcr {
                                                                                                    par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt);
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
@@ -641,17 +638,17 @@ namespace ttcr {
                                 std::abort();
                             }
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         break;
                     case FAST_SWEEPING:
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drcfs) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drcfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -663,7 +660,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         break;
                         
                     case FAST_MARCHING:
@@ -674,7 +671,7 @@ namespace ttcr {
 
                     case DYNAMIC_SHORTEST_PATH:
 
-                        if ( par.verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drcdsp<T,uint32_t,Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                             d[0], d[1], d[2],
@@ -683,10 +680,9 @@ namespace ttcr {
                                                                                             par.tt_from_rp,
                                                                                             par.nTertiary,
                                                                                             par.radius_tertiary_nodes,
-                                                                                            nt,
-                                                                                            par.verbose);
+                                                                                            nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
@@ -697,7 +693,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         break;
 
                     default:
@@ -726,7 +722,7 @@ namespace ttcr {
             return nullptr;
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile << " ... ";
             std::cout.flush();
         }
@@ -745,7 +741,7 @@ namespace ttcr {
         reader.readTetrahedronElements(tetrahedra);
         reader.readSlowness(slowness, constCells);
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << tetrahedra.size() << " cells";
@@ -761,7 +757,7 @@ namespace ttcr {
         switch (par.method) {
             case SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -772,8 +768,7 @@ namespace ttcr {
                                                     par.nn[0],
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt,
-                                                    par.verbose);
+                                                    nt);
                 else
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -781,10 +776,9 @@ namespace ttcr {
                                                     par.interpVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt,
-                                                    par.verbose);
+                                                    nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -794,7 +788,7 @@ namespace ttcr {
             }
             case FAST_MARCHING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -814,7 +808,7 @@ namespace ttcr {
                                                     par.min_distance_rp,
                                                     nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout.flush();
                 }
@@ -823,7 +817,7 @@ namespace ttcr {
             }
             case FAST_SWEEPING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -868,7 +862,7 @@ namespace ttcr {
                 else
                     dynamic_cast<Grid3Dunfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout << "Initiated ordering with " << ptsRef.size() << " reference points and l-"
                     << par.order << " metric\n";
@@ -879,7 +873,7 @@ namespace ttcr {
             }
             case DYNAMIC_SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -895,7 +889,7 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      nt,
-                                                     par.verbose);
+                                                     verbose);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
@@ -908,9 +902,9 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      nt,
-                                                     par.verbose);
+                                                     verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -926,7 +920,7 @@ namespace ttcr {
             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         std::cout.flush();
-        if ( par.verbose && par.method == SHORTEST_PATH ) {
+        if ( verbose && par.method == SHORTEST_PATH ) {
             std::cout << "Interpolating slowness at secondary nodes ... ";
             std::cout.flush();
         }
@@ -940,7 +934,7 @@ namespace ttcr {
             delete g;
             return nullptr;
         }
-        if ( par.verbose && par.method == SHORTEST_PATH ) {
+        if ( verbose && par.method == SHORTEST_PATH ) {
             std::cout << "done.\n";
             std::cout.flush();
         }
@@ -966,7 +960,7 @@ namespace ttcr {
             return nullptr;
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile << " ... ";
             std::cout.flush();
         }
@@ -977,7 +971,7 @@ namespace ttcr {
         
         reader.readNodes3D(nodes);
         reader.readTetrahedronElements(tetrahedra);
-        if ( par.verbose ) std::cout << "done.\n";
+        if ( verbose ) std::cout << "done.\n";
         std::map<std::string, double> slownesses;
         
         bool constCells = true;
@@ -1030,7 +1024,7 @@ namespace ttcr {
             }
             fin.close();
             
-            if ( par.verbose ) {
+            if ( verbose ) {
                 for ( size_t n=0; n<reader.getPhysicalNames(3).size(); ++n ) {
                     std::cout << "  Velocity for " << reader.getPhysicalNames(3)[n] << " is "
                     << 1./slownesses[ reader.getPhysicalNames(3)[n] ] << '\n';
@@ -1042,7 +1036,7 @@ namespace ttcr {
             }
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << tetrahedra.size() << " cells";
@@ -1058,7 +1052,7 @@ namespace ttcr {
         switch (par.method) {
             case SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -1069,8 +1063,7 @@ namespace ttcr {
                                                     par.nn[0],
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt,
-                                                    par.verbose);
+                                                    nt);
                 else
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -1078,10 +1071,9 @@ namespace ttcr {
                                                     par.interpVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt,
-                                                    par.verbose);
+                                                    nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -1091,7 +1083,7 @@ namespace ttcr {
             }
             case FAST_MARCHING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -1112,12 +1104,12 @@ namespace ttcr {
                                                     par.min_distance_rp,
                                                     nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout.flush();
                 }
                 if ( par.source_radius>0.0 ) {
-                    if ( par.verbose ) {
+                    if ( verbose ) {
                         std::cout << "Setting source radius to " << par.source_radius << '\n';
                     }
                     g->setSourceRadius( par.source_radius );
@@ -1127,7 +1119,7 @@ namespace ttcr {
             }
             case FAST_SWEEPING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -1173,7 +1165,7 @@ namespace ttcr {
                 else
                     dynamic_cast<Grid3Dunfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout << "Initiated ordering with " << ptsRef.size() << " reference points and l-"
                     << par.order << " metric\n";
@@ -1184,7 +1176,7 @@ namespace ttcr {
             }
             case DYNAMIC_SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -1200,7 +1192,7 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      nt,
-                                                     par.verbose);
+                                                     verbose);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
@@ -1213,9 +1205,9 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      nt,
-                                                     par.verbose);
+                                                     verbose);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -1232,7 +1224,7 @@ namespace ttcr {
             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
         std::cout.flush();
-        if ( par.verbose && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) )  {
+        if ( verbose && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) )  {
             std::cout << "Interpolating slowness at secondary nodes ... ";
             std::cout.flush();
         }
@@ -1247,7 +1239,7 @@ namespace ttcr {
             return nullptr;
         }
 
-        if ( par.verbose && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) ) {
+        if ( verbose && ( par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH ) ) {
             std::cout << "done.\n";
             std::cout.flush();
         }
@@ -1266,9 +1258,9 @@ namespace ttcr {
             size_t i = filename.rfind(".msh");
             filename.replace(i, 4, ".vtu");
             
-            if ( par.verbose ) std::cout << "Saving model in " << filename << " ... ";
+            if ( verbose ) std::cout << "Saving model in " << filename << " ... ";
             g->saveModelVTU(filename, false);
-            if ( par.verbose ) std::cout << "done.\n";
+            if ( verbose ) std::cout << "done.\n";
 #else
             std::cerr << "Error: program not compiled with VTK support" << std::endl;
             return nullptr;
@@ -1394,7 +1386,7 @@ namespace ttcr {
         }
         
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             
             std::cout << "Reading model file " << par.modelfile
             << "\n  Rectilinear grid in file has"
@@ -1423,7 +1415,7 @@ namespace ttcr {
         switch (par.method) {
             case SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -1439,7 +1431,7 @@ namespace ttcr {
                                                     par.nn[0], par.nn[2],
                                                     nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -1456,7 +1448,7 @@ namespace ttcr {
             }
             case FAST_SWEEPING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -1474,7 +1466,7 @@ namespace ttcr {
                                                     par.rotated_template, nt);
                 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout.flush();
                 }
@@ -1538,7 +1530,7 @@ namespace ttcr {
             abort();
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile
             << "\n  Rectilinear grid in file has"
             << "\n    " << nnodes[0]*nnodes[1]*nnodes[2] << " nodes"
@@ -1606,14 +1598,14 @@ namespace ttcr {
                 switch ( par.method ) {
                     case SHORTEST_PATH:
                     {
-                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drnsp) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drnsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid2Drnsp<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0],
                                                        par.nn[0], par.nn[2],
                                                        nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -1625,7 +1617,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
@@ -1640,14 +1632,14 @@ namespace ttcr {
                             return nullptr;
                         }
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drnfs) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid2Drnfs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0], par.epsilon,
                                                        par.nitermax, par.weno3,
                                                        par.rotated_template, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -1659,7 +1651,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
@@ -1730,7 +1722,7 @@ namespace ttcr {
                             xi[n] = x->GetComponent(n, 0);
                         }
                         foundXi = true;
-                        if ( par.verbose ) { cout << "Model contains anisotropy ratio\n"; }
+                        if ( verbose ) { cout << "Model contains anisotropy ratio\n"; }
                     }
                     if ( cd->HasArray("theta") ) {
                         
@@ -1747,7 +1739,7 @@ namespace ttcr {
                             theta[n] = x->GetComponent(n, 0);
                         }
                         foundTheta = true;
-                        if ( par.verbose ) { cout << "Model contains anisotropy tilt angle\n"; }
+                        if ( verbose ) { cout << "Model contains anisotropy tilt angle\n"; }
                     }
                     break;
                 }
@@ -1756,7 +1748,7 @@ namespace ttcr {
                 switch ( par.method ) {
                     case SHORTEST_PATH:
                     {
-                        if ( par.verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
+                        if ( verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         if ( foundTheta ) {
                             if ( foundXi==false ) { std::cerr << "Error: Model should contain anisotropy ratio" << std::endl; abort(); }
@@ -1774,7 +1766,7 @@ namespace ttcr {
                                                                                                      par.nn[0], par.nn[2], nt);
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
@@ -1803,7 +1795,7 @@ namespace ttcr {
                                 std::abort();
                             }
                         }
-                        if ( par.verbose ) cout << "done.\n";
+                        if ( verbose ) cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
@@ -1819,14 +1811,14 @@ namespace ttcr {
                             return nullptr;
                         }
                         
-                        if ( par.verbose ) { std::cout << "Building grid (Grid2Drcfs) ... "; std::cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drcfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid2Drcfs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0], par.epsilon,
                                                        par.nitermax, par.weno3,
                                                        par.rotated_template, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                        if ( par.verbose ) {
+                        if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid nodes ... ";
                             std::cout.flush();
@@ -1838,7 +1830,7 @@ namespace ttcr {
                             delete g;
                             return nullptr;
                         }
-                        if ( par.verbose ) std::cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
@@ -1873,7 +1865,7 @@ namespace ttcr {
             return nullptr;
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile << " ... ";
             std::cout.flush();
         }
@@ -1901,7 +1893,7 @@ namespace ttcr {
         reader.readSlowness(slowness, constCells);
         
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
@@ -1917,7 +1909,7 @@ namespace ttcr {
         switch (par.method) {
             case SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     cout.flush();
                 }
@@ -1927,7 +1919,7 @@ namespace ttcr {
                 else
                     g = new Grid2Dunsp<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     cout.flush();
@@ -1937,7 +1929,7 @@ namespace ttcr {
             }
             case FAST_MARCHING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -1947,7 +1939,7 @@ namespace ttcr {
                 else
                     g = new Grid2Dunfm<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout.flush();
                 }
@@ -1956,7 +1948,7 @@ namespace ttcr {
             }
             case FAST_SWEEPING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -1982,7 +1974,7 @@ namespace ttcr {
                 else
                     dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout << "Initiated ordering with " << ptsRef.size() << " reference points and l-"
                     << par.order << " metric\n";
@@ -2023,7 +2015,7 @@ namespace ttcr {
             return nullptr;
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile << " ... ";
             std::cout.flush();
         }
@@ -2043,7 +2035,7 @@ namespace ttcr {
 
         reader.readNodes2D(nodes, d);
         reader.readTriangleElements(triangles);
-        if ( par.verbose ) std::cout << "done.\n";
+        if ( verbose ) std::cout << "done.\n";
         std::map<std::string, double> slownesses;
         
         bool constCells = true;
@@ -2096,7 +2088,7 @@ namespace ttcr {
             }
             fin.close();
             
-            if ( par.verbose ) {
+            if ( verbose ) {
                 for ( size_t n=0; n<reader.getPhysicalNames(2).size(); ++n ) {
                     std::cout << "  Velocity for " << reader.getPhysicalNames(2)[n] << " is "
                     << 1./slownesses[ reader.getPhysicalNames(2)[n] ] << '\n';
@@ -2109,7 +2101,7 @@ namespace ttcr {
         }
         
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
@@ -2125,7 +2117,7 @@ namespace ttcr {
         switch (par.method) {
             case SHORTEST_PATH:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
                     std::cout.flush();
                 }
@@ -2135,7 +2127,7 @@ namespace ttcr {
                 else
                     g = new Grid2Dunsp<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.nn[0], nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
                     std::cout.flush();
@@ -2145,7 +2137,7 @@ namespace ttcr {
             }
             case FAST_MARCHING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -2155,7 +2147,7 @@ namespace ttcr {
                 else
                     g = new Grid2Dunfm<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout.flush();
                 }
@@ -2164,7 +2156,7 @@ namespace ttcr {
             }
             case FAST_SWEEPING:
             {
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "Creating grid ... ";
                     std::cout.flush();
                 }
@@ -2191,7 +2183,7 @@ namespace ttcr {
                 else
                     dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-                if ( par.verbose ) {
+                if ( verbose ) {
                     std::cout << "done.\n";
                     std::cout << "Initiated ordering with " << ptsRef.size() << " reference points and l-"
                     << par.order << " metric\n";
@@ -2268,9 +2260,9 @@ namespace ttcr {
             size_t i = filename.rfind(".msh");
             filename.replace(i, 4, ".vtu");
             
-            if ( par.verbose ) std::cout << "Saving model in " << filename << " ... ";
+            if ( verbose ) std::cout << "Saving model in " << filename << " ... ";
             g->saveModelVTU(filename, false);
-            if ( par.verbose ) std::cout << "done.\n";
+            if ( verbose ) std::cout << "done.\n";
 #else
             std::cerr << "Error: Program not compiled with VTK support" << std::endl;
             return nullptr;
@@ -2290,7 +2282,7 @@ namespace ttcr {
             return nullptr;
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             cout << "Reading model file " << par.modelfile << " ... ";
             cout.flush();
         }
@@ -2310,7 +2302,7 @@ namespace ttcr {
         reader.readTriangleElements(triangles);
         reader.readSlowness(slowness, constCells);
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
@@ -2324,7 +2316,7 @@ namespace ttcr {
         std::chrono::high_resolution_clock::time_point begin, end;
         Grid2D<T, uint32_t, sxyz<T>> *g=nullptr;
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
             std::cout.flush();
         }
@@ -2334,7 +2326,7 @@ namespace ttcr {
         else
             g = new Grid2Dunsp<T, uint32_t, Node3Dnsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
             << "\n";
             std::cout.flush();
@@ -2370,7 +2362,7 @@ namespace ttcr {
             return nullptr;
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Reading model file " << par.modelfile << " ... ";
             std::cout.flush();
         }
@@ -2381,7 +2373,7 @@ namespace ttcr {
         
         reader.readNodes3D(nodes);
         reader.readTriangleElements(triangles);
-        if ( par.verbose ) std::cout << "done.\n";
+        if ( verbose ) std::cout << "done.\n";
         std::map<std::string, double> slownesses;
         
         bool constCells = true;
@@ -2434,7 +2426,7 @@ namespace ttcr {
             }
             fin.close();
             
-            if ( par.verbose ) {
+            if ( verbose ) {
                 for ( size_t n=0; n<reader.getPhysicalNames(2).size(); ++n ) {
                     std::cout << "  Velocity for " << reader.getPhysicalNames(2)[n] << " is "
                     << 1./slownesses[ reader.getPhysicalNames(2)[n] ] << '\n';
@@ -2446,7 +2438,7 @@ namespace ttcr {
             }
         }
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
@@ -2460,7 +2452,7 @@ namespace ttcr {
         std::chrono::high_resolution_clock::time_point begin, end;
         Grid2D<T, uint32_t, sxyz<T>> *g=nullptr;
         
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
             std::cout.flush();
         }
@@ -2470,7 +2462,7 @@ namespace ttcr {
         else
             g = new Grid2Dunsp<T, uint32_t, Node3Dnsp<T,uint32_t>, sxyz<T>>(nodes, triangles, par.nn[0], nt);
         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
-        if ( par.verbose ) {
+        if ( verbose ) {
             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
             << "\n";
             std::cout.flush();
@@ -2495,9 +2487,9 @@ namespace ttcr {
             size_t i = filename.rfind(".msh");
             filename.replace(i, 4, ".vtu");
             
-            if ( par.verbose ) std::cout << "Saving model in " << filename << " ... ";
+            if ( verbose ) std::cout << "Saving model in " << filename << " ... ";
             g->saveModelVTU(filename, false);
-            if ( par.verbose ) std::cout << "done.\n";
+            if ( verbose ) std::cout << "done.\n";
 #else
             std::cerr << "Error: Program not compiled with VTK support" << std::endl;
             return nullptr;

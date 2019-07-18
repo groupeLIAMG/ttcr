@@ -45,10 +45,10 @@ namespace ttcr {
         Grid3Ducsp(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const int ns, const bool rptt, const T1 md,
-                   const size_t nt=1, const int verbose=0) :
+                   const size_t nt=1) :
         Grid3Duc<T1,T2,Node3Dcsp<T1,T2>>(no, tet, 1, rptt, md, nt)
         {
-            this->buildGridNodes(no, ns, nt, verbose);
+            this->buildGridNodes(no, ns, nt);
             this->buildGridNeighbors();
         }
         

@@ -52,10 +52,10 @@ int body(const input_parameters &par) {
         src.push_back( Src<T>( par.srcfiles[n] ) );
 		string end = " ... ";
 		if ( n < par.srcfiles.size() - 1 ) end = " ...\n";
-        if ( par.verbose ) cout << "Reading source file " << par.srcfiles[n] << end;
+        if ( verbose ) cout << "Reading source file " << par.srcfiles[n] << end;
         src[n].init();
     }
-    if ( par.verbose ) cout << "done.\n";
+    if ( verbose ) cout << "done.\n";
 	
     
     // Calculate the number of threads to be used
@@ -121,7 +121,7 @@ int body(const input_parameters &par) {
     if ( (par.method == SHORTEST_PATH || par.method == DYNAMIC_SHORTEST_PATH) and par.dump_secondary ) {
         string sec_file = par.basename+"_sec.dat";
         ofstream otmp(sec_file);
-        if ( par.verbose ) {
+        if ( verbose ) {
             cout << "Dumping secondary node coordinates to " << sec_file << endl;
         }
         g->dump_secondary(otmp);
@@ -133,9 +133,9 @@ int body(const input_parameters &par) {
     // Load the receiver file into the Rcv object rcv
 	Rcv<T> rcv( par.rcvfile );
     if ( par.rcvfile != "" ) {
-        if ( par.verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
+        if ( verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
         rcv.init( src.size() );
-        if ( par.verbose ) cout << "done.\n";
+        if ( verbose ) cout << "done.\n";
     }
 
     if ( par.saveModelVTK ) {
@@ -144,17 +144,17 @@ int body(const input_parameters &par) {
         size_t i = filename.rfind(".dat");
         filename.replace(i, 4, ".vtp");
         
-        if ( par.verbose ) std::cout << "Saving receiver in " << filename << " ... ";
+        if ( verbose ) std::cout << "Saving receiver in " << filename << " ... ";
         rcv.toVTK(filename);
-        if ( par.verbose ) std::cout << "done.\n";
+        if ( verbose ) std::cout << "done.\n";
         
         for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
             filename = par.srcfiles[n];
             i = filename.rfind(".dat");
             filename.replace(i, 4, ".vtp");
-            if ( par.verbose ) std::cout << "Saving source in " << filename << " ... ";
+            if ( verbose ) std::cout << "Saving source in " << filename << " ... ";
             src[n].toVTK(filename);
-            if ( par.verbose ) std::cout << "done.\n";
+            if ( verbose ) std::cout << "done.\n";
         }
 #else
         std::cerr << "Error: Program not compiled with VTK support" << std::endl;
@@ -162,22 +162,22 @@ int body(const input_parameters &par) {
 #endif
     }    
     
-    if ( par.verbose ) {
+    if ( verbose ) {
         if ( par.singlePrecision ) {
             cout << "Calculations will be done in single precision.\n";
         } else {
             cout << "Calculations will be done in double precision.\n";
         }
     }
-	if ( par.verbose && num_threads>1 ) {
+	if ( verbose && num_threads>1 ) {
 		cout << "Calculations will be done using " << num_threads
 		<< " threads with " << blk_size << " shots per threads.\n";
 	}
-    if ( par.verbose && par.tt_from_rp ) {
+    if ( verbose && par.tt_from_rp ) {
         cout << "Calculation of traveltimes will be done at backward step\n"
         << "   (minimum distance: " << par.min_distance_rp << ").\n";
     }
-    if ( par.verbose && par.method == DYNAMIC_SHORTEST_PATH ) {
+    if ( verbose && par.method == DYNAMIC_SHORTEST_PATH ) {
         cout << "Radius for tertiary nodes: " << par.radius_tertiary_nodes << '\n';
     }
     
@@ -204,7 +204,7 @@ int body(const input_parameters &par) {
 
 	
     // Computes the travel time
-    if ( par.verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
+    if ( verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
 	if ( par.time ) { begin = chrono::high_resolution_clock::now(); }
     if ( par.saveM ) {
         if ( num_threads == 1 ) {
@@ -495,7 +495,7 @@ int body(const input_parameters &par) {
 		}
 	}
 	if ( par.time ) { end = chrono::high_resolution_clock::now(); }
-    if ( par.verbose ) {
+    if ( verbose ) {
         cout << "done.\n";
         if ( par.method == FAST_SWEEPING ) {
             std::cout << g->get_niter() << " 1st order iterations ";
@@ -515,16 +515,16 @@ int body(const input_parameters &par) {
 		string filename = par.basename+"_tt.dat";
 		
         if ( par.rcvfile != "" ) {
-            if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
+            if ( verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
             rcv.save_tt(filename, 0);
-            if ( par.verbose ) cout << "done.\n";
+            if ( verbose ) cout << "done.\n";
         }
 		
 		if ( par.saveRaypaths && par.rcvfile != "" ) {
 			filename = par.basename+"_rp.vtp";
-			if ( par.verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
+			if ( verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
 			saveRayPaths(filename, r_data[0]);
-			if ( par.verbose ) cout << "done.\n";
+			if ( verbose ) cout << "done.\n";
 			
 			for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 				
@@ -546,9 +546,9 @@ int body(const input_parameters &par) {
 					}
 				}
 				filename = par.basename+"_rp"+to_string(nr+1)+".vtp";
-				if ( par.verbose ) cout << "Saving raypaths of reflected waves in " << filename <<  " ... ";
+				if ( verbose ) cout << "Saving raypaths of reflected waves in " << filename <<  " ... ";
 				saveRayPaths(filename, r_tmp);
-				if ( par.verbose ) cout << "done.\n";
+				if ( verbose ) cout << "done.\n";
 			}
 			
 			if ( reflectors.size() > 0 ) {
@@ -564,13 +564,13 @@ int body(const input_parameters &par) {
         
         if ( par.saveM ) {
             filename = par.basename+"_M.dat";
-            if ( par.verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
+            if ( verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
             ofstream fout(filename);
             for ( size_t n1=0; n1<m_data[0].size(); ++n1 )
                 for ( size_t n2=0; n2<m_data[0][n1].size(); ++n2 )
                     fout << m_data[0][n1][n2].i << ' ' << m_data[0][n1][n2].j << ' ' << m_data[0][n1][n2].v << '\n';
             fout.close();
-            if ( par.verbose ) cout << "done.\n";
+            if ( verbose ) cout << "done.\n";
         }
 
 	} else {
@@ -586,16 +586,16 @@ int body(const input_parameters &par) {
             string filename = par.basename+"_"+srcname+"_tt.dat";
 			
             if ( par.rcvfile != "" ) {
-                if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
+                if ( verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
                 rcv.save_tt(filename, ns);
-                if ( par.verbose ) cout << "done.\n";
+                if ( verbose ) cout << "done.\n";
             }
 			
             if ( par.saveRaypaths && par.rcvfile != "" ) {
                 filename = par.basename+"_"+srcname+"_rp.vtp";
-                if ( par.verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
+                if ( verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
                 saveRayPaths(filename, r_data[ns]);
-                if ( par.verbose ) cout << "done.\n";
+                if ( verbose ) cout << "done.\n";
 				
 				for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
 					
@@ -617,22 +617,22 @@ int body(const input_parameters &par) {
 						}
 					}
 					filename = par.basename+"_"+srcname+"_rp"+to_string(nr+1)+".vtp";
-					if ( par.verbose ) cout << "Saving raypaths of reflected waves in " << filename <<  " ... ";
+					if ( verbose ) cout << "Saving raypaths of reflected waves in " << filename <<  " ... ";
 					saveRayPaths(filename, r_tmp);
-					if ( par.verbose ) cout << "done.\n";
+					if ( verbose ) cout << "done.\n";
 				}
             }
             if ( par.saveM ) {
                 filename = par.basename+"_"+srcname+"_M.dat";
-                if ( par.verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
+                if ( verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
                 ofstream fout(filename);
                 for ( size_t n1=0; n1<m_data[ns].size(); ++n1 )
                     for ( size_t n2=0; n2<m_data[ns][n1].size(); ++n2 )
                         fout << m_data[ns][n1][n2].i << ' ' << m_data[ns][n1][n2].j << ' ' << m_data[ns][n1][n2].v << '\n';
                 fout.close();
-                if ( par.verbose ) cout << "done.\n";
+                if ( verbose ) cout << "done.\n";
             }
-            if ( par.verbose ) cout << '\n';
+            if ( verbose ) cout << '\n';
         }
 		
 		if ( par.saveRaypaths && reflectors.size() > 0 ) {
@@ -644,7 +644,7 @@ int body(const input_parameters &par) {
                 exit(1);
             }
             
-            if ( par.verbose ) cout << "Saving global raypath data in " << filename << " ... ";
+            if ( verbose ) cout << "Saving global raypath data in " << filename << " ... ";
 			size_t size = r_data.size();
 			fout.write((char*)&size,sizeof(size_t));
 			for ( size_t n=0; n<r_data.size(); ++n ) {
@@ -693,11 +693,11 @@ int body(const input_parameters &par) {
 			}
 			
 			fout.close();
-            if ( par.verbose ) cout << "done.\n";
+            if ( verbose ) cout << "done.\n";
 		}
     }
     
-    if ( par.verbose ) cout << "Normal termination of program.\n";
+    if ( verbose ) cout << "Normal termination of program.\n";
 	return 0;
 }
 
@@ -710,7 +710,7 @@ int main(int argc, char * argv[])
     
     string fname = parse_input(argc, argv, par);
     
-    if ( par.verbose ) {
+    if ( verbose ) {
         cout << "*** Program ttcr3d ***\n\n"
         << "Raytracing in 3D media.\n";
     }
@@ -721,7 +721,7 @@ int main(int argc, char * argv[])
         abort();
     }
     
-    if ( par.verbose ) {
+    if ( verbose ) {
         switch (par.method) {
             case SHORTEST_PATH:
                 cout << "Shortest path method selected.\n";

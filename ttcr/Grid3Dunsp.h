@@ -47,11 +47,11 @@ namespace ttcr {
         Grid3Dunsp(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const int ns, const bool iv, const bool rptt, const T1 md,
-                   const size_t nt=1, const int verbose=0) :
+                   const size_t nt=1) :
         Grid3Dun<T1,T2,Node3Dnsp<T1,T2>>(no, tet, 1, iv, rptt, md, nt),
         nSecondary(ns)
         {
-            this->buildGridNodes(no, ns, nt, verbose);
+            this->buildGridNodes(no, ns, nt);
             this->buildGridNeighbors();
         }
         

@@ -43,10 +43,10 @@ int body(const input_parameters &par) {
         src.push_back( Src<T>( par.srcfiles[n] ) );
 		string end = " ... ";
 		if ( n < par.srcfiles.size() - 1 ) end = " ...\n";
-        if ( par.verbose ) cout << "Reading source file " << par.srcfiles[n] << end;
+        if ( verbose ) cout << "Reading source file " << par.srcfiles[n] << end;
         src[n].init();
     }
-    if ( par.verbose ) cout << "done.\n";
+    if ( verbose ) cout << "done.\n";
 	
 	size_t const nTx = src.size();
 	size_t num_threads = 1;
@@ -92,18 +92,18 @@ int body(const input_parameters &par) {
     }
 
 	Rcv<T> rcv( par.rcvfile );
-    if ( par.verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
+    if ( verbose ) cout << "Reading receiver file " << par.rcvfile << " ... ";
     rcv.init( src.size() );
-    if ( par.verbose ) cout << "done.\n";
+    if ( verbose ) cout << "done.\n";
     
-    if ( par.verbose ) {
+    if ( verbose ) {
         if ( par.singlePrecision ) {
             cout << "Calculations will be done in single precision.\n";
         } else {
             cout << "Calculations will be done in double precision.\n";
         }
     }
-	if ( par.verbose && num_threads>1 ) {
+	if ( verbose && num_threads>1 ) {
 		cout << "Calculations will be done using " << num_threads
         << " threads with " << blk_size << " shots per thread.\n";
 	}
@@ -120,7 +120,7 @@ int body(const input_parameters &par) {
         g->projectPts(rcv.get_coord());
     }
 	
-	if ( par.verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
+	if ( verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
 	if ( par.time ) { begin = chrono::high_resolution_clock::now(); }
     if ( par.saveM ) {
         if ( num_threads == 1 ) {
@@ -265,7 +265,7 @@ int body(const input_parameters &par) {
 		}
 	}
 	if ( par.time ) { end = chrono::high_resolution_clock::now(); }
-    if ( par.verbose ) cout << "done.\n";
+    if ( verbose ) cout << "done.\n";
 	if ( par.time ) {
 		cout.precision(12);
 		cout << "Time to perform raytracing: " <<
@@ -288,25 +288,25 @@ int body(const input_parameters &par) {
     if ( src.size() == 1 ) {
 		string filename = par.basename+"_tt.dat";
 		
-		if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
+		if ( verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
 		rcv.save_tt(filename, 0);
-		if ( par.verbose ) cout << "done.\n";
+		if ( verbose ) cout << "done.\n";
 		
 		if ( par.saveRaypaths ) {
 			filename = par.basename+"_rp.vtp";
-			if ( par.verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
+			if ( verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
 			saveRayPaths(filename, r_data[0]);
-			if ( par.verbose ) cout << "done.\n";
+			if ( verbose ) cout << "done.\n";
 		}
         if ( par.saveM ) {
             filename = par.basename+"_M.dat";
-            if ( par.verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
+            if ( verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
             ofstream fout(filename);
             for ( size_t n1=0; n1<m_data[0].size(); ++n1 )
                 for ( size_t n2=0; n2<m_data[0][n1].size(); ++n2 )
                         fout << m_data[0][n1][n2].i << ' ' << m_data[0][n1][n2].j << ' ' << m_data[0][n1][n2].v << '\n';
             fout.close();
-            if ( par.verbose ) cout << "done.\n";
+            if ( verbose ) cout << "done.\n";
         }
 	} else {
         for ( size_t ns=0; ns<src.size(); ++ns ) {
@@ -320,31 +320,31 @@ int body(const input_parameters &par) {
             
             string filename = par.basename+"_"+srcname+"_tt.dat";
 			
-            if ( par.verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
+            if ( verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
             rcv.save_tt(filename, ns);
-            if ( par.verbose ) cout << "done.\n";
+            if ( verbose ) cout << "done.\n";
 			
             if ( par.saveRaypaths ) {
                 filename = par.basename+"_"+srcname+"_rp.vtp";
-                if ( par.verbose ) cout << "Saving raypaths of direct waves in " << filename <<  " ... ";
+                if ( verbose ) cout << "Saving raypaths of direct waves in " << filename <<  " ... ";
                 saveRayPaths(filename, r_data[ns]);
-                if ( par.verbose ) cout << "done.\n";
+                if ( verbose ) cout << "done.\n";
 			}
             if ( par.saveM ) {
                 filename = par.basename+"_"+srcname+"_M.dat";
-                if ( par.verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
+                if ( verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
                 ofstream fout(filename);
                 for ( size_t n1=0; n1<m_data[ns].size(); ++n1 )
                     for ( size_t n2=0; n2<m_data[ns][n1].size(); ++n2 )
                             fout << m_data[ns][n1][n2].i << ' ' << m_data[ns][n1][n2].j << ' ' << m_data[ns][n1][n2].v << '\n';
                 fout.close();
-                if ( par.verbose ) cout << "done.\n";
+                if ( verbose ) cout << "done.\n";
             }
-			if ( par.verbose ) cout << '\n';
+			if ( verbose ) cout << '\n';
         }
 	}
     
-    if ( par.verbose ) cout << "Normal termination of program.\n";
+    if ( verbose ) cout << "Normal termination of program.\n";
     return 0;
 }
 
@@ -354,14 +354,14 @@ int main(int argc, char * argv[])
     input_parameters par;
     
 	string fname = parse_input(argc, argv, par);
-	if ( par.verbose ) {
+	if ( verbose ) {
 		cout << "\n*** Program ttcr2ds ***\n\n"
         << "Raytracing on undulated surfaces\n";
 	}
     
     get_params(fname, par);
 	
-	if ( par.verbose ) {
+	if ( verbose ) {
         switch (par.method) {
             case SHORTEST_PATH:
                 cout << "Shortest path method selected.\n";

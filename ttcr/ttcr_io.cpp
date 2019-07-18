@@ -35,7 +35,9 @@ extern "C" {
 using namespace std;
 
 namespace ttcr {
-    
+
+    int verbose = 0;
+
     void print_usage (std::ostream& stream, char *progname, int exit_code)
     {
         stream << "\n *** " << progname << " - Ray tracing by grid methods ***\n\n";
@@ -58,6 +60,7 @@ namespace ttcr {
         int next_option;
         const char* const short_options = "hk†p:vts";
         bool no_option = true;
+
         do {
             next_option = getopt (argc, argv, short_options);
             switch (next_option)
@@ -83,7 +86,7 @@ namespace ttcr {
                     
                 case  'v' : // -v or --verbose
                     no_option = false;
-                    ip.verbose++;
+                    verbose++;
                     break;
                     
                 case  't' :
@@ -124,7 +127,7 @@ namespace ttcr {
             exit(1);
         }
         
-        if ( ip.verbose )
+        if ( verbose )
             std::cout << "\nReading file " << filename << std::endl;
         
         char value[100];

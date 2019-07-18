@@ -36,7 +36,6 @@ namespace ttcr {
     struct input_parameters {
         uint32_t nn[3];
         int nt;
-        int verbose;
         int order;                    // order of l metric
         int nitermax;
         int nTertiary;
@@ -68,7 +67,7 @@ namespace ttcr {
         std::string rcvfile;
         std::vector<std::string> srcfiles;
         
-        input_parameters() : nn(), nt(0), verbose(0), order(2), nitermax(20),
+        input_parameters() : nn(), nt(0), order(2), nitermax(20),
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),

@@ -127,8 +127,7 @@ namespace ttcr {
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,
                                   const bool savePhysicalEntity=false) const {}
         virtual void saveModelVTR(const std::string &, const double*,
-                                  const bool saveSlowness=true,
-                                  const int verbose=0) const {}
+                                  const bool saveSlowness=true) const {}
 #endif
     };
     

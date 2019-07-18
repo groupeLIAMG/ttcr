@@ -227,7 +227,7 @@ namespace ttcr {
         
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const int, const size_t, const int);
+                            const int, const size_t);
         
         void buildGridNeighbors() {
             // Index the neighbors nodes of each cell
@@ -524,7 +524,7 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                               const int nsecondary,
-                                              const size_t nt, const int verbose) {
+                                              const size_t nt) {
         
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
