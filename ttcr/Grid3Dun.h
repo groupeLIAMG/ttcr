@@ -1711,8 +1711,7 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
-                
+
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
                 for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
@@ -1731,6 +1730,36 @@ namespace ttcr {
                         continue;
                     }
                     
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(*nc);
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            else
+                                s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                                                         nodes[itmp[0]],
+                                                                         nodes[itmp[1]],
+                                                                         nodes[itmp[2]],
+                                                                         nodes[itmp[3]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
+#ifdef DEBUG_RP
+                            r_data[0].push_back(Tx[nt]);
+#endif
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
@@ -1775,6 +1804,50 @@ namespace ttcr {
                         break;
                     }
 
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( cellNo == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(cellNo);
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            else
+                                s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                                                         nodes[itmp[0]],
+                                                                         nodes[itmp[1]],
+                                                                         nodes[itmp[2]],
+                                                                         nodes[itmp[3]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
+#ifdef DEBUG_RP
+                            r_data[0].push_back(Tx[nt]);
+#endif
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
                     // we might be on one of the nodes
                     if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
                         onNode = true;
@@ -2596,7 +2669,6 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -2616,6 +2688,20 @@ namespace ttcr {
                         continue;
                     }
                     
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(*nc);
+
+                            r_tmp.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
@@ -2650,6 +2736,34 @@ namespace ttcr {
                         break;
                     }
                     
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( cellNo == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(cellNo);
+
+                            r_tmp.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
                     // we might be on one of the nodes
                     if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
                         onNode = true;
@@ -3101,17 +3215,6 @@ namespace ttcr {
                                             break;
                                         }
                                     }
-//                                    for ( T2 i=0; i<4; ++i ) {
-//                                        T2 iA = itmp[(i+1)%4];
-//                                        T2 iB = itmp[(i+2)%4];
-//                                        T2 iC = itmp[(i+3)%4];
-//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
-//                                            found = true;
-//                                            break;
-//                                        }
-//                                    }
                                     if ( found ) {
                                         r_tmp.push_back( Tx[nt] );
                                         reachedTx = true;
@@ -3364,7 +3467,6 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -3397,7 +3499,35 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(*nc);
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            else
+                                s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                                                         nodes[itmp[0]],
+                                                                         nodes[itmp[1]],
+                                                                         nodes[itmp[2]],
+                                                                         nodes[itmp[3]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                            r_tmp.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
@@ -3406,7 +3536,6 @@ namespace ttcr {
                                          faceNodes);
 
                     tt += 0.5*(s1 + s2) * r_tmp.back().getDistance( curr_pt );
-//                    std::cout << curr_pt << '\t' << tt << '\t' << s1 << '\t' << s2 << '\n';
                     s1 = s2;
                     r_tmp.push_back( curr_pt );
                     
@@ -3434,6 +3563,48 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
                         reachedTx = true;
+                        break;
+                    }
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( cellNo == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(cellNo);
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            else
+                                s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
+                                                                         nodes[itmp[0]],
+                                                                         nodes[itmp[1]],
+                                                                         nodes[itmp[2]],
+                                                                         nodes[itmp[3]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                            r_tmp.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
                         break;
                     }
                     
