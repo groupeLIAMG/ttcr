@@ -7865,9 +7865,9 @@ namespace ttcr {
         }
         
         bool found = false;
-
         sxyz<T1> g_old = g;
         T1 minAngle = 9999.9;
+        T1 ng = norm(g);
         // find projection that is closest to current gradient
         for ( auto fn=faces.begin(); fn!=faces.end(); ++fn ) {
             sxyz<T1> gtmp = projectOnFace(g_old, *fn);
@@ -7897,8 +7897,8 @@ namespace ttcr {
             // check if going in the same direction as g
             c = pt_i2 - curr_pt;
 
-            T1 dcg = dot(c, g);
-            T1 angle = std::acos(dcg/(norm(c)*norm(g)));
+            T1 dcg = dot(c, g_old);
+            T1 angle = std::acos(dcg/(norm(c)*ng));
 
             if ( dab > 0.0 && norm2(b) <= norm2(a) && dcg > 0.0 && angle < minAngle ) {
                 g = gtmp;
