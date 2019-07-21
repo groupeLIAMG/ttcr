@@ -1854,7 +1854,6 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -1874,6 +1873,21 @@ namespace ttcr {
                         continue;
                     }
                     
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            tt += t0[nt] + slowness[*nc] * nodes[nodeNo].getDistance( Tx[nt] );
+#ifdef DEBUG_RP
+                            r_data[0].push_back(Tx[nt]);
+#endif
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
@@ -1913,7 +1927,35 @@ namespace ttcr {
                         reachedTx = true;
                         break;
                     }
-                    
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( cellNo == txCell[nt] ) {
+                            tt += t0[nt] + slowness[cellNo] * nodes[nodeNo].getDistance( Tx[nt] );
+#ifdef DEBUG_RP
+                            r_data[0].push_back(Tx[nt]);
+#endif
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
                     T2 prevNode = nodeNo;
                     
                     // we might be on one of the nodes
@@ -2485,17 +2527,6 @@ namespace ttcr {
                                             break;
                                         }
                                     }
-//                                    for ( T2 i=0; i<4; ++i ) {
-//                                        T2 iA = itmp[(i+1)%4];
-//                                        T2 iB = itmp[(i+2)%4];
-//                                        T2 iC = itmp[(i+3)%4];
-//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
-//                                            found = true;
-//                                            break;
-//                                        }
-//                                    }
                                     if ( found ) {
                                         tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
 #ifdef DEBUG_RP
@@ -2705,7 +2736,6 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -2725,6 +2755,20 @@ namespace ttcr {
                         continue;
                     }
                     
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(*nc);
+
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
@@ -2746,11 +2790,65 @@ namespace ttcr {
                 }
                 
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+                    // projet gradient on face and find intersection on next edge
+                    sxyz<T1> pt_i;
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                        break;
+                    }
+
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( cellNo == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(cellNo);
+
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                    } else {
+                        onEdge = true;
+                        onNode = false;
+                    }
+
+                    curr_pt = pt_i;
+                    r_data.push_back( curr_pt );
                 }
                 
             } else if ( onEdge ) {
@@ -2785,12 +2883,12 @@ namespace ttcr {
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
                     
-                    cellNo = cells[n];
+                    T2 testCellNo = cells[n];
                     
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
+                    for ( auto nn=neighbors[testCellNo].begin(); nn!= neighbors[testCellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -2813,7 +2911,8 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
+
+                    cellNo = testCellNo;
                     curr_pt = pt_i;
 
                     bool break_flag = check_pt_location(curr_pt, neighbors[cellNo],
@@ -2838,12 +2937,39 @@ namespace ttcr {
                     break;
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+                    sxyz<T1> pt_i;
+                    g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
+                    if ( g.x==0.0 && g.y==0.0 && g.z==0.0 ) {
+                        foundIntersection = false;
+                    } else {
+                        foundIntersection = true;
+                    }
+
+                    if ( foundIntersection == false || curr_pt == pt_i ) {
+                        std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                    }
+
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                    }
+
+                    curr_pt = pt_i;
+                    r_data.push_back(curr_pt);
                 }
+
             } else if ( onFace ) {
                 
                 std::array<T2,4> itmp = getPrimary(cellNo);
@@ -2888,7 +3014,8 @@ namespace ttcr {
                     {itmp[0], itmp[1], itmp[2]},
                     {itmp[0], itmp[1], itmp[3]},
                     {itmp[0], itmp[2], itmp[3]},
-                    {itmp[1], itmp[2], itmp[3]}};
+                    {itmp[1], itmp[2], itmp[3]}
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
@@ -2976,11 +3103,39 @@ namespace ttcr {
                     }
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+                    g = projectOnFace(g, faceNodes);
+
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecEdge(curr_pt, g, faceNodes, pt_i, edgeNodes);
+
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                        break;
+                    }
+
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                        onFace = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                        onFace = false;
+                    } else {
+                        onEdge = true;
+                        onFace = false;
+                    }
+                    curr_pt = pt_i;
+                    r_data.push_back( curr_pt );
                 }
             } else { // at Rx, somewhere in a tetrahedron
                 
@@ -3011,7 +3166,9 @@ namespace ttcr {
                     {itmp[0], itmp[1], itmp[2]},
                     {itmp[0], itmp[1], itmp[3]},
                     {itmp[0], itmp[2], itmp[3]},
-                    {itmp[1], itmp[2], itmp[3]}};
+                    {itmp[1], itmp[2], itmp[3]}
+
+                };
                 for ( size_t n=0; n<4; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
                 
@@ -3125,17 +3282,6 @@ namespace ttcr {
                                             break;
                                         }
                                     }
-//                                    for ( T2 i=0; i<4; ++i ) {
-//                                        T2 iA = itmp[(i+1)%4];
-//                                        T2 iB = itmp[(i+2)%4];
-//                                        T2 iC = itmp[(i+3)%4];
-//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
-//                                            found = true;
-//                                            break;
-//                                        }
-//                                    }
                                     if ( found ) {
                                         r_data.push_back( Tx[nt] );
                                         reachedTx = true;
@@ -3303,7 +3449,6 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -3323,6 +3468,19 @@ namespace ttcr {
                         continue;
                     }
                     
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            tt += t0[nt] + slowness[*nc] * r_data.back().getDistance( Tx[nt] );
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
@@ -3345,13 +3503,87 @@ namespace ttcr {
                 }
                 
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+                    // projet gradient on face and find intersection on next edge
+                    sxyz<T1> pt_i;
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                        break;
+                    }
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( cellNo == txCell[nt] ) {
+
+                            tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+                    T2 prevNode = nodeNo;
+
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                    } else {
+                        onEdge = true;
+                        onNode = false;
+                    }
+
+                    T1 dt;
+                    // find traversed cell
+                    if ( onNode ) {
+                        // propagation was along edge
+                        dt = nodes[nodeNo].getTT(threadNo) - nodes[prevNode].getTT(threadNo);
+                    } else { // onEdge
+                        T2 traversedCell;
+                        for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                            if ( std::find( nodes[edgeNodes[0]].getOwners().begin(), nodes[edgeNodes[0]].getOwners().end(), *nc ) != nodes[edgeNodes[0]].getOwners().end() &&
+                                std::find( nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc ) != nodes[edgeNodes[1]].getOwners().end() ) {
+                                traversedCell = *nc;
+                                break;
+                            }
+                        }
+                        dt = slowness[traversedCell] * r_data.back().getDistance( curr_pt );
+                    }
+
+                    curr_pt = pt_i;
+
+                    tt += dt;
+                    r_data.push_back( curr_pt );
                 }
-                
             } else if ( onEdge ) {
                 
                 // find cells common to edge
@@ -3384,12 +3616,12 @@ namespace ttcr {
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
                     
-                    cellNo = cells[n];
+                    T2 testCellNo = cells[n];
                     
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
+                    for ( auto nn=neighbors[testCellNo].begin(); nn!= neighbors[testCellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -3412,7 +3644,8 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
+
+                    cellNo = testCellNo;
                     curr_pt = pt_i;
 
                     bool break_flag = check_pt_location(curr_pt, neighbors[cellNo],
@@ -3438,11 +3671,78 @@ namespace ttcr {
                     break;
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+                    // we must be going outside the mesh
+                    // hack: project gradient on face and find intersection
+#ifdef DEBUG_RP
+                    std::cout << "\n\nWarning: raypath (onEdge) likely going outside mesh for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << '\n';
+                    std::cout << "         Projecting gradient on external face and resuming" << std::endl;
+#endif
+                    sxyz<T1> pt_i;
+                    std::array<T2,2> pen = edgeNodes;
+                    g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
+                    if ( g.x==0.0 && g.y==0.0 && g.z==0.0 ) {
+                        foundIntersection = false;
+                    } else {
+                        foundIntersection = true;
+                    }
+
+                    if ( foundIntersection == false || curr_pt == pt_i ) {
+                        std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                        break;
+                    }
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                    }
+
+                    T1 dt;
+                    // find traversed cell
+                    if ( onNode ) {
+                        T2 traversedCell;
+                        for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                            if ( std::find( nodes[pen[0]].getOwners().begin(), nodes[pen[0]].getOwners().end(), *nc ) != nodes[pen[0]].getOwners().end() &&
+                                std::find( nodes[pen[1]].getOwners().begin(), nodes[pen[1]].getOwners().end(), *nc ) != nodes[pen[1]].getOwners().end() ) {
+                                traversedCell = *nc;
+                                break;
+                            }
+                        }
+                        dt = slowness[traversedCell] * r_data.back().getDistance( curr_pt );
+                    } else {
+                        T2 traversedCell;
+                        std::array<T2,3> fn;
+                        fn[0] = pen[0];
+                        fn[1] = pen[1];
+                        if ( edgeNodes[0] != fn[0] && edgeNodes[0] != fn[1]) {
+                            fn[2] = edgeNodes[0];
+                        } else {
+                            fn[2] = edgeNodes[1];
+                        }
+                        for ( auto nc=nodes[fn[0]].getOwners().begin(); nc!=nodes[fn[0]].getOwners().end(); ++nc ) {
+                            if ( std::find( nodes[fn[1]].getOwners().begin(), nodes[fn[1]].getOwners().end(), *nc ) != nodes[fn[1]].getOwners().end() &&
+                                std::find( nodes[fn[2]].getOwners().begin(), nodes[fn[2]].getOwners().end(), *nc ) != nodes[fn[2]].getOwners().end() ) {
+                                traversedCell = *nc;
+                                break;
+                            }
+                        }
+                        dt = slowness[traversedCell] * r_data.back().getDistance( curr_pt );
+                    }
+
+                    curr_pt = pt_i;
+                    tt += dt;
+                    r_data.push_back( curr_pt );
                 }
             } else if ( onFace ) {
                 
@@ -3578,11 +3878,56 @@ namespace ttcr {
                     }
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+                    // we must be going outside the mesh
+                    // hack: project gradient on face and continue
+#ifdef DEBUG_RP
+                    std::cout << "\n\nWarning: raypath (onFace) likely going outside mesh for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << '\n';
+                    std::cout << "         Projecting gradient on external face and resuming" << std::endl;
+#endif
+                    g = projectOnFace(g, faceNodes);
+
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecEdge(curr_pt, g, faceNodes, pt_i, edgeNodes);
+
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                        break;
+
+                    }
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                        onFace = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                        onFace = false;
+                    } else {
+                        onEdge = true;
+                        onFace = false;
+                    }
+                    curr_pt = pt_i;
+                    T2 traversedCell;
+                    for ( auto nc=nodes[faceNodes[0]].getOwners().begin(); nc!=nodes[faceNodes[0]].getOwners().end(); ++nc ) {
+                        if ( std::find( nodes[faceNodes[1]].getOwners().begin(), nodes[faceNodes[1]].getOwners().end(), *nc ) != nodes[faceNodes[1]].getOwners().end() &&
+                            std::find( nodes[faceNodes[2]].getOwners().begin(), nodes[faceNodes[2]].getOwners().end(), *nc ) != nodes[faceNodes[2]].getOwners().end() ) {
+                            traversedCell = *nc;
+                            break;
+                        }
+                    }
+
+                    tt += slowness[traversedCell] * r_data.back().getDistance( curr_pt );
+                    r_data.push_back( curr_pt );
                 }
             } else { // at Rx, somewhere in a tetrahedron
                 
@@ -3690,6 +4035,7 @@ namespace ttcr {
                                 (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
                                 
                                 tt += t0[nt] + slowness[txCell[nt]] * r_data.back().getDistance( Tx[nt] );
+                                r_data.push_back(Tx[nt]);
                                 reachedTx = true;
                                 break;
                             }
@@ -3732,17 +4078,6 @@ namespace ttcr {
                                             break;
                                         }
                                     }
-//                                    for ( T2 i=0; i<4; ++i ) {
-//                                        T2 iA = itmp[(i+1)%4];
-//                                        T2 iB = itmp[(i+2)%4];
-//                                        T2 iC = itmp[(i+3)%4];
-//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
-//                                            found = true;
-//                                            break;
-//                                        }
-//                                    }
                                     if ( found ) {
                                         tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                                         r_data.push_back( Tx[nt] );
