@@ -362,6 +362,23 @@ namespace ttcr {
             }
         }
         
+        void checkCloseToTx(const sxyz<T1>& curr_pt,
+                            sxyz<T1>& g,
+                            const std::array<T2,2> &edgeNodes,
+                            const std::vector<sxyz<T1>>& Tx,
+                            const std::vector<T2>& txCell) const {
+
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                for (size_t n=0; n<4; ++n){
+                    if ( itmp[n]==edgeNodes[0] || itmp[n]==edgeNodes[1] ) {
+                        g = Tx[nt]-curr_pt;
+                        return;
+                    }
+                }
+            }
+        }
+
         sxyz<T1> projectOnFace(const sxyz<T1>& g, const std::array<T2,3>& faceNodes) const {
             
             // calculate normal to the face
@@ -2029,7 +2046,7 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
+                checkCloseToTx(curr_pt, g, edgeNodes, Tx, txCell);
 
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
@@ -2878,7 +2895,7 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
+                checkCloseToTx(curr_pt, g, edgeNodes, Tx, txCell);
 
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
@@ -3611,7 +3628,7 @@ namespace ttcr {
                     getNeighborNodesAB(ref_pt, opp_pts);
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
-                checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
+                checkCloseToTx(curr_pt, g, edgeNodes, Tx, txCell);
 
                 bool foundIntersection=false;
                 for (size_t n=0; n<cells.size(); ++n ) {
