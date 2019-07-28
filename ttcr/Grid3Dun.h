@@ -1498,15 +1498,21 @@ namespace ttcr {
         }
         
         std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<bool> txOnEdge( Tx.size(), false );
+        std::vector<bool> txOnFace( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
+        std::vector<std::array<T2,2>> txEdges( Tx.size() );
+        std::vector<std::array<T2,3>> txFaces( Tx.size() );
         std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
+                if ( nodes[nn].isPrimary() ) {
+                    if ( nodes[nn] == Tx[nt] ) {
+                        txOnNode[nt] = true;
+                        txNode[nt] = nn;
+                        break;
+                    }
                 }
             }
         }
@@ -1535,6 +1541,32 @@ namespace ttcr {
                             txNeighborCells[nt].push_back( *nc0 );
                     }
                 }
+                // check if on edge
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                        txOnEdge[nt] = true;
+                        txEdges[nt][0] = ind[nedge][0];
+                        txEdges[nt][1] = ind[nedge][1];
+                        break;
+                    }
+                }
+                if ( !txOnEdge[nt] ) {
+                    // check if on face
+                    const T2 indf[4][3] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]} };
+                    for ( size_t nface=0; nface<4; ++nface ) {
+                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                            txOnFace[nt] = true;
+                            txFaces[nt][0] = indf[nface][0];
+                            txFaces[nt][1] = indf[nface][1];
+                            txFaces[nt][2] = indf[nface][2];
+                            break;
+                        }
+                    }
+                }
             }
 #ifdef DEBUG_RP
             std::cout << "   src no: " << nt << '\n';
@@ -1542,6 +1574,17 @@ namespace ttcr {
                 std::cout << "     onNode\n"
                 << "\t    txNode: " << txNode[nt] << '\n'
                 << "\t    coords: " << nodes[txNode[nt]] << '\n';
+            } else if (txOnEdge[nt] ) {
+                std::cout << "     onEdge\n"
+                << "\t    edge vertices no: " << txEdges[nt][0] << ' ' << txEdges[nt][1] << '\n'
+                << "\t  vertices: " << nodes[txEdges[nt][0]] << '\n'
+                << "\t          : " << nodes[txEdges[nt][1]] << '\n';
+            } else if (txOnEdge[nt] ) {
+                std::cout << "     onFace\n"
+                << "\t    face vertices no: " << txFaces[nt][0] << ' ' << txFaces[nt][1] << ' ' << txFaces[nt][2] << '\n'
+                << "\t  vertices: " << nodes[txFaces[nt][0]] << '\n'
+                << "\t          : " << nodes[txFaces[nt][1]] << '\n'
+                << "\t          : " << nodes[txFaces[nt][2]] << '\n';
             } else {
                 std::array<T2,4> itmp = getPrimary(txCell[nt]);
                 std::cout << "     inCell\n"
@@ -2300,13 +2343,55 @@ namespace ttcr {
             
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        tt += t0[nt];
-                        reachedTx = true;
+                    if ( txOnNode[nt] ) {
+                        if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                            tt += t0[nt];
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnEdge[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::linearVel(Tx[nt],
+                                                                 nodes[txEdges[nt][0]],
+                                                                 nodes[txEdges[nt][1]]);
+                            else
+                                s2 = Interpolator<T1>::linear(Tx[nt],
+                                                              nodes[txEdges[nt][0]],
+                                                              nodes[txEdges[nt][1]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
 #ifdef DEBUG_RP
-                        r_data[0].push_back(Tx[nt]);
+                            r_data[0].push_back(Tx[nt]);
 #endif
-                        break;
+                            break;
+                        }
+                    } else if ( txOnFace[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::bilinearTriangleVel(Tx[nt],
+                                                                           nodes[txFaces[nt][0]],
+                                                                           nodes[txFaces[nt][1]],
+                                                                           nodes[txFaces[nt][2]]);
+                            else
+                                s2 = Interpolator<T1>::bilinearTriangle(Tx[nt],
+                                                                        nodes[txFaces[nt][0]],
+                                                                        nodes[txFaces[nt][1]],
+                                                                        nodes[txFaces[nt][2]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
+#ifdef DEBUG_RP
+                            r_data[0].push_back(Tx[nt]);
+#endif
+                            break;
+                        }
                     }
                 }
             } if ( onEdge ) {
@@ -2533,15 +2618,21 @@ namespace ttcr {
         }
         
         std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<bool> txOnEdge( Tx.size(), false );
+        std::vector<bool> txOnFace( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
+        std::vector<std::array<T2,2>> txEdges( Tx.size() );
+        std::vector<std::array<T2,3>> txFaces( Tx.size() );
         std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
+                if ( nodes[nn].isPrimary() ) {
+                    if ( nodes[nn] == Tx[nt] ) {
+                        txOnNode[nt] = true;
+                        txNode[nt] = nn;
+                        break;
+                    }
                 }
             }
         }
@@ -2563,6 +2654,32 @@ namespace ttcr {
                     for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
                         if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
                             txNeighborCells[nt].push_back( *nc0 );
+                    }
+                }
+                // check if on edge
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                        txOnEdge[nt] = true;
+                        txEdges[nt][0] = ind[nedge][0];
+                        txEdges[nt][1] = ind[nedge][1];
+                        break;
+                    }
+                }
+                if ( !txOnEdge[nt] ) {
+                    // check if on face
+                    const T2 indf[4][3] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]} };
+                    for ( size_t nface=0; nface<4; ++nface ) {
+                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                            txOnFace[nt] = true;
+                            txFaces[nt][0] = indf[nface][0];
+                            txFaces[nt][1] = indf[nface][1];
+                            txFaces[nt][2] = indf[nface][2];
+                            break;
+                        }
                     }
                 }
             }
@@ -3142,9 +3259,28 @@ namespace ttcr {
             
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        reachedTx = true;
-                        break;
+                    if ( txOnNode[nt] ) {
+                        if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnEdge[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
+
+                            r_tmp.push_back(Tx[nt]);
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnFace[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+
+                            r_tmp.push_back(Tx[nt]);
+                            reachedTx = true;
+                            break;
+                        }
                     }
                 }
             } if ( onEdge ) {
@@ -3253,15 +3389,21 @@ namespace ttcr {
         }
         
         std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<bool> txOnEdge( Tx.size(), false );
+        std::vector<bool> txOnFace( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
+        std::vector<std::array<T2,2>> txEdges( Tx.size() );
+        std::vector<std::array<T2,3>> txFaces( Tx.size() );
         std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
+                if ( nodes[nn].isPrimary() ) {
+                    if ( nodes[nn] == Tx[nt] ) {
+                        txOnNode[nt] = true;
+                        txNode[nt] = nn;
+                        break;
+                    }
                 }
             }
         }
@@ -3288,6 +3430,32 @@ namespace ttcr {
                             txNeighborCells[nt].push_back( *nc0 );
                     }
                 }
+                // check if on edge
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                        txOnEdge[nt] = true;
+                        txEdges[nt][0] = ind[nedge][0];
+                        txEdges[nt][1] = ind[nedge][1];
+                        break;
+                    }
+                }
+                if ( !txOnEdge[nt] ) {
+                    // check if on face
+                    const T2 indf[4][3] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]} };
+                    for ( size_t nface=0; nface<4; ++nface ) {
+                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                            txOnFace[nt] = true;
+                            txFaces[nt][0] = indf[nface][0];
+                            txFaces[nt][1] = indf[nface][1];
+                            txFaces[nt][2] = indf[nface][2];
+                            break;
+                        }
+                    }
+                }
             }
 #ifdef DEBUG_RP
             std::cout << "   src no: " << nt << '\n';
@@ -3295,6 +3463,17 @@ namespace ttcr {
                 std::cout << "     onNode\n"
                 << "\t    txNode: " << txNode[nt] << '\n'
                 << "\t    coords: " << nodes[txNode[nt]] << '\n';
+            } else if (txOnEdge[nt] ) {
+                std::cout << "     onEdge\n"
+                << "\t    edge vertices no: " << txEdges[nt][0] << ' ' << txEdges[nt][1] << '\n'
+                << "\t  vertices: " << nodes[txEdges[nt][0]] << '\n'
+                << "\t          : " << nodes[txEdges[nt][1]] << '\n';
+            } else if (txOnEdge[nt] ) {
+                std::cout << "     onFace\n"
+                << "\t    face vertices no: " << txFaces[nt][0] << ' ' << txFaces[nt][1] << ' ' << txFaces[nt][2] << '\n'
+                << "\t  vertices: " << nodes[txFaces[nt][0]] << '\n'
+                << "\t          : " << nodes[txFaces[nt][1]] << '\n'
+                << "\t          : " << nodes[txFaces[nt][2]] << '\n';
             } else {
                 std::array<T2,4> itmp = getPrimary(txCell[nt]);
                 std::cout << "     inCell\n"
@@ -4037,10 +4216,51 @@ namespace ttcr {
             
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        tt += t0[nt];
-                        reachedTx = true;
-                        break;
+                    if ( txOnNode[nt] ) {
+                        if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                            tt += t0[nt];
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnEdge[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::linearVel(Tx[nt],
+                                                                 nodes[txEdges[nt][0]],
+                                                                 nodes[txEdges[nt][1]]);
+                            else
+                                s2 = Interpolator<T1>::linear(Tx[nt],
+                                                              nodes[txEdges[nt][0]],
+                                                              nodes[txEdges[nt][1]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                            reachedTx = true;
+                            r_tmp.push_back(Tx[nt]);
+                            break;
+                        }
+                    } else if ( txOnFace[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+
+                            if ( interpVel )
+                                s2 = Interpolator<T1>::bilinearTriangleVel(Tx[nt],
+                                                                           nodes[txFaces[nt][0]],
+                                                                           nodes[txFaces[nt][1]],
+                                                                           nodes[txFaces[nt][2]]);
+                            else
+                                s2 = Interpolator<T1>::bilinearTriangle(Tx[nt],
+                                                                        nodes[txFaces[nt][0]],
+                                                                        nodes[txFaces[nt][1]],
+                                                                        nodes[txFaces[nt][2]]);
+
+                            tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                            reachedTx = true;
+                            r_tmp.push_back(Tx[nt]);
+                            break;
+                        }
                     }
                 }
             } if ( onEdge ) {
@@ -4049,6 +4269,7 @@ namespace ttcr {
                         if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
                             s2 = nodes[txNode[nt]].getNodeSlowness();
                             tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                            r_tmp.push_back( Tx[nt] );
                             reachedTx = true;
                             break;
                         }
@@ -4079,6 +4300,7 @@ namespace ttcr {
                                                                              nodes[itmp[3]]);
                                 
                                 tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
+                                r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
                                 break;
                             }
@@ -4220,15 +4442,21 @@ namespace ttcr {
         }
         
         std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<bool> txOnEdge( Tx.size(), false );
+        std::vector<bool> txOnFace( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
+        std::vector<std::array<T2,2>> txEdges( Tx.size() );
+        std::vector<std::array<T2,3>> txFaces( Tx.size() );
         std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
+                if ( nodes[nn].isPrimary() ) {
+                    if ( nodes[nn] == Tx[nt] ) {
+                        txOnNode[nt] = true;
+                        txNode[nt] = nn;
+                        break;
+                    }
                 }
             }
         }
@@ -4250,6 +4478,32 @@ namespace ttcr {
                     for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
                         if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
                             txNeighborCells[nt].push_back( *nc0 );
+                    }
+                }
+                // check if on edge
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                        txOnEdge[nt] = true;
+                        txEdges[nt][0] = ind[nedge][0];
+                        txEdges[nt][1] = ind[nedge][1];
+                        break;
+                    }
+                }
+                if ( !txOnEdge[nt] ) {
+                    // check if on face
+                    const T2 indf[4][3] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]} };
+                    for ( size_t nface=0; nface<4; ++nface ) {
+                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                            txOnFace[nt] = true;
+                            txFaces[nt][0] = indf[nface][0];
+                            txFaces[nt][1] = indf[nface][1];
+                            txFaces[nt][2] = indf[nface][2];
+                            break;
+                        }
                     }
                 }
             }
@@ -5012,9 +5266,28 @@ namespace ttcr {
             
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
-                        reachedTx = true;
-                        break;
+                    if ( txOnNode[nt] ) {
+                        if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnEdge[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
+
+                            r_tmp.push_back(Tx[nt]);
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnFace[nt] ) {
+                        if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+
+                            r_tmp.push_back(Tx[nt]);
+                            reachedTx = true;
+                            break;
+                        }
                     }
                 }
             } if ( onEdge ) {
