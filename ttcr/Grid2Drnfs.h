@@ -150,11 +150,11 @@ namespace ttcr {
         
         for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
             
-            double x = this->xmin + nc*this->dx;
+            T1 x = this->xmin + nc*this->dx;
             
             for ( T2 nr=0; nr<=this->ncz; ++nr ) {
                 
-                double z = this->zmin + nr*this->dz;
+                T1 z = this->zmin + nr*this->dz;
                 
                 if ( nr < this->ncz && nc < this->ncx ) {
                     cell_downRight = nc*this->ncz + nr;

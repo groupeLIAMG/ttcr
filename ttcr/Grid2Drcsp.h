@@ -199,11 +199,11 @@ namespace ttcr {
         
         for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
             
-            double x = this->xmin + nc*this->dx;
+            T1 x = this->xmin + nc*this->dx;
             
             for ( T2 nr=0; nr<=this->ncz; ++nr ) {
                 
-                double z = this->zmin + nr*this->dz;
+                T1 z = this->zmin + nr*this->dz;
                 
                 if ( nr < this->ncz && nc < this->ncx ) {
                     cell_downRight = nc*this->ncz + nr;
@@ -257,7 +257,7 @@ namespace ttcr {
                 if ( nr < this->ncz ) {
                     for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
 
-                        double zsv = this->zmin + nr*this->dz + (ns+1)*dzs;
+                        T1 zsv = this->zmin + nr*this->dz + (ns+1)*dzs;
 
                         if ( cell_downLeft != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_downLeft );
@@ -276,7 +276,7 @@ namespace ttcr {
                 if ( nc < this->ncx ) {
                     for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
                         
-                        double xsh = this->xmin + nc*this->dx + (ns+1)*dxs;
+                        T1 xsh = this->xmin + nc*this->dx + (ns+1)*dxs;
                         
                         if ( cell_upRight != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_upRight );
