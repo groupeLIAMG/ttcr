@@ -830,55 +830,31 @@ namespace ttcr {
         T1 D3 = det4(v1, v2,  v, v4);
         T1 D4 = det4(v1, v2, v3,  v);
         
-        int t1, t2, t3, t4;
+        int t1 = (signum(D0)==signum(D1));
+        int t2 = (signum(D0)==signum(D2));
+        int t3 = (signum(D0)==signum(D3));
+        int t4 = (signum(D0)==signum(D4));
         
+        bool it1, it2, it3, it4;
+        it1 = it2 = it3 = it4 = 0;
+
         if ( std::abs(D1)<small2 ) {
             // points are coplanar, check if pt is inside triangle
-            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[1] ]),
-                                &(nodes[ tetrahedra[nt].i[2] ]),
-                                &(nodes[ tetrahedra[nt].i[3] ]), v))
-                return 1;
-            else
-                return 0;
-            
-        } else {
-            t1 = (signum(D0)==signum(D1));
+            it1 = testInTriangle(v2, v3, v4, v);
         }
-        
         if ( std::abs(D2)<small2 ) {
-            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
-                                &(nodes[ tetrahedra[nt].i[2] ]),
-                                &(nodes[ tetrahedra[nt].i[3] ]), v))
-                return 1;
-            else
-                return 0;
-        } else {
-            t2 = (signum(D0)==signum(D2));
+            it2 = testInTriangle(v1, v3, v4, v);
         }
         
         if ( std::abs(D3)<small2 ) {
-            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
-                                &(nodes[ tetrahedra[nt].i[1] ]),
-                                &(nodes[ tetrahedra[nt].i[3] ]), v))
-                return 1;
-            else
-                return 0;
-        } else {
-            t3 = (signum(D0)==signum(D3));
+            it3 = testInTriangle(v1, v2, v4, v);
         }
         
         if ( std::abs(D4)<small2 ) {
-            if ( testInTriangle(&(nodes[ tetrahedra[nt].i[0] ]),
-                                &(nodes[ tetrahedra[nt].i[1] ]),
-                                &(nodes[ tetrahedra[nt].i[2] ]), v))
-                return 1;
-            else
-                return 0;
-        } else {
-            t4 = (signum(D0)==signum(D4));
+            it4 = testInTriangle(v1, v2, v3, v);
         }
         
-        return t1 && t2 && t3 && t4;
+        return ( t1 && t2 && t3 && t4 ) || it1 || it2 || it3 || it4;
     }
     
     template<typename T1, typename T2, typename NODE>

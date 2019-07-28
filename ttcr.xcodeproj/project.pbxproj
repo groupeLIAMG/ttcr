@@ -194,6 +194,7 @@
 		2B721612216CF34D00B8FAB2 /* Grid3Dundsp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Dundsp.h; sourceTree = "<group>"; };
 		2B76D8911BB2351D00F2D81F /* Grid2Drnfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drnfs.h; sourceTree = "<group>"; };
 		2B8837C11C81BC340081A37C /* Cell.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Cell.h; sourceTree = "<group>"; };
+		2B88845722EC839800F2CFB4 /* half.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = half.hpp; sourceTree = "<group>"; };
 		2B8AAD8A1C3F51DB00C38269 /* Grid3Drcfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drcfs.h; sourceTree = "<group>"; };
 		2B8FC2501AB0D1E700EF9265 /* grid3dunsp_mex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = grid3dunsp_mex.cpp; sourceTree = "<group>"; };
 		2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grid3duisp_mex.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -372,6 +373,15 @@
 			path = ttcr_matlab;
 			sourceTree = "<group>";
 		};
+		2B88845622EC839800F2CFB4 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				2B88845722EC839800F2CFB4 /* half.hpp */,
+			);
+			name = include;
+			path = "half-2.0.0/include";
+			sourceTree = "<group>";
+		};
 		2BB7D5BA1D07A801004730B9 /* ttcrpy */ = {
 			isa = PBXGroup;
 			children = (
@@ -394,6 +404,7 @@
 		2BC708CA18EDA599004DA2C9 = {
 			isa = PBXGroup;
 			children = (
+				2B88845622EC839800F2CFB4 /* include */,
 				2BB7D5BA1D07A801004730B9 /* ttcrpy */,
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
@@ -1271,6 +1282,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
@@ -2132,6 +2144,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
@@ -2200,6 +2213,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;
@@ -2498,6 +2512,7 @@
 					/opt/local/include,
 					/opt/local/include/eigen3,
 					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				LIBRARY_SEARCH_PATHS = /opt/local/lib;

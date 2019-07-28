@@ -117,6 +117,47 @@ namespace ttcr {
         w = 1.0 - u - v;
     }
 
+    template<typename T>
+    void barycentric(const sxyz<T> &a,
+                     const sxyz<T> &b,
+                     const sxyz<T> &c,
+                     const sxyz<T> &p,
+                     T &u, T &v, T &w) {
+
+        sxyz<T> ab = b - a;
+        sxyz<T> ac = c - a;
+
+        // Unnormalized triangle normal
+        sxyz<T> m = cross(ab, ac);
+
+        // Nominators and one-over-denominator for u and v ratios
+        T nu, nv, ood;
+
+        // Absolute components for determining projection plane
+        T x = std::abs(m.x), y = std::abs(m.y), z = std::abs(m.z);
+
+        // Compute areas in plane of largest projection
+        if (x >= y && x >= z) {
+            // x is largest, project to the yz plane
+            nu = triangleArea2D(p.y, p.z, b.y, b.z, c.y, c.z); // Area of PBC in yz plane
+            nv = triangleArea2D(p.y, p.z, c.y, c.z, a.y, a.z); // Area of PCA in yz plane
+            ood = 1.0 / m.x; // 1/(2*area of ABC in yz plane)
+        } else if (y >= x && y >= z) {
+            // y is largest, project to the xz plane
+            nu = triangleArea2D(p.x, p.z, b.x, b.z, c.x, c.z);
+            nv = triangleArea2D(p.x, p.z, c.x, c.z, a.x, a.z);
+            ood = 1.0 / -m.y;
+        } else {
+            // z is largest, project to the xy plane
+            nu = triangleArea2D(p.x, p.y, b.x, b.y, c.x, c.y);
+            nv = triangleArea2D(p.x, p.y, c.x, c.y, a.x, a.y);
+            ood = 1.0 / m.z;
+        }
+        u = nu * ood;
+        v = nv * ood;
+        w = 1.0 - u - v;
+    }
+
     template<typename T, typename NODE>
     bool testInTriangleBoundingBox(const NODE *vertexA,
                                    const NODE *vertexB,
@@ -137,12 +178,42 @@ namespace ttcr {
         T zMax = vertexA->getZ() > vertexB->getZ() ? vertexA->getZ() : vertexB->getZ();
         zMax = zMax > vertexC->getZ() ? zMax : vertexC->getZ();
         
-        if ( E.x < xMin || xMax < E.x || E.y < yMin || yMax < E.y || E.z < zMin || zMax < E.z )
+        if (E.x < xMin-small2 || xMax+small2 < E.x ||
+            E.y < yMin-small2 || yMax+small2 < E.y ||
+            E.z < zMin-small2 || zMax+small2 < E.z)
             return false;
         else
             return true;
     }
     
+    template<typename T>
+    bool testInTriangleBoundingBox(const sxyz<T> &vertexA,
+                                   const sxyz<T> &vertexB,
+                                   const sxyz<T> &vertexC,
+                                   const sxyz<T> &E) {
+        T xMin = vertexA.x < vertexB.x ? vertexA.x : vertexB.x;
+        xMin = xMin < vertexC.x ? xMin : vertexC.x;
+        T xMax = vertexA.x > vertexB.x ? vertexA.x : vertexB.x;
+        xMax = xMax > vertexC.x ? xMax : vertexC.x;
+
+        T yMin = vertexA.y < vertexB.y ? vertexA.y : vertexB.y;
+        yMin = yMin < vertexC.y ? yMin : vertexC.y;
+        T yMax = vertexA.y > vertexB.y ? vertexA.y : vertexB.y;
+        yMax = yMax > vertexC.y ? yMax : vertexC.y;
+
+        T zMin = vertexA.z < vertexB.z ? vertexA.z : vertexB.z;
+        zMin = zMin < vertexC.z ? zMin : vertexC.z;
+        T zMax = vertexA.z > vertexB.z ? vertexA.z : vertexB.z;
+        zMax = zMax > vertexC.z ? zMax : vertexC.z;
+
+        if (E.x < xMin-small2 || xMax+small2 < E.x ||
+            E.y < yMin-small2 || yMax+small2 < E.y ||
+            E.z < zMin-small2 || zMax+small2 < E.z)
+            return false;
+        else
+            return true;
+    }
+
     template<typename T, typename NODE>
     T distSqPointToSegment(const NODE *vertexA,
                            const NODE *vertexB,
@@ -168,6 +239,35 @@ namespace ttcr {
             T p_p1_squareLength = (vertexA->getX() - E.x)*(vertexA->getX() - E.x) +
             (vertexA->getY() - E.y)*(vertexA->getY() - E.y) +
             (vertexA->getZ() - E.z)*(vertexA->getZ() - E.z);
+            return p_p1_squareLength - dotProd * dotProd * p1_p2_squareLength;
+        }
+    }
+
+    template<typename T>
+    T distSqPointToSegment(const sxyz<T> &vertexA,
+                           const sxyz<T> &vertexB,
+                           const sxyz<T> &E) {
+
+        T p1_p2_squareLength = (vertexB.x - vertexA.x)*(vertexB.x - vertexA.x) +
+        (vertexB.y - vertexA.y)*(vertexB.y - vertexA.y) +
+        (vertexB.z - vertexA.z)*(vertexB.z - vertexA.z);
+
+        T dotProd = ((E.x - vertexA.x)*(vertexB.x - vertexA.x) +
+                     (E.y - vertexA.y)*(vertexB.y - vertexA.y) +
+                     (E.z - vertexA.z)*(vertexB.z - vertexA.z)) / p1_p2_squareLength;
+
+        if ( dotProd < 0.0 ) {
+            return (E.x-vertexA.x)*(E.x-vertexA.x) +
+            (E.y-vertexA.y)*(E.y-vertexA.y) +
+            (E.z-vertexA.z)*(E.z-vertexA.z);
+        } else if ( dotProd > 1.0 ) {
+            return (E.x-vertexB.x)*(E.x-vertexB.x) +
+            (E.y-vertexB.y)*(E.y-vertexB.y) +
+            (E.z-vertexB.z)*(E.z-vertexB.z);
+        } else {
+            T p_p1_squareLength = (vertexA.x - E.x)*(vertexA.x - E.x) +
+            (vertexA.y - E.y)*(vertexA.y - E.y) +
+            (vertexA.z - E.z)*(vertexA.z - E.z);
             return p_p1_squareLength - dotProd * dotProd * p1_p2_squareLength;
         }
     }
@@ -210,6 +310,30 @@ namespace ttcr {
         return false;
     }
     
+    template<typename T>
+    bool testInTriangle(const sxyz<T> &vertexA,
+                        const sxyz<T> &vertexB,
+                        const sxyz<T> &vertexC,
+                        const sxyz<T> &E) {
+
+        if ( ! testInTriangleBoundingBox(vertexA, vertexB, vertexC, E) )
+            return false;
+
+        T u, v, w;
+        barycentric(vertexA, vertexB, vertexC, E, u, v, w);
+        if ( v >= 0.0 && w >= 0.0 && (v + w) <= 1.0 )
+            return true;
+
+        if (distSqPointToSegment(vertexA, vertexB, E) <= small2)
+            return true;
+        if (distSqPointToSegment(vertexA, vertexC, E) <= small2)
+            return true;
+        if (distSqPointToSegment(vertexB, vertexC, E) <= small2)
+            return true;
+
+        return false;
+    }
+
 
     template<typename T>
     void buildReflectors(const MSHReader &reader,
