@@ -742,7 +742,7 @@ namespace ttcr {
         reader.readSlowness(slowness, constCells);
         
         if ( verbose ) {
-            std::cout << "  Unstructured mesh in file has"
+            std::cout << "\n  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << tetrahedra.size() << " cells";
             if ( constCells )
@@ -1037,7 +1037,7 @@ namespace ttcr {
         }
         
         if ( verbose ) {
-            std::cout << "  Unstructured mesh in file has"
+            std::cout << "\n  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << tetrahedra.size() << " cells";
             if ( constCells )
@@ -1894,7 +1894,7 @@ namespace ttcr {
         
         
         if ( verbose ) {
-            std::cout << "  Unstructured mesh in file has"
+            std::cout << "\n  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
             if ( constCells )
@@ -2102,7 +2102,7 @@ namespace ttcr {
         
         
         if ( verbose ) {
-            std::cout << "  Unstructured mesh in file has"
+            std::cout << "\n  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
             if ( constCells )
@@ -2303,7 +2303,7 @@ namespace ttcr {
         reader.readSlowness(slowness, constCells);
         
         if ( verbose ) {
-            std::cout << "  Unstructured mesh in file has"
+            std::cout << "\n  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
             if ( constCells )
@@ -2439,7 +2439,7 @@ namespace ttcr {
         }
         
         if ( verbose ) {
-            std::cout << "  Unstructured mesh in file has"
+            std::cout << "\n  Unstructured mesh in file has"
             << "\n    " << nodes.size() << " nodes"
             << "\n    " << triangles.size() << " cells";
             if ( constCells )
