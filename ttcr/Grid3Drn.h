@@ -275,6 +275,7 @@ namespace ttcr {
         void grad(sxyz<T1>& g, const size_t i, const size_t j, const size_t k,
                   const size_t nt) const;
         
+        void gradO2(sxyz<T1>& g, const sxyz<T1> &pt, const size_t nt) const;
         void grad(sxyz<T1>& g, const sxyz<T1> &pt, const size_t nt) const;
 
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -629,10 +630,10 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE>
-    void Grid3Drn<T1,T2,NODE>::grad(sxyz<T1>& g, const sxyz<T1> &pt,
-                                    const size_t nt) const {
+    void Grid3Drn<T1,T2,NODE>::gradO2(sxyz<T1>& g, const sxyz<T1> &pt,
+                                      const size_t nt) const {
         
-        // compute travel time gradient at point pt
+        // compute travel time gradient (2nd order centered operator) at point pt
         
         T1 p1 = pt.x - dx/2.0;
         T1 p2 = p1 + dx;
@@ -667,6 +668,76 @@ namespace ttcr {
         }
         g.z = (getTraveltime({pt.x, pt.y, p2}, nt) - getTraveltime({pt.x, pt.y, p1}, nt)) / dz;
         
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::grad(sxyz<T1>& g, const sxyz<T1> &pt,
+                                      const size_t nt) const {
+
+        // compute travel time gradient (4th order centered operator) at point pt
+
+        static const T1 k1 = 1./24.;
+        static const T1 k2 = 9./8.;
+
+        T1 p1 = pt.x - dx;
+        T1 p2 = p1 + 0.5*dx;
+        T1 p3 = p1 + 1.5*dx;
+        T1 p4 = p1 + 2.0*dx;
+        if ( p1 <= xmin ) {  // check if on grid edge or out of grid
+            p1 = xmin;  // shift pt to allow interpolating in getTraveltime
+            p2 = p1 + 0.5*dx;
+            p3 = p1 + 1.5*dx;
+            p4 = p1 + 2.0*dx;
+        } else if ( p4 >= xmax ) {
+            p4 = xmax;
+            p3 = p4 - 0.5*dx;
+            p2 = p4 - 1.5*dx;
+            p1 = p4 - 2.0*dx;
+        }
+        g.x = (k1 * getTraveltime({p1, pt.y, pt.z}, nt) -
+               k2 * getTraveltime({p2, pt.y, pt.z}, nt) +
+               k2 * getTraveltime({p3, pt.y, pt.z}, nt) -
+               k1 * getTraveltime({p4, pt.y, pt.z}, nt)) / dx;
+
+        p1 = pt.y - dy/2.0;
+        p2 = p1 + 0.5*dy;
+        p3 = p1 + 1.5*dy;
+        p4 = p1 + 2.0*dy;
+        if ( p1 <= ymin ) {
+            p1 = ymin;
+            p2 = p1 + 0.5*dy;
+            p3 = p1 + 1.5*dy;
+            p4 = p1 + 2.0*dy;
+        } else if ( p4 >= ymax ) {
+            p4 = ymax;
+            p3 = p4 - 0.5*dy;
+            p2 = p4 - 1.5*dy;
+            p1 = p4 - 2.0*dy;
+        }
+        g.y = (k1 * getTraveltime({pt.x, p1, pt.z}, nt) -
+               k2 * getTraveltime({pt.x, p2, pt.z}, nt) +
+               k2 * getTraveltime({pt.x, p3, pt.z}, nt) -
+               k1 * getTraveltime({pt.x, p4, pt.z}, nt)) / dy;
+
+        p1 = pt.z - dz/2.0;
+        p2 = p1 + 0.5*dz;
+        p3 = p1 + 1.5*dz;
+        p4 = p1 + 2.0*dz;
+        if ( p1 <= zmin ) {
+            p1 = zmin;
+            p2 = p1 + 0.5*dz;
+            p3 = p1 + 1.5*dz;
+            p4 = p1 + 2.0*dz;
+        } else if ( p4 >= zmax ) {
+            p4 = zmax;
+            p3 = p4 - 0.5*dz;
+            p2 = p4 - 1.5*dz;
+            p1 = p4 - 2.0*dz;
+        }
+        g.z = (k1 * getTraveltime({pt.x, pt.y, p1}, nt) -
+               k2 * getTraveltime({pt.x, pt.y, p2}, nt) +
+               k2 * getTraveltime({pt.x, pt.y, p3}, nt) -
+               k1 * getTraveltime({pt.x, pt.y, p4}, nt)) / dz;
     }
 
     template<typename T1, typename T2, typename NODE>
@@ -823,13 +894,17 @@ namespace ttcr {
         // distance between opposite nodes of a voxel
         static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
-        
+#ifdef DEBUG_RP
+        std::cout << "\n\nStarting raypath computation\n  curr_pt = " << curr_pt << '\n';
+#endif
         bool reachedTx = false;
         while ( reachedTx == false ) {
             
             grad(g, curr_pt, threadNo);
             g *= -1.0;
-            
+#ifdef DEBUG_RP
+            std::cout << "  g = " << g << '\n';
+#endif
             long long i, j, k;
             getIJK(curr_pt, i, j, k);
             
@@ -863,7 +938,9 @@ namespace ttcr {
                 curr_pt += tz*g;
                 curr_pt.z = zp;
             }
-            
+#ifdef DEBUG_RP
+            std::cout << "  curr_pt = " << curr_pt << '\n';
+#endif
             if ( curr_pt.x < xmin || curr_pt.x > xmax ||
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
