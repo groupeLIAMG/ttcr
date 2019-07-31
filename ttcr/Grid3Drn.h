@@ -178,6 +178,11 @@ namespace ttcr {
             }
         }
 
+#ifdef VTK
+        void saveModelVTR(const std::string &,
+                          const bool saveSlowness=true) const;
+#endif
+
     protected:
         size_t nThreads;	     // number of threads
         T1 dx;                   // cell size in x
@@ -2718,6 +2723,66 @@ namespace ttcr {
             }
         }
     }
+
+#ifdef VTK
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::saveModelVTR(const std::string &fname,
+                                            const bool saveSlowness) const {
+
+        int nn[3] = {static_cast<int>(ncx+1), static_cast<int>(ncy+1), static_cast<int>(ncz+1)};
+
+        vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[0]; ++n)
+            xCoords->InsertNextValue( xmin + n*dx );
+        vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[1]; ++n)
+            yCoords->InsertNextValue( ymin + n*dy );
+        vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
+        for (size_t n=0; n<nn[2]; ++n)
+            zCoords->InsertNextValue( zmin + n*dz );
+
+        vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
+        rgrid->SetDimensions( nn );
+        rgrid->SetXCoordinates(xCoords);
+        rgrid->SetYCoordinates(yCoords);
+        rgrid->SetZCoordinates(zCoords);
+
+        vtkSmartPointer<vtkDoubleArray> newScalars =
+        vtkSmartPointer<vtkDoubleArray>::New();
+
+        newScalars->SetNumberOfComponents(1);
+        newScalars->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
+
+        if ( saveSlowness ) {
+            newScalars->SetName("Slowness");
+            for ( size_t n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() ) {
+                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    newScalars->SetTuple1(id, nodes[n].getNodeSlowness() );
+                }
+            }
+        } else {
+            newScalars->SetName("Velocity");
+            for ( size_t n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() ) {
+                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    newScalars->SetTuple1(id, 1./nodes[n].getNodeSlowness() );
+                }
+            }
+        }
+        rgrid->GetPointData()->SetScalars(newScalars);
+
+        vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
+        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+
+        writer->SetFileName( fname.c_str() );
+        writer->SetInputData( rgrid );
+        writer->SetDataModeToBinary();
+        writer->Update();
+    }
+#endif
+
+
 }
 
 #endif

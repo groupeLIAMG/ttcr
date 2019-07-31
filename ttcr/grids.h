@@ -333,6 +333,22 @@ namespace ttcr {
             delete g;
             return nullptr;
         }
+
+        if ( par.saveModelVTK ) {
+#ifdef VTK
+            std::string filename = par.modelfile;
+            size_t i = filename.rfind(".grd");
+            filename.replace(i, 4, ".vtr");
+
+            if ( verbose ) std::cout << "Saving model in " << filename << " ... ";
+            g->saveModelVTR(filename, false);
+            if ( verbose ) std::cout << "done.\n";
+#else
+            std::cerr << "Error: program not compiled with VTK support" << std::endl;
+            return nullptr;
+#endif
+        }
+
         
         return g;
     }
