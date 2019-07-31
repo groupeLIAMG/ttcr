@@ -123,6 +123,13 @@ namespace ttcr {
                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                              const size_t=0) const {}
         
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1> &Rx,
+                        std::vector<sxyz<T1>> &r_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
+        
         void saveSlownessXYZ(const char filename[]) const {
             std::ofstream fout( filename );
             
@@ -261,13 +268,6 @@ namespace ttcr {
                                     const std::vector<T1>& t0,
                                     const sxyz<T1>& Rx,
                                     const size_t threadNo) const;
-        
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
-                        T1 &tt,
-                        const size_t threadNo) const;
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,

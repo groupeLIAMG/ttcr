@@ -39,3 +39,9 @@ ttcr2d : ttcr2d.o ttcr_io.o
 
 ttcr2d.o : ttcr/ttcr2d.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr2d.cpp
+
+ttcr3d_raypath : ttcr3d_raypath.o ttcr_io.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr3d_raypath.o -o ttcr3d_raypath
+
+ttcr3d_raypath.o : ttcr/ttcr3d_raypath.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -c ttcr/ttcr3d_raypath.cpp

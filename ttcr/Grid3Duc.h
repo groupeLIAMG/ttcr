@@ -173,6 +173,13 @@ namespace ttcr {
                               std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                               const size_t=0) const {}
         
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1> &Rx,
+                        std::vector<sxyz<T1>> &r_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
+        
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
         
@@ -272,13 +279,6 @@ namespace ttcr {
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
-                        const size_t threadNo) const;
-        
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
-                        T1 &tt,
                         const size_t threadNo) const;
         
         bool check_pt_location(sxyz<T1> &curr_pt,
@@ -3104,7 +3104,7 @@ namespace ttcr {
                     std::set<NODE*> nnodes;
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t;
-                    if ( r_data.size <= 1 ) {
+                    if ( r_data.size() <= 1 ) {
                         curr_t = Interpolator<T1>::trilinearTime(curr_pt,
                                                                  nodes[itmp[0]],
                                                                  nodes[itmp[1]],
@@ -3121,7 +3121,7 @@ namespace ttcr {
                     g = grad3d->compute(curr_pt, curr_t, nnodes, threadNo);
                 } else {
                     std::vector<NODE*> ref_pt(3);
-                    if ( r_data.size <= 1 ) {
+                    if ( r_data.size() <= 1 ) {
                         ref_pt[0] = &(nodes[itmp[0]]);
                         ref_pt[1] = &(nodes[itmp[1]]);
                         ref_pt[2] = &(nodes[itmp[2]]);

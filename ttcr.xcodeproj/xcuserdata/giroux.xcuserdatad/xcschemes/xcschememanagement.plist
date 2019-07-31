@@ -69,6 +69,11 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>ttcr3d_raypath.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>14</integer>
+		</dict>
 		<key>ttcrpy.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -128,6 +133,11 @@
 			<true/>
 		</dict>
 		<key>2B8FC2511AB0D2B000EF9265</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2BB25EE122F07A72008765E9</key>
 		<dict>
 			<key>primary</key>
 			<true/>

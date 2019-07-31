@@ -21,6 +21,8 @@
 		2B6F87A8190F3EDA002AC9DF /* grid2dunsp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B6F87A7190F3EDA002AC9DF /* grid2dunsp_mex.cpp */; };
 		2B8FC25B1AB0D30900EF9265 /* grid3dunsp_mex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B8FC2501AB0D1E700EF9265 /* grid3dunsp_mex.cpp */; };
 		2BA2D8CB191D556500923EF6 /* grid2dunsp.m in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2B6F87AF190F410D002AC9DF /* grid2dunsp.m */; };
+		2BB25EE522F07A72008765E9 /* ttcr3d_raypath.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BB25EE422F07A72008765E9 /* ttcr3d_raypath.cpp */; };
+		2BB25EEB22F07D8E008765E9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BC708D718EDA599004DA2C9 /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708D618EDA599004DA2C9 /* ttcr3d.cpp */; };
 		2BC7090418EDA83B004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BC7090C18EDAAA0004DA2C9 /* ttcr2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC7090B18EDAAA0004DA2C9 /* ttcr2d.cpp */; };
@@ -107,6 +109,15 @@
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BB25EE022F07A72008765E9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
 		};
 		2BC708D118EDA599004DA2C9 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -205,6 +216,8 @@
 		2B90ECD319054C3D0015748B /* Grid3Dunfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Dunfs.h; sourceTree = "<group>"; };
 		2B98A47519070C6D00816CF1 /* Grid2Drn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Drn.h; sourceTree = "<group>"; };
 		2B9963541F067641004FED9D /* cgrid3d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; path = cgrid3d.pyx; sourceTree = "<group>"; };
+		2BB25EE222F07A72008765E9 /* ttcr3d_raypath */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d_raypath; sourceTree = BUILT_PRODUCTS_DIR; };
+		2BB25EE422F07A72008765E9 /* ttcr3d_raypath.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ttcr3d_raypath.cpp; sourceTree = "<group>"; };
 		2BBBF74A21C0502D00B6D63B /* Grid3Drndsp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid3Drndsp.h; sourceTree = "<group>"; };
 		2BC39C39216FD4D8001510F2 /* Grid3Ducdsp.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; path = Grid3Ducdsp.h; sourceTree = "<group>"; };
 		2BC708D318EDA599004DA2C9 /* ttcr3d */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcr3d; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -313,6 +326,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2B8FC2541AB0D2B000EF9265 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BB25EDF22F07A72008765E9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -428,6 +448,7 @@
 				2B45CD351C5C38B40083644A /* grid2drcfs_mex.mexmaci64 */,
 				2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */,
 				2BE88D3821A4F1C10020D1DF /* someTests */,
+				2BB25EE222F07A72008765E9 /* ttcr3d_raypath */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -506,6 +527,7 @@
 				2B46D14D19F2B80E00E7ADFC /* structs_msh2vtk.h */,
 				2B46D14E19F2B84700E7ADFC /* msh2vtk_io.cpp */,
 				2B46D14F19F2B84700E7ADFC /* msh2vtk_io.h */,
+				2BB25EE422F07A72008765E9 /* ttcr3d_raypath.cpp */,
 			);
 			path = ttcr;
 			sourceTree = "<group>";
@@ -657,6 +679,23 @@
 			productReference = 2B8FC25A1AB0D2B000EF9265 /* grid3duisp_mex.mexmaci64 */;
 			productType = "com.apple.product-type.tool";
 		};
+		2BB25EE122F07A72008765E9 /* ttcr3d_raypath */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BB25EEA22F07A72008765E9 /* Build configuration list for PBXNativeTarget "ttcr3d_raypath" */;
+			buildPhases = (
+				2BB25EDE22F07A72008765E9 /* Sources */,
+				2BB25EDF22F07A72008765E9 /* Frameworks */,
+				2BB25EE022F07A72008765E9 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ttcr3d_raypath;
+			productName = ttcr3d_raypath;
+			productReference = 2BB25EE222F07A72008765E9 /* ttcr3d_raypath */;
+			productType = "com.apple.product-type.tool";
+		};
 		2BC708D218EDA599004DA2C9 /* ttcr3d */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2BC708DC18EDA599004DA2C9 /* Build configuration list for PBXNativeTarget "ttcr3d" */;
@@ -749,6 +788,9 @@
 					2B46D14419F2B78C00E7ADFC = {
 						CreatedOnToolsVersion = 6.0.1;
 					};
+					2BB25EE122F07A72008765E9 = {
+						CreatedOnToolsVersion = 10.3;
+					};
 					2BE88D3721A4F1C10020D1DF = {
 						CreatedOnToolsVersion = 10.1;
 						ProvisioningStyle = Automatic;
@@ -780,6 +822,7 @@
 				2B45CD341C5C38B40083644A /* grid2drcfs_mex */,
 				2B45CD471C5C3F100083644A /* grid2drcsp_mex */,
 				2BE88D3721A4F1C10020D1DF /* someTests */,
+				2BB25EE122F07A72008765E9 /* ttcr3d_raypath */,
 			);
 		};
 /* End PBXProject section */
@@ -847,6 +890,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B8FC25B1AB0D30900EF9265 /* grid3dunsp_mex.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BB25EDE22F07A72008765E9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BB25EEB22F07D8E008765E9 /* ttcr_io.cpp in Sources */,
+				2BB25EE522F07A72008765E9 /* ttcr3d_raypath.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2090,6 +2142,139 @@
 			};
 			name = Release;
 		};
+		2BB25EE622F07A72008765E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		2BB25EE722F07A72008765E9 /* Debug_RP */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_RP;
+		};
+		2BB25EE822F07A72008765E9 /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_O;
+		};
+		2BB25EE922F07A72008765E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		2BC708DA18EDA599004DA2C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2742,6 +2927,17 @@
 				2B42E66321833A8B00E44058 /* Debug_RP */,
 				2B8FC2581AB0D2B000EF9265 /* Debug_O */,
 				2B8FC2591AB0D2B000EF9265 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2BB25EEA22F07A72008765E9 /* Build configuration list for PBXNativeTarget "ttcr3d_raypath" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2BB25EE622F07A72008765E9 /* Debug */,
+				2BB25EE722F07A72008765E9 /* Debug_RP */,
+				2BB25EE822F07A72008765E9 /* Debug_O */,
+				2BB25EE922F07A72008765E9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

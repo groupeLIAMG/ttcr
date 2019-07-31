@@ -52,6 +52,7 @@
 #include "vtkSmartPointer.h"
 #include "vtkTetra.h"
 #include "vtkXMLRectilinearGridWriter.h"
+#include "vtkXMLUnstructuredGridReader.h"
 #include "vtkXMLUnstructuredGridWriter.h"
 #endif
 
@@ -177,10 +178,19 @@ namespace ttcr {
                               std::vector<std::vector<T1>*>& traveltimes,
                               std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                               const size_t=0) const {}
+
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1>& Rx,
+                        std::vector<sxyz<T1>>& r_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
         
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
-        
+        void loadTT(const std::string &, const int, const size_t nt=0,
+                    const int format=1) const;
+
 #ifdef VTK
         void saveModelVTU(const std::string &, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
@@ -264,13 +274,6 @@ namespace ttcr {
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,
-                        const size_t threadNo) const;
-        
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1>& Rx,
-                        std::vector<sxyz<T1>>& r_data,
-                        T1 &tt,
                         const size_t threadNo) const;
         
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -939,7 +942,59 @@ namespace ttcr {
             throw std::runtime_error("Unsupported format for saving traveltimes");
         }
     }
-    
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::loadTT(const std::string &fname, const int all,
+                                      const size_t nt, const int format) const {
+
+        if ( format == 1 ) {
+            std::string filename = fname+".dat";
+            std::ifstream fin(filename.c_str());
+            T2 nMax = nPrimary;
+            if ( all == 1 ) {
+                nMax = static_cast<T2>(nodes.size());
+            }
+            T1 x, y, z, tt;
+            for ( T2 n=0; n<nMax; ++n ) {
+                fin >> x >> y >> z >> tt;
+                nodes[n].setTT(tt, nt);
+            }
+            fin.close();
+        } else if ( format == 2 ) {
+#ifdef VTK
+            std::string filename = fname+".vtu";
+
+            vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+            vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+
+            reader->SetFileName( filename.c_str() );
+            reader->Update();
+
+            T2 nMax = nPrimary;  // only primary were saved
+            for (size_t n=0; n<nMax; ++n) {
+                nodes[n].setTT(reader->GetOutput()->GetPointData()->GetArray("Travel time")->GetTuple1(n), nt);
+            }
+#else
+            std::cerr << "VTK not included during compilation.\n";
+#endif
+        } else if ( format == 3 ) {
+            std::string filename = fname+".bin";
+            std::ifstream fin(filename.c_str(), std::ios::binary);
+            T2 nMax = nPrimary;
+            if ( all == 1 ) {
+                nMax = static_cast<T2>(nodes.size());
+            }
+            for ( T2 n=0; n<nMax; ++n ) {
+                T1 tmp[4];
+                fin.read( (char*)tmp, 4*sizeof(T1) );
+                nodes[n].setTT(tmp[3], nt);
+            }
+            fin.close();
+        } else {
+            throw std::runtime_error("Unsupported format for traveltimes");
+        }
+    }
+
 #ifdef VTK
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::saveModelVTU(const std::string &fname,
@@ -3021,7 +3076,7 @@ namespace ttcr {
                     std::set<NODE*> nnodes;
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t;
-                    if ( r_tmp.size <= 1 ) {
+                    if ( r_tmp.size() <= 1 ) {
                         curr_t = Interpolator<T1>::trilinearTime(curr_pt,
                                                                  nodes[itmp[0]],
                                                                  nodes[itmp[1]],
@@ -3038,7 +3093,7 @@ namespace ttcr {
                     g = grad3d->compute(curr_pt, curr_t, nnodes, threadNo);
                 } else {
                     std::vector<NODE*> ref_pt(3);
-                    if ( r_tmp.size <= 1 ) {
+                    if ( r_tmp.size() <= 1 ) {
                         ref_pt[0] = &(nodes[itmp[0]]);
                         ref_pt[1] = &(nodes[itmp[1]]);
                         ref_pt[2] = &(nodes[itmp[2]]);

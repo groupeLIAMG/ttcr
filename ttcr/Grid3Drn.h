@@ -116,6 +116,13 @@ namespace ttcr {
                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                              const size_t=0) const {}
         
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1> &Rx,
+                        std::vector<sxyz<T1>> &r_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
+
         void saveSlownessXYZ(const char filename[]) const {
             //Saves the Slowness of the primary nodes
             std::ofstream fout( filename );
@@ -147,7 +154,9 @@ namespace ttcr {
         
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
-        
+        void loadTT(const std::string &, const int, const size_t nt=0,
+                    const int format=1) const;
+
         virtual const int get_niter() const { return 0; }
         virtual const int get_niterw() const { return 0; }
         
@@ -272,12 +281,7 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         const size_t threadNo=0) const;
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
-                        T1 &tt,
-                        const size_t threadNo) const;
+        
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
@@ -2063,7 +2067,57 @@ namespace ttcr {
         }
     }
     
-    
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::loadTT(const std::string & fname, const int all,
+                                      const size_t nt,
+                                      const int format) const {
+
+        if ( format == 1 ) {
+            std::string filename = fname+".dat";
+            std::ifstream fin(filename.c_str());
+            T1 x, y, z, tt;
+            for ( T2 n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() || all==1 ) {
+                    fin >> x >> y >> z >> tt;
+                    nodes[n].setTT(tt, nt);
+                }
+            }
+            fin.close();
+        } else if ( format == 2 ) {
+#ifdef VTK
+            std::string filename = fname+".vtr";
+
+            vtkSmartPointer<vtkXMLRectilinearGridReader> reader =
+            vtkSmartPointer<vtkXMLRectilinearGridReader>::New();
+
+            reader->SetFileName( filename.c_str() );
+            reader->Update();
+
+            for ( size_t n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() ) {
+                    vtkIdType id = reader->GetOutput()->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    nodes[n].setTT(reader->GetOutput()->GetPointData()->GetArray("Travel time")->GetTuple1(id), nt);
+                }
+            }
+#else
+            std::cerr << "VTK not included during compilation.\n";
+#endif
+        } else if ( format == 3 ) {
+            std::string filename = fname+".bin";
+            std::ifstream fin(filename.c_str(),std::ios::binary);
+            for ( T2 n=0; n<nodes.size(); ++n ) {
+                if ( nodes[n].isPrimary() || all==1 ) {
+                    T1 tmp[4];
+                    fin.read( (char*)tmp, 4*sizeof(T1) );
+                    nodes[n].setTT(tmp[3], nt);
+                }
+            }
+            fin.close();
+        } else {
+            throw std::runtime_error("Unsupported format for traveltimes");
+        }
+    }
+
     
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,

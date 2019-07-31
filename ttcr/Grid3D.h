@@ -97,6 +97,13 @@ namespace ttcr {
                              std::vector<std::vector<siv<T1>>>& l_data,
                              const size_t threadNo=0) const {}
 
+        virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                                const std::vector<T1>& t0,
+                                const sxyz<T1>& Rx,
+                                std::vector<sxyz<T1>>& r_data,
+                                T1 &tt,
+                                const size_t threadNo=0) const {}
+        
         virtual void setSlowness(const std::vector<T1>& s) {}
         virtual void setChi(const std::vector<T1>& x) {}
         virtual void setPsi(const std::vector<T1>& x) {}
@@ -108,7 +115,9 @@ namespace ttcr {
         
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}
-        
+        virtual void loadTT(const std::string &, const int, const size_t nt=0,
+                            const int format=1) const {}
+
         virtual const T1 getXmin() const { return 1; }
         virtual const T1 getXmax() const { return 1; }
         virtual const T1 getYmin() const { return 1; }
