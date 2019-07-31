@@ -2427,7 +2427,7 @@ namespace ttcr {
                     } else if ( txOnFace[nt] ) {
                         if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
-                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+                            curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
 
                             if ( interpVel )
                                 s2 = Interpolator<T1>::bilinearTriangleVel(Tx[nt],
@@ -3330,7 +3330,7 @@ namespace ttcr {
                     } else if ( txOnFace[nt] ) {
                         if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
-                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+                            curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
 
                             r_tmp.push_back(Tx[nt]);
                             reachedTx = true;
@@ -4298,7 +4298,7 @@ namespace ttcr {
                     } else if ( txOnFace[nt] ) {
                         if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
-                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+                            curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
 
                             if ( interpVel )
                                 s2 = Interpolator<T1>::bilinearTriangleVel(Tx[nt],
@@ -5337,7 +5337,7 @@ namespace ttcr {
                     } else if ( txOnFace[nt] ) {
                         if ( curr_pt.getDistance(nodes[txFaces[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
-                            curr_pt.getDistance(nodes[txFaces[nt][3]]) < minDist ) {
+                            curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
 
                             r_tmp.push_back(Tx[nt]);
                             reachedTx = true;
