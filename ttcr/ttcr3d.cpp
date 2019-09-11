@@ -25,9 +25,12 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <thread>
+
+#include <boost/asio/ip/host_name.hpp>
 
 #include "Grid3D.h"
 #include "Rcv.h"
@@ -711,8 +714,15 @@ int main(int argc, char * argv[])
     string fname = parse_input(argc, argv, par);
     
     if ( verbose ) {
+        auto host_name = boost::asio::ip::host_name();
+        char * user_name = getenv("USER");
+        if (!user_name) {
+            user_name = getenv("USERNAME");
+        }
         cout << "*** Program ttcr3d ***\n\n"
-        << "Raytracing in 3D media.\n";
+        << "Raytracing in 3D media.\n\n"
+        << "Calculations performed on " << host_name
+        << " by " << user_name << "\n";
     }
     get_params(fname, par);
 	

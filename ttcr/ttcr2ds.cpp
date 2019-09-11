@@ -22,8 +22,11 @@
  *
  */
 
+#include <cstdlib>
 #include <iostream>
 #include <thread>
+
+#include <boost/asio/ip/host_name.hpp>
 
 #include "Grid2Duc.h"
 #include "Rcv.h"
@@ -355,8 +358,15 @@ int main(int argc, char * argv[])
     
 	string fname = parse_input(argc, argv, par);
 	if ( verbose ) {
+        auto host_name = boost::asio::ip::host_name();
+        char * user_name = getenv("USER");
+        if (!user_name) {
+            user_name = getenv("USERNAME");
+        }
 		cout << "\n*** Program ttcr2ds ***\n\n"
-        << "Raytracing on undulated surfaces\n";
+        << "Raytracing on undulated surfaces\n\n"
+        << "Calculations performed on " << host_name
+        << " by " << user_name << "\n";
 	}
     
     get_params(fname, par);

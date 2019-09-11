@@ -11,7 +11,7 @@ CXXFLAGS = $(CXXOPTIONS) -I/usr/local/VTK-8.2.0/include/vtk-8.2 \
 
 LFLAGS = -L/usr/local/VTK-8.2.0/lib64/
 
-LIBS = -lvtkIOXML-8.2 -lvtkCommonDataModel-8.2 -lvtkCommonCore-8.2 -lvtkIOXMLParser-8.2 -lvtkIOCore-8.2 -lvtkCommonExecutionModel-8.2 \
+LIBS = -lboost_system -lvtkIOXML-8.2 -lvtkCommonDataModel-8.2 -lvtkCommonCore-8.2 -lvtkIOXMLParser-8.2 -lvtkIOCore-8.2 -lvtkCommonExecutionModel-8.2 \
 -lvtkCommonSystem-8.2 -lvtkCommonTransforms-8.2 -lvtkCommonMisc-8.2 -lvtkCommonMath-8.2 -lvtksys-8.2 -lvtkexpat-8.2 -lvtklz4-8.2 \
 -lvtklzma-8.2 -lvtkzlib-8.2 -lvtkdoubleconversion-8.2
 
