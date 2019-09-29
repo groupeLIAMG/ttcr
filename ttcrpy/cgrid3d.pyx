@@ -79,7 +79,7 @@ cdef extern from "Grid3Drnfs.h" namespace "ttcr":
 
 cdef extern from "Grid3Drcfs.h" namespace "ttcr":
     cdef cppclass Grid3Drcfs[T1,T2]:
-        Grid3Drcfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, size_t) except +
+        Grid3Drcfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool, size_t) except +
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void raytrace(vector[sxyz[T1]]&,
@@ -320,8 +320,10 @@ cdef class Grid3Drc:
         self.ny = ny
         self.nz = nz
         cdef bool ttrp = 1
+        cdef bool interp_vel = 0
         self.grid = new Grid3Drcfs[double,uint32_t](nx, ny, nz, dx, xmin, ymin,
-                                  zmin, eps, maxit, weno, ttrp, nthreads)
+                                  zmin, eps, maxit, weno, ttrp, interp_vel,
+                                  nthreads)
 
     def __dealloc__(self):
         del self.grid

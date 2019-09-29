@@ -263,7 +263,8 @@ namespace ttcr {
                     g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
-                                                    par.weno3, par.tt_from_rp, nt);
+                                                    par.weno3, par.tt_from_rp,
+                                                    par.interpVel, nt);
                 }
                 else
                     g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
@@ -662,7 +663,8 @@ namespace ttcr {
                         g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
-                                                        par.weno3, par.tt_from_rp, nt);
+                                                        par.weno3, par.tt_from_rp,
+                                                        par.interpVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
