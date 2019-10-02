@@ -263,7 +263,8 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.source_radius;
             }
-            else if (par.find("src radius tertiary") < 200) {
+            else if (par.find("src radius tertiary") < 200 ||
+                     par.find("radius dynamic nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.radius_tertiary_nodes;
             }
