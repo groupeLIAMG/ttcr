@@ -45,7 +45,8 @@ namespace ttcr {
         x(0.0f), y(0.0f), z(0.0f),
         gridIndex(std::numeric_limits<T2>::max()),
         tt(nullptr),
-        owners(0)
+        owners(0),
+        primary(true)
         {
             tt = new T1[nt];
             
@@ -60,7 +61,8 @@ namespace ttcr {
         x(xx), y(yy), z(zz),
         gridIndex(index),
         tt(nullptr),
-        owners(0)
+        owners(0),
+        primary(true)
         {
             tt = new T1[nt];
             
@@ -75,7 +77,8 @@ namespace ttcr {
         x(xx), y(yy), z(zz),
         gridIndex(std::numeric_limits<T2>::max()),
         tt(nullptr),
-        owners(0)
+        owners(0),
+        primary(true)
         {
             tt = new T1[nt];
             
@@ -90,7 +93,8 @@ namespace ttcr {
         x(node.x), y(node.y), z(node.z),
         gridIndex(node.gridIndex),
         tt(nullptr),
-        owners(node.owners)
+        owners(node.owners),
+        primary(node.primary)
         {
             tt = new T1[nThreads];
             
@@ -149,10 +153,10 @@ namespace ttcr {
         
         int getDimension() const { return 3; }
         
-        void setPrimary(const bool p) {
-            // do nothing, is here to be consistent with Node3Dcsp
+        void setPrimary(const bool p=true) {
+            primary = p;
         }
-        const bool isPrimary() const { return true; }
+        const bool isPrimary() const { return primary; }
         
     protected:
         size_t nThreads;
@@ -162,7 +166,7 @@ namespace ttcr {
         T2 gridIndex;               // index of this node in the list of the grid
         T1 *tt;                     // travel time for the multiple source points
         std::vector<T2> owners;     // indices of cells touching the node
-        
+        bool primary;
     };
     
     template<typename T1, typename T2>

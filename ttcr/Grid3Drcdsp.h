@@ -358,6 +358,7 @@ namespace ttcr {
                                 this->nodes[n].pushOwner( cXpYpZp );
                             }
                             this->nodes[n].setXYZindex( xsv, y, z, n );
+                            this->nodes[n].setPrimary(false);
                         }
                     }
 
@@ -384,6 +385,7 @@ namespace ttcr {
                                 this->nodes[n].pushOwner( cXpYpZp );
                             }
                             this->nodes[n].setXYZindex( x, ysv, z, n );
+                            this->nodes[n].setPrimary(false);
                         }
                     }
 
@@ -410,6 +412,7 @@ namespace ttcr {
                                 this->nodes[n].pushOwner( cXpYpZp );
                             }
                             this->nodes[n].setXYZindex( x, y, zsv, n );
+                            this->nodes[n].setPrimary(false);
                         }
                     }
 
@@ -430,6 +433,7 @@ namespace ttcr {
                                     this->nodes[n].pushOwner( cXpYpZp );
                                 }
                                 this->nodes[n].setXYZindex( xsv, ysv, z, n );
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -451,6 +455,7 @@ namespace ttcr {
                                     this->nodes[n].pushOwner( cXpYpZp );
                                 }
                                 this->nodes[n].setXYZindex( xsv, y, zsv, n );
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -472,6 +477,7 @@ namespace ttcr {
                                     this->nodes[n].pushOwner( cXpYpZp );
                                 }
                                 this->nodes[n].setXYZindex( x, ysv, zsv, n );
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
