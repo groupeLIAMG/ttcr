@@ -25,7 +25,6 @@
 #ifndef ttcr_Grad_h
 #define ttcr_Grad_h
 
-#define NDEBUG
 #include <cassert>
 
 #include <array>

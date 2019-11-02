@@ -26,7 +26,6 @@
 #ifndef ttcr_Grid3Dun_h
 #define ttcr_Grid3Dun_h
 
-#define NDEBUG
 #include <cassert>
 #include <cmath>
 
