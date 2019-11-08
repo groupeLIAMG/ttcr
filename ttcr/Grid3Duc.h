@@ -2050,7 +2050,7 @@ namespace ttcr {
                         // propagation was along edge
                         dt = nodes[nodeNo].getTT(threadNo) - nodes[prevNode].getTT(threadNo);
                     } else { // onEdge
-                        T2 traversedCell;
+                        T2 traversedCell = 0;
                         for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                             if ( std::find( nodes[edgeNodes[0]].getOwners().begin(), nodes[edgeNodes[0]].getOwners().end(), *nc ) != nodes[edgeNodes[0]].getOwners().end() &&
                                 std::find( nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc ) != nodes[edgeNodes[1]].getOwners().end() ) {
@@ -2201,7 +2201,7 @@ namespace ttcr {
                     T1 dt;
                     // find traversed cell
                     if ( onNode ) {
-                        T2 traversedCell;
+                        T2 traversedCell = 0;
                         for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                             if ( std::find( nodes[pen[0]].getOwners().begin(), nodes[pen[0]].getOwners().end(), *nc ) != nodes[pen[0]].getOwners().end() &&
                                 std::find( nodes[pen[1]].getOwners().begin(), nodes[pen[1]].getOwners().end(), *nc ) != nodes[pen[1]].getOwners().end() ) {
@@ -2211,7 +2211,7 @@ namespace ttcr {
                         }
                         dt = slowness[traversedCell] * prev_pt.getDistance( curr_pt );
                     } else {
-                        T2 traversedCell;
+                        T2 traversedCell = 0;
                         std::array<T2,3> fn;
                         fn[0] = pen[0];
                         fn[1] = pen[1];
@@ -2423,7 +2423,7 @@ namespace ttcr {
 #ifdef DEBUG_RP
                     r_data[0].push_back(curr_pt);
 #endif
-                    T2 traversedCell;
+                    T2 traversedCell = 0;
                     for ( auto nc=nodes[faceNodes[0]].getOwners().begin(); nc!=nodes[faceNodes[0]].getOwners().end(); ++nc ) {
                         if ( std::find( nodes[faceNodes[1]].getOwners().begin(), nodes[faceNodes[1]].getOwners().end(), *nc ) != nodes[faceNodes[1]].getOwners().end() &&
                             std::find( nodes[faceNodes[2]].getOwners().begin(), nodes[faceNodes[2]].getOwners().end(), *nc ) != nodes[faceNodes[2]].getOwners().end() ) {
@@ -3746,7 +3746,7 @@ namespace ttcr {
                         // propagation was along edge
                         dt = nodes[nodeNo].getTT(threadNo) - nodes[prevNode].getTT(threadNo);
                     } else { // onEdge
-                        T2 traversedCell;
+                        T2 traversedCell = 0;
                         for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                             if ( std::find( nodes[edgeNodes[0]].getOwners().begin(), nodes[edgeNodes[0]].getOwners().end(), *nc ) != nodes[edgeNodes[0]].getOwners().end() &&
                                 std::find( nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc ) != nodes[edgeNodes[1]].getOwners().end() ) {
@@ -3889,7 +3889,7 @@ namespace ttcr {
                     T1 dt;
                     // find traversed cell
                     if ( onNode ) {
-                        T2 traversedCell;
+                        T2 traversedCell = 0;
                         for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                             if ( std::find( nodes[pen[0]].getOwners().begin(), nodes[pen[0]].getOwners().end(), *nc ) != nodes[pen[0]].getOwners().end() &&
                                 std::find( nodes[pen[1]].getOwners().begin(), nodes[pen[1]].getOwners().end(), *nc ) != nodes[pen[1]].getOwners().end() ) {
@@ -3899,7 +3899,7 @@ namespace ttcr {
                         }
                         dt = slowness[traversedCell] * r_data.back().getDistance( curr_pt );
                     } else {
-                        T2 traversedCell;
+                        T2 traversedCell = 0;
                         std::array<T2,3> fn;
                         fn[0] = pen[0];
                         fn[1] = pen[1];
@@ -4095,7 +4095,7 @@ namespace ttcr {
                         onFace = false;
                     }
                     curr_pt = pt_i;
-                    T2 traversedCell;
+                    T2 traversedCell = 0;
                     for ( auto nc=nodes[faceNodes[0]].getOwners().begin(); nc!=nodes[faceNodes[0]].getOwners().end(); ++nc ) {
                         if ( std::find( nodes[faceNodes[1]].getOwners().begin(), nodes[faceNodes[1]].getOwners().end(), *nc ) != nodes[faceNodes[1]].getOwners().end() &&
                             std::find( nodes[faceNodes[2]].getOwners().begin(), nodes[faceNodes[2]].getOwners().end(), *nc ) != nodes[faceNodes[2]].getOwners().end() ) {
