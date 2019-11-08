@@ -40,12 +40,25 @@
 
 namespace ttcr {
     
-    // least-squares, first order
+/**
+ * Compute traveltime gradient for a triangle, with first-order least-squares
+ *
+ *  @tparam T underlying type of node objects
+ */
     template <typename T>
     class Grad2D_ls_fo {
     public:
-        Grad2D_ls_fo() {}
-        
+        Grad2D_ls_fo() = default;
+
+        /**
+         * Compute gradient given triangle nodes
+         *
+         * @param n0 first node making the triangle
+         * @param n1 second node making the triangle
+         * @param n2 third node making the triangle
+         * @param nt thread number
+         * @returns value of the travetime gradient
+         */
         sxz<T> compute(const Node<T> &n0,
                        const Node<T> &n1,
                        const Node<T> &n2,
@@ -102,12 +115,26 @@ namespace ttcr {
     }
     
     
-    // least-squares, second order
-    template <typename T, typename NODE>
-    class Grad2D_ls_so {
+/**
+ * Compute traveltime gradient for a triangle, with second-order least-squares
+ *
+ * Nodes that are neighbours to the triangle are used
+ *
+ *  @tparam T underlying type of node object
+ *  @tparam NODE node objects making the mesh
+ */
+template <typename T, typename NODE>
+class Grad2D_ls_so {
     public:
-        Grad2D_ls_so() {}
+        Grad2D_ls_so() = default;
         
+        /**
+         * Compute gradient given  nodes
+         *
+         * @param nodes set of nodes neighbours to the triangle
+         * @param nt thread number
+         * @returns value of the travetime gradient
+         */
         sxz<T> compute(const std::set<NODE*> &nodes,
                        const size_t nt);
         
@@ -174,27 +201,50 @@ namespace ttcr {
         
         return g;
     }
-    
+
+/**
+ * Interface to 3D traveltime gradient computation classes
+ *
+ * @tparam T underlying type of node object
+ * @tparam NODE node objects making the mesh
+ */
     template <typename T, typename NODE>
     class Grad3D {
     public:
-        virtual ~Grad3D() {}
+
+        virtual ~Grad3D() = default;
+
+        /**
+         * Compute gradient at a given point
+         *
+         * @param pt point where to compute gradient
+         * @param t traveltime at point pt
+         * @param nodes nodes surrounding point pt
+         * @param nt thread number
+         * @returns value of the travetime gradient
+         */
         virtual sxyz<T> compute(const sxyz<T> &pt,
                                 const T t,
                                 const std::set<NODE*> &nodes,
                                 const size_t nt) = 0;
     };
     
-    // least-squares, first order
+/**
+ * Compute traveltime gradient for a tetrahedron, with first-order least-squares
+ *
+ * @tparam T underlying type of node objects
+ * @tparam NODE node objects making the mesh
+ */
     template <typename T, typename NODE>
     class Grad3D_ls_fo : public Grad3D<T, NODE> {
     public:
-        Grad3D_ls_fo() {}
-        
+        Grad3D_ls_fo() = default;
+        ~Grad3D_ls_fo() = default;
+
         sxyz<T> compute(const sxyz<T> &pt,
                         const T t,
                         const std::set<NODE*> &nodes,
-                        const size_t nt);
+                        const size_t nt) override;
         
     private:
         sxyz<T> g;
@@ -243,17 +293,22 @@ namespace ttcr {
     }
     
    
-    
-    // least-squares, second order
+    /**
+    * Compute traveltime gradient for a tetrahedron, with second-order least-squares
+    *
+    * @tparam T underlying type of node objects
+    * @tparam NODE node objects making the mesh
+    */
     template <typename T, typename NODE>
     class Grad3D_ls_so : public Grad3D<T, NODE> {
     public:
-        Grad3D_ls_so() {}
-        
+        Grad3D_ls_so() = default;
+        ~Grad3D_ls_so() = default;
+
         sxyz<T> compute(const sxyz<T> &pt,
                         const T t,
                         const std::set<NODE*> &nodes,
-                        const size_t nt);
+                        const size_t nt) override;
         
     private:
         sxyz<T> g;
@@ -270,18 +325,6 @@ namespace ttcr {
                                           const size_t nt) {
         // evaluate gradient are center of gravity
         assert(nodes.size()>=9);
-//        if ( nodes.size() < 9 ) {
-//            // fall back to first order
-//            std::cout << "\n*** Warning: falling back to first order least-squares gradient computation at point "
-//            << pt.x << ", " << pt.y << ", " << pt.z << "\n";
-//            std::cout << "\tSurrounding nodes:\n";
-//            for ( auto n=nodes.cbegin(); n!=nodes.cend(); ++n ) {
-//                std::cout << "\t\t" << (*n)->getX() << ", " << (*n)->getY() << ", " << (*n)->getZ() << '\n';
-//            }
-//            std::cout << std::endl;
-//            Grad3D_ls_fo<T,NODE> g;
-//            return g.compute(pt, t, nodes, nt);
-//        }
 
         A.resize( nodes.size(), 9 );
         b.resize( nodes.size(), 1 );
@@ -319,12 +362,27 @@ namespace ttcr {
     }
     
 
-    // Averaging-based method
+    /**
+    * Compute traveltime gradient for a tetrahedron, with the Averaging-based method
+    *
+    * @tparam T underlying type of node objects
+    * @tparam NODE node objects making the mesh
+    */
     template <typename T, typename NODE>
     class Grad3D_ab : public Grad3D<T, NODE> {
     public:
-        Grad3D_ab() {}
-        
+        Grad3D_ab() = default;
+        ~Grad3D_ab() = default;
+
+        /**
+         * Compute gradient at a given point
+         *
+         * @param pt point where to compute gradient
+         * @param ref_pt reference points for tetrahedra connected to pt
+         * @param opp_pts points opposed to reference points in corresponding tetrahedra
+         * @param nt thread number
+         * @returns value of the travetime gradient
+         */
         sxyz<T> compute(const sxyz<T> &pt,
                         const std::vector<NODE*>& ref_pt,
                         const std::vector<std::vector<std::array<NODE*,3>>>& opp_pts,
@@ -333,7 +391,9 @@ namespace ttcr {
         sxyz<T> compute(const sxyz<T> &pt,
                         const T t,
                         const std::set<NODE*> &nodes,
-                        const size_t nt) { return {0.0, 0.0, 0.0}; }  // should never be called
+                        const size_t nt) override {
+            return {0.0, 0.0, 0.0};   // should never be called
+        }
         
     private:
         Eigen::Matrix<T, 3, 3> A;
