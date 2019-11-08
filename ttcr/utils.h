@@ -42,25 +42,68 @@
 #include "Rcv.h"
 
 namespace ttcr {
-    
+
+/**
+ * Compute the factorial of a number
+ *
+ * @param n number to compute
+ * @returns value of factorial
+ */
     template<typename T>
     constexpr T factorial(T n)
     {
         return n <= 1 ? 1 : (n * factorial(n-1));
     }
-    
+
+/**
+ * Test if four points are coplanar
+ *
+ *  Points are sxyz objects
+ *
+ * @tparam T underlying type of sxyz objects
+ * @param x1 first point
+ * @param x2 second point
+ * @param x3 third point
+ * @param x4 fourth point
+ * @returns result of test
+ */
     template<typename T>
     bool areCoplanar(const sxyz<T> &x1, const sxyz<T> &x2,
                      const sxyz<T> &x3, const sxyz<T> &x4) {
         return (std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
     }
     
+    /**
+    * Test if four points are coplanar
+    *
+    *  Points are sxyz and Node objects
+    *
+    * @tparam T underlying type of sxyz object
+    * @tparam NODE type of Node objects
+    * @param x1 first point
+    * @param x2 second point
+    * @param x3 third point
+    * @param x4 fourth point
+    * @returns result of test
+    */
     template<typename T, typename NODE>
     bool areCoplanar(const sxyz<T> &x1, const NODE &x2,
                      const NODE &x3, const NODE &x4) {
         return (std::abs( dot( x3-x1, cross(x2-x1, x4-x3) ) )<small2);
     }
     
+    /**
+    * Test if four points are colinear
+    *
+    *  Points are sxyz and Node objects
+    *
+    * @tparam T underlying type of sxyz object
+    * @tparam NODE type of Node objects
+    * @param pt first point
+    * @param n0 second point
+    * @param n1 third point
+    * @returns result of test
+    */
     template<typename T, typename NODE>
     bool areCollinear(const sxyz<T> &pt, const NODE &n0, const NODE &n1) {
         
@@ -68,14 +111,38 @@ namespace ttcr {
         //
         sxyz<T> v = cross(pt-n0, pt-n1);
         return norm(v)<small2;
-        
     }
-    
+
+/**
+ * Compute area of triangle
+ *
+ * @tparam T type of coordinate values
+ * @param x1 x coordinate of first point
+ * @param y1 y coordinate of first point
+ * @param x2 x coordinate of second point
+ * @param y2 y coordinate of second point
+ * @param x3 x coordinate of third point
+ * @param y3 y coordinate of thirs point
+ * @returns value of area
+ */
     template<typename T>
     T triangleArea2D(T x1, T y1, T x2, T y2, T x3, T y3) {
         return (x1-x2)*(y2-y3) - (x2-x3)*(y1-y2);
     }
-    
+
+/**
+ * Compute the barycentric coordinates of a point given a triangle
+ *
+ * @tparam T underlying type of sxyz object
+ * @tparam NODE type of Node objects
+ * @param[in] a 1st node of triangle
+ * @param[in] b 2nd node of triangle
+ * @param[in] c 3rd node of triangle
+ * @param[in] p point for which barycentric coordinate are computed
+ * @param[out] u 1st barycentric coordinate
+ * @param[out] v 2nd barycentric coordinate
+ * @param[out] w 3rd barycentric coordinate
+ */
     template<typename T, typename NODE>
     void barycentric(const NODE *a,
                      const NODE *b,
@@ -117,6 +184,18 @@ namespace ttcr {
         w = 1.0 - u - v;
     }
 
+/**
+ * Compute the barycentric coordinates of a point given a triangle
+ *
+ * @tparam T underlying type of sxyz object
+ * @param[in] a 1st node of triangle
+ * @param[in] b 2nd node of triangle
+ * @param[in] c 3rd node of triangle
+ * @param[out] p point for which barycentric coordinate are computed
+ * @param[out] u 1st barycentric coordinate
+ * @param[out] v 2nd barycentric coordinate
+ * @param[out] w 3rd barycentric coordinate
+ */
     template<typename T>
     void barycentric(const sxyz<T> &a,
                      const sxyz<T> &b,
@@ -158,6 +237,17 @@ namespace ttcr {
         w = 1.0 - u - v;
     }
 
+/**
+ * Test if a point is within a box bounding a triangle
+ *
+ * @tparam T underlying type of sxyz object
+ * @tparam NODE type of Node objects
+ * @param vertexA 1st point defining triangle
+ * @param vertexB 2nd point defining triangle
+ * @param vertexC 3rd point defining triangle
+ * @param E point to test
+ * @returns test value
+ */
     template<typename T, typename NODE>
     bool testInTriangleBoundingBox(const NODE *vertexA,
                                    const NODE *vertexB,
@@ -186,6 +276,16 @@ namespace ttcr {
             return true;
     }
     
+/**
+ * Test if a point is within a box bounding a triangle
+ *
+ * @tparam T underlying type of sxyz objects
+ * @param vertexA 1st point defining triangle
+ * @param vertexB 2nd point defining triangle
+ * @param vertexC 3rd point defining triangle
+ * @param E point to test
+ * @returns test value
+ */
     template<typename T>
     bool testInTriangleBoundingBox(const sxyz<T> &vertexA,
                                    const sxyz<T> &vertexB,
@@ -214,6 +314,16 @@ namespace ttcr {
             return true;
     }
 
+/**
+ * compute closest distance between a point and a line segment
+ *
+ * @tparam T underlying type of sxyz object
+ * @tparam NODE type of Node objects
+ * @param vertexA 1st point defining segment
+ * @param vertexB 2nd point defining segment
+ * @param E point to consider
+ * @returns distance
+ */
     template<typename T, typename NODE>
     T distSqPointToSegment(const NODE *vertexA,
                            const NODE *vertexB,
@@ -243,6 +353,15 @@ namespace ttcr {
         }
     }
 
+/**
+ * compute closest distance between a point and a line segment
+ *
+ * @tparam T underlying type of sxyz object
+ * @param vertexA 1st point defining segment
+ * @param vertexB 2nd point defining segment
+ * @param E point to consider
+ * @returns distance
+ */
     template<typename T>
     T distSqPointToSegment(const sxyz<T> &vertexA,
                            const sxyz<T> &vertexB,
@@ -272,6 +391,17 @@ namespace ttcr {
         }
     }
 
+/**
+ * compute closest distance between a point and a plane
+ *
+ * @tparam T underlying type of sxyz object
+ * @tparam NODE type of Node objects
+ * @param a 1st point defining plane
+ * @param b 2nd point defining plane
+ * @param c 3rd point defining plane
+ * @param pt point to consider
+ * @returns distance
+ */
     template<typename T, typename NODE>
     T distPointToPlane(const NODE *a,
                        const NODE *b,
@@ -286,6 +416,17 @@ namespace ttcr {
         return dot(n, {a->getX() - pt.x, a->getY() - pt.y, a->getZ() - pt.z});
     }
     
+/**
+ * test if a point is within a triangle
+ *
+ * @tparam T underlying type of sxyz object
+ * @tparam NODE type of Node objects
+ * @param vertexA 1st point defining triangle
+ * @param vertexB 2nd point defining triangle
+ * @param vertexC 3rd point defining triangle
+ * @param E point to consider
+ * @returns test results
+ */
     template<typename T, typename NODE>
     bool testInTriangle(const NODE *vertexA,
                         const NODE *vertexB,
@@ -310,6 +451,16 @@ namespace ttcr {
         return false;
     }
     
+/**
+ * test if a point is within a triangle
+ *
+ * @tparam T underlying type of sxyz object
+ * @param vertexA 1st point defining triangle
+ * @param vertexB 2nd point defining triangle
+ * @param vertexC 3rd point defining triangle
+ * @param E point to consider
+ * @returns test results
+ */
     template<typename T>
     bool testInTriangle(const sxyz<T> &vertexA,
                         const sxyz<T> &vertexB,
@@ -335,6 +486,16 @@ namespace ttcr {
     }
 
 
+/**
+ * Build reflectors from interfaces between two lithologies
+ *
+ * @tparam T underlying type of sxyz & Rcv objects
+ * @param[in] reader reader used to extract indicides of nodes makign the reflectors
+ * @param[in] nodes grid nodes
+ * @param[in] nsrc number of sources to model
+ * @param[in] nsecondary number of secondary nodes
+ * @param[out] reflectors vector of Rcv objects making the reflectors
+ */
     template<typename T>
     void buildReflectors(const MSHReader &reader,
                          const std::vector<sxyz<T>> &nodes,
@@ -445,7 +606,14 @@ namespace ttcr {
             reflectors.back().init_tt( nsrc );
         }
     }
-    
+
+/**
+ * Save 3D raypaths in a vtk file
+ *
+ * @tparam T underlying type of sxyz objects
+ * @param fname name of file for saving paths
+ * @param r_data raypath coordinates
+ */
     template<typename T>
     void saveRayPaths(const std::string &fname,
                       const std::vector<std::vector<sxyz<T>>> &r_data) {
@@ -486,6 +654,13 @@ namespace ttcr {
         
     }
     
+/**
+ * Save 2D raypaths in a vtk file
+ *
+ * @tparam T underlying type of sxz objects
+ * @param fname name of file for saving paths
+ * @param r_data raypath coordinates
+ */
     template<typename T>
     void saveRayPaths(const std::string &fname,
                       const std::vector<std::vector<sxz<T>>> &r_data) {
@@ -525,7 +700,14 @@ namespace ttcr {
 #endif
         
     }
-    
+
+/**
+ * Create a string
+ *
+ * @tparam T type of object for which string is created
+ * @param value value to convert to string
+ * @returns string representation of value
+ */
     template<typename T>
     std::string to_string( const T & value )
     {
