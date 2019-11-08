@@ -77,13 +77,13 @@ int body(const input_parameters &par) {
     Grid2D<T,uint32_t,sxyz<T>> *g=nullptr;
     if (extension == ".vtu") {
 #ifdef VTK
-        g = unstruct2Ds_vtu<T>(par, num_threads);
+        g = buildUnstructured2DsfromVtu<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;
 #endif
     } else if (extension == ".msh") {
-        g = unstruct2Ds<T>(par, num_threads, src.size());
+        g = buildUnstructured2Ds<T>(par, num_threads);
     } else {
         cerr << par.modelfile << " Unknown extenstion: " << extension << endl;
         return 1;

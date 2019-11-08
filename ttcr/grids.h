@@ -79,9 +79,17 @@
 #include "utils.h"
 
 namespace ttcr {
-    
+
+/**
+ * build 3D rectilinear grid from parameters
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of model file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid3D<T,uint32_t> *recti3D(const input_parameters &par, const size_t nt) {
+    Grid3D<T,uint32_t> *buildRectilinear3D(const input_parameters &par,
+                                           const size_t nt) {
         
         Grid3D<T,uint32_t> *g = nullptr;
         
@@ -350,14 +358,21 @@ namespace ttcr {
 #endif
         }
 
-        
         return g;
     }
     
     
 #ifdef VTK
+/**
+ * build 3D rectilinear grid from VTK file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of VTK file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid3D<T,uint32_t> *recti3D_vtr(const input_parameters &par, const size_t nt) {
+    Grid3D<T,uint32_t> *buildRectilinear3DfromVtr(const input_parameters &par,
+                                                  const size_t nt) {
         Grid3D<T,uint32_t> *g = nullptr;
         vtkRectilinearGrid *dataSet;
         
@@ -729,8 +744,16 @@ namespace ttcr {
         return g;
     }
     
+/**
+ * build tetrahedral mesh from VTK file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of VTK file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid3D<T, uint32_t> *unstruct3D_vtu(const input_parameters &par, const size_t nt)
+    Grid3D<T, uint32_t> *buildUnstructured3DfromVtu(const input_parameters &par,
+                                                    const size_t nt)
     {
         
         VTUReader reader( par.modelfile.c_str() );
@@ -965,10 +988,18 @@ namespace ttcr {
     }
 #endif
     
+/**
+ * build tetrahedral mesh from gmsh file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of gmsh file
+ * @param nt number of threads
+ * @param nsrc number of sources (used if reflectors are built)
+ */
     template<typename T>
-    Grid3D<T, uint32_t> *unstruct3D(const input_parameters &par,
-                                    std::vector<Rcv<T>> &reflectors,
-                                    const size_t nt, const size_t ns)
+    Grid3D<T, uint32_t> *buildUnstructured3D(const input_parameters &par,
+                                             std::vector<Rcv<T>> &reflectors,
+                                             const size_t nt, const size_t nsrc)
     {
         
         MSHReader reader( par.modelfile.c_str() );
@@ -1267,7 +1298,7 @@ namespace ttcr {
         }
         
         if ( par.processReflectors ) {
-            buildReflectors(reader, nodes, ns, par.nn[0], reflectors);
+            buildReflectors(reader, nodes, nsrc, par.nn[0], reflectors);
         }
         
         if ( par.saveModelVTK ) {
@@ -1289,8 +1320,16 @@ namespace ttcr {
         
     }
     
+/**
+ * build 2D rectilinear grid from parameters
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of model file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid2D<T,uint32_t,sxz<T>> *recti2D(const input_parameters &par, const size_t nt)
+    Grid2D<T,uint32_t,sxz<T>> *buildRectilinear2D(const input_parameters &par,
+                                                  const size_t nt)
     {
         
         ifstream fin;
@@ -1514,8 +1553,16 @@ namespace ttcr {
     
     
 #ifdef VTK
+/**
+ * build 2D rectilinear grid from VTK file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of VTK file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid2D<T,uint32_t,sxz<T>> *recti2D_vtr(const input_parameters &par, const size_t nt)
+    Grid2D<T,uint32_t,sxz<T>> *buildRectilinear2DfromVtr(const input_parameters &par,
+                                                         const size_t nt)
     {
         Grid2D<T,uint32_t,sxz<T>> *g = nullptr;
         vtkRectilinearGrid *dataSet;
@@ -1873,8 +1920,16 @@ namespace ttcr {
         return g;
     }
     
+/**
+ * build triangular mesh from VTK file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of VTK file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid2D<T,uint32_t,sxz<T>> *unstruct2D_vtu(const input_parameters &par, const size_t nt)
+    Grid2D<T,uint32_t,sxz<T>> *buildUnstructured2DfromVtu(const input_parameters &par,
+                                                          const size_t nt)
     {
         VTUReader reader( par.modelfile.c_str() );
         
@@ -2020,10 +2075,18 @@ namespace ttcr {
     }
 #endif
     
+/**
+ * build triangular mesh from gmsh file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of gmsh file
+ * @param nt number of threads
+ * @param nsrc number of sources (used if reflectors are built)
+ */
     template<typename T>
-    Grid2D<T,uint32_t,sxz<T>> *unstruct2D(const input_parameters &par,
-                                          std::vector<Rcv2D<T>> &reflectors,
-                                          const size_t nt, const size_t ns)
+    Grid2D<T,uint32_t,sxz<T>> *buildUnstructured2D(const input_parameters &par,
+                                                   std::vector<Rcv2D<T>> &reflectors,
+                                                   const size_t nt, const size_t nsrc)
     {
         
         MSHReader reader( par.modelfile.c_str() );
@@ -2269,7 +2332,7 @@ namespace ttcr {
                 for (it=refl_pts.begin(); it!=refl_pts.end(); ++it) {
                     reflectors.back().add_coord( *it );
                 }
-                reflectors.back().init_tt( ns );
+                reflectors.back().init_tt( nsrc );
             }
         }
         if ( par.saveModelVTK ) {
@@ -2290,8 +2353,16 @@ namespace ttcr {
         return g;
     }
     
+/**
+ * build undulated triangular mesh from VTK file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of VTK file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds_vtu(const input_parameters &par, const size_t nt)
+    Grid2D<T, uint32_t, sxyz<T>> *buildUnstructured2DsfromVtu(const input_parameters &par,
+                                                              const size_t nt)
     {
         VTUReader reader( par.modelfile.c_str() );
         
@@ -2367,10 +2438,16 @@ namespace ttcr {
     }
     
     
-    
+/**
+ * build undulated triangular mesh from gmsh file
+ *
+ * @tparam T type of real numbers
+ * @param par input parameters structure holding name of gmsh file
+ * @param nt number of threads
+ */
     template<typename T>
-    Grid2D<T, uint32_t, sxyz<T>> *unstruct2Ds(const input_parameters &par,
-                                              const size_t nt, const size_t ns)
+    Grid2D<T, uint32_t, sxyz<T>> *buildUnstructured2Ds(const input_parameters &par,
+                                                       const size_t nt)
     {
         
         MSHReader reader( par.modelfile.c_str() );

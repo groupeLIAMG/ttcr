@@ -54,23 +54,23 @@ int body(const input_parameters &par) {
 
     // Load the grid file into the GRID3D object g for different formats
     if (extension == ".grd") {
-        g = recti3D<T>(par, num_threads);
+        g = buildRectilinear3D<T>(par, num_threads);
     } else if (extension == ".vtr") {
 #ifdef VTK
-        g = recti3D_vtr<T>(par, num_threads);
+        g = buildRectilinear3DfromVtr<T>(par, num_threads);
 #else
         cerr << "Error: Program not compiled with VTK support" << endl;
         return 1;
 #endif
     } else if (extension == ".vtu") {
 #ifdef VTK
-        g = unstruct3D_vtu<T>(par, num_threads);
+        g = buildUnstructured3DfromVtu<T>(par, num_threads);
 #else
         cerr << "Error: Program not compiled with VTK support" << endl;
         return 1;
 #endif
     } else if (extension == ".msh") {
-        g = unstruct3D<T>(par, reflectors, num_threads, src.size());
+        g = buildUnstructured3D<T>(par, reflectors, num_threads, src.size());
     } else {
         cerr << par.modelfile << " Unknown extenstion: " << extension << endl;
         return 1;

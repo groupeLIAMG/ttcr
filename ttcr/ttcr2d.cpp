@@ -80,23 +80,23 @@ int body(const input_parameters &par) {
     Grid2D<T,uint32_t,sxz<T>> *g=nullptr;
     vector<Rcv2D<T>> reflectors;
     if (extension == ".grd") {
-        g = recti2D<T>(par, num_threads);
+        g = buildRectilinear2D<T>(par, num_threads);
     } else if (extension == ".vtr") {
 #ifdef VTK
-        g = recti2D_vtr<T>(par, num_threads);
+        g = buildRectilinear2DfromVtr<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;
 #endif
     } else if (extension == ".vtu") {
 #ifdef VTK
-        g = unstruct2D_vtu<T>(par, num_threads);
+        g = buildUnstructured2DfromVtu<T>(par, num_threads);
 #else
 		cerr << "Error: Program not compiled with VTK support" << endl;
 		return 1;
 #endif
     } else if (extension == ".msh") {
-        g = unstruct2D<T>(par, reflectors, num_threads, src.size());
+        g = buildUnstructured2D<T>(par, reflectors, num_threads, src.size());
     } else {
         cerr << par.modelfile << " Unknown extenstion: " << extension << endl;
         return 1;
