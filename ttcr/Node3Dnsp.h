@@ -116,7 +116,7 @@ namespace ttcr {
             }
         }
         
-        ~Node3Dnsp() {
+        virtual ~Node3Dnsp() {
             delete [] tt;
             delete [] nodeParent;
             delete [] cellParent;

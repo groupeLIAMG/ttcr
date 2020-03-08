@@ -95,7 +95,7 @@ namespace ttcr {
             }
         }
         
-        ~Node3Dn() {
+        virtual ~Node3Dn() {
             delete [] tt;
         }
         

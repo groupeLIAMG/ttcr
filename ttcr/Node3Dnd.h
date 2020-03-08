@@ -21,6 +21,8 @@ namespace ttcr {
     public:
         Node3Dnd() : Node3Dn<T1,T2>(1) {}
         
+        virtual ~Node3Dnd() {}
+        
         Node3Dnd(const T1 t, const T1 xx, const T1 yy, const T1 zz, const size_t nt,
                  const size_t i) : Node3Dn<T1,T2>(t, xx, yy, zz, 1, 0) {}
 

@@ -144,7 +144,7 @@ namespace ttcr {
             }
         }
         
-        ~Node3Dcsp() {
+        virtual ~Node3Dcsp() {
             delete [] tt;
             delete [] nodeParent;
             delete [] cellParent;
