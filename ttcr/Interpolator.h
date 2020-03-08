@@ -26,6 +26,7 @@
 #ifndef ttcr_Interpolator_h
 #define ttcr_Interpolator_h
 
+#include <array>
 #include <cmath>
 
 namespace ttcr {
