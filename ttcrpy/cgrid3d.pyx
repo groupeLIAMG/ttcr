@@ -181,7 +181,7 @@ cdef class Grid3Drn:
 
         Parameters
         ----------
-            slowness : 1D array od slowness values at nodes (can be None, but
+            slowness : 1D array of slowness values at nodes (can be None, but
                        slowness should have been set before calling raytrace)
             Tx : coordinates of source points (npts x 3)
             Rx : coordinates of receivers (nrcv x 3)
