@@ -47,33 +47,34 @@ namespace ttcr {
         {0,1,3}   // (relative) indices of nodes of 4th triangle
     };
 
-    //
-    //
-    //              1
-    //            ,/|`\
-    //          ,/  |  `\
-    //        ,0    '.   `4
-    //      ,/       1     `\
-    //    ,/         |       `\
-    //   0-----5-----'.--------3
-    //    `\.         |      ,/
-    //       `\.      |     3
-    //          `2.   '. ,/
-    //             `\. |/
-    //                `2
-    //
-    //
-    //  triangle 0:  0-1  1-2  2-0     (first occurence of edge underlined)
-    //               ---  ---  ---
-    //  triangle 1:  1-2  2-3  3-1
-    //                    ---  ---
-    //  triangle 2:  0-2  2-3  3-0
-    //                         ---
-    //  triangle 3:  0-1  1-3  3-0
+    /*
+      
+                    1
+                  ,/|`\
+                ,/  |  `\
+              ,0    '.   `4
+            ,/       1     `\
+          ,/         |       `\
+         0-----5-----'.--------3
+          `\.         |      ,/
+             `\.      |     3
+                `2.   '. ,/
+                   `\. |/
+                      `2
+      
+      
+        triangle 0:  0-1  1-2  2-0     (first occurence of edge underlined)
+                     ---  ---  ---
+        triangle 1:  1-2  2-3  3-1
+                          ---  ---
+        triangle 2:  0-2  2-3  3-0
+                               ---
+        triangle 3:  0-1  1-3  3-0
 
-    // for triangle "itri", indices of length for edge "iedge" are
-    // iLength[itri][iedge] = {{0,1,2},{1,3,4},{2,3,5},{0,4,5}}
-
+       for triangle "itri", indices of length for edge "iedge" are
+       iLength[itri][iedge] = {{0,1,2},{1,3,4},{2,3,5},{0,4,5}}
+     
+     */
 
     template<typename T>
     struct sxz {
@@ -596,26 +597,28 @@ namespace ttcr {
 
     template<typename T>
     void projNorm(const sxyz<T>& b, const sxyz<T>& c, const sxyz<T>& p, T& xi0, T& zeta0) {
-        //                B
-        //                o
-        //              /   \
-        //           /          \
-        //        /       o P       \
-        //    A o----------------------o  C
-        //
-        // b is _unit_ vector AC
-        // c is _unit_ vector AB
-        // p is vector AP
-        // xi0 & zeta0 are normalized coordinates of P in plane ABC (Lelièvre et al, 2011, GJI 184, 885-896)
+        /*
+                          B
+                          o
+                        /   \
+                     /          \
+                  /       o P       \
+              A o----------------------o  C
+          
+           b is _unit_ vector AC
+           c is _unit_ vector AB
+           p is vector AP
+           xi0 & zeta0 are normalized coordinates of P in plane ABC (Lelièvre et al, 2011, GJI 184, 885-896)
 
-        // solved using xi*c + zeta*b = p
+           solved using xi*c + zeta*b = p
 
-        //       | c.x b.x |                        | p.x |
-        //  A =  | c.y b.y |   x = |  xi0  |    b = | p.y |
-        //       | c.z b.z |       | zeta0 |        | p.z |
+                 | c.x b.x |                        | p.x |
+            A =  | c.y b.y |   x = |  xi0  |    b = | p.y |
+                 | c.z b.z |       | zeta0 |        | p.z |
 
-        // solve AT A x = AT b
-
+           solve AT A x = AT b
+         */
+        
         T ata11 = norm2(c);
         T ata12 = b.x*c.x + b.y*c.y + b.z*c.z;
         T ata21 = ata12;
