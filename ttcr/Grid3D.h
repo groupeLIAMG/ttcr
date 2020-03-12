@@ -27,7 +27,11 @@
 #ifndef ttcr_Grid3D_h
 #define ttcr_Grid3D_h
 
+#include <algorithm>
+#include <exception>
+#include <functional>
 #include <fstream>
+#include <thread>
 
 #include "ttcr_t.h"
 
@@ -40,69 +44,122 @@ namespace ttcr {
         virtual ~Grid3D() {}
         
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<sxyz<T1>>& Rx,
+                              std::vector<T1>& traveltimes,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                              std::vector<std::vector<T1>*>& traveltimes,
+                              const size_t=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxyz<T1>>>& r_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<sxyz<T1>>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<sxyz<T1>>>& r_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                             const size_t=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                              std::vector<std::vector<T1>*>& traveltimes,
+                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
+                              const size_t=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxyz<T1>>>& r_data,
-                             T1& v0,
-                             const size_t threadNo=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxyz<T1>>>& r_data,
-                             T1& v0,
-                             std::vector<std::vector<sijv<T1>>>& m_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<sxyz<T1>>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<sxyz<T1>>>& r_data,
+                              std::vector<std::vector<sijv<T1>>>& m_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
 
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<siv<T1>>>& l_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<sxyz<T1>>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<sijv<T1>>>& m_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
 
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxyz<T1>>>& r_data,
-                             std::vector<std::vector<siv<T1>>>& l_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<sxyz<T1>>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<siv<T1>>>& l_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
+
+        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
+                              const std::vector<T1>& t0,
+                              const std::vector<sxyz<T1>>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<sxyz<T1>>>& r_data,
+                              std::vector<std::vector<siv<T1>>>& l_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
+
+        void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                       const std::vector<std::vector<T1>>& t0,
+                       const std::vector<std::vector<sxyz<T1>>>& Rx,
+                       std::vector<std::vector<T1>>& traveltimes) const;
+
+        void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                       const std::vector<std::vector<T1>>& t0,
+                       const std::vector<std::vector<sxyz<T1>>>& Rx,
+                       std::vector<std::vector<T1>>& traveltimes,
+                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const;
+
+        void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                       const std::vector<std::vector<T1>>& t0,
+                       const std::vector<std::vector<sxyz<T1>>>& Rx,
+                       std::vector<std::vector<T1>>& traveltimes,
+                       std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
+
+        void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                       const std::vector<std::vector<T1>>& t0,
+                       const std::vector<std::vector<sxyz<T1>>>& Rx,
+                       std::vector<std::vector<T1>>& traveltimes,
+                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                       std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
+
+        void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                       const std::vector<std::vector<T1>>& t0,
+                       const std::vector<std::vector<sxyz<T1>>>& Rx,
+                       std::vector<std::vector<T1>>& traveltimes,
+                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+
+        void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                       const std::vector<std::vector<T1>>& t0,
+                       const std::vector<std::vector<sxyz<T1>>>& Rx,
+                       std::vector<std::vector<T1>>& traveltimes,
+                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
 
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const sxyz<T1>& Rx,
                                 std::vector<sxyz<T1>>& r_data,
                                 T1 &tt,
-                                const size_t threadNo=0) const {}
+                                const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
         virtual void setSlowness(const std::vector<T1>& s) {}
         virtual void setChi(const std::vector<T1>& x) {}
@@ -125,8 +182,8 @@ namespace ttcr {
         virtual const T1 getZmin() const { return 1; }
         virtual const T1 getZmax() const { return 1; }
         
-        virtual const int get_niter() const { return 1; }
-        virtual const int get_niterw() const { return 1; }
+        virtual const int get_niter() const { return 0; }
+        virtual const int get_niterw() const { return 0; }
         
         virtual const size_t getNthreads() const { return 1; }
         
@@ -144,8 +201,192 @@ namespace ttcr {
         virtual void saveModelVTR(const std::string &, const double*,
                                   const bool saveSlowness=true) const {}
 #endif
+    private:
+        const std::vector<size_t> get_blk_size(const size_t nTx) const {
+            std::vector<size_t> blk_size ( this->getNthreads(), 0 );
+            size_t nj = nTx;
+            while ( nj > 0 ) {
+                for ( size_t n=0; n<this->getNthreads(); ++n ) {
+                    blk_size[n] += 1;
+                    nj -= 1;
+                    if ( nj == 0 ) {
+                        break;
+                    }
+                }
+            }
+//            size_t total = 0;
+//            for ( size_t i=0; i<this->getNthreads(); ++i ) {
+//                total += blk_size[i];
+//            }
+//            std::cout << "total " << total << "\tnTx " << nTx << '\n';
+            return blk_size;
+        }
     };
-    
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                                  const std::vector<std::vector<T1>>& t0,
+                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                  std::vector<std::vector<T1>>& traveltimes) const {
+
+        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+
+        std::vector<std::thread> threads(this->getNthreads());
+        size_t blk_start = 0;
+        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+
+            size_t blk_end = blk_start + blk_size[i];
+            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,blk_start,blk_end,i]{
+
+                for ( size_t n=blk_start; n<blk_end; ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], i);
+                }
+            });
+
+            blk_start = blk_end;
+        }
+
+        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+    }
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                                  const std::vector<std::vector<T1>>& t0,
+                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                  std::vector<std::vector<T1>>& traveltimes,
+                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const {
+
+        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+
+        std::vector<std::thread> threads(this->getNthreads());
+        size_t blk_start = 0;
+        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+
+            size_t blk_end = blk_start + blk_size[i];
+            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,blk_start,blk_end,i]{
+
+                for ( size_t n=blk_start; n<blk_end; ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], i);
+                }
+            });
+
+            blk_start = blk_end;
+        }
+
+        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+    }
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                                  const std::vector<std::vector<T1>>& t0,
+                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                  std::vector<std::vector<T1>>& traveltimes,
+                                  std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
+
+        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+
+        std::vector<std::thread> threads(this->getNthreads());
+        size_t blk_start = 0;
+        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+
+            size_t blk_end = blk_start + blk_size[i];
+            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&m_data,blk_start,blk_end,i]{
+
+                for ( size_t n=blk_start; n<blk_end; ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], m_data[n], i);
+                }
+            });
+
+            blk_start = blk_end;
+        }
+
+        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+    }
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                                  const std::vector<std::vector<T1>>& t0,
+                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                  std::vector<std::vector<T1>>& traveltimes,
+                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                                  std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
+
+        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+
+        std::vector<std::thread> threads(this->getNthreads());
+        size_t blk_start = 0;
+        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+
+            size_t blk_end = blk_start + blk_size[i];
+            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&m_data,blk_start,blk_end,i]{
+
+                for ( size_t n=blk_start; n<blk_end; ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], m_data[n], i);
+                }
+            });
+
+            blk_start = blk_end;
+        }
+
+        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+    }
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                                  const std::vector<std::vector<T1>>& t0,
+                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                  std::vector<std::vector<T1>>& traveltimes,
+                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
+
+        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+
+        std::vector<std::thread> threads(this->getNthreads());
+        size_t blk_start = 0;
+        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+
+            size_t blk_end = blk_start + blk_size[i];
+            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&l_data,blk_start,blk_end,i]{
+
+                for ( size_t n=blk_start; n<blk_end; ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], i);
+                }
+            });
+
+            blk_start = blk_end;
+        }
+
+        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+    }
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
+                                  const std::vector<std::vector<T1>>& t0,
+                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                  std::vector<std::vector<T1>>& traveltimes,
+                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
+
+        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+
+        std::vector<std::thread> threads(this->getNthreads());
+        size_t blk_start = 0;
+        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+
+            size_t blk_end = blk_start + blk_size[i];
+            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&l_data,blk_start,blk_end,i]{
+
+                for ( size_t n=blk_start; n<blk_end; ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], i);
+                }
+            });
+
+            blk_start = blk_end;
+        }
+
+        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+    }
+
 }
+
 
 #endif
