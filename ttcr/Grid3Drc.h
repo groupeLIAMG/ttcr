@@ -188,6 +188,10 @@ namespace ttcr {
             }
         }
 
+        T1 computeSlowness(const sxyz<T1>& pt) const {
+            return cells.getSlowness(getCellNo(pt));
+        }
+
     protected:
         size_t nThreads;	     // number of threads
         T1 dx;                   // cell size in x

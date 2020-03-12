@@ -130,7 +130,11 @@ namespace ttcr {
         
         virtual const size_t getNthreads() const { return 1; }
         
-        virtual void dump_secondary(std::ofstream&) const {};
+        virtual void dump_secondary(std::ofstream&) const {}
+
+        virtual T1 computeSlowness(const sxyz<T1>&) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

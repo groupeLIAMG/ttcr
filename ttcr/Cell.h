@@ -47,6 +47,10 @@ namespace ttcr {
                 slowness[n] = s[n];
             }
         }
+
+        const T getSlowness(const size_t i) const {
+            return slowness.at(i);
+        }
         
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for Cell.");
@@ -127,6 +131,10 @@ namespace ttcr {
             }
         }
         
+        const T getSlowness(const size_t i) const {
+            return slowness.at(i);
+        }
+
         void setXi(const std::vector<T>& s) {
             if ( xi.size() != s.size() ) {
                 throw std::length_error("Error: xi vectors of incompatible size.");
@@ -207,6 +215,10 @@ namespace ttcr {
             }
         }
         
+        const T getSlowness(const size_t i) const {
+            return slowness.at(i);
+        }
+
         void setXi(const std::vector<T>& s) {
             if ( xi.size() != s.size() ) {
                 throw std::length_error("Error: xi vectors of incompatible size.");
@@ -478,6 +490,10 @@ namespace ttcr {
             }
         }
         
+        const T getSlowness(const size_t i) const {
+            return slowness.at(i);
+        }
+
         void setChi(const std::vector<T>& s) {
             if ( chi.size() != s.size() ) {
                 throw std::length_error("Error: chi vectors of incompatible size.");
