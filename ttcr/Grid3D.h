@@ -203,10 +203,11 @@ namespace ttcr {
 #endif
     private:
         const std::vector<size_t> get_blk_size(const size_t nTx) const {
-            std::vector<size_t> blk_size ( this->getNthreads(), 0 );
+            size_t n_blk = this->getNthreads() > nTx ? this->getNthreads() : nTx;
+            std::vector<size_t> blk_size ( n_blk, 0 );
             size_t nj = nTx;
             while ( nj > 0 ) {
-                for ( size_t n=0; n<this->getNthreads(); ++n ) {
+                for ( size_t n=0; n<n_blk; ++n ) {
                     blk_size[n] += 1;
                     nj -= 1;
                     if ( nj == 0 ) {
@@ -214,176 +215,195 @@ namespace ttcr {
                     }
                 }
             }
-//            size_t total = 0;
-//            for ( size_t i=0; i<this->getNthreads(); ++i ) {
-//                total += blk_size[i];
-//            }
-//            std::cout << "total " << total << "\tnTx " << nTx << '\n';
             return blk_size;
         }
     };
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                                  const std::vector<std::vector<T1>>& t0,
-                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
-                                  std::vector<std::vector<T1>>& traveltimes) const {
+                                 const std::vector<std::vector<T1>>& t0,
+                                 const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                 std::vector<std::vector<T1>>& traveltimes) const {
 
-        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+        if ( Tx.size() == 0 ) {
+            this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], 0);
+        } else {
+            std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
-        std::vector<std::thread> threads(this->getNthreads());
-        size_t blk_start = 0;
-        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+            std::vector<std::thread> threads(blk_size.size());
+            size_t blk_start = 0;
+            for ( size_t i=0; i<blk_size.size(); ++i ) {
 
-            size_t blk_end = blk_start + blk_size[i];
-            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,blk_start,blk_end,i]{
+                size_t blk_end = blk_start + blk_size[i];
+                threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,blk_start,blk_end,i]{
 
-                for ( size_t n=blk_start; n<blk_end; ++n ) {
-                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], i);
-                }
-            });
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], i);
+                    }
+                });
 
-            blk_start = blk_end;
+                blk_start = blk_end;
+            }
+
+            std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
-
-        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
     }
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                                  const std::vector<std::vector<T1>>& t0,
-                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
-                                  std::vector<std::vector<T1>>& traveltimes,
-                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const {
+                                 const std::vector<std::vector<T1>>& t0,
+                                 const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                 std::vector<std::vector<T1>>& traveltimes,
+                                 std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const {
 
-        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+        if ( Tx.size() == 0 ) {
+            this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], 0);
+        } else {
+            std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
-        std::vector<std::thread> threads(this->getNthreads());
-        size_t blk_start = 0;
-        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+            std::vector<std::thread> threads(blk_size.size());
+            size_t blk_start = 0;
+            for ( size_t i=0; i<blk_size.size(); ++i ) {
 
-            size_t blk_end = blk_start + blk_size[i];
-            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,blk_start,blk_end,i]{
+                size_t blk_end = blk_start + blk_size[i];
+                threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,blk_start,blk_end,i]{
 
-                for ( size_t n=blk_start; n<blk_end; ++n ) {
-                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], i);
-                }
-            });
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], i);
+                    }
+                });
 
-            blk_start = blk_end;
+                blk_start = blk_end;
+            }
+
+            std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
-
-        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
     }
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                                  const std::vector<std::vector<T1>>& t0,
-                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
-                                  std::vector<std::vector<T1>>& traveltimes,
-                                  std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
+                                 const std::vector<std::vector<T1>>& t0,
+                                 const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                 std::vector<std::vector<T1>>& traveltimes,
+                                 std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
 
-        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+        if ( Tx.size() == 0 ) {
+            this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], m_data[0], 0);
+        } else {
+            std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
-        std::vector<std::thread> threads(this->getNthreads());
-        size_t blk_start = 0;
-        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+            std::vector<std::thread> threads(blk_size.size());
+            size_t blk_start = 0;
+            for ( size_t i=0; i<blk_size.size(); ++i ) {
 
-            size_t blk_end = blk_start + blk_size[i];
-            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&m_data,blk_start,blk_end,i]{
+                size_t blk_end = blk_start + blk_size[i];
+                threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&m_data,blk_start,blk_end,i]{
 
-                for ( size_t n=blk_start; n<blk_end; ++n ) {
-                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], m_data[n], i);
-                }
-            });
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], m_data[n], i);
+                    }
+                });
 
-            blk_start = blk_end;
+                blk_start = blk_end;
+            }
+
+            std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
-
-        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
     }
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                                  const std::vector<std::vector<T1>>& t0,
-                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
-                                  std::vector<std::vector<T1>>& traveltimes,
-                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
-                                  std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
+                                 const std::vector<std::vector<T1>>& t0,
+                                 const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                 std::vector<std::vector<T1>>& traveltimes,
+                                 std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                                 std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
 
-        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+        if ( Tx.size() == 0 ) {
+            this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], m_data[0], 0);
+        } else {
+            std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
-        std::vector<std::thread> threads(this->getNthreads());
-        size_t blk_start = 0;
-        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+            std::vector<std::thread> threads(blk_size.size());
+            size_t blk_start = 0;
+            for ( size_t i=0; i<blk_size.size(); ++i ) {
 
-            size_t blk_end = blk_start + blk_size[i];
-            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&m_data,blk_start,blk_end,i]{
+                size_t blk_end = blk_start + blk_size[i];
+                threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&m_data,blk_start,blk_end,i]{
 
-                for ( size_t n=blk_start; n<blk_end; ++n ) {
-                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], m_data[n], i);
-                }
-            });
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], m_data[n], i);
+                    }
+                });
 
-            blk_start = blk_end;
+                blk_start = blk_end;
+            }
+
+            std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
-
-        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
     }
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                                  const std::vector<std::vector<T1>>& t0,
-                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
-                                  std::vector<std::vector<T1>>& traveltimes,
-                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
+                                 const std::vector<std::vector<T1>>& t0,
+                                 const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                 std::vector<std::vector<T1>>& traveltimes,
+                                 std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
 
-        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+        if ( Tx.size() == 0 ) {
+            this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], l_data[0], 0);
+        } else {
+            std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
-        std::vector<std::thread> threads(this->getNthreads());
-        size_t blk_start = 0;
-        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+            std::vector<std::thread> threads(blk_size.size());
+            size_t blk_start = 0;
+            for ( size_t i=0; i<blk_size.size(); ++i ) {
 
-            size_t blk_end = blk_start + blk_size[i];
-            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&l_data,blk_start,blk_end,i]{
+                size_t blk_end = blk_start + blk_size[i];
+                threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&l_data,blk_start,blk_end,i]{
 
-                for ( size_t n=blk_start; n<blk_end; ++n ) {
-                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], i);
-                }
-            });
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], i);
+                    }
+                });
 
-            blk_start = blk_end;
+                blk_start = blk_end;
+            }
+
+            std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
-
-        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
     }
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                                  const std::vector<std::vector<T1>>& t0,
-                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
-                                  std::vector<std::vector<T1>>& traveltimes,
-                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
-                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
+                                 const std::vector<std::vector<T1>>& t0,
+                                 const std::vector<std::vector<sxyz<T1>>>& Rx,
+                                 std::vector<std::vector<T1>>& traveltimes,
+                                 std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                                 std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
 
-        std::vector<size_t> blk_size = get_blk_size(Tx.size());
+        if ( Tx.size() == 0 ) {
+            this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], l_data[0], 0);
+        } else {
+            std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
-        std::vector<std::thread> threads(this->getNthreads());
-        size_t blk_start = 0;
-        for ( size_t i=0; i<this->getNthreads(); ++i ) {
+            std::vector<std::thread> threads(blk_size.size());
+            size_t blk_start = 0;
+            for ( size_t i=0; i<blk_size.size(); ++i ) {
 
-            size_t blk_end = blk_start + blk_size[i];
-            threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&l_data,blk_start,blk_end,i]{
+                size_t blk_end = blk_start + blk_size[i];
+                threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&l_data,blk_start,blk_end,i]{
 
-                for ( size_t n=blk_start; n<blk_end; ++n ) {
-                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], i);
-                }
-            });
+                    for ( size_t n=blk_start; n<blk_end; ++n ) {
+                        this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], i);
+                    }
+                });
 
-            blk_start = blk_end;
+                blk_start = blk_end;
+            }
+
+            std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
-
-        std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
     }
 
 }
