@@ -38,6 +38,23 @@ namespace ttcr {
     std::string parse_input(int argc, char * argv[], input_parameters &);
     void get_params(const std::string &, input_parameters &);
     
+    class AtomicWriter {
+        std::ostringstream st;
+        std::ostream &stream;
+    public:
+        AtomicWriter(std::ostream &s=std::cout):stream(s) { }
+        template <typename T>
+        AtomicWriter& operator<<(T const& t) {
+            st << t;
+            return *this;
+        }
+        AtomicWriter& operator<<( std::ostream&(*f)(std::ostream&) ) {
+            st << f;
+            return *this;
+        }
+        ~AtomicWriter() { stream << st.str(); }
+    };
+
 }
 
 #endif /* defined(__ttcr__spmrt_io__) */
