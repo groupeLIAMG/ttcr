@@ -461,39 +461,8 @@ namespace ttcr {
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
-                                     T1& v0,
-                                     const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        
-        v0 = 0.0;
-        for ( size_t n=0; n<Tx.size(); ++n ) {
-            v0 += this->computeSlowness( Tx[n] );
-        }
-        v0 = Tx.size() / v0;
-
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
-        }
-    }
-    
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<sxyz<T1>>>& r_data,
-                                     T1& v0,
                                      std::vector<std::vector<sijv<T1>>>& m_data,
                                      const size_t threadNo) const {
-        
         raytrace(Tx, t0, Rx, threadNo);
         
         if ( r_data.size() != Rx.size() ) {
@@ -509,12 +478,6 @@ namespace ttcr {
             m_data[ni].resize( 0 );
         }
         
-        v0 = 0.0;
-        for ( size_t n=0; n<Tx.size(); ++n ) {
-            v0 += this->computeSlowness( Tx[n] );
-        }
-        v0 = Tx.size() / v0;
-
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], traveltimes[n], n, threadNo);
         }

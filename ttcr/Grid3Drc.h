@@ -247,6 +247,13 @@ namespace ttcr {
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1> &Rx,
+                        std::vector<siv<T1>> &l_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
+
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
@@ -805,6 +812,156 @@ namespace ttcr {
                         r_data.push_back( Tx[ns] );
                     }
                     
+                    tt += t0[ns];
+                    reachedTx = true;
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE, typename CELL>
+    void Grid3Drc<T1,T2,NODE,CELL>::getRaypath(const std::vector<sxyz<T1>>& Tx,
+                                               const std::vector<T1>& t0,
+                                               const sxyz<T1> &Rx,
+                                               std::vector<siv<T1>> &l_data,
+                                               T1 &tt,
+                                               const size_t threadNo) const {
+
+        tt = 0.0;
+
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
+                return;
+            }
+        }
+
+        sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        sxyz<T1> g;
+#ifdef DEBUG_RP
+        std::cout << "Starting at " << curr_pt << '\n';
+#endif
+
+        siv<T1> cell;
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
+
+            grad(g, curr_pt, threadNo);
+            g *= -1.0;
+
+            long long i, j, k;
+            getIJK(curr_pt, i, j, k);
+
+            // planes we will intersect
+            T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+            T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+
+            if ( std::abs(xp-curr_pt.x)<small2) {
+                xp += dx*boost::math::sign(g.x);
+            }
+            if ( std::abs(yp-curr_pt.y)<small2) {
+                yp += dy*boost::math::sign(g.y);
+            }
+            if ( std::abs(zp-curr_pt.z)<small2) {
+                zp += dz*boost::math::sign(g.z);
+            }
+
+            // dist to planes
+            T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+            T1 ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
+            T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+
+            if ( tx<ty && tx<tz ) { // closer to xp
+                curr_pt += tx*g;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+            } else if ( ty<tz ) {
+                curr_pt += ty*g;
+                curr_pt.y = yp;
+            } else {
+                curr_pt += tz*g;
+                curr_pt.z = zp;
+            }
+#ifdef DEBUG_RP
+            std::cout << "Grad: " << g << "\t going to: " << curr_pt << '\n';
+#endif
+
+            if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                curr_pt.y < ymin || curr_pt.y > ymax ||
+                curr_pt.z < zmin || curr_pt.z > zmax ) {
+                //  we are going oustide the grid!
+                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+            }
+            sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+            cell.i = getCellNo(mid_pt);
+            cell.v = curr_pt.getDistance(prev_pt);
+            l_data.push_back(cell);
+            tt += cells.computeDt(prev_pt, curr_pt, cell.i);
+            prev_pt = curr_pt;
+
+            // are we close enough to one the Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                T1 dist = curr_pt.getDistance( Tx[ns] );
+                if ( dist < maxDist ) {
+
+                    g = Tx[ns] - curr_pt;
+                    // check if we intersect a plane between curr_pt & Tx
+
+                    getIJK(curr_pt, i, j, k);
+
+                    xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                    yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
+                    zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+
+                    if ( std::abs(xp-curr_pt.x)<small2) {
+                        xp += dx*boost::math::sign(g.x);
+                    }
+                    if ( std::abs(yp-curr_pt.y)<small2) {
+                        yp += dy*boost::math::sign(g.y);
+                    }
+                    if ( std::abs(zp-curr_pt.z)<small2) {
+                        zp += dz*boost::math::sign(g.z);
+                    }
+
+                    // dist to planes
+                    tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                    ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
+                    tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+
+                    if ( tx<ty && tx<tz ) { // closer to xp
+                        curr_pt += tx*g;
+                        curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    } else if ( ty<tz ) {
+                        curr_pt += ty*g;
+                        curr_pt.y = yp;
+                    } else {
+                        curr_pt += tz*g;
+                        curr_pt.z = zp;
+                    }
+
+                    if ( curr_pt.getDistance(prev_pt) > dist ||  // we do not intersect a plane
+                        curr_pt == Tx[ns] ) {  // we have arrived
+                        cell.i = getCellNo(Tx[ns]);
+                        cell.v = Tx[ns].getDistance(prev_pt);
+                        l_data.push_back(cell);
+                        tt += cells.computeDt(Tx[ns], prev_pt, cell.i);
+                    } else {
+                        // to intersection
+                        mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                        cell.i = getCellNo(mid_pt);
+                        cell.v = curr_pt.getDistance(prev_pt);
+                        l_data.push_back(cell);
+                        tt += cells.computeDt(prev_pt, curr_pt, cell.i);
+                        
+                        // to Tx
+                        cell.i = getCellNo(Tx[ns]);
+                        cell.v = Tx[ns].getDistance(curr_pt);
+                        l_data.push_back(cell);
+                        tt += cells.computeDt(Tx[ns], curr_pt, cell.i);
+                    }
+
                     tt += t0[ns];
                     reachedTx = true;
                 }

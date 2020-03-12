@@ -264,6 +264,14 @@ namespace ttcr {
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
+                        std::vector<sijv<T1>>& m_data,
+                        T1 &tt,
+                        const size_t RxNo,
+                        const size_t threadNo=0) const;
+        
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,
                         std::vector<sijv<T1>>& m_data,
                         T1 &tt,
@@ -1078,6 +1086,300 @@ namespace ttcr {
 #ifdef DEBUG_RP
                         std::cout << Tx[ns] << "\n\n";
 #endif
+                    }
+
+                    reachedTx = true;
+                }
+            }
+        }
+    }
+    
+    
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
+                                          const std::vector<T1>& t0,
+                                          const sxyz<T1> &Rx,
+                                          std::vector<sijv<T1>>& m_data,
+                                          T1 &tt,
+                                          const size_t RxNo,
+                                          const size_t threadNo) const {
+        tt = 0.0;
+        T1 s1, s2;
+
+        static const size_t nnx = ncx+1;
+        static const size_t nny = ncy+1;
+
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                return;
+            }
+        }
+        
+        sxyz<T1> curr_pt( Rx ), prev_pt( Rx ), mid_pt;
+        s1 = computeSlowness( curr_pt );
+        sijv<T1> m;
+        m.i = RxNo;
+        
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        sxyz<T1> g;
+        
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
+            
+            grad(g, curr_pt, threadNo);
+            g *= -1.0;
+            
+            long long i, j, k;
+            getIJK(curr_pt, i, j, k);
+            
+            // planes we will intersect
+            T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+            T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+            
+            if ( std::abs(xp-curr_pt.x)<small2) {
+                xp += dx*boost::math::sign(g.x);
+            }
+            if ( std::abs(yp-curr_pt.y)<small2) {
+                yp += dy*boost::math::sign(g.y);
+            }
+            if ( std::abs(zp-curr_pt.z)<small2) {
+                zp += dz*boost::math::sign(g.z);
+            }
+            
+            // dist to planes
+            T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+            T1 ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
+            T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+            
+            if ( tx<ty && tx<tz ) { // closer to xp
+                curr_pt += tx*g;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+            } else if ( ty<tz ) {
+                curr_pt += ty*g;
+                curr_pt.y = yp;
+            } else {
+                curr_pt += tz*g;
+                curr_pt.z = zp;
+            }
+            
+            if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                curr_pt.y < ymin || curr_pt.y > ymax ||
+                curr_pt.z < zmin || curr_pt.z > zmax ) {
+                //  we are going oustide the grid!
+                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+            }
+            
+            s2 = computeSlowness( curr_pt );
+            tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
+            s1 = s2;
+            prev_pt = curr_pt;
+            
+            // compute terms of matrix M
+            mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
+            T1 s = computeSlowness(mid_pt);
+            s *= s;
+            T1 ds = curr_pt.getDistance( prev_pt );
+            
+            size_t ix = (mid_pt.x-xmin)/dx;
+            size_t iy = (mid_pt.y-ymin)/dy;
+            size_t iz = (mid_pt.z-zmin)/dz;
+            for ( size_t ii=0; ii<2; ++ii ) {
+                for ( size_t jj=0; jj<2; ++jj ) {
+                    for ( size_t kk=0; kk<2; ++kk ) {
+                        size_t iv = ix+ii;
+                        size_t jv = iy+jj;
+                        size_t kv = iz+kk;
+                        T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
+                        (1. - std::abs(mid_pt.y - jv*dy)/dy) *
+                        (1. - std::abs(mid_pt.z - kv*dz)/dz);
+                        
+                        m.j = (kv*nny+jv)*nnx+iv;
+                        m.v = -s * ds * dvdv;
+                        
+                        bool found = false;
+                        for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                            if ( m_data[nm].j == m.j ) {
+                                m_data[nm].v += m.v;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if ( found == false ) {
+                            m_data.push_back(m);
+                        }
+                    }
+                }
+            }
+            
+            
+            // are we close enough to one of the Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                T1 dist = curr_pt.getDistance( Tx[ns] );
+                if ( dist < maxDist ) {
+                    
+                    g = Tx[ns] - curr_pt;
+                    // check if we intersect a plane between curr_pt & Tx
+                    
+                    getIJK(curr_pt, i, j, k);
+                    
+                    xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                    yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
+                    zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+                    
+                    if ( std::abs(xp-curr_pt.x)<small2) {
+                        xp += dx*boost::math::sign(g.x);
+                    }
+                    if ( std::abs(yp-curr_pt.y)<small2) {
+                        yp += dy*boost::math::sign(g.y);
+                    }
+                    if ( std::abs(zp-curr_pt.z)<small2) {
+                        zp += dz*boost::math::sign(g.z);
+                    }
+                    
+                    // dist to planes
+                    tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                    ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
+                    tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+                    
+                    if ( tx<ty && tx<tz ) { // closer to xp
+                        curr_pt += tx*g;
+                        curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    } else if ( ty<tz ) {
+                        curr_pt += ty*g;
+                        curr_pt.y = yp;
+                    } else {
+                        curr_pt += tz*g;
+                        curr_pt.z = zp;
+                    }
+                    
+                    if ( curr_pt.getDistance(prev_pt) > dist  ||  // we do not intersect a plane
+                        curr_pt == Tx[ns] ) {  // we have arrived
+                        
+                        s2 = computeSlowness( Tx[ns] );
+                        tt += t0[ns] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[ns] );
+                        
+                        // compute terms of matrix M
+                        mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
+                        s = computeSlowness(mid_pt);
+                        s *= s;
+                        ds = Tx[ns].getDistance( prev_pt );
+                        
+                        ix = (mid_pt.x-xmin)/dx;
+                        iy = (mid_pt.y-ymin)/dy;
+                        iz = (mid_pt.z-zmin)/dz;
+                        for ( size_t ii=0; ii<2; ++ii ) {
+                            for ( size_t jj=0; jj<2; ++jj ) {
+                                for ( size_t kk=0; kk<2; ++kk ) {
+                                    size_t iv = ix+ii;
+                                    size_t jv = iy+jj;
+                                    size_t kv = iz+kk;
+                                    T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
+                                    (1. - std::abs(mid_pt.y - jv*dy)/dy) *
+                                    (1. - std::abs(mid_pt.z - kv*dz)/dz);
+                                    
+                                    m.j = (kv*nny+jv)*nnx+iv;
+                                    m.v = -s * ds * dvdv;
+                                    
+                                    bool found = false;
+                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                                        if ( m_data[nm].j == m.j ) {
+                                            m_data[nm].v += m.v;
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if ( found == false ) {
+                                        m_data.push_back(m);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // to intersection
+                        s2 = computeSlowness( curr_pt );
+                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
+                        s1 = s2;
+                        
+                        // compute terms of matrix M
+                        mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
+                        s = computeSlowness(mid_pt);
+                        s *= s;
+                        ds = curr_pt.getDistance( prev_pt );
+                        
+                        ix = (mid_pt.x-xmin)/dx;
+                        iy = (mid_pt.y-ymin)/dy;
+                        iz = (mid_pt.z-zmin)/dz;
+                        for ( size_t ii=0; ii<2; ++ii ) {
+                            for ( size_t jj=0; jj<2; ++jj ) {
+                                for ( size_t kk=0; kk<2; ++kk ) {
+                                    size_t iv = ix+ii;
+                                    size_t jv = iy+jj;
+                                    size_t kv = iz+kk;
+                                    T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
+                                    (1. - std::abs(mid_pt.y - jv*dy)/dy) *
+                                    (1. - std::abs(mid_pt.z - kv*dz)/dz);
+                                    
+                                    m.j = (kv*nny+jv)*nnx+iv;
+                                    m.v = -s * ds * dvdv;
+                                    
+                                    bool found = false;
+                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                                        if ( m_data[nm].j == m.j ) {
+                                            m_data[nm].v += m.v;
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if ( found == false ) {
+                                        m_data.push_back(m);
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        
+                        // to Tx
+                        s2 = computeSlowness( Tx[ns] );
+                        tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                        
+                        // compute terms of matrix M
+                        mid_pt = static_cast<T1>(0.5)*(Tx[ns] + curr_pt);
+                        s = computeSlowness(mid_pt);
+                        s *= s;
+                        ds = Tx[ns].getDistance( curr_pt );
+                        
+                        ix = (mid_pt.x-xmin)/dx;
+                        iy = (mid_pt.y-ymin)/dy;
+                        iz = (mid_pt.z-zmin)/dz;
+                        for ( size_t ii=0; ii<2; ++ii ) {
+                            for ( size_t jj=0; jj<2; ++jj ) {
+                                for ( size_t kk=0; kk<2; ++kk ) {
+                                    size_t iv = ix+ii;
+                                    size_t jv = iy+jj;
+                                    size_t kv = iz+kk;
+                                    T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
+                                    (1. - std::abs(mid_pt.y - jv*dy)/dy) *
+                                    (1. - std::abs(mid_pt.z - kv*dz)/dz);
+                                    
+                                    m.j = (kv*nny+jv)*nnx+iv;
+                                    m.v = -s * ds * dvdv;
+                                    
+                                    bool found = false;
+                                    for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                                        if ( m_data[nm].j == m.j ) {
+                                            m_data[nm].v += m.v;
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if ( found == false ) {
+                                        m_data.push_back(m);
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     reachedTx = true;
