@@ -389,7 +389,7 @@ namespace ttcr {
                 }
                 fin.close();
             }
-            catch (std::ifstream::failure e) {
+            catch (std::ifstream::failure &e) {
                 std::cerr << "Exception opening/reading/closing file " << filename << std::endl;
                 return false;
             }
