@@ -25,7 +25,7 @@ namespace ttcr {
                    const T1 eps, const int maxit, const bool w,
                    const bool ttrp=true, const bool intVel=false, const size_t nt=1) :
         Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, ttrp, intVel, nt),
-        epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w)
+        epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w)
         {
             buildGridNodes();
             this->buildGridNeighbors();
@@ -36,8 +36,8 @@ namespace ttcr {
         
         void setSlowness(const std::vector<T1>& s);
         
-        const int get_niter() const { return niter; }
-        const int get_niterw() const { return niterw; }
+        const int get_niter() const { return niter_final; }
+        const int get_niterw() const { return niterw_final; }
         
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
@@ -94,8 +94,8 @@ namespace ttcr {
     protected:
         T1 epsilon;
         int nitermax;
-        mutable int niter;
-        mutable int niterw;
+        mutable int niter_final;
+        mutable int niterw_final;
         bool weno3;
         
         void buildGridNodes();
@@ -350,8 +350,8 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
-            niter=0;
-            niterw=0;
+            int niter = 0;
+            int niterw = 0;
             if ( this->dx != this->dz || this->dx != this->dy ) {
                 throw std::logic_error("Error: WENO stencil needs dx equal to dz");
             }
@@ -378,8 +378,10 @@ namespace ttcr {
                 }
                 niterw++;
             }
+            niter_final = niter;
+            niterw_final = niterw;
         } else {
-            niter=0;
+            int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
                 this->sweep(frozen, threadNo);
                 
@@ -392,6 +394,7 @@ namespace ttcr {
                 }
                 niter++;
             }
+            niter_final = niter;
         }
     }
     
@@ -421,8 +424,8 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
-            niter=0;
-            niterw=0;
+            int niter = 0;
+            int niterw = 0;
             if ( this->dx != this->dz || this->dx != this->dy ) {
                 throw std::logic_error("Error: WENO stencil needs dx equal to dz");
             }
@@ -449,8 +452,10 @@ namespace ttcr {
                 }
                 niterw++;
             }
+            niter_final = niter;
+            niterw_final = niterw;
         } else {
-            niter=0;
+            int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
                 this->sweep(frozen, threadNo);
                 
@@ -463,6 +468,7 @@ namespace ttcr {
                 }
                 niter++;
             }
+            niter_final = niter;
         }
         
     }

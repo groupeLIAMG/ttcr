@@ -29,8 +29,8 @@ namespace ttcr {
         
         void setSlowness(const std::vector<T1>& s);
         
-        const int get_niter() const { return niter; }
-        const int get_niterw() const { return niterw; }
+        const int get_niter() const { return niter_final; }
+        const int get_niterw() const { return niterw_final; }
         
         void raytrace(const std::vector<sxz<T1>>& Tx,
                      const std::vector<T1>& t0,
@@ -69,8 +69,8 @@ namespace ttcr {
     protected:
         T1 epsilon;
         int nitermax;
-        mutable int niter;
-        mutable int niterw;
+        mutable int niter_final;
+        mutable int niterw_final;
         bool weno3;
         bool rotated_template;
         
@@ -91,7 +91,7 @@ namespace ttcr {
                                   const T1 eps, const int maxit, const bool w,
                                   const bool rt, const size_t nt) :
     Grid2Drn<T1,T2,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
-    epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w), rotated_template(rt)
+    epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w), rotated_template(rt)
     {
         buildGridNodes();
         this->buildGridNeighbors();
@@ -231,8 +231,8 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
-            niter=0;
-            niterw=0;
+            int niter = 0;
+            int niterw = 0;
             if ( this->dx != this->dz ) {
                 while ( change >= epsilon && niter<nitermax ) {
                     this->sweep_xz(frozen, threadNo);
@@ -282,8 +282,10 @@ namespace ttcr {
                     niterw++;
                 }
             }
+            niter_final = niter;
+            niterw_final = niterw;
         } else {
-            niter=0;
+            int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
                 if ( this->dx == this->dz ) {
                     this->sweep(frozen, threadNo);
@@ -303,6 +305,7 @@ namespace ttcr {
                 }
                 niter++;
             }
+            niter_final = niter;
         }
         
         if ( traveltimes.size() != Rx.size() ) {
@@ -345,8 +348,8 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
-            niter=0;
-            niterw=0;
+            int niter = 0;
+            int niterw = 0;
             if ( this->dx != this->dz ) {
                 while ( change >= epsilon && niter<nitermax ) {
                     this->sweep_xz(frozen, threadNo);
@@ -396,8 +399,10 @@ namespace ttcr {
                     niterw++;
                 }
             }
+            niter_final = niter;
+            niterw_final = niterw;
         } else {
-            niter=0;
+            int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
                 if ( this->dx == this->dz ) {
                     this->sweep(frozen, threadNo);
@@ -417,6 +422,7 @@ namespace ttcr {
                 }
                 niter++;
             }
+            niter_final = niter;
         }
         
         for (size_t nr=0; nr<Rx.size(); ++nr) {

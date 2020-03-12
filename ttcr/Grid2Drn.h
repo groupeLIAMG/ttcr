@@ -87,12 +87,6 @@ namespace ttcr {
         void saveTTgrad(const std::string &, const size_t nt=0,
                         const bool vtkFormat=0) const;
         
-        //    void saveTTgrad2(const std::string &, const size_t nt=0,
-        //                     const bool vtkFormat=0) const;
-        
-        virtual const int get_niter() const { return 0; }
-        virtual const int get_niterw() const { return 0; }
-        
         const size_t getNthreads() const { return nThreads; }
         const T1 getXmin() const { return xmin; }
         const T1 getZmin() const { return zmin; }

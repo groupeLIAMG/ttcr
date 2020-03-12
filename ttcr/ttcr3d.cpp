@@ -203,9 +203,7 @@ int body(const input_parameters &par) {
         rfl2_r_data[n].resize( src.size() );
     }
     vector<vector<vector<sijv<T>>>> m_data(src.size());
-    vector<T> v0(src.size());
 
-	
     // Computes the travel time
     if ( verbose ) { cout << "Computing traveltimes ... "; cout.flush(); }
 	if ( par.time ) { begin = chrono::high_resolution_clock::now(); }
@@ -214,7 +212,7 @@ int body(const input_parameters &par) {
             for ( size_t n=0; n<src.size(); ++n ) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                rcv.get_tt(n), r_data[n], v0[n], m_data[n]);
+                                rcv.get_tt(n), r_data[n], m_data[n]);
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
@@ -229,12 +227,12 @@ int body(const input_parameters &par) {
                 
                 size_t blk_end = blk_start + blk_size;
                 
-                threads[i]=thread( [&g,&src,&rcv,&r_data,&v0,&m_data,blk_start,blk_end,i]{
+                threads[i]=thread( [&g,&src,&rcv,&r_data,&m_data,blk_start,blk_end,i]{
                     
                     for ( size_t n=blk_start; n<blk_end; ++n ) {
                         try {
                             g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                        rcv.get_tt(n), r_data[n], v0[n], m_data[n], i+1);
+                                        rcv.get_tt(n), r_data[n], m_data[n], i+1);
                         } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
@@ -247,7 +245,7 @@ int body(const input_parameters &par) {
             for ( size_t n=blk_start; n<nTx; ++n ) {
                 try {
                     g->raytrace(src[n].get_coord(), src[n].get_t0(), rcv.get_coord(),
-                                rcv.get_tt(n), r_data[n], v0[n], m_data[n], 0);
+                                rcv.get_tt(n), r_data[n], m_data[n], 0);
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();

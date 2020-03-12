@@ -42,7 +42,7 @@ namespace ttcr {
                    const T1 eps, const int maxit, const size_t nt=1,
                    const bool procObtuse=true) :
         Grid2Dun<T1,T2,NODE,S>(no, tri, nt),
-        epsilon(eps), nitermax(maxit), sorted()
+        epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
             buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -53,7 +53,9 @@ namespace ttcr {
         }
         
         void initOrdering(const std::vector<S>& refPts, const int order);
-        
+
+        const int get_niter() const { return niter_final; }
+
         void raytrace(const std::vector<S>&,
                      const std::vector<T1>&,
                      const std::vector<S>&,
@@ -83,6 +85,7 @@ namespace ttcr {
     private:
         T1 epsilon;
         int nitermax;
+        mutable int niter_final;
         std::vector<std::vector<NODE*>> sorted;
         
         void buildGridNodes(const std::vector<S>&,
@@ -231,7 +234,7 @@ namespace ttcr {
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+        niter_final = niter;
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
@@ -276,11 +279,7 @@ namespace ttcr {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
                         this->localSolver(*vertexC, threadNo);
                 }
-                
-                //			char fname[200];
-                //			sprintf(fname, "fsm%06d_%zd_a.dat",niter+1,i+1);
-                //			saveTT(fname, threadNo);
-                
+
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
                     T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
@@ -298,9 +297,7 @@ namespace ttcr {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
                         this->localSolver(*vertexC, threadNo);
                 }
-                //			sprintf(fname, "fsm%06d_%zd_d.dat",niter+1,i+1);
-                //			saveTT(fname, threadNo);
-                
+
                 change = 0.0;
                 for ( size_t n=0; n<this->nodes.size(); ++n ) {
                     T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
@@ -316,7 +313,7 @@ namespace ttcr {
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+        niter_final = niter;
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );

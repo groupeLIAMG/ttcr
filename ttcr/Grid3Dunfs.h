@@ -44,7 +44,7 @@ namespace ttcr {
                    const T1 eps, const int maxit, const int rp, const bool iv,
                    const bool rptt, const T1 md, const size_t nt=1) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
-        epsilon(eps), nitermax(maxit), S(), niter(0)
+        epsilon(eps), nitermax(maxit), S(), niter_final(0)
         {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -56,7 +56,7 @@ namespace ttcr {
                    const int rp, const bool iv, const bool rptt, const T1 md,
                    const size_t nt=1) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
-        epsilon(eps), nitermax(maxit), S(), niter(0)
+        epsilon(eps), nitermax(maxit), S(), niter_final(0)
         {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -68,7 +68,7 @@ namespace ttcr {
         
         void initOrdering(const std::vector<sxyz<T1>>& refPts, const int order);
         
-        const int get_niter() const { return niter; }
+        const int get_niter() const { return niter_final; }
         
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
@@ -117,7 +117,7 @@ namespace ttcr {
         T1 epsilon;
         int nitermax;
         std::vector<std::vector<Node3Dn<T1,T2>*>> S;
-        mutable int niter;
+        mutable int niter_final;
         
         void initTx(const std::vector<sxyz<T1>>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
@@ -200,7 +200,7 @@ namespace ttcr {
         for ( size_t n=0; n<this->nodes.size(); ++n )
             times[n] = this->nodes[n].getTT( threadNo );
         
-        niter=0;
+        int niter = 0;
         T1 change = std::numeric_limits<T1>::max();
         while ( change >= epsilon && niter<nitermax ) {
             
@@ -244,7 +244,7 @@ namespace ttcr {
             }
             niter++;
         }
-        
+        niter_final = niter;
     }
     
     template<typename T1, typename T2>
@@ -292,7 +292,7 @@ namespace ttcr {
         for ( size_t n=0; n<this->nodes.size(); ++n )
             times[n] = this->nodes[n].getTT( threadNo );
         
-        niter=0;
+        int niter = 0;
         T1 change = std::numeric_limits<T1>::max();
         while ( change >= epsilon && niter<nitermax ) {
             
@@ -337,6 +337,7 @@ namespace ttcr {
             }
             niter++;
         }
+        niter_final = niter;
     }
 
     template<typename T1, typename T2>

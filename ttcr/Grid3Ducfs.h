@@ -44,7 +44,7 @@ namespace ttcr {
                    const T1 eps, const int maxit, const bool rp,
                    const bool rptt, const T1 md, const size_t nt=1) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt),
-        epsilon(eps), nitermax(maxit), S()
+        epsilon(eps), nitermax(maxit), niter_final(0), S()
         {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors();
@@ -84,6 +84,7 @@ namespace ttcr {
     private:
         T1 epsilon;
         int nitermax;
+        mutable int niter_final;
         std::vector<std::vector<Node3Dc<T1,T2>*>> S;
         
         void initTx(const std::vector<sxyz<T1>>& Tx, const std::vector<T1>& t0,
@@ -211,7 +212,7 @@ namespace ttcr {
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+        niter_final = niter;
         
     }
     
@@ -305,7 +306,7 @@ namespace ttcr {
             }
             niter++;
         }
-        std::cout << niter << " iterations were needed with epsilon = " << epsilon << '\n';
+        niter_final = niter;
         
     }
     

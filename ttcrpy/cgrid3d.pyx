@@ -66,16 +66,15 @@ cdef extern from "Grid3Drnfs.h" namespace "ttcr":
                       vector[sxyz[T1]]&,
                       vector[T1]&,
                       vector[vector[sxyz[T1]]]&,
-                      T1&,
                       size_t) except +
         void raytrace(vector[sxyz[T1]]&,
                       vector[T1]&,
                       vector[sxyz[T1]]&,
                       vector[T1]&,
                       vector[vector[sxyz[T1]]]&,
-                      T1&,
                       vector[vector[sijv[T1]]]&,
                       size_t) except +
+        T1 computeSlowness(sxyz[T1]&)
 
 cdef extern from "Grid3Drcfs.h" namespace "ttcr":
     cdef cppclass Grid3Drcfs[T1,T2]:
@@ -173,6 +172,39 @@ cdef class Grid3Drn:
                     slown.push_back(slowness[(i*ny + j)*nz + k])
         self.grid.setSlowness(slown)
 
+    def get_s0(self, Tx, slowness=None):
+        """
+        Return slowness value at source position
+
+        The source can comprise more than one point
+
+        Parameters
+        ----------
+            Tx : coordinates of source points (npts x 3)
+            slowness : 1D array of slowness values at nodes (can be None, but
+                       slowness should have been set before calling get_s0)
+
+        Returns
+        -------
+            s0 : average slowness at source points
+        """
+        cdef vector[double] slown
+        if slowness is not None:
+            nx = self.nx+1
+            ny = self.ny+1
+            nz = self.nz+1
+            for k in range(nz):
+                for j in range(ny):
+                    for i in range(nx):
+                        # slowness is in 'C' order and we must pass it in 'F' order
+                        slown.push_back(slowness[(i*ny + j)*nz + k])
+            self.grid.setSlowness(slown)
+
+        cdef double s0 = 0.0
+        for t in Tx:
+            s0 += self.grid.computeSlowness(sxyz[double](t[0], t[1], t[2]))
+        return s0 / Tx.shape[0]
+
     def raytrace(self, slowness, Tx, Rx, t0=0.0, nout=1, thread_no=0):
         """
         Perform raytracing for a single source
@@ -192,10 +224,9 @@ cdef class Grid3Drn:
         Returns
         -------
             tt : travel time are receivers
-            if nout == 3 or nout == 4:
+            if nout == 2 or nout == 3:
                 rays : list holding coordinates of ray segments, for each rcv
-                v0 : average velocity at source points
-            if nout == 4:
+            if nout == 3:
                 M : matrix of partial derivatives of t w/r to velocity
         """
         # assing model data
@@ -225,7 +256,6 @@ cdef class Grid3Drn:
 
         cdef vector[vector[sxyz[double]]] r_data
         cdef vector[vector[sijv[double]]] m_data
-        cdef double v0 = 0.0
 
         if nout == 1:
             self.grid.raytrace(vTx, vt0, vRx, vtt, thread_no)
@@ -236,8 +266,8 @@ cdef class Grid3Drn:
 
             return tt
 
-        elif nout == 3:
-            self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, v0, thread_no)
+        elif nout == 2:
+            self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, thread_no)
 
             rays = [ [0.0] for i in range(Rx.shape[0]) ]
             tt = np.empty((Rx.shape[0],))
@@ -249,10 +279,10 @@ cdef class Grid3Drn:
                     rays[n][nn, 1] = r_data[n][nn].y
                     rays[n][nn, 2] = r_data[n][nn].z
 
-            return tt, rays, v0
+            return tt, rays
 
-        elif nout == 4:
-            self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, v0, m_data, thread_no)
+        elif nout == 3:
+            self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data, thread_no)
 
             rays = [ [0.0] for i in range(Rx.shape[0]) ]
             tt = np.empty((Rx.shape[0],))
@@ -286,7 +316,7 @@ cdef class Grid3Drn:
             indptr[M] = k
             MM = csr_matrix((val, indices, indptr), shape=(M,N))
 
-            return tt, rays, v0, MM
+            return tt, rays, MM
 
 
 cdef class Grid3Drc:
@@ -407,7 +437,7 @@ cdef class Grid3Drc:
 
         cdef vector[vector[siv[double]]] l_data
         cdef vector[vector[sxyz[double]]] r_data
-        cdef double v0 = 0.0
+        cdef double s0 = 0.0
 
         if nout is not None:
             if nout == 1:

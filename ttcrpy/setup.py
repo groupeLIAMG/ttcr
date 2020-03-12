@@ -13,15 +13,16 @@ if platform.system() == 'Darwin':
     os.environ['CXX'] = 'clang++'
     os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
     extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3']
-    include_dirs = ['../ttcr/','/opt/local/include','/opt/local/include/eigen3/',np.get_include()]
+    include_dirs = ['../ttcr/', '../boost_1_72_0/', '../eigen-3.3.7/',
+                    np.get_include()]
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
-    include_dirs = ['Z:\\src\\ttcr\\ttcr',
-    'C:\\Users\\berna\OneDrive\Documents\\boost_1_66_0',
-    'C:\\Users\\berna\OneDrive\Documents\eigen3',np.get_include()]
+    include_dirs = ['..\\ttcr', '..\\boost_1_72_0', '..\eigen-3.3.7',
+                    np.get_include()]
 elif platform.system() == 'Linux':
     extra_compile_args = ['-std=c++11', '-O3']
-    include_dirs = ['../ttcr/','/usr/include/eigen3/',np.get_include()]
+    include_dirs = ['../ttcr/', '../boost_1_72_0/', '../eigen-3.3.7/',
+                    np.get_include()]
 
 
 extensions = [

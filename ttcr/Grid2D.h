@@ -124,8 +124,8 @@ namespace ttcr {
         virtual const T2 getNcz() const { return 1; }
         
         
-        virtual const int get_niter() const { return 1; }
-        virtual const int get_niterw() const { return 1; }
+        virtual const int get_niter() const { return 0; }
+        virtual const int get_niterw() const { return 0; }
         
         virtual const size_t getNthreads() const { return 1; }
         

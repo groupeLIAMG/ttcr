@@ -170,9 +170,6 @@ namespace ttcr {
             return size;
         }
         
-        virtual const int get_niter() const { return 0; }
-        virtual const int get_niterw() const { return 0; }
-        
         const size_t getNthreads() const { return nThreads; }
         const T1 getXmin() const { return xmin; }
         const T1 getYmin() const { return ymin; }

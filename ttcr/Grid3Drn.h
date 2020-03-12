@@ -156,9 +156,6 @@ namespace ttcr {
                     const int format=1) const;
         void loadTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
-
-        virtual const int get_niter() const { return 0; }
-        virtual const int get_niterw() const { return 0; }
         
         const size_t getNthreads() const { return nThreads; }
         const T1 getXmin() const { return xmin; }

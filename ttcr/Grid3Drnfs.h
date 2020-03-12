@@ -26,7 +26,7 @@ namespace ttcr {
                    const bool ttrp=true, const bool intVel=false,
                    const size_t nt=1) :
         Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, ttrp, intVel, nt),
-        epsilon(eps), nitermax(maxit), niter(0), niterw(0), weno3(w)
+        epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w)
         {
             buildGridNodes();
             this->buildGridNeighbors();
@@ -36,8 +36,8 @@ namespace ttcr {
             
         }
         
-        const int get_niter() const { return niter; }
-        const int get_niterw() const { return niterw; }
+        const int get_niter() const { return niter_final; }
+        const int get_niterw() const { return niterw_final; }
         
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
@@ -63,15 +63,6 @@ namespace ttcr {
                       const std::vector<sxyz<T1>>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<sxyz<T1>>>& r_data,
-                      T1& v0,
-                      const size_t threadNo=0) const;
-        
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<sxyz<T1>>& Rx,
-                      std::vector<T1>& traveltimes,
-                      std::vector<std::vector<sxyz<T1>>>& r_data,
-                      T1& v0,
                       std::vector<std::vector<sijv<T1>>>& m_data,
                       const size_t threadNo=0) const;
 
@@ -93,8 +84,8 @@ namespace ttcr {
     protected:
         T1 epsilon;
         int nitermax;
-        mutable int niter;
-        mutable int niterw;
+        mutable int niter_final;
+        mutable int niterw_final;
         bool weno3;
         
         void buildGridNodes();
@@ -253,6 +244,12 @@ namespace ttcr {
         int npts = 1;
         if ( weno3 == true) npts = 2;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
+//        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+//            if ( frozen[n] ) {
+//                AtomicWriter aw;
+//                aw << Tx[0] << " frozen at " << n << " tt = " << std::setprecision(9) << this->nodes[n].getTT(threadNo) << '\n';
+//            }
+//        }
         
         std::vector<T1> times( this->nodes.size() );
         for ( size_t n=0; n<this->nodes.size(); ++n )
@@ -260,8 +257,8 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
-            niter=0;
-            niterw=0;
+            int niter = 0;
+            int niterw = 0;
             if ( this->dx != this->dz || this->dx != this->dy ) {
                 throw std::logic_error("Error: WENO stencil needs dx equal to dz");
             }
@@ -288,8 +285,11 @@ namespace ttcr {
                 }
                 niterw++;
             }
+            niter_final = niter;
+            niterw_final = niterw;
+            //std::cout << Tx[0] << "    times " << times[0] << '\t' << this->nodes[0].getNodeSlowness() << '\n';
         } else {
-            niter=0;
+            int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
                 this->sweep(frozen, threadNo);
                 
@@ -302,6 +302,7 @@ namespace ttcr {
                 }
                 niter++;
             }
+            niter_final = niter;
         }
         
     }
@@ -332,8 +333,8 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
-            niter=0;
-            niterw=0;
+            int niter = 0;
+            int niterw = 0;
             if ( this->dx != this->dz || this->dx != this->dy ) {
                 throw std::logic_error("Error: WENO stencil needs dx equal to dz");
             }
@@ -360,8 +361,10 @@ namespace ttcr {
                 }
                 niterw++;
             }
+            niter_final = niter;
+            niterw_final = niterw;
         } else {
-            niter=0;
+            int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
                 this->sweep(frozen, threadNo);
                 
@@ -374,6 +377,7 @@ namespace ttcr {
                 }
                 niter++;
             }
+            niter_final = niter;
         }
         
     }
