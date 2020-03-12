@@ -203,7 +203,7 @@ namespace ttcr {
 #endif
     private:
         const std::vector<size_t> get_blk_size(const size_t nTx) const {
-            size_t n_blk = this->getNthreads() > nTx ? this->getNthreads() : nTx;
+            size_t n_blk = this->getNthreads() < nTx ? this->getNthreads() : nTx;
             std::vector<size_t> blk_size ( n_blk, 0 );
             size_t nj = nTx;
             while ( nj > 0 ) {
