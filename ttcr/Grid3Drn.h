@@ -90,32 +90,6 @@ namespace ttcr {
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncy*ncz; }
         
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<sxyz<T1>>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<sxyz<T1>>>& r_data,
-                             const size_t threadNo=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                             const size_t=0) const {}
-        
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1> &Rx,
@@ -174,6 +148,8 @@ namespace ttcr {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
         }
+
+        T1 computeSlowness(const sxyz<T1>&) const;
 
 #ifdef VTK
         void saveModelVTR(const std::string &,
@@ -298,8 +274,6 @@ namespace ttcr {
                             const sxyz<T1> &Rx,
                             std::vector<sxyz<T1>> &r_data,
                             const size_t threadNo=0) const;
-        
-        T1 computeSlowness(const sxyz<T1>&) const;
         
         void sweep(const std::vector<bool>& frozen,
                    const size_t threadNo) const;
@@ -2347,7 +2321,6 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
                                            const size_t threadNo) const {
-        
         // sweep first direction
         for ( size_t k=0; k<=ncz; ++k ) {
             for ( size_t j=0; j<=ncy; ++j ) {

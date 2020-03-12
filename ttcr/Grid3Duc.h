@@ -147,32 +147,6 @@ namespace ttcr {
             return zmax;
         }
         
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                              const std::vector<T1>& t0,
-                              const std::vector<sxyz<T1>>& Rx,
-                              std::vector<T1>& traveltimes,
-                              const size_t threadNo=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                              const std::vector<T1>& t0,
-                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                              std::vector<std::vector<T1>*>& traveltimes,
-                              const size_t=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                              const std::vector<T1>& t0,
-                              const std::vector<sxyz<T1>>& Rx,
-                              std::vector<T1>& traveltimes,
-                              std::vector<std::vector<sxyz<T1>>>& r_data,
-                              const size_t threadNo=0) const {}
-        
-        virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                              const std::vector<T1>& t0,
-                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                              std::vector<std::vector<T1>*>& traveltimes,
-                              std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                              const size_t=0) const {}
-        
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1> &Rx,
