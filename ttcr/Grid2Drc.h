@@ -87,7 +87,6 @@ namespace ttcr {
         void saveTTgrad(const std::string &, const size_t nt=0,
                         const bool vtkFormat=0) const {}
         
-        const size_t getNthreads() const { return nThreads; }
         const T1 getXmin() const { return xmin; }
         const T1 getZmin() const { return zmin; }
         const T1 getDx() const { return dx; }
@@ -103,7 +102,6 @@ namespace ttcr {
         }
 
     protected:
-        size_t nThreads;
         T1 dx;           // cell size in x
         T1 dz;           // cell size in z
         T1 xmin;         // x origin of the grid
@@ -129,8 +127,10 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename CELL>
     Grid2Drc<T1,T2,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-                                        const T1 minx, const T1 minz, const size_t nt) : nThreads(nt),
-    dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
+                                        const T1 minx, const T1 minz, const size_t nt) :
+    Grid2D<T1,T2,sxz<T1>>(nt),
+    dx(ddx), dz(ddz), xmin(minx), zmin(minz),
+    xmax(minx+nx*ddx), zmax(minz+nz*ddz),
     ncx(nx), ncz(nz),
     nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
     cells(ncx*ncz),

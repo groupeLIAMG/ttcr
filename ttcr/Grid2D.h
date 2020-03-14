@@ -32,69 +32,73 @@
 
 namespace ttcr {
     
-    template<typename T1, typename T2, typename S>
+    template<typename T1 = double, typename T2 = uint32_t, typename S = sxz<double>>
     class Grid2D {
     public:
-        
+        Grid2D(const size_t nt=1) :
+            nThreads(nt) {}
+
         virtual ~Grid2D() {}
         
-        virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             const size_t threadNo=0) const {}
+        const size_t getNthreads() const { return nThreads; }
         
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<S>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              const size_t threadNo=0) const {}
         
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<S>>& r_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<const std::vector<S>*>& Rx,
+                              std::vector<std::vector<T1>*>& traveltimes,
+                              const size_t threadNo=0) const {}
         
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<const std::vector<S>*>& Rx,
-                             std::vector<std::vector<T1>*>& traveltimes,
-                             std::vector<std::vector<std::vector<S>>*>& r_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<S>>& r_data,
+                              const size_t threadNo=0) const {}
         
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<S>>& r_data,
-                             std::vector<std::vector<siv2<T1>>>& l_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<const std::vector<S>*>& Rx,
+                              std::vector<std::vector<T1>*>& traveltimes,
+                              std::vector<std::vector<std::vector<S>>*>& r_data,
+                              const size_t threadNo=0) const {}
         
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<siv2<T1>>>& l_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<S>>& r_data,
+                              std::vector<std::vector<siv2<T1>>>& l_data,
+                              const size_t threadNo=0) const {}
         
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<S>>& r_data,
-                             T1& v0,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<siv2<T1>>>& l_data,
+                              const size_t threadNo=0) const {}
+        
+        virtual void raytrace(const std::vector<S>& Tx,
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<S>>& r_data,
+                              T1& v0,
+                              const size_t threadNo=0) const {}
 
         virtual void raytrace(const std::vector<S>& Tx,
-                             const std::vector<T1>& t0,
-                             const std::vector<S>& Rx,
-                             std::vector<T1>& traveltimes,
-                             std::vector<std::vector<S>>& r_data,
-                             T1& v0,
-                             std::vector<std::vector<sijv<T1>>>& m_data,
-                             const size_t threadNo=0) const {}
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<S>>& r_data,
+                              T1& v0,
+                              std::vector<std::vector<sijv<T1>>>& m_data,
+                              const size_t threadNo=0) const {}
 
         
         
@@ -127,8 +131,6 @@ namespace ttcr {
         virtual const int get_niter() const { return 0; }
         virtual const int get_niterw() const { return 0; }
         
-        virtual const size_t getNthreads() const { return 1; }
-        
         virtual int projectPts(std::vector<S>&) const { return 1; }
         
         virtual void interpolateAtNodes(std::vector<T1> &) const {}
@@ -143,6 +145,8 @@ namespace ttcr {
         virtual void saveModelVTR(const std::string &, const double*,
                                   const bool saveSlowness=true) const {}
 #endif
+    protected:
+        size_t nThreads;
     };
     
 }
