@@ -29,6 +29,7 @@
 		2BC7091218EDABD3004DA2C9 /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
 		2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BD0F4F618EED76000B3957F /* ttcr2ds.cpp */; };
 		2BD0F4FD18EED7E400B3957F /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BC708FE18EDA83B004DA2C9 /* ttcr_io.cpp */; };
+		2BE26494241B160500B6DC77 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BE26493241B160500B6DC77 /* main.cpp */; };
 		2BE88D3B21A4F1C10020D1DF /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BE88D3A21A4F1C10020D1DF /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -138,6 +139,15 @@
 			runOnlyForDeploymentPostprocessing = 1;
 		};
 		2BD0F4F218EED76000B3957F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		2BE2648F241B160500B6DC77 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -270,6 +280,8 @@
 		2BDE233B19DBA63F0001FC4D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2BDE5D611C3EB25500223E26 /* Grid3Drnsp.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; path = Grid3Drnsp.h; sourceTree = "<group>"; };
 		2BDE5D621C3EB2D800223E26 /* Grid3Drcsp.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; path = Grid3Drcsp.h; sourceTree = "<group>"; };
+		2BE26491241B160500B6DC77 /* profile_threaded */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = profile_threaded; sourceTree = BUILT_PRODUCTS_DIR; };
+		2BE26493241B160500B6DC77 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		2BE88D3821A4F1C10020D1DF /* someTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = someTests; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BE88D3A21A4F1C10020D1DF /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		2BF787831905A36200E80373 /* Grid3Dunsp.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; path = Grid3Dunsp.h; sourceTree = "<group>"; };
@@ -360,6 +372,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BE2648E241B160500B6DC77 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2BE88D3521A4F1C10020D1DF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -429,6 +448,7 @@
 				2BC708D518EDA599004DA2C9 /* ttcr */,
 				2B6F87A6190F3EDA002AC9DF /* ttcr_matlab */,
 				2BE88D3921A4F1C10020D1DF /* someTests */,
+				2BE26492241B160500B6DC77 /* profile_threaded */,
 				2BC708D418EDA599004DA2C9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -449,6 +469,7 @@
 				2B45CD481C5C3F100083644A /* grid2drcsp_mex.mexmaci64 */,
 				2BE88D3821A4F1C10020D1DF /* someTests */,
 				2BB25EE222F07A72008765E9 /* ttcr3d_raypath */,
+				2BE26491241B160500B6DC77 /* profile_threaded */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -530,6 +551,14 @@
 				2BB25EE422F07A72008765E9 /* ttcr3d_raypath.cpp */,
 			);
 			path = ttcr;
+			sourceTree = "<group>";
+		};
+		2BE26492241B160500B6DC77 /* profile_threaded */ = {
+			isa = PBXGroup;
+			children = (
+				2BE26493241B160500B6DC77 /* main.cpp */,
+			);
+			path = profile_threaded;
 			sourceTree = "<group>";
 		};
 		2BE88D3921A4F1C10020D1DF /* someTests */ = {
@@ -747,6 +776,23 @@
 			productReference = 2BD0F4F418EED76000B3957F /* ttcr2ds */;
 			productType = "com.apple.product-type.tool";
 		};
+		2BE26490241B160500B6DC77 /* profile_threaded */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BE26499241B160500B6DC77 /* Build configuration list for PBXNativeTarget "profile_threaded" */;
+			buildPhases = (
+				2BE2648D241B160500B6DC77 /* Sources */,
+				2BE2648E241B160500B6DC77 /* Frameworks */,
+				2BE2648F241B160500B6DC77 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = profile_threaded;
+			productName = profile_threaded;
+			productReference = 2BE26491241B160500B6DC77 /* profile_threaded */;
+			productType = "com.apple.product-type.tool";
+		};
 		2BE88D3721A4F1C10020D1DF /* someTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2BE88D4021A4F1C10020D1DF /* Build configuration list for PBXNativeTarget "someTests" */;
@@ -791,6 +837,9 @@
 					2BB25EE122F07A72008765E9 = {
 						CreatedOnToolsVersion = 10.3;
 					};
+					2BE26490241B160500B6DC77 = {
+						CreatedOnToolsVersion = 11.3.1;
+					};
 					2BE88D3721A4F1C10020D1DF = {
 						CreatedOnToolsVersion = 10.1;
 						ProvisioningStyle = Automatic;
@@ -823,6 +872,7 @@
 				2B45CD471C5C3F100083644A /* grid2drcsp_mex */,
 				2BE88D3721A4F1C10020D1DF /* someTests */,
 				2BB25EE122F07A72008765E9 /* ttcr3d_raypath */,
+				2BE26490241B160500B6DC77 /* profile_threaded */,
 			);
 		};
 /* End PBXProject section */
@@ -926,6 +976,14 @@
 			files = (
 				2BD0F4FD18EED7E400B3957F /* ttcr_io.cpp in Sources */,
 				2BD0F4F718EED76000B3957F /* ttcr2ds.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BE2648D241B160500B6DC77 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BE26494241B160500B6DC77 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2543,6 +2601,138 @@
 			};
 			name = Release;
 		};
+		2BE26495241B160500B6DC77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+					"$(inherited)/ttcr",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		2BE26496241B160500B6DC77 /* Debug_RP */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					DEBUG_RP,
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+					"$(inherited)/ttcr",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_RP;
+		};
+		2BE26497241B160500B6DC77 /* Debug_O */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+					"$(inherited)/ttcr",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_O;
+		};
+		2BE26498241B160500B6DC77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/opt/local/include,
+					/opt/local/include/eigen3,
+					"/usr/local/VTK/include/vtk-8.2",
+					"$(inherited)/half-2.0.0/include",
+					"$(inherited)/ttcr",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		2BE88D3C21A4F1C10020D1DF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2982,6 +3172,17 @@
 				2B42E65F21833A8B00E44058 /* Debug_RP */,
 				2BF3B02519F82D3800A6C041 /* Debug_O */,
 				2BD0F4FB18EED76000B3957F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2BE26499241B160500B6DC77 /* Build configuration list for PBXNativeTarget "profile_threaded" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2BE26495241B160500B6DC77 /* Debug */,
+				2BE26496241B160500B6DC77 /* Debug_RP */,
+				2BE26497241B160500B6DC77 /* Debug_O */,
+				2BE26498241B160500B6DC77 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

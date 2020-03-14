@@ -146,7 +146,7 @@ namespace ttcr {
             }
         }
         
-        ~Node2Dcsp() {
+        virtual ~Node2Dcsp() {
             delete [] tt;
             delete [] nodeParent;
             delete [] cellParent;

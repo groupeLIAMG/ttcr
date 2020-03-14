@@ -49,6 +49,11 @@
 			<key>orderHint</key>
 			<integer>3</integer>
 		</dict>
+		<key>profile_threaded.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>15</integer>
+		</dict>
 		<key>someTests.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -153,6 +158,11 @@
 			<true/>
 		</dict>
 		<key>2BD0F4F318EED76000B3957F</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2BE26490241B160500B6DC77</key>
 		<dict>
 			<key>primary</key>
 			<true/>
