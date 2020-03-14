@@ -38,49 +38,59 @@ namespace ttcr {
         
         const int get_niter() const { return niter_final; }
         const int get_niterw() const { return niterw_final; }
-        
+
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       std::vector<T1>& traveltimes,
-                      const size_t threadNo=0) const;
-        
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                      std::vector<std::vector<T1>*>& traveltimes,
-                      const size_t threadNo=0) const;
-        
+                      const size_t threadNo=0) const {
+            // this is here just to be able to compile cgrid3d.pyx cython code
+            // should be removed when cgrid3d be replace by rgrid
+            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, threadNo);
+        }
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<sxyz<T1>>>& r_data,
-                      const size_t threadNo=0) const;
-        
+                      const size_t threadNo=0) const {
+            // this is here just to be able to compile cgrid3d.pyx cython code
+            // should be removed when cgrid3d be replace by rgrid
+            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, r_data, threadNo);
+        }
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<sxyz<T1>>>& r_data,
                       std::vector<std::vector<sijv<T1>>>& m_data,
-                      const size_t threadNo=0) const;
-
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                      std::vector<std::vector<T1>*>& traveltimes,
-                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                      const size_t threadNo=0) const;
-        
+                      const size_t threadNo=0) const {
+            // this is here just to be able to compile cgrid3d.pyx cython code
+            // should be removed when cgrid3d be replace by rgrid
+            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, r_data, m_data, threadNo);
+        }
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<sxyz<T1>>>& r_data,
                       std::vector<std::vector<siv<T1>>>& l_data,
-                      const size_t threadNo=0) const;
-        
+                      const size_t threadNo=0) const {
+            // this is here just to be able to compile cgrid3d.pyx cython code
+            // should be removed when cgrid3d be replace by rgrid
+            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, threadNo);
+        }
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<siv<T1>>>& l_data,
+                      const size_t threadNo=0) const {
+            // this is here just to be able to compile cgrid3d.pyx cython code
+            // should be removed when cgrid3d be replace by rgrid
+            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, l_data, threadNo);
+        }
+
     protected:
         T1 epsilon;
         int nitermax;
@@ -242,7 +252,7 @@ namespace ttcr {
         // Set Tx pts
         std::vector<bool> frozen( this->nodes.size(), false );
         int npts = 1;
-        if ( weno3 == true) npts = 2;
+        if ( weno3 == true ) npts = 2;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
 //        for ( size_t n=0; n<this->nodes.size(); ++n ) {
 //            if ( frozen[n] ) {
@@ -304,7 +314,9 @@ namespace ttcr {
             }
             niter_final = niter;
         }
-        
+//        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+//            std::cout << this->nodes[n].getTT(threadNo) << '\n';
+//        }
     }
     
     template<typename T1, typename T2>
@@ -324,7 +336,7 @@ namespace ttcr {
         // Set Tx pts
         std::vector<bool> frozen( this->nodes.size(), false );
         int npts = 1;
-        if ( weno3 == true) npts = 2;
+        if ( weno3 == true ) npts = 2;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
         
         std::vector<T1> times( this->nodes.size() );
@@ -380,184 +392,6 @@ namespace ttcr {
             niter_final = niter;
         }
         
-    }
-    
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     const size_t threadNo) const {
-        raytrace(Tx, t0, Rx, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        if ( this->tt_from_rp ) {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
-            }
-        } else {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
-            }
-        }
-    }
-    
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
-                                     const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-               
-        if ( this->tt_from_rp ) {
-            for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
-            }
-        } else {
-            for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
-            }
-        }
-    }
-    
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<sxyz<T1>>>& r_data,
-                                     const size_t threadNo) const {
-
-        raytrace(Tx, t0, Rx, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
-        }
-    }
-    
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<sxyz<T1>>>& r_data,
-                                     std::vector<std::vector<sijv<T1>>>& m_data,
-                                     const size_t threadNo) const {
-        raytrace(Tx, t0, Rx, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        if ( m_data.size() != Rx.size() ) {
-            m_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<m_data.size(); ++ni ) {
-            m_data[ni].resize( 0 );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], traveltimes[n], n, threadNo);
-        }
-    }
-    
-
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
-                                     std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                                     const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            r_data[nr]->resize( Rx[nr]->size() );
-            for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
-                (*r_data[nr])[ni].resize( 0 );
-            }
-            
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-            }
-        }
-    }
-    
-    template<typename T1, typename T2>
-    void Grid3Drnfs<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<sxyz<T1>>>& r_data,
-                                     std::vector<std::vector<siv<T1>>>& l_data,
-                                     const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        if ( l_data.size() != Rx.size() ) {
-            l_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
-            l_data[ni].resize( 0 );
-        }
-        
-        siv<T1> cell;
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
-            
-            for (size_t ns=0; ns<r_data[n].size()-1; ++ns) {
-                sxyz<T1> m = static_cast<T1>(0.5)*(r_data[n][ns]+r_data[n][ns+1]);  // ps @ middle of segment
-                cell.i = this->getCellNo( m );
-                cell.v = r_data[n][ns].getDistance( r_data[n][ns+1] );
-                
-                bool found=false;
-                for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                    if ( l_data[n][nc].i == cell.i ) {
-                        l_data[n][nc].v += cell.v;  // must add in case we pass through secondary nodes along edge
-                        found = true;
-                        break;
-                    }
-                }
-                if ( found == false ) {
-                    l_data[n].push_back( cell );
-                }
-            }
-            //  must be sorted to build matrix L
-            sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
-        }
     }
 }
 

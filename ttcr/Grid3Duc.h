@@ -65,9 +65,9 @@ namespace ttcr {
     public:
         Grid3Duc(const std::vector<sxyz<T1>>& no,
                  const std::vector<tetrahedronElem<T2>>& tet,
-                 const int rp, const bool rptt, const T1 md,
+                 const int rp, const bool ttrp, const T1 md,
                  const size_t nt=1) :
-        nThreads(nt), rp_method(rp), tt_from_rp(rptt),
+        Grid3D<T1,T2>(ttrp, nt), rp_method(rp), 
         nPrimary(static_cast<T2>(no.size())),
         source_radius(0.0), min_dist(md),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
@@ -167,8 +167,6 @@ namespace ttcr {
         
         void saveModelXYZ(const std::string &) const;
         
-        const size_t getNthreads() const { return nThreads; }
-        
         void dump_secondary(std::ofstream& os) const {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
@@ -176,9 +174,7 @@ namespace ttcr {
         }
 
     protected:
-        const size_t nThreads;
         int rp_method;
-        bool tt_from_rp;
         T2 nPrimary;
         T1 source_radius;
         T1 min_dist;

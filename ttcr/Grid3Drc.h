@@ -68,11 +68,10 @@ namespace ttcr {
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
                  const bool ttrp, const size_t nt=1) :
-        nThreads(nt),
-        dx(ddx), dy(ddy), dz(ddz),
+        Grid3D<T1,T2>(ttrp, nt), dx(ddx), dy(ddy), dz(ddz),
         xmin(minx), ymin(miny), zmin(minz),
         xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
-        ncx(nx), ncy(ny), ncz(nz), tt_from_rp(ttrp),
+        ncx(nx), ncy(ny), ncz(nz),
         nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt))),
         cells(CELL(nx*ny*nz)),
         neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
@@ -144,7 +143,6 @@ namespace ttcr {
             return size;
         }
         
-        const size_t getNthreads() const { return nThreads; }
         const T1 getXmin() const { return xmin; }
         const T1 getYmin() const { return ymin; }
         const T1 getZmin() const { return zmin; }
@@ -167,7 +165,6 @@ namespace ttcr {
         }
 
     protected:
-        size_t nThreads;	     // number of threads
         T1 dx;                   // cell size in x
         T1 dy;			         // cell size in y
         T1 dz;                   // cell size in z
@@ -180,7 +177,6 @@ namespace ttcr {
         T2 ncx;                  // number of cells in x
         T2 ncy;                  // number of cells in y
         T2 ncz;                  // number of cells in z
-        bool tt_from_rp;
 
         mutable std::vector<NODE> nodes;
         
@@ -265,7 +261,7 @@ namespace ttcr {
         Grid3Drc<T1,T2,NODE,CELL>& operator=(const Grid3Drc<T1,T2,NODE,CELL>& g) { return *this; }
         
         T1 getTraveltime(const sxyz<T1>& pt,
-                         const size_t threadNo) const;
+                         const size_t threadNo) const final;
         
         void grad(sxyz<T1>& g, const sxyz<T1> &pt,
                   const size_t nt) const;
