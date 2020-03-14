@@ -79,7 +79,7 @@ namespace ttcr {
         }
         
         
-        Node2Dn() {
+        virtual ~Node2Dn() {
             delete [] tt;
         }
         

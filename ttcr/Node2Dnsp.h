@@ -101,7 +101,7 @@ namespace ttcr {
         }
         
         
-        Node2Dnsp() {
+        virtual ~Node2Dnsp() {
             delete [] tt;
             delete [] nodeParent;
             delete [] cellParent;
