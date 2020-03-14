@@ -225,7 +225,7 @@ namespace ttcr {
                                  const std::vector<std::vector<sxyz<T1>>>& Rx,
                                  std::vector<std::vector<T1>>& traveltimes) const {
 
-        if ( Tx.size() == 0 ) {
+        if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], 0);
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -256,7 +256,7 @@ namespace ttcr {
                                  std::vector<std::vector<T1>>& traveltimes,
                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const {
 
-        if ( Tx.size() == 0 ) {
+        if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], 0);
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -287,7 +287,7 @@ namespace ttcr {
                                  std::vector<std::vector<T1>>& traveltimes,
                                  std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
 
-        if ( Tx.size() == 0 ) {
+        if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], m_data[0], 0);
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -319,7 +319,7 @@ namespace ttcr {
                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
                                  std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const {
 
-        if ( Tx.size() == 0 ) {
+        if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], m_data[0], 0);
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -350,7 +350,7 @@ namespace ttcr {
                                  std::vector<std::vector<T1>>& traveltimes,
                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
 
-        if ( Tx.size() == 0 ) {
+        if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], l_data[0], 0);
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -382,7 +382,7 @@ namespace ttcr {
                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
 
-        if ( Tx.size() == 0 ) {
+        if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], l_data[0], 0);
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
