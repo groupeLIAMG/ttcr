@@ -174,7 +174,6 @@
 		2B092FA820E1BEA5005C5B94 /* cmesh2d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; path = cmesh2d.pyx; sourceTree = "<group>"; };
 		2B0B2DDB1D4A4C5600111F13 /* Grid2Dttcr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Grid2Dttcr.cpp; sourceTree = "<group>"; };
 		2B0B2DDC1D4A4C5600111F13 /* Grid2Dttcr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Grid2Dttcr.h; sourceTree = "<group>"; };
-		2B0B2DDD1D4A4C9B00111F13 /* setup.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = setup.py; sourceTree = "<group>"; };
 		2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */ = {isa = PBXFileReference; explicitFileType = text.script.python; fileEncoding = 4; path = cgrid2d.pyx; sourceTree = "<group>"; };
 		2B0CC4051C30C0DC001BC581 /* Grid3Drnfs.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; path = Grid3Drnfs.h; sourceTree = "<group>"; };
 		2B11D19318FE1FD30075EAAC /* Grid2Dunfm.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; path = Grid2Dunfm.h; sourceTree = "<group>"; };
@@ -424,7 +423,6 @@
 		2BB7D5BA1D07A801004730B9 /* ttcrpy */ = {
 			isa = PBXGroup;
 			children = (
-				2B0B2DDD1D4A4C9B00111F13 /* setup.py */,
 				2B6D56201D50358C00075138 /* utils.py */,
 				2B0B2DDE1D4A4CA600111F13 /* cgrid2d.pyx */,
 				2B9963541F067641004FED9D /* cgrid3d.pyx */,
