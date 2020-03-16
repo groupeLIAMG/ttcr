@@ -57,5 +57,9 @@ extensions = [
 
 setup(
     name='ttcrpy',
+    description='Code to perform raytracing for geophysical applications',
+    author='Bernard Giroux',
+    author_email='bernard.giroux@ete.inrs.ca',
+    url='https://github.com/groupeLIAMG/ttcr',
     ext_modules=cythonize(extensions, language_level=3),
 )
