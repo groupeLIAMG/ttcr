@@ -66,13 +66,12 @@ namespace ttcr {
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
                  const bool ttrp, const bool intVel, const size_t nt=1) :
-        Grid3D<T1,T2>(ttrp, nt),
+        Grid3D<T1,T2>(ttrp, nx*ny*nz, nt),
         dx(ddx), dy(ddy), dz(ddz),
         xmin(minx), ymin(miny), zmin(minz),
         xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
         ncx(nx), ncy(ny), ncz(nz), interpVel(intVel),
-        nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt))),
-        neighbors(std::vector<std::vector<T2>>(nx*ny*nz))
+        nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt)))
         { }
         
         virtual ~Grid3Drn() {}
@@ -88,7 +87,15 @@ namespace ttcr {
         
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncy*ncz; }
-        
+
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+            size_t nPrimary = (ncx+1) * (ncy+1) * (ncz+1);
+            tt.resize(nPrimary);
+            for ( size_t n=0; n<nPrimary; ++n ) {
+                tt[n] = nodes[n].getTT(threadNo);
+            }
+        }
+
         void saveSlownessXYZ(const char filename[]) const {
             //Saves the Slowness of the primary nodes
             std::ofstream fout( filename );
@@ -105,8 +112,8 @@ namespace ttcr {
         
         size_t getNeighborsSize() const {
             size_t n_elem = 0;
-            for ( size_t n=0; n<neighbors.size(); ++n ) {
-                n_elem += neighbors[n].size();
+            for ( size_t n=0; n<this->neighbors.size(); ++n ) {
+                n_elem += this->neighbors[n].size();
             }
             return n_elem*sizeof(size_t);
         }
@@ -164,9 +171,7 @@ namespace ttcr {
         bool interpVel;
         
         mutable std::vector<NODE> nodes;
-        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
         
-        void buildGridNeighbors();
         void interpSecondary();
         
         T2 getCellNo(const sxyz<T1>& pt) const {
@@ -316,19 +321,6 @@ namespace ttcr {
     };
     
     
-    
-    template<typename T1, typename T2, typename NODE>
-    void Grid3Drn<T1,T2,NODE>::buildGridNeighbors() {
-        
-        //Index the neighbors nodes of each cell
-        for ( T2 n=0; n<nodes.size(); ++n ) {
-            for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
-                T2 check = nodes[n].getOwners()[n2];
-                neighbors[ check ].push_back(n);
-            }
-        }
-    }
-
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::interpSecondary() {
         T2 nPrimary = (ncx+1)*(ncy+1)*(ncz+1);
@@ -511,12 +503,12 @@ namespace ttcr {
     //    T1 slo = computeSlowness( Rx );
     //
     //    T2 cellNo = getCellNo( Rx );
-    //    T2 neibNo = neighbors[cellNo][0];
+    //    T2 neibNo = this->neighbors[cellNo][0];
     //    T1 dt = computeDt(nodes[neibNo], Rx, slo);
     //
     //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    //    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-    //        neibNo = neighbors[cellNo][k];
+    //    for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+    //        neibNo = this->neighbors[cellNo][k];
     //        dt = computeDt(nodes[neibNo], Rx, slo);
     //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
     //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -542,14 +534,14 @@ namespace ttcr {
         T1 slo = computeSlowness( Rx );
         
         T2 cellNo = getCellNo( Rx );
-        T2 neibNo = neighbors[cellNo][0];
+        T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = computeDt(nodes[neibNo], Rx, slo);
         
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         nodeParentRx = neibNo;
         cellParentRx = cellNo;
-        for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-            neibNo = neighbors[cellNo][k];
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
             dt = computeDt(nodes[neibNo], Rx, slo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -577,14 +569,14 @@ namespace ttcr {
     //    T1 slo = computeSlowness( Rx );
     //
     //    T2 cellNo = getCellNo( Rx );
-    //    T2 neibNo = neighbors[cellNo][0];
+    //    T2 neibNo = this->neighbors[cellNo][0];
     //    T1 dt = computeDt(nodes[neibNo], Rx, slo);
     //
     //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     //    nodeParentRx = neibNo;
     //    cellParentRx = cellNo;
-    //    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-    //        neibNo = neighbors[cellNo][k];
+    //    for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+    //        neibNo = this->neighbors[cellNo][k];
     //        dt = computeDt(nodes[neibNo], Rx, slo);
     //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
     //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;

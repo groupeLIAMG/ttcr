@@ -65,7 +65,7 @@ namespace ttcr {
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt)
         {
             this->buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
         }
         
         ~Grid3Ducfm() {

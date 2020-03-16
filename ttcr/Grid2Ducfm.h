@@ -60,7 +60,7 @@ namespace ttcr {
         Grid2Duc<T1, T2,NODE,S>(no, tri, nt)
         {
             buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<NODE>(this->nodes);
             if ( procObtuse ) this->processObtuse();
         }
         

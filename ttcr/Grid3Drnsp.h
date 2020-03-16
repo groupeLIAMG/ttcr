@@ -38,7 +38,7 @@ namespace ttcr {
         nsnx(nnx), nsny(nny), nsnz(nnz)
         {
             buildGridNodes();
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dnsp<T1,T2>>(this->nodes);
         }
         
         ~Grid3Drnsp() {

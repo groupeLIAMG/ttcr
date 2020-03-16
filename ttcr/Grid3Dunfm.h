@@ -45,7 +45,7 @@ namespace ttcr {
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt)
         {
             this->buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
         }
         
         ~Grid3Dunfm() {

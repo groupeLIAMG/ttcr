@@ -47,7 +47,7 @@ namespace ttcr {
         epsilon(eps), nitermax(maxit), niter_final(0), S()
         {
             this->buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
         }
         
         ~Grid3Ducfs() {

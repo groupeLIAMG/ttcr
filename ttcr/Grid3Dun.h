@@ -73,11 +73,10 @@ namespace ttcr {
                  const bool ttrp,
                  const T1 md,
                  const size_t nt=1) :
-        Grid3D<T1,T2>(ttrp, nt), rp_method(rp), interpVel(iv),
+        Grid3D<T1,T2>(ttrp, tet.size(), nt), rp_method(rp), interpVel(iv),
         nPrimary(static_cast<T2>(no.size())),
         source_radius(0.0), min_dist(md),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
-        neighbors(std::vector<std::vector<T2>>(tet.size())),
         tetrahedra(tet)
         {}
         
@@ -115,6 +114,13 @@ namespace ttcr {
         
         size_t getNumberOfNodes() const { return nodes.size(); }
         
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+            tt.resize(nPrimary);
+            for ( size_t n=0; n<nPrimary; ++n ) {
+                tt[n] = nodes[n].getTT(threadNo);
+            }
+        }
+
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
@@ -182,7 +188,6 @@ namespace ttcr {
         T1 source_radius;
         T1 min_dist;
         mutable std::vector<NODE> nodes;
-        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
         std::vector<tetrahedronElem<T2>> tetrahedra;
         
         T1 computeDt(const NODE& source, const NODE& node) const {
@@ -207,15 +212,6 @@ namespace ttcr {
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         void buildGridNodes(const std::vector<sxyz<T1>>&,
                             const int, const size_t);
-        
-        void buildGridNeighbors() {
-            // Index the neighbors nodes of each cell
-            for ( T2 n=0; n<nodes.size(); ++n ) {
-                for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
-                    neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
-                }
-            }
-        }
         
         void localUpdate3D(NODE *vertexC, const size_t threadNo) const;
         
@@ -353,9 +349,9 @@ namespace ttcr {
         std::array<T2,4> getPrimary(const T2 cellNo) const {
             size_t i = 0;
             std::array<T2,4> tmp;
-            for (size_t n=0; n<neighbors[cellNo].size(); ++n) {
-                if ( nodes[neighbors[cellNo][n]].isPrimary() )
-                    tmp[i++] = neighbors[cellNo][n];
+            for (size_t n=0; n<this->neighbors[cellNo].size(); ++n) {
+                if ( nodes[this->neighbors[cellNo][n]].isPrimary() )
+                    tmp[i++] = this->neighbors[cellNo][n];
                 if ( i == 4 ) break;
             }
             return tmp;
@@ -441,12 +437,12 @@ namespace ttcr {
         for (auto tet=nodes[closestNode].getOwners().begin(); tet!=nodes[closestNode].getOwners().end(); ++tet) {
             T2 celli = *tet;
             for (size_t n=0;n<4;++n){
-                T2 neighborNode = neighbors[celli][n];
+                T2 neighborNode = this->neighbors[celli][n];
                 for (auto tet2=nodes[neighborNode].getOwners().begin(); tet2!=nodes[neighborNode].getOwners().end(); ++tet2) {
-                    sxyz<T1> v1 = { nodes[ neighbors[*tet2][0] ]};
-                    sxyz<T1> v2 = { nodes[ neighbors[*tet2][1] ]};
-                    sxyz<T1> v3 = { nodes[ neighbors[*tet2][2] ]};
-                    sxyz<T1> v4 = { nodes[ neighbors[*tet2][3] ]};
+                    sxyz<T1> v1 = { nodes[ this->neighbors[*tet2][0] ]};
+                    sxyz<T1> v2 = { nodes[ this->neighbors[*tet2][1] ]};
+                    sxyz<T1> v3 = { nodes[ this->neighbors[*tet2][2] ]};
+                    sxyz<T1> v4 = { nodes[ this->neighbors[*tet2][3] ]};
                     
                     T1 D0 = 1.e6*det4(v1, v2, v3, v4);
                     T1 D1 = 1.e6*det4(pt, v2, v3, v4);
@@ -706,12 +702,12 @@ namespace ttcr {
         
         T2 cellNo = getCellNo( Rx );
         
-        T2 neibNo = neighbors[cellNo][0];
+        T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = computeDt(nodes[neibNo], Rx, slo);
         
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-        for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-            neibNo = neighbors[cellNo][k];
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
             dt = computeDt(nodes[neibNo], Rx, slo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -1778,7 +1774,7 @@ namespace ttcr {
                     
                     std::array<T2,3> nb;
                     size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
                         if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
                             nb[n++] = *nn;
                         }
@@ -1977,7 +1973,7 @@ namespace ttcr {
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[testCellNo].begin(); nn!= neighbors[testCellNo].end(); ++nn ) {
+                    for ( auto nn=this->neighbors[testCellNo].begin(); nn!= this->neighbors[testCellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -2004,7 +2000,7 @@ namespace ttcr {
                     cellNo = testCellNo;
                     curr_pt = pt_i;
 
-                    bool break_flag = check_pt_location(curr_pt, neighbors[cellNo],
+                    bool break_flag = check_pt_location(curr_pt, this->neighbors[cellNo],
                                                         {itmpNode, edgeNodes2[0], edgeNodes2[1]},
                                                         onNode,
                                                         nodeNo, onEdge, edgeNodes,
@@ -2810,7 +2806,7 @@ namespace ttcr {
                     
                     std::array<T2,3> nb;
                     size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
                         if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
                             nb[n++] = *nn;
                         }
@@ -2955,7 +2951,7 @@ namespace ttcr {
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[testCellNo].begin(); nn!= neighbors[testCellNo].end(); ++nn ) {
+                    for ( auto nn=this->neighbors[testCellNo].begin(); nn!= this->neighbors[testCellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -2982,7 +2978,7 @@ namespace ttcr {
                     cellNo = testCellNo;
                     curr_pt = pt_i;
 
-                    bool break_flag = check_pt_location(curr_pt, neighbors[cellNo],
+                    bool break_flag = check_pt_location(curr_pt, this->neighbors[cellNo],
                                                         {itmpNode, edgeNodes2[0], edgeNodes2[1]},
                                                         onNode,
                                                         nodeNo, onEdge, edgeNodes,
@@ -3670,7 +3666,7 @@ namespace ttcr {
                     
                     std::array<T2,3> nb;
                     size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
                         if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
                             nb[n++] = *nn;
                         }
@@ -3870,7 +3866,7 @@ namespace ttcr {
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[cellNo].begin(); nn!= neighbors[cellNo].end(); ++nn ) {
+                    for ( auto nn=this->neighbors[cellNo].begin(); nn!= this->neighbors[cellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -3896,7 +3892,7 @@ namespace ttcr {
                     
                     curr_pt = pt_i;
 
-                    bool break_flag = check_pt_location(curr_pt, neighbors[cellNo],
+                    bool break_flag = check_pt_location(curr_pt, this->neighbors[cellNo],
                                                         {itmpNode, edgeNodes2[0], edgeNodes2[1]},
                                                         onNode,
                                                         nodeNo, onEdge, edgeNodes,
@@ -4648,7 +4644,7 @@ namespace ttcr {
                     
                     std::array<T2,3> nb;
                     size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
                         if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
                             nb[n++] = *nn;
                         }
@@ -4807,7 +4803,7 @@ namespace ttcr {
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[testCellNo].begin(); nn!= neighbors[testCellNo].end(); ++nn ) {
+                    for ( auto nn=this->neighbors[testCellNo].begin(); nn!= this->neighbors[testCellNo].end(); ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -4846,11 +4842,11 @@ namespace ttcr {
                     
                     bool break_flag = false;
                     for ( size_t n2=0; n2<4; ++n2 ) {
-                        if ( nodes[ neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
+                        if ( nodes[ this->neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
                             onNodePrev = onNode;
                             onFacePrev = onFace;
                             
-                            nodeNo = neighbors[cellNo][n2];
+                            nodeNo = this->neighbors[cellNo][n2];
                             onNode = true;
                             onEdge = false;
                             onFace = false;
@@ -5598,7 +5594,7 @@ namespace ttcr {
             sxyz<T1> NodeSource;
             bool NearSource=false;
             for(size_t nt=0;nt<Tx.size();++nt){
-                for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].begin()+4;++n){
+                for(auto n=this->neighbors[txCell[nt]].begin();n!=this->neighbors[txCell[nt]].begin()+4;++n){
                     for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
                         if(*nc==cellNo){
                             NearSource=true;
@@ -5627,10 +5623,10 @@ namespace ttcr {
                     T2 cellNoi = *nc;
                     std::array<T2, 3>ind;
                     for (T2 i=0;i<4;++i){
-                        if (neighbors[cellNoi][i]==nodeNo){
-                            ind[0]=neighbors[cellNoi][(i+1)%4];
-                            ind[1]=neighbors[cellNoi][(i+2)%4];
-                            ind[2]=neighbors[cellNoi][(i+3)%4];
+                        if (this->neighbors[cellNoi][i]==nodeNo){
+                            ind[0]=this->neighbors[cellNoi][(i+1)%4];
+                            ind[1]=this->neighbors[cellNoi][(i+2)%4];
+                            ind[2]=this->neighbors[cellNoi][(i+3)%4];
                             break;
                         }
                     }
@@ -5683,10 +5679,10 @@ namespace ttcr {
                         continue;
                     }
                     if ( ind == faceNodesPrev) continue;
-                    T1 s=0.25*(nodes[neighbors[cellNoi][0]].getNodeSlowness()+
-                               nodes[neighbors[cellNoi][1]].getNodeSlowness()+
-                               nodes[neighbors[cellNoi][2]].getNodeSlowness()+
-                               nodes[neighbors[cellNoi][3]].getNodeSlowness());
+                    T1 s=0.25*(nodes[this->neighbors[cellNoi][0]].getNodeSlowness()+
+                               nodes[this->neighbors[cellNoi][1]].getNodeSlowness()+
+                               nodes[this->neighbors[cellNoi][2]].getNodeSlowness()+
+                               nodes[this->neighbors[cellNoi][3]].getNodeSlowness());
                     
                     sxyz<T1> pt;
                     if(blti_raytrace(curr_pt, ind, pt, threadNo, s)){
@@ -5733,20 +5729,20 @@ namespace ttcr {
                     }
                     ////// nodes
                     for (T2 i=0;i<4;++i){
-                        if (neighbors[cellNoi][i]==nodeNo)
+                        if (this->neighbors[cellNoi][i]==nodeNo)
                             continue;
-                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        T1 t=nodes[this->neighbors[cellNoi][i]].getTT(threadNo);
                         if (t>=time)
                             continue;
-                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        t+=s*nodes[this->neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            pt_i=sxyz<T1>(nodes[this->neighbors[cellNoi][i]]);
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            newNode=neighbors[cellNoi][i];
+                            newNode=this->neighbors[cellNoi][i];
                             cellNo=cellNoi;
                         }
                     }
@@ -5790,7 +5786,7 @@ namespace ttcr {
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[cellNoi].begin(); nn!= neighbors[cellNoi].begin()+4; ++nn ) {
+                    for ( auto nn=this->neighbors[cellNoi].begin(); nn!= this->neighbors[cellNoi].begin()+4; ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -5906,18 +5902,18 @@ namespace ttcr {
                         
                     }
                     for (T2 i=0;i<4;++i){
-                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        T1 t=nodes[this->neighbors[cellNoi][i]].getTT(threadNo);
                         if (t>=time)
                             continue;
-                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        t+=s*nodes[this->neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            pt_i=sxyz<T1>(nodes[this->neighbors[cellNoi][i]]);
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            nodeNo=neighbors[cellNoi][i];
+                            nodeNo=this->neighbors[cellNoi][i];
                             cellNo=cellNoi;
                         }
                     }
@@ -5955,14 +5951,14 @@ namespace ttcr {
                 sxyz<T1> pt_i;
                 T1 Slow;
                 std::array<T2,3> ind[8] = {
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][2] } },
-                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][3] } },
-                    { { neighbors[cellNo1][0], neighbors[cellNo1][2], neighbors[cellNo1][3] } },
-                    { { neighbors[cellNo1][1], neighbors[cellNo1][2], neighbors[cellNo1][3] } }
+                    { { this->neighbors[cellNo][0], this->neighbors[cellNo][1], this->neighbors[cellNo][2] } },
+                    { { this->neighbors[cellNo][0], this->neighbors[cellNo][1], this->neighbors[cellNo][3] } },
+                    { { this->neighbors[cellNo][0], this->neighbors[cellNo][2], this->neighbors[cellNo][3] } },
+                    { { this->neighbors[cellNo][1], this->neighbors[cellNo][2], this->neighbors[cellNo][3] } },
+                    { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][1], this->neighbors[cellNo1][2] } },
+                    { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][1], this->neighbors[cellNo1][3] } },
+                    { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } },
+                    { { this->neighbors[cellNo1][1], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } }
                 };
                 for ( size_t n=0; n<8; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
@@ -5970,14 +5966,14 @@ namespace ttcr {
                 
                 T1 t_i=std::numeric_limits<T1>::max();
                 T2 face;
-                T1 s1=0.25*(nodes[neighbors[cellNo][0]].getNodeSlowness()+
-                            nodes[neighbors[cellNo][1]].getNodeSlowness()+
-                            nodes[neighbors[cellNo][2]].getNodeSlowness()+
-                            nodes[neighbors[cellNo][3]].getNodeSlowness());
-                T1 s2=0.25*(nodes[neighbors[cellNo1][0]].getNodeSlowness()+
-                            nodes[neighbors[cellNo1][1]].getNodeSlowness()+
-                            nodes[neighbors[cellNo1][2]].getNodeSlowness()+
-                            nodes[neighbors[cellNo1][3]].getNodeSlowness());
+                T1 s1=0.25*(nodes[this->neighbors[cellNo][0]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo][1]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo][2]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo][3]].getNodeSlowness());
+                T1 s2=0.25*(nodes[this->neighbors[cellNo1][0]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo1][1]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo1][2]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo1][3]].getNodeSlowness());
                 
                 for ( size_t n=0; n<8; ++n ) {
                     if ( ind[n] == faceNodes ||   ind[n] == faceNodesPrev ) continue;
@@ -6048,26 +6044,26 @@ namespace ttcr {
                 }
                 if (! NearSource){
                     std::array<T2,2> indEdges[9] = {
-                        {{ neighbors[cellNo][0],neighbors[cellNo][1]}},
-                        {{ neighbors[cellNo][0],neighbors[cellNo][2]}},
-                        {{ neighbors[cellNo][0],neighbors[cellNo][3]}},
-                        {{ neighbors[cellNo][1],neighbors[cellNo][2]}},
-                        {{ neighbors[cellNo][1],neighbors[cellNo][3]}},
-                        {{ neighbors[cellNo][2],neighbors[cellNo][3]}}
+                        {{ this->neighbors[cellNo][0],this->neighbors[cellNo][1]}},
+                        {{ this->neighbors[cellNo][0],this->neighbors[cellNo][2]}},
+                        {{ this->neighbors[cellNo][0],this->neighbors[cellNo][3]}},
+                        {{ this->neighbors[cellNo][1],this->neighbors[cellNo][2]}},
+                        {{ this->neighbors[cellNo][1],this->neighbors[cellNo][3]}},
+                        {{ this->neighbors[cellNo][2],this->neighbors[cellNo][3]}}
                     };
                     T2 forthNode=0;
                     for (T2 i=0; i<4;++i){
-                        if (neighbors[cellNo1][i]!=neighbors[cellNo][0] &&
-                            neighbors[cellNo1][i]!=neighbors[cellNo][1]&&
-                            neighbors[cellNo1][i]!=neighbors[cellNo][2]&&
-                            neighbors[cellNo1][i]!=neighbors[cellNo][3]){
+                        if (this->neighbors[cellNo1][i]!=this->neighbors[cellNo][0] &&
+                            this->neighbors[cellNo1][i]!=this->neighbors[cellNo][1]&&
+                            this->neighbors[cellNo1][i]!=this->neighbors[cellNo][2]&&
+                            this->neighbors[cellNo1][i]!=this->neighbors[cellNo][3]){
                             forthNode=i;
                             break;
                         }
                     }
-                    indEdges[6]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+1)%4]};
-                    indEdges[7]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+2)%4]};
-                    indEdges[8]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+3)%4]};
+                    indEdges[6]={this->neighbors[cellNo1][forthNode],this->neighbors[cellNo1][(forthNode+1)%4]};
+                    indEdges[7]={this->neighbors[cellNo1][forthNode],this->neighbors[cellNo1][(forthNode+2)%4]};
+                    indEdges[8]={this->neighbors[cellNo1][forthNode],this->neighbors[cellNo1][(forthNode+3)%4]};
                     for(T2 n=0;n<9;++n){
                         T1 s;
                         sxyz<T1> pt;
@@ -6094,33 +6090,33 @@ namespace ttcr {
                         
                     }
                     for (T2 n=0;n<4;++n){
-                        T1 t=nodes[neighbors[cellNo][n]].getTT(threadNo);
+                        T1 t=nodes[this->neighbors[cellNo][n]].getTT(threadNo);
                         if(t<time){
                             sxyz<T1> pt;
-                            t+=s1*nodes[neighbors[cellNo][n]].getDistance(curr_pt);
+                            t+=s1*nodes[this->neighbors[cellNo][n]].getDistance(curr_pt);
                             if(t<t_i){
                                 t_i=t;
                                 Slow=s1;
-                                pt_i=sxyz<T1>(nodes[neighbors[cellNo][n]]);
+                                pt_i=sxyz<T1>(nodes[this->neighbors[cellNo][n]]);
                                 onNode = true;
                                 onEdge = false;
                                 onFace = false;
                                 faceNodesPrev=faceNodes;
-                                nodeNo=neighbors[cellNo][n];
+                                nodeNo=this->neighbors[cellNo][n];
                             }
                         }
                     }
-                    if(nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)<time){
+                    if(nodes[this->neighbors[cellNo1][forthNode]].getTT(threadNo)<time){
                         sxyz<T1> pt;
-                        if(nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt)<t_i){
-                            t_i=nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt);
+                        if(nodes[this->neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[this->neighbors[cellNo1][forthNode]].getDistance(curr_pt)<t_i){
+                            t_i=nodes[this->neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[this->neighbors[cellNo1][forthNode]].getDistance(curr_pt);
                             Slow=s2;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNo1][forthNode]]);
+                            pt_i=sxyz<T1>(nodes[this->neighbors[cellNo1][forthNode]]);
                             onNode = true;
                             onEdge = false;
                             onFace = false;
                             faceNodesPrev=faceNodes;
-                            nodeNo=neighbors[cellNo1][forthNode];
+                            nodeNo=this->neighbors[cellNo1][forthNode];
                         }
                     }
                 }
@@ -6191,7 +6187,7 @@ namespace ttcr {
                         break;
                     }
                     for(size_t n=0;n<4;++n){
-                        sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
+                        sxyz<T1> NearTx={nodes[this->neighbors[txCell[nt]][n]]};
                         if (curr_pt.getDistance(NearTx)< minDist*minDist){
                             std::array<T2,4> itmp = getPrimary(txCell[nt]);
                             if ( interpVel )
@@ -6485,7 +6481,7 @@ namespace ttcr {
             sxyz<T1> NodeSource;
             bool NearSource=false;
             for(size_t nt=0;nt<Tx.size();++nt){
-                for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].begin()+4;++n){
+                for(auto n=this->neighbors[txCell[nt]].begin();n!=this->neighbors[txCell[nt]].begin()+4;++n){
                     for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
                         if(*nc==cellNo){
                             NearSource=true;
@@ -6514,10 +6510,10 @@ namespace ttcr {
                     T2 cellNoi = *nc;
                     std::array<T2, 3>ind;
                     for (T2 i=0;i<4;++i){
-                        if (neighbors[cellNoi][i]==nodeNo){
-                            ind[0]=neighbors[cellNoi][(i+1)%4];
-                            ind[1]=neighbors[cellNoi][(i+2)%4];
-                            ind[2]=neighbors[cellNoi][(i+3)%4];
+                        if (this->neighbors[cellNoi][i]==nodeNo){
+                            ind[0]=this->neighbors[cellNoi][(i+1)%4];
+                            ind[1]=this->neighbors[cellNoi][(i+2)%4];
+                            ind[2]=this->neighbors[cellNoi][(i+3)%4];
                             break;
                         }
                     }
@@ -6570,10 +6566,10 @@ namespace ttcr {
                         continue;
                     }
                     if ( ind == faceNodesPrev) continue;
-                    T1 s=0.25*(nodes[neighbors[cellNoi][0]].getNodeSlowness()+
-                               nodes[neighbors[cellNoi][1]].getNodeSlowness()+
-                               nodes[neighbors[cellNoi][2]].getNodeSlowness()+
-                               nodes[neighbors[cellNoi][3]].getNodeSlowness());
+                    T1 s=0.25*(nodes[this->neighbors[cellNoi][0]].getNodeSlowness()+
+                               nodes[this->neighbors[cellNoi][1]].getNodeSlowness()+
+                               nodes[this->neighbors[cellNoi][2]].getNodeSlowness()+
+                               nodes[this->neighbors[cellNoi][3]].getNodeSlowness());
 
                     sxyz<T1> pt;
                     if(blti_raytrace(curr_pt, ind, pt, threadNo, s)){
@@ -6620,20 +6616,20 @@ namespace ttcr {
                     }
                     ////// nodes
                     for (T2 i=0;i<4;++i){
-                        if (neighbors[cellNoi][i]==nodeNo)
+                        if (this->neighbors[cellNoi][i]==nodeNo)
                             continue;
-                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        T1 t=nodes[this->neighbors[cellNoi][i]].getTT(threadNo);
                         if (t>=time)
                             continue;
-                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        t+=s*nodes[this->neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            pt_i=sxyz<T1>(nodes[this->neighbors[cellNoi][i]]);
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            newNode=neighbors[cellNoi][i];
+                            newNode=this->neighbors[cellNoi][i];
                             cellNo=cellNoi;
                         }
                     }
@@ -6679,7 +6675,7 @@ namespace ttcr {
                     // there are 2 faces that might be intersected
                     std::array<T2,2> edgeNodes2;
                     size_t n2=0;
-                    for ( auto nn=neighbors[cellNoi].begin(); nn!= neighbors[cellNoi].begin()+4; ++nn ) {
+                    for ( auto nn=this->neighbors[cellNoi].begin(); nn!= this->neighbors[cellNoi].begin()+4; ++nn ) {
                         if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
                             edgeNodes2[n2++] = *nn;
                         }
@@ -6795,18 +6791,18 @@ namespace ttcr {
                         
                     }
                     for (T2 i=0;i<4;++i){
-                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        T1 t=nodes[this->neighbors[cellNoi][i]].getTT(threadNo);
                         if (t>time)
                             continue;
-                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        t+=s*nodes[this->neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
                             t_i=t;
                             Slow=s;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            pt_i=sxyz<T1>(nodes[this->neighbors[cellNoi][i]]);
                             onNode = true;
                             onEdge = false;
                             onFace = false;
-                            nodeNo=neighbors[cellNoi][i];
+                            nodeNo=this->neighbors[cellNoi][i];
                             cellNo=cellNoi;
                         }
                     }
@@ -6846,14 +6842,14 @@ namespace ttcr {
                 sxyz<T1> pt_i;
                 T1 Slow;
                 std::array<T2,3> ind[8] = {
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } },
-                    {{ neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][2] }},
-                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][3]}},
-                    { { neighbors[cellNo1][0], neighbors[cellNo1][2], neighbors[cellNo1][3] } },
-                    { { neighbors[cellNo1][1], neighbors[cellNo1][2], neighbors[cellNo1][3] } }
+                    { { this->neighbors[cellNo][0], this->neighbors[cellNo][1], this->neighbors[cellNo][2] } },
+                    { { this->neighbors[cellNo][0], this->neighbors[cellNo][1], this->neighbors[cellNo][3] } },
+                    { { this->neighbors[cellNo][0], this->neighbors[cellNo][2], this->neighbors[cellNo][3] } },
+                    { { this->neighbors[cellNo][1], this->neighbors[cellNo][2], this->neighbors[cellNo][3] } },
+                    {{ this->neighbors[cellNo1][0], this->neighbors[cellNo1][1], this->neighbors[cellNo1][2] }},
+                    { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][1], this->neighbors[cellNo1][3]}},
+                    { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } },
+                    { { this->neighbors[cellNo1][1], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } }
                 };
                 for ( size_t n=0; n<8; ++n )
                     std::sort( ind[n].begin(), ind[n].end() );
@@ -6861,14 +6857,14 @@ namespace ttcr {
                 
                 T1 t_i=std::numeric_limits<T1>::max();
                 T2 face;
-                T1 s1=0.25*(nodes[neighbors[cellNo][0]].getNodeSlowness()+
-                            nodes[neighbors[cellNo][1]].getNodeSlowness()+
-                            nodes[neighbors[cellNo][2]].getNodeSlowness()+
-                            nodes[neighbors[cellNo][3]].getNodeSlowness());
-                T1 s2=0.25*(nodes[neighbors[cellNo1][0]].getNodeSlowness()+
-                            nodes[neighbors[cellNo1][1]].getNodeSlowness()+
-                            nodes[neighbors[cellNo1][2]].getNodeSlowness()+
-                            nodes[neighbors[cellNo1][3]].getNodeSlowness());
+                T1 s1=0.25*(nodes[this->neighbors[cellNo][0]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo][1]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo][2]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo][3]].getNodeSlowness());
+                T1 s2=0.25*(nodes[this->neighbors[cellNo1][0]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo1][1]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo1][2]].getNodeSlowness()+
+                            nodes[this->neighbors[cellNo1][3]].getNodeSlowness());
                 
                 for ( size_t n=0; n<8; ++n ) {
                     if ( ind[n] == faceNodes) continue;
@@ -6939,26 +6935,26 @@ namespace ttcr {
                 }
                 if (!NearSource){
                     std::array<T2,2> indEdges[9] = {
-                        {{ neighbors[cellNo][0],neighbors[cellNo][1]}},
-                        {{ neighbors[cellNo][0],neighbors[cellNo][2]}},
-                        {{ neighbors[cellNo][0],neighbors[cellNo][3]}},
-                        {{ neighbors[cellNo][1],neighbors[cellNo][2]}},
-                        {{ neighbors[cellNo][1],neighbors[cellNo][3]}},
-                        {{ neighbors[cellNo][2],neighbors[cellNo][3]}}
+                        {{ this->neighbors[cellNo][0],this->neighbors[cellNo][1]}},
+                        {{ this->neighbors[cellNo][0],this->neighbors[cellNo][2]}},
+                        {{ this->neighbors[cellNo][0],this->neighbors[cellNo][3]}},
+                        {{ this->neighbors[cellNo][1],this->neighbors[cellNo][2]}},
+                        {{ this->neighbors[cellNo][1],this->neighbors[cellNo][3]}},
+                        {{ this->neighbors[cellNo][2],this->neighbors[cellNo][3]}}
                     };
                     T2 forthNode=0;
                     for (T2 i=0; i<4;++i){
-                        if (neighbors[cellNo1][i]!=neighbors[cellNo][0] &&
-                            neighbors[cellNo1][i]!=neighbors[cellNo][1]&&
-                            neighbors[cellNo1][i]!=neighbors[cellNo][2]&&
-                            neighbors[cellNo1][i]!=neighbors[cellNo][3]){
+                        if (this->neighbors[cellNo1][i]!=this->neighbors[cellNo][0] &&
+                            this->neighbors[cellNo1][i]!=this->neighbors[cellNo][1]&&
+                            this->neighbors[cellNo1][i]!=this->neighbors[cellNo][2]&&
+                            this->neighbors[cellNo1][i]!=this->neighbors[cellNo][3]){
                             forthNode=i;
                             break;
                         }
                     }
-                    indEdges[6]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+1)%4]};
-                    indEdges[7]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+2)%4]};
-                    indEdges[8]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+3)%4]};
+                    indEdges[6]={this->neighbors[cellNo1][forthNode],this->neighbors[cellNo1][(forthNode+1)%4]};
+                    indEdges[7]={this->neighbors[cellNo1][forthNode],this->neighbors[cellNo1][(forthNode+2)%4]};
+                    indEdges[8]={this->neighbors[cellNo1][forthNode],this->neighbors[cellNo1][(forthNode+3)%4]};
                     for(T2 n=0;n<9;++n){
                         T1 s;
                         sxyz<T1> pt;
@@ -6985,33 +6981,33 @@ namespace ttcr {
                         
                     }
                     for (T2 n=0;n<4;++n){
-                        T1 t=nodes[neighbors[cellNo][n]].getTT(threadNo);
+                        T1 t=nodes[this->neighbors[cellNo][n]].getTT(threadNo);
                         if(t<time){
                             sxyz<T1> pt;
-                            t+=s1*nodes[neighbors[cellNo][n]].getDistance(curr_pt);
+                            t+=s1*nodes[this->neighbors[cellNo][n]].getDistance(curr_pt);
                             if(t<t_i){
                                 t_i=t;
                                 Slow=s1;
-                                pt_i=sxyz<T1>(nodes[neighbors[cellNo][n]]);
+                                pt_i=sxyz<T1>(nodes[this->neighbors[cellNo][n]]);
                                 onNode = true;
                                 onEdge = false;
                                 onFace = false;
                                 faceNodesPrev=faceNodes;
-                                nodeNo=neighbors[cellNo][n];
+                                nodeNo=this->neighbors[cellNo][n];
                             }
                         }
                     }
-                    if(nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)<time){
+                    if(nodes[this->neighbors[cellNo1][forthNode]].getTT(threadNo)<time){
                         sxyz<T1> pt;
-                        if(nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt)<t_i){
-                            t_i=nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt);
+                        if(nodes[this->neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[this->neighbors[cellNo1][forthNode]].getDistance(curr_pt)<t_i){
+                            t_i=nodes[this->neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[this->neighbors[cellNo1][forthNode]].getDistance(curr_pt);
                             Slow=s2;
-                            pt_i=sxyz<T1>(nodes[neighbors[cellNo1][forthNode]]);
+                            pt_i=sxyz<T1>(nodes[this->neighbors[cellNo1][forthNode]]);
                             onNode = true;
                             onEdge = false;
                             onFace = false;
                             faceNodesPrev=faceNodes;
-                            nodeNo=neighbors[cellNo1][forthNode];
+                            nodeNo=this->neighbors[cellNo1][forthNode];
                         }
                     }
                 }
@@ -7063,7 +7059,7 @@ namespace ttcr {
                         break;
                     }
                     for(size_t n=0;n<4;++n){
-                        sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
+                        sxyz<T1> NearTx={nodes[this->neighbors[txCell[nt]][n]]};
                         if (curr_pt.getDistance(NearTx)< minDist*minDist){
                             tt += t0[nt];
                             reachedTx = true;
@@ -7735,33 +7731,33 @@ namespace ttcr {
             size_t n2((n1+1)%3), n3((n1+2)%3);
             for ( auto nc0=nodes[faceNodes[n1]].getOwners().begin(); nc0!=nodes[faceNodes[n1]].getOwners().end(); ++nc0 ) {
                 for (size_t N=0; N<4; ++N ) {
-                    for ( auto nc=nodes[neighbors[(*nc0)][N]].getOwners().begin(); nc!=nodes[neighbors[(*nc0)][N]].getOwners().end(); ++nc ) {
+                    for ( auto nc=nodes[this->neighbors[(*nc0)][N]].getOwners().begin(); nc!=nodes[this->neighbors[(*nc0)][N]].getOwners().end(); ++nc ) {
                         for (size_t iD=0; iD<4; ++iD ) {
                             size_t iA((iD+1)%4), iB((iD+2)%4), iC((iD+3)%4);
                             bool coarsetofine=(testInTriangle(&nodes[faceNodes[n1]],
                                                               &nodes[faceNodes[n2]],
                                                               &nodes[faceNodes[n3]],
-                                                              sxyz<T1>(nodes[neighbors[(*nc)][iA]]))) &&
+                                                              sxyz<T1>(nodes[this->neighbors[(*nc)][iA]]))) &&
                             (testInTriangle(&nodes[faceNodes[n1]],
                                             &nodes[faceNodes[n2]],
                                             &nodes[faceNodes[n3]],
-                                            sxyz<T1>(nodes[neighbors[(*nc)][iB]]))) &&
+                                            sxyz<T1>(nodes[this->neighbors[(*nc)][iB]]))) &&
                             (testInTriangle(&nodes[faceNodes[n1]],
                                             &nodes[faceNodes[n2]],
                                             &nodes[faceNodes[n3]],
-                                            sxyz<T1>(nodes[neighbors[(*nc)][iC]]))) && (*nc!=cellNo);
+                                            sxyz<T1>(nodes[this->neighbors[(*nc)][iC]]))) && (*nc!=cellNo);
                             
-                            bool fintocoarse=(testInTriangle(&nodes[neighbors[(*nc)][iA]],
-                                                             &nodes[neighbors[(*nc)][iB]],
-                                                             &nodes[neighbors[(*nc)][iC]],
+                            bool fintocoarse=(testInTriangle(&nodes[this->neighbors[(*nc)][iA]],
+                                                             &nodes[this->neighbors[(*nc)][iB]],
+                                                             &nodes[this->neighbors[(*nc)][iC]],
                                                              sxyz<T1>(nodes[faceNodes[n1]]))) &&
-                            (testInTriangle(&nodes[neighbors[(*nc)][iA]],
-                                            &nodes[neighbors[(*nc)][iB]],
-                                            &nodes[neighbors[(*nc)][iC]],
+                            (testInTriangle(&nodes[this->neighbors[(*nc)][iA]],
+                                            &nodes[this->neighbors[(*nc)][iB]],
+                                            &nodes[this->neighbors[(*nc)][iC]],
                                             sxyz<T1>(nodes[faceNodes[n2]]))) &&
-                            (testInTriangle(&nodes[neighbors[(*nc)][iA]],
-                                            &nodes[neighbors[(*nc)][iB]],
-                                            &nodes[neighbors[(*nc)][iC]],
+                            (testInTriangle(&nodes[this->neighbors[(*nc)][iA]],
+                                            &nodes[this->neighbors[(*nc)][iB]],
+                                            &nodes[this->neighbors[(*nc)][iC]],
                                             sxyz<T1>(nodes[faceNodes[n3]]))) && (*nc!=cellNo);
                             
                             if(fintocoarse || coarsetofine){
@@ -7778,15 +7774,15 @@ namespace ttcr {
         
         
         for ( auto nc=AdjacentCells.begin();nc!=AdjacentCells.end();++nc ) {
-//            std::cout << '\t' << nodes[neighbors[*nc][0]] << '\n';
-//            std::cout << '\t' << nodes[neighbors[*nc][1]] << '\n';
-//            std::cout << '\t' << nodes[neighbors[*nc][2]] << '\n';
-//            std::cout << '\t' << nodes[neighbors[*nc][3]] << '\n';
+//            std::cout << '\t' << nodes[this->neighbors[*nc][0]] << '\n';
+//            std::cout << '\t' << nodes[this->neighbors[*nc][1]] << '\n';
+//            std::cout << '\t' << nodes[this->neighbors[*nc][2]] << '\n';
+//            std::cout << '\t' << nodes[this->neighbors[*nc][3]] << '\n';
             for ( T2 iD=0; iD<4; ++iD ) {
                 T2 iA((iD+1)%4), iB((iD+2)%4), iC((iD+3)%4);
-                if (testInTriangle(&nodes[neighbors[*nc][iA]],
-                                   &nodes[neighbors[*nc][iB]],
-                                   &nodes[neighbors[*nc][iC]],
+                if (testInTriangle(&nodes[this->neighbors[*nc][iA]],
+                                   &nodes[this->neighbors[*nc][iB]],
+                                   &nodes[this->neighbors[*nc][iC]],
                                    curr_pt)){
                     return (*nc);
                 }
@@ -7828,15 +7824,15 @@ namespace ttcr {
     void Grid3Dun<T1,T2,NODE>::getNeighborNodes(const T2 cellNo,
                                                 std::set<NODE*> &nnodes) const {
         
-        for ( size_t n=0; n<neighbors[cellNo].size(); ++n ) {
-            if ( nodes[neighbors[cellNo][n]].isPrimary() ) {
-                T2 nodeNo = neighbors[cellNo][n];
+        for ( size_t n=0; n<this->neighbors[cellNo].size(); ++n ) {
+            if ( nodes[this->neighbors[cellNo][n]].isPrimary() ) {
+                T2 nodeNo = this->neighbors[cellNo][n];
                 nnodes.insert( &(nodes[nodeNo]) );
                 if ( rp_method == 1 ) {  // second-order
                     for ( auto nc=nodes[nodeNo].getOwners().cbegin(); nc!=nodes[nodeNo].getOwners().cend(); ++nc ) {
-                        for ( size_t nn=0; nn<neighbors[*nc].size(); ++nn ) {
-                            if ( nodes[ neighbors[*nc][nn] ].isPrimary() ) {
-                                nnodes.insert( &(nodes[ neighbors[*nc][nn] ]) );
+                        for ( size_t nn=0; nn<this->neighbors[*nc].size(); ++nn ) {
+                            if ( nodes[ this->neighbors[*nc][nn] ].isPrimary() ) {
+                                nnodes.insert( &(nodes[ this->neighbors[*nc][nn] ]) );
                             }
                         }
                     }
@@ -7855,9 +7851,9 @@ namespace ttcr {
             for ( size_t nc=0; nc<ref_pt[nr]->getOwners().size(); ++nc ) {
                 T2 cellNo = ref_pt[nr]->getOwners()[nc];
                 size_t ind=0;
-                for ( size_t nn=0; nn<neighbors[cellNo].size(); ++nn ) {
-                    if ( &(nodes[ neighbors[cellNo][nn] ]) != ref_pt[nr] && nodes[ neighbors[cellNo][nn] ].isPrimary() ) {
-                        opp_pts[nr][nc][ind++] = &(nodes[ neighbors[cellNo][nn] ]);
+                for ( size_t nn=0; nn<this->neighbors[cellNo].size(); ++nn ) {
+                    if ( &(nodes[ this->neighbors[cellNo][nn] ]) != ref_pt[nr] && nodes[ this->neighbors[cellNo][nn] ].isPrimary() ) {
+                        opp_pts[nr][nc][ind++] = &(nodes[ this->neighbors[cellNo][nn] ]);
                     }
                 }
             }
@@ -7874,9 +7870,9 @@ namespace ttcr {
 
         std::vector<NODE*> interpNodes;
         
-        for (size_t n=0; n < neighbors[ cellNo ].size(); n++){
-            if ( nodes[neighbors[ cellNo ][n] ].isPrimary() ){
-                interpNodes.push_back( &(nodes[neighbors[ cellNo ][n] ]) );
+        for (size_t n=0; n < this->neighbors[ cellNo ].size(); n++){
+            if ( nodes[this->neighbors[ cellNo ][n] ].isPrimary() ){
+                interpNodes.push_back( &(nodes[this->neighbors[ cellNo ][n] ]) );
             }
         }
         if ( interpVel )
@@ -7934,7 +7930,7 @@ namespace ttcr {
         std::vector<std::array<T2,4>> primary(cells.size());
         for (size_t nc=0; nc<cells.size(); ++nc) {
             size_t np = 0;
-            for ( auto nn=neighbors[cells[nc]].begin(); nn!= neighbors[cells[nc]].end(); ++nn ) {
+            for ( auto nn=this->neighbors[cells[nc]].begin(); nn!= this->neighbors[cells[nc]].end(); ++nn ) {
                 if (nodes[*nn].isPrimary()) {
                     primary[nc][np++] = *nn;
                 }

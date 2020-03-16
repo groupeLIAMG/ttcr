@@ -46,10 +46,9 @@ namespace ttcr {
         Grid2Dun(const std::vector<S>& no,
                  const std::vector<triangleElem<T2>>& tri,
                  const size_t nt=1) :
-        nThreads(nt),
+        Grid2D<T1,T2,S>(tri.size(), nt), nThreads(nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
-        neighbors(std::vector<std::vector<T2>>(tri.size())),
         triangles(), virtualNodes()
         {
             for (auto it=tri.begin(); it!=tri.end(); ++it) {
@@ -151,18 +150,8 @@ namespace ttcr {
         const size_t nThreads;
         T2 nPrimary;
         mutable std::vector<NODE> nodes;
-        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
         std::vector<triangleElemAngle<T1,T2>> triangles;
         std::map<T2, virtualNode<T1,NODE>> virtualNodes;
-        
-        void buildGridNeighbors() {
-            // Index the neighbors nodes of each cell
-            for ( T2 n=0; n<nodes.size(); ++n ) {
-                for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
-                    neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
-                }
-            }
-        }
         
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
@@ -234,12 +223,12 @@ namespace ttcr {
         T1 slo = computeSlowness( Rx );
         
         T2 cellNo = this->getCellNo( Rx );
-        T2 neibNo = neighbors[cellNo][0];
+        T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = computeDt(nodes[neibNo], Rx, slo);
         
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-        for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-            neibNo = neighbors[cellNo][k];
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
             dt = computeDt(nodes[neibNo], Rx, slo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -266,14 +255,14 @@ namespace ttcr {
         T1 slo = computeSlowness( Rx );
         
         T2 cellNo = getCellNo( Rx );
-        T2 neibNo = neighbors[cellNo][0];
+        T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = computeDt(nodes[neibNo], Rx, slo);
         
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         nodeParentRx = neibNo;
         cellParentRx = cellNo;
-        for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-            neibNo = neighbors[cellNo][k];
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
             dt = computeDt(nodes[neibNo], Rx, slo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -297,9 +286,9 @@ namespace ttcr {
         //We calculate the Slowness at the point
         std::vector<T2> list;
         
-        for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
-            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
-                list.push_back(neighbors[ cellNo ][n3]);
+        for (size_t n3=0; n3 < this->neighbors[ cellNo ].size(); n3++){
+            if ( nodes[this->neighbors[ cellNo ][n3] ].isPrimary() ){
+                list.push_back(this->neighbors[ cellNo ][n3]);
             }
         }
         
@@ -321,9 +310,9 @@ namespace ttcr {
         
         std::vector<T2> list;
         
-        for (size_t n3=0; n3 < neighbors[ cellNo ].size(); n3++){
-            if ( nodes[neighbors[ cellNo ][n3] ].isPrimary() ){
-                list.push_back(neighbors[ cellNo ][n3]);
+        for (size_t n3=0; n3 < this->neighbors[ cellNo ].size(); n3++){
+            if ( nodes[this->neighbors[ cellNo ][n3] ].isPrimary() ){
+                list.push_back(this->neighbors[ cellNo ][n3]);
             }
         }
         
@@ -883,7 +872,7 @@ namespace ttcr {
                     
                     T2 nb[2];
                     size_t n=0;
-                    for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
                         if ( *nn != nodeNo ) {
                             nb[n++] = *nn;
                         }
@@ -956,7 +945,7 @@ namespace ttcr {
                         
                         T2 nb[2];
                         size_t n=0;
-                        for (auto nn=neighbors[*nc].begin(); nn!=neighbors[*nc].end(); ++nn ) {
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
                             if ( *nn != nodeNo ) {
                                 nb[n++] = *nn;
                             }
@@ -1024,9 +1013,9 @@ namespace ttcr {
                 g.normalize();
                 
                 // we have 3 segments that we might intersect
-                T2 ind[3][2] = { {neighbors[cellNo][0], neighbors[cellNo][1]},
-                    {neighbors[cellNo][0], neighbors[cellNo][2]},
-                    {neighbors[cellNo][1], neighbors[cellNo][2]} };
+                T2 ind[3][2] = { {this->neighbors[cellNo][0], this->neighbors[cellNo][1]},
+                    {this->neighbors[cellNo][0], this->neighbors[cellNo][2]},
+                    {this->neighbors[cellNo][1], this->neighbors[cellNo][2]} };
                 
                 for ( size_t ns=0; ns<3; ++ns )
                     if ( ind[ns][0]>ind[ns][1] )
@@ -1307,12 +1296,12 @@ namespace ttcr {
                                                   std::set<NODE*> &nnodes) const {
         
         for ( size_t n=0; n<3; ++n ) {
-            T2 nodeNo = neighbors[cellNo][n];
+            T2 nodeNo = this->neighbors[cellNo][n];
             nnodes.insert( &(nodes[nodeNo]) );
             
             for ( auto nc=nodes[nodeNo].getOwners().cbegin(); nc!=nodes[nodeNo].getOwners().cend(); ++nc ) {
                 for ( size_t nn=0; nn<3; ++nn ) {
-                    nnodes.insert( &(nodes[ neighbors[*nc][nn] ]) );
+                    nnodes.insert( &(nodes[ this->neighbors[*nc][nn] ]) );
                 }
             }
         }

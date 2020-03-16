@@ -114,10 +114,7 @@ namespace ttcr {
         mutable std::vector<NODE> nodes;
         
         CELL cells;   // column-wise (z axis) slowness vector of the cells
-        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
-        
-        void buildGridNeighbors();
-        
+               
         void checkPts(const std::vector<sxz<T1>>&) const;
         
         bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
@@ -128,24 +125,14 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE, typename CELL>
     Grid2Drc<T1,T2,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                                         const T1 minx, const T1 minz, const size_t nt) :
-    Grid2D<T1,T2,sxz<T1>>(nt),
+    Grid2D<T1,T2,sxz<T1>>(nx*nz, nt),
     dx(ddx), dz(ddz), xmin(minx), zmin(minz),
     xmax(minx+nx*ddx), zmax(minz+nz*ddz),
     ncx(nx), ncz(nz),
     nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
-    cells(ncx*ncz),
-    neighbors(std::vector<std::vector<T2>>(ncx*ncz))
+    cells(ncx*ncz)
     { }
     
-    
-    template<typename T1, typename T2, typename NODE, typename CELL>
-    void Grid2Drc<T1,T2,NODE,CELL>::buildGridNeighbors() {
-        for ( T2 n=0; n<nodes.size(); ++n ) {
-            for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
-                neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
-            }
-        }
-    }
     
     template<typename T1, typename T2, typename NODE, typename CELL>
     void Grid2Drc<T1,T2,NODE,CELL>::saveTT(const std::string& fname, const int all,

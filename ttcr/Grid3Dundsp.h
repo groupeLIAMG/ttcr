@@ -53,7 +53,7 @@ namespace ttcr {
         tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
         {
             this->buildGridNodes(no, ns, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
             this->source_radius = rad;
             nPermanent = static_cast<T2>(this->nodes.size());
             for ( size_t n=0; n<nt; ++n ) {

@@ -94,7 +94,7 @@ namespace ttcr {
     epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w), rotated_template(rt)
     {
         buildGridNodes();
-        this->buildGridNeighbors();
+        this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
     }
     
     

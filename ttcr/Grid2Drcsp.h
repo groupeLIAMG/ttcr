@@ -176,7 +176,7 @@ namespace ttcr {
     nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0)
     {
         buildGridNodes();
-        this->buildGridNeighbors();
+        this->template buildGridNeighbors<Node2Dcsp<T1,T2>>(this->nodes);
     }
     
     template<typename T1, typename T2, typename CELL>

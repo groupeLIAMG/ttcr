@@ -52,7 +52,7 @@ namespace ttcr {
         nSecondary(ns)
         {
             this->buildGridNodes(no, ns, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dnsp<T1,T2>>(this->nodes);
         }
         
         ~Grid3Dunsp() {

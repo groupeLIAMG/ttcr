@@ -45,7 +45,7 @@ namespace ttcr {
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
             buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<NODE>(this->nodes);
             if ( procObtuse ) this->processObtuse();
         }
         

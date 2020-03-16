@@ -35,8 +35,8 @@ namespace ttcr {
     template<typename T1 = double, typename T2 = uint32_t, typename S = sxz<double>>
     class Grid2D {
     public:
-        Grid2D(const size_t nt=1) :
-            nThreads(nt) {}
+        Grid2D(const size_t ncells, const size_t nt=1) :
+            nThreads(nt), neighbors(std::vector<std::vector<T2>>(ncells)) {}
 
         virtual ~Grid2D() {}
         
@@ -147,6 +147,17 @@ namespace ttcr {
 #endif
     protected:
         size_t nThreads;
+        
+        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
+        
+        template<typename N>
+        void buildGridNeighbors(std::vector<N>& nodes) {
+            for ( T2 n=0; n<nodes.size(); ++n ) {
+                for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
+                    neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
+                }
+            }
+        }
     };
     
 }

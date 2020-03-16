@@ -47,7 +47,7 @@ namespace ttcr {
         epsilon(eps), nitermax(maxit), S(), niter_final(0)
         {
             this->buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
         }
         Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,

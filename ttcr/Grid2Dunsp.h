@@ -44,7 +44,7 @@ namespace ttcr {
         Grid2Dun<T1,T2,NODE,S>(no, tri, nt), nsecondary(ns)
         {
             buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<NODE>(this->nodes);
         }
         
         ~Grid2Dunsp() {

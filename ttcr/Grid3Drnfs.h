@@ -29,7 +29,7 @@ namespace ttcr {
         epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w)
         {
             buildGridNodes();
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
         }
         
         ~Grid3Drnfs() {

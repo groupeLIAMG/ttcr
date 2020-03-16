@@ -120,7 +120,7 @@ namespace ttcr {
     nPrimary((nx+1) * (nz+1))
     {
         buildGridNodes();
-        this->buildGridNeighbors();
+        this->template buildGridNeighbors<Node2Dnsp<T1,T2>>(this->nodes);
     }
     
     template<typename T1, typename T2>

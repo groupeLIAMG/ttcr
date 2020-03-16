@@ -40,8 +40,9 @@ namespace ttcr {
     template<typename T1, typename T2>
     class Grid3D {
     public:
-        Grid3D(const bool ttrp, const size_t nt=1) :
-            nThreads(nt), tt_from_rp(ttrp) {}
+        Grid3D(const bool ttrp, const size_t ncells, const size_t nt=1) :
+            nThreads(nt), tt_from_rp(ttrp),
+            neighbors(std::vector<std::vector<T2>>(ncells)) {}
 
         virtual ~Grid3D() {}
         
@@ -147,6 +148,9 @@ namespace ttcr {
         
         virtual size_t getNumberOfNodes() const { return 1; }
         virtual size_t getNumberOfCells() const { return 1; }
+        virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}
@@ -182,6 +186,17 @@ namespace ttcr {
     protected:
         size_t nThreads;         // number of threads
         bool tt_from_rp;
+        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
+
+        template<typename N>
+        void buildGridNeighbors(const std::vector<N>& nodes) {
+            //Index the neighbors nodes of each cell
+            for ( T2 n=0; n<nodes.size(); ++n ) {
+                for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
+                    neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
+                }
+            }
+        }
 
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,

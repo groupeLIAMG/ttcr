@@ -105,10 +105,7 @@ namespace ttcr {
         T2 ncz;          // number of cells in x
         
         mutable std::vector<NODE> nodes;
-        
-        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
-        void buildGridNeighbors();
-        
+                
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
         }
@@ -201,21 +198,11 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     Grid2Drn<T1,T2,NODE>::Grid2Drn(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                                    const T1 minx, const T1 minz, const size_t nt) :
-    Grid2D<T1,T2,sxz<T1>>(nt),
+    Grid2D<T1,T2,sxz<T1>>(nx*nz, nt),
     dx(ddx), dz(ddz), xmin(minx), zmin(minz), xmax(minx+nx*ddx), zmax(minz+nz*ddz),
     ncx(nx), ncz(nz),
-    nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
-    neighbors(std::vector<std::vector<T2>>(ncx*ncz))
+    nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) ))
     { }
-    
-    template<typename T1, typename T2, typename NODE>
-    void Grid2Drn<T1,T2,NODE>::buildGridNeighbors() {
-        for ( T2 n=0; n<nodes.size(); ++n ) {
-            for ( size_t n2=0; n2<nodes[n].getOwners().size(); ++n2) {
-                neighbors[ nodes[n].getOwners()[n2] ].push_back(n);
-            }
-        }
-    }
     
     template<typename T1, typename T2, typename NODE>
     void Grid2Drn<T1,T2,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
@@ -259,12 +246,12 @@ namespace ttcr {
     //    T1 slownessRx = getSlowness( Rx );
     //
     //    T2 cellNo = getCellNo( Rx );
-    //    T2 neibNo = neighbors[cellNo][0];
+    //    T2 neibNo = this->neighbors[cellNo][0];
     //    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
     //
     //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    //    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-    //        neibNo = neighbors[cellNo][k];
+    //    for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+    //        neibNo = this->neighbors[cellNo][k];
     //        dt = computeDt(nodes[neibNo], Rx, slownessRx);
     //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
     //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -347,14 +334,14 @@ namespace ttcr {
         T1 slownessRx = getSlowness( Rx );
         
         T2 cellNo = getCellNo( Rx );
-        T2 neibNo = neighbors[cellNo][0];
+        T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
         
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         nodeParentRx = neibNo;
         cellParentRx = cellNo;
-        for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-            neibNo = neighbors[cellNo][k];
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
             dt = computeDt(nodes[neibNo], Rx, slownessRx);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
@@ -381,14 +368,14 @@ namespace ttcr {
     //    T1 slownessRx = getSlowness( Rx );
     //
     //    T2 cellNo = getCellNo( Rx );
-    //    T2 neibNo = neighbors[cellNo][0];
+    //    T2 neibNo = this->neighbors[cellNo][0];
     //    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
     //
     //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
     //    nodeParentRx = neibNo;
     //    cellParentRx = cellNo;
-    //    for ( size_t k=1; k< neighbors[cellNo].size(); ++k ) {
-    //        neibNo = neighbors[cellNo][k];
+    //    for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+    //        neibNo = this->neighbors[cellNo][k];
     //        dt = computeDt(nodes[neibNo], Rx, slownessRx);
     //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
     //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;

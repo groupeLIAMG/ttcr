@@ -49,7 +49,7 @@ namespace ttcr {
         Grid3Duc<T1,T2,Node3Dcsp<T1,T2>>(no, tet, 1, rptt, md, nt)
         {
             this->buildGridNodes(no, ns, nt);
-            this->buildGridNeighbors();
+            this->template buildGridNeighbors<Node3Dcsp<T1,T2>>(this->nodes);
         }
         
         ~Grid3Ducsp() {
