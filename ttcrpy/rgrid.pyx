@@ -203,6 +203,10 @@ cdef class Grid3d:
 
     @property
     def x(self):
+        """
+        x: np.ndarray
+            node coordinates along x
+        """
         tmp = np.empty((self._x.size(),))
         cdef int n
         for n in range(self._x.size()):
@@ -211,6 +215,10 @@ cdef class Grid3d:
 
     @property
     def y(self):
+        """
+        y: np.ndarray
+            node coordinates along y
+        """
         tmp = np.empty((self._y.size(),))
         cdef int n
         for n in range(self._y.size()):
@@ -219,6 +227,10 @@ cdef class Grid3d:
 
     @property
     def z(self):
+        """
+        z: np.ndarray
+            node coordinates along z
+        """
         tmp = np.empty((self._z.size(),))
         cdef int n
         for n in range(self._z.size()):
@@ -227,18 +239,34 @@ cdef class Grid3d:
 
     @property
     def dx(self):
+        """
+        dx: float
+            node separation along x
+        """
         return self._dx
 
     @property
     def dy(self):
+        """
+        dy: float
+            node separation along y
+        """
         return self._dy
 
     @property
     def dz(self):
+        """
+        dz: float
+            node separation along z
+        """
         return self._dz
 
     @property
     def shape(self):
+        """
+        shape: (int, int, int)
+            number of parameters along each dimension
+        """
         if self.cell_slowness:
             return (self._x.size()-1, self._y.size()-1, self._z.size()-1)
         else:
@@ -246,10 +274,18 @@ cdef class Grid3d:
 
     @property
     def nthreads(self):
+        """
+        nthreads: int
+            number of threads for raytracing
+        """
         return self._nthreads
 
     @property
     def nparams(self):
+        """
+        nparams: int
+            total number of parameters for grid
+        """
         if self.cell_slowness:
             return (self._x.size()-1) * (self._y.size()-1) * (self._z.size()-1)
         else:
@@ -332,6 +368,15 @@ cdef class Grid3d:
     def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
         """
         Return True if at least one point outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray, shape(npts, 3)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool
         """
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._y.front() or np.max(pts[:,1]) > self._y.back() or
@@ -522,11 +567,12 @@ cdef class Grid3d:
         Parameters
         ----------
         hypo : numpy ndarray with 5 columns
-            1st column is event ID number
-            2nd column is origin time
-            3rd column is source easting
-            4th column is source northing
-            5th column is source elevation
+            hypo holds source information, i.e.
+                1st column is event ID number
+                2nd column is origin time
+                3rd column is source easting
+                4th column is source northing
+                5th column is source elevation
 
         slowness : np ndarray, shape (nx, ny, nz) (optional)
             slowness at grid nodes or cells (depending on cell_slowness)
