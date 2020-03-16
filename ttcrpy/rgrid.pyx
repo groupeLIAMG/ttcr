@@ -364,12 +364,12 @@ cdef class Grid3d:
                 raise ValueError('Slowness has wrong shape')
             tmp = slowness.flatten('F')
             for i in range(nx*ny*nz):
-                slown.push_back(slowness[i])
+                slown.push_back(tmp[i])
         elif slowness.ndim == 1:
             # slowness is in 'C' order and we must pass it in 'F' order
             tmp = slowness.reshape((nx, ny, nz)).flatten('F')
             for i in range(nx*ny*nz):
-                slown.push_back(slowness[i])
+                slown.push_back(tmp[i])
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
@@ -1032,7 +1032,7 @@ cdef class Grid3d:
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'
-            
+
         Returns
         -------
         Instance of Grid3d
