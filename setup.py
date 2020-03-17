@@ -16,11 +16,11 @@ if platform.system() == 'Darwin':
     os.environ['CC'] = 'clang'
     os.environ['CXX'] = 'clang++'
     os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.15'
-    extra_compile_args = ['-std=c++17', '-stdlib=libc++', '-O3']
+    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3']
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
 elif platform.system() == 'Linux':
-    extra_compile_args = ['-std=c++17', '-O3']
+    extra_compile_args = ['-std=c++11', '-O3']
 
 include_dirs = ['ttcr', 'boost_1_72_0', 'eigen-3.3.7', np.get_include()]
 
@@ -59,7 +59,7 @@ extensions = [
 
 setup(
     name='ttcrpy',
-    version='0.1'
+    version='0.1.0',
     description='Code to perform raytracing for geophysical applications',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -75,7 +75,7 @@ setup(
         'Programming Language :: Cython',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering'
-        ]
+        ],
     url='https://github.com/groupeLIAMG/ttcr',
     ext_modules=cythonize(extensions, language_level=3),
 )
