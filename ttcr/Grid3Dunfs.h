@@ -59,7 +59,7 @@ namespace ttcr {
         epsilon(eps), nitermax(maxit), S(), niter_final(0)
         {
             this->buildGridNodes(no, nt);
-            this->buildGridNeighbors();
+            this->buildGridNeighbors(this->nodes);
             this->initOrdering(refPts, order);
         }
         

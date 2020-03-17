@@ -15,3 +15,7 @@ ttcrpy/__pycache__/
 dynamicNodes.svg
 
 fsm_hybrid.pdf
+
+examples/.ipynb_checkpoints/
+
+tests/__pycache__/
