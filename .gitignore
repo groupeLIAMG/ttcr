@@ -9,3 +9,9 @@ test_lelievre11.py
 ttcr_matlab/*.mex*
 xcuserdata/
 someTests/
+
+ttcrpy/__pycache__/
+
+dynamicNodes.svg
+
+fsm_hybrid.pdf
