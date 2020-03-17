@@ -9,6 +9,9 @@ from setuptools import setup
 from setuptools.extension import Extension
 from Cython.Build import cythonize
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 if platform.system() == 'Darwin':
     os.environ['CC'] = 'clang'
     os.environ['CXX'] = 'clang++'
@@ -20,7 +23,6 @@ elif platform.system() == 'Linux':
     extra_compile_args = ['-std=c++17', '-O3']
 
 include_dirs = ['ttcr', 'boost_1_72_0', 'eigen-3.3.7', np.get_include()]
-
 
 extensions = [
     Extension('ttcrpy.rgrid',
@@ -57,9 +59,23 @@ extensions = [
 
 setup(
     name='ttcrpy',
+    version='0.1'
     description='Code to perform raytracing for geophysical applications',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Bernard Giroux',
     author_email='bernard.giroux@ete.inrs.ca',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Education',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+        'Operating System :: OS Independent',
+        'Programming Language :: C++',
+        'Programming Language :: Cython',
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering'
+        ]
     url='https://github.com/groupeLIAMG/ttcr',
     ext_modules=cythonize(extensions, language_level=3),
 )
