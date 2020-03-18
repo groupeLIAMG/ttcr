@@ -21,6 +21,7 @@ def get_tt(filename):
     tt = vtk_to_numpy(data.GetPointData().GetArray(name))
     return tt
 
+
 class TestGrid3dc(unittest.TestCase):
 
     def setUp(self):
@@ -45,7 +46,7 @@ class TestGrid3dc(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
-        tt = tt.flatten(order='F')
+        tt = tt.flatten()
         tt_ref = get_tt('fsm_d_p_lc_src_all_tt.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness in cells)')
@@ -56,7 +57,7 @@ class TestGrid3dc(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
-        tt = tt.flatten(order='F')
+        tt = tt.flatten()
         tt_ref = get_tt('spm_d_p_lc_05_src_all_tt.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
                         'SPM accuracy failed (slowness in cells)')
@@ -67,10 +68,11 @@ class TestGrid3dc(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
-        tt = tt.flatten(order='F')
+        tt = tt.flatten()
         tt_ref = get_tt('dspm_d_p_lc_2_2_2_src_all_tt.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
                         'SPM accuracy failed (slowness in cells)')
+
 
 class TestGrid3dn(unittest.TestCase):
 
@@ -97,7 +99,7 @@ class TestGrid3dn(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
-        tt = tt.flatten(order='F')
+        tt = tt.flatten()
         tt_ref = get_tt('fsm_d_p_gc_src_all_tt.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness at nodes)')
@@ -108,7 +110,7 @@ class TestGrid3dn(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
-        tt = tt.flatten(order='F')
+        tt = tt.flatten()
         tt_ref = get_tt('spm_d_p_gc_05_src_all_tt.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
                         'SPM accuracy failed (slowness at nodes)')
@@ -120,10 +122,56 @@ class TestGrid3dn(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
-        tt = tt.flatten(order='F')
+        tt = tt.flatten()
         tt_ref = get_tt('dspm_d_p_gc_2_2_2_src_all_tt.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
                         'SPM accuracy failed (slowness at nodes)')
+
+
+class Data_kernel(unittest.TestCase):
+
+    def test_3d(self):
+
+        V = np.ones((11, 12, 13))
+        V[:, :, 7:] = 2
+        slowness = 1. / V.flatten()
+
+        grx = np.arange(12.)
+        gry = np.arange(13.)
+        grz = np.arange(14.)
+
+        z = 0.5 + np.arange(13.)
+        Tx = np.vstack((0.5+np.zeros((13,)),
+                        0.5+np.zeros((13,)),
+                        z)).T
+        Rx = np.vstack((10.5+np.zeros((13,)),
+                        11.5+np.zeros((13,)),
+                        z)).T
+        nTx = Tx.shape[0]
+        nRx = Rx.shape[0]
+        Tx = np.kron(Tx, np.ones((nRx,1)))
+        Rx = np.kron(np.ones((nTx,1)), Rx)
+
+        L = rg.Grid3d.data_kernel_straight_rays(Tx, Rx, grx, gry, grz)
+        tt = L.dot(slowness)
+
+        tt2 = np.zeros(tt.shape)
+        d = np.sqrt(np.sum((Tx-Rx)**2, axis=1))
+
+        ind = np.logical_and(Tx[:,2]>7, Rx[:,2]>7)
+        tt2[ind] = d[ind]/2
+
+        ind2 = np.logical_and(Tx[:,2]<7, Rx[:,2]<7)
+        tt2[ind2] = d[ind2]
+
+        ind3 = np.logical_and(np.logical_not(ind), np.logical_not(ind2))
+
+        f = (7-Tx[ind3,2]) / (Rx[ind3,2]-Tx[ind3,2])
+        ind = (Rx[ind3,2]-Tx[ind3,2]) < 0
+        f[ind] = 1-f[ind]
+        tt2[ind3] = d[ind3]*f + d[ind3]*(1-f)/2
+
+        self.assertAlmostEqual(np.sum(np.abs(tt-tt2)), 0.0 )
 
 if __name__ == '__main__':
 
