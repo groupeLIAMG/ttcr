@@ -1120,6 +1120,440 @@ cdef class Grid3d:
         g.set_slowness(slowness)
         return g
 
+    @staticmethod
+    def data_kernel_straight_rays(np.ndarray[np.double_t, ndim=2] Tx,
+                                  np.ndarray[np.double_t, ndim=2] Rx,
+                                  np.ndarray[np.double_t, ndim=1] grx,
+                                  np.ndarray[np.double_t, ndim=1] gry,
+                                  np.ndarray[np.double_t, ndim=1] grz,
+                                  centers=False):
+        """
+        data_kernel_straight_rays(Tx, Rx, grx, gry, grz, centers) -> L, (xc, yc, zc)
+
+        Raytracing with straight rays in 3D
+
+        Parameters
+        ----------
+        Tx : numpy ndarray
+              source coordinates, nTx by 3
+                1st column contains X coordinates,
+                2nd contains Y coordinates
+                3rd contains Z coordinates
+        Rx : numpy ndarray
+              receiver coordinates, nTx by 3
+                1st column contains X coordinates,
+                2nd contains Y coordinates
+                3rd contains Z coordinates
+        grx : numpy ndarray
+                grid node coordinates along x
+        gry : numpy ndarray
+                grid node coordinates along y
+        grz : numpy ndarray
+                grid node coordinates along z
+        centers : bool
+                return coordinates of center of cells (False by default)
+
+        Returns
+        -------
+        L : scipy csr_matrix
+               data kernel matrix (tt = L*slowness)
+        (xc, yc, zc) : tuple of np ndarrays
+                vectors of coordinates of center of cells
+
+        Note
+        ----
+        Tx and Rx should contain the same number of rows, each row corresponding
+        to a source-receiver pair
+        """
+
+        cdef size_t nTx = Tx.shape[0]
+        cdef size_t n_grx = grx.shape[0]
+        cdef size_t n_gry = gry.shape[0]
+        cdef size_t n_grz = grz.shape[0]
+
+        cdef double small = 1.e-10
+
+        data_p = []
+        indices_p = []
+        indptr_p = []
+
+        cdef size_t k = 0
+        cdef size_t ix, iy, iz
+
+        cdef double x, y, z, x1, y1, z1, x2, y2, z2, dtmp, d, l, m, n
+        cdef double m_y, b_y, m_z, b_z, dlx, dly, dlz, dl, xe, ye, ze
+        cdef int sx, sy, sz
+        cdef bool up_y, up_z
+        cdef Py_ssize_t nt
+
+        for nt in range(nTx):
+            indptr_p.append(k)
+
+            x1 = Tx[nt, 0]
+            y1 = Tx[nt, 1]
+            z1 = Tx[nt, 2]
+            x2 = Rx[nt, 0]
+            y2 = Rx[nt, 1]
+            z2 = Rx[nt, 2]
+
+            if x1 > x2:  # on veut x croissant
+                dtmp = x1
+                x1 = x2
+                x2 = dtmp
+                dtmp = y1
+                y1 = y2
+                y2 = dtmp
+                dtmp = z1
+                z1 = z2
+                z2 = dtmp
+
+            d = sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1) )
+            # cosinus directeurs
+            l = (x2-x1)/d
+            m = (y2-y1)/d
+            n = (z2-z1)/d
+
+            sy = (m > 0) - (m < 0)  # sign of m
+            sz = (n > 0) - (n < 0)
+
+            x = x1
+            y = y1
+            z = z1
+
+            for ix in range(n_grx-1):
+                if x < grx[ix+1] and x >= grx[ix]:
+                    break
+            for iy in range(n_gry-1):
+                if y < gry[iy+1] and y >= gry[iy]:
+                    break
+            for iz in range(n_grz-1):
+                if z < grz[iz+1] and z >= grz[iz]:
+                    break
+
+            if abs(l) < small:
+                if abs(m) < small:
+                    # X & Y constants
+                    if z1 > z2:
+                        dtmp = z1
+                        z1 = z2
+                        z2 = dtmp
+                        z = z1
+                        for iz in range(n_grz-1):
+                            if z < grz[iz+1] and z >= grz[iz]:
+                                break
+                    while z < z2:
+                        iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                        dlz = ( grz[iz+1] if grz[iz+1] < z2 else z2 ) - z
+
+                        indices_p.append(iCell)
+                        data_p.append(dlz)
+                        k += 1
+
+                        iz += 1
+                        z = grz[iz]
+
+                elif abs(n) < small:
+                    # X & Z constants
+                    if y1 > y2:
+                        dtmp = y1
+                        y1 = y2
+                        y2 = dtmp
+                        y = y1
+                        for iy in range(n_gry-1):
+                            if y < gry[iy+1] and y >= gry[iy]:
+                                break
+                    while y < y2:
+                        iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                        dly = ( gry[iy+1] if gry[iy+1] < y2 else y2 ) - y
+
+                        indices_p.append(iCell)
+                        data_p.append(dly)
+                        k += 1
+
+                        iy += 1
+                        y = gry[iy]
+
+                else:
+                    # seul X constant
+                    if y1 > y2:
+                        dtmp = y1
+                        y1 = y2
+                        y2 = dtmp
+                        dtmp = z1
+                        z1 = z2
+                        z2 = dtmp
+                        y = y1
+                        for iy in range(n_gry-1):
+                            if y < gry[iy+1] and y >= gry[iy]:
+                                break
+                        z = z1
+                        for iz in range(n_grz-1):
+                            if z < grz[iz+1] and z >= grz[iz]:
+                                break
+
+                    m_z = (z2-z1) / (y2-y1)
+                    b_z = z2 - m_z*y2
+                    up_z = m_z > 0
+
+                    while y < y2:
+
+                        zi = m_z*gry[iy+1] + b_z
+                        if up_z:
+                            while z < zi and z < z2:
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                ze = grz[iz+1] if grz[iz+1]<zi else zi
+                                ze = ze if ze < z2 else z2
+                                ye = (ze-b_z) / m_z
+                                dly = ye - y
+                                dlz = ze - z
+                                dl = sqrt( dly*dly + dlz*dlz )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                y = ye
+                                z = ze
+
+                                if abs(z-grz[iz+1]) < small:
+                                    iz += 1
+
+                        else: # down
+                            while z > zi and z > z2:
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                ze = grz[iz] if grz[iz] > zi else zi
+                                ze = ze if ze > z2 else z2
+                                ye = (ze-b_z)/m_z
+                                dly = ye - y
+                                dlz = ze - z
+                                dl = sqrt( dly*dly + dlz*dlz )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                y = ye
+                                z = ze
+                                if abs(z-grz[iz]) < small:
+                                    iz -= 1
+
+                        iy += 1
+                        y = gry[iy]
+            else:
+                if abs(m) < small and abs(n) < small:
+                    # Y & Z constants
+                    while x < x2:
+                        iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                        dlx = ( grx[ix+1] if grx[ix+1] < x2 else x2 ) - x
+
+                        indices_p.append(iCell)
+                        data_p.append(dlx)
+                        k += 1
+
+                        ix += 1
+                        x = grx[ix]
+
+                elif abs(m) < small:
+                    # seul Y constant
+                    m_z = (z2-z1) / (x2-x1)
+                    b_z = z2 - m_z*x2
+                    up_z = m_z>0
+
+                    while x < x2:
+
+                        zi = m_z*grx[ix+1] + b_z
+
+                        if up_z:
+                            while z < zi and z < z2:
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                ze = grz[iz+1] if grz[iz+1] < zi else zi
+                                ze = ze if ze < z2 else z2
+                                xe = (ze-b_z) / m_z
+                                dlx = xe - x
+                                dlz = ze - z
+                                dl = sqrt( dlx*dlx + dlz*dlz )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                x = xe
+                                z = ze
+                                if abs(z-grz[iz+1]) < small:
+                                    iz += 1
+                        else: # down
+                            while z > zi and z > z2:
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                ze = grz[iz] if grz[iz] > zi else zi
+                                ze = ze if ze > z2 else z2
+                                xe = (ze-b_z) / m_z
+                                dlx = xe - x
+                                dlz = ze - z
+                                dl = sqrt( dlx*dlx + dlz*dlz )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                x = xe
+                                z = ze
+                                if abs(z-grz[iz]) < small:
+                                    iz -= 1
+
+                        ix += 1
+                        x = grx[ix]
+                elif abs(n) < small:
+                    # seul Z constant
+                    m_y = (y2-y1) / (x2-x1)
+                    b_y = y2 - m_y*x2
+                    up_y = m_y > 0
+
+                    while x < x2:
+
+                        yi = m_y*grx[ix+1] + b_y
+
+                        if up_y:
+                            while y < yi and y < y2:
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                ye = gry[iy+1] if gry[iy+1] < yi else yi
+                                ye = ye if ye < y2 else y2
+                                xe = (ye-b_y) / m_y
+                                dlx = xe - x
+                                dly = ye - y
+                                dl = sqrt( dlx*dlx + dly*dly )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                x = xe
+                                y = ye
+                                if abs(y-gry[iy+1]) < small:
+                                    iy += 1
+                        else:  # down
+                            while y > yi and y > y2:
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                ye = gry[iy] if gry[iy] > yi else yi
+                                ye = ye if ye > y2 else y2
+                                xe = (ye-b_y)/m_y
+                                dlx = xe - x
+                                dly = ye - y
+                                dl = sqrt( dlx*dlx + dly*dly )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                x = xe
+                                y = ye
+                                if abs(y-gry[iy]) < small:
+                                    iy -= 1
+
+                        ix += 1
+                        x = grx[ix]
+                else:
+                    while x < x2:
+
+                        m_y = (y2-y1) / (x2-x1)
+                        b_y = y2 - m_y*x2
+                        up_y = m_y > 0
+
+                        m_z = (z2-z1) / (x2-x1)
+                        b_z = z2 - m_z*x2
+                        up_z = m_z > 0
+
+                        yi = m_y*grx[ix+1] + b_y
+                        zi = m_z*grx[ix+1] + b_z
+
+                        while (sy*(yi-y)) > 0 and (sy*(y2-y)) > 0 and \
+							  (sz*(zi-z)) > 0 and (sz*(z2-z)) > 0:
+
+                            if up_y:
+                                ye = gry[iy+1] if gry[iy+1] < yi else yi
+                                ye = ye if ye<y2 else y2
+                            else:
+                                ye = gry[iy] if gry[iy] > yi else yi
+                                ye = ye if ye>y2 else y2
+                            if up_z:
+                                ze = grz[iz+1] if grz[iz+1] < zi else zi
+                                ze = ze if ze < z2 else z2
+                            else:
+                                ze = grz[iz] if grz[iz] > zi else zi
+                                ze = ze if ze > z2 else z2
+
+                            if (ze-b_z)/m_z < (ye-b_y)/m_y:  # we cross z before y
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                xe = (ze-b_z) / m_z
+                                ye = m_y*xe + b_y
+                                dlx = xe - x
+                                dly = ye - y
+                                dlz = ze - z
+                                dl = sqrt( dlx*dlx + dly*dly + dlz*dlz )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                x = xe
+                                y = ye
+                                z = ze
+                                if up_z:
+                                    if abs(z-grz[iz+1]) < small:
+                                        iz += 1
+                                else:
+                                    if abs(z-grz[iz]) < small:
+                                        iz -= 1
+
+                            else:  # we cross y before z
+                                iCell = (ix*(n_gry-1)+iy)*(n_grz-1) + iz
+
+                                xe = (ye-b_y)/m_y
+                                ze = m_z*xe + b_z
+                                dlx = xe - x
+                                dly = ye - y
+                                dlz = ze - z
+
+                                dl = sqrt( dlx*dlx + dly*dly + dlz*dlz )
+
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+
+                                x = xe
+                                y = ye
+                                z = ze
+                                if up_y:
+                                    if abs(y-gry[iy+1]) < small:
+                                        iy += 1
+                                else:
+                                    if abs(y-gry[iy]) < small:
+                                        iy -= 1
+
+                        ix += 1
+                        x = grx[ix]
+
+        indptr_p.append(k)
+        L = sp.csr_matrix((data_p, indices_p, indptr_p),
+                          shape=(nTx, (n_grx-1)*(n_gry-1)*(n_grz-1)))
+
+        if centers:
+            xc = (grx[1:]+grx[:-1])/2
+            yc = (gry[1:]+gry[:-1])/2
+            zc = (grz[1:]+grz[:-1])/2
+            return L, (xc, yc, zc)
+        else:
+            return L
+
 
 cdef class Grid2d:
     """
@@ -1260,9 +1694,6 @@ cdef class Grid2d:
 
 
 
-
-
-
     @staticmethod
     def data_kernel_straight_rays(np.ndarray[np.double_t, ndim=2] Tx,
                                   np.ndarray[np.double_t, ndim=2] Rx,
@@ -1292,18 +1723,18 @@ cdef class Grid2d:
         -------
         L : scipy csr_matrix
                data kernel matrix (tt = L*slowness)
-        """
 
+        Note
+        ----
+        Tx and Rx should contain the same number of rows, each row corresponding
+        to a source-receiver pair
+        """
 
         cdef size_t nTx = Tx.shape[0]
         cdef size_t n_grx = grx.shape[0]
         cdef size_t n_grz = grz.shape[0]
 
         cdef double small = 1.e-10
-
-        cdef size_t nCells = (n_grx-1)*(n_grz-1)
-        cdef size_t nLmax = 1 + nTx * n_grx * int(n_grz/2)
-        cdef double percent_sp = (nLmax*1.0)/(nTx*nCells*1.0)
 
         data_p = []
         indices_p = []
