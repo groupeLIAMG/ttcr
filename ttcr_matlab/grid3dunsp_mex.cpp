@@ -114,8 +114,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
             nSecondary = static_cast<uint32_t>( mxGetScalar(prhs[3]) );
         }
+        bool interp_vel = false;
+        bool tt_from_rp = true;
+        double min_dist = 1.e-5;
+        size_t nthreads = 1;   // TODO : allow multiple threads
         
-        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, nSecondary));
+        plhs[0] = convertPtr2Mat<grid>(new grid(nodes, tetrahedra, nSecondary,
+                                                interp_vel, tt_from_rp,
+                                                min_dist, nthreads));
         return;
     }
     

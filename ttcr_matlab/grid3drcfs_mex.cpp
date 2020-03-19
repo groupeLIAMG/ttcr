@@ -315,19 +315,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( nlhs == 3 ) {
                     try {
-                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv]);
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], 0);
                     } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 } else if ( nlhs == 2 ) {
                     try {
-                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]);
+                        grid_instance->raytrace2(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], 0);
                     } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
                 } else {
                     try {
-                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
+                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], 0);
                     } catch (...) {
                         mexErrMsgTxt("Problem while raytracing.");
                     }
@@ -374,7 +374,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             }
                         } else if ( nlhs == 2 ) {
                             try {
-                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i);
+                                grid_instance->raytrace2(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i);
                             } catch (...) {
                                 mexErrMsgTxt("Problem while raytracing.");
                             }
