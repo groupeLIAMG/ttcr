@@ -19,3 +19,9 @@ fsm_hybrid.pdf
 examples/.ipynb_checkpoints/
 
 tests/__pycache__/
+
+dist/
+
+ttcrpy/rgrid.cpp
+
+ttcrpy/cmesh2d.cpp
