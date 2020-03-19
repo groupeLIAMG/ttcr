@@ -13,6 +13,10 @@ cdef extern from "typedefs.h" namespace "ttcr":
         pass
     cdef cppclass cell2d:
         pass
+    cdef cppclass cell2dvti:
+        pass
+    cdef cppclass cell2dtti:
+        pass
 
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
@@ -158,26 +162,26 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
                       vector[vector[siv2[T1]]]& l_data,
                       size_t threadNo) except +
 
-cdef extern from "Grid2Drn.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drn[T1,T2,NODE](Grid2D[T1,T2,sxz[T1]]):
+cdef extern from "Grid2Drc.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Drc[T1,T2,S,NODE,CELL](Grid2D[T1,T2,S]):
         pass
 
-cdef extern from "Grid2Drc.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drc[T1,T2,NODE,CELL](Grid2D[T1,T2,sxz[T1]]):
+cdef extern from "Grid2Drn.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Drn[T1,T2,S,NODE](Grid2D[T1,T2,S]):
         pass
 
 cdef extern from "Grid2Drcsp.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drcsp[T1,T2,CELL](Grid2Drc[T1,T2,node2d,cell2d]):
+    cdef cppclass Grid2Drcsp[T1,T2,S,CELL](Grid2Drc[T1,T2,S,node2d,CELL]):
         Grid2Drcsp(T2, T2, T1, T1, T1, T1, T2, T2, size_t) except +
 
 cdef extern from "Grid2Drcfs.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drcfs[T1,T2](Grid2Drn[T1,T2,Node2Dn[T1,T2]]):
+    cdef cppclass Grid2Drcfs[T1,T2,S](Grid2Drn[T1,T2,S,Node2Dn[T1,T2]]):
         Grid2Drcfs(T2, T2, T1, T1, T1, T1, T1, int, bool, bool, size_t) except +
 
 cdef extern from "Grid2Drnsp.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drnsp[T1,T2](Grid2Drn[T1,T2,Node2Dnsp[T1,T2]]):
+    cdef cppclass Grid2Drnsp[T1,T2,S](Grid2Drn[T1,T2,S,node2d]):
         Grid2Drnsp(T2, T2, T1, T1, T1, T1, T2, T2, size_t) except +
 
 cdef extern from "Grid2Drnfs.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drnfs[T1,T2](Grid2Drn[T1,T2,Node2Dn[T1,T2]]):
+    cdef cppclass Grid2Drnfs[T1,T2,S](Grid2Drn[T1,T2,S,Node2Dn[T1,T2]]):
         Grid2Drnfs(T2, T2, T1, T1, T1, T1, T1, int, bool, bool, size_t) except +

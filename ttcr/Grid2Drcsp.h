@@ -51,8 +51,8 @@
 
 namespace ttcr {
     
-    template<typename T1, typename T2, typename CELL>
-    class Grid2Drcsp : public Grid2Drc<T1,T2,Node2Dcsp<T1,T2>,CELL> {
+    template<typename T1, typename T2, typename S, typename CELL>
+    class Grid2Drcsp : public Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL> {
     public:
         Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
@@ -61,43 +61,43 @@ namespace ttcr {
         virtual ~Grid2Drcsp() {
         }
         
-        void raytrace(const std::vector<sxz<T1>>& Tx,
+        void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      const std::vector<sxz<T1>>& Rx,
+                      const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       const size_t threadNo=0) const;
         
-        void raytrace(const std::vector<sxz<T1>>& Tx,
+        void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                      const std::vector<const std::vector<S>*>& Rx,
                       std::vector<std::vector<T1>*>& traveltimes,
                       const size_t threadNo=0) const;
         
-        void raytrace(const std::vector<sxz<T1>>& Tx,
+        void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      const std::vector<sxz<T1>>& Rx,
+                      const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
-                      std::vector<std::vector<sxz<T1>>>& r_data,
+                      std::vector<std::vector<S>>& r_data,
                       const size_t threadNo=0) const;
         
-        void raytrace(const std::vector<sxz<T1>>& Tx,
+        void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                      const std::vector<const std::vector<S>*>& Rx,
                       std::vector<std::vector<T1>*>& traveltimes,
-                      std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                      std::vector<std::vector<std::vector<S>>*>& r_data,
                       const size_t threadNo=0) const;
         
-        void raytrace(const std::vector<sxz<T1>>& Tx,
+        void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      const std::vector<sxz<T1>>& Rx,
+                      const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<sxz<double>>>& r_data,
                       std::vector<std::vector<siv2<double>>>& l_data,
                       const size_t threadNo=0) const;
 
-        void raytrace(const std::vector<sxz<T1>>& Tx,
+        void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      const std::vector<sxz<T1>>& Rx,
+                      const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<siv2<double>>>& l_data,
                       const size_t threadNo=0) const;
@@ -127,7 +127,7 @@ namespace ttcr {
                           std::vector<bool>& frozen,
                           const size_t threadNo) const;
         
-        void initQueue(const std::vector<sxz<T1>>& Tx,
+        void initQueue(const std::vector<S>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node2Dcsp<T1,T2>*,
                        std::vector<Node2Dcsp<T1,T2>*>,
@@ -137,7 +137,7 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
         
-        void initBand(const std::vector<sxz<T1>>& Tx,
+        void initBand(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       std::priority_queue<Node2Dcsp<T1,T2>*,
                       std::vector<Node2Dcsp<T1,T2>*>,
@@ -148,39 +148,39 @@ namespace ttcr {
                       const size_t threadNo) const;
         
         
-        T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
+        T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
                          const size_t threadNo) const;
         
-        T1 getTraveltime(const sxz<T1>& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
+        T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
                          T2& nodeParentRx, T2& cellParentRx,
                          const size_t threadNo) const;
         
         T1 get_tt_corr(const siv2<T1>& cell,
-                       const Grid2Drcsp<T1,T2,CELL> *grid,
+                       const Grid2Drcsp<T1,T2,S,CELL> *grid,
                        const size_t i) const {
             return cell.v*(this->slowness[cell.i] - grid->slowness[i]);
         }
         
     private:
         Grid2Drcsp() {}
-        Grid2Drcsp(const Grid2Drcsp<T1,T2,CELL>& g) {}
-        Grid2Drcsp<T1,T2,CELL>& operator=(const Grid2Drcsp<T1,T2,CELL>& g) {}
+        Grid2Drcsp(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
+        Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
         
     };
     
-    template<typename T1, typename T2, typename CELL>
-    Grid2Drcsp<T1,T2,CELL>::Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+    template<typename T1, typename T2, typename S, typename CELL>
+    Grid2Drcsp<T1,T2,S,CELL>::Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                                        const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
                                        const size_t nt) :
-    Grid2Drc<T1,T2,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,nt),
+    Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,nt),
     nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0)
     {
         buildGridNodes();
         this->template buildGridNeighbors<Node2Dcsp<T1,T2>>(this->nodes);
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::buildGridNodes() {
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::buildGridNodes() {
         
         this->nodes.resize( // noeuds secondaires
                            this->ncx*nsnx*(this->ncz+1) +
@@ -296,8 +296,8 @@ namespace ttcr {
     
     
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::initQueue(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::initQueue(const std::vector<S>& Tx,
                                            const std::vector<T1>& t0,
                                            std::priority_queue<Node2Dcsp<T1,T2>*,
                                            std::vector<Node2Dcsp<T1,T2>*>,
@@ -335,8 +335,8 @@ namespace ttcr {
     }
     
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::initBand(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::initBand(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
                                           std::priority_queue<Node2Dcsp<T1,T2>*,
                                           std::vector<Node2Dcsp<T1,T2>*>,
@@ -403,10 +403,10 @@ namespace ttcr {
     }
     
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
-                                          const std::vector<sxz<T1>>& Rx,
+                                          const std::vector<S>& Rx,
                                           std::vector<T1>& traveltimes,
                                           const size_t threadNo) const {
         
@@ -438,10 +438,10 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
-                                          const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                                          const std::vector<const std::vector<S>*>& Rx,
                                           std::vector<std::vector<T1>*>& traveltimes,
                                           const size_t threadNo) const {
         this->checkPts(Tx);
@@ -475,12 +475,12 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
-                                          const std::vector<sxz<T1>>& Rx,
+                                          const std::vector<S>& Rx,
                                           std::vector<T1>& traveltimes,
-                                          std::vector<std::vector<sxz<T1>>>& r_data,
+                                          std::vector<std::vector<S>>& r_data,
                                           const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -567,12 +567,12 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
-                                          const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                                          const std::vector<const std::vector<S>*>& Rx,
                                           std::vector<std::vector<T1>*>& traveltimes,
-                                          std::vector<std::vector<std::vector<sxz<T1>>>*>& r_data,
+                                          std::vector<std::vector<std::vector<S>>*>& r_data,
                                           const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -637,9 +637,9 @@ namespace ttcr {
                 std::vector<Node2Dcsp<T1,T2>> *node_p;
                 node_p = &(this->nodes);
                 
-                std::vector<sxz<T1>> r_tmp;
+                std::vector<S> r_tmp;
                 T2 iChild, iParent = nodeParentRx;
-                sxz<T1> child;
+                S child;
                 
                 // store the son's coord
                 child.x = (*Rx[nr])[n].x;
@@ -685,10 +685,10 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
-                                          const std::vector<sxz<T1>>& Rx,
+                                          const std::vector<S>& Rx,
                                           std::vector<T1>& traveltimes,
                                           std::vector<std::vector<sxz<double>>>& r_data,
                                           std::vector<std::vector<siv2<double>>>& l_data,
@@ -818,10 +818,10 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::raytrace(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                           const std::vector<T1>& t0,
-                                          const std::vector<sxz<T1>>& Rx,
+                                          const std::vector<S>& Rx,
                                           std::vector<T1>& traveltimes,
                                           std::vector<std::vector<siv2<double>>>& l_data,
                                           const size_t threadNo) const {
@@ -930,8 +930,8 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::propagate( std::priority_queue<Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
                                            CompareNodePtr<T1>>& queue,
                                            std::vector<bool>& inQueue,
                                            std::vector<bool>& frozen,
@@ -971,8 +971,8 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    void Grid2Drcsp<T1,T2,CELL>::propagate_lw(std::priority_queue<Node2Dcsp<T1,T2>*,
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::propagate_lw(std::priority_queue<Node2Dcsp<T1,T2>*,
                                               std::vector<Node2Dcsp<T1,T2>*>,
                                               CompareNodePtr<T1>>& queue,
                                               std::vector<bool>& inQueue,
@@ -1008,8 +1008,8 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2, typename CELL>
-    T1 Grid2Drcsp<T1,T2,CELL>::getTraveltime(const sxz<T1>& Rx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    T1 Grid2Drcsp<T1,T2,S,CELL>::getTraveltime(const S& Rx,
                                              const std::vector<Node2Dcsp<T1,T2>>& nodes,
                                              const size_t threadNo) const {
         
@@ -1035,8 +1035,8 @@ namespace ttcr {
     }
     
     
-    template<typename T1, typename T2, typename CELL>
-    T1 Grid2Drcsp<T1,T2,CELL>::getTraveltime(const sxz<T1>& Rx,
+    template<typename T1, typename T2, typename S, typename CELL>
+    T1 Grid2Drcsp<T1,T2,S,CELL>::getTraveltime(const S& Rx,
                                              const std::vector<Node2Dcsp<T1,T2>>& nodes,
                                              T2& nodeParentRx, T2& cellParentRx,
                                              const size_t threadNo) const {

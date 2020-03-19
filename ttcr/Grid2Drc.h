@@ -31,8 +31,8 @@
 
 namespace ttcr {
     
-    template<typename T1, typename T2, typename NODE, typename CELL>
-    class Grid2Drc : public Grid2D<T1,T2,sxz<T1>> {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    class Grid2Drc : public Grid2D<T1,T2,S> {
     public:
         Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                  const T1 minx, const T1 minz, const size_t nt=1);
@@ -59,7 +59,7 @@ namespace ttcr {
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncz; }
         
-        T2 getCellNo(const sxz<T1>& pt) const {
+        T2 getCellNo(const S& pt) const {
             T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
             T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
             T2 nx = static_cast<T2>( small + (x-xmin)/dx );
@@ -115,17 +115,17 @@ namespace ttcr {
         
         CELL cells;   // column-wise (z axis) slowness vector of the cells
                
-        void checkPts(const std::vector<sxz<T1>>&) const;
+        void checkPts(const std::vector<S>&) const;
         
-        bool inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const;
+        bool inPolygon(const S& p, const S poly[], const size_t N) const;
         
         
     };
     
-    template<typename T1, typename T2, typename NODE, typename CELL>
-    Grid2Drc<T1,T2,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    Grid2Drc<T1,T2,S,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                                         const T1 minx, const T1 minz, const size_t nt) :
-    Grid2D<T1,T2,sxz<T1>>(nx*nz, nt),
+    Grid2D<T1,T2,S>(nx*nz, nt),
     dx(ddx), dz(ddz), xmin(minx), zmin(minz),
     xmax(minx+nx*ddx), zmax(minz+nz*ddz),
     ncx(nx), ncz(nz),
@@ -134,8 +134,8 @@ namespace ttcr {
     { }
     
     
-    template<typename T1, typename T2, typename NODE, typename CELL>
-    void Grid2Drc<T1,T2,NODE,CELL>::saveTT(const std::string& fname, const int all,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Drc<T1,T2,S,NODE,CELL>::saveTT(const std::string& fname, const int all,
                                            const size_t nt,
                                            const int format) const {
         
@@ -209,8 +209,8 @@ namespace ttcr {
     }
     
     
-    template<typename T1, typename T2, typename NODE, typename CELL>
-    void Grid2Drc<T1,T2,NODE,CELL>::checkPts(const std::vector<sxz<T1>>& pts) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Drc<T1,T2,S,NODE,CELL>::checkPts(const std::vector<S>& pts) const {
         for (size_t n=0; n<pts.size(); ++n) {
             if ( pts[n].x < xmin || pts[n].x > xmax ||
                 pts[n].z < zmin || pts[n].z > zmax ) {
@@ -222,8 +222,8 @@ namespace ttcr {
     }
     
     
-    template<typename T1, typename T2, typename NODE, typename CELL>
-    bool Grid2Drc<T1,T2,NODE,CELL>::inPolygon(const sxz<T1>& p, const sxz<T1> poly[], const size_t N) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    bool Grid2Drc<T1,T2,S,NODE,CELL>::inPolygon(const S& p, const S poly[], const size_t N) const {
         bool c = false;
         for (size_t i = 0, j = N-1; i < N; j = i++) {
             if ((((poly[i].z <= p.z) && (p.z < poly[j].z)) ||

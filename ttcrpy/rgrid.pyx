@@ -15,8 +15,8 @@ import vtk
 from vtk.util import numpy_support
 
 from ttcrpy.rgrid cimport Grid3D, Grid3Drcfs, Grid3Drcsp, Grid3Drcdsp, \
-    Grid3Drnfs, Grid3Drnsp, Grid3Drndsp, Grid2D, Grid2Drcsp, Grid2Drcfs, \
-    Grid2Drnsp, Grid2Drnfs, Grid2Drc, Grid2Drn
+    Grid3Drnfs, Grid3Drnsp, Grid3Drndsp, Grid2D, Grid2Drc, Grid2Drn, \
+    Grid2Drcsp, Grid2Drcfs, Grid2Drnsp, Grid2Drnfs
 
 
 cdef class Grid3d:
@@ -1178,11 +1178,13 @@ cdef class Grid3d:
         indptr_p = []
 
         cdef size_t k = 0
-        cdef size_t ix, iy, iz
+        cdef size_t ix = 0
+        cdef size_t iy = 0
+        cdef size_t iz = 0
 
         cdef double x, y, z, x1, y1, z1, x2, y2, z2, dtmp, d, l, m, n
         cdef double m_y, b_y, m_z, b_z, dlx, dly, dlz, dl, xe, ye, ze
-        cdef int sx, sy, sz
+        cdef int sy, sz
         cdef bool up_y, up_z
         cdef Py_ssize_t nt
 
@@ -1585,7 +1587,7 @@ cdef class Grid2d:
     cdef char method
 
 #    cdef Grid2D[double,uint32_t,sxz[double]]* grid
-    cdef Grid2Drcsp[double,uint32_t, cell2d]* grid
+    cdef Grid2Drcsp[double, uint32_t, sxz[double], cell2d]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
                   np.ndarray[np.double_t, ndim=1] z,
@@ -1612,7 +1614,7 @@ cdef class Grid2d:
 
         if cell_slowness:
             if method == 'SPM':
-                self.grid = new Grid2Drcsp[double,uint32_t,cell2d](
+                self.grid = new Grid2Drcsp[double,uint32_t, sxz[double],cell2d](
                                 nx, nz, self._dx, self._dz,
                                 xmin, zmin, nsnx, nsnz, nthreads)
             elif method == 'FSM':
@@ -1741,7 +1743,8 @@ cdef class Grid2d:
         indptr_p = []
 
         cdef size_t k = 0
-        cdef size_t ix, iz
+        cdef size_t ix = 0
+        cdef size_t iz = 0
 
         cdef double x, z, xs, xr, zs, zr, dtmp, dlx, dlz, m, b, ze, xe
         cdef int64_t iCell
