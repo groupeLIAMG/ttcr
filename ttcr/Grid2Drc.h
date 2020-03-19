@@ -123,8 +123,10 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
-    Grid2Drc<T1,T2,S,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-                                        const T1 minx, const T1 minz, const size_t nt) :
+    Grid2Drc<T1,T2,S,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz,
+                                          const T1 ddx, const T1 ddz,
+                                          const T1 minx, const T1 minz,
+                                          const size_t nt) :
     Grid2D<T1,T2,S>(nx*nz, nt),
     dx(ddx), dz(ddz), xmin(minx), zmin(minz),
     xmax(minx+nx*ddx), zmax(minz+nz*ddz),
@@ -135,9 +137,10 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
-    void Grid2Drc<T1,T2,S,NODE,CELL>::saveTT(const std::string& fname, const int all,
-                                           const size_t nt,
-                                           const int format) const {
+    void Grid2Drc<T1,T2,S,NODE,CELL>::saveTT(const std::string& fname,
+                                             const int all,
+                                             const size_t nt,
+                                             const int format) const {
         
         if ( format == 1 ) {
             std::string filename = fname+".dat";
@@ -223,7 +226,8 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
-    bool Grid2Drc<T1,T2,S,NODE,CELL>::inPolygon(const S& p, const S poly[], const size_t N) const {
+    bool Grid2Drc<T1,T2,S,NODE,CELL>::inPolygon(const S& p, const S poly[],
+                                                const size_t N) const {
         bool c = false;
         for (size_t i = 0, j = N-1; i < N; j = i++) {
             if ((((poly[i].z <= p.z) && (p.z < poly[j].z)) ||

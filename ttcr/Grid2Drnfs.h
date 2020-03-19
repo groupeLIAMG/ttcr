@@ -129,10 +129,10 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     Grid2Drnfs<T1,T2,S>::Grid2Drnfs(const T2 nx, const T2 nz,
-                                  const T1 ddx, const T1 ddz,
-                                  const T1 minx, const T1 minz,
-                                  const T1 eps, const int maxit, const bool w,
-                                  const bool rt, const size_t nt) :
+                                    const T1 ddx, const T1 ddz,
+                                    const T1 minx, const T1 minz,
+                                    const T1 eps, const int maxit, const bool w,
+                                    const bool rt, const size_t nt) :
     Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
     epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w), rotated_template(rt)
     {
@@ -209,10 +209,10 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<S>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -321,10 +321,10 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<S>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       std::vector<std::vector<T1>*>& traveltimes,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
@@ -436,11 +436,11 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<S>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<S>>& r_data,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       std::vector<std::vector<S>>& r_data,
+                                       const size_t threadNo) const {
         
         raytrace(Tx, t0, Rx, traveltimes, threadNo);
         
@@ -458,11 +458,11 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<S>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
-                                     std::vector<std::vector<std::vector<S>>*>& r_data,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       std::vector<std::vector<T1>*>& traveltimes,
+                                       std::vector<std::vector<std::vector<S>>*>& r_data,
+                                       const size_t threadNo) const {
         
         raytrace(Tx, t0, Rx, traveltimes, threadNo);
         
@@ -484,12 +484,12 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<S>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<S>>& r_data,
-                                     std::vector<std::vector<siv<T1>>>& l_data,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       std::vector<std::vector<S>>& r_data,
+                                       std::vector<std::vector<siv<T1>>>& l_data,
+                                       const size_t threadNo) const {
         
         raytrace(Tx, t0, Rx, traveltimes, threadNo);
         

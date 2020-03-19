@@ -112,9 +112,11 @@ namespace ttcr {
     };
     
     template<typename T1, typename T2, typename S>
-    Grid2Drnsp<T1,T2,S>::Grid2Drnsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-                                  const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
-                                  const size_t nt) :
+    Grid2Drnsp<T1,T2,S>::Grid2Drnsp(const T2 nx, const T2 nz,
+                                    const T1 ddx, const T1 ddz,
+                                    const T1 minx, const T1 minz,
+                                    const T2 nnx, const T2 nnz,
+                                    const size_t nt) :
     Grid2Drn<T1,T2,S,Node2Dnsp<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
     nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0),
     nPrimary((nx+1) * (nz+1))
@@ -304,14 +306,14 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::initQueue(const std::vector<S>& Tx,
-                                      const std::vector<T1>& t0,
-                                      std::priority_queue<Node2Dnsp<T1,T2>*,
-                                      std::vector<Node2Dnsp<T1,T2>*>,
-                                      CompareNodePtr<T1>>& queue,
-                                      std::vector<Node2Dnsp<T1,T2>>& txNodes,
-                                      std::vector<bool>& inQueue,
-                                      std::vector<bool>& frozen,
-                                      const size_t threadNo) const {
+                                        const std::vector<T1>& t0,
+                                        std::priority_queue<Node2Dnsp<T1,T2>*,
+                                        std::vector<Node2Dnsp<T1,T2>*>,
+                                        CompareNodePtr<T1>>& queue,
+                                        std::vector<Node2Dnsp<T1,T2>>& txNodes,
+                                        std::vector<bool>& inQueue,
+                                        std::vector<bool>& frozen,
+                                        const size_t threadNo) const {
         
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
@@ -343,10 +345,10 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<S>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -378,10 +380,10 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<S>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       std::vector<std::vector<T1>*>& traveltimes,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
@@ -416,11 +418,11 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<S>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<S>>& r_data,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       std::vector<std::vector<S>>& r_data,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -508,11 +510,11 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<S>*>& Rx,
-                                     std::vector<std::vector<T1>*>& traveltimes,
-                                     std::vector<std::vector<std::vector<S>>*>& r_data,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       std::vector<std::vector<T1>*>& traveltimes,
+                                       std::vector<std::vector<std::vector<S>>*>& r_data,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
@@ -626,12 +628,12 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
-                                     const std::vector<T1>& t0,
-                                     const std::vector<S>& Rx,
-                                     std::vector<T1>& traveltimes,
-                                     std::vector<std::vector<sxz<double>>>& r_data,
-                                     std::vector<std::vector<siv<double>>>& l_data,
-                                     const size_t threadNo) const {
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       std::vector<std::vector<sxz<double>>>& r_data,
+                                       std::vector<std::vector<siv<double>>>& l_data,
+                                       const size_t threadNo) const {
         
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -757,11 +759,12 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename S>
-    void Grid2Drnsp<T1,T2,S>::propagate( std::priority_queue<Node2Dnsp<T1,T2>*, std::vector<Node2Dnsp<T1,T2>*>,
-                                      CompareNodePtr<T1>>& queue,
-                                      std::vector<bool>& inQueue,
-                                      std::vector<bool>& frozen,
-                                      const size_t threadNo) const {
+    void Grid2Drnsp<T1,T2,S>::propagate(std::priority_queue<Node2Dnsp<T1,T2>*,
+                                        std::vector<Node2Dnsp<T1,T2>*>,
+                                        CompareNodePtr<T1>>& queue,
+                                        std::vector<bool>& inQueue,
+                                        std::vector<bool>& frozen,
+                                        const size_t threadNo) const {
         
         while ( !queue.empty() ) {
             const Node2Dnsp<T1,T2>* source = queue.top();
