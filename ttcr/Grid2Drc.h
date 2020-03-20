@@ -99,7 +99,14 @@ namespace ttcr {
 
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncz; }
-        
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+            size_t nPrimary = (ncx+1) * (ncz+1);
+            tt.resize(nPrimary);
+            for ( size_t n=0; n<nPrimary; ++n ) {
+                tt[n] = nodes[n].getTT(threadNo);
+            }
+        }
+
         T2 getCellNo(const S& pt) const {
             T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
             T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;

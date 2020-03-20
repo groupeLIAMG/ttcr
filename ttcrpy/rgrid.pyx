@@ -1561,6 +1561,10 @@ cdef class Grid2d:
     """
     class to perform raytracing with 2D rectilinear grids
 
+    Slowness model can be defined in two ways:
+        1) slowness constant within the voxels of the grid (the default)
+        2) slowness defined at nodes of the grid
+
     Attributes
     ----------
     x: np.ndarray
@@ -1577,6 +1581,40 @@ cdef class Grid2d:
         total number of parameters for grid
     nthreads: int
         number of threads for raytracing
+
+    Constructor:
+
+    Grid2d(x, z, nthreads=1, cell_slowness=1, method='FSM', iso='iso',
+           eps=1.e-15, maxit=20, weno=1, rotated_template=0,
+           nsnx=10, nsnz=10) -> Grid2d
+
+    Parameters
+    ----------
+    x : numpy ndarray
+          node coordinates along x
+    z : numpy ndarray
+          node coordinates along z
+    nthreads : int
+          number of threads for raytracing (default is 1)
+    cell_slowness : bool
+          slowness defined for cells (True) or nodes (False) (default is 1)
+    method : string
+          raytracing method (default is SPM)
+            'FSM' : fast marching method
+            'SPM' : shortest path method
+    eps : double
+          convergence criterion (FSM) (default is 1e-15)
+    maxit : int
+          max number of sweeping iterations (FSM) (default is 20)
+    weno : bool
+          use 3rd order weighted essentially non-oscillatory operator (FSM)
+          (default is True)
+    rotated_template : bool
+          use rotated templates (FSM)
+    nsnx : int
+          number of secondary nodes in x (SPM) (default is 10)
+    nsnz : int
+          number of secondary nodes in z (SPM) (default is 10)
     """
     cdef vector[double] _x
     cdef vector[double] _z

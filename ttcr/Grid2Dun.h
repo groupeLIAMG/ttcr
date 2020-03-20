@@ -88,16 +88,19 @@ namespace ttcr {
         
         size_t getNumberOfNodes(bool primary=false) const {
             if ( primary ) {
-                size_t nn = 0;
-                for ( size_t n=0; n<nodes.size(); ++n ) {
-                    if ( nodes[n].isPrimary()==true ) nn++;
-                }
-                return nn;
+                return nPrimary;
             }
             return nodes.size();
         }
         size_t getNumberOfCells() const { return triangles.size(); }
         
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+            tt.resize(nPrimary);
+            for ( size_t n=0; n<nPrimary; ++n ) {
+                tt[n] = nodes[n].getTT(threadNo);
+            }
+        }
+
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
