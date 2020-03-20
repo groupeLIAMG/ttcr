@@ -133,14 +133,14 @@ namespace ttcr {
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<S>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes,
-                      std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+                      std::vector<std::vector<std::vector<siv2<T1>>>>& l_data) const;
 
         void raytrace(const std::vector<std::vector<S>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<S>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<S>>>& r_data,
-                      std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+                      std::vector<std::vector<std::vector<siv2<T1>>>>& l_data) const;
 
         virtual void setSlowness(const std::vector<T1>& s) {}
         virtual void setXi(const std::vector<T1>& x) {
@@ -304,7 +304,7 @@ namespace ttcr {
                                    const std::vector<std::vector<T1>>& t0,
                                    const std::vector<std::vector<S>>& Rx,
                                    std::vector<std::vector<T1>>& traveltimes,
-                                   std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
+                                   std::vector<std::vector<std::vector<siv2<T1>>>>& l_data) const {
         
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], l_data[0], 0);
@@ -336,7 +336,7 @@ namespace ttcr {
                                    const std::vector<std::vector<S>>& Rx,
                                    std::vector<std::vector<T1>>& traveltimes,
                                    std::vector<std::vector<std::vector<S>>>& r_data,
-                                   std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
+                                   std::vector<std::vector<std::vector<siv2<T1>>>>& l_data) const {
         
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], l_data[0], 0);
