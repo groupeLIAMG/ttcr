@@ -650,7 +650,7 @@ cdef class Grid3d:
                 if None, attempt to run in parallel if warranted by number of
                 sources and value of nthreads in constructor
         aggregate_src : bool (False by default)
-            it True, all source coordinates belong to a single event
+            if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to slowness
         compute_M : bool (False by default)
@@ -677,15 +677,15 @@ cdef class Grid3d:
         Notes
         -----
         If source has 3 columns:
-                Columns correspond to x, y and z coordinates
-                Origin time (t0) is 0 for all points
+            Columns correspond to x, y and z coordinates
+            Origin time (t0) is 0 for all points
         If source has 4 columns:
-                1st column corresponds to origin times
-                2nd, 3rd & 4th columns correspond to x, y and z coordinates
+            1st column corresponds to origin times
+            2nd, 3rd & 4th columns correspond to x, y and z coordinates
         If source has 5 columns:
-                1st column corresponds to event ID
-                2nd column corresponds to origin times
-                3rd, 4th & 5th columns correspond to x, y and z coordinates
+            1st column corresponds to event ID
+            2nd column corresponds to origin times
+            3rd, 4th & 5th columns correspond to x, y and z coordinates
 
         For the latter case (5 columns), source and rcv should contain the same
             number of rows, each row corresponding to a source-receiver pair
