@@ -106,6 +106,17 @@ cdef class Grid3d:
     cdef bool cell_slowness
     cdef size_t _nthreads
     cdef char method
+    cdef bool tt_from_rp
+    cdef bool interp_vel
+    cdef double eps
+    cdef int maxit
+    cdef bool weno
+    cdef uint32_t nsnx
+    cdef uint32_t nsny
+    cdef uint32_t nsnz
+    cdef uint32_t n_secondary
+    cdef uint32_t n_tertiary
+    cdef double radius_tertiary
     cdef Grid3D[double, uint32_t]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
@@ -130,6 +141,17 @@ cdef class Grid3d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._nthreads = nthreads
+        self.tt_from_rp = tt_from_rp
+        self.interp_vel = interp_vel
+        self.eps = eps
+        self.maxit = maxit
+        self.weno = weno
+        self.nsnx = nsnx
+        self.nsny = nsny
+        self.nsnz = nsnz
+        self.n_secondary = n_secondary
+        self.n_tertiary = n_tertiary
+        self.radius_tertiary = radius_tertiary
 
         if method == 'FSM':
             if np.abs(self._dx - self._dy)>0.000001 or np.abs(self._dx - self._dz)>0.000001:
@@ -200,6 +222,21 @@ cdef class Grid3d:
 
     def __dealloc__(self):
         del self.grid
+
+    def __reduce__(self):
+        if self.method == b'f':
+            method = 'FSM'
+        elif self.method == b's':
+            method = 'SPM'
+        elif self.method == b'd':
+            method = 'DSPM'
+
+        constructor_params = (self.nthreads, self.cell_slowness, method,
+                              self.tt_from_rp, self.interp_vel, self.eps,
+                              self.maxit, self.weno, self.nsnx, self.nsny,
+                              self.nsnz, self.n_secondary, self.n_tertiary,
+                              self.radius_tertiary)
+        return (_rebuild3d, (self.x, self.y, self.z, constructor_params))
 
     @property
     def x(self):
@@ -1624,12 +1661,17 @@ cdef class Grid2d:
     cdef size_t _nthreads
     cdef char method
     cdef char iso
+    cdef double eps
+    cdef int maxit
+    cdef bool weno
+    cdef bool rotated_template
+    cdef uint32_t nsnx
+    cdef uint32_t nsnz
 
     cdef Grid2D[double,uint32_t,sxz[double]]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
-                  np.ndarray[np.double_t, ndim=1] z,
-                  size_t nthreads=1,
+                  np.ndarray[np.double_t, ndim=1] z, size_t nthreads=1,
                   bool cell_slowness=1, str method='SPM', str aniso='iso',
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10):
@@ -1642,6 +1684,12 @@ cdef class Grid2d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._nthreads = nthreads
+        self.eps = eps
+        self.maxit = maxit
+        self.weno = weno
+        self.rotated_template = rotated_template
+        self.nsnx = nsnx
+        self.nsnz = nsnz
 
         for val in x:
             self._x.push_back(val)
@@ -1701,6 +1749,30 @@ cdef class Grid2d:
 
     def __dealloc__(self):
         del self.grid
+
+    def __reduce__(self):
+        if self.method == b'f':
+            method = 'FSM'
+        elif self.method == b's':
+            method = 'SPM'
+        elif self.method == b'd':
+            method = 'DSPM'
+
+        if self.iso == b'i':
+            aniso = 'iso'
+        elif self.iso == b'e':
+            aniso = 'elliptical'
+        elif self.iso == b't':
+            aniso = 'tilted_elliptical'
+        elif self.iso == b'p':
+            aniso = 'vti_psv'
+        elif self.iso == b'h':
+            aniso = 'vti_sh'
+
+        constructor_params = (self.nthreads, self.cell_slowness, method,
+                              aniso, self.eps, self.maxit, self.weno,
+                              self.rotated_template, self.nsnx, self.nsnz)
+        return (_rebuild2d, (self.x, self.z, constructor_params))
 
     @property
     def x(self):
@@ -2570,3 +2642,20 @@ cdef class Grid2d:
         indptr_p.append(k)
         L = sp.csr_matrix((data_p, indices_p, indptr_p), shape=(nTx, (n_grx-1)*(n_grz-1)))
         return L
+
+
+def _rebuild3d(x, y, z, constructor_params):
+    (nthreads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
+     weno, nsnx, nsny, nsnz, n_secondary,
+     n_tertiary, radius_tertiary) = constructor_params
+    g = Grid3d(x, y, z, nthreads, cell_slowness, method, tt_from_rp,
+               interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
+               n_tertiary, radius_tertiary)
+    return g
+
+def _rebuild2d(x, z, constructor_params):
+    (nthreads, cell_slowness, method, aniso, eps, maxit, weno,
+     rotated_template, nsnx, nsnz) = constructor_params
+    g = Grid2d(x, z, nthreads, cell_slowness, method, aniso, eps, maxit, weno,
+               rotated_template, nsnx, nsnz)
+    return g
