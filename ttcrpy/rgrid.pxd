@@ -8,15 +8,21 @@ from libcpp cimport bool
 from ttcrpy.common cimport sxz, sxyz, siv, siv2, sijv, Node3Dc, Node3Dcsp, \
 Node3Dn, Node3Dnsp, Cell, Node2Dcsp, Node2Dn, Node2Dnsp
 
+
 cdef extern from "typedefs.h" namespace "ttcr":
     cdef cppclass node2d:
         pass
     cdef cppclass cell2d:
         pass
-    cdef cppclass cell2dvti:
+    cdef cppclass cell2d_e:
         pass
-    cdef cppclass cell2dtti:
+    cdef cppclass cell2d_te:
         pass
+    cdef cppclass cell2d_p:
+        pass
+    cdef cppclass cell2d_h:
+        pass
+
 
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
@@ -137,6 +143,14 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
     cdef cppclass Grid2D[T1,T2,S]:
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
+        void setXi(vector[T1]&) except +
+        void setTiltAngle(vector[T1]&) except +
+        void setVp0(vector[T1]&) except +
+        void setVs0(vector[T1]&) except +
+        void setDelta(vector[T1]&) except +
+        void setEpsilon(vector[T1]&) except +
+        void setGamma(vector[T1]&) except +
+        void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[S]& Tx,
                       vector[T1]& t0,
                       vector[S]& Rx,

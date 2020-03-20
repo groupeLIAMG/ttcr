@@ -1585,14 +1585,14 @@ cdef class Grid2d:
     cdef bool cell_slowness
     cdef size_t _nthreads
     cdef char method
+    cdef char iso
 
-#    cdef Grid2D[double,uint32_t,sxz[double]]* grid
-    cdef Grid2Drcsp[double, uint32_t, sxz[double], cell2d]* grid
+    cdef Grid2D[double,uint32_t,sxz[double]]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
                   np.ndarray[np.double_t, ndim=1] z,
                   size_t nthreads=1,
-                  bool cell_slowness=1, str method='SPM',
+                  bool cell_slowness=1, str method='SPM', str aniso='iso',
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10):
 
@@ -1614,28 +1614,52 @@ cdef class Grid2d:
 
         if cell_slowness:
             if method == 'SPM':
-                self.grid = new Grid2Drcsp[double,uint32_t, sxz[double],cell2d](
-                                nx, nz, self._dx, self._dz,
-                                xmin, zmin, nsnx, nsnz, nthreads)
+                self.method = b's'
+                if aniso == 'iso':
+                    self.iso = b'i'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'elliptical':
+                    self.iso = b'e'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_e](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'tilted_elliptical':
+                    self.iso = b't'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_te](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'vti_psv':
+                    self.iso = b'p'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_p](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'vti_sh':
+                    self.iso = b'h'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                else:
+                    raise ValueError('Anisotropy model not implemented')
             elif method == 'FSM':
-                raise ValueError('Implementation issue at this time')
-                # self.grid = new Grid2Drcfs[double,uint32_t](nx, nz,
-                #                                             self._dx, self._dz,
-                #                                             xmin, zmin,
-                #                                             eps, maxit, weno,
-                #                                             rotated_template,
-                #                                             nthreads)
+                self.method = b'f'
+                self.grid = new Grid2Drcfs[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, rotated_template, nthreads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
-            #
-            raise ValueError('Implementation issue at this time')
-            # if method == 'SPM':
-            #     self.grid = new Grid2Drnsp[double,uint32_t](nx, nz,
-            #                                                 self._dx, self._dz,
-            #                                                 xmin, zmin,
-            #                                                 nsnx, nsnz,
-            #                                                 nthreads)
+            if method == 'SPM':
+                self.method = b's'
+                self.grid = new Grid2Drnsp[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin,
+                                nsnx, nsnz, nthreads)
+            elif method == 'FSM':
+                self.method = b'f'
+                self.grid = new Grid2Drnfs[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, rotated_template, nthreads)
 
     def __dealloc__(self):
         del self.grid
@@ -1694,6 +1718,317 @@ cdef class Grid2d:
         """
         return (self._x.size()-1) * (self._z.size()-1)
 
+    def get_grid_traveltimes(self, thread_no=0):
+        """
+        Obtain traveltimes computed at primary grid nodes
+
+        Parameters
+        ----------
+        thread_no : int
+            thread used to computed traveltimes (default is 0)
+
+        Returns
+        -------
+        tt: np ndarray, shape (nx, nz)
+        """
+        if thread_no >= self._nthreads:
+            raise ValueError('Thread number is larger than number of threads')
+        cdef vector[double] tmp
+        cdef int n
+        self.grid.getTT(tmp, thread_no)
+        tt = np.empty((tmp.size(),))
+        for n in range(tmp.size()):
+            tt[n] = tmp[n]
+        shape = (self._x.size(), self._z.size())
+        return tt.reshape(shape)
+
+    def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
+        """
+        Return True if at least one point outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray, shape(npts, 2)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool
+        """
+        return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
+                np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
+
+    def set_slowness(self, slowness):
+        """
+        Assign slowness to grid
+
+        Parameters
+        ----------
+        slowness : np ndarray, shape (nx, nz)
+            slowness may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if slowness.size != nx*nz:
+            raise ValueError('Slowness vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if slowness.ndim == 2:
+            if slowness.shape != (nx, nz):
+                raise ValueError('Slowness has wrong shape')
+            tmp = slowness.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif slowness.ndim == 1:
+            tmp = slowness.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('Slowness must be 1D or 3D ndarray')
+        self.grid.setSlowness(data)
+
+    def set_xi(self, xi):
+        """
+        Assign elliptical anisotropy ratio to grid
+
+        Parameters
+        ----------
+        xi : np ndarray, shape (nx, nz)
+            xi may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if xi.size != nx*nz:
+            raise ValueError('xi vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if xi.ndim == 2:
+            if xi.shape != (nx, nz):
+                raise ValueError('xi has wrong shape')
+            tmp = xi.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif xi.ndim == 1:
+            tmp = xi.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('xi must be 1D or 3D ndarray')
+        self.grid.setXi(data)
+
+    def set_tilt_angle(self, theta):
+        """
+        Assign tilted elliptical anisotropy angle to grid
+
+        Parameters
+        ----------
+        theta : np ndarray, shape (nx, nz)
+            theta may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if theta.size != nx*nz:
+            raise ValueError('theta vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if theta.ndim == 2:
+            if theta.shape != (nx, nz):
+                raise ValueError('theta has wrong shape')
+            tmp = theta.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif theta.ndim == 1:
+            tmp = theta.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('theta must be 1D or 3D ndarray')
+        self.grid.setTiltAngle(data)
+
+    def set_Vp0(self, v):
+        """
+        Assign vertical Vp to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVp0(data)
+
+    def set_Vs0(self, v):
+        """
+        Assign vertical Vs to grid (VTI medium, SH waves)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVs0(data)
+
+    def set_delta(self, v):
+        """
+        Assign Thomsen delta parameter to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setDelta(data)
+
+    def set_epsilon(self, v):
+        """
+        Assign Thomsen epsilon parameter to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setEpsilon(data)
+
+    def set_gamma(self, v):
+        """
+        Assign Thomsen gamma parameter to grid (VTI medium, SH waves)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setGamma(data)
 
 
     @staticmethod

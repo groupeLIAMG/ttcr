@@ -47,15 +47,56 @@ namespace ttcr {
                 throw;
             }
         }
-        
         void setXi(const std::vector<T1>& x) {
-            cells.setXi( x );
+            try {
+                cells.setXi( x );
+            } catch (std::exception& e) {
+                throw;
+            }
         }
-        
         void setTiltAngle(const std::vector<T1>& t) {
-            cells.setTiltAngle( t );
+            try {
+                cells.setTiltAngle( t );
+            } catch (std::exception& e) {
+                throw;
+            }
         }
-        
+        void setVp0(const std::vector<T1>& s) {
+            try {
+                cells.setVp0(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setVs0(const std::vector<T1>& s) {
+            try {
+                cells.setVs0(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setDelta(const std::vector<T1>& s) {
+            try {
+                cells.setDelta(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setEpsilon(const std::vector<T1>& s) {
+            try {
+                cells.setEpsilon(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setGamma(const std::vector<T1>& s) {
+            try {
+                cells.setGamma(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncz; }
         

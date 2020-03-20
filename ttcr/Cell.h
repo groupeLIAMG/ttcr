@@ -278,6 +278,7 @@ namespace ttcr {
             
             return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
         }
+        
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
@@ -348,6 +349,10 @@ namespace ttcr {
             else sign = -1.;        // SV wave
         }
         
+        void setSlowness(const std::vector<T>& s) {
+            throw std::logic_error("Error: slowness not defined for CellVTI_PSV.");
+        }
+        
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_PSV.");
         }
@@ -390,6 +395,12 @@ namespace ttcr {
             return source.getDistance( node ) / v;
         }
         
+        void computeDistance(const NODE& source, const S& node,
+                             siv2<T>& cell) const {
+            cell.v  = std::abs(node.x - source.getX());
+            cell.v2 = std::abs(node.z - source.getZ());
+        }
+        
     private:
         T sign;
         std::vector<T> Vp0;
@@ -425,6 +436,10 @@ namespace ttcr {
             for ( size_t n=0; n<gamma.size(); ++n ) {
                 gamma[n] = s[n];
             }
+        }
+        
+        void setSlowness(const std::vector<T>& s) {
+            throw std::logic_error("Error: slowness not defined for CellVTI_SH.");
         }
         
         void setXi(const std::vector<T>& s) {
@@ -463,6 +478,12 @@ namespace ttcr {
             return source.getDistance( node ) / v;
         }
         
+        void computeDistance(const NODE& source, const S& node,
+                             siv2<T>& cell) const {
+            cell.v  = std::abs(node.x - source.getX());
+            cell.v2 = std::abs(node.z - source.getZ());
+        }
+
     private:
         std::vector<T> Vs0;
         std::vector<T> gamma;

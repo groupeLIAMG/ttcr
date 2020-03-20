@@ -100,16 +100,35 @@ namespace ttcr {
                               std::vector<std::vector<sijv<T1>>>& m_data,
                               const size_t threadNo=0) const {}
 
-        
-        
         virtual void setSlowness(const std::vector<T1>& s) {}
-        virtual void setXi(const std::vector<T1>& x) {}
-        virtual void setTiltAngle(const std::vector<T1>& x) {}
-        
+        virtual void setXi(const std::vector<T1>& x) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
+        virtual void setTiltAngle(const std::vector<T1>& x) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
+        virtual void setVp0(const std::vector<T1>& s) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
+        virtual void setVs0(const std::vector<T1>& s) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
+        virtual void setDelta(const std::vector<T1>& s) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
+        virtual void setEpsilon(const std::vector<T1>& s) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
+        virtual void setGamma(const std::vector<T1>& s) {
+                throw std::runtime_error("Method should be implemented in subclass");
+            }
         
         virtual size_t getNumberOfNodes() const { return 1; }
         virtual size_t getNumberOfCells() const { return 1; }
-        
+        virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
+
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}
         
