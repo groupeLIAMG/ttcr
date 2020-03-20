@@ -2068,6 +2068,325 @@ cdef class Grid2d:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setGamma(data)
 
+    def raytrace(self, source, rcv, slowness=None, xi=None, theta=None,
+                 Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
+                 thread_no=None, aggregate_src=False, compute_L=False,
+                 return_rays=False):
+        """
+        Perform raytracing
+
+        Parameters
+        ----------
+        source : 2D numpy ndarray with 2 or 3 columns
+            see notes below
+        rcv : 2D numpy ndarray with 2 columns
+            Columns correspond to x, y and z coordinates
+        slowness : np ndarray, shape (nx, nz) (None by default)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+                if None, slowness must have been assigned previously
+        xi : np ndarray, shape (nx, nz) (None by default)
+            xi at grid cells (only for SPM & cell_slowness=True)
+            xi may also have been flattened (with default 'C' order)
+                if None, xi must have been assigned previously
+        theta : np ndarray, shape (nx, nz) (None by default)
+            theta at grid cells (only for SPM & cell_slowness=True)
+            theta may also have been flattened (with default 'C' order)
+                if None, theta must have been assigned previously
+        Vp0 : np ndarray, shape (nx, nz) (None by default)
+            Vp0 at grid cells (only for SPM & cell_slowness=True)
+            Vp0 may also have been flattened (with default 'C' order)
+                if None, Vp0 must have been assigned previously
+        Vs0 : np ndarray, shape (nx, nz) (None by default)
+            Vs0 at grid cells (only for SPM & cell_slowness=True)
+            Vs0 may also have been flattened (with default 'C' order)
+                if None, Vs0 must have been assigned previously
+        delta : np ndarray, shape (nx, nz) (None by default)
+            delta at grid cells (only for SPM & cell_slowness=True)
+            delta may also have been flattened (with default 'C' order)
+                if None, delta must have been assigned previously
+        epsilon : np ndarray, shape (nx, nz) (None by default)
+            epsilon at grid cells (only for SPM & cell_slowness=True)
+            epsilon may also have been flattened (with default 'C' order)
+                if None, epsilon must have been assigned previously
+        gamma : np ndarray, shape (nx, nz) (None by default)
+            gamma at grid cells (only for SPM & cell_slowness=True)
+            gamma may also have been flattened (with default 'C' order)
+                if None, gamma must have been assigned previously
+        thread_no : int (None by default)
+            Perform calculations in thread number "thread_no"
+                if None, attempt to run in parallel if warranted by number of
+                sources and value of nthreads in constructor
+        aggregate_src : bool (False by default)
+            if True, all source coordinates belong to a single event
+        compute_L : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to slowness
+        return_rays : bool (False by default)
+            Return raypaths
+
+        Returns
+        -------
+        tt : numpy ndarray
+            travel times for the appropriate source-rcv  (see Notes below)
+        rays : list of numpy ndarray (if return_rays is True)
+            Coordinates of segments forming raypaths
+        L : scipy csr_matrix
+            Matrix of partial derivative of travel time w/r to slowness
+
+        Notes
+        -----
+        If source has 2 columns:
+            Columns correspond to x and z coordinates
+            Origin time (t0) is 0 for all points
+        If source has 3 columns:
+            1st column corresponds to origin times
+            2nd & 3rd columns correspond to x and z coordinates
+
+        source and rcv can contain the same number of rows, each row
+        corresponding to a source-receiver pair, or the number of rows may
+        differ if aggregate_src is True or if all rows in source are identical.
+        """
+        # check input data consistency
+
+        if source.ndim != 2 or rcv.ndim != 2:
+            raise ValueError('source and rcv should be 2D arrays')
+
+        if self.iso != b'i' and self.method != b's' and not self.cell_slowness:
+            raise NotImplementedError('Anisotropic raytracing implemented only for SPM')
+
+        if compute_L and not self.cell_slowness:
+            raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
+
+        if compute_L and (self.iso == b'p' or self.iso == b'h'):
+            raise NotImplementedError('compute_L not implemented for VTI media')
+
+        if source.shape[1] == 2:
+            src = source
+            Tx = np.unique(source, axis=0)
+            t0 = np.zeros((Tx.shape[0], 1))
+            nTx = Tx.shape[0]
+        elif source.shape[1] == 3:
+            src = source[:,1:3]
+            tmp = np.unique(source, axis=0)
+            nTx = tmp.shape[0]
+            Tx = tmp[:,1:3]
+            t0 = tmp[:,0]
+        else:
+            raise ValueError('source should be either nsrc x 2 or 3')
+
+        if src.shape[1] != 2 or rcv.shape[1] != 2:
+            raise ValueError('src and rcv should be ndata x 2')
+
+        if self.is_outside(src):
+            raise ValueError('Source point outside grid')
+
+        if self.is_outside(rcv):
+            raise ValueError('Receiver outside grid')
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+        if xi is not None:
+            self.set_xi(xi)
+        if theta is not None:
+            self.set_tilt_angle(theta)
+        if Vp0 is not None:
+            self.set_Vp0(Vp0)
+        if Vs0 is not None:
+            self.set_Vs0(Vs0)
+        if delta is not None:
+            self.set_delta(delta)
+        if epsilon is not None:
+            self.set_epsilon(epsilon)
+        if gamma is not None:
+            self.set_gamma(gamma)
+
+        cdef vector[vector[sxz[double]]] vTx
+        cdef vector[vector[sxz[double]]] vRx
+        cdef vector[vector[double]] vt0
+        cdef vector[vector[double]] vtt
+
+        cdef vector[vector[vector[sxz[double]]]] r_data
+        cdef vector[vector[vector[siv2[double]]]] l_data
+        cdef size_t thread_nb
+
+        cdef int i, j, k, n, nn, MM, NN
+
+        vTx.resize(nTx)
+        vRx.resize(nTx)
+        vt0.resize(nTx)
+        vtt.resize(nTx)
+        if compute_L:
+            l_data.resize(nTx)
+        if return_rays:
+            r_data.resize(nTx)
+
+        iRx = []
+        if nTx == 1:
+            vTx[0].push_back(sxz[double](src[0,0], src[0,1]))
+            for r in rcv:
+                vRx[0].push_back(sxz[double](r[0], r[1]))
+            vt0[0].push_back(t0[0])
+            vtt[0].resize(rcv.shape[0])
+            iRx.append(np.arange(rcv.shape[0]))
+        elif aggregate_src:
+            for t in Tx:
+                vTx[0].push_back(sxz[double](t[0], t[1]))
+            for t in t0:
+                vt0[0].push_back(t)
+            for r in rcv:
+                vRx[0].push_back(sxz[double](r[0], r[1]))
+            vtt[0].resize(rcv.shape[0])
+            nTx = 1
+            iRx.append(np.arange(rcv.shape[0]))
+        else:
+            if src.shape != rcv.shape:
+                raise ValueError('src and rcv should be of equal size')
+
+            for n in range(nTx):
+                ind = np.sum(Tx[n,:] == src, axis=1) == 2
+                iRx.append(np.nonzero(ind)[0])
+                vTx[n].push_back(sxz[double](Tx[n,0], Tx[n,1]))
+                vt0[n].push_back(t0[n])
+                for r in rcv[ind,:]:
+                    vRx[n].push_back(sxz[double](r[0], r[1]))
+                vtt[n].resize(vRx[n].size())
+
+        tt = np.zeros((rcv.shape[0],))
+        if nTx < self._nthreads or self._nthreads == 1:
+            if compute_L==False and return_rays==False:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+            elif compute_L and return_rays:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+            elif compute_L:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+            else:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+
+        elif thread_no is not None:
+            # we should be here for just one event
+            assert nTx == 1
+            # normally we should not need to compute L
+            assert compute_L is False
+            thread_nb = thread_no
+
+            if return_rays:
+                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
+                for nt in range(vtt[0].size()):
+                    tt[nt] = vtt[0][nt]
+                rays = []
+                for n2 in range(vRx.size()):
+                    r = np.empty((r_data[0][n2].size(), 2))
+                    for nn in range(r_data[0][n2].size()):
+                        r[nn, 0] = r_data[0][n2][nn].x
+                        r[nn, 1] = r_data[0][n2][nn].z
+                    rays.append(r)
+                return tt, rays
+
+            else:
+                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
+                for nt in range(vtt[0].size()):
+                    tt[nt] = vtt[0][nt]
+                return tt
+
+        else:
+            if compute_L==False and return_rays==False:
+                self.grid.raytrace(vTx, vt0, vRx, vtt)
+            elif compute_L and return_rays:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+            elif compute_L:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+            else:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+
+        for n in range(nTx):
+            for nt in range(vtt[n].size()):
+                tt[iRx[n][nt]] = vtt[n][nt]
+
+        if return_rays:
+            rays = [ [0.0] for n in range(rcv.shape[0])]
+            for n in range(nTx):
+                r = [ [0.0] for i in range(vRx[n].size())]
+                for n2 in range(vRx[n].size()):
+                    r[n2] = np.empty((r_data[n][n2].size(), 2))
+                    for nn in range(r_data[n][n2].size()):
+                        r[n2][nn, 0] = r_data[n][n2][nn].x
+                        r[n2][nn, 1] = r_data[n][n2][nn].z
+                for nt in range(vtt[n].size()):
+                    rays[iRx[n][nt]] = r[nt]
+
+        if compute_L:
+            # first build an array of matrices, for each event
+            L = []
+            ncells = self.get_number_of_cells()
+            for n in range(nTx):
+                nnz = 0
+                for ni in range(l_data[n].size()):
+                    nnz += l_data[n][ni].size()
+
+                if self.iso == b'i':
+                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                    indices = np.empty((nnz,), dtype=np.int64)
+                    val = np.empty((nnz,))
+
+                    k = 0
+                    MM = vRx[n].size()
+                    NN = ncells
+                    for i in range(MM):
+                        indptr[i] = k
+                        for j in range(NN):
+                            for nn in range(l_data[n][i].size()):
+                                if l_data[n][i][nn].i == j:
+                                    indices[k] = j
+                                    val[k] = l_data[n][i][nn].v
+                                    k += 1
+
+                    indptr[MM] = k
+                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                else:
+                    nnz *= 2
+                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                    indices = np.empty((nnz,), dtype=np.int64)
+                    val = np.empty((nnz,))
+
+                    k = 0
+                    MM = vRx[n].size()
+                    NN = 2*ncells
+                    for i in range(MM):
+                        indptr[i] = k
+                        for j in range(NN):
+                            for nn in range(l_data[n][i].size()):
+                                if l_data[n][i][nn].i == j:
+                                    indices[k] = j
+                                    val[k] = l_data[n][i][nn].v
+                                    k += 1
+                                elif l_data[n][i][nn].i+ncells == j:
+                                    indices[k] = j
+                                    val[k] = l_data[n][i][nn].v2
+                                    k += 1
+
+                    indptr[MM] = k
+                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+            # we want a single matrix
+            tmp = sp.vstack(L)
+            itmp = []
+            for n in range(nTx):
+                for nt in range(vtt[n].size()):
+                    itmp.append(iRx[n][nt])
+            L = tmp[itmp,:]
+
+        if compute_L==False and return_rays==False:
+            return tt
+        elif compute_L and return_rays:
+            return tt, rays, L
+        elif compute_L:
+            return tt, L
+        else:
+            return tt, rays
+
 
     @staticmethod
     def data_kernel_straight_rays(np.ndarray[np.double_t, ndim=2] Tx,
