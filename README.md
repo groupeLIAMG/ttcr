@@ -1,10 +1,12 @@
-# ttcr
+![Logo](./images/ttcrpy_logo.svg)
+====
+
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](./01_LICENSE.txt)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1162725.svg)](https://doi.org/10.5281/zenodo.1162725)
 
-This repo contains C++ codes for raytracing on regular and unstructuted meshes.
-Python and Matlab wrappers are provided as well.
+This repo contains C++ and python codes for raytracing on regular and unstructuted meshes.
+Matlab wrappers are provided as well.
 
 - [Python package](#heading)
 - [Stand alone command-line programs](#heading)
