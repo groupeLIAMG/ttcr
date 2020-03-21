@@ -86,7 +86,7 @@ namespace ttcr {
             nodes[nn].setTT(tt, nt);
         }
         
-        size_t getNumberOfNodes(bool primary=false) const {
+        size_t getNumberOfNodes(const bool primary=false) const {
             if ( primary ) {
                 return nPrimary;
             }

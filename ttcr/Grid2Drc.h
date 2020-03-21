@@ -97,7 +97,13 @@ namespace ttcr {
             }
         }
 
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes(const bool primary=false) const {
+            if ( primary ) {
+                return (ncx+1) * (ncz+1);
+            } else {
+                return nodes.size();
+            }
+        }
         size_t getNumberOfCells() const { return ncx*ncz; }
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             size_t nPrimary = (ncx+1) * (ncz+1);

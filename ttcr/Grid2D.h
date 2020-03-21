@@ -26,8 +26,10 @@
 #ifndef ttcr_Grid2D_h
 #define ttcr_Grid2D_h
 
+#include <array>
 #include <fstream>
 #include <thread>
+#include <vector>
 
 #include "ttcr_t.h"
 
@@ -165,7 +167,7 @@ namespace ttcr {
                 throw std::runtime_error("Method should be implemented in subclass");
             }
         
-        virtual size_t getNumberOfNodes() const { return 1; }
+        virtual size_t getNumberOfNodes(const bool primary=false) const { return 1; }
         virtual size_t getNumberOfCells() const { return 1; }
         virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             throw std::runtime_error("Method should be implemented in subclass");
@@ -200,6 +202,17 @@ namespace ttcr {
         
         virtual void dump_secondary(std::ofstream&) const {};
         
+        virtual void getNodes(std::vector<S>& nodes) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
+        virtual void getTriangles(std::vector<std::array<T2, 3>>&) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
+        // keep next method until array is supported by cython
+        virtual void getTriangles(std::vector<std::vector<T2>>&) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
+
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,
                                   const bool savePhysicalEntity=false) const {}
