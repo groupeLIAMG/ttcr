@@ -25,3 +25,19 @@ dist/
 ttcrpy/rgrid.cpp
 
 ttcrpy/cmesh2d.cpp
+
+ttcrpy/cgrid2d.cp36-win_amd64.pyd
+
+ttcrpy/cgrid2d.cp37-win_amd64.pyd
+
+ttcrpy/cgrid3d.cp36-win_amd64.pyd
+
+ttcrpy/cgrid3d.cp37-win_amd64.pyd
+
+ttcrpy/cmesh2d.cp36-win_amd64.pyd
+
+ttcrpy/cmesh2d.cp37-win_amd64.pyd
+
+ttcrpy/cmesh3d.cp36-win_amd64.pyd
+
+ttcrpy/cmesh3d.cp37-win_amd64.pyd

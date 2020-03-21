@@ -1043,7 +1043,6 @@ cdef class Grid3d:
         Notes
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
-
         """
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(self.y)
@@ -2458,6 +2457,80 @@ cdef class Grid2d:
             return tt, L
         else:
             return tt, rays
+
+    def to_vtk(self, fields, filename):
+        """
+        Save grid variables to VTK format
+
+        Parameters
+        ----------
+        fields: dict
+            dict of variables to save to file
+            variables should be numpy ndarrays of size equal to either the
+            number of nodes of the number of cells of the grid
+        filename: str
+            Name of file without extension for saving (extension vtr will be
+            added)
+
+        Notes
+        -----
+        VTK files can be visualized with Paraview (https://www.paraview.org)
+        """
+        xCoords = numpy_support.numpy_to_vtk(self.x)
+        yCoords = numpy_support.numpy_to_vtk(np.array([0.0]))
+        zCoords = numpy_support.numpy_to_vtk(self.z)
+
+        rgrid = vtk.vtkRectilinearGrid()
+        rgrid.SetDimensions(self._x.size(), 1, self._z.size())
+        rgrid.SetXCoordinates(xCoords)
+        rgrid.SetYCoordinates(yCoords)
+        rgrid.SetZCoordinates(zCoords)
+
+        for fn in fields:
+            data = fields[fn]
+
+            scalar = vtk.vtkDoubleArray()
+            scalar.SetName(fn)
+            scalar.SetNumberOfComponents(1)
+            scalar.SetNumberOfTuples(data.size)
+            if data.size == self.get_number_of_nodes():
+                shape = (self._x.size(), self._z.size())
+                if data.ndim == 2:
+                    if data.shape != shape:
+                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                    # VTK stores in 'F' order
+                    tmp = data.flatten(order='F')
+                elif data.ndim == 1:
+                    # 'C' order assumed, reshape back and flatten to 'F' order
+                    tmp = data.reshape(shape).flatten(order='F')
+                else:
+                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
+                for n in range(data.size):
+                    scalar.SetTuple1(n, tmp[n])
+                rgrid.GetPointData().AddArray(scalar)
+            elif data.size == self.get_number_of_cells():
+                shape = (self._x.size()-1, self._z.size()-1)
+                if data.ndim == 2:
+                    if data.shape != shape:
+                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                    # VTK stores in 'F' order
+                    tmp = data.flatten(order='F')
+                elif data.ndim == 1:
+                    # 'C' order assumed, reshape back and flatten to 'F' order
+                    tmp = data.reshape(shape).flatten(order='F')
+                else:
+                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
+                for n in range(data.size):
+                    scalar.SetTuple1(n, tmp[n])
+                rgrid.GetCellData().AddArray(scalar)
+            else:
+                raise ValueError('Field {0:s} has incorrect size'.format(fn))
+
+        writer = vtk.vtkXMLRectilinearGridWriter()
+        writer.SetFileName(filename+'.vtr')
+        writer.SetInputData(rgrid)
+        writer.SetDataModeToBinary()
+        writer.Update()
 
 
     @staticmethod
