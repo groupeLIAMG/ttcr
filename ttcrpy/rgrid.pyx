@@ -1079,70 +1079,111 @@ cdef class Grid3d:
         rgrid.SetYCoordinates(yCoords)
         rgrid.SetZCoordinates(zCoords)
 
+        save_grid = False
         for fn in fields:
             data = fields[fn]
 
-            scalar = vtk.vtkDoubleArray()
-            scalar.SetName(fn)
-            scalar.SetNumberOfComponents(1)
-            scalar.SetNumberOfTuples(data.size)
-            if data.size == self.get_number_of_nodes():
-                shape = (self._x.size(), self._y.size(), self._z.size())
-                if data.ndim == 3:
-                    if data.shape != shape:
-                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
-                    # VTK stores in 'F' order
-                    tmp = data.flatten(order='F')
-                elif data.ndim == 1:
-                    # 'C' order assumed, reshape back and flatten to 'F' order
-                    tmp = data.reshape(shape).flatten(order='F')
-                else:
-                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
-                for n in range(data.size):
-                    scalar.SetTuple1(n, tmp[n])
-                rgrid.GetPointData().AddArray(scalar)
-            elif data.size == self.get_number_of_cells():
-                shape = (self._x.size()-1, self._y.size()-1, self._z.size()-1)
-                if data.ndim == 3:
-                    if data.shape != shape:
-                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
-                    # VTK stores in 'F' order
-                    tmp = data.flatten(order='F')
-                elif data.ndim == 1:
-                    # 'C' order assumed, reshape back and flatten to 'F' order
-                    tmp = data.reshape(shape).flatten(order='F')
-                else:
-                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
-                for n in range(data.size):
-                    scalar.SetTuple1(n, tmp[n])
-                rgrid.GetCellData().AddArray(scalar)
+            if isinstance(data, list):
+                self._save_raypaths(data, filename+'_'+fn+'.vtp')
             else:
-                raise ValueError('Field {0:s} has incorrect size'.format(fn))
+                save_grid = True
+                scalar = vtk.vtkDoubleArray()
+                scalar.SetName(fn)
+                scalar.SetNumberOfComponents(1)
+                scalar.SetNumberOfTuples(data.size)
+                if data.size == self.get_number_of_nodes():
+                    shape = (self._x.size(), self._y.size(), self._z.size())
+                    if data.ndim == 3:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim ({1:d})'.format(fn, data.ndim))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetPointData().AddArray(scalar)
+                elif data.size == self.get_number_of_cells():
+                    shape = (self._x.size()-1, self._y.size()-1, self._z.size()-1)
+                    if data.ndim == 3:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim ({1:d})'.format(fn, data.ndim))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetCellData().AddArray(scalar)
+                else:
+                    raise ValueError('Field {0:s} has incorrect size'.format(fn))
 
-        writer = vtk.vtkXMLRectilinearGridWriter()
-        writer.SetFileName(filename+'.vtr')
-        writer.SetInputData(rgrid)
+        if save_grid:
+            writer = vtk.vtkXMLRectilinearGridWriter()
+            writer.SetFileName(filename+'.vtr')
+            writer.SetInputData(rgrid)
+            writer.SetDataModeToBinary()
+            writer.Update()
+
+    def _save_raypaths(self, rays, filename):
+        polydata = vtk.vtkPolyData()
+        cellarray = vtk.vtkCellArray()
+        pts = vtk.vtkPoints()
+        npts = 0
+        for n in range(len(rays)):
+            npts += rays[n].shape[0]
+        pts.SetNumberOfPoints(npts)
+        npts = 0
+        for n in range(len(rays)):
+            for p in range(rays[n].shape[0]):
+                pts.InsertPoint(npts, rays[n][p, 0], rays[n][p, 1], rays[n][p, 2])
+                npts += 1
+        polydata.SetPoints(pts)
+        npts = 0
+        for n in range(len(rays)):
+            line = vtk.vtkPolyLine()
+            line.GetPointIds().SetNumberOfIds(rays[n].shape[0])
+            for p in range(rays[n].shape[0]):
+                line.GetPointIds().SetId(p, npts)
+                npts += 1
+            cellarray.InsertNextCell(line)
+        polydata.SetLines(cellarray)
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetFileName(filename)
+        writer.SetInputData(polydata)
         writer.SetDataModeToBinary()
         writer.Update()
+
 
     @staticmethod
     def builder(filename, nthreads=1, method='FSM', tt_from_rp=1, interp_vel=0,
                 eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
                 n_secondary=2, n_tertiary=2, radius_tertiary=1.0):
         """
+        builder(filename, nthreads=1, method='FSM', tt_from_rp=1, interp_vel=0,
+                eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
+                n_secondary=2, n_tertiary=2, radius_tertiary=1.0)
+
         Build instance of Grid3d from VTK file
 
         Parameters
         ----------
         filename : str
-            Name of file holding rectilinear grid
+            Name of file holding a vtkRectilinearGrid.
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'
 
         Returns
         -------
-        Instance of Grid3d
+        grid: :obj:`Grid3d`
+            grid instance
         """
 
         reader = vtk.vtkXMLRectilinearGridReader()
@@ -2550,49 +2591,83 @@ cdef class Grid2d:
         rgrid.SetYCoordinates(yCoords)
         rgrid.SetZCoordinates(zCoords)
 
+        save_grid = False
         for fn in fields:
             data = fields[fn]
 
-            scalar = vtk.vtkDoubleArray()
-            scalar.SetName(fn)
-            scalar.SetNumberOfComponents(1)
-            scalar.SetNumberOfTuples(data.size)
-            if data.size == self.get_number_of_nodes():
-                shape = (self._x.size(), self._z.size())
-                if data.ndim == 2:
-                    if data.shape != shape:
-                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
-                    # VTK stores in 'F' order
-                    tmp = data.flatten(order='F')
-                elif data.ndim == 1:
-                    # 'C' order assumed, reshape back and flatten to 'F' order
-                    tmp = data.reshape(shape).flatten(order='F')
-                else:
-                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
-                for n in range(data.size):
-                    scalar.SetTuple1(n, tmp[n])
-                rgrid.GetPointData().AddArray(scalar)
-            elif data.size == self.get_number_of_cells():
-                shape = (self._x.size()-1, self._z.size()-1)
-                if data.ndim == 2:
-                    if data.shape != shape:
-                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
-                    # VTK stores in 'F' order
-                    tmp = data.flatten(order='F')
-                elif data.ndim == 1:
-                    # 'C' order assumed, reshape back and flatten to 'F' order
-                    tmp = data.reshape(shape).flatten(order='F')
-                else:
-                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
-                for n in range(data.size):
-                    scalar.SetTuple1(n, tmp[n])
-                rgrid.GetCellData().AddArray(scalar)
+            if isinstance(data, list):
+                self._save_raypaths(data, filename+'_'+fn+'.vtp')
             else:
-                raise ValueError('Field {0:s} has incorrect size'.format(fn))
+                scalar = vtk.vtkDoubleArray()
+                scalar.SetName(fn)
+                scalar.SetNumberOfComponents(1)
+                scalar.SetNumberOfTuples(data.size)
+                if data.size == self.get_number_of_nodes():
+                    shape = (self._x.size(), self._z.size())
+                    if data.ndim == 2:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetPointData().AddArray(scalar)
+                elif data.size == self.get_number_of_cells():
+                    shape = (self._x.size()-1, self._z.size()-1)
+                    if data.ndim == 2:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetCellData().AddArray(scalar)
+                else:
+                    raise ValueError('Field {0:s} has incorrect size'.format(fn))
 
-        writer = vtk.vtkXMLRectilinearGridWriter()
-        writer.SetFileName(filename+'.vtr')
-        writer.SetInputData(rgrid)
+        if save_grid:
+            writer = vtk.vtkXMLRectilinearGridWriter()
+            writer.SetFileName(filename+'.vtr')
+            writer.SetInputData(rgrid)
+            writer.SetDataModeToBinary()
+            writer.Update()
+
+    def _save_raypaths(self, rays, filename):
+        polydata = vtk.vtkPolyData()
+        cellarray = vtk.vtkCellArray()
+        pts = vtk.vtkPoints()
+        npts = 0
+        for n in range(len(rays)):
+            npts += rays[n].shape[0]
+        pts.SetNumberOfPoints(npts)
+        npts = 0
+        for n in range(len(rays)):
+            for p in range(rays[n].shape[0]):
+                pts.InsertPoint(npts, rays[n][p, 0], 0.0, rays[n][p, 1])
+                npts += 1
+        polydata.SetPoints(pts)
+        npts = 0
+        for n in range(len(rays)):
+            line = vtk.vtkPolyLine()
+            line.GetPointIds().SetNumberOfIds(rays[n].shape[0])
+            for p in range(rays[n].shape[0]):
+                line.GetPointIds().SetId(p, npts)
+                npts += 1
+            cellarray.InsertNextCell(line)
+        polydata.SetLines(cellarray)
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetFileName(filename)
+        writer.SetInputData(polydata)
         writer.SetDataModeToBinary()
         writer.Update()
 
