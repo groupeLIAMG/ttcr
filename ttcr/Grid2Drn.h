@@ -791,7 +791,15 @@ namespace ttcr {
             if ( curr_pt.x < xmin || curr_pt.x > xmax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             
             r_data.push_back( curr_pt );
@@ -870,7 +878,15 @@ namespace ttcr {
                 if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -920,8 +936,16 @@ namespace ttcr {
                 
                 if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==ncx+1) ||
                     (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
-                    //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                   //  we are going oustide the grid!
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 // planes we will intersect
@@ -1116,7 +1140,15 @@ namespace ttcr {
             
             if ( iIn<0 || iIn>ncx || jIn<0 || jIn>ncz ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             
             r_data.push_back( curr_pt );
@@ -1170,7 +1202,15 @@ namespace ttcr {
                 if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
                     (gOut.z<0.0 && j==0) || (gOut.z>0.0 && j==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 
