@@ -16,7 +16,7 @@ import h5py
 
 import vtk
 
-import cmesh3d
+import ttcrpy.cmesh3d
 
 from utils import nargout
 
@@ -286,7 +286,7 @@ class meshTriangle3D(Mesh):
                     G = (x[0]*a + x[1]*b + x[2]*c)/np.sum(x)
                     return G
             else:
-                
+
                 import matplotlib.pyplot as plt
                 fig = plt.figure()
                 ax = fig.add_subplot(1,1,1)
@@ -304,8 +304,8 @@ class meshTriangle3D(Mesh):
                     ax.plot([a[0], b[0], c[0], a[0]], [a[1], b[1], c[1], a[1]])
                 ax.hold(False)
                 plt.show()
-                
-                
+
+
                 print('Houston! We have a problem')
 
 
@@ -378,7 +378,7 @@ class MeshTetrahedra(Mesh):
         for nc in np.arange(self.cells.shape[0]):
             cent[nc, :] = 0.25 * np.sum(self.nodes[self.cells[nc,:], :], axis=0)
         return cent
-    
+
     def get_volume(self):
         vol = np.zeros((self.cells.shape[0], ))
         cte = 1.0 / 6.0
@@ -454,39 +454,37 @@ class MeshTetrahedra(Mesh):
 
 
 if __name__ == '__main__':
-    
+
     test_2d = True
     test_3d = True
-    
+
     if test_2d:
         reader = MSHReader('/Users/giroux/CloudStation/Projets/ArcelorMittal/analyse_config/topo.msh')
-    
+
         print(reader.is2D())
         print(reader.getNumberOfElements())
         print(reader.getNumberOfElements(2))
-    
+
         nodes = reader.readNodes()
         tri = reader.readTriangleElements()
         print(tri.shape)
-    
+
         import mayavi.mlab as mm
         mm.figure()
         mm.triangular_mesh(nodes[:,0], nodes[:,1], nodes[:,2], tri, color=(0, 0, 1))
         mm.show()
 
-    
+
         mesh = meshTriangle3D(nodes, tri)
-    
+
         p = np.array([305105.0, 5723733.0, 100.0])
-    
+
         mesh.projz(p)
 
     if test_3d:
-        
+
         msh = MeshTetrahedra()
         msh.buildFromMSH('/Users/giroux/JacquesCloud/Projets/spm_fmm_fsm/dspm/fig01/Model1a.msh')
-        
+
         cent = msh.get_centroids()
         gamma = msh.get_gamma()
-        
-        

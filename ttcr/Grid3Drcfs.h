@@ -321,7 +321,9 @@ namespace ttcr {
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      const size_t threadNo) const {
-        
+        if ( verbose > 2 ) {
+            std::cout << "\nIn Grid3Drcfs::raytrace(Tx, t0, Rx, threadNo)\n" << std::endl;
+        }
         this->checkPts(Tx);
         this->checkPts(Rx);
         
@@ -406,7 +408,7 @@ namespace ttcr {
         // Set Tx pts
         std::vector<bool> frozen( this->nodes.size(), false );
         int npts = 1;
-        if ( weno3 == true) npts = 2;
+        if ( weno3 == true ) npts = 2;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
         
         std::vector<T1> times( this->nodes.size() );

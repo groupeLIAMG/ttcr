@@ -17,7 +17,7 @@
 using namespace std;
 using namespace ttcr;
 
-typedef Grid2Drcfs<double,uint32_t> grid;
+typedef Grid2Drcfs<double,uint32_t,sxz<double>> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

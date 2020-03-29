@@ -788,7 +788,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
 
             s2 = computeSlowness( curr_pt );
@@ -927,7 +935,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             
             r_data.push_back( curr_pt );
@@ -1014,7 +1030,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
 #ifdef DEBUG_RP
             std::cout << curr_pt << '\n';
@@ -1171,7 +1195,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             
             s2 = computeSlowness( curr_pt );
@@ -1465,7 +1497,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
             cell.i = getCellNo(mid_pt);
@@ -1625,7 +1665,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             sxyz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
             cell.i = getCellNo(mid_pt);
@@ -1787,8 +1835,15 @@ namespace ttcr {
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                std::cout << curr_pt << '\t' << xmin << '\t' << xmax << '\t' << ymin << '\t' << ymax  << '\t' << zmin  << '\t' << zmax << '\n';
-                throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
             }
             
             prev_pt = r_data.back();
@@ -2100,7 +2155,15 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -2167,7 +2230,15 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 iOut = i;
@@ -2239,7 +2310,15 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -2311,7 +2390,15 @@ namespace ttcr {
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
@@ -2379,7 +2466,15 @@ namespace ttcr {
                     (gOut.y<0.0 && jOut==0) || (gOut.y>0.0 && jOut==ncy+1) ||
                     (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
                     //  we are going oustide the grid!
-                    throw std::runtime_error("Error while computing raypaths: going outside grid!");
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
                 }
                 
                 // planes we will intersect

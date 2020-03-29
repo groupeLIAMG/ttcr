@@ -19,7 +19,7 @@
 using namespace std;
 using namespace ttcr;
 
-typedef Grid2Drcsp<double,uint32_t,Cell<double, Node2Dcsp<double, uint32_t>, sxz<double>>> grid;
+typedef Grid2Drcsp<double,uint32_t,sxz<double>,Cell<double, Node2Dcsp<double, uint32_t>, sxz<double>>> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

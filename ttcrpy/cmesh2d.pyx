@@ -34,6 +34,9 @@ cimport numpy as np
 
 from scipy.sparse import csr_matrix
 
+import vtk
+from vtk.util import numpy_support
+
 cdef extern from "ttcr_t.h" namespace "ttcr":
     cdef cppclass sxz[T]:
         sxz(T, T) except +
@@ -61,11 +64,15 @@ cdef extern from "Grid2Ducsp.h" namespace "ttcr":
         Grid2Ducsp(vector[S], vector[triangleElem[T2]], T2, size_t) except +
         size_t getNthreads()
         size_t getNumberOfCells()
+        size_t getNumberOfNodes(bool)
         void setSlowness(T1 *, size_t) except +
         void raytrace(vector[S]&, vector[T1]&, vector[S]&, vector[T1]&, size_t) except +
         void raytrace(vector[S]&, vector[T1]&, vector[S]&, vector[T1]&, vector[vector[S]]&, vector[vector[siv[T1]]]&, size_t) except +
         void calculateArea(vector[T1] &) except +
         void interpolateAtNodes(vector[T1] &) except +
+        void getTT(vector[T1]&, size_t)
+        void getNodes(vector[S]&)
+        void getTriangles(vector[vector[T2]]&)
 
 
 cdef class Mesh2D:
@@ -97,6 +104,29 @@ cdef class Mesh2D:
 
     def __dealloc__(self):
         del self.mesh
+
+    def get_grid_traveltimes(self, thread_no=0):
+        """
+        Obtain traveltimes computed at primary grid nodes
+
+        Parameters
+        ----------
+        thread_no : int
+            thread used to computed traveltimes (default is 0)
+
+        Returns
+        -------
+        tt: np ndarray
+        """
+        if thread_no >= self.mesh.getNthreads():
+            raise ValueError('Thread number is larger than number of threads')
+        cdef vector[double] tmp
+        cdef int n
+        self.mesh.getTT(tmp, thread_no)
+        tt = np.empty((tmp.size(),))
+        for n in range(tmp.size()):
+            tt[n] = tmp[n]
+        return tt
 
     def set_slowness(self, slowness):
         """
@@ -248,6 +278,66 @@ cdef class Mesh2D:
             L = csr_matrix((val, indices, indptr), shape=(M,N))
 
             return tt, L, rays
+
+    def to_vtk(self, fields, filename):
+        """
+        Save grid variables to VTK format
+
+        Parameters
+        ----------
+        fields: dict
+            dict of variables to save to file
+            variables should be numpy ndarrays of size equal to either the
+            number of nodes of the number of cells of the grid
+        filename: str
+            Name of file without extension for saving (extension vtr will be
+            added)
+
+        Notes
+        -----
+        VTK files can be visualized with Paraview (https://www.paraview.org)
+        """
+        cdef vector[sxz[double]] nodes
+        cdef vector[vector[uint32_t]] triangles
+        self.mesh.getNodes(nodes)
+        self.mesh.getTriangles(triangles)
+
+        cdef int n
+        ugrid = vtk.vtkUnstructuredGrid()
+        pts = vtk.vtkPoints()
+        tri = vtk.vtkTriangle()
+        for n in range(nodes.size()):
+            pts.InsertNextPoint(nodes[n].x, 0.0, nodes[n].z)
+        ugrid.SetPoints(pts)
+        for n in range(triangles.size()):
+            tri.GetPointIds().SetId(0, triangles[n][0])
+            tri.GetPointIds().SetId(1, triangles[n][1])
+            tri.GetPointIds().SetId(2, triangles[n][2])
+            ugrid.InsertNextCell(tri.GetCellType(), tri.GetPointIds())
+
+        for fn in fields:
+            data = fields[fn]
+
+            scalar = vtk.vtkDoubleArray()
+            scalar.SetName(fn)
+            scalar.SetNumberOfComponents(1)
+            scalar.SetNumberOfTuples(data.size)
+            if data.size == self.mesh.getNumberOfNodes(1):
+                for n in range(nodes.size()):
+                    scalar.SetTuple1(n, data[n])
+                ugrid.GetPointData().AddArray(scalar)
+            elif data.size == self.mesh.getNumberOfCells():
+                for n in range(triangles.size()):
+                    scalar.SetTuple1(n, data[n])
+                ugrid.GetCellData().AddArray(scalar)
+            else:
+                raise ValueError('Field {0:s} has incorrect size'.format(fn))
+
+            writer = vtk.vtkXMLUnstructuredGridWriter()
+            writer.SetFileName(filename+'.vtu')
+            writer.SetInputData(ugrid)
+            writer.SetDataModeToBinary()
+            writer.Update()
 
 #    def get_Dx_Dz(self):
 #        """

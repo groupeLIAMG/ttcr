@@ -76,7 +76,7 @@ cdef extern from "Node2Dcsp.h" namespace "ttcr":
 
 
 cdef extern from "Grid2Drcsp.h" namespace "ttcr":
-    cdef cppclass Grid2Drcsp[T1, T2, CELL]:
+    cdef cppclass Grid2Drcsp[T1, T2, S, CELL]:
         Grid2Drcsp(T2, T2, T1, T1, T1, T1, T2, T2, size_t)
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
@@ -295,13 +295,13 @@ cdef class Grid2Dcpp:
 cdef class Grid2Diso:
     cdef uint32_t nx
     cdef uint32_t nz
-    cdef Grid2Drcsp[double, uint32_t, Cell[double, Node2Dcsp[double, uint32_t], sxz[double]]]* grid
+    cdef Grid2Drcsp[double, uint32_t, sxz[double], Cell[double, Node2Dcsp[double, uint32_t], sxz[double]]]* grid
 
     def __cinit__(self, uint32_t nx, uint32_t nz, double dx, double dz,
                   double xmin, double zmin, uint32_t nsnx, uint32_t nsnz,
                   size_t nthreads):
-        self.grid = new Grid2Drcsp[double, uint32_t, Cell[double, Node2Dcsp[double, uint32_t], sxz[double]]](nx, nz, dx, dz, xmin, zmin, nsnx, nsnz, nthreads)
-    
+        self.grid = new Grid2Drcsp[double, uint32_t, sxz[double], Cell[double, Node2Dcsp[double, uint32_t], sxz[double]]](nx, nz, dx, dz, xmin, zmin, nsnx, nsnz, nthreads)
+
     def __dealloc__(self):
         del self.grid
 

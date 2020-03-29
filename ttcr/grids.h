@@ -1478,12 +1478,12 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Drcsp<T, uint32_t, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drcsp<T, uint32_t, sxz<T>, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                                                              min[0], min[2],
                                                                                              par.nn[0], par.nn[2],
                                                                                              nt);
                 else
-                    g = new Grid2Drnsp<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drnsp<T, uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
                                                     min[0], min[2],
                                                     par.nn[0], par.nn[2],
                                                     nt);
@@ -1511,13 +1511,13 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells ) {
-                    g = new Grid2Drcfs<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drcfs<T, uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
                                                     min[0], min[2], par.epsilon,
                                                     par.nitermax, par.weno3,
                                                     par.rotated_template, nt);
                 }
                 else
-                    g = new Grid2Drnfs<T, uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                    g = new Grid2Drnfs<T, uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
                                                     min[0], min[2], par.epsilon,
                                                     par.nitermax, par.weno3,
                                                     par.rotated_template, nt);
@@ -1665,7 +1665,7 @@ namespace ttcr {
                     {
                         if ( verbose ) { std::cout << "Building grid (Grid2Drnsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid2Drnsp<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                        g = new Grid2Drnsp<T,uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0],
                                                        par.nn[0], par.nn[2],
                                                        nt);
@@ -1699,7 +1699,7 @@ namespace ttcr {
                         
                         if ( verbose ) { std::cout << "Building grid (Grid2Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid2Drnfs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                        g = new Grid2Drnfs<T,uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0], par.epsilon,
                                                        par.nitermax, par.weno3,
                                                        par.rotated_template, nt);
@@ -1817,16 +1817,16 @@ namespace ttcr {
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         if ( foundTheta ) {
                             if ( foundXi==false ) { std::cerr << "Error: Model should contain anisotropy ratio" << std::endl; abort(); }
-                            g = new Grid2Drcsp<T, uint32_t,
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>,
                             CellTiltedElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                                                      xrange[0], zrange[0],
                                                                                      par.nn[0], par.nn[2], nt);
                         } else if ( foundXi ) {
-                            g = new Grid2Drcsp<T, uint32_t, CellElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                                                                                xrange[0], zrange[0],
                                                                                                                par.nn[0], par.nn[2], nt);
                         } else {
-                            g = new Grid2Drcsp<T, uint32_t, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                                                                      xrange[0], zrange[0],
                                                                                                      par.nn[0], par.nn[2], nt);
                         }
@@ -1878,7 +1878,7 @@ namespace ttcr {
                         
                         if ( verbose ) { std::cout << "Building grid (Grid2Drcfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        g = new Grid2Drcfs<T,uint32_t>(ncells[0], ncells[2], d[0], d[2],
+                        g = new Grid2Drcfs<T,uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
                                                        xrange[0], zrange[0], par.epsilon,
                                                        par.nitermax, par.weno3,
                                                        par.rotated_template, nt);

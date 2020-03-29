@@ -1,8 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-    Raytracing on rectilinear grids
+Raytracing on rectilinear grids
 
-    This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
+This module contains two classes to perform traveltime computation and
+raytracing on rectilinear grids:
+    - `Grid2d` for 2D media
+    - `Grid3d` for 3D media
+
+Two general algorithms are implemented
+    - the Shortest-Path Method
+    - the Fast-Sweeping Method
+and `Grid3d` also support the Dynamic Shortest-Path Method
+
+Slowness model can be defined in two ways:
+    1) slowness constant within the voxels of the grid (the default)
+    2) slowness defined at nodes of the grid
+
+This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 """
 
 # distutils: language = c++
@@ -15,17 +29,26 @@ import vtk
 from vtk.util import numpy_support
 
 from ttcrpy.rgrid cimport Grid3D, Grid3Drcfs, Grid3Drcsp, Grid3Drcdsp, \
-    Grid3Drnfs, Grid3Drnsp, Grid3Drndsp, Grid2D, Grid2Drcsp, Grid2Drcfs, \
-    Grid2Drnsp, Grid2Drnfs, Grid2Drc, Grid2Drn
+    Grid3Drnfs, Grid3Drnsp, Grid3Drndsp, Grid2D, Grid2Drc, Grid2Drn, \
+    Grid2Drcsp, Grid2Drcfs, Grid2Drnsp, Grid2Drnfs
 
+cdef extern from "verbose.h" namespace "ttcr" nogil:
+    void setVerbose(int)
+
+def set_verbose(v):
+    """
+    Set verbosity level for C++ code
+
+    Parameters
+    ----------
+    v: int
+        verbosity level
+    """
+    setVerbose(v)
 
 cdef class Grid3d:
     """
     class to perform raytracing with 3D rectilinear grids
-
-    Slowness model can be defined in two ways:
-        1) slowness constant within the voxels of the grid (the default)
-        2) slowness defined at nodes of the grid
 
     Attributes
     ----------
@@ -54,48 +77,48 @@ cdef class Grid3d:
            interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
            n_secondary=2, n_tertiary=2, radius_tertiary=1.0) -> Grid3d
 
-       Parameters
-       ----------
-       x : numpy ndarray
-             node coordinates along x
-       y : numpy ndarray
-             node coordinates along y
-       z : numpy ndarray
-             node coordinates along z
-       nthreads : int
-             number of threads for raytracing (default is 1)
-       cell_slowness : bool
-             slowness defined for cells (True) or nodes (False) (default is 1)
-       method : string
-             raytracing method (default is FSM)
-               'FSM' : fast marching method
-               'SPM' : shortest path method
-               'DSPM' : dynamic shortest path
-       tt_from_rp : bool
-             compute traveltimes from raypaths (SPM od DSPM) (default is 1)
-       interp_vel : bool
-             interpolate velocity instead of slowness at nodes (for
-             cell_slowness == False or FSM) (defauls is False)
-       eps : double
-             convergence criterion (FSM) (default is 1e-15)
-       maxit : int
-             max number of sweeping iterations (FSM) (default is 20)
-       weno : bool
-             use 3rd order weighted essentially non-oscillatory operator (FSM)
-             (default is True)
-       nsnx : int
-             number of secondary nodes in x (SPM) (default is 5)
-       nsny : int
-             number of secondary nodes in y (SPM) (default is 5)
-       nsnz : int
-             number of secondary nodes in z (SPM) (default is 5)
-       n_secondary : int
-             number of secondary nodes (DSPM) (default is 2)
-       n_tertiary : int
-             number of tertiary nodes (DSPM) (default is 2)
-       radius_tertiary : double
-             radius of sphere around source that includes tertiary nodes (DSPM)
-              (default is 1)
+        Parameters
+        ----------
+        x : np.ndarray
+            node coordinates along x
+        y : np.ndarray
+            node coordinates along y
+        z : np.ndarray
+            node coordinates along z
+        nthreads : int
+            number of threads for raytracing (default is 1)
+        cell_slowness : bool
+            slowness defined for cells (True) or nodes (False) (default is 1)
+        method : string
+            raytracing method (default is FSM)
+                - 'FSM' : fast marching method
+                - 'SPM' : shortest path method
+                - 'DSPM' : dynamic shortest path
+        tt_from_rp : bool
+            compute traveltimes from raypaths (SPM od DSPM) (default is 1)
+        interp_vel : bool
+            interpolate velocity instead of slowness at nodes (for
+            cell_slowness == False or FSM) (defauls is False)
+        eps : double
+            convergence criterion (FSM) (default is 1e-15)
+        maxit : int
+            max number of sweeping iterations (FSM) (default is 20)
+        weno : bool
+            use 3rd order weighted essentially non-oscillatory operator (FSM)
+            (default is True)
+        nsnx : int
+            number of secondary nodes in x (SPM) (default is 5)
+        nsny : int
+            number of secondary nodes in y (SPM) (default is 5)
+        nsnz : int
+            number of secondary nodes in z (SPM) (default is 5)
+        n_secondary : int
+            number of secondary nodes (DSPM) (default is 2)
+        n_tertiary : int
+            number of tertiary nodes (DSPM) (default is 2)
+        radius_tertiary : double
+            radius of sphere around source that includes tertiary nodes (DSPM)
+            (default is 1)
     """
     cdef vector[double] _x
     cdef vector[double] _y
@@ -106,6 +129,17 @@ cdef class Grid3d:
     cdef bool cell_slowness
     cdef size_t _nthreads
     cdef char method
+    cdef bool tt_from_rp
+    cdef bool interp_vel
+    cdef double eps
+    cdef int maxit
+    cdef bool weno
+    cdef uint32_t nsnx
+    cdef uint32_t nsny
+    cdef uint32_t nsnz
+    cdef uint32_t n_secondary
+    cdef uint32_t n_tertiary
+    cdef double radius_tertiary
     cdef Grid3D[double, uint32_t]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
@@ -130,6 +164,17 @@ cdef class Grid3d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._nthreads = nthreads
+        self.tt_from_rp = tt_from_rp
+        self.interp_vel = interp_vel
+        self.eps = eps
+        self.maxit = maxit
+        self.weno = weno
+        self.nsnx = nsnx
+        self.nsny = nsny
+        self.nsnz = nsnz
+        self.n_secondary = n_secondary
+        self.n_tertiary = n_tertiary
+        self.radius_tertiary = radius_tertiary
 
         if method == 'FSM':
             if np.abs(self._dx - self._dy)>0.000001 or np.abs(self._dx - self._dz)>0.000001:
@@ -201,12 +246,24 @@ cdef class Grid3d:
     def __dealloc__(self):
         del self.grid
 
+    def __reduce__(self):
+        if self.method == b'f':
+            method = 'FSM'
+        elif self.method == b's':
+            method = 'SPM'
+        elif self.method == b'd':
+            method = 'DSPM'
+
+        constructor_params = (self.nthreads, self.cell_slowness, method,
+                              self.tt_from_rp, self.interp_vel, self.eps,
+                              self.maxit, self.weno, self.nsnx, self.nsny,
+                              self.nsnz, self.n_secondary, self.n_tertiary,
+                              self.radius_tertiary)
+        return (_rebuild3d, (self.x, self.y, self.z, constructor_params))
+
     @property
     def x(self):
-        """
-        x: np.ndarray
-            node coordinates along x
-        """
+        """np.ndarray: node coordinates along x"""
         tmp = np.empty((self._x.size(),))
         cdef int n
         for n in range(self._x.size()):
@@ -215,10 +272,7 @@ cdef class Grid3d:
 
     @property
     def y(self):
-        """
-        y: np.ndarray
-            node coordinates along y
-        """
+        """np.ndarray: node coordinates along y"""
         tmp = np.empty((self._y.size(),))
         cdef int n
         for n in range(self._y.size()):
@@ -227,10 +281,7 @@ cdef class Grid3d:
 
     @property
     def z(self):
-        """
-        z: np.ndarray
-            node coordinates along z
-        """
+        """np.ndarray: node coordinates along z"""
         tmp = np.empty((self._z.size(),))
         cdef int n
         for n in range(self._z.size()):
@@ -239,34 +290,22 @@ cdef class Grid3d:
 
     @property
     def dx(self):
-        """
-        dx: float
-            node separation along x
-        """
+        """float: node separation along x"""
         return self._dx
 
     @property
     def dy(self):
-        """
-        dy: float
-            node separation along y
-        """
+        """float: node separation along y"""
         return self._dy
 
     @property
     def dz(self):
-        """
-        dz: float
-            node separation along z
-        """
+        """float: node separation along z"""
         return self._dz
 
     @property
     def shape(self):
-        """
-        shape: (int, int, int)
-            number of parameters along each dimension
-        """
+        """:obj:`list` of :obj:`int`: number of parameters along each dimension"""
         if self.cell_slowness:
             return (self._x.size()-1, self._y.size()-1, self._z.size()-1)
         else:
@@ -274,18 +313,12 @@ cdef class Grid3d:
 
     @property
     def nthreads(self):
-        """
-        nthreads: int
-            number of threads for raytracing
-        """
+        """int: number of threads for raytracing"""
         return self._nthreads
 
     @property
     def nparams(self):
-        """
-        nparams: int
-            total number of parameters for grid
-        """
+        """int: total number of parameters for grid"""
         if self.cell_slowness:
             return (self._x.size()-1) * (self._y.size()-1) * (self._z.size()-1)
         else:
@@ -293,18 +326,26 @@ cdef class Grid3d:
 
     def get_number_of_nodes(self):
         """
-        Return number of nodes in grid
+        Returns
+        -------
+        int:
+            number of nodes in grid
         """
         return self._x.size() * self._y.size() * self._z.size()
 
     def get_number_of_cells(self):
         """
-        Return number of cells in grid
+        Returns
+        -------
+        int:
+            number of cells in grid
         """
         return (self._x.size()-1) * (self._y.size()-1) * (self._z.size()-1)
 
     def get_grid_traveltimes(self, thread_no=0):
         """
+        get_grid_traveltimes(thread_no=0)
+
         Obtain traveltimes computed at primary grid nodes
 
         Parameters
@@ -315,6 +356,7 @@ cdef class Grid3d:
         Returns
         -------
         tt: np ndarray, shape (nx, ny, nz)
+            traveltimes
         """
         if thread_no >= self._nthreads:
             raise ValueError('Thread number is larger than number of threads')
@@ -329,6 +371,8 @@ cdef class Grid3d:
 
     def ind(self, i, j, k):
         """
+        ind(i, j, k)
+
         Return node index
 
         Parameters
@@ -342,7 +386,8 @@ cdef class Grid3d:
 
         Returns
         -------
-        Node index for a "flattened" grid
+        int:
+            node index for a "flattened" grid
         """
         return (i*self._y.size() + j)*self._z.size() + k
 
@@ -361,13 +406,16 @@ cdef class Grid3d:
 
         Returns
         -------
-        Cell index for a "flattened" grid
+        int:
+            cell index for a "flattened" grid
         """
         return (i*(self._y.size()-1) + j)*(self._z.size()-1) + k
 
     def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
         """
-        Return True if at least one point outside grid
+        is_outside(pts)
+
+        Check if points are outside grid
 
         Parameters
         ----------
@@ -376,7 +424,8 @@ cdef class Grid3d:
 
         Returns
         -------
-        bool
+        bool:
+            True if at least one point outside grid
         """
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._y.front() or np.max(pts[:,1]) > self._y.back() or
@@ -384,6 +433,8 @@ cdef class Grid3d:
 
     def set_slowness(self, slowness):
         """
+        set_slowness(slowness)
+
         Assign slowness to grid
 
         Parameters
@@ -421,18 +472,20 @@ cdef class Grid3d:
 
     def compute_D(self, coord):
         """
+        compute_D(coord)
+
         Return matrix of interpolation weights for velocity data points
         constraint
 
         Parameters
         ----------
-        coord : numpy ndarray
-            coordinates of data points (npts x 3)
+        coord : np.ndarray, shape (npts, 3)
+            coordinates of data points
 
         Returns
         -------
-        D : scipy csr_matrix
-            Matrix of interpolation weights, of size npts x nparams
+        D : scipy csr_matrix, shape (npts, nparams)
+            Matrix of interpolation weights
         """
         if self.is_outside(coord):
             raise ValueError('Velocity data point outside grid')
@@ -487,8 +540,8 @@ cdef class Grid3d:
 
         Returns
         -------
-        Kx, Ky, Kz : tuple of sparse (csr) matrices for derivatives
-            along x, y, & z
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+            matrices for derivatives along x, y, & z
         """
         # central operator f"(x) = (f(x+h)-2f(x)+f(x-h))/h^2
         # forward operator f"(x) = (f(x+2h)-2f(x+h)+f(x))/h^2
@@ -562,17 +615,19 @@ cdef class Grid3d:
 
     def get_s0(self, hypo, slowness=None):
         """
+        get_s0(hypo, slowness=None)
+
         Return slowness at source points
 
         Parameters
         ----------
-        hypo : numpy ndarray with 5 columns
+        hypo : np.ndarray with 5 columns
             hypo holds source information, i.e.
-                1st column is event ID number
-                2nd column is origin time
-                3rd column is source easting
-                4th column is source northing
-                5th column is source elevation
+                - 1st column is event ID number
+                - 2nd column is origin time
+                - 3rd column is source easting
+                - 4th column is source northing
+                - 5th column is source elevation
 
         slowness : np ndarray, shape (nx, ny, nz) (optional)
             slowness at grid nodes or cells (depending on cell_slowness)
@@ -580,7 +635,7 @@ cdef class Grid3d:
 
         Returns
         -------
-        s0 : numpy ndarray
+        s0 : np.ndarray
             slowness at source points
         """
 
@@ -633,43 +688,47 @@ cdef class Grid3d:
                  aggregate_src=False, compute_L=False, compute_M=False,
                  return_rays=False):
         """
+        raytrace(source, rcv, slowness=None, thread_no=None,
+                 aggregate_src=False, compute_L=False, compute_M=False,
+                 return_rays=False) -> tt, rays, M, L
+
         Perform raytracing
 
         Parameters
         ----------
-        source : 2D numpy ndarray with 3, 4 or 5 columns
+        source : 2D np.ndarray with 3, 4 or 5 columns
             see notes below
-        rcv : 2D numpy ndarray with 3 columns
+        rcv : 2D np.ndarray with 3 columns
             Columns correspond to x, y and z coordinates
         slowness : np ndarray, shape (nx, ny, nz) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             slowness may also have been flattened (with default 'C' order)
-                if None, slowness must have been assigned previously
+            if None, slowness must have been assigned previously
         thread_no : int (None by default)
             Perform calculations in thread number "thread_no"
-                if None, attempt to run in parallel if warranted by number of
-                sources and value of nthreads in constructor
+            if None, attempt to run in parallel if warranted by number of
+            sources and value of nthreads in constructor
         aggregate_src : bool (False by default)
-            it True, all source coordinates belong to a single event
+            if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to slowness
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
-                Note : compute_M and compute_L are mutually exclusive
+            Note : compute_M and compute_L are mutually exclusive
         return_rays : bool (False by default)
             Return raypaths
 
         Returns
         -------
-        tt : numpy ndarray
+        tt : np.ndarray
             travel times for the appropriate source-rcv  (see Notes below)
-        rays : list of numpy ndarray (if return_rays is True)
-            Coordinates of segments forming raypaths
-        M : list of scipy csr_matrix
-            list of matrices of partial derivative of travel time w/r to velocity
-                the number of matrices is equal to the number of sources
+        rays : :obj:`list` of :obj:`np.ndarray`
+            Coordinates of segments forming raypaths (if return_rays is True)
+        M : :obj:`list` of :obj:`csr_matrix`
+            matrices of partial derivative of travel time w/r to velocity.
+            the number of matrices is equal to the number of sources
         L : scipy csr_matrix
-            Matrix of partial derivative of travel time w/r to slowness
+            Matrix of partial derivative of travel time w/r to slowness.
             if input argument source has 5 columns, L is a list of matrices and
             the number of matrices is equal to the number of sources
             otherwise, L is a single csr_matrix
@@ -677,18 +736,18 @@ cdef class Grid3d:
         Notes
         -----
         If source has 3 columns:
-                Columns correspond to x, y and z coordinates
-                Origin time (t0) is 0 for all points
+            - Columns correspond to x, y and z coordinates
+            - Origin time (t0) is 0 for all points
         If source has 4 columns:
-                1st column corresponds to origin times
-                2nd, 3rd & 4th columns correspond to x, y and z coordinates
+            - 1st column corresponds to origin times
+            - 2nd, 3rd & 4th columns correspond to x, y and z coordinates
         If source has 5 columns:
-                1st column corresponds to event ID
-                2nd column corresponds to origin times
-                3rd, 4th & 5th columns correspond to x, y and z coordinates
+            - 1st column corresponds to event ID
+            - 2nd column corresponds to origin times
+            - 3rd, 4th & 5th columns correspond to x, y and z coordinates
 
         For the latter case (5 columns), source and rcv should contain the same
-            number of rows, each row corresponding to a source-receiver pair
+        number of rows, each row corresponding to a source-receiver pair.
         For the 2 other cases, source and rcv can contain the same number of
         rows, each row corresponding to a source-receiver pair, or the number
         of rows may differ if aggregate_src is True or if all rows in source
@@ -991,22 +1050,24 @@ cdef class Grid3d:
 
     def to_vtk(self, fields, filename):
         """
-        Save grid variables to VTK format
+        to_vtk(fields, filename)
+
+        Save grid variables and/or raypaths to VTK format
 
         Parameters
         ----------
         fields: dict
-            dict of variables to save to file
-            variables should be numpy ndarrays of size equal to either the
-            number of nodes of the number of cells of the grid
+            dict of variables to save to file. Variables should be np.ndarray of
+            size equal to either the number of nodes of the number of cells of
+            the grid, or a list of raypath coordinates.
         filename: str
             Name of file without extension for saving (extension vtr will be
-            added)
+            added).  Raypaths are saved in separate files, and filename will
+            be appended by the dict key and have a vtp extension.
 
         Notes
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
-
         """
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(self.y)
@@ -1018,70 +1079,111 @@ cdef class Grid3d:
         rgrid.SetYCoordinates(yCoords)
         rgrid.SetZCoordinates(zCoords)
 
+        save_grid = False
         for fn in fields:
             data = fields[fn]
 
-            scalar = vtk.vtkDoubleArray()
-            scalar.SetName(fn)
-            scalar.SetNumberOfComponents(1)
-            scalar.SetNumberOfTuples(data.size)
-            if data.size == self.get_number_of_nodes():
-                shape = (self._x.size(), self._y.size(), self._z.size())
-                if data.ndim == 3:
-                    if data.shape != shape:
-                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
-                    # VTK stores in 'F' order
-                    tmp = data.flatten(order='F')
-                elif data.ndim == 1:
-                    # 'C' order assumed, reshape back and flatten to 'F' order
-                    tmp = data.reshape(shape).flatten(order='F')
-                else:
-                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
-                for n in range(data.size):
-                    scalar.SetTuple1(n, tmp[n])
-                rgrid.GetPointData().AddArray(scalar)
-            elif data.size == self.get_number_of_cells():
-                shape = (self._x.size()-1, self._y.size()-1, self._z.size()-1)
-                if data.ndim == 3:
-                    if data.shape != shape:
-                        raise ValueError('Field {0:s} has incorrect shape'.format(fn))
-                    # VTK stores in 'F' order
-                    tmp = data.flatten(order='F')
-                elif data.ndim == 1:
-                    # 'C' order assumed, reshape back and flatten to 'F' order
-                    tmp = data.reshape(shape).flatten(order='F')
-                else:
-                    raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
-                for n in range(data.size):
-                    scalar.SetTuple1(n, tmp[n])
-                rgrid.GetCellData().AddArray(scalar)
+            if isinstance(data, list):
+                self._save_raypaths(data, filename+'_'+fn+'.vtp')
             else:
-                raise ValueError('Field {0:s} has incorrect size'.format(fn))
+                save_grid = True
+                scalar = vtk.vtkDoubleArray()
+                scalar.SetName(fn)
+                scalar.SetNumberOfComponents(1)
+                scalar.SetNumberOfTuples(data.size)
+                if data.size == self.get_number_of_nodes():
+                    shape = (self._x.size(), self._y.size(), self._z.size())
+                    if data.ndim == 3:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim ({1:d})'.format(fn, data.ndim))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetPointData().AddArray(scalar)
+                elif data.size == self.get_number_of_cells():
+                    shape = (self._x.size()-1, self._y.size()-1, self._z.size()-1)
+                    if data.ndim == 3:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim ({1:d})'.format(fn, data.ndim))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetCellData().AddArray(scalar)
+                else:
+                    raise ValueError('Field {0:s} has incorrect size'.format(fn))
 
-        writer = vtk.vtkXMLRectilinearGridWriter()
-        writer.SetFileName(filename+'.vtr')
-        writer.SetInputData(rgrid)
+        if save_grid:
+            writer = vtk.vtkXMLRectilinearGridWriter()
+            writer.SetFileName(filename+'.vtr')
+            writer.SetInputData(rgrid)
+            writer.SetDataModeToBinary()
+            writer.Update()
+
+    def _save_raypaths(self, rays, filename):
+        polydata = vtk.vtkPolyData()
+        cellarray = vtk.vtkCellArray()
+        pts = vtk.vtkPoints()
+        npts = 0
+        for n in range(len(rays)):
+            npts += rays[n].shape[0]
+        pts.SetNumberOfPoints(npts)
+        npts = 0
+        for n in range(len(rays)):
+            for p in range(rays[n].shape[0]):
+                pts.InsertPoint(npts, rays[n][p, 0], rays[n][p, 1], rays[n][p, 2])
+                npts += 1
+        polydata.SetPoints(pts)
+        npts = 0
+        for n in range(len(rays)):
+            line = vtk.vtkPolyLine()
+            line.GetPointIds().SetNumberOfIds(rays[n].shape[0])
+            for p in range(rays[n].shape[0]):
+                line.GetPointIds().SetId(p, npts)
+                npts += 1
+            cellarray.InsertNextCell(line)
+        polydata.SetLines(cellarray)
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetFileName(filename)
+        writer.SetInputData(polydata)
         writer.SetDataModeToBinary()
         writer.Update()
+
 
     @staticmethod
     def builder(filename, nthreads=1, method='FSM', tt_from_rp=1, interp_vel=0,
                 eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
                 n_secondary=2, n_tertiary=2, radius_tertiary=1.0):
         """
+        builder(filename, nthreads=1, method='FSM', tt_from_rp=1, interp_vel=0,
+                eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
+                n_secondary=2, n_tertiary=2, radius_tertiary=1.0)
+
         Build instance of Grid3d from VTK file
 
         Parameters
         ----------
         filename : str
-            Name of file holding rectilinear grid
+            Name of file holding a vtkRectilinearGrid.
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'
 
         Returns
         -------
-        Instance of Grid3d
+        grid: :obj:`Grid3d`
+            grid instance
         """
 
         reader = vtk.vtkXMLRectilinearGridReader()
@@ -1134,36 +1236,37 @@ cdef class Grid3d:
 
         Parameters
         ----------
-        Tx : numpy ndarray
-              source coordinates, nTx by 3
-                1st column contains X coordinates,
-                2nd contains Y coordinates
-                3rd contains Z coordinates
-        Rx : numpy ndarray
-              receiver coordinates, nTx by 3
-                1st column contains X coordinates,
-                2nd contains Y coordinates
-                3rd contains Z coordinates
-        grx : numpy ndarray
-                grid node coordinates along x
-        gry : numpy ndarray
-                grid node coordinates along y
-        grz : numpy ndarray
-                grid node coordinates along z
+        Tx : np.ndarray
+            source coordinates, nTx by 3
+                - 1st column contains X coordinates,
+                - 2nd contains Y coordinates
+                - 3rd contains Z coordinates
+        Rx : np.ndarray
+            receiver coordinates, nTx by 3
+                - 1st column contains X coordinates,
+                - 2nd contains Y coordinates
+                - 3rd contains Z coordinates
+        grx : np.ndarray
+            grid node coordinates along x
+        gry : np.ndarray
+            grid node coordinates along y
+        grz : np.ndarray
+            grid node coordinates along z
         centers : bool
-                return coordinates of center of cells (False by default)
+            return coordinates of center of cells (False by default)
 
         Returns
         -------
         L : scipy csr_matrix
-               data kernel matrix (tt = L*slowness)
-        (xc, yc, zc) : tuple of np ndarrays
-                vectors of coordinates of center of cells
+            data kernel matrix (tt = L*slowness)
+        (xc, yc, zc) : :obj:`tuple` of `np.ndarray`
+            vectors of coordinates of center of cells
 
         Note
         ----
         Tx and Rx should contain the same number of rows, each row corresponding
         to a source-receiver pair
+
         """
 
         cdef size_t nTx = Tx.shape[0]
@@ -1178,11 +1281,13 @@ cdef class Grid3d:
         indptr_p = []
 
         cdef size_t k = 0
-        cdef size_t ix, iy, iz
+        cdef size_t ix = 0
+        cdef size_t iy = 0
+        cdef size_t iz = 0
 
         cdef double x, y, z, x1, y1, z1, x2, y2, z2, dtmp, d, l, m, n
         cdef double m_y, b_y, m_z, b_z, dlx, dly, dlz, dl, xe, ye, ze
-        cdef int sx, sy, sz
+        cdef int sy, sz
         cdef bool up_y, up_z
         cdef Py_ssize_t nt
 
@@ -1575,6 +1680,40 @@ cdef class Grid2d:
         total number of parameters for grid
     nthreads: int
         number of threads for raytracing
+
+    Constructor:
+
+    Grid2d(x, z, nthreads=1, cell_slowness=1, method='FSM', iso='iso',
+           eps=1.e-15, maxit=20, weno=1, rotated_template=0,
+           nsnx=10, nsnz=10) -> Grid2d
+
+    Parameters
+    ----------
+    x : np.ndarray
+        node coordinates along x
+    z : np.ndarray
+        node coordinates along z
+    nthreads : int
+        number of threads for raytracing (default is 1)
+    cell_slowness : bool
+        slowness defined for cells (True) or nodes (False) (default is 1)
+    method : string
+        raytracing method (default is SPM)
+            - 'FSM' : fast marching method
+            - 'SPM' : shortest path method
+    eps : double
+        convergence criterion (FSM) (default is 1e-15)
+    maxit : int
+        max number of sweeping iterations (FSM) (default is 20)
+    weno : bool
+        use 3rd order weighted essentially non-oscillatory operator (FSM)
+        (default is True)
+    rotated_template : bool
+        use rotated templates (FSM)
+    nsnx : int
+        number of secondary nodes in x (SPM) (default is 10)
+    nsnz : int
+        number of secondary nodes in z (SPM) (default is 10)
     """
     cdef vector[double] _x
     cdef vector[double] _z
@@ -1583,14 +1722,19 @@ cdef class Grid2d:
     cdef bool cell_slowness
     cdef size_t _nthreads
     cdef char method
+    cdef char iso
+    cdef double eps
+    cdef int maxit
+    cdef bool weno
+    cdef bool rotated_template
+    cdef uint32_t nsnx
+    cdef uint32_t nsnz
 
-#    cdef Grid2D[double,uint32_t,sxz[double]]* grid
-    cdef Grid2Drcsp[double,uint32_t, cell2d]* grid
+    cdef Grid2D[double,uint32_t,sxz[double]]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
-                  np.ndarray[np.double_t, ndim=1] z,
-                  size_t nthreads=1,
-                  bool cell_slowness=1, str method='SPM',
+                  np.ndarray[np.double_t, ndim=1] z, size_t nthreads=1,
+                  bool cell_slowness=1, str method='SPM', str aniso='iso',
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10):
 
@@ -1602,6 +1746,12 @@ cdef class Grid2d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._nthreads = nthreads
+        self.eps = eps
+        self.maxit = maxit
+        self.weno = weno
+        self.rotated_template = rotated_template
+        self.nsnx = nsnx
+        self.nsnz = nsnz
 
         for val in x:
             self._x.push_back(val)
@@ -1612,34 +1762,83 @@ cdef class Grid2d:
 
         if cell_slowness:
             if method == 'SPM':
-                self.grid = new Grid2Drcsp[double,uint32_t,cell2d](
-                                nx, nz, self._dx, self._dz,
-                                xmin, zmin, nsnx, nsnz, nthreads)
+                self.method = b's'
+                if aniso == 'iso':
+                    self.iso = b'i'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'elliptical':
+                    self.iso = b'e'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_e](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'tilted_elliptical':
+                    self.iso = b't'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_te](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'vti_psv':
+                    self.iso = b'p'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_p](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                elif aniso == 'vti_sh':
+                    self.iso = b'h'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, nthreads)
+                else:
+                    raise ValueError('Anisotropy model not implemented')
             elif method == 'FSM':
-                raise ValueError('Implementation issue at this time')
-                # self.grid = new Grid2Drcfs[double,uint32_t](nx, nz,
-                #                                             self._dx, self._dz,
-                #                                             xmin, zmin,
-                #                                             eps, maxit, weno,
-                #                                             rotated_template,
-                #                                             nthreads)
+                self.method = b'f'
+                self.grid = new Grid2Drcfs[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, rotated_template, nthreads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
-            #
-            raise ValueError('Implementation issue at this time')
-            # if method == 'SPM':
-            #     self.grid = new Grid2Drnsp[double,uint32_t](nx, nz,
-            #                                                 self._dx, self._dz,
-            #                                                 xmin, zmin,
-            #                                                 nsnx, nsnz,
-            #                                                 nthreads)
+            if method == 'SPM':
+                self.method = b's'
+                self.grid = new Grid2Drnsp[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin,
+                                nsnx, nsnz, nthreads)
+            elif method == 'FSM':
+                self.method = b'f'
+                self.grid = new Grid2Drnfs[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, rotated_template, nthreads)
 
     def __dealloc__(self):
         del self.grid
 
+    def __reduce__(self):
+        if self.method == b'f':
+            method = 'FSM'
+        elif self.method == b's':
+            method = 'SPM'
+        elif self.method == b'd':
+            method = 'DSPM'
+
+        if self.iso == b'i':
+            aniso = 'iso'
+        elif self.iso == b'e':
+            aniso = 'elliptical'
+        elif self.iso == b't':
+            aniso = 'tilted_elliptical'
+        elif self.iso == b'p':
+            aniso = 'vti_psv'
+        elif self.iso == b'h':
+            aniso = 'vti_sh'
+
+        constructor_params = (self.nthreads, self.cell_slowness, method,
+                              aniso, self.eps, self.maxit, self.weno,
+                              self.rotated_template, self.nsnx, self.nsnz)
+        return (_rebuild2d, (self.x, self.z, constructor_params))
+
     @property
     def x(self):
+        """np.ndarray: node coordinates along x"""
         tmp = np.empty((self._x.size(),))
         cdef int n
         for n in range(self._x.size()):
@@ -1648,6 +1847,7 @@ cdef class Grid2d:
 
     @property
     def z(self):
+        """np.ndarray: node coordinates along z"""
         tmp = np.empty((self._z.size(),))
         cdef int n
         for n in range(self._z.size()):
@@ -1656,14 +1856,17 @@ cdef class Grid2d:
 
     @property
     def dx(self):
+        """float: node separation along x"""
         return self._dx
 
     @property
     def dz(self):
+        """float: node separation along x"""
         return self._dz
 
     @property
     def shape(self):
+        """:obj:`list` of :obj:`int`: number of parameters along each dimension"""
         if self.cell_slowness:
             return (self._x.size()-1, self._z.size()-1)
         else:
@@ -1671,10 +1874,12 @@ cdef class Grid2d:
 
     @property
     def nthreads(self):
+        """int: number of threads for raytracing"""
         return self._nthreads
 
     @property
     def nparams(self):
+        """int: total number of parameters for grid"""
         if self.cell_slowness:
             return (self._x.size()-1) * (self._z.size()-1)
         else:
@@ -1682,16 +1887,789 @@ cdef class Grid2d:
 
     def get_number_of_nodes(self):
         """
-        Return number of nodes in grid
+        Returns
+        -------
+        int:
+            number of nodes in grid
         """
         return self._x.size() * self._z.size()
 
     def get_number_of_cells(self):
         """
-        Return number of cells in grid
+        Returns
+        -------
+        int:
+            number of cells in grid
         """
         return (self._x.size()-1) * (self._z.size()-1)
 
+    def get_grid_traveltimes(self, thread_no=0):
+        """
+        get_grid_traveltimes(thread_no=0)
+
+        Obtain traveltimes computed at primary grid nodes
+
+        Parameters
+        ----------
+        thread_no : int
+            thread used to computed traveltimes (default is 0)
+
+        Returns
+        -------
+        tt: np ndarray, shape (nx, nz)
+        """
+        if thread_no >= self._nthreads:
+            raise ValueError('Thread number is larger than number of threads')
+        cdef vector[double] tmp
+        cdef int n
+        self.grid.getTT(tmp, thread_no)
+        tt = np.empty((tmp.size(),))
+        for n in range(tmp.size()):
+            tt[n] = tmp[n]
+        shape = (self._x.size(), self._z.size())
+        return tt.reshape(shape)
+
+    def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
+        """
+        is_outside(pts)
+
+        Check if points are outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray, shape(npts, 3)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool:
+            True if at least one point outside grid
+        """
+        return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
+                np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
+
+    def set_slowness(self, slowness):
+        """
+        set_slowness(slowness)
+
+        Assign slowness to grid
+
+        Parameters
+        ----------
+        slowness : np ndarray, shape (nx, nz)
+            slowness may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if slowness.size != nx*nz:
+            raise ValueError('Slowness vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if slowness.ndim == 2:
+            if slowness.shape != (nx, nz):
+                raise ValueError('Slowness has wrong shape')
+            tmp = slowness.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif slowness.ndim == 1:
+            tmp = slowness.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('Slowness must be 1D or 3D ndarray')
+        self.grid.setSlowness(data)
+
+    def set_xi(self, xi):
+        """
+        set_xi(xi)
+
+        Assign elliptical anisotropy ratio to grid
+
+        Parameters
+        ----------
+        xi : np ndarray, shape (nx, nz)
+            xi may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if xi.size != nx*nz:
+            raise ValueError('xi vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if xi.ndim == 2:
+            if xi.shape != (nx, nz):
+                raise ValueError('xi has wrong shape')
+            tmp = xi.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif xi.ndim == 1:
+            tmp = xi.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('xi must be 1D or 3D ndarray')
+        self.grid.setXi(data)
+
+    def set_tilt_angle(self, theta):
+        """
+        set_tilt_angle(theta)
+
+        Assign tilted elliptical anisotropy angle to grid
+
+        Parameters
+        ----------
+        theta : np ndarray, shape (nx, nz)
+            theta may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if theta.size != nx*nz:
+            raise ValueError('theta vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if theta.ndim == 2:
+            if theta.shape != (nx, nz):
+                raise ValueError('theta has wrong shape')
+            tmp = theta.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif theta.ndim == 1:
+            tmp = theta.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('theta must be 1D or 3D ndarray')
+        self.grid.setTiltAngle(data)
+
+    def set_Vp0(self, v):
+        """
+        set_Vp0(v)
+
+        Assign vertical Vp to grid (VTI medium)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVp0(data)
+
+    def set_Vs0(self, v):
+        """
+        set_Vs0(v)
+
+        Assign vertical Vs to grid (VTI medium)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVs0(data)
+
+    def set_delta(self, v):
+        """
+        set_delta(d)
+
+        Assign Thomsen delta parameter to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        d : np ndarray, shape (nx, nz)
+            d may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setDelta(data)
+
+    def set_epsilon(self, v):
+        """
+        set_epsilon(e)
+
+        Assign Thomsen epsilon parameter to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        e : np ndarray, shape (nx, nz)
+            e may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setEpsilon(data)
+
+    def set_gamma(self, v):
+        """
+        set_gamma(g)
+
+        Assign Thomsen gamma parameter to grid (VTI medium, SH waves)
+
+        Parameters
+        ----------
+        g : np ndarray, shape (nx, nz)
+            g may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setGamma(data)
+
+    def raytrace(self, source, rcv, slowness=None, xi=None, theta=None,
+                 Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
+                 thread_no=None, aggregate_src=False, compute_L=False,
+                 return_rays=False):
+        """
+        raytrace(source, rcv, slowness=None, xi=None, theta=None,
+                 Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
+                 thread_no=None, aggregate_src=False, compute_L=False,
+                 return_rays=False) -> tt, rays, L
+
+        Perform raytracing
+
+        Parameters
+        ----------
+        source : 2D np.ndarray with 2 or 3 columns
+            see notes below
+        rcv : 2D np.ndarray with 2 columns
+            Columns correspond to x, y and z coordinates
+        slowness : np ndarray, shape (nx, nz) (None by default)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+            if None, slowness must have been assigned previously
+        xi : np ndarray, shape (nx, nz) (None by default)
+            xi at grid cells (only for SPM & cell_slowness=True)
+            xi may also have been flattened (with default 'C' order)
+            if None, xi must have been assigned previously
+        theta : np ndarray, shape (nx, nz) (None by default)
+            theta at grid cells (only for SPM & cell_slowness=True)
+            theta may also have been flattened (with default 'C' order)
+            if None, theta must have been assigned previously
+        Vp0 : np ndarray, shape (nx, nz) (None by default)
+            Vp0 at grid cells (only for SPM & cell_slowness=True)
+            Vp0 may also have been flattened (with default 'C' order)
+            if None, Vp0 must have been assigned previously
+        Vs0 : np ndarray, shape (nx, nz) (None by default)
+            Vs0 at grid cells (only for SPM & cell_slowness=True)
+            Vs0 may also have been flattened (with default 'C' order)
+            if None, Vs0 must have been assigned previously
+        delta : np ndarray, shape (nx, nz) (None by default)
+            delta at grid cells (only for SPM & cell_slowness=True)
+            delta may also have been flattened (with default 'C' order)
+            if None, delta must have been assigned previously
+        epsilon : np ndarray, shape (nx, nz) (None by default)
+            epsilon at grid cells (only for SPM & cell_slowness=True)
+            epsilon may also have been flattened (with default 'C' order)
+            if None, epsilon must have been assigned previously
+        gamma : np ndarray, shape (nx, nz) (None by default)
+            gamma at grid cells (only for SPM & cell_slowness=True)
+            gamma may also have been flattened (with default 'C' order)
+            if None, gamma must have been assigned previously
+        thread_no : int (None by default)
+            Perform calculations in thread number "thread_no"
+            if None, attempt to run in parallel if warranted by number of
+            sources and value of nthreads in constructor
+        aggregate_src : bool (False by default)
+            if True, all source coordinates belong to a single event
+        compute_L : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to slowness
+        return_rays : bool (False by default)
+            Return raypaths
+
+        Returns
+        -------
+        tt : np.ndarray
+            travel times for the appropriate source-rcv  (see Notes below)
+        rays : :obj:`list` of :obj:`np.ndarray`
+            Coordinates of segments forming raypaths (if return_rays is True)
+        L : scipy csr_matrix
+            Matrix of partial derivative of travel time w/r to slowness
+
+        Notes
+        -----
+        If source has 2 columns:
+            - Columns correspond to x and z coordinates
+            - Origin time (t0) is 0 for all points
+        If source has 3 columns:
+            - 1st column corresponds to origin times
+            - 2nd & 3rd columns correspond to x and z coordinates
+
+        source and rcv can contain the same number of rows, each row
+        corresponding to a source-receiver pair, or the number of rows may
+        differ if aggregate_src is True or if all rows in source are identical.
+        """
+        # check input data consistency
+
+        if source.ndim != 2 or rcv.ndim != 2:
+            raise ValueError('source and rcv should be 2D arrays')
+
+        if self.iso != b'i' and self.method != b's' and not self.cell_slowness:
+            raise NotImplementedError('Anisotropic raytracing implemented only for SPM')
+
+        if compute_L and not self.cell_slowness:
+            raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
+
+        if compute_L and (self.iso == b'p' or self.iso == b'h'):
+            raise NotImplementedError('compute_L not implemented for VTI media')
+
+        if source.shape[1] == 2:
+            src = source
+            Tx = np.unique(source, axis=0)
+            t0 = np.zeros((Tx.shape[0], 1))
+            nTx = Tx.shape[0]
+        elif source.shape[1] == 3:
+            src = source[:,1:3]
+            tmp = np.unique(source, axis=0)
+            nTx = tmp.shape[0]
+            Tx = tmp[:,1:3]
+            t0 = tmp[:,0]
+        else:
+            raise ValueError('source should be either nsrc x 2 or 3')
+
+        if src.shape[1] != 2 or rcv.shape[1] != 2:
+            raise ValueError('src and rcv should be ndata x 2')
+
+        if self.is_outside(src):
+            raise ValueError('Source point outside grid')
+
+        if self.is_outside(rcv):
+            raise ValueError('Receiver outside grid')
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+        if xi is not None:
+            self.set_xi(xi)
+        if theta is not None:
+            self.set_tilt_angle(theta)
+        if Vp0 is not None:
+            self.set_Vp0(Vp0)
+        if Vs0 is not None:
+            self.set_Vs0(Vs0)
+        if delta is not None:
+            self.set_delta(delta)
+        if epsilon is not None:
+            self.set_epsilon(epsilon)
+        if gamma is not None:
+            self.set_gamma(gamma)
+
+        cdef vector[vector[sxz[double]]] vTx
+        cdef vector[vector[sxz[double]]] vRx
+        cdef vector[vector[double]] vt0
+        cdef vector[vector[double]] vtt
+
+        cdef vector[vector[vector[sxz[double]]]] r_data
+        cdef vector[vector[vector[siv2[double]]]] l_data
+        cdef size_t thread_nb
+
+        cdef int i, j, k, n, nn, MM, NN
+
+        vTx.resize(nTx)
+        vRx.resize(nTx)
+        vt0.resize(nTx)
+        vtt.resize(nTx)
+        if compute_L:
+            l_data.resize(nTx)
+        if return_rays:
+            r_data.resize(nTx)
+
+        iRx = []
+        if nTx == 1:
+            vTx[0].push_back(sxz[double](src[0,0], src[0,1]))
+            for r in rcv:
+                vRx[0].push_back(sxz[double](r[0], r[1]))
+            vt0[0].push_back(t0[0])
+            vtt[0].resize(rcv.shape[0])
+            iRx.append(np.arange(rcv.shape[0]))
+        elif aggregate_src:
+            for t in Tx:
+                vTx[0].push_back(sxz[double](t[0], t[1]))
+            for t in t0:
+                vt0[0].push_back(t)
+            for r in rcv:
+                vRx[0].push_back(sxz[double](r[0], r[1]))
+            vtt[0].resize(rcv.shape[0])
+            nTx = 1
+            iRx.append(np.arange(rcv.shape[0]))
+        else:
+            if src.shape != rcv.shape:
+                raise ValueError('src and rcv should be of equal size')
+
+            for n in range(nTx):
+                ind = np.sum(Tx[n,:] == src, axis=1) == 2
+                iRx.append(np.nonzero(ind)[0])
+                vTx[n].push_back(sxz[double](Tx[n,0], Tx[n,1]))
+                vt0[n].push_back(t0[n])
+                for r in rcv[ind,:]:
+                    vRx[n].push_back(sxz[double](r[0], r[1]))
+                vtt[n].resize(vRx[n].size())
+
+        tt = np.zeros((rcv.shape[0],))
+        if nTx < self._nthreads or self._nthreads == 1:
+            if compute_L==False and return_rays==False:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+            elif compute_L and return_rays:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+            elif compute_L:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+            else:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+
+        elif thread_no is not None:
+            # we should be here for just one event
+            assert nTx == 1
+            # normally we should not need to compute L
+            assert compute_L is False
+            thread_nb = thread_no
+
+            if return_rays:
+                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
+                for nt in range(vtt[0].size()):
+                    tt[nt] = vtt[0][nt]
+                rays = []
+                for n2 in range(vRx.size()):
+                    r = np.empty((r_data[0][n2].size(), 2))
+                    for nn in range(r_data[0][n2].size()):
+                        r[nn, 0] = r_data[0][n2][nn].x
+                        r[nn, 1] = r_data[0][n2][nn].z
+                    rays.append(r)
+                return tt, rays
+
+            else:
+                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
+                for nt in range(vtt[0].size()):
+                    tt[nt] = vtt[0][nt]
+                return tt
+
+        else:
+            if compute_L==False and return_rays==False:
+                self.grid.raytrace(vTx, vt0, vRx, vtt)
+            elif compute_L and return_rays:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+            elif compute_L:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+            else:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+
+        for n in range(nTx):
+            for nt in range(vtt[n].size()):
+                tt[iRx[n][nt]] = vtt[n][nt]
+
+        if return_rays:
+            rays = [ [0.0] for n in range(rcv.shape[0])]
+            for n in range(nTx):
+                r = [ [0.0] for i in range(vRx[n].size())]
+                for n2 in range(vRx[n].size()):
+                    r[n2] = np.empty((r_data[n][n2].size(), 2))
+                    for nn in range(r_data[n][n2].size()):
+                        r[n2][nn, 0] = r_data[n][n2][nn].x
+                        r[n2][nn, 1] = r_data[n][n2][nn].z
+                for nt in range(vtt[n].size()):
+                    rays[iRx[n][nt]] = r[nt]
+
+        if compute_L:
+            # first build an array of matrices, for each event
+            L = []
+            ncells = self.get_number_of_cells()
+            for n in range(nTx):
+                nnz = 0
+                for ni in range(l_data[n].size()):
+                    nnz += l_data[n][ni].size()
+
+                if self.iso == b'i':
+                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                    indices = np.empty((nnz,), dtype=np.int64)
+                    val = np.empty((nnz,))
+
+                    k = 0
+                    MM = vRx[n].size()
+                    NN = ncells
+                    for i in range(MM):
+                        indptr[i] = k
+                        for j in range(NN):
+                            for nn in range(l_data[n][i].size()):
+                                if l_data[n][i][nn].i == j:
+                                    indices[k] = j
+                                    val[k] = l_data[n][i][nn].v
+                                    k += 1
+
+                    indptr[MM] = k
+                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                else:
+                    nnz *= 2
+                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                    indices = np.empty((nnz,), dtype=np.int64)
+                    val = np.empty((nnz,))
+
+                    k = 0
+                    MM = vRx[n].size()
+                    NN = 2*ncells
+                    for i in range(MM):
+                        indptr[i] = k
+                        for j in range(NN):
+                            for nn in range(l_data[n][i].size()):
+                                if l_data[n][i][nn].i == j:
+                                    indices[k] = j
+                                    val[k] = l_data[n][i][nn].v
+                                    k += 1
+                                elif l_data[n][i][nn].i+ncells == j:
+                                    indices[k] = j
+                                    val[k] = l_data[n][i][nn].v2
+                                    k += 1
+
+                    indptr[MM] = k
+                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+            # we want a single matrix
+            tmp = sp.vstack(L)
+            itmp = []
+            for n in range(nTx):
+                for nt in range(vtt[n].size()):
+                    itmp.append(iRx[n][nt])
+            L = tmp[itmp,:]
+
+        if compute_L==False and return_rays==False:
+            return tt
+        elif compute_L and return_rays:
+            return tt, rays, L
+        elif compute_L:
+            return tt, L
+        else:
+            return tt, rays
+
+    def to_vtk(self, fields, filename):
+        """
+        to_vtk(fields, filename)
+
+        Save grid variables and/or raypaths to VTK format
+
+        Parameters
+        ----------
+        fields: dict
+            dict of variables to save to file. Variables should be np.ndarray of
+            size equal to either the number of nodes of the number of cells of
+            the grid, or a list of raypath coordinates.
+        filename: str
+            Name of file without extension for saving (extension vtr will be
+            added).  Raypaths are saved in separate files, and filename will
+            be appended by the dict key and have a vtp extension.
+
+        Notes
+        -----
+        VTK files can be visualized with Paraview (https://www.paraview.org)
+        """
+        xCoords = numpy_support.numpy_to_vtk(self.x)
+        yCoords = numpy_support.numpy_to_vtk(np.array([0.0]))
+        zCoords = numpy_support.numpy_to_vtk(self.z)
+
+        rgrid = vtk.vtkRectilinearGrid()
+        rgrid.SetDimensions(self._x.size(), 1, self._z.size())
+        rgrid.SetXCoordinates(xCoords)
+        rgrid.SetYCoordinates(yCoords)
+        rgrid.SetZCoordinates(zCoords)
+
+        save_grid = False
+        for fn in fields:
+            data = fields[fn]
+
+            if isinstance(data, list):
+                self._save_raypaths(data, filename+'_'+fn+'.vtp')
+            else:
+                scalar = vtk.vtkDoubleArray()
+                scalar.SetName(fn)
+                scalar.SetNumberOfComponents(1)
+                scalar.SetNumberOfTuples(data.size)
+                if data.size == self.get_number_of_nodes():
+                    shape = (self._x.size(), self._z.size())
+                    if data.ndim == 2:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetPointData().AddArray(scalar)
+                elif data.size == self.get_number_of_cells():
+                    shape = (self._x.size()-1, self._z.size()-1)
+                    if data.ndim == 2:
+                        if data.shape != shape:
+                            raise ValueError('Field {0:s} has incorrect shape'.format(fn))
+                        # VTK stores in 'F' order
+                        tmp = data.flatten(order='F')
+                    elif data.ndim == 1 or (data.ndim == 2 and data.shape[0] == data.size):
+                        # 'C' order assumed, reshape back and flatten to 'F' order
+                        tmp = data.reshape(shape).flatten(order='F')
+                    else:
+                        raise ValueError('Field {0:s} has incorrect ndim'.format(fn))
+                    for n in range(data.size):
+                        scalar.SetTuple1(n, tmp[n])
+                    rgrid.GetCellData().AddArray(scalar)
+                else:
+                    raise ValueError('Field {0:s} has incorrect size'.format(fn))
+
+        if save_grid:
+            writer = vtk.vtkXMLRectilinearGridWriter()
+            writer.SetFileName(filename+'.vtr')
+            writer.SetInputData(rgrid)
+            writer.SetDataModeToBinary()
+            writer.Update()
+
+    def _save_raypaths(self, rays, filename):
+        polydata = vtk.vtkPolyData()
+        cellarray = vtk.vtkCellArray()
+        pts = vtk.vtkPoints()
+        npts = 0
+        for n in range(len(rays)):
+            npts += rays[n].shape[0]
+        pts.SetNumberOfPoints(npts)
+        npts = 0
+        for n in range(len(rays)):
+            for p in range(rays[n].shape[0]):
+                pts.InsertPoint(npts, rays[n][p, 0], 0.0, rays[n][p, 1])
+                npts += 1
+        polydata.SetPoints(pts)
+        npts = 0
+        for n in range(len(rays)):
+            line = vtk.vtkPolyLine()
+            line.GetPointIds().SetNumberOfIds(rays[n].shape[0])
+            for p in range(rays[n].shape[0]):
+                line.GetPointIds().SetId(p, npts)
+                npts += 1
+            cellarray.InsertNextCell(line)
+        polydata.SetLines(cellarray)
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetFileName(filename)
+        writer.SetInputData(polydata)
+        writer.SetDataModeToBinary()
+        writer.Update()
 
 
     @staticmethod
@@ -1706,23 +2684,23 @@ cdef class Grid2d:
 
         Parameters
         ----------
-        Tx : numpy ndarray
-              source coordinates, nTx by 2
-                1st column contains X coordinates,
-                2nd contains Z coordinates
-        Rx : numpy ndarray
-              receiver coordinates, nTx by 2
-                1st column contains X coordinates,
-                2nd contains Z coordinates
-        grx : numpy ndarray
-               grid node coordinates along x
-        grz : numpy ndarray
-               grid node coordinates along z
+        Tx : np.ndarray
+            source coordinates, nTx by 2
+                - 1st column contains X coordinates,
+                - 2nd contains Z coordinates
+        Rx : np.ndarray
+            receiver coordinates, nTx by 2
+                - 1st column contains X coordinates,
+                - 2nd contains Z coordinates
+        grx : np.ndarray
+                grid node coordinates along x
+        grz : np.ndarray
+                grid node coordinates along z
 
         Returns
         -------
         L : scipy csr_matrix
-               data kernel matrix (tt = L*slowness)
+            data kernel matrix (tt = L*slowness)
 
         Note
         ----
@@ -1741,7 +2719,8 @@ cdef class Grid2d:
         indptr_p = []
 
         cdef size_t k = 0
-        cdef size_t ix, iz
+        cdef size_t ix = 0
+        cdef size_t iz = 0
 
         cdef double x, z, xs, xr, zs, zr, dtmp, dlx, dlz, m, b, ze, xe
         cdef int64_t iCell
@@ -1875,3 +2854,20 @@ cdef class Grid2d:
         indptr_p.append(k)
         L = sp.csr_matrix((data_p, indices_p, indptr_p), shape=(nTx, (n_grx-1)*(n_grz-1)))
         return L
+
+
+def _rebuild3d(x, y, z, constructor_params):
+    (nthreads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
+     weno, nsnx, nsny, nsnz, n_secondary,
+     n_tertiary, radius_tertiary) = constructor_params
+    g = Grid3d(x, y, z, nthreads, cell_slowness, method, tt_from_rp,
+               interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
+               n_tertiary, radius_tertiary)
+    return g
+
+def _rebuild2d(x, z, constructor_params):
+    (nthreads, cell_slowness, method, aniso, eps, maxit, weno,
+     rotated_template, nsnx, nsnz) = constructor_params
+    g = Grid2d(x, z, nthreads, cell_slowness, method, aniso, eps, maxit, weno,
+               rotated_template, nsnx, nsnz)
+    return g

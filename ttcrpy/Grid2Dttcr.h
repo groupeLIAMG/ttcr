@@ -36,12 +36,12 @@
 #include "Grid2Drcsp.h"
 
 namespace ttcr {
-    
+
     typedef Grid2D<double,uint32_t,sxz<double>> grid;
-    typedef Grid2Drcsp<double,uint32_t,Cell<double,Node2Dcsp<double,uint32_t>,sxz<double>>> gridiso;
-    typedef Grid2Drcsp<double,uint32_t,CellElliptical<double,Node2Dcsp<double,uint32_t>,sxz<double>>> gridaniso;
-    typedef Grid2Drcsp<double,uint32_t,CellTiltedElliptical<double,Node2Dcsp<double,uint32_t>,sxz<double>>> gridtilted;
-    
+    typedef Grid2Drcsp<double,uint32_t,sxz<double>,Cell<double,Node2Dcsp<double,uint32_t>,sxz<double>>> gridiso;
+    typedef Grid2Drcsp<double,uint32_t,sxz<double>,CellElliptical<double,Node2Dcsp<double,uint32_t>,sxz<double>>> gridaniso;
+    typedef Grid2Drcsp<double,uint32_t,sxz<double>,CellTiltedElliptical<double,Node2Dcsp<double,uint32_t>,sxz<double>>> gridtilted;
+
     class Grid2Dttcr {
     public:
         Grid2Dttcr(std::string&, uint32_t, uint32_t, double, double, double, double, uint32_t, uint32_t, size_t);
@@ -49,29 +49,29 @@ namespace ttcr {
             delete grid_instance;
         }
         std::string getType() const { return type; }
-        
+
         void setSlowness(const std::vector<double>& slowness);
         void setXi(const std::vector<double>& xi);
         void setTheta(const std::vector<double>& theta);
-        
+
         void raytrace(const std::vector<sxz<double>>& Tx,
                       const std::vector<double>& tTx,
                       const std::vector<sxz<double>>& Rx,
                       double* traveltimes,
                       PyObject* rays,
                       PyObject* L) const;
-        
+
         void raytrace(const std::vector<sxz<double>>& Tx,
                       const std::vector<double>& tTx,
                       const std::vector<sxz<double>>& Rx,
                       double* traveltimes,
                       PyObject* L) const;
-        
+
         void raytrace(const std::vector<sxz<double>>& Tx,
                       const std::vector<double>& tTx,
                       const std::vector<sxz<double>>& Rx,
                       double* traveltimes) const;
-        
+
         static int Lsr2d(const double* Tx,
                           const double* Rx,
                           const size_t nTx,
@@ -90,14 +90,14 @@ namespace ttcr {
 						   const size_t n_grz,
 						   PyObject* L);
 
-		
+
     private:
         const std::string type;
         grid *grid_instance;
-		
+
         Grid2Dttcr() {}
     };
-	
+
 }
 
 #endif /* Grid2Dttcr_h */

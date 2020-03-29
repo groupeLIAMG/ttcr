@@ -373,7 +373,9 @@ namespace ttcr {
                                  std::vector<std::vector<T1>*>& traveltimes,
                                  std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                  const size_t threadNo) const {
-
+        if ( verbose > 2 ) {
+            std::cout << "\nIn Grid3D::raytrace(..., r_data, threadNo)\n" << std::endl;
+        }
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
@@ -433,7 +435,9 @@ namespace ttcr {
                                  std::vector<std::vector<sxyz<T1>>>& r_data,
                                  std::vector<std::vector<siv<T1>>>& l_data,
                                  const size_t threadNo) const {
-
+        if ( verbose > 2 ) {
+            std::cout << "\nIn Grid3D::raytrace(..., r_data, l_data, threadNo)\n" << std::endl;
+        }
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
@@ -662,7 +666,9 @@ namespace ttcr {
                                  std::vector<std::vector<T1>>& traveltimes,
                                  std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
                                  std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const {
-
+        if ( verbose > 2 ) {
+            std::cout << "\nIn Grid3D::raytrace\n" << std::endl;
+        }
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], l_data[0], 0);
         } else {

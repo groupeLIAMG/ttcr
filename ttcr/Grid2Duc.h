@@ -103,9 +103,22 @@ namespace ttcr {
             nodes[nn].setTT(tt, nt);
         }
         
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes(const bool primary=false) const {
+            if ( primary ) {
+                return nPrimary;
+            } else {
+                return nodes.size();
+            }
+        }
         size_t getNumberOfCells() const { return triangles.size(); }
         
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+            tt.resize(nPrimary);
+            for ( size_t n=0; n<nPrimary; ++n ) {
+                tt[n] = nodes[n].getTT(threadNo);
+            }
+        }
+
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
@@ -154,7 +167,26 @@ namespace ttcr {
             }
         }
 
-        
+        void getNodes(std::vector<S>& _nodes) const final {
+            _nodes.resize(nPrimary);
+            for ( size_t n=0; n<nPrimary; ++n ) {
+                _nodes[n] = nodes[n];
+            }
+        }
+        void getTriangles(std::vector<std::array<T2, 3>>& tri) const final {
+            tri.resize(triangles.size());
+            for ( size_t n=0; n<triangles.size(); ++n ) {
+                tri[n] = {triangles[n].i[0], triangles[n].i[1], triangles[n].i[2]};
+            }
+        }
+        void getTriangles(std::vector<std::vector<T2>>& tri) const final {
+            tri.resize(triangles.size());
+            for ( size_t n=0; n<triangles.size(); ++n ) {
+                tri[n].resize(3);
+                tri[n] = {triangles[n].i[0], triangles[n].i[1], triangles[n].i[2]};
+            }
+        }
+
     protected:
         const size_t nThreads;
         T2 nPrimary;

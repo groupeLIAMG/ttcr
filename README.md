@@ -1,10 +1,12 @@
-# ttcr
+![Logo](./images/ttcrpy_logo.svg)
+====
+
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](./01_LICENSE.txt)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1162725.svg)](https://doi.org/10.5281/zenodo.1162725)
 
-This repo contains C++ codes for raytracing on regular and unstructuted meshes.
-Python and Matlab wrappers are provided as well.
+This repo contains C++ and python codes for raytracing on regular and unstructured meshes.
+Matlab wrappers are provided as well.
 
 - [Python package](#heading)
 - [Stand alone command-line programs](#heading)
@@ -61,9 +63,10 @@ On my OS X machine, I use this command to compile from a terminal:
 ```
 MATLAB=/Applications/MATLAB_R2014a.app
 
-$MATLAB/bin/mex -O CXXFLAGS='$CXXFLAGS -std=c++11 -stdlib=libc++' LDFLAGS='$LDFLAGS \
--std=c++11 -stdlib=libc++' -largeArrayDims -v -I$HOME/src/ttcr/ttcr \
--I$HOME/src/ttcr/boost_1_72_0 -I$HOME/src/ttcr/eigen-3.3.7 grid2dunsp_mex.cpp
+$MATLAB/bin/mex -O CXXFLAGS='$CXXFLAGS -std=c++11 -stdlib=libc++' \
+LDFLAGS='$LDFLAGS -std=c++11 -stdlib=libc++' -largeArrayDims -v \
+-I$HOME/src/ttcr/ttcr -I$HOME/src/ttcr/boost_1_72_0 \
+-I$HOME/src/ttcr/eigen-3.3.7 grid2dunsp_mex.cpp
 ```
 
 On a windows machine with intel compiler installed, I could compile it from the matlab prompt with:
