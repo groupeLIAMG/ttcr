@@ -16,7 +16,7 @@ if platform.system() == 'Darwin':
     os.environ['CC'] = 'clang'
     os.environ['CXX'] = 'clang++'
     os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.15'
-    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3']
+    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3'] #, '-DDEBUG_RP']
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
 elif platform.system() == 'Linux':
@@ -38,7 +38,7 @@ extensions = [
               extra_compile_args=extra_compile_args,
               ),
     Extension('ttcrpy.cgrid3d',
-              sources=['ttcrpy/cgrid3d.pyx'],  # additional source file(s)
+              sources=['ttcrpy/cgrid3d.pyx', 'ttcrpy/verbose.cpp'],  # additional source file(s)
               include_dirs=include_dirs,
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
