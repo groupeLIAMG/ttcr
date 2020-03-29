@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Module cgrid3d &#8212; ttcrpy 0.1.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html"><h1 style="font-size: 3em;">ttcrpy</h1></a>
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">home</a>|&nbsp;</li>
+        <li><a href="search.html">search</a>|&nbsp;</li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/code_cgrid3d.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ttcrpy.cgrid3d">
+<span id="module-cgrid3d"></span><h1>Module cgrid3d<a class="headerlink" href="#module-ttcrpy.cgrid3d" title="Permalink to this headline">¶</a></h1>
+<p>3D grid for raytracing based on the fast sweeping method</p>
+<p>This code is part of ttcr ( <a class="reference external" href="https://github.com/groupeLIAMG/ttcr">https://github.com/groupeLIAMG/ttcr</a> )</p>
+<dl class="class">
+<dt id="ttcrpy.cgrid3d.Grid3Drc">
+<em class="property">class </em><code class="sig-prename descclassname">ttcrpy.cgrid3d.</code><code class="sig-name descname">Grid3Drc</code><span class="sig-paren">(</span><em class="sig-param">nx</em>, <em class="sig-param">ny</em>, <em class="sig-param">nz</em>, <em class="sig-param">dx</em>, <em class="sig-param">xmin</em>, <em class="sig-param">ymin</em>, <em class="sig-param">zmin</em>, <em class="sig-param">eps</em>, <em class="sig-param">maxit</em>, <em class="sig-param">weno</em>, <em class="sig-param">nthreads</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drc" title="Permalink to this definition">¶</a></dt>
+<dd><p>3D rectilinear grid with slowness defined in cells</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nx</strong> (<em>number of cells in x</em>) – </p></li>
+<li><p><strong>ny</strong> (<em>number of cells in y</em>) – </p></li>
+<li><p><strong>nz</strong> (<em>number of cells in z</em>) – </p></li>
+<li><p><strong>dx</strong> (<em>cell size in x</em>) – </p></li>
+<li><p><strong>xmin</strong> (<em>origin in x</em>) – </p></li>
+<li><p><strong>ymin</strong> (<em>origin in y</em>) – </p></li>
+<li><p><strong>zmin</strong> (<em>origin in z</em>) – </p></li>
+<li><p><strong>eps</strong> (<em>convergence criterion</em><em> (</em><em>FSM</em><em>)</em>) – </p></li>
+<li><p><strong>maxit</strong> (<em>max number of sweeping iterations</em>) – </p></li>
+<li><p><strong>weno</strong> (<em>use 3rd order weighted essentially non-oscillatory operator</em><em> (</em><em>bool</em><em>)</em>) – </p></li>
+<li><p><strong>nthreads</strong> (<em>number of threads for raytracing</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drc.get_nthreads">
+<code class="sig-name descname">get_nthreads</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drc.get_nthreads" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>number of threads allowed for calculations</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drc.raytrace">
+<code class="sig-name descname">raytrace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drc.raytrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform raytracing for a single source</p>
+<p>The source can comprise more than one point</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slowness</strong> (<em>1D array of slowness values in cells</em><em> (</em><em>can be None</em><em>, </em><em>but</em>) – slowness should have been set before calling raytrace)</p></li>
+<li><p><strong>Tx</strong> (<em>coordinates of source points</em><em> (</em><em>npts x 3</em><em>)</em>) – </p></li>
+<li><p><strong>Rx</strong> (<em>coordinates of receivers</em><em> (</em><em>nrcv x 3</em><em>)</em>) – </p></li>
+<li><p><strong>t0</strong> (<em>time of source event</em>) – </p></li>
+<li><p><strong>nout</strong> (<em>number of parameters to return</em><em> (</em><em>optional</em><em>, </em><em>see below</em><em>)</em>) – </p></li>
+<li><p><strong>thread_no</strong> (<em>thread/process number on which computation should be run</em>) – </p></li>
+<li><p><strong>L</strong> (<em>ray projection matrix</em><em> (</em><em>must be a csr_matrix</em><em>)</em>) – </p></li>
+<li><p><strong>rays</strong> (<em>list holding coordinates of ray segments</em><em>, </em><em>for each rcv</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>tt</strong> (<em>travel time are receivers</em>)</p></li>
+<li><p><em>if nout &gt;= 2</em> – rays : list holding coordinates of ray segments, for each rcv</p></li>
+<li><p><em>if nout == 3</em> – L : ray projection matrix</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>if nout is given, input arguments L and rays are ignored, new intances
+are created if needed</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drc.set_slowness">
+<code class="sig-name descname">set_slowness</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drc.set_slowness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign slowness at grid cells</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>slowness</strong> (<em>1D array</em><em> (</em><em>in 'C' order</em><em>)</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ttcrpy.cgrid3d.Grid3Drn">
+<em class="property">class </em><code class="sig-prename descclassname">ttcrpy.cgrid3d.</code><code class="sig-name descname">Grid3Drn</code><span class="sig-paren">(</span><em class="sig-param">nx</em>, <em class="sig-param">ny</em>, <em class="sig-param">nz</em>, <em class="sig-param">dx</em>, <em class="sig-param">xmin</em>, <em class="sig-param">ymin</em>, <em class="sig-param">zmin</em>, <em class="sig-param">eps</em>, <em class="sig-param">maxit</em>, <em class="sig-param">weno</em>, <em class="sig-param">nthreads</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drn" title="Permalink to this definition">¶</a></dt>
+<dd><p>3D rectilinear grid with slowness defined at nodes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nx</strong> (<em>number of cells in x</em>) – </p></li>
+<li><p><strong>ny</strong> (<em>number of cells in y</em>) – </p></li>
+<li><p><strong>nz</strong> (<em>number of cells in z</em>) – </p></li>
+<li><p><strong>dx</strong> (<em>cell size in x</em>) – </p></li>
+<li><p><strong>xmin</strong> (<em>origin in x</em>) – </p></li>
+<li><p><strong>ymin</strong> (<em>origin in y</em>) – </p></li>
+<li><p><strong>zmin</strong> (<em>origin in z</em>) – </p></li>
+<li><p><strong>eps</strong> (<em>convergence criterion</em><em> (</em><em>FSM</em><em>)</em>) – </p></li>
+<li><p><strong>maxit</strong> (<em>max number of sweeping iterations</em>) – </p></li>
+<li><p><strong>weno</strong> (<em>use 3rd order weighted essentially non-oscillatory operator</em><em> (</em><em>bool</em><em>)</em>) – </p></li>
+<li><p><strong>nthreads</strong> (<em>number of threads for raytracing</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drn.get_nthreads">
+<code class="sig-name descname">get_nthreads</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drn.get_nthreads" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>number of threads allowed for calculations</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drn.get_s0">
+<code class="sig-name descname">get_s0</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drn.get_s0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return slowness value at source position</p>
+<p>The source can comprise more than one point</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Tx</strong> (<em>coordinates of source points</em><em> (</em><em>npts x 3</em><em>)</em>) – </p></li>
+<li><p><strong>slowness</strong> (<em>1D array of slowness values at nodes</em><em> (</em><em>can be None</em><em>, </em><em>but</em>) – slowness should have been set before calling get_s0)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>s0</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>average slowness at source points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drn.raytrace">
+<code class="sig-name descname">raytrace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drn.raytrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform raytracing for a single source</p>
+<p>The source can comprise more than one point</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slowness</strong> (<em>1D array of slowness values at nodes</em><em> (</em><em>can be None</em><em>, </em><em>but</em>) – slowness should have been set before calling raytrace)</p></li>
+<li><p><strong>Tx</strong> (<em>coordinates of source points</em><em> (</em><em>npts x 3</em><em>)</em>) – </p></li>
+<li><p><strong>Rx</strong> (<em>coordinates of receivers</em><em> (</em><em>nrcv x 3</em><em>)</em>) – </p></li>
+<li><p><strong>t0</strong> (<em>time of source event</em>) – </p></li>
+<li><p><strong>nout</strong> (<em>number of parameters to return</em><em> (</em><em>see below</em><em>)</em>) – </p></li>
+<li><p><strong>thread_no</strong> (<em>thread/process number on which computation should be run</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>tt</strong> (<em>travel time are receivers</em>)</p></li>
+<li><p><em>if nout == 2 or nout == 3</em> – rays : list holding coordinates of ray segments, for each rcv</p></li>
+<li><p><em>if nout == 3</em> – M : matrix of partial derivatives of t w/r to velocity</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ttcrpy.cgrid3d.Grid3Drn.set_slowness">
+<code class="sig-name descname">set_slowness</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.cgrid3d.Grid3Drn.set_slowness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign slowness at grid nodes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>slowness</strong> (<em>1D array</em><em> (</em><em>in 'C' order</em><em>)</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">home</a>|&nbsp;</li>
+        <li><a href="search.html">search</a>|&nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Bernard Giroux.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>
