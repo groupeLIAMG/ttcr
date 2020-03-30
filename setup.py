@@ -20,7 +20,11 @@ if platform.system() == 'Darwin':
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
 elif platform.system() == 'Linux':
-    extra_compile_args = ['-std=c++11', '-O3']
+    if 'readthedocs.org/user_builds/ttcrpy' in os.path.dirname(__file__):
+        # do not optimize when building on readthedocs server
+        extra_compile_args = ['-std=c++11']
+    else:
+        extra_compile_args = ['-std=c++11', '-O3']
 
 include_dirs = ['ttcr', 'boost_1_72_0', 'eigen-3.3.7', np.get_include()]
 
