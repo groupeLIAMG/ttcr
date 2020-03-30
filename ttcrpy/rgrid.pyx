@@ -411,6 +411,14 @@ cdef class Grid3d:
         """
         return (i*(self._y.size()-1) + j)*(self._z.size()-1) + k
 
+    cdef uint32_t _f2c_ind(self, uint32_t ind):
+        """Convert cell index from 'F' order to 'C' order"""
+        cdef uint32_t i, j, k
+        k = <uint32_t>(ind / ((self._x.size()-1) * (self._y.size()-1)))
+        j = <uint32_t>((ind - k * (self._x.size()-1) * (self._y.size()-1)) / (self._x.size()-1))
+        i = <uint32_t>(ind - ((k * (self._y.size()-1) + j) * (self._x.size()-1)))
+        return (i * (self._y.size()-1) + j) * (self._z.size()-1) + k
+
     def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
         """
         is_outside(pts)
@@ -992,7 +1000,7 @@ cdef class Grid3d:
                     indptr[i] = k
                     for j in range(NN):
                         for nn in range(l_data[n][i].size()):
-                            if l_data[n][i][nn].i == j:
+                            if self._f2c_ind(l_data[n][i][nn].i) == j:
                                 indices[k] = j
                                 val[k] = l_data[n][i][nn].v
                                 k += 1
