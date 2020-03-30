@@ -28,6 +28,7 @@
 
 #include <array>
 #include <fstream>
+#include <functional>
 #include <thread>
 #include <vector>
 
