@@ -22,7 +22,7 @@ elif platform.system() == 'Windows':
 elif platform.system() == 'Linux':
     if 'readthedocs.org/user_builds/ttcrpy' in os.path.dirname(__file__):
         # do not optimize when building on readthedocs server
-        extra_compile_args = ['-std=c++11']
+        extra_compile_args = ['-std=c++11', '-O0']
     else:
         extra_compile_args = ['-std=c++11', '-O3']
 
