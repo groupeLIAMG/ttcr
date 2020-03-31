@@ -47,3 +47,5 @@ ttcrpy/cmesh3d.cp36-win_amd64.pyd
 ttcrpy/cmesh3d.cp37-win_amd64.pyd
 
 examples/example_cmesh2d.vtu
+
+docs/_build/
