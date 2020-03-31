@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e -x
 
-
-[ ! -d "/io/wheelhouse" ] && mkdir -p "/io/wheelhouse"
-
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
     "${PYBIN}/pip" install -r /io/requirements.txt
