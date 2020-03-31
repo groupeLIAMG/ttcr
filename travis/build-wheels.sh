@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e -x
 
-# Compile wheels
+# Compile wheels for python 3.5, 3.6 & 3.7
 for PYBIN in /opt/python/*3[567]*/bin; do
     "${PYBIN}/pip" install -r /io/requirements.txt
     "${PYBIN}/pip" wheel /io/ -w wheelhouse/
@@ -13,7 +13,7 @@ for whl in wheelhouse/*.whl; do
 done
 
 # Install packages and test
-for PYBIN in /opt/python/*/bin/; do
-    "${PYBIN}/pip" install ttcrpy --no-index -f /io/wheelhouse
+#for PYBIN in /opt/python/*/bin/; do
+#    "${PYBIN}/pip" install ttcrpy --no-index -f /io/wheelhouse
 #    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
-done
+#done
