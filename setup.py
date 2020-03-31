@@ -63,7 +63,8 @@ extensions = [
 
 setup(
     name='ttcrpy',
-    version='0.1.1',
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     description='Code to perform raytracing for geophysical applications',
     long_description=long_description,
     long_description_content_type='text/markdown',
