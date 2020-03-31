@@ -10,6 +10,10 @@ ttcr_matlab/*.mex*
 xcuserdata/
 someTests/
 
+ttcrpy.egg-info/
+
+ttcrpy-0*
+
 ttcrpy/__pycache__/
 
 dynamicNodes.svg
