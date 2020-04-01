@@ -1,0 +1,20 @@
+include ttcrpy/*.pyx
+include ttcrpy/*ttcr.h
+include ttcrpy/grid.py
+include ttcrpy/mesh.py
+include ttcr/Cell.h
+include ttcr/Grad.h
+include ttcr/Grid*.h
+include ttcr/Interpolator.h
+include ttcr/MSHReader.h
+include ttcr/Metric.h
+include ttcr/Node*.h
+include ttcr/Rcv*.h
+include ttcr/Src*.h
+include ttcr/structs_ttcr.h
+include ttcr/ttcr_t.h
+include ttcr/utils.h
+include boost_1_72_0/LICENSE_1_0.txt
+incliude boost_1_72_0/README.md
+recursive-include boost_1_72_0/boost/math *
+recursive-include eigen-3.3.7 *

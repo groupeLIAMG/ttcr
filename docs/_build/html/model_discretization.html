@@ -97,7 +97,11 @@ VTK format.</p>
 </div>
 <div class="section" id="id1">
 <h2>3D models<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<<<<<<< Updated upstream
 <p>Rectilinear grids and tetraedral meshes can be used for 3D calculations.</p>
+=======
+<p>Rectilinear grids and tetrahedral meshes can be used for 3D calculations.</p>
+>>>>>>> Stashed changes
 </div>
 <div class="section" id="assigning-velocity-slowness">
 <h2>Assigning velocity/slowness<a class="headerlink" href="#assigning-velocity-slowness" title="Permalink to this headline">¶</a></h2>
@@ -109,6 +113,15 @@ distribution in space. Two options are possible.</p>
 In the rightmost case, slowness values are assigned to grid nodes.  In the latter case, traveltime
 computation between two nodes is done by taking the average of the slowness
 values at the two nodes.</p>
+<<<<<<< Updated upstream
+=======
+<p>The choice mostly depends on the application.  For example, in traveltime tomography
+the problem is to use traveltime data to estimate the slowness model.  Rectilinear
+grids contain less cells than nodes, hence the number of unknown parameters is
+less if slowness values are assigned to cells.  With tetrahedral meshes, the number of
+nodes is less than the number of cells, and the system to solve will be smaller
+if slowness values are assignied to the nodes.</p>
+>>>>>>> Stashed changes
 </div>
 </div>
 
