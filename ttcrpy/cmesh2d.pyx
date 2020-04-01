@@ -142,6 +142,7 @@ cdef class Mesh2D:
         if not slowness.flags['C_CONTIGUOUS']:
             slowness = np.ascontiguousarray(slowness)
 
+        # ::1 tells cython that data is contiguous
         cdef double[::1] slowness_memview = slowness
 
         self.mesh.setSlowness(&slowness_memview[0], slowness_memview.shape[0])

@@ -13,8 +13,7 @@
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Module rgrid" href="code_rgrid.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
   </head><body>
 
 <div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
@@ -30,21 +29,14 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="code_rgrid.html" title="Module rgrid"
-             accesskey="P">previous</a> |</li>
         <li><a href="index.html">home</a>|&nbsp;</li>
         <li><a href="search.html">search</a>|&nbsp;</li>
-
-          <li class="nav-item nav-item-1"><a href="code.html" accesskey="U">Documentation for the python code</a> &#187;</li> 
+ 
       </ul>
     </div>
 
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="code_rgrid.html"
-                        title="previous chapter">Module rgrid</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -70,238 +62,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-ttcrpy.grid">
-<span id="module-grid"></span><h1>Module grid<a class="headerlink" href="#module-ttcrpy.grid" title="Permalink to this headline">¶</a></h1>
-<p>Created on Tue Jun 21 20:55:29 2016</p>
-<p>&#64;author: giroux</p>
-<p>Copyright 2016 Bernard Giroux
-email: <a class="reference external" href="mailto:bernard&#46;giroux&#37;&#52;&#48;ete&#46;inrs&#46;ca">bernard<span>&#46;</span>giroux<span>&#64;</span>ete<span>&#46;</span>inrs<span>&#46;</span>ca</a></p>
-<p>This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.</p>
-<p>This program is distributed in the hope that it /will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.</p>
-<p>You should have received a copy of the GNU General Public License
-along with this program.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
-<dl class="class">
-<dt id="ttcrpy.grid.Grid">
-<em class="property">class </em><code class="sig-prename descclassname">ttcrpy.grid.</code><code class="sig-name descname">Grid</code><a class="headerlink" href="#ttcrpy.grid.Grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Superclass for 2D and 3D grids</p>
-<dl class="simple">
-<dt>Grids are regular, i.e. constant step size, although not restricted to</dt><dd><p>square or cubic cells (dx, dy and dz may differ from each other)</p>
-</dd>
-</dl>
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.boreholes_order">
-<em class="property">static </em><code class="sig-name descname">boreholes_order</code><span class="sig-paren">(</span><em class="sig-param">bh</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.boreholes_order" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute order of many boreholes so that they best align</p>
-<dl class="simple">
-<dt>Usage:</dt><dd><p>boreholes_order(bh) -&gt; order</p>
-</dd>
-</dl>
-<p>Assumption: boreholes are more or less vertical</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.getNcell">
-<code class="sig-name descname">getNcell</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.getNcell" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a tuple with the number of cells in each dimension</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.getNumberOfCells">
-<code class="sig-name descname">getNumberOfCells</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.getNumberOfCells" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the number of cells of the grid</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.lsplane">
-<em class="property">static </em><code class="sig-name descname">lsplane</code><span class="sig-paren">(</span><em class="sig-param">X</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.lsplane" title="Permalink to this definition">¶</a></dt>
-<dd><p>Least-squares plane (orthogonal distance regression) to a cloud of points
-Usages:</p>
-<blockquote>
-<div><p>x0,a = lsplane(x)
-x0,a,d,normd = lsplane(x)</p>
-</div></blockquote>
-<dl class="simple">
-<dt>Input:</dt><dd><p>x: cloud of points (n x 3)</p>
-</dd>
-<dt>Output:</dt><dd><p>x0: point on plane (3,)
-a: direction cosine of normal to plane (1x3)
-d: residuals
-normd: norm of residuals</p>
-</dd>
-</dl>
-<p>translation of the matlab function lsplane.m by I M Smith</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.proj_plane">
-<em class="property">static </em><code class="sig-name descname">proj_plane</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">x0</em>, <em class="sig-param">a</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.proj_plane" title="Permalink to this definition">¶</a></dt>
-<dd><p>p_data = proj_plane(data, x0, a)</p>
-<dl class="simple">
-<dt>Input:</dt><dd><p>data : coordinates to project on plane (nx3)
-x0   : pt on the plane (3,)
-a    : direction cosine of normal to plane (3,)</p>
-</dd>
-<dt>Output:</dt><dd><p>p_data : projected coordinates (nx3)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.proj_planes">
-<em class="property">static </em><code class="sig-name descname">proj_planes</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">planes</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.proj_planes" title="Permalink to this definition">¶</a></dt>
-<dd><p>p_data,no_plane = proj_planes(data, planes)</p>
-<dl>
-<dt>Input:</dt><dd><p>data : coordinates to project on plane (nx3)
-planes : list of plane objects with the following attributes</p>
-<blockquote>
-<div><p>x0   : pt on the plane (3,)
-a    : direction cosine of normal to plane (3,)</p>
-</div></blockquote>
-</dd>
-<dt>Output:</dt><dd><p>p_data : projected coordinates (nx3)
-no_plane : index of plane on which data is projected (n,)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid.transl_rotat">
-<em class="property">static </em><code class="sig-name descname">transl_rotat</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">origin</em>, <em class="sig-param">az</em>, <em class="sig-param">dip</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid.transl_rotat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Translate with respect to origin and rotate w/r to azimuth and dip</p>
-<p>m_data = transl_rotat(data, origin, az, dip)</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="ttcrpy.grid.Grid2D">
-<em class="property">class </em><code class="sig-prename descclassname">ttcrpy.grid.</code><code class="sig-name descname">Grid2D</code><span class="sig-paren">(</span><em class="sig-param">grx=None</em>, <em class="sig-param">grz=None</em>, <em class="sig-param">nthreads=1</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class for 2D grids</p>
-<dl class="simple">
-<dt>Important: the raytracing codes are based on a column-major order</dt><dd><p>for the slowness vector (Z is the “fast” axis).
-To visualize the slowness model with Z axis vertical and X horizontal,
-the vector should be reshaped as
-slowness.reshape(nx,nz).T</p>
-</dd>
-</dl>
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.FFTMA">
-<code class="sig-name descname">FFTMA</code><span class="sig-paren">(</span><em class="sig-param">G</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.FFTMA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform FFT-MA simulation using pre-computed spectral matrix</p>
-<dl class="simple">
-<dt>INPUT</dt><dd><p>G: covariance matrix in spectral domain as return by preFFTMA</p>
-</dd>
-<dt>OUTPUT</dt><dd><p>Z: simulated field of size nx x nz</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.checkCenter">
-<code class="sig-name descname">checkCenter</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.checkCenter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Verify if given coordinates correspond to the center of the cells</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.derivative">
-<code class="sig-name descname">derivative</code><span class="sig-paren">(</span><em class="sig-param">order</em>, <em class="sig-param">normalize=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.derivative" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute spatial derivative operators for grid _cells_</p>
-<dl class="simple">
-<dt>For 1st order:</dt><dd><p>forward operator is (u_{i+1} - u_i)/dx
-centered operator is (u_{i+1} - u_{i-1})/(2dx)
-backward operator is (u_i - u_{i-1})/dx</p>
-</dd>
-<dt>For 2nd order:</dt><dd><p>forward operator is (u_i - 2u_{i+1} + u_{i+2})/dx^2
-centered operator is (u_{i-1} - 2u_i + u_{i+1})/dx^2
-backward operator is (u_{i-2} - 2u_{i-1} + u_i)/dx^2</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.getCellCenter">
-<code class="sig-name descname">getCellCenter</code><span class="sig-paren">(</span><em class="sig-param">dx=None</em>, <em class="sig-param">dz=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.getCellCenter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a nCell x 2 array containing the coordinates of the center of the cells</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.getForwardStraightRays">
-<code class="sig-name descname">getForwardStraightRays</code><span class="sig-paren">(</span><em class="sig-param">ind=None</em>, <em class="sig-param">dx=None</em>, <em class="sig-param">dy=None</em>, <em class="sig-param">dz=None</em>, <em class="sig-param">aniso=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.getForwardStraightRays" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build ray projection matrix for straight rays</p>
-<dl class="simple">
-<dt>Input:</dt><dd><p>ind: indices of Tx-Rx pairs for which matrix is built
-dx: grid cell size along X (default is size of grid instance)
-dz: grid cell size along Z (default is size of grid instance)
-aniso: if true build matrix for anisotropic slowness</p>
-</dd>
-<dt>Output:</dt><dd><p>L: ray projection matrix, ndata by ncell (ndata x 2*ncell for anisotropic media)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.preFFTMA">
-<code class="sig-name descname">preFFTMA</code><span class="sig-paren">(</span><em class="sig-param">cm</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.preFFTMA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute matrix G for FFT-MA simulations</p>
-<dl class="simple">
-<dt>INPUT</dt><dd><p>cm: list of covariance models</p>
-</dd>
-<dt>OUTPUT</dt><dd><p>G: covariance matrix in spectral domain</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.raytrace">
-<code class="sig-name descname">raytrace</code><span class="sig-paren">(</span><em class="sig-param">slowness</em>, <em class="sig-param">Tx</em>, <em class="sig-param">Rx</em>, <em class="sig-param">t0=()</em>, <em class="sig-param">xi=()</em>, <em class="sig-param">theta=()</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.raytrace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute traveltimes, raypaths and build ray projection matrix</p>
-<dl>
-<dt>Usages:</dt><dd><p>tt,L,rays = grid.raytrace(slowness,Tx,Rx,t0,xi,theta)
-tt,L = grid.raytrace(slowness,Tx,Rx,t0,xi,theta)  {Note: rays can be omitted from output}</p>
-</dd>
-<dt>Input:</dt><dd><p>slowness: vector of slowness values at grid cells (ncell x 1)
-Tx: coordinates of sources points (ndata x 3)
-Rx: coordinates of receivers      (ndata x 3)
-t0 (optional): initial time at sources points (ndata x 1)
-xi (optional): anisotropy ratio vector ( ncell x 1 )</p>
-<blockquote>
-<div><p>values are ratio of slowness in Z over slowness in X</p>
-</div></blockquote>
-<dl class="simple">
-<dt>theta (optional): angle of rotation of the ellipse of anisotropy ( ncell x 1 ),</dt><dd><p>counter-clockwise from horizontal, units in radian</p>
-</dd>
-</dl>
-</dd>
-<dt>Output:</dt><dd><p>tt: vector of traveltimes, ndata by 1
-L: ray projection matrix, ndata by ncell (ndata x 2*ncell for anisotropic media)
-rays: tuple containing the matrices of coordinates of the ray</p>
-<blockquote>
-<div><p>paths, ndata by 1.  Each matrix is nPts by 2</p>
-</div></blockquote>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="ttcrpy.grid.Grid2D.toXdmf">
-<code class="sig-name descname">toXdmf</code><span class="sig-paren">(</span><em class="sig-param">field</em>, <em class="sig-param">fieldname</em>, <em class="sig-param">filename</em><span class="sig-paren">)</span><a class="headerlink" href="#ttcrpy.grid.Grid2D.toXdmf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save a field in xdmf format</p>
-<dl class="simple">
-<dt>INPUT</dt><dd><p>field: data array of size equal to the number of cells in the grid
-fieldname: name to be assinged to the data (string)
-filename: name of xdmf file (string)</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="module-grid">
+<h1>Module grid<a class="headerlink" href="#module-grid" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -319,13 +81,9 @@ filename: name of xdmf file (string)</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="code_rgrid.html" title="Module rgrid"
-             >previous</a> |</li>
         <li><a href="index.html">home</a>|&nbsp;</li>
         <li><a href="search.html">search</a>|&nbsp;</li>
-
-          <li class="nav-item nav-item-1"><a href="code.html" >Documentation for the python code</a> &#187;</li> 
+ 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

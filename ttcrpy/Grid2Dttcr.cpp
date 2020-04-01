@@ -824,7 +824,7 @@ namespace ttcr {
         data_p = (double*)realloc( data_p, nnz*sizeof(double) );
         indices_p = (int64_t*)realloc( indices_p, nnz*sizeof(int64_t) );
 
-        import_array();  // to use PyArray_SimpleNewFromData
+        import_array_throw();  // to use PyArray_SimpleNewFromData
 
         npy_intp dims[] = {static_cast<npy_intp>(nnz)};
         PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);
@@ -1042,7 +1042,7 @@ namespace ttcr {
         data_p = (double*)realloc( data_p, nnz*sizeof(double) );
         indices_p = (int64_t*)realloc( indices_p, nnz*sizeof(int64_t) );
 
-        import_array();  // to use PyArray_SimpleNewFromData
+        import_array_throw();  // to use PyArray_SimpleNewFromData
 
         npy_intp dims[] = {static_cast<npy_intp>(nnz)};
         PyObject* data = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, data_p);

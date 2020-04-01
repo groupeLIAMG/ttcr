@@ -57,7 +57,7 @@ html_theme = 'sphinxdoc'
 html_static_path = ['_static']
 
 # Napoleon settings
-napoleon_google_docstring = True
+napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
