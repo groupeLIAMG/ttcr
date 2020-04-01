@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e -x
 
-# Compile wheels for python 3.5, 3.6 & 3.7
-for PYBIN in /opt/python/*3[567]*/bin; do
+# Compile wheels for python 3.6 & 3.7
+for PYBIN in /opt/python/*3[67]*/bin; do
     "${PYBIN}/pip" install -r /io/requirements.txt
     "${PYBIN}/pip" wheel /io/ -w wheelhouse/
 done
