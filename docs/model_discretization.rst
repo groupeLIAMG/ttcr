@@ -14,7 +14,7 @@ VTK format.
 3D models
 =========
 
-Rectilinear grids and tetraedral meshes can be used for 3D calculations.
+Rectilinear grids and tetrahedral meshes can be used for 3D calculations.
 
 Assigning velocity/slowness
 ===========================
@@ -34,3 +34,10 @@ In the leftmost case, slowness values are assigned to the cells of the mesh.
 In the rightmost case, slowness values are assigned to grid nodes.  In the latter case, traveltime
 computation between two nodes is done by taking the average of the slowness
 values at the two nodes.
+
+The choice mostly depends on the application.  For example, in traveltime tomography
+the problem is to use traveltime data to estimate the slowness model.  Rectilinear
+grids contain less cells than nodes, hence the number of unknown parameters is
+less if slowness values are assigned to cells.  With tetrahedral meshes, the number of
+nodes is less than the number of cells, and the system to solve will be smaller
+if slowness values are assignied to the nodes.
