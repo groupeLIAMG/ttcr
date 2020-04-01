@@ -54,7 +54,7 @@ extensions = [
               extra_compile_args=extra_compile_args,
               ),
     Extension('ttcrpy.cmesh3d',
-              sources=['ttcrpy/cmesh3d.pyx', './ttcrpy/Mesh3Dttcr.cpp'],
+              sources=['ttcrpy/cmesh3d.pyx', './ttcrpy/Mesh3Dttcr.cpp', 'ttcrpy/verbose.cpp'],
               include_dirs=include_dirs,
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
