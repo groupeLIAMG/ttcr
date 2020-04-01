@@ -11,4 +11,4 @@ The output files obtained on my machine are in the subdirectory out.
 ### Python wrapper
 
 An example showing how to do raytracing on a 2D triangular mesh is presented in
-example_mesh2d.py.
+example_cmesh2d.ipynp.

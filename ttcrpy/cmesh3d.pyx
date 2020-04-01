@@ -29,8 +29,6 @@ cimport numpy as np
 
 from scipy.sparse import csr_matrix
 
-from utils import nargout
-
 cdef extern from "ttcr_t.h" namespace "ttcr":
     cdef cppclass sxyz[T]:
         sxyz(T, T, T) except +
@@ -73,7 +71,7 @@ cdef class Mesh3Dcpp:
         del self.mesh
 
     def raytrace(self, slowness, Tx, Rx, t0):
-        nout = 4#nargout()
+        nout = 4
 
         # assing model data
         cdef vector[double] slown
@@ -85,37 +83,35 @@ cdef class Mesh3Dcpp:
         cdef vector[sxyz[double]] cTx
         for t in Tx:
             cTx.push_back(sxyz[double](t[0], t[1], t[2]))
-        
+
         cdef vector[sxyz[double]] cRx
         for r in Rx:
             cRx.push_back(sxyz[double](r[0], r[1], r[2]))
-        
+
         cdef vector[double] ct0
         for tmp in t0:
             ct0.push_back(tmp)
-        
+
         # instantiate output variables
         cdef np.ndarray tt = np.empty([Rx.shape[0],], dtype=np.double)  # tt should be the right size
         cdef np.ndarray v0 = np.empty([Rx.shape[0],], dtype=np.double)
-    
+
         if nout == 1:
             self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt))
             return tt
 
         elif nout == 3:
             rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
-            
+
             self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0))
             return tt, rays, v0
 
 #        elif nout == 4:
 #            rays = tuple([ [0.0] for i in range(Rx.shape[0]) ])
-#            
+#
 #            nTx = np.unique(Tx, axis=0).shape[0]
-#            
+#
 #            M = tuple([ ([0.0],[0.0],[0.0]) for i in range(nTx) ])
-#            
+#
 #            self.mesh.raytrace(cTx, ct0, cRx, <double*> np.PyArray_DATA(tt), rays, <double*> np.PyArray_DATA(v0), M)
 #            return tt, rays, v0, M
-
-
