@@ -1,4 +1,4 @@
-![Logo](https://github.com/groupeLIAMG/ttcr/images/ttcrpy_logo.svg)
+![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.svg)
 ====
 
 
@@ -41,7 +41,7 @@ There are three programs that can be called from the command line:
 - ttcr2ds : raytracing on undulated surfaces
 - ttcr3d : raytracing in 3D
 
-See [documentation](https://github.com/groupeLIAMG/ttcr/docs/command_line.md) for
+See [documentation](https://github.com/groupeLIAMG/ttcr/blob/master/docs/command_line.md) for
 command-line programs options and file formats.
 
 ### Examples
