@@ -4,12 +4,12 @@ set -e -x
 # Compile wheels for python 3.6 & 3.7
 for PYBIN in /opt/python/*3[67]*/bin; do
     "${PYBIN}/pip" install -r /io/requirements.txt
-    "${PYBIN}/pip" wheel /io/ -w wheelhouse/
+    "${PYBIN}/pip" wheel /io/ -w dist/
 done
 
 # Bundle external shared libraries into the wheels
 for whl in wheelhouse/*.whl; do
-    auditwheel repair "$whl" --plat $PLAT -w /io/wheelhouse/
+    auditwheel repair "$whl" --plat $PLAT -w /io/dist/
 done
 
 # Install packages and test
