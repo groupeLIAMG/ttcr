@@ -478,6 +478,45 @@ cdef class Grid3d:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
 
+    def set_velocity(self, velocity):
+        """
+        set_velocity(slowness)
+
+        Assign velocity to grid
+
+        Parameters
+        ----------
+        velocity : np ndarray, shape (nx, ny, nz)
+            velocity may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if velocity.size != nx*ny*nz:
+            raise ValueError('velocity vector has wrong size')
+
+        cdef vector[double] slown
+        cdef int i
+        if velocity.ndim == 3:
+            if velocity.shape != (nx, ny, nz):
+                raise ValueError('velocity has wrong shape')
+            tmp = velocity.flatten('F')
+            for i in range(nx*ny*nz):
+                slown.push_back(1./tmp[i])
+        elif velocity.ndim == 1:
+            # slowness is in 'C' order and we must pass it in 'F' order
+            tmp = velocity.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                slown.push_back(1./tmp[i])
+        else:
+            raise ValueError('velocity must be 1D or 3D ndarray')
+        self.grid.setSlowness(slown)
+
     def compute_D(self, coord):
         """
         compute_D(coord)
@@ -1985,11 +2024,45 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         elif slowness.ndim == 1:
-            tmp = slowness.reshape((nx, nz)).flatten()
             for i in range(nx*nz):
-                data.push_back(tmp[i])
+                data.push_back(slowness[i])
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
+        self.grid.setSlowness(data)
+
+    def set_velocity(self, velocity):
+        """
+        set_velocity(velocity)
+
+        Assign velocity to grid
+
+        Parameters
+        ----------
+        velocity : np ndarray, shape (nx, nz)
+            velocity may also have been flattened (with default 'C' order)
+        """
+        if self.velocity:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if velocity.size != nx*nz:
+            raise ValueError('velocity vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if velocity.ndim == 2:
+            if velocity.shape != (nx, nz):
+                raise ValueError('velocity has wrong shape')
+            tmp = velocity.flatten()
+            for i in range(nx*nz):
+                data.push_back(1./tmp[i])
+        elif velocity.ndim == 1:
+            for i in range(nx*nz):
+                data.push_back(1./velocity[i])
+        else:
+            raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(data)
 
     def set_xi(self, xi):
