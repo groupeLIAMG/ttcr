@@ -1,7 +1,7 @@
-![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.svg)
-====
+[![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.svg)](https://github.com/groupeLIAMG/ttcr)
+============================
 
-
+[![pypi](https://img.shields.io/pypi/v/ttcrpy.svg)](https://pypi.org/project/ttcrpy/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](./01_LICENSE.txt)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1162725.svg)](https://doi.org/10.5281/zenodo.1162725)
 [![Build Status](https://travis-ci.com/groupeLIAMG/ttcr.svg?branch=master)](https://travis-ci.com/groupeLIAMG/ttcr)
