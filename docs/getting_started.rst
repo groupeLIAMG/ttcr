@@ -18,7 +18,7 @@ You can use pip to install the package by doing::
 Requirements
 ============
 
-ttcrpy needs the following modules:
+ttcrpy needs the following packages:
   - numpy (https://numpy.org)
   - scipy (https://www.scipy.org)
   - vtk (https://www.vtk.org)
