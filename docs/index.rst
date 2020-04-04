@@ -13,6 +13,7 @@ Welcome to ttcrpy's documentation!
 
    getting_started.rst
    model_discretization.rst
+   algorithms.rst
    code.rst
 
 
