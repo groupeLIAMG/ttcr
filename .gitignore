@@ -51,3 +51,7 @@ examples/example_cmesh2d.vtu
 docs/_build/
 
 old_stuff/
+
+.eggs/
+
+ttcrpy/tmesh.cpp
