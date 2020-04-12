@@ -1203,6 +1203,7 @@ cdef class Grid3d:
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'
+        Other parameters are defined in Constructor
 
         Returns
         -------
@@ -2275,6 +2276,110 @@ cdef class Grid2d:
         else:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setGamma(data)
+
+    def compute_K(self, order=1):
+        """
+        Compute smoothing matrices
+
+        Parameters
+        ----------
+        order : int
+            order of smoothing operator, accept 1 or 2 (1 by default)
+
+        Returns
+        -------
+        Kx, Kz : :obj:`tuple` of :obj:`csr_matrix`
+            matrices for derivatives along x & z
+        """
+
+        nx, nz = self.shape
+        if order == 1:
+            # forward operator is (u_{i+1} - u_i)/dx
+            # centered operator is (u_{i+1} - u_{i-1})/(2dx)
+            # backward operator is (u_i - u_{i-1})/dx
+
+            idx = 1 / self.dx
+            idz = 1 / self.dz
+
+            i = np.kron(np.arange(nx * nz), np.ones((2, ), dtype=np.int32))
+            j = np.zeros((nz * nx * 2, ), dtype=np.int32)
+            v = np.zeros((nz * nx * 2, ))
+
+            jj = np.vstack((np.arange(nz), nz + np.arange(nz))).T
+            jj = jj.flatten()
+            j[:2 * nz] = jj
+            vd = idx * np.tile(np.array([-1, 1]), (nz, ))
+            v[:2 * nz] = vd
+
+            jj = np.vstack((-nz + np.arange(nz), nz + np.arange(nz))).T
+            jj = jj.flatten()
+            for n in range(1, nx - 1):
+                j[n * 2 * nz:(n + 1) * 2 * nz] = n * nz + jj
+                v[n * 2 * nz:(n + 1) * 2 * nz] = 0.5 * vd
+
+            jj = np.vstack((-nz + np.arange(nz), np.arange(nz))).T
+            jj = jj.flatten()
+            j[(nx - 1) * 2 * nz:nx * 2 * nz] = (nx - 1) * nz + jj
+            v[(nx - 1) * 2 * nz:nx * 2 * nz] = vd
+
+            Kx = sp.csr_matrix((v, (i, j)))
+
+            jj = np.vstack((np.hstack((0, np.arange(nz - 1))),
+                            np.hstack((np.arange(1, nz), nz - 1)))).T
+            jj = jj.flatten()
+            vd = idz * np.hstack((np.array([-1, 1]),
+                                  np.tile(np.array([-0.5, 0.5]), (nz - 2,)),
+                                  np.array([-1, 1])))
+
+            for n in range(nx):
+                j[n * 2 * nz:(n + 1) * 2 * nz] = n * nz + jj
+                v[n * 2 * nz:(n + 1) * 2 * nz] = vd
+
+            Kz = sp.csr_matrix((v, (i, j)))
+        elif order == 2:
+            # forward operator is (u_i - 2u_{i+1} + u_{i+2})/dx^2
+            # centered operator is (u_{i-1} - 2u_i + u_{i+1})/dx^2
+            # backward operator is (u_{i-2} - 2u_{i-1} + u_i)/dx^2
+
+            idx2 = 1 / (self.dx * self.dx)
+            idz2 = 1 / (self.dz * self.dz)
+
+            i = np.kron(np.arange(nx * nz), np.ones((3, ), dtype=np.int32))
+            j = np.zeros((nz * nx * 3, ), dtype=np.int32)
+            v = np.zeros((nz * nx * 3, ))
+
+            jj = np.vstack((np.arange(nz), nz + np.arange(nz),
+                            2 * nz + np.arange(nz))).T
+            jj = jj.flatten()
+            j[:3 * nz] = jj
+            vd = idx2 * np.tile(np.array([1.0, -2.0, 1.0]), (nz, ))
+            v[:3 * nz] = vd
+
+            for n in range(1, nx - 1):
+                j[n * 3 * nz:(n + 1) * 3 * nz] = (n - 1) * nz + jj
+                v[n * 3 * nz:(n + 1) * 3 * nz] = vd
+
+            j[(nx - 1) * 3 * nz:nx * 3 * nz] = (nx - 3) * nz + jj
+            v[(nx - 1) * 3 * nz:nx * 3 * nz] = vd
+
+            Kx = sp.csr_matrix((v, (i, j)))
+
+            jj = np.vstack((np.hstack((0, np.arange(nz - 2), nz - 3)),
+                            np.hstack((1, np.arange(1, nz - 1), nz - 2)),
+                            np.hstack((2, np.arange(2, nz), nz - 1)))).T
+            jj = jj.flatten()
+            vd = vd * idz2 / idx2
+
+            for n in range(nx):
+                j[n * 3 * nz:(n + 1) * 3 * nz] = n * nz + jj
+                v[n * 3 * nz:(n + 1) * 3 * nz] = vd
+
+            Kz = sp.csr_matrix((v, (i, j)))
+
+        else:
+            raise ValueError('order value not valid (1 or 2 accepted)')
+
+        return Kx, Kz
 
     def raytrace(self, source, rcv, slowness=None, xi=None, theta=None,
                  Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
