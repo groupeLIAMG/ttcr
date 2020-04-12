@@ -1,9 +1,12 @@
-![Logo](./images/ttcrpy_logo.svg)
-====
+[![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.svg)](https://github.com/groupeLIAMG/ttcr)
+============================
 
-
+[![pypi](https://img.shields.io/pypi/v/ttcrpy.svg)](https://pypi.org/project/ttcrpy/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](./01_LICENSE.txt)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1162725.svg)](https://doi.org/10.5281/zenodo.1162725)
+[![Build Status](https://travis-ci.com/groupeLIAMG/ttcr.svg?branch=master)](https://travis-ci.com/groupeLIAMG/ttcr)
+[![Documentation Status](https://readthedocs.org/projects/ttcrpy/badge/?version=latest)](https://ttcrpy.readthedocs.io/en/latest/?badge=latest)
+
 
 This repo contains C++ and python codes for raytracing on regular and unstructured meshes.
 Matlab wrappers are provided as well.
@@ -28,6 +31,8 @@ be run in parallel on a multi-core machine.
 
 The core computing code is written in C++, and has been wrapped with cython.
 
+Documentation can be found on [Read The Docs](https://ttcrpy.readthedocs.io/)
+
 ## Stand-alone command-line programs
 
 There are three programs that can be called from the command line:
@@ -36,8 +41,8 @@ There are three programs that can be called from the command line:
 - ttcr2ds : raytracing on undulated surfaces
 - ttcr3d : raytracing in 3D
 
-See [documentation](./docs/command_line.md) for options and file formats.
-
+See [documentation](https://github.com/groupeLIAMG/ttcr/blob/master/docs/command_line.md) for
+command-line programs options and file formats.
 
 ### Examples
 

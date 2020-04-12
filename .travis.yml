@@ -1,30 +1,31 @@
-
 notifications:
   email: false
-
-matrix:
+jobs:
   include:
-  - name: "manylinux1"
+  - name: manylinux1
     sudo: required
     services:
     - docker
     env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 PLAT=manylinux1_x86_64
-  - name: "manylinux2010"
+  - name: manylinux2010
     sudo: required
     services:
     - docker
     env: DOCKER_IMAGE=quay.io/pypa/manylinux2010_x86_64 PLAT=manylinux2010_x86_64
-
 install:
 - docker pull $DOCKER_IMAGE
-
 script:
 - docker run --rm -e PLAT=$PLAT -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-linux-wheels.sh
-- ls wheelhouse/
-
-
+- ls dist/
 deploy:
+  skip_cleanup: true
   provider: pypi
-  user: "__token__"
+  distributions: bdist_wheel
+  user: __token__
   password:
-    secure: OVp/3WuMinD5f+LWGS4l1mADB9fhieBIIJwxgcnmnnRtltuvBw94XFQEhNe+mrVnR8V0V8rvoKMoypa/qQHs/5pz0xP6MD6M1ch9legMrDBRLVJXEinFdr2C7Mr2SQa5XWyLqTCJCjpmTESjQ2jG45KF+dfGR97U+eF9pYWU6oP2CypFy1hR2AaZSt2O94IaHQeEDXSwRQLPNIewbz38muD1fm7MOd2FlSZuv0GztBMW6CuKx7XAW4UlJmsnJJprT46uBWDlWmkOon7J1qkZLlHwUXb6IZVwyKsphUCyM/RoszxgQpMomIolAyuHHlpGQJMsDhXz3WQqvvW7P+a4aUR0yMSpE/oKMDNrlgoxrkxO8vAmCpSrsXict+HmmcUrAXTfvdQ86/Zax8gTFNiVnOaUPpVDc18QJryGCljdUB1sSoUEateQ+FovD6nfSfYnLH3C367X8ZBNcTF34DXfaNHt/5aUxxhaGMHhm7uysl1WbdyDIS52WB5Pch1IZEM6c0NmYtUe3ISiY63q1BpHl5ly59A6cVNcMQxbY/X556x7MHmcpXBS4dAJVhYC+V2QaOrY/qIUDj4QXlX3Va02Kb7ALZPyTb08B72yjulYuQkZz1ICYeN0f7X9AuyxdWvU3jpANDUGFxKljQk7BFBkwjNpg8gLDEJPSJQVScJeMn0=
+    secure: wBdH4tMfnjOP9JFG9QdZRhiOQ0SxNpyaAk/2H1TaP8dro1o8enpepEkJRKR2CVA2bOevTb5siyX0fPvaw7KHFRpx88kduuWYrp1OmI8fBtXc8KPxZ+iPzBZYs/VMp9A/aDRRNqTqIQ6iUKe/P91bu6BGo10c/xdIQm1n3S756Fj6ITsUKXvCTuqqSEq2MdUm9NEy4/qk5gKeOxyz4J41OGU0Oy5p2UoC4w6W0d6CEosbxbzM8WApJ2yjPzDcJToYRbG6nXQDCmDUxLlWqX5uYlffumh3QUpaXtzRbthOmvu/Ca1dgc3I12gHSNVzg5RNiBI5Ikbqc5uAAtRjnIN8G8z3A7mte07r74MTz9iXTFaC2LyxAudTQm5e782pmvuqe5k3LTN/GX/ol9buvuTuaxvtwhVoVpAfblqFTN1/EMG71/QIV4Yp67A1f09GGdXOqJbaJUt3arVuSPxWr48IUoV6zJvn35IThZpPZbS7T2pkYZDU/c4xhaErA3PT0kYIu56JmX/bSFSMJTqUJLjkpHWNFUphFW1DSROQglbUBCVxNWJVLmlt8xFGglxT7Do/9bJ5Le2yqdRkfbOBh5zmYr1TzctYs78o1PrRjFqdPM1FMNWj5evBkEEuRlb2B/jBF3t3L2iYEK9KEtrW93TkLOATfZeUff3E6FdPJQSPdkI=
+  on:
+    tags: true
+    branch:
+    - master
+    - "/v?(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$/"
