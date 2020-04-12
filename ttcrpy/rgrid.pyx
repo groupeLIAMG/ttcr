@@ -439,6 +439,22 @@ cdef class Grid3d:
                 np.min(pts[:,1]) < self._y.front() or np.max(pts[:,1]) > self._y.back() or
                 np.min(pts[:,2]) < self._z.front() or np.max(pts[:,2]) > self._z.back() )
 
+    def get_slowness(self):
+        """Returns slowness of grid
+
+        Returns
+        -------
+        slowness : np ndarray, shape (nx, ny, nz)
+        """
+        cdef int i
+        cdef vector[double] slown
+        self.grid.getSlowness(slown)
+        nx, ny, nz = self.shape
+        slowness = np.ndarray((nx*ny*nz,), order='F')
+        for i in range(slown.size()):
+            slowness[i] = slown[i]
+        return slowness.reshape((nx, ny, nz))
+
     def set_slowness(self, slowness):
         """
         set_slowness(slowness)
@@ -1955,6 +1971,22 @@ cdef class Grid2d:
         """
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
+
+    def get_slowness(self):
+        """Returns slowness of grid
+
+        Returns
+        -------
+        slowness : np ndarray, shape (nx, nz)
+        """
+        cdef int i
+        cdef vector[double] slown
+        self.grid.getSlowness(slown)
+        nx, nz = self.shape
+        slowness = np.ndarray((nx*nz,))
+        for i in range(slown.size()):
+            slowness[i] = slown[i]
+        return slowness.reshape((nx, nz))
 
     def set_slowness(self, slowness):
         """

@@ -59,12 +59,21 @@ namespace ttcr {
         virtual ~Grid2Drn() {
         }
         
-        virtual void setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 nodes[n].setNodeSlowness( s[n] );
+            }
+        }
+        
+        void getSlowness(std::vector<T1>& slowness) const {
+            if (slowness.size() != (ncx+1) * (ncz+1)) {
+                slowness.resize((ncx+1) * (ncz+1));
+            }
+            for ( size_t n=0; n<slowness.size(); ++n ) {
+                slowness[n] = nodes[n].getNodeSlowness();
             }
         }
         

@@ -73,6 +73,15 @@ namespace ttcr {
             }
         }
         
+        void getSlowness(std::vector<T1>& slowness) const {
+            if (slowness.size() != nPrimary) {
+                slowness.resize(nPrimary);
+            }
+            for ( size_t n=0; n<slowness.size(); ++n ) {
+                slowness[n] = nodes[n].getNodeSlowness();
+            }
+        }
+        
         virtual void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");

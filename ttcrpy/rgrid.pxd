@@ -28,6 +28,7 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
+        void getSlowness(vector[T1]&) except +
         T1 computeSlowness(sxyz[T1]&) except +
         void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[sxyz[T1]]& Tx,
@@ -143,6 +144,7 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
     cdef cppclass Grid2D[T1,T2,S]:
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
+        void getSlowness(vector[T1]&) except +
         void setXi(vector[T1]&) except +
         void setTiltAngle(vector[T1]&) except +
         void setVp0(vector[T1]&) except +

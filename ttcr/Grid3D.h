@@ -141,6 +141,9 @@ namespace ttcr {
                        std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
 
         virtual void setSlowness(const std::vector<T1>& s) {}
+        virtual void getSlowness(std::vector<T1>&) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
         virtual void setChi(const std::vector<T1>& x) {}
         virtual void setPsi(const std::vector<T1>& x) {}
         
