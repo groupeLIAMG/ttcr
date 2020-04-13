@@ -1683,8 +1683,8 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lvtkIOXML-7.1.1",
-					"-lvtkCommonDataModel-7.1.1",
 					"-lvtkCommonCore-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -1735,8 +1735,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = (
 					"-lvtkIOXML-7.1.1",
-					"-lvtkCommonDataModel-7.1.1",
 					"-lvtkCommonCore-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
 				);
 				SDKROOT = macosx;
 			};
@@ -1993,8 +1993,8 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lvtkIOXML-7.1.1",
-					"-lvtkCommonDataModel-7.1.1",
 					"-lvtkCommonCore-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
 				);
 				SDKROOT = macosx;
 			};

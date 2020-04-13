@@ -52,8 +52,18 @@ namespace ttcr {
                      PyObject* rays,
                      double* v0,
                      PyObject* M) const;
-        int ComputeD(const std::vector<sxyz<double>>& Pts,
-                     PyObject* D)const;
+        int raytrace(const std::vector<sxyz<double>>& Tx,
+                     const std::vector<double>& tTx,
+                     const std::vector<sxyz<double>>& Rx,
+                     const std::vector<uint32_t> & Rxindices,
+                     const bool & statCorrections,
+                       const bool &,
+                     double* traveltimes,
+                     PyObject* rays,
+                     double* v0,
+                     PyObject* M) const;
+        PyObject * ComputeD(const std::vector<sxyz<double>>& Pts)const;
+        int ComputeK(const int & ,const std::string & ,const int & ,const size_t & ,const bool &,PyObject* )const;
         bool CheckPoint(const std::vector<sxyz<double>>& Point) const;
 
     private:

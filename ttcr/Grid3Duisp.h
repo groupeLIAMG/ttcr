@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 #include <queue>
 #include <vector>
 
@@ -37,6 +38,8 @@
 #include "Interpolator.h"
 #include "Node3Disp.h"
 #include "utils.h"
+#include <thread>
+#include <Eigen/Dense>
 
 namespace ttcr {
     
@@ -80,9 +83,8 @@ namespace ttcr {
             return 0;
         }
         T1 AddNewSecondaryNodes(const sxyz<T1> & source,const size_t &  Number, const T1 & Radius1,
-                                  const T1 & Radius2=0);
-        T1 AddNodesInside(const sxyz<T1> & source,const size_t &  Number, const T1 & Radius1)const;
-        
+                                  const T1 & Radius2=0,const size_t=0);
+        T1 averageEdge()const;
         void DelateNodes();
         int raytrace(const std::vector<sxyz<T1>>&,
                      const std::vector<T1>&,
@@ -145,8 +147,10 @@ namespace ttcr {
                      std::vector<std::vector<sxyz<T1>>>& r_data,
                      T1 & v0,
                      std::vector<std::vector<sijv<T1>>>& m_data,
-                     const size_t threadNo=0) const;
+                     const size_t threadNo=0,
+                     const bool interp_slow=false) const;
         int computeD(const std::vector<sxyz<T1>>& Pts, std::vector<std::vector<sijv<T1>>>& d_data)const;
+        int computeK(const int & order,const std::string & method,const int & expansion,const size_t & minPoints, const bool &,std::vector<std::vector<std::vector<siv<T1>>>>&)const;
     private:
         T2 nsecondary;
         
@@ -378,7 +382,34 @@ namespace ttcr {
         
         this->nodes.shrink_to_fit();
     }
-    
+    template<typename T1, typename T2>
+    T1 Grid3Duisp<T1,T2>::averageEdge()const {
+        std::set<std::array<T2,2>> edges;
+        typename std::set<std::array<T2,2>>::iterator edgIt;
+        T2 iNodes[6][2] = {
+            {0,1},
+            {0,2},
+            {0,3},
+            {1,2},
+            {1,3},
+            {2,3}
+        };
+        T1 sum=0.0;
+        for (size_t ntet=0;ntet<this->tetrahedra.size();++ntet){
+            for (size_t n=0;n<6;++n){
+            std::array<T2, 2> edgei={this->tetrahedra[ntet].i[iNodes[n][0]],
+                this->tetrahedra[ntet].i[iNodes[n][1]]};
+            std::sort(edgei.begin(),edgei.end());
+            edgIt = edges.find(edgei);
+            if ( edgIt  == edges.end() ) {
+                T1 d=this->nodes[edgei[0]].getDistance(this->nodes[edgei[1]]);
+                sum+=d;
+                edges.insert(edgei);
+                }
+            }
+        }
+        return (sum/edges.size());
+    }
     
     template<typename T1, typename T2>
     void Grid3Duisp<T1,T2>::interpSlownessSecondary() {
@@ -470,7 +501,7 @@ namespace ttcr {
         }
     }
     template<typename T1, typename T2>
-    T1 Grid3Duisp<T1,T2>::AddNewSecondaryNodes(const sxyz<T1> & source,const size_t & SecondNodesN, const T1 & Radius1,const T1 & Radius2){
+    T1 Grid3Duisp<T1,T2>::AddNewSecondaryNodes(const sxyz<T1> & source,const size_t & SecondNodesN, const T1 & Radius1,const T1 & Radius2,const size_t threadNo){
         std::vector<T2> Tetrahedrons;
         for(T2 tet=0; tet<this->neighbors.size();++tet){
             sxyz<T1> Centroid=this->nodes[this->neighbors[tet][0]]+this->nodes[this->neighbors[tet][1]];
@@ -479,6 +510,9 @@ namespace ttcr {
             if (source.getDistance(Centroid)<=Radius1 && source.getDistance(Centroid)>=Radius2)
                 Tetrahedrons.push_back(tet);
         }
+   
+//        std::thread::id this_id = std::this_thread::get_id();
+//        std::cout << "thread " << this_id << "\n";
         if (Tetrahedrons.size()==0)
             return 0.0;
         std::set<T2> AdjacentCells(Tetrahedrons.begin(),Tetrahedrons.end());
@@ -667,133 +701,57 @@ namespace ttcr {
     }
     
     
-    template<typename T1,typename T2>
-    T1 Grid3Duisp<T1,T2>::AddNodesInside(const sxyz<T1> & source,const size_t &  Number, const T1 & Radius) const{
-        std::vector<T1> RelativeCoordinates(Number);
-        for (size_t p=0;p<Number;p++)
-            RelativeCoordinates[p]=(p+1.0)/(Number+1.0);
-        RelativeCoordinates.erase(std::remove(RelativeCoordinates.begin(),RelativeCoordinates.end(),(2.0/3.0)),RelativeCoordinates.end());
-        T2 nNodes = static_cast<T2>(this->nodes.size());
-        for(T2 tet=0; tet<this->neighbors.size();++tet){
-            sxyz<T1> Centroid=this->nodes[this->neighbors[tet][0]]+this->nodes[this->neighbors[tet][1]];
-            Centroid+=this->nodes[this->neighbors[tet][2]]+this->nodes[this->neighbors[tet][3]];
-            Centroid/=4;
-            if (source.getDistance(Centroid)<=Radius){
-                Node3Disp<T1,T2> tmpNode (this->nThreads);
-                tmpNode.setXYZindex(Centroid.x,Centroid.y,Centroid.z,nNodes);
-                tmpNode.setPrimary(10);
-                tmpNode.SetPrincipals(this->neighbors[tet][0]);
-                tmpNode.SetPrincipals(this->neighbors[tet][1]);
-                tmpNode.SetPrincipals(this->neighbors[tet][2]);
-                tmpNode.SetPrincipals(this->neighbors[tet][3]);
-                this->neighbors[tet].push_back(nNodes);
-                this->nodes.push_back(tmpNode);
-                this->nodes.back().pushOwner(tet);
-                std::vector<Node3Disp<T1,T2>*> inodes;
-                inodes.push_back( &(this->nodes[this->neighbors[tet][0]]) );
-                inodes.push_back( &(this->nodes[this->neighbors[tet][1]]) );
-                inodes.push_back( &(this->nodes[this->neighbors[tet][2]]) );
-                inodes.push_back( &(this->nodes[this->neighbors[tet][3]]) );
-                T1 s = Interpolator<T1>::inverseDistance(this->nodes[nNodes], inodes);
-                this->nodes[nNodes++].setNodeSlowness( s );
-                
-                for (size_t i=0;i<4;i++){
-                    sxyz<T1> Median={Centroid.x-this->nodes[this->neighbors[tet][i]].getX(),
-                        Centroid.y-this->nodes[this->neighbors[tet][i]].getY(),Centroid.z-this->nodes[this->neighbors[tet][i]].getZ()};
-                    Median*=1.5;
-                    for(auto nf=RelativeCoordinates.begin();nf!=RelativeCoordinates.end();nf++){
-                        Node3Disp<T1,T2> tmpNode(this->nThreads);
-                        tmpNode.setXYZindex(this->nodes[this->neighbors[tet][i]].getX()+(*nf)*Median.x,this->nodes[this->neighbors[tet][i]].getY()+(*nf)*Median.y,this->nodes[this->neighbors[tet][i]].getZ()+(*nf)*Median.z,nNodes);
-                        tmpNode.setPrimary(10);
-                        tmpNode.SetPrincipals(this->neighbors[tet][0]);
-                        tmpNode.SetPrincipals(this->neighbors[tet][1]);
-                        tmpNode.SetPrincipals(this->neighbors[tet][2]);
-                        tmpNode.SetPrincipals(this->neighbors[tet][3]);
-                        this->neighbors[tet].push_back(nNodes);
-                        this->nodes.push_back(tmpNode);
-                        this->nodes.back().pushOwner(tet);
-                        T1 s = Interpolator<T1>::inverseDistance(this->nodes.back(), inodes);
-                        this->nodes[nNodes++].setNodeSlowness( s );
-                        
-                    }
-                    
-                }
-//                for (auto nei=this->neighbors[tet].begin();nei!=this->neighbors[tet].end();++nei){
-//                    std::cout<<std::setprecision(10)<<this->nodes[*nei].getX()<<","<<this->nodes[*nei].getY()<<","<<this->nodes[*nei].getZ()<<";"<<std::endl;
-//                }
-                
-            }
-            
-        }
-        return 0.0;
-    }
-    
     template<typename T1, typename T2>
     int Grid3Duisp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const std::vector<sxyz<T1>>& Rx,
                                     std::vector<T1>& traveltimes,
                                     const size_t threadNo) const {
-        
+
         if ( this->checkPts(Tx) == 1 ) return 1;
         if ( this->checkPts(Rx) == 1 ) return 1;
-        
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Disp<T1,T2>*, std::vector<Node3Disp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
-        
+
         std::vector<Node3Disp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
-        
-//        for (size_t n=0; n<Rx.size(); ++n) {
-//            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-//        }
         T2 StandartSPM=1.0;
-        T1 Slowness_Srcs[Tx.size()];
-        T2 Cells_Tx [Tx.size()];
+        T1 Slowness_Srcs[1];
+        T2 Cells_Tx [1];
         if (StandartSPM==1.0){
-            for(size_t i=0;i<Tx.size();++i){
-                Cells_Tx[i] =this->getCellNo(Tx[i]);
-                Slowness_Srcs[i]=this->computeSlowness(Tx[i]);
+            for(size_t ii=0;ii<Tx.size();ii++){
+                Cells_Tx[ii] =this->getCellNo(Tx[ii]);
+                Slowness_Srcs[ii]=this->computeSlowness(Tx[ii]);
             }
         }
         
         for (size_t n=0; n<Rx.size(); ++n) {
-            T1 t=0.0;
-            if (StandartSPM==1.0){
-                bool find=false;
-                for(size_t i=0;i<Tx.size();++i){
-                    if (Cells_Tx[i]==this->getCellNo(Rx[n])){
-                        t=Tx[i].getDistance(Rx[n])*0.5*(Slowness_Srcs[i]+this->computeSlowness(Rx[n]));
-                        find=true;
-                        break;
-                    }
-                }
-                if (!find){
-                    t= this->getTraveltime(Rx[n], this->nodes, threadNo);
-                }
-            }else{
-                std::vector<sxyz<T1>> r_data;
-                this->getRaypathABM(Tx, Rx[n],r_data,threadNo);
-                T1 s2=this->computeSlowness(r_data[0]);
-                for(size_t no=0;no<r_data.size()-1;++no){
+            T1 t=0;
+            std::vector<sxyz<T1>> r_data;
+            this->getRaypath_ho(Tx, Rx[n],r_data,threadNo);
+            for (size_t src=0;src<Tx.size();++src){
+                if (Tx[src]==r_data[0])
+                    t=t0[src];
+            }
+            T1 s2=this->computeSlowness(r_data[0]);
+            for(size_t no=0;no<r_data.size()-1;++no){
                     T1 s1=this->computeSlowness(r_data[no+1]);
                     t+=r_data[no].getDistance(r_data[no+1])*0.5*(s1+s2);
                     s2=s1;
-                }
                 
             }
             traveltimes[n] =t;
@@ -881,73 +839,23 @@ namespace ttcr {
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
-        /////////////////
-       
-        std::ofstream myfile;
-        myfile.open ("StandartSPM.dat");
-        myfile.close();
-        //myfile.open ("CreatedSPM.dat");
-        //myfile.close();
-        //////////////////
-        T2 StandartSPM=0.0;
-        T1 Slowness_Srcs[Tx.size()];
-        T2 Cells_Tx [Tx.size()];
-        if (StandartSPM==1.0){
-            for(size_t i=0;i<Tx.size();++i){
-                Cells_Tx[i] =this->getCellNo(Tx[i]);
-                Slowness_Srcs[i]=this->computeSlowness(Tx[i]);
-            }
-        }
-
+ 
         for (size_t n=0; n<Rx.size(); ++n) {
-        
-            //this->getRaypathBLIT(Tx, Rx[n], r_data[n],threadNo);
-            //this->getRaypath(Tx, Rx[n], r_data[n],threadNo);
-            //this->getRaypathABM(Tx, Rx[n], r_data[n],threadNo);
-           //this->getRaypath_ho(Tx, Rx[n], r_data[n],threadNo);
-            ///////////////////////////////////////////////////////////////////////////////////////////////
-            T1 t=0.0;
-            if (StandartSPM==1.0){
-                bool find=false;
-                for(size_t i=0;i<Tx.size();++i){
-                    if (Cells_Tx[i]==this->getCellNo(Rx[n])){
-                        t=Tx[i].getDistance(Rx[n])*0.5*(Slowness_Srcs[i]+this->computeSlowness(Rx[n]));
-                        find=true;
-                        break;
-                    }
-                }
-                if (!find){
-                    //cout<<" in cell source"<< endl;
-                    t= this->getTraveltime(Rx[n], this->nodes, threadNo);
-                }
-                
-            }else{
-                this->getRaypathABM(Tx, Rx[n], r_data[n],threadNo);
-                T1 s2=this->computeSlowness(r_data[n][0]);
-        
-                //T1 s2=this->Highorder_computeSlowness(r_data[n][0]);
-                for(size_t no=0;no<r_data[n].size()-1;++no){
-                    //T1 s1=this->Highorder_computeSlowness(r_data[n][no+1]);
-                    T1 s1=this->computeSlowness(r_data[n][no+1]);
-                    t+=r_data[n][no].getDistance(r_data[n][no+1])*0.5*(s1+s2);
-                    s2=s1;
-                }
-
+            T1 t=0;
+            this->getRaypath_ho(Tx, Rx[n],r_data[n],threadNo);
+//            if (r_data[n].size()==0)////////////////////////////////////////////////////////////
+//                continue;
+            for (size_t src=0;src<Tx.size();++src){
+                if (Tx[src]==r_data[n][0])
+                    t=t0[src];
             }
-//            for(T2 sr=0;sr<Tx.size();++sr){
-//                if(r_data[n][0]==Tx[sr])
-//                        t=t0[sr];
-//                }
+            T1 s2=this->computeSlowness(r_data[n][0]);
+            for(size_t no=0;no<r_data[n].size()-1;++no){
+                T1 s1=this->computeSlowness(r_data[n][no+1]);
+                t+=r_data[n][no].getDistance(r_data[n][no+1])*0.5*(s1+s2);
+                s2=s1;
+            }
             traveltimes[n] =t;
-            ///////////////////////////////////////////////////////////////////////////////////////////////
-            std::ofstream outfile;
-
-
-            outfile.open("CreatedSPM.dat", std::ios_base::app);
-            outfile << t<<"\n";
-            outfile.close();
-
-            ///////////////////////////////////////////////////////////////////////////////////////////////
         }
         return 0;
     }
@@ -960,6 +868,7 @@ namespace ttcr {
                                     const size_t threadNo) const {
 
         if ( this->checkPts(Tx) == 1 ) return 1;
+   
         if ( this->checkPts(Rx) == 1 ) return 1;
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -994,48 +903,601 @@ namespace ttcr {
             v0 += this->computeSlowness( Tx[n] );
         }
         v0 = Tx.size() / v0;
-        /////////////////
-        T2 StandartSPM=0.0;
-        T1 Slowness_Srcs[Tx.size()];
-        T2 Cells_Tx [Tx.size()];
-        if (StandartSPM==1.0){
-            for(size_t i=0;i<Tx.size();++i){
-                Cells_Tx[i] =this->getCellNo(Tx[i]);
-                Slowness_Srcs[i]=this->computeSlowness(Tx[i]);
-            }
-        }
-        
+    
         for (size_t n=0; n<Rx.size(); ++n) {
 
-            T1 t=0.0;
-            if (StandartSPM==1.0){
-                bool find=false;
-                for(size_t i=0;i<Tx.size();++i){
-                    if (Cells_Tx[i]==this->getCellNo(Rx[n])){
-                        t=Tx[i].getDistance(Rx[n])*0.5*(Slowness_Srcs[i]+this->computeSlowness(Rx[n]));
-                        find=true;
-                        break;
-                    }
-                }
-                if (!find){
-            
-                    t= this->getTraveltime(Rx[n], this->nodes, threadNo);
-                }
-                
-            }else{
-                this->getRaypathABM(Tx, Rx[n], r_data[n],threadNo);
-                T1 s2=this->computeSlowness(r_data[n][0]);
-
-                for(size_t no=0;no<r_data[n].size()-1;++no){
-                    T1 s1=this->computeSlowness(r_data[n][no+1]);
-                    t+=r_data[n][no].getDistance(r_data[n][no+1])*0.5*(s1+s2);
-                    s2=s1;
-                }
-                
+            T1 t=0;
+            this->getRaypath_ho(Tx, Rx[n],r_data[n],threadNo);
+            for (size_t src=0;src<Tx.size();++src){
+                if (Tx[src]==r_data[n][0])
+                    t=t0[src];
+            }
+            T1 s2=this->computeSlowness(r_data[n][0]);
+            for(size_t no=0;no<r_data[n].size()-1;++no){
+                T1 s1=this->computeSlowness(r_data[n][no+1]);
+                t+=r_data[n][no].getDistance(r_data[n][no+1])*0.5*(s1+s2);
+                s2=s1;
             }
             traveltimes[n] =t;
         }
         return 0;
+    }
+    template<typename T1, typename T2>
+    int Grid3Duisp<T1,T2>::computeK(const int & order,const std::string & method,const int & expansion,const size_t & minPoints,const bool & weighting, std::vector<std::vector<std::vector<siv<T1>>>>& d_data)const{
+        
+        if (order!=1 && order!=2){
+            std::cout<<"invalid order"<<std::endl;
+            return 1;
+        }
+        if (method!="3D" && method!="4D" && method!="ABM"){
+            std::cout<<"invalid method"<<std::endl;
+            return 1;
+        }
+        if (expansion!=1 && expansion!=2){
+            std::cout<<"invalid expansion order"<<std::endl;
+            return 1;
+        }
+        if (d_data.size()!=3)
+            d_data.resize(3);
+        size_t nodesNbr=this->getNumberOfNodes();
+        d_data[0].resize(nodesNbr);
+        d_data[1].resize(nodesNbr);
+        d_data[2].resize(nodesNbr);
+        for(T2 n=0;n<nodesNbr;++n){
+            std::set<T2> surroundedNodes;
+            std::set<T2> layer;
+            layer.insert(n);
+            while((surroundedNodes.size()+layer.size()-1)<minPoints){
+                std::copy(layer.begin(),layer.end(),std::inserter(surroundedNodes,surroundedNodes.end()));
+                std::vector<T2> nextlayer;
+                for(auto nn=layer.begin();nn!=layer.end();++nn){
+                    for(auto cel=this->nodes[*nn].getOwners().begin();cel!=this->nodes[*nn].getOwners().end();cel++){
+                        for(size_t i=0;i<4;++i){
+                            if (surroundedNodes.find(this->neighbors[*cel][i])!=surroundedNodes.end())
+                                continue;
+                             nextlayer.push_back(this->neighbors[*cel][i]);
+                        }
+                    }
+                }
+                layer.clear();
+                std::copy( nextlayer.begin(), nextlayer.end(),std::inserter(layer,layer.end()));
+            }
+            std::copy(layer.begin(),layer.end(),std::inserter(surroundedNodes,surroundedNodes.end()));
+            surroundedNodes.erase(n);
+            size_t npt=surroundedNodes.size();
+            if (expansion==1){
+                if(order==1){
+                    if (method=="3D"){
+                        if (npt<3 ){
+                            std::cout<<"the number of points is lower than 3: the system becomes underdetermined"<<std::endl;
+                            return 1;
+                        }
+                        Eigen::Matrix<T1,Eigen::Dynamic, 3> A;
+                        Eigen::Matrix<T1,3,Eigen::Dynamic> Acoefs;
+                        A.resize(npt, 3);
+                        Acoefs.resize(3,npt);
+                        size_t i(0);
+                        if(weighting){
+                            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+                            W.setZero(npt,npt);
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();
+                                W(i,i)=1./(A(i,0)*A(i,0)+A(i,1)*A(i,1)+A(i,2)*A(i,2));
+                                i++;
+                            }
+                            A=W*A;
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose()*W;
+                        }else{
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();
+                                A(i++,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();
+                            }
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose();
+                        }
+
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        std::array<T1,3> sum{0.,0.,0.};
+                        siv<T1> coef;
+                        size_t c(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            coef.i=*nd;
+                            coef.v=Acoefs(0,c);
+                            sum[0]+=Acoefs(0,c);
+                            d_data[0][n].push_back(coef);
+                            coef.v=Acoefs(1,c);
+                            sum[1]+=Acoefs(1,c);
+                            d_data[1][n].push_back(coef);
+                            coef.v=Acoefs(2,c);
+                            sum[2]+=Acoefs(2,c++);
+                            d_data[2][n].push_back(coef);
+                        }
+                        coef.i=n;
+                        coef.v=-sum[0];
+                        d_data[0][n].push_back(coef);
+                        coef.v=-sum[1];
+                        d_data[1][n].push_back(coef);
+                        coef.v=-sum[2];
+                        d_data[2][n].push_back(coef);
+                        
+                    }else if(method=="4D") {//4D method
+                        if (npt<4 ){
+                            std::cout<<"the number of points is lower than 4: the system becomes underdetermined"<<std::endl;
+                            return 1;
+                        }
+                        Eigen::Matrix<T1,Eigen::Dynamic, 4> A;
+                        Eigen::Matrix<T1,4,Eigen::Dynamic> Acoefs;
+                        A.resize(npt, 4);
+                        Acoefs.resize(4,npt);
+                        size_t i(0);
+                        if (weighting){
+                            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+                            W.setZero(npt,npt);
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();;
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();;
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();;
+                                A(i,3)=1.0;
+                                W(i,i)=1./(A(i,0)*A(i,0)+A(i,1)*A(i,1)+A(i,2)*A(i,2));
+                                i++;
+                            }
+                            A=W*A;
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose()*W;
+                        }else{
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();;
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();;
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();;
+                                A(i++,3)=1.0;
+                            }
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose();
+                        }
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        siv<T1> coef;
+                        size_t c(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            coef.i=*nd;
+                            coef.v=Acoefs(0,c);
+                            d_data[0][n].push_back(coef);
+                            coef.v=Acoefs(1,c);
+                            d_data[1][n].push_back(coef);
+                            coef.v=Acoefs(2,c++);
+                            d_data[2][n].push_back(coef);
+                        }
+                    }else{// ABM
+                        T1 Wsum=0.;
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            for(auto nc=this->nodes[*nd].getOwners().begin();nc!=this->nodes[*nd].getOwners().end();++nc){
+                                bool found=true;
+                                for (size_t no=0;no<4;++no){
+                                    if (this->neighbors[*nc][no]==n)
+                                        continue;
+                                    if(surroundedNodes.find(this->neighbors[*nc][no])==surroundedNodes.end()){
+                                        found=false;
+                                        break;
+                                    }
+                                }
+                                if (!found)
+                                    continue;
+                                Eigen::Matrix<T1,3, 3> A;
+                                Eigen::Matrix<T1,3,3> Acoefs;
+                                std::array<T2, 3> tetnodes;
+                                T2 closest;
+                                if (weighting){
+                                    sxyz<T1> centroid={0.,0.,0.};
+                                    T1 mindist=std::numeric_limits<T1>::max();
+                                    for (size_t ni=0;ni<4;++ni){
+                                        centroid+= sxyz<T1>(this->nodes[this->neighbors[*nc][ni]]);
+                                        T1 d=this->nodes[n].getDistance(this->nodes[this->neighbors[*nc][ni]]);
+                                        if(d<mindist){
+                                            closest=this->neighbors[*nc][ni];
+                                            mindist=d;
+                                        }
+                                    }
+                                    centroid/=4.;
+                                    T1 w_i=1./centroid.getDistance(this->nodes[n]);
+                                    w_i*=w_i;
+                                    size_t ii(0);
+                                    for (size_t no=0;no<4;++no){
+                                        if(this->neighbors[*nc][no]!=closest){
+                                            tetnodes[ii]=this->neighbors[*nc][no];
+                                            A(ii,0)=this->nodes[this->neighbors[*nc][no]].getX()-this->nodes[closest].getX();
+                                            A(ii,1)=this->nodes[this->neighbors[*nc][no]].getY()-this->nodes[closest].getY();
+                                            A(ii++,2)=this->nodes[this->neighbors[*nc][no]].getZ()-this->nodes[closest].getZ();
+                                        }
+                                    }
+                                    Acoefs=A.inverse();
+                                    Acoefs=Acoefs*w_i;
+                                    Wsum+=w_i;
+                                }else{
+                                    T1 mindist=std::numeric_limits<T1>::max();
+                                    for (size_t ni=0;ni<4;++ni){
+                                        T1 d=this->nodes[n].getDistance(this->nodes[this->neighbors[*nc][ni]]);
+                                        if(d<mindist){
+                                            closest=this->neighbors[*nc][ni];
+                                            mindist=d;
+                                        }
+                                    }
+                                    size_t ii(0);
+                                    for (size_t no=0;no<4;++no){
+                                        if(this->neighbors[*nc][no]!=closest){
+                                            tetnodes[ii]=this->neighbors[*nc][no];
+                                            A(ii,0)=this->nodes[this->neighbors[*nc][no]].getX()-this->nodes[closest].getX();
+                                            A(ii,1)=this->nodes[this->neighbors[*nc][no]].getY()-this->nodes[closest].getY();
+                                            A(ii++,2)=this->nodes[this->neighbors[*nc][no]].getZ()-this->nodes[closest].getZ();
+                                        }
+                                    }
+                                    Acoefs=A.inverse();
+                                    Wsum+=1.;
+                                }
+
+                                std::array<T1,3> sum{0.,0.,0.};
+                                for(size_t nn=0;nn<3;++nn){
+                                    bool exist=false;
+                                    sum[0]+=Acoefs(0,nn);
+                                    sum[1]+=Acoefs(1,nn);
+                                    sum[2]+=Acoefs(2,nn);
+                                    for(size_t nd=0;nd<d_data[0][n].size();++nd){
+                                        if(d_data[0][n][nd].i==tetnodes[nn]){
+                                            d_data[0][n][nd].v+=Acoefs(0,nn);
+                                            d_data[1][n][nd].v+=Acoefs(1,nn);
+                                            d_data[2][n][nd].v+=Acoefs(2,nn);
+                                            exist=true;
+                                            break;
+                                        }
+                                    }
+                                    if (!exist){
+                                        siv<T1> coef;
+                                        coef.i=tetnodes[nn];
+                                        coef.v=Acoefs(0,nn);
+                                        d_data[0][n].push_back(coef);
+                                        
+                                        coef.v=Acoefs(1,nn);
+                                        d_data[1][n].push_back(coef);
+
+                                        coef.v=Acoefs(2,nn);
+                                        d_data[2][n].push_back(coef);
+                                    }
+                                    
+                                }
+                                bool exist=false;
+                                for(size_t nd=0;nd<d_data[0][n].size();++nd){
+                                    if(d_data[0][n][nd].i==closest){
+                                        d_data[0][n][nd].v+=-sum[0];
+                                        d_data[1][n][nd].v+=-sum[1];
+                                        d_data[2][n][nd].v+=-sum[2];
+                                        exist=true;
+                                        break;
+                                    }
+                                }
+                                if (!exist){
+                                    siv<T1> coef;
+                                    coef.i=closest;
+                                    coef.v=-sum[0];
+                                    d_data[0][n].push_back(coef);
+                                    
+                                    coef.v=-sum[1];
+                                    d_data[1][n].push_back(coef);
+                                    
+                                    coef.v=-sum[2];
+                                    d_data[2][n].push_back(coef);
+                                }
+                                
+                            }
+                        }
+                        for(size_t dn=0;dn<d_data[0][n].size();++dn ){
+                            d_data[0][n][dn].v/=Wsum;
+                            d_data[1][n][dn].v/=Wsum;
+                            d_data[2][n][dn].v/=Wsum;
+                        }
+                    }
+                }else{
+                    std::cout<<"The second derivative needs a second expansion order"<<std::endl;
+                }
+            }else{// double expansion
+                if (order==1){
+                    if(method=="3D"){
+                        if (npt<9 ){
+                            std::cout<<"the number of points is lower than 9: the system becomes underdetermined"<<std::endl;
+                            return 1;
+                        }
+                        Eigen::Matrix<T1,Eigen::Dynamic, 9> A;
+                        Eigen::Matrix<T1,9,Eigen::Dynamic> Acoefs;
+                        A.resize(npt, 9);
+                        Acoefs.resize(9,npt);
+                        size_t i(0);
+                        if (weighting){
+                            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+                            W.setZero(npt,npt);
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+            
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();
+                                
+                                A(i,3)=0.5*A(i,0)*A(i,0);
+                                A(i,4)=0.5*A(i,1)*A(i,1);
+                                A(i,5)=0.5*A(i,2)*A(i,2);
+                                
+                                A(i,6)=A(i,0)*A(i,1);
+                                A(i,7)=A(i,0)*A(i,2);
+                                A(i,8)=A(i,1)*A(i,2);
+                                W(i,i)=1./(A(i,0)*A(i,0)+A(i,1)*A(i,1)+A(i,2)*A(i,2));
+                                i++;
+                            }
+                            A=W*A;
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose()*W;
+                        }else{
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();
+                                
+                                A(i,3)=0.5*A(i,0)*A(i,0);
+                                A(i,4)=0.5*A(i,1)*A(i,1);
+                                A(i,5)=0.5*A(i,2)*A(i,2);
+                                
+                                A(i,6)=A(i,0)*A(i,1);
+                                A(i,7)=A(i,0)*A(i,2);
+                                A(i,8)=A(i,1)*A(i,2);
+                                i++;
+                            }
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose();
+                        }
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        std::array<T1,3> sum{0.,0.,0.};
+                        siv<T1> coef;
+                        size_t c(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            coef.i=*nd;
+                            coef.v=Acoefs(0,c);
+                            sum[0]+=Acoefs(0,c);
+                            d_data[0][n].push_back(coef);
+                            coef.v=Acoefs(1,c);
+                            sum[1]+=Acoefs(1,c);
+                            d_data[1][n].push_back(coef);
+                            coef.v=Acoefs(2,c);
+                            sum[2]+=Acoefs(2,c++);
+                            d_data[2][n].push_back(coef);
+                        }
+                        coef.i=n;
+                        coef.v=-sum[0];
+                        d_data[0][n].push_back(coef);
+                        coef.v=-sum[1];
+                        d_data[1][n].push_back(coef);
+                        coef.v=-sum[2];
+                        d_data[2][n].push_back(coef);
+                        
+                    }else if (method=="4D"){// method 4D
+                        if (npt<10 ){
+                            std::cout<<"the number of points is lower than 10: the system becomes underdetermined"<<std::endl;
+                            return 1;
+                        }
+                        Eigen::Matrix<T1,Eigen::Dynamic, 10> A;
+                        Eigen::Matrix<T1,10,Eigen::Dynamic> Acoefs;
+                        A.resize(npt, 10);
+                        Acoefs.resize(10,npt);
+                        size_t i(0);
+                        if (weighting){
+                            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+                            W.setZero(npt,npt);
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();;
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();;
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();;
+                                
+                                A(i,3)=0.5*A(i,0)*A(i,0);
+                                A(i,4)=0.5*A(i,1)*A(i,1);
+                                A(i,5)=0.5*A(i,2)*A(i,2);
+                                
+                                A(i,6)=A(i,0)*A(i,1);
+                                A(i,7)=A(i,0)*A(i,2);
+                                A(i,8)=A(i,1)*A(i,2);
+                                A(i,9)=1.0;
+                                W(i,i)=1./(A(i,0)*A(i,0)+A(i,1)*A(i,1)+A(i,2)*A(i,2));
+                                i++;
+                            }
+                            A=W*A;
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose()*W;
+                        }else{
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,0)=this->nodes[*nd].getX()-this->nodes[n].getX();;
+                                A(i,1)=this->nodes[*nd].getY()-this->nodes[n].getY();;
+                                A(i,2)=this->nodes[*nd].getZ()-this->nodes[n].getZ();;
+                                
+                                A(i,3)=0.5*A(i,0)*A(i,0);
+                                A(i,4)=0.5*A(i,1)*A(i,1);
+                                A(i,5)=0.5*A(i,2)*A(i,2);
+                                
+                                A(i,6)=A(i,0)*A(i,1);
+                                A(i,7)=A(i,0)*A(i,2);
+                                A(i,8)=A(i,1)*A(i,2);
+                                A(i++,9)=1.0;
+                            }
+                             Acoefs=(A.transpose()*A).inverse()*A.transpose();
+                        }
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        siv<T1> coef;
+                        size_t c(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            coef.i=*nd;
+                            coef.v=Acoefs(0,c);
+                            d_data[0][n].push_back(coef);
+                            coef.v=Acoefs(1,c);
+                            d_data[1][n].push_back(coef);
+                            coef.v=Acoefs(2,c++);
+                            d_data[2][n].push_back(coef);
+                        }
+                        
+                    }else{//ABM
+                        std::cout<<"the ABM does not support a double expansion"<<std::endl;
+                        return 1;
+                    }
+                }else{// order 2
+                    if(method=="3D"){
+                        if (npt<9 ){
+                            std::cout<<"the number of points is lower than 9: the system becomes underdetermined"<<std::endl;
+                            return 1;
+                        }
+                        Eigen::Matrix<T1,Eigen::Dynamic, 9> A;
+                        Eigen::Matrix<T1,9,Eigen::Dynamic> Acoefs;
+                        A.resize(npt, 9);
+                        Acoefs.resize(9,npt);
+                        size_t i(0);
+                        if (weighting){
+                            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+                            W.setZero(npt,npt);
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,3)=this->nodes[*nd].getX()-this->nodes[n].getX();
+                                A(i,4)=this->nodes[*nd].getY()-this->nodes[n].getY();
+                                A(i,5)=this->nodes[*nd].getZ()-this->nodes[n].getZ();
+                                
+                                A(i,0)=0.5*A(i,3)*A(i,3);
+                                A(i,1)=0.5*A(i,4)*A(i,4);
+                                A(i,2)=0.5*A(i,5)*A(i,5);
+                                
+                                A(i,6)=A(i,3)*A(i,4);
+                                A(i,7)=A(i,3)*A(i,5);
+                                A(i,8)=A(i,4)*A(i,5);
+                                W(i,i)=1./(A(i,3)*A(i,3)+A(i,4)*A(i,4)+A(i,5)*A(i,5));
+                                i++;
+                            }
+                            A=W*A;
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose()*W;
+                        }else{
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,3)=this->nodes[*nd].getX()-this->nodes[n].getX();
+                                A(i,4)=this->nodes[*nd].getY()-this->nodes[n].getY();
+                                A(i,5)=this->nodes[*nd].getZ()-this->nodes[n].getZ();
+                                
+                                A(i,0)=0.5*A(i,3)*A(i,3);
+                                A(i,1)=0.5*A(i,4)*A(i,4);
+                                A(i,2)=0.5*A(i,5)*A(i,5);
+                                
+                                A(i,6)=A(i,3)*A(i,4);
+                                A(i,7)=A(i,3)*A(i,5);
+                                A(i,8)=A(i,4)*A(i,5);
+                                i++;
+                            }
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose();
+                        }
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        std::array<T1, 3> sum{0.,0.,0.};
+                        siv<T1> coef;
+                        size_t c(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            coef.i=*nd;
+                            coef.v=Acoefs(0,c);
+                            sum[0]+=Acoefs(0,c);
+                            d_data[0][n].push_back(coef);
+                            coef.v=Acoefs(1,c);
+                            sum[1]+=Acoefs(1,c);
+                            d_data[1][n].push_back(coef);
+                            coef.v=Acoefs(2,c);
+                            sum[2]+=Acoefs(2,c++);
+                            d_data[2][n].push_back(coef);
+                        }
+                        coef.i=n;
+                        coef.v=-sum[0];
+                        d_data[0][n].push_back(coef);
+                        coef.v=-sum[1];
+                        d_data[1][n].push_back(coef);
+                        coef.v=-sum[2];
+                        d_data[2][n].push_back(coef);
+                        
+                    }else if (method=="4D"){// method 4D
+                        if (npt<10 ){
+                            std::cout<<"the number of points is lower than 10: the system becomes underdetermined"<<std::endl;
+                            return 1;
+                        }
+                        Eigen::Matrix<T1,Eigen::Dynamic, 10> A;
+                        Eigen::Matrix<T1,10,Eigen::Dynamic> Acoefs;
+                        A.resize(npt, 10);
+                        Acoefs.resize(10,npt);
+                        size_t i(0);
+                        if (weighting){
+                            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+                            W.setZero(npt,npt);
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,3)=this->nodes[*nd].getX()-this->nodes[n].getX();;
+                                A(i,4)=this->nodes[*nd].getY()-this->nodes[n].getY();;
+                                A(i,5)=this->nodes[*nd].getZ()-this->nodes[n].getZ();;
+                                
+                                A(i,0)=0.5*A(i,3)*A(i,3);
+                                A(i,1)=0.5*A(i,4)*A(i,4);
+                                A(i,2)=0.5*A(i,5)*A(i,5);
+                                
+                                A(i,6)=A(i,3)*A(i,4);
+                                A(i,7)=A(i,3)*A(i,5);
+                                A(i,8)=A(i,4)*A(i,5);
+                                A(i,9)=1.0;
+                                W(i,i)=1./(A(i,3)*A(i,3)+A(i,4)*A(i,4)+A(i,5)*A(i,5));
+                                i++;
+                            }
+                            A=W*A;
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose()*W;
+                        }else{
+                            for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                                
+                                A(i,3)=this->nodes[*nd].getX()-this->nodes[n].getX();;
+                                A(i,4)=this->nodes[*nd].getY()-this->nodes[n].getY();;
+                                A(i,5)=this->nodes[*nd].getZ()-this->nodes[n].getZ();;
+                                
+                                A(i,0)=0.5*A(i,3)*A(i,3);
+                                A(i,1)=0.5*A(i,4)*A(i,4);
+                                A(i,2)=0.5*A(i,5)*A(i,5);
+                                
+                                A(i,6)=A(i,3)*A(i,4);
+                                A(i,7)=A(i,3)*A(i,5);
+                                A(i,8)=A(i,4)*A(i,5);
+                                A(i++,9)=1.0;
+                            }
+                            Acoefs=(A.transpose()*A).inverse()*A.transpose();
+                        }
+                        d_data[0][n].resize(0);
+                        d_data[1][n].resize(0);
+                        d_data[2][n].resize(0);
+                        siv<T1> coef;
+                        size_t c(0);
+                        for(auto nd=surroundedNodes.begin();nd!=surroundedNodes.end();++nd){
+                            coef.i=*nd;
+                            coef.v=Acoefs(0,c);
+                            d_data[0][n].push_back(coef);
+                            coef.v=Acoefs(1,c);
+                            d_data[1][n].push_back(coef);
+                            coef.v=Acoefs(2,c++);
+                            d_data[2][n].push_back(coef);
+                        }
+                    }else{// ABM
+                        std::cout<<"the ABM does not support a double expansion"<<std::endl;
+                        return 1;
+                    }
+                }
+                
+            }
+        }
+        return 0.;
     }
     template<typename T1, typename T2>
     int Grid3Duisp<T1,T2>::computeD(const std::vector<sxyz<T1>> &Pts,
@@ -1054,17 +1516,17 @@ namespace ttcr {
                 }
             }
             if (!found){
-                T2 CellNO=this->getCellNo(Pts[np]);
+                T2 CellNO=this->getCellNo2(Pts[np]);
                 if (CellNO==std::numeric_limits<T2>::max()) return 1;
-                std::array<T1,4> Weights;
+                std::array<T1,4> weights;
                 T1 sum (0.0);
                 for(size_t n=0;n<4;++n){
-                    Weights[n]=1.0/this->nodes[this->neighbors[CellNO][n]].getDistance(Pts[np]);
-                    sum+=Weights[n];
+                    weights[n]=1.0/this->nodes[this->neighbors[CellNO][n]].getDistance(Pts[np]);
+                    sum+=weights[n];
                 }
                 for(size_t n=0;n<4;++n){
-                    Weights[n]/=sum;
-                    d_data[np].push_back({np,this->neighbors[CellNO][n],Weights[n]});
+                    weights[n]/=sum;
+                    d_data[np].push_back({np,this->neighbors[CellNO][n],weights[n]});
                 }
             }
         }
@@ -1391,9 +1853,9 @@ namespace ttcr {
                                     std::vector<std::vector<sxyz<T1>>>& r_data,
                                      T1 & v0,
                                     std::vector<std::vector<sijv<T1>>>& m_data,
-                                    const size_t threadNo) const {
+                                    const size_t threadNo, const bool interp_slow) const {
         
-        //    std::cout << "   running in thread no " << threadNo << std::endl;
+      
         if (this->checkPts(Tx) == 1 ) return 1;
         if (this->checkPts(Rx) == 1 ) return 1;
         
@@ -1434,43 +1896,19 @@ namespace ttcr {
         }
         v0 = Tx.size() / v0;
 
-        
-        T2 StandartSPM=0.0;
-        T1 Slowness_Srcs[Tx.size()];
-        T2 Cells_Tx [Tx.size()];
-        if (StandartSPM==1.0){
-            for(size_t i=0;i<Tx.size();++i){
-                Cells_Tx[i] =this->getCellNo(Tx[i]);
-                Slowness_Srcs[i]=this->computeSlowness(Tx[i]);
-            }
-        }
-        
         for (size_t n=0; n<Rx.size(); ++n) {
-            
-            T1 t=0.0;
-            if (StandartSPM==1.0){
-                bool find=false;
-                for(size_t i=0;i<Tx.size();++i){
-                    if (Cells_Tx[i]==this->getCellNo(Rx[n])){
-                        t=Tx[i].getDistance(Rx[n])*0.5*(Slowness_Srcs[i]+this->computeSlowness(Rx[n]));
-                        find=true;
-                        break;
-                    }
-                }
-                if (!find){
-                    
-                    t= this->getTraveltime(Rx[n], this->nodes, threadNo);
-                }
-                
-            }else{
-                this->getRaypath_ho(Tx, Rx[n], r_data[n],m_data[n],n,threadNo);
-                T1 s2=this->computeSlowness(r_data[n][0]);
-                for(size_t no=0;no<r_data[n].size()-1;++no){
-                    T1 s1=this->computeSlowness(r_data[n][no+1]);
-                    t+=r_data[n][no].getDistance(r_data[n][no+1])*0.5*(s1+s2);
-                    s2=s1;
-                }
-                
+            T1 t=0;
+            this->getRaypath_ho(Tx, Rx[n], r_data[n],m_data[n],n,threadNo,interp_slow);
+
+            for (size_t src=0;src<Tx.size();++src){
+                if (Tx[src]==r_data[n][0])
+                    t=t0[src];
+            }
+            T1 s2=this->computeSlowness(r_data[n][0]);
+            for(size_t no=0;no<r_data[n].size()-1;++no){
+                T1 s1=this->computeSlowness(r_data[n][no+1]);
+                t+=r_data[n][no].getDistance(r_data[n][no+1])*0.5*(s1+s2);
+                s2=s1;
             }
             traveltimes[n] =t;
         }

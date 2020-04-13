@@ -145,6 +145,35 @@ namespace ttcr {
             return num/den;
         }
         template<typename NODE>
+        static T linear(const sxyz<T>& node,
+                        const NODE& node1,
+                        const NODE& node2) {
+            sxyz<T> AB = {node2.getX()-node1.getX(), node2.getY()-node1.getY(), node2.getZ()-node1.getZ()};
+            sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
+            sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
+            
+            T nAB = norm(AB);
+            T w1 = norm(IA)/nAB;
+            T w2 = norm(IB)/nAB;
+            
+            return w2*node1.getNodeSlowness() + w1*node2.getNodeSlowness();
+        }
+        
+        template<typename NODE>
+        static T linearVel(const sxyz<T>& node,
+                           const NODE& node1,
+                           const NODE& node2) {
+            sxyz<T> AB = {node2.getX()-node1.getX(), node2.getY()-node1.getY(), node2.getZ()-node1.getZ()};
+            sxyz<T> IA = {node1.getX()-node.x, node1.getY()-node.y, node1.getZ()-node.z};
+            sxyz<T> IB = {node2.getX()-node.x, node2.getY()-node.y, node2.getZ()-node.z};
+            
+            T nAB = norm(AB);
+            T w1 = norm(IA)/nAB;
+            T w2 = norm(IB)/nAB;
+            
+            return 1.0/(w2/node1.getNodeSlowness() + w1/node2.getNodeSlowness());
+        }
+        template<typename NODE>
         static T bilinearTriangle(const sxyz<T> &node,const NODE &node1,
                                 const NODE  &node2,NODE node3) {
             sxyz<T> AB={node2.getX()-node1.getX(),node2.getY()-node1.getY(),node2.getZ()-node1.getZ()};

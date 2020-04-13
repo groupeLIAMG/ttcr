@@ -34,7 +34,13 @@ int main(int argc, const char * argv[]) {
 //        src[i].init();
 //    }
     src.push_back( Src<double >("Src1.dat") );
-    src[0].init();
+   src[0].init();
+//    src.push_back( Src<double >("Src2.dat") );
+//    src[1].init();
+//    src.push_back( Src<double >("Src3.dat") );
+//    src[2].init();
+//    src.push_back( Src<double >("Src4.dat") );
+//    src[3].init();
     
     //bool SecondNodes=false;
     std::vector<sxyz<double >> Ttx;
@@ -78,7 +84,7 @@ int main(int argc, const char * argv[]) {
         if ( nodes[n].y<ic[1]) ic[1] = nodes[n].y;
         if ( nodes[n].z<ic[2]) ic[2] = nodes[n].z;
     }
-    for ( size_t n=1; n<nodes.size(); ++n ) {
+    for ( size_t n=0; n<nodes.size(); ++n ) {
         nodes[n].x-=ic[0];
         nodes[n].y-=ic[1];
         nodes[n].z-=ic[2];
@@ -102,18 +108,26 @@ int main(int argc, const char * argv[]) {
     fin.close();
 
     ///////////////////////////////////////////////////////////////////
+
+    
     size_t start_s=clock();
     if (method=="SPM"){
         Grid3Duisp<double, uint32_t> * mesh_instancesp;
-        unsigned ns=7;
+        unsigned ns=2;
         mesh_instancesp=new Grid3Duisp<double, uint32_t>(nodes,tetrahedra,ns,1);
+        double Ed_v=mesh_instancesp->averageEdge();
          mesh_instancesp->setSlowness(tmp);
         //    std::vector<double> Slow(nodes.size(),1.0/3.0);
         //    mesh_instancesp->setSlowness(Slow);
-        //mesh_instancesp->setSourceRadius(10.0*1.e-3);
-        /////////
+        //mesh_instancesp->setSourceRadius(0.0*1.e-3);
 
-        size_t nTx = Tx.size();      
+        ////////////////////////////////////////////////////
+//        std::vector<std::vector<std::vector<siv<double >>>> d_data(3);
+//        std::string methode="ABM";
+//        mesh_instancesp->computeK(1,methode,1,13,false,d_data);
+        ///////////////////////////////////////////////////////////////
+        size_t nTx = Tx.size();
+        
         size_t nRx=Rx.size();
         std::vector<std::vector<sxyz<double >>> vTx;
         std::vector<std::vector<double >> t0;
@@ -137,11 +151,6 @@ int main(int argc, const char * argv[]) {
                 iTx.push_back(std::vector<size_t>(1, ntx) );
             }
         }
-        /*
-         Looping over all non redundant Tx
-         */
-        //    std::vector<std::vector<sijv<double>>> d_data;
-        //    mesh_instance->computeD(Rx, d_data);
         
         std::vector<sxyz<double >> vRx;
         std::vector<std::vector<double >> tt( vTx.size() );
@@ -156,15 +165,17 @@ int main(int argc, const char * argv[]) {
                     vRx.push_back( {Rx[ iTx[nv][ni] ].x-ic[0],Rx[ iTx[nv][ni] ].y-ic[1],
                         Rx[ iTx[nv][ni] ].z-ic[2]});
                 }
+            ;
+                mesh_instancesp->AddNewSecondaryNodes(vTx[nv][0],2,0.100,0);
+
                 
-              mesh_instancesp->AddNewSecondaryNodes(vTx[nv][0],1,0.150,0);
-                //mesh_instancesp->AddNewSecondaryNodes(vTx[nv][0], 2, 0.035,0);
-                
-                if ( mesh_instancesp->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv],v0[nv],m_data[nv],0) == 1 )
+//                if ( mesh_instancesp->raytrace(vTx[nv], t0[nv], vRx, tt[nv],r_data[nv],0) == 1 )
+//                    throw std::runtime_error("Problem while raytracing.");
+                if (mesh_instancesp->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv],v0[nv],m_data[nv], 0,false)==1)
                     throw std::runtime_error("Problem while raytracing.");
                 size_t stop_s=clock();
                 std::cout << "time: " << (stop_s-start_s)/double(CLOCKS_PER_SEC) << endl;
-                mesh_instancesp->DelateNodes();
+                //mesh_instancesp->DelateNodes();
                 for (size_t ii=0;ii<r_data[nv].size();ii++){
                     std::cout<<" size r_data["<<ii<<"] :"<< r_data[nv][ii].size()<<std::endl;
                 }
@@ -188,17 +199,20 @@ int main(int argc, const char * argv[]) {
                 size_t blk_end = blk_start + blk_size;
                 Grid3Duisp<double , uint32_t> *mesh_ref = mesh_instancesp;
                 threads[i]=std::thread( [&mesh_ref,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
-                                         &r_data,&v0,&m_data,blk_start,blk_end,i]{
+                                         &r_data,&v0,&m_data,ic,blk_start,blk_end,i]{
                     
                     for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
                         
                         std::vector<sxyz<double >> vRx;
                         for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                            vRx.push_back( Rx[ iTx[nv][ni] ] );
+                            vRx.push_back( {Rx[ iTx[nv][ni] ].x-ic[0],Rx[ iTx[nv][ni] ].y-ic[1],
+                                Rx[ iTx[nv][ni] ].z-ic[2]});
                         }
-                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv],m_data[nv],i+1) == 1 ) {
+                        //mesh_ref->AddNewSecondaryNodes(vTx[nv][0],1,0.100,0,i+1);
+                        if ( mesh_ref->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], v0[nv],i+1) == 1 ) {
                             throw std::runtime_error("Problem while raytracing.");
                         }
+                        //mesh_ref->DelateNodes();
                     }
                 });
                 
@@ -208,11 +222,14 @@ int main(int argc, const char * argv[]) {
             for ( size_t nv=blk_start; nv<vTx.size(); ++nv ) {
                 std::vector<sxyz<double >> vRx;
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    vRx.push_back( Rx[ iTx[nv][ni] ] );
+                    vRx.push_back( {Rx[ iTx[nv][ni] ].x-ic[0],Rx[ iTx[nv][ni] ].y-ic[1],
+                        Rx[ iTx[nv][ni] ].z-ic[2]});
                 }
-                if ( mesh_instancesp->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv],v0[nv],m_data[nv], 0) == 1 ) {
+                //mesh_instancesp->AddNewSecondaryNodes(vTx[nv][0],1,0.100,0);
+                if ( mesh_instancesp->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv],v0[nv], 0) == 1 ) {
                     throw std::runtime_error("Problem while raytracing.");
                 }
+                //mesh_instancesp->DelateNodes();
             }
             
             std::for_each(threads.begin(),threads.end(),
@@ -223,17 +240,13 @@ int main(int argc, const char * argv[]) {
             std::string filename="Src"+to_string(N+1+i)+".vtp";
             saveRayPaths(filename, r_data[i]);
         }
-        size_t stop_s=clock();
-        std::cout << "time: " << (stop_s-start_s)/double(CLOCKS_PER_SEC) << endl;
-        mesh_instancesp->DelateNodes();
-        for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-            for (size_t ii=0;ii<r_data[nv].size();ii++){
-                std::cout<<" size r_data["<<ii<<"] :"<< r_data[nv][ii].size()<<std::endl;
-            }
-        }
-        std::cout<<"\n"<<std::endl;
-        cout<<"\n"<<endl;
         mesh_instancesp->saveTT("time",0,0,false);
+//        std::ofstream myfile;
+//        myfile.open ("time.dat");
+//        for (size_t i=0;i<tt[0].size();++i){
+//            myfile<<tt[0][i]<<std::endl;
+//        }
+//        myfile.close();
     }
     if (method=="FMM"){///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         
@@ -245,7 +258,7 @@ int main(int argc, const char * argv[]) {
             //mesh_instancefm->setSourceRadius(30.0*1.e-3);
             /////////
             
-            size_t nTx = Tx.size();
+        size_t nTx = Tx.size();
             size_t nRx=Rx.size();
             std::vector<std::vector<sxyz<double >>> vTx;
             std::vector<std::vector<double >> t0;

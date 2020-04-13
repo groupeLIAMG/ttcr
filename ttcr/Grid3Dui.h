@@ -103,7 +103,16 @@ namespace ttcr {
             }
             return 0;
         }
-
+        std::array<T2,4> getPrimary(const T2 cellNo) const {
+            size_t i = 0;
+            std::array<T2,4> tmp;
+            for (size_t n=0; n<neighbors[cellNo].size(); ++n) {
+                if ( nodes[neighbors[cellNo][n]].isPrimary() )
+                    tmp[i++] = neighbors[cellNo][n];
+                if ( i == 4 ) break;
+            }
+            return tmp;
+        }
         void setSourceRadius(const double r) { source_radius = r; }
 
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
@@ -149,11 +158,13 @@ namespace ttcr {
             return zmax;
         }
         T2 getCellNo(const sxyz<T1>& pt) const {
-            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
-                if ( insideTetrahedron(pt, n) ) {
-                    return n;
-                }
-            }
+//            T2 cell1;
+//            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
+//                if ( insideTetrahedron(pt, n) ) {
+//                   cell1= n;
+//                    break;
+//                }
+//            }
             // if no cell is found
             T2 ClosestNode=0;
             T1 distance=std::numeric_limits<T1>::max();
@@ -168,27 +179,58 @@ namespace ttcr {
             T2 Cell;
                  
             for(auto tet=nodes[ClosestNode].getOwners().begin();tet!=nodes[ClosestNode].getOwners().end();++tet){
-                sxyz<T1> v1 = { nodes[ neighbors[*tet][0] ]};
-                sxyz<T1> v2 = { nodes[ neighbors[*tet][1] ]};
-                sxyz<T1> v3 ={ nodes[ neighbors[*tet][2] ]};
-                sxyz<T1> v4 = { nodes[ neighbors[*tet][3] ]};
-                
-                T1 D0 = 1.e6*det4(v1, v2, v3, v4);
-                T1 D1 = 1.e6*det4( pt, v2, v3, v4);
-                T1 D2 = 1.e6*det4(v1,  pt, v3, v4);
-                T1 D3 = 1.e6*det4(v1, v2,  pt, v4);
-                T1 D4 = 1.e6*det4(v1, v2, v3,  pt);
+                T2 celli=*tet;
+                for (size_t n=0;n<4;++n){
+                    T2 neighbornode=neighbors[celli][n];
+                    for(auto tet2=nodes[neighbornode].getOwners().begin();tet2!=nodes[neighbornode].getOwners().end();++tet2){
+                        sxyz<T1> v1 = { nodes[ neighbors[*tet2][0] ]};
+                        sxyz<T1> v2 = { nodes[ neighbors[*tet2][1] ]};
+                        sxyz<T1> v3 ={ nodes[ neighbors[*tet2][2] ]};
+                        sxyz<T1> v4 = { nodes[ neighbors[*tet2][3] ]};
   
-                T1 VolumeDiff=abs(abs(D0)-abs(D1)-abs(D2)-abs(D3)-abs(D4));
-                 plotCell(*tet, pt, sxyz<T1>(0.0,0.0,0.00));
-                if(VolumeDiff<MinVolumeDiff){
-                    MinVolumeDiff=VolumeDiff;
-                    Cell=*tet;
+                        T1 D0 = 1.e6*det4(v1, v2, v3, v4);
+                        T1 D1 = 1.e6*det4( pt, v2, v3, v4);
+                        T1 D2 = 1.e6*det4(v1,  pt, v3, v4);
+                        T1 D3 = 1.e6*det4(v1, v2,  pt, v4);
+                        T1 D4 = 1.e6*det4(v1, v2, v3,  pt);
+                        
+                        T1 VolumeDiff=abs(abs(D0)-abs(D1)-abs(D2)-abs(D3)-abs(D4));
+                        //T1 VolumeDiff=abs(D0-D1-D2-D3-D4);
+                        if(VolumeDiff<MinVolumeDiff){
+                            MinVolumeDiff=VolumeDiff;
+                            Cell=*tet2;
+                        }
+
+                    }
+                    
                 }
             }
-            plotCell(Cell, pt, sxyz<T1>(0.0,0.0,0.00));
+//            if (cell1!=Cell){
+//                std::cout<<"cell = "<< Cell<<"; cell1 = "<<cell1<< std::endl;
+//                plotCell(Cell, pt, sxyz<T1>(0.0,0.0,0.00));
+//                plotCell(cell1, pt, sxyz<T1>(0.0,0.0,0.00));
+//            }
+
             return Cell;
         }
+        T2 getCellNo2(const sxyz<T1>& pt) const {
+            T2 cell1=std::numeric_limits<T2>::max();
+            for ( T2 n=0; n<tetrahedra.size(); ++n ) {
+                if ( insideTetrahedron(pt, n) ) {
+                    cell1= n;
+                    break;
+                    
+                }
+                
+            }
+            return cell1;
+        }
+        T1 computeSlowness(const sxyz<T1>& curr_pt,
+                           const bool onNode,
+                           const T2 nodeNo,
+                           const bool onEdge,
+                           const std::array<T2,2>& edgeNodes,
+                           const std::array<T2,3>& faceNodes) const;
          int checkPts(const std::vector<sxyz<T1>>&) const;
 
         virtual int raytrace(const std::vector<sxyz<T1>>& Tx,
@@ -269,6 +311,8 @@ namespace ttcr {
 
         void local3Dsolver(NODE *vertexC, const size_t threadNo) const;
         bool blti_raytrace(const sxyz<T1> & curr_pt,const std::array<T2, 3> &faces, sxyz<T1> & next_pt,const size_t threadNo, const T1 & s) const;
+        bool blti_raytrace(const sxyz<T1> & curr_pt,const std::array<T2, 3> &faces, sxyz<T1> & next_pt,T1 & xi,T1 & zeta, const size_t threadNo, const T1 & s) const;
+
         bool blti2D_raytrace(const sxyz<T1> & curr_pt,const T2 & node1,const T2 & node2, sxyz<T1> & next_pt,const size_t threadNo, const T1 & s) const;
         T1 local2Dsolver(const NODE *vertexA,
                          const NODE *vertexB,
@@ -291,7 +335,11 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         const size_t threadNo) const;
-
+        
+        T1 getTraveltime_blti(const std::vector<sxyz<T1>>& Tx,
+                              const std::vector<T1>& t0,
+                              const sxyz<T1>& Rx,
+                              const size_t threadNo) const;
         void getRaypath_ho(const std::vector<sxyz<T1>>& Tx,
                            const sxyz<T1> &Rx,
                            std::vector<sxyz<T1>> &r_data,
@@ -309,7 +357,8 @@ namespace ttcr {
                            std::vector<sxyz<T1>> &r_data,
                            std::vector<sijv<T1>>& m_data,
                            const size_t RxNo,
-                           const size_t threadNo) const;
+                           const size_t threadNo,
+                           const bool interp_slow) const;
         void getRaypathABM(const std::vector<sxyz<T1>>& Tx,
                          const sxyz<T1> &Rx,std::vector<sxyz<T1>> &r_data,
                            const size_t threadNo)const;
@@ -1895,13 +1944,13 @@ namespace ttcr {
                             break;
                     }
                     
-                    if (InLimits && ! foundIntersection){
-                        // if the current point is on limits but we don't find intersection, we project again the gradient.
-                        foundIntersection=true;
-                        
-                    }
+//                    if (InLimits && ! foundIntersection){
+//                        // if the current point is on limits but we don't find intersection, we project again the gradient.
+//                        foundIntersection=true;
+//
+//                    }
                     if ( foundIntersection == false && !InLimits) {
-                        std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
+                        std::cout << "\nWarning: finding raypath on node failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
@@ -2114,10 +2163,10 @@ namespace ttcr {
                     if (foundIntersection)
                         break;
                 }
-                if (InLimits && ! foundIntersection){
-                    foundIntersection=true;// we project again th gradient
-                    
-                }
+//                if (InLimits && ! foundIntersection){
+//                    foundIntersection=true;// we project again th gradient
+//
+//                }
                 if (!foundIntersection){
                     InLimits=InLimits? false:true;
                 }
@@ -2528,7 +2577,7 @@ namespace ttcr {
         }
         sxyz<T1> g;
         T2 N=0;
-        while ( reachedTx == false && N<500) {
+        while ( reachedTx == false && N<800) {
 //           if (N==66)
 //               std::cout<<"arret"<<std::endl;
             ++N;
@@ -3315,6 +3364,901 @@ namespace ttcr {
         }
     }
     template<typename T1, typename T2, typename NODE>
+    T1 Grid3Dui<T1,T2,NODE>::getTraveltime_blti(const std::vector<sxyz<T1>>& Tx,
+                                                const std::vector<T1>& t0,
+                                                const sxyz<T1> &Rx,
+                                                const size_t threadNo) const {
+        
+        T1 minDist = small;
+        bool interpVel =true;
+        T1 tt = 0.0;
+        T1 tt_s1, tt_s2;
+     //////////////////////////// test triangle
+        sxyz<T1> I={0.5*(nodes[neighbors[0][0]].getX()+nodes[neighbors[0][1]].getX()),0.5*(nodes[neighbors[0][0]].getY()+nodes[neighbors[0][1]].getY()),0.5*(nodes[neighbors[0][0]].getZ()+nodes[neighbors[0][1]].getZ())};
+        bool v=testInTriangle(& nodes[neighbors[0][0]], & nodes[neighbors[0][1]],& nodes[neighbors[0][2]], I);
+        
+        
+    ////////////////////////////////////////////
+        
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                return t0[ns];
+            }
+        }
+        
+        std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<T2> txNode( Tx.size() );
+        std::vector<T2> txCell( Tx.size() );
+        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == Tx[nt] ) {
+                    txOnNode[nt] = true;
+                    txNode[nt] = nn;
+                    break;
+                }
+            }
+        }
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            if ( !txOnNode[nt] ) {
+                txCell[nt] = getCellNo( Tx[nt] );
+                
+                std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                // find adjacent cells
+                T2 ind[6][2] = {
+                    {itmp[0], itmp[1]},
+                    {itmp[0], itmp[2]},
+                    {itmp[0], itmp[3]},
+                    {itmp[1], itmp[2]},
+                    {itmp[1], itmp[3]},
+                    {itmp[2], itmp[3]} };
+                
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
+                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
+                            txNeighborCells[nt].push_back( *nc0 );
+                    }
+                }
+            }
+            
+        }
+        
+        T2 cellNo, nodeNo;
+        sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
+        bool onNode = false;
+        bool onEdge = false;
+        bool onFace = false;
+        std::array<T2,2> edgeNodes;
+        std::array<T2,3> faceNodes={{0,0,0}};
+        std::array<T2,3> PrevfaceNodes={{0,0,0}};
+        bool reachedTx = false;
+        T1 Xmax=-std::numeric_limits<T1>::max();
+        T1 Xmin=std::numeric_limits<T1>::max();
+        T1 Ymax=-std::numeric_limits<T1>::max();
+        T1 Ymin=std::numeric_limits<T1>::max();
+        T1 Zmax=-std::numeric_limits<T1>::max();
+        T1 Zmin=std::numeric_limits<T1>::max();
+        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == curr_pt ) {
+                nodeNo = nn;
+                onNode = true;
+                tt_s1 = nodes[nodeNo].getNodeSlowness();
+            }
+            Xmax=nodes[nn].getX()>Xmax?nodes[nn].getX():Xmax;
+            Ymax=nodes[nn].getY()>Ymax?nodes[nn].getY():Ymax;
+            Zmax=nodes[nn].getZ()>Zmax?nodes[nn].getZ():Zmax;
+            
+            Xmin=nodes[nn].getX()<Xmin?nodes[nn].getX():Xmin;
+            Ymin=nodes[nn].getY()<Ymin?nodes[nn].getY():Ymin;
+            Zmin=nodes[nn].getZ()<Zmin?nodes[nn].getZ():Zmin;
+            
+        }
+        if ( !onNode ) {
+            cellNo = getCellNo( curr_pt );
+            
+            std::array<T2,4> itmp = getPrimary(cellNo);
+            T2 ind[6][2] = {
+                {itmp[0], itmp[1]},
+                {itmp[0], itmp[2]},
+                {itmp[0], itmp[3]},
+                {itmp[1], itmp[2]},
+                {itmp[1], itmp[3]},
+                {itmp[2], itmp[3]} };
+            
+            for ( size_t n=0; n<6; ++n ) {
+                if ( areCollinear(curr_pt, ind[n][0], ind[n][1]) ) {
+                    onEdge = true;
+                    edgeNodes[0] = ind[n][0];
+                    edgeNodes[1] = ind[n][1];
+                    
+                    if ( interpVel )
+                        tt_s1 = Interpolator<T1>::linearVel(curr_pt,
+                                                            nodes[edgeNodes[0]],
+                                                            nodes[edgeNodes[1]]);
+                    else
+                        tt_s1 = Interpolator<T1>::linear(curr_pt,
+                                                         nodes[edgeNodes[0]],
+                                                         nodes[edgeNodes[1]]);
+                    
+                    break;
+                }
+            }
+            if ( !onEdge ) {
+                std::array<T2,3> ind[4] = {
+                    { { itmp[0], itmp[1], itmp[2] } },
+                    { { itmp[0], itmp[1], itmp[3] } },
+                    { { itmp[0], itmp[2], itmp[3] } },
+                    { { itmp[1], itmp[2], itmp[3] } }
+                };
+                
+                for ( size_t n=0; n<4; ++n )
+                    std::sort( ind[n].begin(), ind[n].end() );
+                
+                for ( size_t n=0; n<4; ++n ) {
+                    if ( areCoplanar(curr_pt, ind[n][0], ind[n][1], ind[n][2]) ) {
+                        onFace = true;
+                        faceNodes[0] = ind[n][0];
+                        faceNodes[1] = ind[n][1];
+                        faceNodes[2] = ind[n][2];
+                        
+                        if ( interpVel )
+                            tt_s1 = Interpolator<T1>::bilinearTriangleVel(curr_pt,
+                                                                          nodes[faceNodes[0]],
+                                                                          nodes[faceNodes[1]],
+                                                                          nodes[faceNodes[2]]);
+                        else
+                            tt_s1 = Interpolator<T1>::bilinearTriangle(curr_pt,
+                                                                       nodes[faceNodes[0]],
+                                                                       nodes[faceNodes[1]],
+                                                                       nodes[faceNodes[2]]);
+                        break;
+                    }
+                }
+            }
+        }
+ 
+        if (!onEdge && ! onNode && ! onFace){
+            std::array<T2,4> itmp = getPrimary(cellNo);
+            if ( interpVel )
+                tt_s1 = Interpolator<T1>::TrilinearTriangleVel(curr_pt,
+                                                               nodes[itmp[0]],
+                                                               nodes[itmp[1]],
+                                                               nodes[itmp[2]],
+                                                               nodes[itmp[3]]);
+            else
+                tt_s1 = Interpolator<T1>::TrilinearTriangle(curr_pt,
+                                                            nodes[itmp[0]],
+                                                            nodes[itmp[1]],
+                                                            nodes[itmp[2]],
+                                                            nodes[itmp[3]]);
+        }
+        for(auto nt=0;nt<txCell.size();++nt){
+            if (getCellNo( Rx )==txCell[nt]){
+                std::array<T2,4> itmp = getPrimary(cellNo);
+                if ( interpVel )
+                    tt_s2 = Interpolator<T1>::TrilinearTriangleVel(Tx[nt],
+                                                                   nodes[itmp[0]],
+                                                                   nodes[itmp[1]],
+                                                                   nodes[itmp[2]],
+                                                                   nodes[itmp[3]]);
+                else
+                    tt_s2 = Interpolator<T1>::TrilinearTriangle(Tx[nt],
+                                                                nodes[itmp[0]],
+                                                                nodes[itmp[1]],
+                                                                nodes[itmp[2]],
+                                                                nodes[itmp[3]]);
+                
+                tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
+                reachedTx=true;
+                break;
+            }
+        }
+
+        T1 time=std::numeric_limits<T1>::max();
+        bool InlimitD=false;
+        
+        while ( reachedTx == false ) {
+
+            sxyz<T1> NodeSource;
+            bool NearSource=false;
+            for(size_t nt=0;nt<Tx.size();++nt){
+                for(auto n=neighbors[txCell[nt]].begin();n!=neighbors[txCell[nt]].begin()+4;++n){
+                    for(auto nc=nodes[*n].getOwners().begin();nc!=nodes[*n].getOwners().end();++nc){
+                        if(*nc==cellNo){
+                            NearSource=true;
+                            NodeSource=Tx[nt];
+                            break;
+                        }
+                    }
+                    if (NearSource)
+                        break;
+                }
+                if (curr_pt.getDistance(Tx[nt])<=source_radius){
+                    NearSource=true;
+                    NodeSource=Tx[nt];
+                    break;
+                }
+                
+            }
+            
+            if ( onNode ) {
+                
+                T1 t_i=std::numeric_limits<T1>::max();
+                T1 Slow;
+                sxyz<T1> pt_i;
+                T2 newNode;
+                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                    T2 cellNoi = *nc;
+                    std::array<T2, 3>ind;
+                    for (T2 i=0;i<4;++i){
+                        if (neighbors[cellNoi][i]==nodeNo){
+                            ind[0]=neighbors[cellNoi][(i+1)%4];
+                            ind[1]=neighbors[cellNoi][(i+2)%4];
+                            ind[2]=neighbors[cellNoi][(i+3)%4];
+                            break;
+                        }
+                    }
+                    std::sort(ind.begin(), ind.end());
+                    if (NearSource){
+                        bool flag=false;
+                        std::array<T1,3> Barycenter;
+                        if (BLTISolver_ArroundSource(NodeSource, curr_pt, ind, Barycenter)==true){
+                            pt_i.x=Barycenter[0]*nodes[ind[0]].getX()+Barycenter[1]*nodes[ind[1]].getX()+Barycenter[2]*nodes[ind[2]].getX();
+                            pt_i.y=Barycenter[0]*nodes[ind[0]].getY()+Barycenter[1]*nodes[ind[1]].getY()+Barycenter[2]*nodes[ind[2]].getY();
+                            pt_i.z=Barycenter[0]*nodes[ind[0]].getZ()+Barycenter[1]*nodes[ind[1]].getZ()+Barycenter[2]*nodes[ind[2]].getZ();
+                            if(NodeSource.getDistance(pt_i)>NodeSource.getDistance(curr_pt))
+                                continue;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
+                                    onNode = true;
+                                    onEdge = false;
+                                    onFace = false;
+                                    newNode=ind[ni];
+                                    cellNo=cellNoi;
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(Barycenter[ni])<minDist*minDist){
+                                    onNode = false;
+                                    onEdge = true;
+                                    onFace = false;
+                                    edgeNodes[0] = ind[(ni+1)%3];
+                                    edgeNodes[1] = ind[(ni+2)%3];
+                                    cellNo=cellNoi;
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
+                            
+                            onNode = false;
+                            onEdge = false;
+                            onFace = true;
+                            PrevfaceNodes=faceNodes;
+                            faceNodes=ind;
+                            cellNo=cellNoi;
+                            break;
+                        }
+//                        
+                        continue;
+                    }
+                    //
+                  if ( ind == PrevfaceNodes) continue;
+                    T1 s=0.25*(nodes[neighbors[cellNoi][0]].getNodeSlowness()+
+                               nodes[neighbors[cellNoi][1]].getNodeSlowness()+
+                               nodes[neighbors[cellNoi][2]].getNodeSlowness()+
+                               nodes[neighbors[cellNoi][3]].getNodeSlowness());
+                    
+                    sxyz<T1> pt;
+                    if(blti_raytrace(curr_pt, ind, pt, threadNo, s)){
+                    T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[0]], nodes[ind[1]], nodes[ind[2]], threadNo);
+                    if (t>=time)
+                            continue;
+                    t+=curr_pt.getDistance(pt)*s;
+                    if (t<t_i){
+                        t_i=t;
+                        Slow=s;
+                        pt_i=pt;;
+                        onNode = false;
+                        onEdge = false;
+                        onFace = true;
+                        PrevfaceNodes=faceNodes;
+                        faceNodes = ind;
+                        cellNo=cellNoi;
+                    }
+                }
+                    /////// minimum at each edges
+                    std::array<T2,2> indEdges[3] = {{{ ind[0],ind[1]}},{{ind[0],ind[2]}},{{ ind[1],ind[2]}}};
+                    for(T2 n=0;n<3;++n){
+                        
+                        sxyz<T1> pt;
+                        if(blti2D_raytrace(curr_pt, indEdges[n][0], indEdges[n][1], pt, threadNo, s) ==false) continue;
+                        T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
+                        T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
+                        T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
+                        if (t>=time)
+                            continue;
+                        t+=curr_pt.getDistance(pt)*s;
+                        if (t<t_i ){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=pt;
+                            edgeNodes[0] = indEdges[n][0];
+                            edgeNodes[1] = indEdges[n][1];
+                            onNode = false;
+                            onEdge = true;
+                            onFace = false;
+                            cellNo=cellNoi;
+                        }
+                        
+                    }
+                    ////// nodes
+                    for (T2 i=0;i<4;++i){
+                        if (neighbors[cellNoi][i]==nodeNo)
+                            continue;
+                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        if (t>=time)
+                            continue;
+                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        if (t<t_i){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            newNode=neighbors[cellNoi][i];
+                            cellNo=cellNoi;
+                        }
+                    }
+                    
+                }
+                
+                prev_pt = curr_pt;
+               
+                curr_pt = pt_i;
+                //tt_s2 = computeSlowness(curr_pt);
+                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+                if (onNode){
+                    nodeNo=newNode;
+                }
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                        faceNodes);
+                
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
+                if (!NearSource && t_i==std::numeric_limits<T1>::max()){
+                    std::cout << "\n\nWarning: finding raypath on node failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    reachedTx = true;
+                   
+                }
+                
+            } else if ( onEdge ) {
+                
+                // find cells common to edge
+                std::vector<T2> cells;
+                T1 Slow;
+                for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
+                    if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() ) {
+                        cells.push_back( *nc0 );
+                    }
+                }
+                std::array<T2,2> edgeNodestmp;
+                T1 t_i=std::numeric_limits<T1>::max();
+                sxyz<T1> pt_i;
+                for (T2 nc=0; nc<cells.size(); ++nc ) {
+                    T2 cellNoi = cells[nc];
+                    // there are 2 faces that might be intersected
+                    std::array<T2,2> edgeNodes2;
+                    size_t n2=0;
+                    for ( auto nn=neighbors[cellNoi].begin(); nn!= neighbors[cellNoi].begin()+4; ++nn ) {
+                        if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] ) {
+                            edgeNodes2[n2++] = *nn;
+                        }
+                    }
+                    std::array<T2,3> ind[2] = {
+                        { { edgeNodes[0], edgeNodes2[0], edgeNodes2[1]}},
+                        { { edgeNodes[1], edgeNodes2[0], edgeNodes2[1]}}};
+                    std::sort( ind[0].begin(), ind[0].end());
+                    std::sort( ind[1].begin(), ind[1].end());
+                    std::array<T2,2> indEdges[5] = {
+                        {{ edgeNodes[0],edgeNodes2[0]}},
+                        {{ edgeNodes[0],edgeNodes2[1]}},
+                        {{ edgeNodes[1],edgeNodes2[0]}},
+                        {{ edgeNodes[1],edgeNodes2[1]}},
+                        {{ edgeNodes2[0],edgeNodes2[1]}}};
+                    T1 s=0.25*(nodes[edgeNodes[0]].getNodeSlowness()+
+                               nodes[edgeNodes[1]].getNodeSlowness()+
+                               nodes[edgeNodes2[0]].getNodeSlowness()+
+                               nodes[edgeNodes2[1]].getNodeSlowness());
+                    bool flag=false;
+                    for ( size_t n=0; n<2; ++n ) {
+                        if (NearSource){
+                            std::array<T1,3> Barycenter;
+                            if (BLTISolver_ArroundSource(NodeSource, curr_pt, ind[n], Barycenter)==true){
+                                pt_i.x=Barycenter[0]*nodes[ind[n][0]].getX()+Barycenter[1]*nodes[ind[n][1]].getX()+Barycenter[2]*nodes[ind[n][2]].getX();
+                                pt_i.y=Barycenter[0]*nodes[ind[n][0]].getY()+Barycenter[1]*nodes[ind[n][1]].getY()+Barycenter[2]*nodes[ind[n][2]].getY();
+                                pt_i.z=Barycenter[0]*nodes[ind[n][0]].getZ()+Barycenter[1]*nodes[ind[n][1]].getZ()+Barycenter[2]*nodes[ind[n][2]].getZ();
+                                if(NodeSource.getDistance(pt_i)>NodeSource.getDistance(curr_pt))
+                                    continue;
+                                for(T2 ni=0;ni<3;++ni){
+                                    if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
+                                        onNode = true;
+                                        onEdge = false;
+                                        onFace = false;
+                                        nodeNo=ind[n][ni];
+                                        cellNo=cellNoi;
+                                        flag=true;
+                                        break;
+                                    }
+                                }
+                                if (flag)
+                                   break;
+                                 for(T2 ni=0;ni<3;++ni){
+                                    if(std::abs(Barycenter[ni])<minDist*minDist){
+                                        onNode = false;
+                                        onEdge = true;
+                                        onFace = false;
+                                        edgeNodes[0] = ind[n][(ni+1)%3];
+                                        edgeNodes[1] = ind[n][(ni+2)%3];
+                                        cellNo=cellNoi;
+                                        flag=true;
+                                        break;
+                                    }
+                                 }
+                                if (flag)
+                                   break;
+                                onNode = false;
+                                onEdge = false;
+                                onFace = true;
+                                PrevfaceNodes=faceNodes;
+                                faceNodes=ind[n];
+                                cellNo=cellNoi;
+                                flag=true;
+                                break;
+                            }
+                            continue;
+                        }
+                        if ( ind[n] == PrevfaceNodes) continue;
+                        sxyz<T1> pt;
+                        if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
+                        T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
+                        if (t>=time)
+                            continue;
+                        t+=curr_pt.getDistance(pt)*s;
+ 
+                        if (t<t_i){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=pt;
+                            onNode = false;
+                            onEdge = false;
+                            onFace = true;
+                            PrevfaceNodes=faceNodes;
+                            faceNodes = ind[n];
+                            cellNo=cellNoi;
+                        }
+                    }
+                    if (flag)
+                        break;
+                    if (NearSource)
+                        continue;
+                    for(T2 n=0;n<5;++n){
+                        sxyz<T1> pt;
+                        if(blti2D_raytrace(curr_pt, indEdges[n][0], indEdges[n][1], pt, threadNo, s) ==false) continue;
+                        T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
+                        T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
+                        T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
+                        if (t>=time)
+                            continue;
+                        t+=curr_pt.getDistance(pt)*s;
+                        if (t<t_i ){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=pt;
+                            edgeNodestmp[0] = indEdges[n][0];
+                            edgeNodestmp[1] = indEdges[n][1];
+                            onNode = false;
+                            onEdge = true;
+                            onFace = false;
+                            cellNo=cellNoi;
+                            
+                        }
+                        
+                    }
+                    for (T2 i=0;i<4;++i){
+                        T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
+                        if (t>=time)
+                            continue;
+                        t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
+                        if (t<t_i){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=sxyz<T1>(nodes[neighbors[cellNoi][i]]);
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            nodeNo=neighbors[cellNoi][i];
+                            cellNo=cellNoi;
+                        }
+                    }
+                    
+                    // find next cell
+                }
+                if (!NearSource &&  t_i==std::numeric_limits<T1>::max()){
+                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    reachedTx = true;
+                    
+                }
+                if (onEdge){
+                    edgeNodes[0] = edgeNodestmp[0];
+                    edgeNodes[1] = edgeNodestmp[1];
+                }
+                prev_pt = curr_pt;
+                curr_pt = pt_i;
+                //tt_s2 = computeSlowness(curr_pt);
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                                     faceNodes);
+                
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
+                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+            } else{ // on Face
+                //////////////////////////
+                // cout<<N<<endl;
+
+                T2 cellNo1;
+                if (!onFace || InlimitD) //// *********************************************
+                    cellNo1=cellNo;
+                else
+                    cellNo1=findAdjacentCell2(faceNodes, cellNo,curr_pt);
+
+                sxyz<T1> pt_i;
+                T1 Slow;
+                ///////////////////////////
+                std::array<T2,3> ind[8] = {
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][2] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][1], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][0], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo][1], neighbors[cellNo][2], neighbors[cellNo][3] } },
+                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][2] } },
+                    { { neighbors[cellNo1][0], neighbors[cellNo1][1], neighbors[cellNo1][3] } },
+                    { { neighbors[cellNo1][0], neighbors[cellNo1][2], neighbors[cellNo1][3] } },
+                    { { neighbors[cellNo1][1], neighbors[cellNo1][2], neighbors[cellNo1][3] } }
+                };
+                for ( size_t n=0; n<8; ++n )
+                    std::sort( ind[n].begin(), ind[n].end() );
+                // there are 3 faces that might be intersected
+                
+                T1 t_i=std::numeric_limits<T1>::max();
+                T2 face;
+                T1 s1=0.25*(nodes[neighbors[cellNo][0]].getNodeSlowness()+
+                            nodes[neighbors[cellNo][1]].getNodeSlowness()+
+                            nodes[neighbors[cellNo][2]].getNodeSlowness()+
+                            nodes[neighbors[cellNo][3]].getNodeSlowness());
+                T1 s2=0.25*(nodes[neighbors[cellNo1][0]].getNodeSlowness()+
+                            nodes[neighbors[cellNo1][1]].getNodeSlowness()+
+                            nodes[neighbors[cellNo1][2]].getNodeSlowness()+
+                            nodes[neighbors[cellNo1][3]].getNodeSlowness());
+                
+                for ( size_t n=0; n<8; ++n ) {
+                    if ( ind[n] == faceNodes ||   ind[n] == PrevfaceNodes ) continue;
+                    if (NearSource){
+                        // plotCell(cellNo, curr_pt, NodeSource-curr_pt);
+                        //plotCell(cellNo1, curr_pt, sxyz<T1>(0.0,0.0,0.0));
+                        bool flag=false;
+                        std::array<T1,3> Barycenter;
+                        if (BLTISolver_ArroundSource(NodeSource, curr_pt, ind[n], Barycenter)==true){
+                            pt_i.x=Barycenter[0]*nodes[ind[n][0]].getX()+Barycenter[1]*nodes[ind[n][1]].getX()+Barycenter[2]*nodes[ind[n][2]].getX();
+                            pt_i.y=Barycenter[0]*nodes[ind[n][0]].getY()+Barycenter[1]*nodes[ind[n][1]].getY()+Barycenter[2]*nodes[ind[n][2]].getY();
+                            pt_i.z=Barycenter[0]*nodes[ind[n][0]].getZ()+Barycenter[1]*nodes[ind[n][1]].getZ()+Barycenter[2]*nodes[ind[n][2]].getZ();
+                            
+                            if(NodeSource.getDistance(pt_i)>NodeSource.getDistance(curr_pt))
+                                continue;
+                            for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(1.0-Barycenter[ni])<minDist*minDist){
+                                    onNode = true;
+                                    onEdge = false;
+                                    onFace = false;
+                                    nodeNo=ind[n][ni];
+                                    PrevfaceNodes=faceNodes;
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if (flag)
+                                break;
+                             for(T2 ni=0;ni<3;++ni){
+                                if(std::abs(Barycenter[ni])<minDist*minDist){
+                                    onNode = false;
+                                    onEdge = true;
+                                    onFace = false;
+                                    edgeNodes[0] = ind[n][(ni+1)%3];
+                                    edgeNodes[1] = ind[n][(ni+2)%3];
+                                    PrevfaceNodes=faceNodes;
+                                    break;
+                                }
+                             }
+                            if (flag)
+                                break;
+                            onNode = false;
+                            onEdge = false;
+                            onFace = true;
+                            face=static_cast<T1>(n);
+                            break;
+                        }
+                        continue;
+                    }
+                    T1 s;
+                    sxyz<T1> pt;
+                    s=(n<4)?s1:s2;
+
+                    if(blti_raytrace(curr_pt, ind[n], pt,threadNo, s)==false) continue;
+                    T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
+                    if (t>=time)
+                        continue;
+                    t+=curr_pt.getDistance(pt)*s;
+                    if (t<t_i){
+                        t_i=t;
+                        Slow=s;
+                        pt_i=pt;
+                        onNode = false;
+                        onEdge = false;
+                        onFace = true;
+                        face=static_cast<T1>(n);
+                    }
+                }
+                if (! NearSource){
+                    std::array<T2,2> indEdges[9] = {
+                        {{ neighbors[cellNo][0],neighbors[cellNo][1]}},
+                        {{ neighbors[cellNo][0],neighbors[cellNo][2]}},
+                        {{ neighbors[cellNo][0],neighbors[cellNo][3]}},
+                        {{ neighbors[cellNo][1],neighbors[cellNo][2]}},
+                        {{ neighbors[cellNo][1],neighbors[cellNo][3]}},
+                        {{ neighbors[cellNo][2],neighbors[cellNo][3]}}
+                    };
+                    T2 forthNode=0;
+                    for (T2 i=0; i<4;++i){
+                        if (neighbors[cellNo1][i]!=neighbors[cellNo][0] &&
+                            neighbors[cellNo1][i]!=neighbors[cellNo][1]&&
+                            neighbors[cellNo1][i]!=neighbors[cellNo][2]&&
+                            neighbors[cellNo1][i]!=neighbors[cellNo][3]){
+                            forthNode=i;
+                            break;
+                        }
+                    }
+                    indEdges[6]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+1)%4]};
+                    indEdges[7]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+2)%4]};
+                    indEdges[8]={neighbors[cellNo1][forthNode],neighbors[cellNo1][(forthNode+3)%4]};
+                    for(T2 n=0;n<9;++n){
+                        T1 s;
+                        sxyz<T1> pt;
+                        s=(n<6)?s1:s2;
+                        if(blti2D_raytrace(curr_pt, indEdges[n][0], indEdges[n][1], pt, threadNo, s) ==false) continue;
+                        T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
+                        T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
+                        T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
+                        if (t>=time)
+                            continue;
+                        t+=curr_pt.getDistance(pt)*s;
+                        if (t<t_i ){
+                            t_i=t;
+                            Slow=s;
+                            pt_i=pt;
+                            edgeNodes[0] = indEdges[n][0];
+                            edgeNodes[1] = indEdges[n][1];
+                            PrevfaceNodes=faceNodes;
+                            onNode = false;
+                            onEdge = true;
+                            onFace = false;;
+
+                        }
+
+                    }
+                    for (T2 n=0;n<4;++n){
+                        T1 t=nodes[neighbors[cellNo][n]].getTT(threadNo);
+                        if(t<time){
+                            sxyz<T1> pt;
+                            t+=s1*nodes[neighbors[cellNo][n]].getDistance(curr_pt);
+                            if(t<t_i){
+                                t_i=t;
+                                Slow=s1;
+                                pt_i=sxyz<T1>(nodes[neighbors[cellNo][n]]);
+                                onNode = true;
+                                onEdge = false;
+                                onFace = false;
+                                PrevfaceNodes=faceNodes;
+                                nodeNo=neighbors[cellNo][n];
+                            }
+                        }
+                    }
+                    if(nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)<time){
+                        sxyz<T1> pt;
+                        if(nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt)<t_i){
+                            t_i=nodes[neighbors[cellNo1][forthNode]].getTT(threadNo)+s2*nodes[neighbors[cellNo1][forthNode]].getDistance(curr_pt);
+                            Slow=s2;
+                            pt_i=sxyz<T1>(nodes[neighbors[cellNo1][forthNode]]);
+                            onNode = true;
+                            onEdge = false;
+                            onFace = false;
+                            PrevfaceNodes=faceNodes;
+                            nodeNo=neighbors[cellNo1][forthNode];
+                        }
+                    }
+                }
+                if (t_i==std::numeric_limits<T1>::max() && ! NearSource){
+                        std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        reachedTx = true;
+                        continue;
+                    }
+                
+                prev_pt = curr_pt;
+                curr_pt = pt_i;
+                //tt_s2 = computeSlowness(curr_pt);
+                InlimitD=false;
+                if (abs(curr_pt.x-Xmax)<=minDist*minDist ||abs(curr_pt.x-Xmin)<=minDist*minDist )
+                    InlimitD=true;
+                if (abs(curr_pt.y-Ymax)<=minDist*minDist ||abs(curr_pt.y-Ymin)<=minDist*minDist )
+                    InlimitD=true;
+                if (abs(curr_pt.z-Zmax)<=minDist*minDist ||abs(curr_pt.z-Zmin)<=minDist*minDist )
+                    InlimitD=true;
+
+                if (onFace){
+                    PrevfaceNodes=faceNodes;
+                    faceNodes = ind[face];
+                    if (!InlimitD){
+                        if (face<4)
+                            cellNo=findAdjacentCell2(faceNodes, cellNo,curr_pt);
+                        
+                        else
+                            cellNo=findAdjacentCell2(faceNodes, cellNo1,curr_pt);
+                    }
+                }
+
+                tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
+                                        faceNodes);
+                tt += 0.5*(tt_s1 + tt_s2) * prev_pt.getDistance( curr_pt );
+                tt_s1 = tt_s2;
+                time=t_i-curr_pt.getDistance(prev_pt)*Slow;
+//                if ( cellNo==std::numeric_limits<T2>::max() ) {
+//                    std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
+//                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+//                    tt = 0.0;
+//                    reachedTx = true;
+//                    continue;
+//                }
+                
+            }
+            if ( onNode ) {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist*minDist ) {
+                        std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                        if ( interpVel )
+                            
+                            tt_s2 = Interpolator<T1>::TrilinearTriangleVel(Tx[nt],
+                                                                           nodes[itmp[0]],
+                                                                           nodes[itmp[1]],
+                                                                           nodes[itmp[2]],
+                                                                           nodes[itmp[3]]);
+                        else
+                            tt_s2 = Interpolator<T1>::TrilinearTriangle(Tx[nt],
+                                                                        nodes[itmp[0]],
+                                                                        nodes[itmp[1]],
+                                                                        nodes[itmp[2]],
+                                                                        nodes[itmp[3]]);
+                        
+                        tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
+                        reachedTx = true;
+                        break;
+                    }
+                    for(size_t n=0;n<4;++n){
+                        sxyz<T1> NearTx={nodes[neighbors[txCell[nt]][n]]};
+                        if (curr_pt.getDistance(NearTx)< minDist*minDist){
+                            std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                            if ( interpVel )
+                                
+                                tt_s2 = Interpolator<T1>::TrilinearTriangleVel(Tx[nt],
+                                                                               nodes[itmp[0]],
+                                                                               nodes[itmp[1]],
+                                                                               nodes[itmp[2]],
+                                                                               nodes[itmp[3]]);
+                            else
+                                tt_s2 = Interpolator<T1>::TrilinearTriangle(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            
+                            tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    
+                }
+            } else {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( txOnNode[nt] ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
+                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                            if ( cellNo == *nc ) {
+                                std::array<T2,4> itmp = getPrimary(cellNo);
+                                
+                                if ( interpVel )
+                                    tt_s2 = Interpolator<T1>::TrilinearTriangleVel(Tx[nt],
+                                                                                   nodes[itmp[0]],
+                                                                                   nodes[itmp[1]],
+                                                                                   nodes[itmp[2]],
+                                                                                   nodes[itmp[3]]);
+                                else
+                                    tt_s2 = Interpolator<T1>::TrilinearTriangle(Tx[nt],
+                                                                                nodes[itmp[0]],
+                                                                                nodes[itmp[1]],
+                                                                                nodes[itmp[2]],
+                                                                                nodes[itmp[3]]);
+                                
+                                tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        if ( cellNo == txCell[nt] ) {
+                            std::array<T2,4> itmp = getPrimary(cellNo);
+                            if ( interpVel )
+                                tt_s2 = Interpolator<T1>::TrilinearTriangleVel(Tx[nt],
+                                                                               nodes[itmp[0]],
+                                                                               nodes[itmp[1]],
+                                                                               nodes[itmp[2]],
+                                                                               nodes[itmp[3]]);
+                            else
+                                tt_s2 = Interpolator<T1>::TrilinearTriangle(Tx[nt],
+                                                                            nodes[itmp[0]],
+                                                                            nodes[itmp[1]],
+                                                                            nodes[itmp[2]],
+                                                                            nodes[itmp[3]]);
+                            
+                            tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
+                        } else {
+                            for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
+                                if ( cellNo == txNeighborCells[nt][nn] ) {
+                                    std::array<T2,4> itmp = getPrimary(txCell[nt]);
+                                    if ( interpVel )
+                                        tt_s2 = Interpolator<T1>::TrilinearTriangleVel(Tx[nt],
+                                                                                       nodes[itmp[0]],
+                                                                                       nodes[itmp[1]],
+                                                                                       nodes[itmp[2]],
+                                                                                       nodes[itmp[3]]);
+                                    else
+                                        tt_s2 = Interpolator<T1>::TrilinearTriangle(Tx[nt],
+                                                                                    nodes[itmp[0]],
+                                                                                    nodes[itmp[1]],
+                                                                                    nodes[itmp[2]],
+                                                                                    nodes[itmp[3]]);
+                                    
+                                    tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * curr_pt.getDistance( Tx[nt] );
+                                    reachedTx = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if ( reachedTx ) break;
+                }
+            }
+        }
+        return tt;
+    }
+    template<typename T1, typename T2, typename NODE>
     void Grid3Dui<T1,T2,NODE>::getRaypathBLIT(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
@@ -3364,7 +4308,9 @@ namespace ttcr {
                 }
             }
         }
+        ///////////////////////////////////// test triangle
         
+        ////////////////////////////////////////
         T2 cellNo, nodeNo, nodeNoPrev;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         bool onNode = false;
@@ -3440,8 +4386,7 @@ namespace ttcr {
         T2 N=0;
         while ( reachedTx == false && N<500) {
             ++N;
-//            if (N==29   )
-//               cout<<"stop";
+            std::cout<<"curr_pt N "<< N <<" "<<curr_pt.x<<" ; "<<curr_pt.y<<" ; "<<curr_pt.z<<std::endl;
             sxyz<T1> NodeSource;
             bool NearSource=false;
             for(size_t nt=0;nt<Tx.size();++nt){
@@ -3539,7 +4484,7 @@ namespace ttcr {
                         if (neighbors[cellNoi][i]==nodeNo)
                             continue;
                         T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
@@ -3563,7 +4508,7 @@ namespace ttcr {
                         T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
                         T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
                         T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i ){
@@ -3588,7 +4533,7 @@ namespace ttcr {
                     sxyz<T1> pt;
                     if(blti_raytrace(curr_pt, ind, pt, threadNo, s)==false) continue;
                     T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[0]], nodes[ind[1]], nodes[ind[2]], threadNo);
-                    if (t>time)
+                    if (t>=time)
                         continue;
                     t+=curr_pt.getDistance(pt)*s;
                     if (t<t_i){
@@ -3718,7 +4663,7 @@ namespace ttcr {
                         sxyz<T1> pt;
                         if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
                         T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i){
@@ -3746,7 +4691,7 @@ namespace ttcr {
                         T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
                         T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
                         T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i ){
@@ -3768,7 +4713,7 @@ namespace ttcr {
                     }
                     for (T2 i=0;i<4;++i){
                         T1 t=nodes[neighbors[cellNoi][i]].getTT(threadNo);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=s*nodes[neighbors[cellNoi][i]].getDistance(curr_pt);
                         if (t<t_i){
@@ -3811,7 +4756,7 @@ namespace ttcr {
                 //////////////////////////
               // cout<<N<<endl;
                 T2 cellNo1=findAdjacentCell2(faceNodes, cellNo,curr_pt);
-                if (r_tmp.size()==1)
+                if (r_tmp.size()==1 or cellNo1==-1)
                     cellNo1=cellNo;
                 sxyz<T1> pt_i;
                 T1 Slow;
@@ -3897,7 +4842,7 @@ namespace ttcr {
                     s=(n<4)?s1:s2;
                     if(blti_raytrace(curr_pt, ind[n], pt, threadNo, s)==false) continue;
                     T1 t=Interpolator<T1>::bilinearTime(pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]], threadNo);
-                    if (t>time)
+                    if (t>=time)
                         continue;
                     t+=curr_pt.getDistance(pt)*s;
                     if (t<t_i){
@@ -3943,7 +4888,7 @@ namespace ttcr {
                         T1 dist0=pt.getDistance(nodes[indEdges[n][0]]);
                         T1 dist1=pt.getDistance(nodes[indEdges[n][1]]);
                         T1 t= (dist1*nodes[indEdges[n][0]].getTT(threadNo)+dist0*nodes[indEdges[n][1]].getTT(threadNo))/(dist0+dist1);
-                        if (t>time)
+                        if (t>=time)
                             continue;
                         t+=curr_pt.getDistance(pt)*s;
                         if (t<t_i ){
@@ -4024,7 +4969,14 @@ namespace ttcr {
                 }
 
             }
-//            std::cout<<"distance= "<<1000.0*curr_pt.getDistance(prev_pt)<<endl;
+            if (cellNo==std::numeric_limits<T2>::max()){
+                std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx: raypath in domain limits "
+                << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                r_tmp.resize(1);
+                r_tmp[0] = Rx;
+                reachedTx = true;
+                continue;
+            }
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
@@ -4082,6 +5034,12 @@ namespace ttcr {
                                              const sxyz<T1> &Rx,
                                              std::vector<sxyz<T1>> &r_data,
                                              const size_t threadNo) const {
+        
+//        if (Rx.x<0.23 and Rx.z<0.26){///////////////////////////////////////////////////////////////////////////////
+//            r_data.resize(0);
+//            return;
+//        }
+
         T1 minDist = small;
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
@@ -4241,7 +5199,7 @@ namespace ttcr {
         }
         sxyz<T1> g;
         T2 N=0;
-        while ( reachedTx == false && N<250) {
+        while ( reachedTx == false && N<800) {
             ++N;
             //            }
             if ( onNode ) {
@@ -4878,6 +5836,7 @@ namespace ttcr {
                 }
                 if (!foundIntersection)
                     InLimits=InLimits? false:true;
+
                 if ( foundIntersection == false && InLimits==false ) {
                     std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
@@ -5303,6 +6262,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -5313,6 +6273,7 @@ namespace ttcr {
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_tmp.resize(1);
                     r_tmp[0] = Rx;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
 
@@ -5695,6 +6656,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -5704,6 +6666,7 @@ namespace ttcr {
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_tmp.resize(1);
                     r_tmp[0] = Rx;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
 
@@ -5946,6 +6909,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -6181,10 +7145,11 @@ namespace ttcr {
                         // find next cell
                         cellNo = findAdjacentCell2(faceNodes, cellNo);
                         if ( cellNo == std::numeric_limits<T2>::max() ) {
-                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
+                            std::cout << "\nWarning: finding raypath failed to converge (cell not found) for Rx "
                             << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                             r_tmp.resize(1);
                             r_tmp[0] = Rx;
+                            m_data.resize(0);
                             reachedTx = true;
                         }
                         break;
@@ -6195,6 +7160,7 @@ namespace ttcr {
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_tmp.resize(1);
                     r_tmp[0] = Rx;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
             }
@@ -6249,9 +7215,10 @@ namespace ttcr {
                                              std::vector<sxyz<T1>>& r_data,
                                              std::vector<sijv<T1>>& m_data,
                                              const size_t RxNo,
-                                             const size_t threadNo) const {
+                                             const size_t threadNo,const bool interp_slow) const {
+        
 
-
+            
         T1 minDist = small;
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
@@ -6301,7 +7268,7 @@ namespace ttcr {
         sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
         sijv<T1> m;
         m.i = RxNo;
-        
+
         bool InLimits=false;
         bool onNode = false;
         bool onEdge = false;
@@ -6309,7 +7276,6 @@ namespace ttcr {
         bool onNodePrev = false;
         bool onEdgePrev = false;
         bool onFacePrev = false;
-        bool secondNodes=nodes.size()>nPrimary;
         std::array<T2,2> edgeNodes, edgeNodesPrev;
         std::array<T2,3> faceNodes={{0,0,0}};
         std::array<T2,3> faceNodesPrev;
@@ -6414,8 +7380,10 @@ namespace ttcr {
                         if ( r_tmp.size() > 1 && ds>minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s=computeSlowness(mid_pt,cellNo );
-                            s *= s;
+                            if (!interp_slow){
+                                s=computeSlowness(mid_pt,cellNo );
+                                s *= s;
+                            }
                         }
                         
                         bool break_flag = false;
@@ -6431,7 +7399,7 @@ namespace ttcr {
                                 onEdge = false;
                                 onFace = false;
                                 
-                                if ( r_tmp.size() > 1 && ds> 0.01) {
+                                if ( r_tmp.size() > 1 && ds> minDist) {
                                     std::set<T2> allNodes;
                                     if (onNodePrev) allNodes.insert(nodeNoPrev);
                                     if (onNode) allNodes.insert(nodeNo);
@@ -6453,26 +7421,20 @@ namespace ttcr {
                                         allNodes.insert( faceNodes[1] );
                                         allNodes.insert( faceNodes[2] );
                                     }
-                                    if (secondNodes){
-                                        auto no=--allNodes.end();
-                                        while (no!=allNodes.begin()) {
-                                            if(nodes[*no].getprimary()==10){
-                                                std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                allNodes.erase(no);
-                                            }
-                                            --no;
-                                        }
-                                    }
                                     std::vector<T1> w;
                                     T1 sum_w = 0.0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-                                        w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
+                                        w.push_back( 1./nodes[*it].getDistance(mid_pt) );
                                         sum_w += w.back();
                                     }
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
+                                        if (interp_slow){
+                                            m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                        }else{
+                                            m.v = -s * ds * w[nn++]/sum_w;
+                                        }
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -6529,16 +7491,6 @@ namespace ttcr {
                                         allNodes.insert( faceNodes[1] );
                                         allNodes.insert( faceNodes[2] );
                                     }
-                                    if (secondNodes){
-                                        auto no=--allNodes.end();
-                                        while (no!=allNodes.begin()) {
-                                            if(nodes[*no].getprimary()==10){
-                                                std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                allNodes.erase(no);
-                                            }
-                                            --no;
-                                        }
-                                    }
                                     std::vector<T1> w;
                                     T1 sum_w = 0.0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -6548,7 +7500,11 @@ namespace ttcr {
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
+                                        if (interp_slow){
+                                            m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                        }else{
+                                            m.v = -s * ds * w[nn++]/sum_w;
+                                        }
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -6600,16 +7556,6 @@ namespace ttcr {
                                 allNodes.insert( faceNodes[1] );
                                 allNodes.insert( faceNodes[2] );
                             }
-                            if (secondNodes){
-                                auto no=--allNodes.end();
-                                while (no!=allNodes.begin()) {
-                                    if(nodes[*no].getprimary()==10){
-                                        std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                        allNodes.erase(no);
-                                    }
-                                    --no;
-                                }
-                            }
                             std::vector<T1> w;
                             T1 sum_w = 0.0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -6619,7 +7565,11 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
+                                if (interp_slow){
+                                    m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                }else{
+                                    m.v = -s * ds * w[nn++]/sum_w;
+                                }
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -6689,8 +7639,10 @@ namespace ttcr {
                             if ( r_tmp.size() > 1 && ds>minDist) {
                                 // compute terms of matrix M
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                                s=computeSlowness(mid_pt,cellNo );
-                                s *= s;
+                                if (!interp_slow){
+                                    s = computeSlowness(mid_pt,cellNo);
+                                    s *= s;
+                                }
                             }
                             
                             bool break_flag = false;
@@ -6728,16 +7680,6 @@ namespace ttcr {
                                             allNodes.insert( faceNodes[1] );
                                             allNodes.insert( faceNodes[2] );
                                         }
-                                        if (secondNodes){
-                                            auto no=--allNodes.end();
-                                            while (no!=allNodes.begin()) {
-                                                if(nodes[*no].getprimary()==10){
-                                                    std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                    allNodes.erase(no);
-                                                }
-                                                --no;
-                                            }
-                                        }
                                         std::vector<T1> w;
                                         T1 sum_w = 0.0;
                                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -6747,7 +7689,11 @@ namespace ttcr {
                                         size_t nn=0;
                                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                             m.j = *it;
-                                            m.v = -s * ds * w[nn++]/sum_w;
+                                            if (interp_slow){
+                                                m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                            }else{
+                                                m.v = -s * ds * w[nn++]/sum_w;
+                                            }
                                             bool found = false;
                                             for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                                 if ( m_data[nm].j == m.j ) {
@@ -6804,16 +7750,6 @@ namespace ttcr {
                                             allNodes.insert( faceNodes[1] );
                                             allNodes.insert( faceNodes[2] );
                                         }
-                                        if (secondNodes){
-                                            auto no=--allNodes.end();
-                                            while (no!=allNodes.begin()) {
-                                                if(nodes[*no].getprimary()==10){
-                                                    std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                    allNodes.erase(no);
-                                                }
-                                                --no;
-                                            }
-                                        }
                                         std::vector<T1> w;
                                         T1 sum_w = 0.0;
                                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -6823,7 +7759,11 @@ namespace ttcr {
                                         size_t nn=0;
                                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                             m.j = *it;
-                                            m.v = -s * ds * w[nn++]/sum_w;
+                                            if (interp_slow){
+                                                m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                            }else{
+                                                m.v = -s * ds * w[nn++]/sum_w;
+                                            }
                                             bool found = false;
                                             for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                                 if ( m_data[nm].j == m.j ) {
@@ -6873,16 +7813,6 @@ namespace ttcr {
                                     allNodes.insert( faceNodes[1] );
                                     allNodes.insert( faceNodes[2] );
                                 }
-                                if (secondNodes){
-                                    auto no=--allNodes.end();
-                                    while (no!=allNodes.begin()) {
-                                        if(nodes[*no].getprimary()==10){
-                                            std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                            allNodes.erase(no);
-                                        }
-                                        --no;
-                                    }
-                                }
                                 std::vector<T1> w;
                                 T1 sum_w = 0.0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -6892,7 +7822,11 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
+                                    if (interp_slow){
+                                        m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                    }else{
+                                        m.v = -s * ds * w[nn++]/sum_w;
+                                    }
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -6931,6 +7865,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
 
@@ -7051,8 +7986,10 @@ namespace ttcr {
                         if (r_tmp.size() > 1 && ds >minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s=computeSlowness(mid_pt,cellNo );
-                            s *= s;
+                            if (!interp_slow){
+                                s = computeSlowness(mid_pt,cellNo);
+                                s *= s;
+                            }
                         }
                         
                         bool break_flag = false;
@@ -7073,16 +8010,6 @@ namespace ttcr {
                                     
                                     allNodes.insert( edgeNodesPrev[0] );
                                     allNodes.insert( edgeNodesPrev[1] );
-                                    if (secondNodes){
-                                        auto no=--allNodes.end();
-                                        while (no!=allNodes.begin()) {
-                                            if(nodes[*no].getprimary()==10){
-                                                std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                allNodes.erase(no);
-                                            }
-                                            --no;
-                                        }
-                                    }
                                     std::vector<T1> w;
                                     T1 sum_w = 0.0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7092,7 +8019,11 @@ namespace ttcr {
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
+                                        if (interp_slow){
+                                            m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                        }else{
+                                            m.v = -s * ds * w[nn++]/sum_w;
+                                        }
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -7131,16 +8062,6 @@ namespace ttcr {
                                 
                                 allNodes.insert( edgeNodes[0] );
                                 allNodes.insert( edgeNodes[1] );
-                                if (secondNodes){
-                                    auto no=--allNodes.end();
-                                    while (no!=allNodes.begin()) {
-                                        if(nodes[*no].getprimary()==10){
-                                            std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                            allNodes.erase(no);
-                                        }
-                                        --no;
-                                    }
-                                }
                                 std::vector<T1> w;
                                 T1 sum_w = 0.0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7150,7 +8071,11 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
+                                    if (interp_slow){
+                                        m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                    }else{
+                                        m.v = -s * ds * w[nn++]/sum_w;
+                                    }
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -7186,16 +8111,6 @@ namespace ttcr {
                                 
                                 allNodes.insert( edgeNodes[0] );
                                 allNodes.insert( edgeNodes[1] );
-                                if (secondNodes){
-                                    auto no=--allNodes.end();
-                                    while (no!=allNodes.begin()) {
-                                        if(nodes[*no].getprimary()==10){
-                                            std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                            allNodes.erase(no);
-                                        }
-                                        --no;
-                                    }
-                                }
                                 std::vector<T1> w;
                                 T1 sum_w = 0.0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7205,7 +8120,11 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
+                                    if (interp_slow){
+                                        m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                    }else{
+                                        m.v = -s * ds * w[nn++]/sum_w;
+                                    }
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -7241,16 +8160,6 @@ namespace ttcr {
                                 
                                 allNodes.insert( edgeNodes[0] );
                                 allNodes.insert( edgeNodes[1] );
-                                if (secondNodes){
-                                    auto no=--allNodes.end();
-                                    while (no!=allNodes.begin()) {
-                                        if(nodes[*no].getprimary()==10){
-                                            std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                            allNodes.erase(no);
-                                        }
-                                        --no;
-                                    }
-                                }
                                 std::vector<T1> w;
                                 T1 sum_w = 0.0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7260,7 +8169,11 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
+                                    if (interp_slow){
+                                        m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                    }else{
+                                        m.v = -s * ds * w[nn++]/sum_w;
+                                    }
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -7302,16 +8215,6 @@ namespace ttcr {
                             allNodes.insert( faceNodes[0] );
                             allNodes.insert( faceNodes[1] );
                             allNodes.insert( faceNodes[2] );
-                            if (secondNodes){
-                                auto no=--allNodes.end();
-                                while (no!=allNodes.begin()) {
-                                    if(nodes[*no].getGridIndex()>nPrimary){
-                                        std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(),std::inserter(allNodes,allNodes.end()));
-                                        allNodes.erase(no);
-                                    }
-                                    --no;
-                                }
-                            }
                             std::vector<T1> w;
                             T1 sum_w = 0.0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7323,7 +8226,11 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
+                                if (interp_slow){
+                                    m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                }else{
+                                    m.v = -s * ds * w[nn++]/sum_w;
+                                }
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -7363,6 +8270,7 @@ namespace ttcr {
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_tmp.resize(1);
                     r_tmp[0] = Rx;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
             } else{ // on Face
@@ -7426,8 +8334,10 @@ namespace ttcr {
                     if (r_tmp.size() > 1 && ds>minDist) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s=computeSlowness(mid_pt,cellNo );
-                        s *= s;
+                        if (!interp_slow){
+                            s = computeSlowness(mid_pt,cellNo);
+                            s *= s;
+                        }
 
                     }
 
@@ -7450,16 +8360,6 @@ namespace ttcr {
                                 allNodes.insert( faceNodesPrev[0] );
                                 allNodes.insert( faceNodesPrev[1] );
                                 allNodes.insert( faceNodesPrev[2] );
-                                if (secondNodes){
-                                    auto no=--allNodes.end();
-                                    while (no!=allNodes.begin()) {
-                                        if(nodes[*no].getprimary()==10){
-                                            std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                            allNodes.erase(no);
-                                        }
-                                        --no;
-                                    }
-                                }
                                 std::vector<T1> w;
                                 T1 sum_w = 0.0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7469,7 +8369,11 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
+                                    if (interp_slow){
+                                        m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                    }else{
+                                        m.v = -s * ds * w[nn++]/sum_w;
+                                    }
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -7511,16 +8415,6 @@ namespace ttcr {
                                 allNodes.insert( faceNodesPrev[0] );
                                 allNodes.insert( faceNodesPrev[1] );
                                 allNodes.insert( faceNodesPrev[2] );
-                                if (secondNodes){
-                                    auto no=--allNodes.end();
-                                    while (no!=allNodes.begin()) {
-                                        if(nodes[*no].getprimary()==10){
-                                            std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                            allNodes.erase(no);
-                                        }
-                                        --no;
-                                    }
-                                }
                                 std::vector<T1> w;
                                 T1 sum_w = 0.0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7530,7 +8424,11 @@ namespace ttcr {
                                 size_t nn=0;
                                 for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                     m.j = *it;
-                                    m.v = -s * ds * w[nn++]/sum_w;
+                                    if (interp_slow){
+                                        m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                    }else{
+                                        m.v = -s * ds * w[nn++]/sum_w;
+                                    }
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -7575,16 +8473,6 @@ namespace ttcr {
                                 allNodes.insert(*nc);
                             }
                         }
-                        if (secondNodes){
-                            auto no=--allNodes.end();
-                            while (no!=allNodes.begin()) {
-                                if(nodes[*no].getprimary()==10){
-                                    std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                    allNodes.erase(no);
-                                }
-                                --no;
-                            }
-                        }
                         std::vector<T1> w;
                         T1 sum_w = 0.0;
                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7594,7 +8482,11 @@ namespace ttcr {
                         size_t nn=0;
                         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                             m.j = *it;
-                            m.v = -s * ds * w[nn++]/sum_w;
+                            if (interp_slow){
+                                m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                            }else{
+                                m.v = -s * ds * w[nn++]/sum_w;
+                            }
                             bool found = false;
                             for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                 if ( m_data[nm].j == m.j ) {
@@ -7654,8 +8546,10 @@ namespace ttcr {
                         if (r_tmp.size() > 1 && ds>minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s = computeSlowness(mid_pt,cellNo);
-                            s *= s;
+                            if (!interp_slow){
+                                s = computeSlowness(mid_pt,cellNo);
+                                s *= s;
+                            }
                         }
 
                         bool break_flag = false;
@@ -7677,16 +8571,6 @@ namespace ttcr {
                                     allNodes.insert( faceNodesPrev[0] );
                                     allNodes.insert( faceNodesPrev[1] );
                                     allNodes.insert( faceNodesPrev[2] );
-                                    if (secondNodes){
-                                        auto no=--allNodes.end();
-                                        while (no!=allNodes.begin()) {
-                                            if(nodes[*no].getprimary()==10){
-                                                std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                allNodes.erase(no);
-                                            }
-                                            --no;
-                                        }
-                                    }
                                     std::vector<T1> w;
                                     T1 sum_w = 0.0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7696,7 +8580,11 @@ namespace ttcr {
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
+                                        if (interp_slow){
+                                            m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                        }else{
+                                            m.v = -s * ds * w[nn++]/sum_w;
+                                        }
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -7739,16 +8627,6 @@ namespace ttcr {
                                     allNodes.insert( faceNodesPrev[0] );
                                     allNodes.insert( faceNodesPrev[1] );
                                     allNodes.insert( faceNodesPrev[2] );
-                                    if (secondNodes){
-                                        auto no=--allNodes.end();
-                                        while (no!=allNodes.begin()) {
-                                            if(nodes[*no].getprimary()==10){
-                                                std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                                allNodes.erase(no);
-                                            }
-                                            --no;
-                                        }
-                                    }
                                     std::vector<T1> w;
                                     T1 sum_w = 0.0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7758,7 +8636,11 @@ namespace ttcr {
                                     size_t nn=0;
                                     for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                         m.j = *it;
-                                        m.v = -s * ds * w[nn++]/sum_w;
+                                        if (interp_slow){
+                                            m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                        }else{
+                                            m.v = -s * ds * w[nn++]/sum_w;
+                                        }
                                         bool found = false;
                                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                             if ( m_data[nm].j == m.j ) {
@@ -7797,16 +8679,6 @@ namespace ttcr {
                             allNodes.insert( faceNodes[0] );
                             allNodes.insert( faceNodes[1] );
                             allNodes.insert( faceNodes[2] );
-                            if (secondNodes){
-                                auto no=--allNodes.end();
-                                while (no!=allNodes.begin()) {
-                                    if(nodes[*no].getprimary()==10){
-                                        std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                        allNodes.erase(no);
-                                    }
-                                    --no;
-                                }
-                            }
                             std::vector<T1> w;
                             T1 sum_w = 0.0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7816,7 +8688,11 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
+                                if (interp_slow){
+                                    m.v=ds * w[nn++]/sum_w;// dsl/dsj
+                                }else{
+                                    m.v = -s * ds * w[nn++]/sum_w;
+                                }
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -7844,12 +8720,15 @@ namespace ttcr {
             }
                 if (!foundIntersection)
                     InLimits=InLimits? false:true;
+
+
                 if ( foundIntersection == false && InLimits==false ) {
                     std::cout << "\n\nWarning: finding raypath on face failed to converge for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_tmp.resize(1);
                     r_tmp[0] = Rx;
                     reachedTx = true;
+                    m_data.resize(0);
                 }
             }
             for ( size_t nt=0; nt<Tx.size(); ++nt ) {
@@ -7925,23 +8804,15 @@ namespace ttcr {
                         if (r_tmp.size() > 1 && ds>minDist) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            s = computeSlowness(mid_pt,cellNo);
-                            s *= s;
+                            if (!interp_slow){
+                                s = computeSlowness(mid_pt,cellNo);
+                                s *= s;
+                            }
                         }
                         if ( r_tmp.size() > 1 && ds>minDist) {
                             std::set<T2> allNodes;
                             for (T2 i=0;i<4;++i)
                                 allNodes.insert(neighbors[cellNo][i]);
-                            if (secondNodes){
-                                auto no=--allNodes.end();
-                                while (no!=allNodes.begin()) {
-                                    if(nodes[*no].getprimary()==10){
-                                        std::copy(nodes[*no].getPrincipals().begin(),nodes[*no].getPrincipals().end(), std::inserter(allNodes,allNodes.end()));
-                                        allNodes.erase(no);
-                                    }
-                                    --no;
-                                }
-                            }
                             std::vector<T1> w;
                             T1 sum_w = 0.0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -7951,7 +8822,11 @@ namespace ttcr {
                             size_t nn=0;
                             for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
                                 m.j = *it;
-                                m.v = -s * ds * w[nn++]/sum_w;
+                                if(interp_slow){
+                                    m.v= ds * w[nn++]/sum_w;
+                                }else{
+                                    m.v = -s * ds * w[nn++]/sum_w;
+                                }
                                 bool found = false;
                                 for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                     if ( m_data[nm].j == m.j ) {
@@ -8507,6 +9382,80 @@ namespace ttcr {
             return false;
     }
     template<typename T1, typename T2, typename NODE>
+    bool Grid3Dui<T1,T2,NODE>::blti_raytrace(const sxyz<T1> & curr_pt,const std::array<T2,3> &face, sxyz<T1> & next_pt,T1 & xi, T1 & zeta,const size_t threadNo,const T1 & s)const{
+        
+        NODE *vertexA=&(nodes[face[0]]);
+        NODE *vertexB=&(nodes[face[1]]);
+        NODE *vertexC=&(nodes[face[2]]);
+        
+        if ( vertexA->getTT(threadNo) > vertexB->getTT(threadNo) )
+            std::swap(vertexA, vertexB);
+        if ( vertexA->getTT(threadNo) > vertexC->getTT(threadNo) )
+            std::swap(vertexA, vertexC);
+        
+        T1 u = vertexB->getTT(threadNo) - vertexA->getTT(threadNo);
+        T1 v = vertexC->getTT(threadNo) - vertexA->getTT(threadNo);
+        sxyz<T1> v_b = { vertexC->getX() - vertexA->getX(),
+            vertexC->getY() - vertexA->getY(),
+            vertexC->getZ() - vertexA->getZ() };
+        sxyz<T1> v_c = { vertexB->getX() - vertexA->getX(),
+            vertexB->getY() - vertexA->getY(),
+            vertexB->getZ() - vertexA->getZ() };
+        
+        sxyz<T1> v_n = cross(v_b, v_c);
+        
+        T1 b = norm( v_b );
+        T1 c = norm( v_c );
+        T1 d2 = dot(v_b, v_c);
+        
+        //       T1 alpha = acos(d2/(b*c) );
+        
+        T1 phi=norm(v_n);
+        T1 d_tmp = -vertexA->getX()*v_n.x - vertexA->getY()*v_n.y - vertexA->getZ()*v_n.z;
+        
+        T1 k = -(d_tmp + v_n.x*curr_pt.x + v_n.y*curr_pt.y+ v_n.z*curr_pt.z)/norm2(v_n);
+        
+        sxyz<T1> pt;
+        pt.x = curr_pt.x+ k*v_n.x;
+        pt.y = curr_pt.y + k*v_n.y;
+        pt.z = curr_pt.z + k*v_n.z;
+        //        bool test=areCoplanar(pt, face[0], face[1], face[2]);
+        //        sxyz<T1> vect=pt-curr_pt;
+        //        T1 dd=dot(v_b,vect);
+        T1 rho0 = curr_pt.getDistance( pt );
+        
+        // project point on AB
+        sxyz<T1> v_pt = {pt.x-vertexA->getX(), pt.y-vertexA->getY(), pt.z-vertexA->getZ()};
+        //// decomposition of Ap
+        sxz<T1> AtA_Vect1={b*b,d2};
+        sxz<T1> AtA_Vect2={d2,c*c};
+        sxz<T1> Atb={dot(v_b,v_pt),dot(v_c,v_pt)};
+        T1 DeT=det(AtA_Vect1,AtA_Vect2);
+        T1 xi0=det(AtA_Vect1,Atb)/DeT;
+        T1 zeta0=det(Atb,AtA_Vect2)/DeT;
+        //        std::array<T1, 3> Weights;
+        //      Interpolator<T1>::bilinearTriangleWeight(pt, *vertexA, *vertexB, *vertexC, Weights);
+        
+        T1 beta = u*b*b - v*d2;
+        T1 gamma = v*c*c - u*d2;
+        T1 w_tilde2 = (s*s*phi*phi-u*u*b*b-v*v*c*c+2.0*u*v*d2 );
+        if (w_tilde2>0.0){
+            T1 xi_tilde = -fabs(beta)*rho0/(phi*sqrt(w_tilde2));
+            T1 zeta_tilde = -fabs(gamma)*rho0/(phi*sqrt(w_tilde2));
+            xi = xi_tilde + xi0;
+            zeta = zeta_tilde + zeta0;
+            if ( 0.<=xi && xi<=1. && 0.<=zeta && zeta<=1. && 0.<=(xi+zeta) && (xi+zeta)<=1. ){
+                next_pt.x=xi*vertexB->getX()+zeta*vertexC->getX()+(1-xi-zeta)*vertexA->getX();
+                next_pt.y=xi*vertexB->getY()+zeta*vertexC->getY()+(1-xi-zeta)*vertexA->getY();
+                next_pt.z=xi*vertexB->getZ()+zeta*vertexC->getZ()+(1-xi-zeta)*vertexA->getZ();
+                return true;
+            }else
+                return false;
+            
+        }else
+            return false;
+    }
+    template<typename T1, typename T2, typename NODE>
     bool Grid3Dui<T1,T2,NODE>::blti2D_raytrace(const sxyz<T1> & curr_pt,const T2 & node1,const T2 &node2, sxyz<T1> & next_pt,const size_t threadNo, const T1 & s) const{
         
         NODE *vertexA=&(nodes[node1]);
@@ -8562,10 +9511,10 @@ namespace ttcr {
         sxyz<T1> m=cross(PQ,PC);
         T1 u=dot(PB,m);
         T1 v=-dot(PA,m);
-        if(signum(u)!=signum(v))
+        if(signum(u)!=signum(v) && signum(u)!=0 && signum(v)!=0)
             return false;
         T1 w=tripleScalar(PQ, PB, PA);
-        if(signum(u)!=signum(w))
+        if(signum(u)!=signum(w) && signum(u)!=0 && signum(w)!=0)
             return false;
         T1 denom=1.0/(u+v+w);
         barycenters[0]=denom*u;
@@ -8573,6 +9522,43 @@ namespace ttcr {
         barycenters[2]=denom*w;
         return true;
     }
+    template<typename T1, typename T2, typename NODE>
+    T1 Grid3Dui<T1,T2,NODE>::computeSlowness(const sxyz<T1>& curr_pt,
+                                             const bool onNode,
+                                             const T2 nodeNo,
+                                             const bool onEdge,
+                                             const std::array<T2,2>& edgeNodes,
+                                             const std::array<T2,3>& faceNodes) const {
+        bool interpVel=true;
+        if ( onNode ) {
+            return nodes[nodeNo].getNodeSlowness();
+        } else {
+            if ( interpVel ) {
+                if ( onEdge ) {
+                    return Interpolator<T1>::linearVel(curr_pt,
+                                                       nodes[edgeNodes[0]],
+                                                       nodes[edgeNodes[1]]);
+                } else {
+                    return Interpolator<T1>::bilinearTriangleVel(curr_pt,
+                                                                 nodes[faceNodes[0]],
+                                                                 nodes[faceNodes[1]],
+                                                                 nodes[faceNodes[2]]);
+                }
+            } else {
+                if ( onEdge ) {
+                    return Interpolator<T1>::linear(curr_pt,
+                                                    nodes[edgeNodes[0]],
+                                                    nodes[edgeNodes[1]]);
+                } else {
+                    return Interpolator<T1>::bilinearTriangle(curr_pt,
+                                                              nodes[faceNodes[0]],
+                                                              nodes[faceNodes[1]],
+                                                              nodes[faceNodes[2]]);
+                }
+            }
+        }
+    }
+
 }
 
 #endif
