@@ -84,6 +84,14 @@ namespace ttcr {
                 nodes[n].setNodeSlowness( s[n] );
             }
         }
+        void getSlowness(std::vector<T1>& slowness) const {
+            if (slowness.size() != (ncx+1) * (ncy+1) * (ncz+1)) {
+                slowness.resize((ncx+1) * (ncy+1) * (ncz+1));
+            }
+            for ( size_t n=0; n<slowness.size(); ++n ) {
+                slowness[n] = nodes[n].getNodeSlowness();
+            }
+        }
         
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncy*ncz; }

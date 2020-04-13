@@ -99,6 +99,15 @@ namespace ttcr {
             }
         }
         
+        void getSlowness(std::vector<T1>& s) const {
+            if (s.size() != slowness.size()) {
+                s.resize(slowness.size());
+            }
+            for (size_t n=0; n<s.size(); ++n) {
+                s[n] = slowness[n];
+            }
+        }
+        
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
             nodes[nn].setTT(tt, nt);
         }

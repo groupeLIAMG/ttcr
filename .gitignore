@@ -53,3 +53,7 @@ docs/_build/
 old_stuff/
 
 .eggs/
+
+ttcrpy/tmesh.cpp
+
+ttcr.xcodeproj/

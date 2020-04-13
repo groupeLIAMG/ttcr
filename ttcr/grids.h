@@ -929,8 +929,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
-                                                     nt,
-                                                     verbose);
+                                                     nt);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
@@ -942,8 +941,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
-                                                     nt,
-                                                     verbose);
+                                                     nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1240,8 +1238,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
-                                                     nt,
-                                                     verbose);
+                                                     nt);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
@@ -1253,8 +1250,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
-                                                     nt,
-                                                     verbose);
+                                                     nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()

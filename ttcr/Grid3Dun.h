@@ -105,7 +105,14 @@ namespace ttcr {
                 nodes[n].setNodeSlowness( s[n] );
             }
         }
-        
+        void getSlowness(std::vector<T1>& slowness) const {
+            if (slowness.size() != nPrimary) {
+                slowness.resize(nPrimary);
+            }
+            for ( size_t n=0; n<slowness.size(); ++n ) {
+                slowness[n] = nodes[n].getNodeSlowness();
+            }
+        }
         void setSourceRadius(const double r) { source_radius = r; }
         
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {

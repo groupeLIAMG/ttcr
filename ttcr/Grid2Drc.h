@@ -40,7 +40,16 @@ namespace ttcr {
         virtual ~Grid2Drc() {
         }
         
-        virtual void setSlowness(const std::vector<T1>& s) {
+        void getSlowness(std::vector<T1>& slowness) const {
+            if (slowness.size() != ncx*ncz) {
+                slowness.resize(ncx*ncz);
+            }
+            for (size_t n=0; n<slowness.size(); ++n) {
+                slowness[n] = cells.getSlowness(n);
+            }
+        }
+        
+        void setSlowness(const std::vector<T1>& s) {
             try {
                 cells.setSlowness( s );
             } catch (std::exception& e) {

@@ -173,6 +173,9 @@ namespace ttcr {
         virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             throw std::runtime_error("Method should be implemented in subclass");
         }
+        virtual void getSlowness(std::vector<T1>&) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
 
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}

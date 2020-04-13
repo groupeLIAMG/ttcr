@@ -352,7 +352,11 @@ namespace ttcr {
         void setSlowness(const std::vector<T>& s) {
             throw std::logic_error("Error: slowness not defined for CellVTI_PSV.");
         }
-        
+
+        const T getSlowness(const size_t i) const {
+            throw std::logic_error("Error: slowness not defined for CellVTI_PSV.");
+        }
+
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_PSV.");
         }
@@ -442,6 +446,10 @@ namespace ttcr {
             throw std::logic_error("Error: slowness not defined for CellVTI_SH.");
         }
         
+        const T getSlowness(const size_t i) const {
+            throw std::logic_error("Error: slowness not defined for CellVTI_SH.");
+        }
+
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_SH.");
         }
