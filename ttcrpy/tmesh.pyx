@@ -51,7 +51,7 @@ cdef class Mesh3d:
 
     Constructor:
 
-    Mesh3d(nodes, tetra, nthreads, cell_slowness, method, gradient_method,
+    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method,
            tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary,
            n_tertiary, radius_tertiary)
 
@@ -61,7 +61,7 @@ cdef class Mesh3d:
             node coordinates
         tetra : np.ndarray of int, shape (ntetra, 4)
             indices of nodes forming the tetrahedra
-        nthreads : int
+        n_threads : int
             number of threads for raytracing (default is 1)
         cell_slowness : bool
             slowness defined for cells (True) or nodes (False) (default is 1)
@@ -96,7 +96,7 @@ cdef class Mesh3d:
 
     """
     cdef bool cell_slowness
-    cdef size_t _nthreads
+    cdef size_t _n_threads
     cdef char method
     cdef bool tt_from_rp
     cdef bool interp_vel
@@ -113,7 +113,7 @@ cdef class Mesh3d:
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=2] nodes,
                   np.ndarray[np.int64_t, ndim=2] tetra,
-                  size_t nthreads=1, bool cell_slowness=1,
+                  size_t n_threads=1, bool cell_slowness=1,
                   str method='FSM', int gradient_method=1,
                   bool tt_from_rp=1, bool interp_vel=0,
                   double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
@@ -121,7 +121,7 @@ cdef class Mesh3d:
                   double radius_tertiary=1.0):
 
         self.cell_slowness = cell_slowness
-        self._nthreads = nthreads
+        self._n_threads = n_threads
         self.tt_from_rp = tt_from_rp
         self.interp_vel = interp_vel
         self.eps = eps
@@ -152,13 +152,13 @@ cdef class Mesh3d:
                                                             eps, maxit,
                                                             gradient_method,
                                                             tt_from_rp,
-                                                            min_dist, nthreads)
+                                                            min_dist, n_threads)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Ducsp[double,uint32_t](self.no, self.tet,
                                                             n_secondary,
                                                             tt_from_rp,
-                                                            min_dist, nthreads)
+                                                            min_dist, n_threads)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Ducdsp[double,uint32_t](self.no, self.tet,
@@ -169,7 +169,7 @@ cdef class Mesh3d:
                                                              tt_from_rp,
                                                              min_dist,
                                                              radius_tertiary,
-                                                             nthreads)
+                                                             n_threads)
 
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -181,14 +181,14 @@ cdef class Mesh3d:
                                                             gradient_method,
                                                             interp_vel,
                                                             tt_from_rp,
-                                                            min_dist, nthreads)
+                                                            min_dist, n_threads)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Dunsp[double,uint32_t](self.no, self.tet,
                                                             n_secondary,
                                                             interp_vel,
                                                             tt_from_rp,
-                                                            min_dist, nthreads)
+                                                            min_dist, n_threads)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Dundsp[double,uint32_t](self.no, self.tet,
@@ -200,7 +200,7 @@ cdef class Mesh3d:
                                                              tt_from_rp,
                                                              min_dist,
                                                              radius_tertiary,
-                                                             nthreads)
+                                                             n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -228,16 +228,16 @@ cdef class Mesh3d:
                 tetra[n, nn] = self.tet[n].i[nn]
 
         constructor_params = (nodes, tetra, method, self.cell_slowness,
-                              self._nthreads, self.tt_from_rp, self.interp_vel,
+                              self._n_threads, self.tt_from_rp, self.interp_vel,
                               self.eps, self.maxit, self.gradient_method,
                               self.min_dist, self.n_secondary, self.n_tertiary,
                               self.radius_tertiary)
         return (_rebuild3d, constructor_params)
 
     @property
-    def nthreads(self):
+    def n_threads(self):
         """int: number of threads for raytracing"""
-        return self._nthreads
+        return self._n_threads
 
     @property
     def nparams(self):
@@ -281,7 +281,7 @@ cdef class Mesh3d:
         tt: np ndarray, shape (nnodes,)
             traveltimes
         """
-        if thread_no >= self._nthreads:
+        if thread_no >= self._n_threads:
             raise ValueError('Thread number is larger than number of threads')
         cdef vector[double] tmp
         cdef int n
@@ -349,14 +349,13 @@ cdef class Mesh3d:
             see notes below
         rcv : 2D np.ndarray with 3 columns
             Columns correspond to x, y and z coordinates
-        slowness : np ndarray, shape (nx, ny, nz) (None by default)
+        slowness : np ndarray, (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
-            slowness may also have been flattened (with default 'C' order)
             if None, slowness must have been assigned previously
         thread_no : int (None by default)
             Perform calculations in thread number "thread_no"
             if None, attempt to run in parallel if warranted by number of
-            sources and value of nthreads in constructor
+            sources and value of n_threads in constructor
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         return_rays : bool (False by default)
@@ -496,7 +495,7 @@ cdef class Mesh3d:
                 vtt[n].resize(vRx[n].size())
 
         tt = np.zeros((rcv.shape[0],))
-        if nTx < self._nthreads or self._nthreads == 1:
+        if nTx < self._n_threads or self._n_threads == 1:
             if return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
@@ -652,14 +651,14 @@ cdef class Mesh3d:
 
 
     @staticmethod
-    def builder(filename, size_t nthreads=1, bool cell_slowness=1,
+    def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM', int gradient_method=1,
                 bool tt_from_rp=1, bool interp_vel=0,
                 double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
                 double radius_tertiary=1.0):
         """
-        builder(filename, nthreads, cell_slowness, method, gradient_method,
+        builder(filename, n_threads, cell_slowness, method, gradient_method,
                 tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary,
                 n_tertiary, radius_tertiary)
 
