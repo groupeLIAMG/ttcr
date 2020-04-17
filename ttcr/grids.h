@@ -66,6 +66,8 @@
 #include "Grid3Dunfs.h"
 #include "Grid3Dunsp.h"
 #include "Grid3Dundsp.h"
+#include "Node2Dc.h"
+#include "Node2Dn.h"
 #include "Node2Dcsp.h"
 #include "Node2Dnsp.h"
 #include "MSHReader.h"
@@ -2004,9 +2006,9 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Ducfm<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+                    g = new Grid2Ducfm<T, uint32_t, Node2Dc<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 else
-                    g = new Grid2Dunfm<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+                    g = new Grid2Dunfm<T, uint32_t, Node2Dn<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\n";
@@ -2023,10 +2025,10 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+                    g = new Grid2Ducfs<T, uint32_t, Node2Dc<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 else
-                    g = new Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+                    g = new Grid2Dunfs<T, uint32_t, Node2Dn<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 T xmin = g->getXmin();
                 T xmax = g->getXmax();
@@ -2039,9 +2041,9 @@ namespace ttcr {
                 ptsRef.push_back( {xmax, zmin} );
                 ptsRef.push_back( {xmax, zmax} );
                 if ( constCells )
-                    dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dc<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 else
-                    dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dn<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\n";
@@ -2220,9 +2222,9 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Ducfm<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+                    g = new Grid2Ducfm<T, uint32_t, Node2Dc<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 else
-                    g = new Grid2Dunfm<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
+                    g = new Grid2Dunfm<T, uint32_t, Node2Dn<T,uint32_t>,sxz<T>>(nodes, triangles, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\n";
@@ -2239,10 +2241,10 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+                    g = new Grid2Ducfs<T, uint32_t, Node2Dc<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 else
-                    g = new Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
+                    g = new Grid2Dunfs<T, uint32_t, Node2Dn<T,uint32_t>,sxz<T>>(nodes, triangles, par.epsilon,
                                                                                   par.nitermax, nt);
                 
                 T xmin = g->getXmin();
@@ -2256,9 +2258,9 @@ namespace ttcr {
                 ptsRef.push_back( {xmax, zmin} );
                 ptsRef.push_back( {xmax, zmax} );
                 if ( constCells )
-                    dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dcsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid2Ducfs<T, uint32_t, Node2Dc<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 else
-                    dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dnsp<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid2Dunfs<T, uint32_t, Node2Dn<T,uint32_t>,sxz<T>>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\n";
