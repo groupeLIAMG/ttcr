@@ -10,6 +10,7 @@ modules are deprecated in favor of rgrid and an upcoming tmesh modules.
    :caption: Modules:
 
    code_rgrid.rst
+   code_tmesh.rst
    code_cgrid2d.rst
    code_cgrid3d.rst
    code_cmesh2d.rst
