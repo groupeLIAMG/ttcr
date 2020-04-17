@@ -86,7 +86,7 @@ namespace ttcr {
         }
         
         size_t getNumberOfCells() const { return ncx*ncz; }
-        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             size_t nPrimary = (ncx+1) * (ncz+1);
             tt.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {

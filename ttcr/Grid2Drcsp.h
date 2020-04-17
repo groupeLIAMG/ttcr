@@ -105,6 +105,16 @@ namespace ttcr {
         const T2 getNsnx() const { return nsnx; }
         const T2 getNsnz() const { return nsnz; }
         
+        void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
+            size_t nPrimary = (this->ncx+1) * (this->ncz+1);
+            tt.resize(nPrimary);
+            for ( size_t n=0, n2=0; n<this->nodes.size(); ++n ) {
+                if (this->nodes[n].isPrimary()) {
+                    tt[n2++] = this->nodes[n].getTT(threadNo);
+                }
+            }
+        }
+        
     protected:
         T2 nsnx;    // number of secondary nodes in x
         T2 nsnz;    // number of secondary nodes in z
