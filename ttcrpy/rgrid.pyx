@@ -2816,6 +2816,7 @@ cdef class Grid2d:
             if isinstance(data, list):
                 self._save_raypaths(data, filename+'_'+fn+'.vtp')
             else:
+                save_grid = True
                 scalar = vtk.vtkDoubleArray()
                 scalar.SetName(fn)
                 scalar.SetNumberOfComponents(1)
