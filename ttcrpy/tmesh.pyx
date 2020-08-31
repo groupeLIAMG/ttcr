@@ -247,6 +247,36 @@ cdef class Mesh3d:
         else:
             return self.no.size()
 
+    def set_use_thread_pool(self, use_thread_pool):
+        """bool: use thread pool instead of parallel loop"""
+        self.grid.setUsePool(use_thread_pool)
+
+    def is_outsize(self, np.ndarray[np.double_t, ndim=2] pts):
+        """
+        is_outside(pts)
+
+        Check if points are outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray, shape(npts, 3)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool:
+            True if at least one point outside grid
+        """
+        cdef vector[sxyz[double]] vpts
+        for n in range(pts.shape[0]):
+            vpts.push_back(sxyz[double](pts[n, 0], pts[n, 1], pts[n, 2]))
+        try:
+            self.grid.checkPts(vpts)  # throws an except if 1 pt is outside
+        except RuntimeError:
+            return True
+
+        return False
+
     def get_number_of_nodes(self):
         """
         Returns
