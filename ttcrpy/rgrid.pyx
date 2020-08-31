@@ -68,12 +68,12 @@ cdef class Grid3d:
         number of parameters along each dimension
     nparams: int
         total number of parameters for grid
-    nthreads: int
+    n_threads: int
         number of threads for raytracing
 
     Constructor:
 
-    Grid3d(x, y, z, nthreads=1, cell_slowness=1, method='FSM', tt_from_rp=1,
+    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1,
            interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
            n_secondary=2, n_tertiary=2, radius_tertiary=1.0) -> Grid3d
 
@@ -85,7 +85,7 @@ cdef class Grid3d:
             node coordinates along y
         z : np.ndarray
             node coordinates along z
-        nthreads : int
+        n_threads : int
             number of threads for raytracing (default is 1)
         cell_slowness : bool
             slowness defined for cells (True) or nodes (False) (default is 1)
@@ -127,7 +127,7 @@ cdef class Grid3d:
     cdef double _dy
     cdef double _dz
     cdef bool cell_slowness
-    cdef size_t _nthreads
+    cdef size_t _n_threads
     cdef char method
     cdef bool tt_from_rp
     cdef bool interp_vel
@@ -145,7 +145,7 @@ cdef class Grid3d:
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
                   np.ndarray[np.double_t, ndim=1] y,
                   np.ndarray[np.double_t, ndim=1] z,
-                  size_t nthreads=1,
+                  size_t n_threads=1,
                   bool cell_slowness=1, str method='FSM',
                   bool tt_from_rp=1, bool interp_vel=0,
                   double eps=1.e-15, int maxit=20, bool weno=1,
@@ -163,7 +163,7 @@ cdef class Grid3d:
         cdef double ymin = y[0]
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
-        self._nthreads = nthreads
+        self._n_threads = n_threads
         self.tt_from_rp = tt_from_rp
         self.interp_vel = interp_vel
         self.eps = eps
@@ -197,7 +197,7 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             eps, maxit, weno,
                                                             tt_from_rp, interp_vel,
-                                                            nthreads)
+                                                            n_threads)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Drcsp[double,uint32_t,Cell[double,Node3Dcsp[double,uint32_t],sxyz[double]]](nx, ny, nz,
@@ -205,7 +205,7 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             nsnx, nsny, nsnz,
                                                             tt_from_rp,
-                                                            nthreads)
+                                                            n_threads)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Drcdsp[double,uint32_t,Cell[double,Node3Dc[double,uint32_t],sxyz[double]]](nx, ny, nz,
@@ -213,7 +213,7 @@ cdef class Grid3d:
                                                            xmin, ymin, zmin,
                                                            n_secondary, tt_from_rp,
                                                            n_tertiary, radius_tertiary,
-                                                           nthreads)
+                                                           n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -223,7 +223,7 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             eps, maxit, weno,
                                                             tt_from_rp, interp_vel,
-                                                            nthreads)
+                                                            n_threads)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Drnsp[double,uint32_t](nx, ny, nz,
@@ -231,7 +231,7 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             nsnx, nsny, nsnz,
                                                             tt_from_rp, interp_vel,
-                                                            nthreads)
+                                                            n_threads)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Drndsp[double,uint32_t](nx, ny, nz,
@@ -239,7 +239,7 @@ cdef class Grid3d:
                                                              xmin, ymin, zmin,
                                                              n_secondary, tt_from_rp,
                                                              n_tertiary, radius_tertiary,
-                                                             interp_vel, nthreads)
+                                                             interp_vel, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -254,7 +254,7 @@ cdef class Grid3d:
         elif self.method == b'd':
             method = 'DSPM'
 
-        constructor_params = (self.nthreads, self.cell_slowness, method,
+        constructor_params = (self.n_threads, self.cell_slowness, method,
                               self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
@@ -312,9 +312,9 @@ cdef class Grid3d:
             return (self._x.size(), self._y.size(), self._z.size())
 
     @property
-    def nthreads(self):
+    def n_threads(self):
         """int: number of threads for raytracing"""
-        return self._nthreads
+        return self._n_threads
 
     @property
     def nparams(self):
@@ -358,7 +358,7 @@ cdef class Grid3d:
         tt: np ndarray, shape (nx, ny, nz)
             traveltimes
         """
-        if thread_no >= self._nthreads:
+        if thread_no >= self._n_threads:
             raise ValueError('Thread number is larger than number of threads')
         cdef vector[double] tmp
         cdef int n
@@ -770,7 +770,7 @@ cdef class Grid3d:
         thread_no : int (None by default)
             Perform calculations in thread number "thread_no"
             if None, attempt to run in parallel if warranted by number of
-            sources and value of nthreads in constructor
+            sources and value of n_threads in constructor
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
@@ -957,7 +957,7 @@ cdef class Grid3d:
         #     print('  size of tt = ',vtt[n].size())
 
         tt = np.zeros((rcv.shape[0],))
-        if nTx < self._nthreads or self._nthreads == 1:
+        if nTx < self._n_threads or self._n_threads == 1:
             if compute_L==False and compute_M==False and return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
@@ -1225,11 +1225,11 @@ cdef class Grid3d:
 
 
     @staticmethod
-    def builder(filename, nthreads=1, method='FSM', tt_from_rp=1, interp_vel=0,
+    def builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0,
                 eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
                 n_secondary=2, n_tertiary=2, radius_tertiary=1.0):
         """
-        builder(filename, nthreads=1, method='FSM', tt_from_rp=1, interp_vel=0,
+        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0,
                 eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
                 n_secondary=2, n_tertiary=2, radius_tertiary=1.0)
 
@@ -1280,7 +1280,7 @@ cdef class Grid3d:
         else:
             slowness = 1.0 / data.reshape(dim, order='F').flatten()
 
-        g = Grid3d(x, y, z, nthreads, cell_slowness, method, tt_from_rp,
+        g = Grid3d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                    interp_vel, eps, maxit, weno, nsnx, nsny, nsnz,
                    n_secondary, n_tertiary, radius_tertiary)
         g.set_slowness(slowness)
@@ -1742,12 +1742,12 @@ cdef class Grid2d:
         number of parameters along each dimension
     nparams: int
         total number of parameters for grid
-    nthreads: int
+    n_threads: int
         number of threads for raytracing
 
     Constructor:
 
-    Grid2d(x, z, nthreads=1, cell_slowness=1, method='FSM', iso='iso',
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='FSM', iso='iso',
            eps=1.e-15, maxit=20, weno=1, rotated_template=0,
            nsnx=10, nsnz=10) -> Grid2d
 
@@ -1757,7 +1757,7 @@ cdef class Grid2d:
         node coordinates along x
     z : np.ndarray
         node coordinates along z
-    nthreads : int
+    n_threads : int
         number of threads for raytracing (default is 1)
     cell_slowness : bool
         slowness defined for cells (True) or nodes (False) (default is 1)
@@ -1784,7 +1784,7 @@ cdef class Grid2d:
     cdef double _dx
     cdef double _dz
     cdef bool cell_slowness
-    cdef size_t _nthreads
+    cdef size_t _n_threads
     cdef char method
     cdef char iso
     cdef double eps
@@ -1797,7 +1797,7 @@ cdef class Grid2d:
     cdef Grid2D[double,uint32_t,sxz[double]]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
-                  np.ndarray[np.double_t, ndim=1] z, size_t nthreads=1,
+                  np.ndarray[np.double_t, ndim=1] z, size_t n_threads=1,
                   bool cell_slowness=1, str method='SPM', str aniso='iso',
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10):
@@ -1809,7 +1809,7 @@ cdef class Grid2d:
         cdef double xmin = x[0]
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
-        self._nthreads = nthreads
+        self._n_threads = n_threads
         self.eps = eps
         self.maxit = maxit
         self.weno = weno
@@ -1831,34 +1831,34 @@ cdef class Grid2d:
                     self.iso = b'i'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, nthreads)
+                                    xmin, zmin, nsnx, nsnz, n_threads)
                 elif aniso == 'elliptical':
                     self.iso = b'e'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_e](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, nthreads)
+                                    xmin, zmin, nsnx, nsnz, n_threads)
                 elif aniso == 'tilted_elliptical':
                     self.iso = b't'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_te](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, nthreads)
+                                    xmin, zmin, nsnx, nsnz, n_threads)
                 elif aniso == 'vti_psv':
                     self.iso = b'p'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_p](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, nthreads)
+                                    xmin, zmin, nsnx, nsnz, n_threads)
                 elif aniso == 'vti_sh':
                     self.iso = b'h'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, nthreads)
+                                    xmin, zmin, nsnx, nsnz, n_threads)
                 else:
                     raise ValueError('Anisotropy model not implemented')
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drcfs[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin, eps,
-                                maxit, weno, rotated_template, nthreads)
+                                maxit, weno, rotated_template, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -1866,12 +1866,12 @@ cdef class Grid2d:
                 self.method = b's'
                 self.grid = new Grid2Drnsp[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin,
-                                nsnx, nsnz, nthreads)
+                                nsnx, nsnz, n_threads)
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drnfs[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin, eps,
-                                maxit, weno, rotated_template, nthreads)
+                                maxit, weno, rotated_template, n_threads)
 
     def __dealloc__(self):
         del self.grid
@@ -1895,7 +1895,7 @@ cdef class Grid2d:
         elif self.iso == b'h':
             aniso = 'vti_sh'
 
-        constructor_params = (self.nthreads, self.cell_slowness, method,
+        constructor_params = (self.n_threads, self.cell_slowness, method,
                               aniso, self.eps, self.maxit, self.weno,
                               self.rotated_template, self.nsnx, self.nsnz)
         return (_rebuild2d, (self.x, self.z, constructor_params))
@@ -1937,9 +1937,9 @@ cdef class Grid2d:
             return (self._x.size(), self._z.size())
 
     @property
-    def nthreads(self):
+    def n_threads(self):
         """int: number of threads for raytracing"""
-        return self._nthreads
+        return self._n_threads
 
     @property
     def nparams(self):
@@ -1982,7 +1982,7 @@ cdef class Grid2d:
         -------
         tt: np ndarray, shape (nx, nz)
         """
-        if thread_no >= self._nthreads:
+        if thread_no >= self._n_threads:
             raise ValueError('Thread number is larger than number of threads')
         cdef vector[double] tmp
         cdef int n
@@ -2074,7 +2074,7 @@ cdef class Grid2d:
         velocity : np ndarray, shape (nx, nz)
             velocity may also have been flattened (with default 'C' order)
         """
-        if self.velocity:
+        if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
         else:
@@ -2507,7 +2507,7 @@ cdef class Grid2d:
         thread_no : int (None by default)
             Perform calculations in thread number "thread_no"
             if None, attempt to run in parallel if warranted by number of
-            sources and value of nthreads in constructor
+            sources and value of n_threads in constructor
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
@@ -2643,7 +2643,7 @@ cdef class Grid2d:
                 vtt[n].resize(vRx[n].size())
 
         tt = np.zeros((rcv.shape[0],))
-        if nTx < self._nthreads or self._nthreads == 1:
+        if nTx < self._n_threads or self._n_threads == 1:
             if compute_L==False and return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
@@ -2816,6 +2816,7 @@ cdef class Grid2d:
             if isinstance(data, list):
                 self._save_raypaths(data, filename+'_'+fn+'.vtp')
             else:
+                save_grid = True
                 scalar = vtk.vtkDoubleArray()
                 scalar.SetName(fn)
                 scalar.SetNumberOfComponents(1)
@@ -3075,17 +3076,17 @@ cdef class Grid2d:
 
 
 def _rebuild3d(x, y, z, constructor_params):
-    (nthreads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
+    (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
      weno, nsnx, nsny, nsnz, n_secondary,
      n_tertiary, radius_tertiary) = constructor_params
-    g = Grid3d(x, y, z, nthreads, cell_slowness, method, tt_from_rp,
+    g = Grid3d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
                n_tertiary, radius_tertiary)
     return g
 
 def _rebuild2d(x, z, constructor_params):
-    (nthreads, cell_slowness, method, aniso, eps, maxit, weno,
+    (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz) = constructor_params
-    g = Grid2d(x, z, nthreads, cell_slowness, method, aniso, eps, maxit, weno,
+    g = Grid2d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                rotated_template, nsnx, nsnz)
     return g

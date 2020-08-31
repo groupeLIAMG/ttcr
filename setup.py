@@ -35,6 +35,12 @@ extensions = [
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
               ),
+    Extension('ttcrpy.tmesh',
+              sources=['ttcrpy/tmesh.pyx', 'ttcrpy/verbose.cpp'],  # additional source file(s)
+              include_dirs=include_dirs,
+              language='c++',             # generate C++ code
+              extra_compile_args=extra_compile_args,
+              ),
     Extension('ttcrpy.cgrid2d',
               sources=['ttcrpy/cgrid2d.pyx', 'ttcrpy/Grid2Dttcr.cpp'],  # additional source file(s)
               include_dirs=include_dirs,

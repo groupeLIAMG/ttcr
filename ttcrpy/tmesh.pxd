@@ -6,7 +6,8 @@ from libc.math cimport sqrt
 from libcpp cimport bool
 
 from ttcrpy.common cimport sxz, sxyz, siv, siv2, sijv, Node3Dc, Node3Dcsp, \
-Node3Dn, Node3Dnsp, Cell, Node2Dcsp, Node2Dn, Node2Dnsp
+Node3Dn, Node3Dnsp, Cell, Node2Dc, Node2Dcsp, Node2Dn, Node2Dnsp
+
 
 cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
     cdef cppclass triangleElem[T]:
@@ -19,6 +20,7 @@ cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
         tetrahedronElem(T, T, T, T) except +
         T i[4]
         T physical_entity
+
 
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
@@ -132,3 +134,79 @@ cdef extern from "Grid3Dundsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dundsp[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
         Grid3Dundsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], int, int, T1,
                     bool, int, bool, T1, T1, size_t) except +
+
+
+cdef extern from "Grid2D.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2D[T1,T2,S]:
+        size_t getNthreads()
+        void setSlowness(vector[T1]&) except +
+        void getSlowness(vector[T1]&) except +
+        void getTT(vector[T1]& tt, size_t threadNo) except +
+        void raytrace(vector[S]& Tx,
+                      vector[T1]& t0,
+                      vector[S]& Rx,
+                      vector[T1]& traveltimes,
+                      size_t threadNo) except +
+        void raytrace(vector[S]& Tx,
+                      vector[T1]& t0,
+                      vector[S]& Rx,
+                      vector[T1]& traveltimes,
+                      vector[vector[sxz[T1]]]& r_data,
+                      size_t threadNo) except +
+        void raytrace(vector[S]& Tx,
+                      vector[T1]& t0,
+                      vector[S]& Rx,
+                      vector[T1]& traveltimes,
+                      vector[vector[siv2[T1]]]& l_data,
+                      size_t threadNo) except +
+        void raytrace(vector[S]& Tx,
+                      vector[T1]& t0,
+                      vector[S]& Rx,
+                      vector[T1]& traveltimes,
+                      vector[vector[S]]& r_data,
+                      vector[vector[siv2[T1]]]& l_data,
+                      size_t threadNo) except +
+        void raytrace(vector[vector[S]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[S]]& Rx,
+                      vector[vector[T1]]& traveltimes) except +
+        void raytrace(vector[vector[S]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[S]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[S]]]& r_data) except +
+        void raytrace(vector[vector[S]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[S]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[siv2[T1]]]]& l_data) except +
+        void raytrace(vector[vector[S]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[S]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[S]]]& r_data,
+                      vector[vector[vector[siv2[T1]]]]& l_data) except +
+
+cdef extern from "Grid2Duc.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Duc[T1,T2,NODE,S](Grid2D[T1,T2,S]):
+        pass
+
+cdef extern from "Grid2Dun.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Dun[T1,T2,NODE,S](Grid2D[T1,T2,S]):
+        pass
+
+cdef extern from "Grid2Ducsp.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Ducsp[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
+        Grid2Ducsp(vector[S]&, vector[triangleElem[T2]]&, T2, size_t) except +
+
+cdef extern from "Grid2Ducfs.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Ducfs[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
+        Grid2Ducfs(vector[S]&, vector[triangleElem[T2]]&, T1, int, size_t, bool) except +
+
+cdef extern from "Grid2Dunsp.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Dunsp[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
+        Grid2Dunsp(vector[S]&, vector[triangleElem[T2]]&, T2, size_t) except +
+
+cdef extern from "Grid2Dunfs.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Dunfs[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
+        Grid2Dunfs(vector[S]&, vector[triangleElem[T2]]&, T1, int, size_t, bool) except +

@@ -6,6 +6,7 @@ cmesh3d.cpp
 build/
 debug_tt_mex/
 test_lelievre11.py
+build_deploy_macos.sh
 ttcr_matlab/*.mex*
 xcuserdata/
 someTests/

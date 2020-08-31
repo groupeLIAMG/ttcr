@@ -53,6 +53,10 @@ cdef extern from "Node2Dn.h" namespace "ttcr" nogil:
     cdef cppclass Node2Dn[T1,T2]:
         pass
 
+cdef extern from "Node2Dc.h" namespace "ttcr" nogil:
+    cdef cppclass Node2Dc[T1,T2]:
+        pass
+
 cdef extern from "Node2Dnsp.h" namespace "ttcr" nogil:
     cdef cppclass Node2Dnsp[T1,T2]:
         pass
