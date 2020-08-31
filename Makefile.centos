@@ -23,7 +23,7 @@ ttcr/Grid3Ducfs.h ttcr/Grid3Duc.h ttcr/Grid3Ducsp.h ttcr/Grid3Dunfm.h ttcr/Grid3
 ttcr/Grid3Dunsp.h ttcr/Interface.h ttcr/Interpolator.h ttcr/Metric.h ttcr/msh2vtk_io.h ttcr/MSHReader.h \
 ttcr/Node2Dc.h ttcr/Node2Dcsp.h ttcr/Node2Dn.h ttcr/Node2Dnsp.h ttcr/Node3Dc.h ttcr/Node3Dcsp.h ttcr/Node3Dn.h \
 ttcr/Node3Dnsp.h ttcr/Node.h ttcr/Rcv2D.h ttcr/Rcv.h ttcr/Src2D.h ttcr/Src.h ttcr/structs_msh2vtk.h \
-ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h
+ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h ttcr/ctpl_stl.h
 
 ttcr3d : ttcr3d.o ttcr_io.o
 	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr3d.o -o ttcr3d
@@ -45,3 +45,9 @@ ttcr3d_raypath : ttcr3d_raypath.o ttcr_io.o
 
 ttcr3d_raypath.o : ttcr/ttcr3d_raypath.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr3d_raypath.cpp
+
+/home/giroux/bin/test_pool : main.o ttcr_io.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o main.o -o /home/giroux/bin/test_pool
+
+main.o : test_pool/main.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -c test_pool/main.cpp
