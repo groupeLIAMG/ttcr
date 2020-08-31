@@ -20,6 +20,10 @@ extern "C" {
 
 using namespace std;
 
+namespace ttcr {
+int verbose = 0;
+}
+
 void print_usage (std::ostream& stream, int exit_code)
 {
 	stream << "\n *** msh2vtk - Convert Gmsh format to VTK format ***\n\n";
@@ -101,7 +105,7 @@ void parse_input(int argc, char * argv[], input_parameters &ip ) {
 				
 			case  'v' : // -v or --verbose
 				no_option = false;
-				ip.verbose++;
+				ttcr::verbose++;
 				break;
 				
 			case  '?' : // The user specified an invalid option.
