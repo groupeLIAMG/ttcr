@@ -13,6 +13,8 @@
 
 
 // for temporary dynamic nodes
+// dynamic nodes are created in separate threads, so base class is created with
+// 1 as input argument for nThreads
 
 namespace ttcr {
     
