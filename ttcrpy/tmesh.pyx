@@ -365,6 +365,75 @@ cdef class Mesh3d:
             slown.push_back(1./velocity[i])
         self.grid.setSlowness(slown)
 
+    def get_s0(self, hypo, slowness=None):
+        """
+        get_s0(hypo, slowness=None)
+
+        Return slowness at source points
+
+        Parameters
+        ----------
+        hypo : np.ndarray with 5 columns
+            hypo holds source information, i.e.
+                - 1st column is event ID number
+                - 2nd column is origin time
+                - 3rd column is source easting
+                - 4th column is source northing
+                - 5th column is source elevation
+
+        slowness : np ndarray, shape (nparams, ) (optional)
+            slowness at grid nodes or cells (depending on cell_slowness)
+
+        Returns
+        -------
+        s0 : np.ndarray
+            slowness at source points
+        """
+
+        cdef Py_ssize_t n, nn
+
+        if hypo.shape[1] != 5:
+            raise ValueError('hypo should be npts x 5')
+        src = hypo[:,2:5]
+        evID = hypo[:,0]
+        eid = np.sort(np.unique(evID))
+        nTx = len(eid)
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+
+        i0 = np.empty((nTx,), dtype=np.int64)
+        for n in range(nTx):
+            for nn in range(evID.size):
+                if eid[n] == evID[nn]:
+                    i0[n] = nn
+                    break
+
+        cdef vector[vector[sxyz[double]]] vTx
+        vTx.resize(nTx)
+
+        iTx = []
+        i0 = 0
+        for n in range(nTx):
+            for nn in range(evID.size):
+                if eid[n] == evID[nn]:
+                    i0 = nn
+                    break
+            vTx[n].push_back(sxyz[double](src[i0,0], src[i0,1], src[i0,2]))
+
+        for i in eid:
+            ii = evID == i
+            iTx.append(np.nonzero(ii)[0])
+
+        s0 = np.zeros((src.shape[0],))
+
+        for n in range(nTx):
+            s = 0.0
+            for nn in range(vTx[n].size()):
+                s += self.grid.computeSlowness(vTx[n][nn])
+            s0[iTx[n]] = s/vTx[n].size()
+        return s0
+
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, return_rays=False):
         """
