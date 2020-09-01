@@ -58,3 +58,9 @@ old_stuff/
 ttcrpy/tmesh.cpp
 
 ttcr.xcodeproj/
+
+test_pool/
+
+main.o
+
+ttcr_io.o
