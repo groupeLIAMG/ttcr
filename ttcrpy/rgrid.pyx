@@ -324,6 +324,10 @@ cdef class Grid3d:
         else:
             return self._x.size() * self._y.size() * self._z.size()
 
+    def set_use_thread_pool(self, use_thread_pool):
+        """bool: use thread pool instead of parallel loop"""
+        self.grid.setUsePool(use_thread_pool)
+
     def get_number_of_nodes(self):
         """
         Returns
@@ -745,7 +749,6 @@ cdef class Grid3d:
                 s += self.grid.computeSlowness(vTx[n][nn])
             s0[iTx[n]] = s/vTx[n].size()
         return s0
-
 
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, compute_M=False,

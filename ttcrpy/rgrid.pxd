@@ -26,6 +26,7 @@ cdef extern from "typedefs.h" namespace "ttcr":
 
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
+        void setUsePool(bool up)
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void getSlowness(vector[T1]&) except +
