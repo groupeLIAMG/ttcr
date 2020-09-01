@@ -33,6 +33,8 @@
 #include <fstream>
 #include <thread>
 
+#include "ctpl_stl.h"
+
 #include "ttcr_t.h"
 
 namespace ttcr {
@@ -40,11 +42,68 @@ namespace ttcr {
     template<typename T1, typename T2>
     class Grid3D {
     public:
-        Grid3D(const bool ttrp, const size_t ncells, const size_t nt=1) :
-            nThreads(nt), tt_from_rp(ttrp),
-            neighbors(std::vector<std::vector<T2>>(ncells)) {}
+        Grid3D(const bool ttrp,
+               const size_t ncells,
+               const size_t nt=1,
+               const bool up=1) :
+            nThreads(nt), tt_from_rp(ttrp), usePool(up),
+            neighbors(std::vector<std::vector<T2>>(ncells)) {
+                if ( nThreads > 1 && usePool ) {
+                    pool.resize(static_cast<int>(nThreads));
+                }
+            }
 
         virtual ~Grid3D() {}
+        
+        // operators: for usage with thread pool
+        void operator()(int id, const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<sxyz<T1>>& Rx,
+                        std::vector<T1>& traveltimes) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, id);
+        }
+        
+        void operator()(int id, const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<sxyz<T1>>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<sxyz<T1>>>& r_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, r_data, id);
+        }
+        
+        void operator()(int id, const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<sxyz<T1>>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<sijv<T1>>>& m_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, m_data, id);
+        }
+        
+        void operator()(int id, const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<sxyz<T1>>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<sxyz<T1>>>& r_data,
+                        std::vector<std::vector<sijv<T1>>>& m_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, r_data, m_data, id);
+        }
+        
+        void operator()(int id, const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<sxyz<T1>>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<siv<T1>>>& l_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, l_data, id);
+        }
+        
+        void operator()(int id, const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<sxyz<T1>>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<sxyz<T1>>>& r_data,
+                        std::vector<std::vector<siv<T1>>>& l_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, id);
+        }
         
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
@@ -175,7 +234,18 @@ namespace ttcr {
         virtual void dump_secondary(std::ofstream&) const {}
 
         virtual T1 computeSlowness(const sxyz<T1>&) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+        }
+        
+        void setUsePool(const bool up) {
+            usePool = up;
+            if ( nThreads > 1 && usePool && pool.size() != nThreads ) {
+                pool.resize(static_cast<int>(nThreads));
+            }
+        }
+        
+        virtual void checkPts(const std::vector<sxyz<T1>>&) const {
+            throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
         
 #ifdef VTK
@@ -277,6 +347,9 @@ namespace ttcr {
         }
 
     private:
+        bool usePool;
+        mutable ctpl::thread_pool pool;
+        
         const std::vector<size_t> get_blk_size(const size_t nTx) const {
             size_t n_blk = nThreads < nTx ? nThreads : nTx;
             std::vector<size_t> blk_size ( n_blk, 0 );
@@ -515,6 +588,18 @@ namespace ttcr {
 
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], 0);
+        } else if ( nThreads == 1 ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], 0);
+            }
+        } else if ( usePool ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                pool.push(std::ref(*this),
+                          std::ref(Tx[n]),
+                          std::ref(t0[n]),
+                          std::ref(Rx[n]),
+                          std::ref(traveltimes[n]));
+            }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
@@ -546,6 +631,19 @@ namespace ttcr {
 
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], 0);
+        } else if ( nThreads == 1 ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], 0);
+            }
+        } else if ( usePool ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                pool.push(std::ref(*this),
+                          std::ref(Tx[n]),
+                          std::ref(t0[n]),
+                          std::ref(Rx[n]),
+                          std::ref(traveltimes[n]),
+                          std::ref(r_data[n]));
+            }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
@@ -577,6 +675,19 @@ namespace ttcr {
 
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], m_data[0], 0);
+        } else if ( nThreads == 1 ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], m_data[n], 0);
+            }
+        } else if ( usePool ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                pool.push(std::ref(*this),
+                          std::ref(Tx[n]),
+                          std::ref(t0[n]),
+                          std::ref(Rx[n]),
+                          std::ref(traveltimes[n]),
+                          std::ref(m_data[n]));
+            }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
@@ -609,6 +720,20 @@ namespace ttcr {
 
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], m_data[0], 0);
+        } else if ( nThreads == 1 ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], m_data[n], 0);
+            }
+        } else if ( usePool ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                pool.push(std::ref(*this),
+                          std::ref(Tx[n]),
+                          std::ref(t0[n]),
+                          std::ref(Rx[n]),
+                          std::ref(traveltimes[n]),
+                          std::ref(r_data[n]),
+                          std::ref(m_data[n]));
+            }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
@@ -640,6 +765,19 @@ namespace ttcr {
 
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], l_data[0], 0);
+        } else if ( nThreads == 1 ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], 0);
+            }
+        } else if ( usePool ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                pool.push(std::ref(*this),
+                          std::ref(Tx[n]),
+                          std::ref(t0[n]),
+                          std::ref(Rx[n]),
+                          std::ref(traveltimes[n]),
+                          std::ref(l_data[n]));
+            }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
@@ -674,6 +812,20 @@ namespace ttcr {
         }
         if ( Tx.size() == 1 ) {
             this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], l_data[0], 0);
+        } else if ( nThreads == 1 ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], 0);
+            }
+        } else if ( usePool ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                pool.push(std::ref(*this),
+                          std::ref(Tx[n]),
+                          std::ref(t0[n]),
+                          std::ref(Rx[n]),
+                          std::ref(traveltimes[n]),
+                          std::ref(r_data[n]),
+                          std::ref(l_data[n]));
+            }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
 
