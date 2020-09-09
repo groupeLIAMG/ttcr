@@ -251,7 +251,7 @@ cdef class Mesh3d:
         """bool: use thread pool instead of parallel loop"""
         self.grid.setUsePool(use_thread_pool)
 
-    def is_outsize(self, np.ndarray[np.double_t, ndim=2] pts):
+    def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
         """
         is_outside(pts)
 
@@ -683,7 +683,7 @@ cdef class Mesh3d:
         for n in range(self.no.size()):
             tPts.InsertPoint(n, self.no[n].x, self.no[n].y, self.no[n].z)
         ugrid.SetPoints(tPts)
-        tet = vtk.vtkTetra
+        tet = vtk.vtkTetra()
         for n in range(self.tet.size()):
             for nn in range(4):
                 tet.GetPointIds().SetId(nn, self.tet[n].i[nn])
