@@ -38,6 +38,8 @@
 #include "vtkXMLPolyDataWriter.h"
 #endif
 
+#include <Eigen/Dense>
+
 #include "MSHReader.h"
 #include "Rcv.h"
 
@@ -485,6 +487,29 @@ namespace ttcr {
         return false;
     }
 
+/**
+ * Compute pseudo-inverse of matrix A by SVD decomposition
+ *
+ */
+
+    template<typename T>
+    Eigen::Index pseudoInverse(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A,
+                               Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pi) {
+        
+        Eigen::JacobiSVD<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
+        //svd.setThreshold(1e-5);
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> S;
+        S.resize(svd.nonzeroSingularValues(), svd.nonzeroSingularValues());
+        S.setZero();
+
+        for ( size_t n=0; n<svd.nonzeroSingularValues(); ++n ) {
+            S(n, n) = 1.0 / svd.singularValues()(n);
+        }
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> U = svd.matrixU().block(0, 0, svd.matrixU().rows(), svd.nonzeroSingularValues());
+        pi = svd.matrixV() * S * U.transpose();
+        
+        return svd.rank();
+    }
 
 /**
  * Build reflectors from interfaces between two lithologies

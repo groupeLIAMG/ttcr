@@ -248,6 +248,17 @@ namespace ttcr {
             throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
         
+        virtual void computeD(const std::vector<sxyz<T1>> &pts,
+                              std::vector<std::vector<sijv<T1>>> &d_data) const {
+            throw std::runtime_error("Method computeD should be implemented in subclass");
+        }
+        
+        virtual void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
+                              const int order, const int taylorSeriesOrder,
+                              const bool weighting, const bool s0inside) const {
+            throw std::runtime_error("Method computeK should be implemented in subclass");
+        }
+        
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,
                                   const bool savePhysicalEntity=false) const {}

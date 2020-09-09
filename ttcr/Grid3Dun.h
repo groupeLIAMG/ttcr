@@ -55,6 +55,7 @@
 #include "vtkXMLUnstructuredGridWriter.h"
 #endif
 
+#include <Eigen/Dense>
 
 #include "Grad.h"
 #include "Grid3D.h"
@@ -187,6 +188,13 @@ namespace ttcr {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
         }
+        
+        void computeD(const std::vector<sxyz<T1>> &pts,
+                      std::vector<std::vector<sijv<T1>>> &d_data) const;
+        
+        void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
+                      const int order=2, const int taylorSeriesOrder=2,
+                      const bool weighting=1, const bool s0inside=0) const;
 
     protected:
         int rp_method;
@@ -332,6 +340,34 @@ namespace ttcr {
         void getNeighborNodes(const T2, std::set<NODE*>&) const;
         void getNeighborNodesAB(const std::vector<NODE*>&,
                                 std::vector<std::vector<std::array<NODE*,3>>>&) const;
+        
+        void getSurroundingNodes(const T2 nodeNumber,
+                                 const int minNbrPoints,
+                                 std::set<T2>& surroundingNodes) const;
+        
+        void buildA(const T2 nodeNumber,
+                    const std::set<T2>& surroundingNodes,
+                    const bool weighting,
+                    const int order,
+                    Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& A,
+                    Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic>& W) const;
+        
+        void buildA2(const T2 nodeNumber,
+                     const std::set<T2>& surroundingNodes,
+                     const bool weighting,
+                     const int order,
+                     Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& A,
+                     Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic>& W) const;
+
+        void fill_k_data(const T2 nodeNo, const std::set<T2>& surroundingNodes,
+                         const int i, const int j, const int k,
+                         const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& Acoefs,
+                         std::vector<std::vector<std::vector<siv<T1>>>>& k_data) const;
+
+        void fill_k_data2(const T2 nodeNo, const std::set<T2>& surroundingNodes,
+                          const int i, const int j, const int k,
+                          const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& Acoefs,
+                          std::vector<std::vector<std::vector<siv<T1>>>>& k_data) const;
 
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
         
@@ -8205,7 +8241,375 @@ namespace ttcr {
         }
         return found;
     }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::computeD(const std::vector<sxyz<T1>> &pts,
+                                        std::vector<std::vector<sijv<T1>>> &d_data) const {
     
+        if ( d_data.size() != pts.size() ) {
+            d_data.resize(pts.size());
+        }
+        for ( size_t i=0; i<pts.size(); ++i ) {
+            d_data[i].resize(0);
+        }
+        
+        for ( size_t np=0; np<pts.size(); ++np ) {
+            bool found = false;
+            for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
+                if ( this->nodes[nn].getDistance(pts[np])<small ) {
+                    found = true;
+                    d_data[np].push_back( {np, nn, 1.0} );
+                    break;
+                }
+            }
+            if ( !found ) {
+                T2 cellNO = this->getCellNo(pts[np]);
+                if ( cellNO==std::numeric_limits<T2>::max() ) {
+                    return;
+                }
+                std::array<T1,4> weights;
+                T1 sum (0.0);
+                for ( size_t n=0; n<4; ++n ) {
+                    weights[n] = 1.0/this->nodes[this->neighbors[cellNO][n]].getDistance(pts[np]);
+                    sum += weights[n];
+                }
+                for ( size_t n=0; n<4; ++n ) {
+                    weights[n] /= sum;
+                    d_data[np].push_back( {np, this->neighbors[cellNO][n], weights[n]});
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::getSurroundingNodes(const T2 nodeNumber,
+                                                   const int minNbrPoints,
+                                                   std::set<T2>& surroundingNodes) const {
+        std::set<T2> layer;
+        layer.insert(nodeNumber);
+        T1 dx, dy, dz;
+        int nzx, nzy, nzz;
+        nzx = nzy = nzz = 0;
+
+        while ( (surroundingNodes.size()+layer.size()-1) < minNbrPoints ) {
+            std::copy(layer.begin(), layer.end(), std::inserter(surroundingNodes, surroundingNodes.end()));
+            std::vector<T2> nextlayer;
+            for ( auto nn=layer.begin(); nn!=layer.end(); ++nn ) {
+                for ( auto cel=this->nodes[*nn].getOwners().begin(); cel!=this->nodes[*nn].getOwners().end(); cel++ ) {
+                    for ( size_t i=0; i<4; ++i ) {
+                        // first 4 nodes are the primary nodes
+                        if ( surroundingNodes.find( this->neighbors[*cel][i] ) != surroundingNodes.end() )
+                            continue;
+                        dx = (this->nodes[nodeNumber].getX() - this->nodes[this->neighbors[*cel][i]].getX());
+                        dy = (this->nodes[nodeNumber].getY() - this->nodes[this->neighbors[*cel][i]].getY());
+                        dz = (this->nodes[nodeNumber].getZ() - this->nodes[this->neighbors[*cel][i]].getZ());
+                        if ( dx == 0.0 )
+                            nzx++;
+                        if ( dy == 0.0 )
+                            nzy++;
+                        if ( dz == 0.0 )
+                            nzz++;
+                        if ( ( dx == 0.0 && nzx > 2 ) ||
+                            ( dy == 0.0 && nzy > 2 ) ||
+                            ( dz == 0.0 && nzz > 2 ) ) {
+                            // allow only 2 nodes on X, Y or Z planes (typically external faces of domain)
+                            //   as more lead to poorly conditionned system
+                            continue;
+                        }
+                        nextlayer.push_back(this->neighbors[*cel][i]);
+                        
+                    }
+                }
+            }
+            if ( nextlayer.size() == 0 ) {
+                throw std::runtime_error("Problem finding surrounding nodes");
+            }
+            layer.clear();
+            std::copy( nextlayer.begin(), nextlayer.end(), std::inserter(layer,layer.end()));
+        }
+        std::copy(layer.begin(), layer.end(), std::inserter(surroundingNodes,surroundingNodes.end()));
+        surroundingNodes.erase(nodeNumber);
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::buildA(const T2 nodeNumber,
+                                      const std::set<T2>& surroundingNodes,
+                                      const bool weighting,
+                                      const int order,
+                                      Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& A,
+                                      Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic>& W) const {
+        
+        size_t npt = surroundingNodes.size();
+        if ( order == 2 ) {
+            A.resize(npt, 9);
+        } else {
+            A.resize(npt, 3);
+        }
+        
+        if ( weighting ) {
+            W.setZero(npt, npt);
+            size_t i = 0;
+            for ( auto nd=surroundingNodes.begin();nd!=surroundingNodes.end(); ++nd ) {
+                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
+                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
+                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+                
+                if ( order == 2 ) {
+                    A(i,3) = 0.5*A(i,0)*A(i,0);
+                    A(i,4) = 0.5*A(i,1)*A(i,1);
+                    A(i,5) = 0.5*A(i,2)*A(i,2);
+                    
+                    A(i,6) = A(i,0)*A(i,1);
+                    A(i,7) = A(i,0)*A(i,2);
+                    A(i,8) = A(i,1)*A(i,2);
+                }
+                
+                W(i,i) = sqrt(1./(A(i,0)*A(i,0) + A(i,1)*A(i,1) + A(i,2)*A(i,2)));
+                i++;
+            }
+            A = W*A;
+        } else {
+            size_t i = 0;
+            for ( auto nd=surroundingNodes.begin(); nd!=surroundingNodes.end(); ++nd ) {
+                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
+                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
+                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+
+                if ( order == 2 ) {
+                    A(i,3) = 0.5*A(i,0)*A(i,0);
+                    A(i,4) = 0.5*A(i,1)*A(i,1);
+                    A(i,5) = 0.5*A(i,2)*A(i,2);
+                    
+                    A(i,6) = A(i,0)*A(i,1);
+                    A(i,7) = A(i,0)*A(i,2);
+                    A(i,8) = A(i,1)*A(i,2);
+                }
+                
+                i++;
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::buildA2(const T2 nodeNumber,
+                                       const std::set<T2>& surroundingNodes,
+                                       const bool weighting,
+                                       const int order,
+                                       Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& A,
+                                       Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic>& W) const {
+
+        size_t npt = surroundingNodes.size();
+        if ( order == 2 ) {
+            A.resize(npt, 10);
+        } else {
+            A.resize(npt, 4);
+        }
+
+        if ( weighting ) {
+            W.setZero(npt, npt);
+            size_t i = 0;
+            for ( auto nd=surroundingNodes.begin();nd!=surroundingNodes.end(); ++nd ) {
+                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
+                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
+                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+
+                if ( order == 1 ) {
+                    A(i,3) = 1.0;
+                } else {  // order == 2
+                    A(i,3) = 0.5*A(i,0)*A(i,0);
+                    A(i,4) = 0.5*A(i,1)*A(i,1);
+                    A(i,5) = 0.5*A(i,2)*A(i,2);
+
+                    A(i,6) = A(i,0)*A(i,1);
+                    A(i,7) = A(i,0)*A(i,2);
+                    A(i,8) = A(i,1)*A(i,2);
+
+                    A(i,9) = 1.0;
+                }
+
+                W(i,i) = sqrt(1./(A(i,0)*A(i,0) + A(i,1)*A(i,1) + A(i,2)*A(i,2)));
+                i++;
+            }
+            A = W*A;
+        } else {
+            size_t i = 0;
+            for ( auto nd=surroundingNodes.begin(); nd!=surroundingNodes.end(); ++nd ) {
+                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
+                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
+                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+
+                if ( order == 1 ) {
+                    A(i,3) = 1.0;
+                } else {  // order == 2
+                    A(i,3) = 0.5*A(i,0)*A(i,0);
+                    A(i,4) = 0.5*A(i,1)*A(i,1);
+                    A(i,5) = 0.5*A(i,2)*A(i,2);
+
+                    A(i,6) = A(i,0)*A(i,1);
+                    A(i,7) = A(i,0)*A(i,2);
+                    A(i,8) = A(i,1)*A(i,2);
+
+                    A(i,9) = 1.0;
+                }
+
+                i++;
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::fill_k_data(const T2 nodeNo,
+                                           const std::set<T2>& surroundingNodes,
+                                           const int i,
+                                           const int j,
+                                           const int k,
+                                           const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& Acoefs,
+                                           std::vector<std::vector<std::vector<siv<T1>>>>& k_data) const {
+        k_data[0][nodeNo].resize(0);
+        k_data[1][nodeNo].resize(0);
+        k_data[2][nodeNo].resize(0);
+        std::array<T1,3> sum{0., 0., 0.};
+        siv<T1> coef;
+
+        size_t c = 0;
+        for ( auto nd=surroundingNodes.begin(); nd!=surroundingNodes.end(); ++nd ) {
+            coef.i = *nd;
+            coef.v = Acoefs(i, c);
+            sum[0] += Acoefs(i, c);
+            k_data[0][nodeNo].push_back(coef);
+            coef.v = Acoefs(j, c);
+            sum[1] += Acoefs(j, c);
+            k_data[1][nodeNo].push_back(coef);
+            coef.v = Acoefs(k, c);
+            sum[2] += Acoefs(k, c);
+            k_data[2][nodeNo].push_back(coef);
+            c++;
+        }
+        coef.i = nodeNo;
+        coef.v = -sum[0];
+        k_data[0][nodeNo].push_back(coef);
+        coef.v = -sum[1];
+        k_data[1][nodeNo].push_back(coef);
+        coef.v = -sum[2];
+        k_data[2][nodeNo].push_back(coef);
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::fill_k_data2(const T2 nodeNo,
+                                            const std::set<T2>& surroundingNodes,
+                                            const int i,
+                                            const int j,
+                                            const int k,
+                                            const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& Acoefs,
+                                            std::vector<std::vector<std::vector<siv<T1>>>>& k_data) const {
+        k_data[0][nodeNo].resize(0);
+        k_data[1][nodeNo].resize(0);
+        k_data[2][nodeNo].resize(0);
+        siv<T1> coef;
+
+        size_t c = 0;
+        for ( auto nd=surroundingNodes.begin(); nd!=surroundingNodes.end(); ++nd ) {
+            coef.i = *nd;
+            coef.v = Acoefs(i, c);
+            k_data[0][nodeNo].push_back(coef);
+            coef.v = Acoefs(j, c);
+            k_data[1][nodeNo].push_back(coef);
+            coef.v = Acoefs(k, c);
+            k_data[2][nodeNo].push_back(coef);
+            c++;
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::computeK(std::vector<std::vector<std::vector<siv<T1>>>>& k_data,
+                                        const int order,
+                                        const int taylorSeriesOrder,
+                                        const bool weighting,
+                                        const bool s0inside) const {
+        if ( order!=1 && order!=2 ) {
+            throw std::runtime_error("order in computeK should be 1 or 2");
+        }
+        if ( taylorSeriesOrder!=1 && taylorSeriesOrder!=2 ) {
+            throw std::runtime_error("taylorSeriesOrder in computeK should be 1 or 2");
+        }
+        if ( order == 2 && taylorSeriesOrder == 1 ) {
+            throw std::runtime_error("2nd order derivative operator requires 2nd order Taylor series expansion");
+        }
+
+        if ( k_data.size() != 3 ) {
+            k_data.resize(3);
+        }
+
+        k_data[0].resize(nPrimary);
+        k_data[1].resize(nPrimary);
+        k_data[2].resize(nPrimary);
+        
+        int minNbrPoints = 4;
+        if ( taylorSeriesOrder == 2 ) {
+            minNbrPoints = 10;
+        }
+        
+        int neededRank = 9;
+        if ( taylorSeriesOrder == 1 ) {
+            neededRank = 3;
+        }
+        if ( s0inside ) {
+            neededRank += 1;
+        }
+        
+        for ( T2 n=0; n<nPrimary; ++n ) {
+            
+            // find surrounding nodes
+            std::set<T2> surroundingNodes;
+            getSurroundingNodes(n, minNbrPoints, surroundingNodes);
+            
+            Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> Acoefs;
+            Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> A;
+            Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic> W;
+
+            if ( s0inside ) {
+                buildA2(n, surroundingNodes, weighting, taylorSeriesOrder, A, W);
+            } else {
+                buildA(n, surroundingNodes, weighting, taylorSeriesOrder, A, W);
+            }
+
+            Eigen::Index rank = pseudoInverse(A, Acoefs);
+
+            if ( rank < neededRank ) {
+                surroundingNodes.clear();
+                getSurroundingNodes(n, 2*minNbrPoints, surroundingNodes);
+                if ( s0inside ) {
+                    buildA2(n, surroundingNodes, weighting, taylorSeriesOrder, A, W);
+                } else {
+                    buildA(n, surroundingNodes, weighting, taylorSeriesOrder, A, W);
+                }
+                rank = pseudoInverse(A, Acoefs);
+                if ( rank < neededRank ) {
+                    throw std::runtime_error("Mesh appears poorly conditionned, unable to compute matrix K");
+                }
+            }
+
+            if ( weighting ) {
+                Acoefs *= W;
+            }
+
+            if ( order == 1 ) {
+                if ( s0inside ) {
+                    fill_k_data2(n, surroundingNodes, 0, 1, 2, Acoefs, k_data);
+                } else {
+                    fill_k_data(n, surroundingNodes, 0, 1, 2, Acoefs, k_data);
+                }
+            } else {  // order == 2
+                if ( s0inside ) {
+                    fill_k_data2(n, surroundingNodes, 3, 4, 5, Acoefs, k_data);
+                } else {
+                    fill_k_data(n, surroundingNodes, 3, 4, 5, Acoefs, k_data);
+                }
+            }
+            
+        }  // end of for nnodes
+    }
+
 }
 
 #endif

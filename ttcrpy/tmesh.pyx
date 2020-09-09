@@ -35,6 +35,9 @@ from ttcrpy.tmesh cimport Grid3D, Grid3Ducfs, Grid3Ducsp, Grid3Ducdsp, \
 cdef extern from "verbose.h" namespace "ttcr" nogil:
     void setVerbose(int)
 
+cdef extern from "utils_cython.h":
+    int build_matrix_siv[T](size_t, size_t, vector[vector[siv[T]]]&, object)
+
 def set_verbose(v):
     """Set verbosity level for C++ code
 
@@ -364,6 +367,104 @@ cdef class Mesh3d:
         for i in range(velocity.size):
             slown.push_back(1./velocity[i])
         self.grid.setSlowness(slown)
+
+    def compute_D(self, coord):
+        """
+        compute_D(coord)
+
+        Return matrix of interpolation weights for velocity data points
+        constraint
+
+        Parameters
+        ----------
+        coord : np.ndarray, shape (npts, 3)
+            coordinates of data points
+
+        Returns
+        -------
+        D : scipy csr_matrix, shape (npts, nparams)
+            Matrix of interpolation weights
+        """
+        if self.is_outside(coord):
+            raise ValueError('Velocity data point outside grid')
+        cdef vector[sxyz[double]] vpts
+        for n in range(coord.shape[0]):
+            vpts.push_back(sxyz[double](coord[n, 0], coord[n, 1], coord[n, 2]))
+
+        cdef vector[vector[sijv[double]]] d_data
+
+        self.grid.computeD(vpts, d_data)
+
+        nnz = 0
+        for ni in range(d_data.size()):
+            nnz += d_data[ni].size()
+
+        MM = vpts.size()
+        NN = self.nparams
+        indptr = np.empty((MM+1,), dtype=np.int64)
+        indices = np.empty((nnz,), dtype=np.int64)
+        val = np.empty((nnz,))
+
+        k = 0
+        for i in range(MM):
+            indptr[i] = k
+            for j in range(NN):
+                for nn in range(d_data[i].size()):
+                    if d_data[i][nn].i == i and d_data[i][nn].j == j:
+                        indices[k] = j
+                        val[k] = d_data[i][nn].v
+                        k += 1
+
+        indptr[MM] = k
+        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+
+    def compute_K(self, order=2, taylor_order=2, weighting=True, squared=True,
+                  s0inside=False):
+        """
+        Compute smoothing matrices (spatial derivative)
+
+        Parameters
+        ----------
+        order : int
+            order of derivative (1 or 2, 2 by default)
+        taylor_order : int
+            order of taylors series expansion (1 or 2, 2 by default)
+        weighting : bool
+            apply inverse distance weighting (True by default)
+        squared : bool
+            Second derivative evaluated by taking the square of first
+            derivative.  Applied only if order == 2 (True by default)
+        s0inside : bool
+            (experimental) ignore slowness value at local node (value is a
+            filtered estimate) (False by default)
+
+        Returns
+        -------
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+            matrices for derivatives along x, y, & z
+        """
+
+        cdef int o = order
+        cdef int to = taylor_order
+        cdef bool w = weighting
+        cdef bool s = s0inside
+        cdef vector[vector[vector[siv[double]]]] k_data
+
+        if order == 2 and squared:
+            o = 1
+        self.grid.computeK(k_data, o, to, w, s)
+
+        K = []
+        cdef size_t MM = self.nparams
+        cdef size_t NN = self.nparams
+        for nk in range(3):
+            m_tuple = ([0.0], [0.0], [0.0])
+            build_matrix_siv(MM, NN, k_data[nk], m_tuple)
+            K.append( sp.csr_matrix(m_tuple, shape=(MM,NN)) )
+            if order == 2 and squared:
+                K[-1] = K[-1] * K[-1]
+
+        return tuple(K)
 
     def get_s0(self, hypo, slowness=None):
         """
