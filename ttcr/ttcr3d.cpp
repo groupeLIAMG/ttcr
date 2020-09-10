@@ -77,7 +77,7 @@ int body(const input_parameters &par) {
     if ( blk_size == 0 ) blk_size++;
     
     
-    // ? Find the generic file name of the input model?
+    // Find the generic file name of the input model
 	string::size_type idx;  // can hold a string of any length
     idx = par.modelfile.rfind('.');
     string extension = "";

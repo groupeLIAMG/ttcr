@@ -35,6 +35,9 @@ from ttcrpy.tmesh cimport Grid3D, Grid3Ducfs, Grid3Ducsp, Grid3Ducdsp, \
 cdef extern from "verbose.h" namespace "ttcr" nogil:
     void setVerbose(int)
 
+cdef extern from "utils_cython.h":
+    int build_matrix_siv[T](size_t, size_t, vector[vector[siv[T]]]&, object)
+
 def set_verbose(v):
     """Set verbosity level for C++ code
 
@@ -247,6 +250,36 @@ cdef class Mesh3d:
         else:
             return self.no.size()
 
+    def set_use_thread_pool(self, use_thread_pool):
+        """bool: use thread pool instead of parallel loop"""
+        self.grid.setUsePool(use_thread_pool)
+
+    def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
+        """
+        is_outside(pts)
+
+        Check if points are outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray, shape(npts, 3)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool:
+            True if at least one point outside grid
+        """
+        cdef vector[sxyz[double]] vpts
+        for n in range(pts.shape[0]):
+            vpts.push_back(sxyz[double](pts[n, 0], pts[n, 1], pts[n, 2]))
+        try:
+            self.grid.checkPts(vpts)  # throws an except if 1 pt is outside
+        except RuntimeError:
+            return True
+
+        return False
+
     def get_number_of_nodes(self):
         """
         Returns
@@ -335,11 +368,179 @@ cdef class Mesh3d:
             slown.push_back(1./velocity[i])
         self.grid.setSlowness(slown)
 
+    def compute_D(self, coord):
+        """
+        compute_D(coord)
+
+        Return matrix of interpolation weights for velocity data points
+        constraint
+
+        Parameters
+        ----------
+        coord : np.ndarray, shape (npts, 3)
+            coordinates of data points
+
+        Returns
+        -------
+        D : scipy csr_matrix, shape (npts, nparams)
+            Matrix of interpolation weights
+        """
+        if self.is_outside(coord):
+            raise ValueError('Velocity data point outside grid')
+        cdef vector[sxyz[double]] vpts
+        for n in range(coord.shape[0]):
+            vpts.push_back(sxyz[double](coord[n, 0], coord[n, 1], coord[n, 2]))
+
+        cdef vector[vector[sijv[double]]] d_data
+
+        self.grid.computeD(vpts, d_data)
+
+        nnz = 0
+        for ni in range(d_data.size()):
+            nnz += d_data[ni].size()
+
+        MM = vpts.size()
+        NN = self.nparams
+        indptr = np.empty((MM+1,), dtype=np.int64)
+        indices = np.empty((nnz,), dtype=np.int64)
+        val = np.empty((nnz,))
+
+        k = 0
+        for i in range(MM):
+            indptr[i] = k
+            for j in range(NN):
+                for nn in range(d_data[i].size()):
+                    if d_data[i][nn].i == i and d_data[i][nn].j == j:
+                        indices[k] = j
+                        val[k] = d_data[i][nn].v
+                        k += 1
+
+        indptr[MM] = k
+        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+
+    def compute_K(self, order=2, taylor_order=2, weighting=True, squared=True,
+                  s0inside=False):
+        """
+        Compute smoothing matrices (spatial derivative)
+
+        Parameters
+        ----------
+        order : int
+            order of derivative (1 or 2, 2 by default)
+        taylor_order : int
+            order of taylors series expansion (1 or 2, 2 by default)
+        weighting : bool
+            apply inverse distance weighting (True by default)
+        squared : bool
+            Second derivative evaluated by taking the square of first
+            derivative.  Applied only if order == 2 (True by default)
+        s0inside : bool
+            (experimental) ignore slowness value at local node (value is a
+            filtered estimate) (False by default)
+
+        Returns
+        -------
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+            matrices for derivatives along x, y, & z
+        """
+
+        cdef int o = order
+        cdef int to = taylor_order
+        cdef bool w = weighting
+        cdef bool s = s0inside
+        cdef vector[vector[vector[siv[double]]]] k_data
+
+        if order == 2 and squared:
+            o = 1
+        self.grid.computeK(k_data, o, to, w, s)
+
+        K = []
+        cdef size_t MM = self.nparams
+        cdef size_t NN = self.nparams
+        for nk in range(3):
+            m_tuple = ([0.0], [0.0], [0.0])
+            build_matrix_siv(MM, NN, k_data[nk], m_tuple)
+            K.append( sp.csr_matrix(m_tuple, shape=(MM,NN)) )
+            if order == 2 and squared:
+                K[-1] = K[-1] * K[-1]
+
+        return tuple(K)
+
+    def get_s0(self, hypo, slowness=None):
+        """
+        get_s0(hypo, slowness=None)
+
+        Return slowness at source points
+
+        Parameters
+        ----------
+        hypo : np.ndarray with 5 columns
+            hypo holds source information, i.e.
+                - 1st column is event ID number
+                - 2nd column is origin time
+                - 3rd column is source easting
+                - 4th column is source northing
+                - 5th column is source elevation
+
+        slowness : np ndarray, shape (nparams, ) (optional)
+            slowness at grid nodes or cells (depending on cell_slowness)
+
+        Returns
+        -------
+        s0 : np.ndarray
+            slowness at source points
+        """
+
+        cdef Py_ssize_t n, nn
+
+        if hypo.shape[1] != 5:
+            raise ValueError('hypo should be npts x 5')
+        src = hypo[:,2:5]
+        evID = hypo[:,0]
+        eid = np.sort(np.unique(evID))
+        nTx = len(eid)
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+
+        i0 = np.empty((nTx,), dtype=np.int64)
+        for n in range(nTx):
+            for nn in range(evID.size):
+                if eid[n] == evID[nn]:
+                    i0[n] = nn
+                    break
+
+        cdef vector[vector[sxyz[double]]] vTx
+        vTx.resize(nTx)
+
+        iTx = []
+        i0 = 0
+        for n in range(nTx):
+            for nn in range(evID.size):
+                if eid[n] == evID[nn]:
+                    i0 = nn
+                    break
+            vTx[n].push_back(sxyz[double](src[i0,0], src[i0,1], src[i0,2]))
+
+        for i in eid:
+            ii = evID == i
+            iTx.append(np.nonzero(ii)[0])
+
+        s0 = np.zeros((src.shape[0],))
+
+        for n in range(nTx):
+            s = 0.0
+            for nn in range(vTx[n].size()):
+                s += self.grid.computeSlowness(vTx[n][nn])
+            s0[iTx[n]] = s/vTx[n].size()
+        return s0
+
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
-                 aggregate_src=False, return_rays=False):
+                 aggregate_src=False, compute_L=False, return_rays=False):
         """
         raytrace(source, rcv, slowness=None, thread_no=None,
-              aggregate_src=False, return_rays=False) -> tt, rays
+                 aggregate_src=False, compute_L=False,
+                 return_rays=False) -> tt, rays, L
 
         Perform raytracing
 
@@ -358,6 +559,8 @@ cdef class Mesh3d:
             sources and value of n_threads in constructor
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
+        compute_L : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to slowness
         return_rays : bool (False by default)
             Return raypaths
 
@@ -367,6 +570,11 @@ cdef class Mesh3d:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
+        L :  :obj:`list` of :obj:`csr_matrix`  or  scipy csr_matrix
+            Matrix of partial derivative of travel time w/r to slowness.
+            if input argument source has 5 columns or if slowness is defined at
+            nodes, L is a list of matrices and the number of matrices is equal
+            to the number of sources otherwise, L is a single csr_matrix
 
         Notes
         -----
@@ -421,6 +629,12 @@ cdef class Mesh3d:
         if src.shape[1] != 3 or rcv.shape[1] != 3:
             raise ValueError('src and rcv should be ndata x 3')
 
+        if self.is_outside(src):
+            raise ValueError('Source point outside grid')
+
+        if self.is_outside(rcv):
+            raise ValueError('Receiver outside grid')
+
         if slowness is not None:
             self.set_slowness(slowness)
 
@@ -430,6 +644,8 @@ cdef class Mesh3d:
         cdef vector[vector[double]] vtt
 
         cdef vector[vector[vector[sxyz[double]]]] r_data
+        cdef vector[vector[vector[siv[double]]]] l_data
+        cdef vector[vector[vector[sijv[double]]]] m_data
         cdef size_t thread_nb
 
         cdef int i, n, n2, nt
@@ -438,6 +654,11 @@ cdef class Mesh3d:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        if compute_L and self.cell_slowness:
+            raise NotImplementedError('compute_L not implemented for mesh with slowness defined in cells')
+        elif compute_L and not self.cell_slowness:
+            m_data.resize(nTx)
+
         if return_rays:
             r_data.resize(nTx)
 
@@ -496,9 +717,24 @@ cdef class Mesh3d:
 
         tt = np.zeros((rcv.shape[0],))
         if nTx < self._n_threads or self._n_threads == 1:
-            if return_rays==False:
+            if compute_L==False and return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+            elif compute_L and return_rays:
+                if self.cell_slowness:
+                    # TODO: implement this in C++ codebase!
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                else:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
+            elif compute_L:
+                if self.cell_slowness:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                else:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
             else:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
@@ -506,6 +742,8 @@ cdef class Mesh3d:
         elif thread_no is not None:
             # we should be here for just one event
             assert nTx == 1
+            # normally we should not need to compute M or L
+            assert compute_L is False
             thread_nb = thread_no
 
             if return_rays:
@@ -529,8 +767,18 @@ cdef class Mesh3d:
                 return tt
 
         else:
-            if return_rays==False:
+            if compute_L==False and return_rays==False:
                 self.grid.raytrace(vTx, vt0, vRx, vtt)
+            elif compute_L and return_rays:
+                if self.cell_slowness:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
+            elif compute_L:
+                if self.cell_slowness:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
             else:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
@@ -551,8 +799,38 @@ cdef class Mesh3d:
                 for nt in range(vtt[n].size()):
                     rays[iRx[n][nt]] = r[nt]
 
-        if return_rays==False:
+        if compute_L and not self.cell_slowness:
+            # we return array of matrices, one for each event
+            L = []
+            for n in range(nTx):
+                nnz = 0
+                for ni in range(m_data[n].size()):
+                    nnz += m_data[n][ni].size()
+                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                indices = np.empty((nnz,), dtype=np.int64)
+                val = np.empty((nnz,))
+
+                k = 0
+                MM = vRx[n].size()
+                NN = self.get_number_of_nodes()
+                for i in range(MM):
+                    indptr[i] = k
+                    for j in range(NN):
+                        for nn in range(m_data[n][i].size()):
+                            if m_data[n][i][nn].i == i and m_data[n][i][nn].j == j:
+                                indices[k] = j
+                                val[k] = m_data[n][i][nn].v
+                                k += 1
+
+                indptr[MM] = k
+                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+
+        if compute_L==False and return_rays==False:
             return tt
+        elif compute_L and return_rays:
+            return tt, rays, L
+        elif compute_L:
+            return tt, L
         else:
             return tt, rays
 
@@ -584,7 +862,7 @@ cdef class Mesh3d:
         for n in range(self.no.size()):
             tPts.InsertPoint(n, self.no[n].x, self.no[n].y, self.no[n].z)
         ugrid.SetPoints(tPts)
-        tet = vtk.vtkTetra
+        tet = vtk.vtkTetra()
         for n in range(self.tet.size()):
             for nn in range(4):
                 tet.GetPointIds().SetId(nn, self.tet[n].i[nn])
