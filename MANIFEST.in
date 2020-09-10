@@ -1,4 +1,5 @@
 include ttcrpy/*.pyx
+include ttcrpy/*.pyd
 include ttcrpy/*ttcr.h
 include ttcr/Cell.h
 include ttcr/Grad.h
@@ -12,6 +13,7 @@ include ttcr/Src*.h
 include ttcr/structs_ttcr.h
 include ttcr/ttcr_t.h
 include ttcr/utils.h
+include ttcr/ctpl_stl.h
 include boost_1_72_0/LICENSE_1_0.txt
 include boost_1_72_0/README.md
 recursive-include boost_1_72_0/boost/math *
