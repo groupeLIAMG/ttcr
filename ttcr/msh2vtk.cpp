@@ -51,7 +51,7 @@ int main(int argc, char * argv[])
     int d = reader.get2Ddim();
 	if ( d == 1 || d == 2 ) {
 		
-		if ( par.verbose ) {
+		if ( ttcr::verbose ) {
 			cout << "Number of nodes: " << reader.getNumberOfNodes() << '\n';
 			cout << "Number of elements: " << reader.getNumberOfElements() << '\n';
 			cout << "Number of media: " << reader.getPhysicalNames(2).size() << '\n';
@@ -122,7 +122,7 @@ int main(int argc, char * argv[])
 			}
 			fin.close();
 			
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				for ( size_t n=0; n<reader.getPhysicalNames(2).size(); ++n ) {
 					cout << "  Velocity for " << reader.getPhysicalNames(2)[n] << " is "
 					<< 1./slownesses[ reader.getPhysicalNames(2)[n] ] << '\n';
@@ -135,7 +135,7 @@ int main(int argc, char * argv[])
 		}
 
 		
-		if ( par.verbose ) {
+		if ( ttcr::verbose ) {
 			cout << "Creating grid ... ";
 			cout.flush();
 		}
@@ -145,7 +145,7 @@ int main(int argc, char * argv[])
 		else
 			g = new Grid2Dunfm<double,uint32_t, Node2Dn<double,uint32_t>,sxz<double>>(nodes, triangles);
 		
-		if ( par.verbose ) {
+		if ( ttcr::verbose ) {
 			cout << "done.\n";
 		}
         try {
@@ -157,21 +157,21 @@ int main(int argc, char * argv[])
 		
 		if ( par.rectilinear ) {
 			double d[] = { par.d, par.d, par.d };
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "Saving " << par.vtkFile << " ... ";
 				cout.flush();
 			}
 			g->saveModelVTR(par.vtkFile, d, par.saveSlowness);
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "done.\n";
 			}
 		} else {
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "Saving " << par.vtkFile << " ... ";
 				cout.flush();
 			}
 			g->saveModelVTU(par.vtkFile, par.saveSlowness, true);
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "done.\n";
 			}
 		}
@@ -211,7 +211,7 @@ int main(int argc, char * argv[])
 					reflector.add_coord( nodes[*it] );
 				}
 				//				cout << '\n';
-				if ( par.verbose ) cout << "Saving reflector file " << fname << '\n';
+				if ( ttcr::verbose ) cout << "Saving reflector file " << fname << '\n';
 				reflector.save_rcvfile();
 			}
 		}
@@ -220,7 +220,7 @@ int main(int argc, char * argv[])
 				
 	} else {
 		
-		if ( par.verbose ) {
+		if ( ttcr::verbose ) {
 			cout << "Number of nodes: " << reader.getNumberOfNodes() << '\n';
 			cout << "Number of elements: " << reader.getNumberOfElements() << '\n';
 			cout << "Number of media: " << reader.getPhysicalNames(3).size() << '\n';
@@ -291,7 +291,7 @@ int main(int argc, char * argv[])
 			}
 			fin.close();
 			
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				for ( size_t n=0; n<reader.getPhysicalNames().size(); ++n ) {
 					cout << "  Velocity for " << reader.getPhysicalNames()[n] << " is "
 					<< 1./slownesses[ reader.getPhysicalNames()[n] ] << '\n';
@@ -303,7 +303,7 @@ int main(int argc, char * argv[])
 		}
 		
 		Grid3D<double, uint32_t> *g = nullptr;
-		if ( par.verbose ) {
+		if ( ttcr::verbose ) {
 			cout << "Creating grid ... ";
 			cout.flush();
 		}
@@ -311,7 +311,7 @@ int main(int argc, char * argv[])
 			g = new Grid3Ducfm<double, uint32_t>(nodes, tetrahedra, false, false, false, 1.e-5);
 		else
 			g = new Grid3Dunfm<double, uint32_t>(nodes, tetrahedra, false, false, false, 1.e-5);
-		if ( par.verbose ) {
+		if ( ttcr::verbose ) {
 			cout << "done.\n";
 		}
         try {
@@ -323,21 +323,21 @@ int main(int argc, char * argv[])
 		
 		if ( par.rectilinear ) {
 			double d[] = { par.d, par.d, par.d };
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "Saving " << par.vtkFile << " ... ";
 				cout.flush();
 			}
-			g->saveModelVTR(par.vtkFile, d, par.saveSlowness, par.verbose);
-			if ( par.verbose ) {
+			g->saveModelVTR(par.vtkFile, d, par.saveSlowness);
+			if ( ttcr::verbose ) {
 				cout << "done.\n";
 			}
 		} else {
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "Saving " << par.vtkFile << " ... ";
 				cout.flush();
 			}
 			g->saveModelVTU(par.vtkFile, par.saveSlowness, true);
-			if ( par.verbose ) {
+			if ( ttcr::verbose ) {
 				cout << "done.\n";
 			}
 		}
@@ -376,7 +376,7 @@ int main(int argc, char * argv[])
 					reflector.add_coord( nodes[*it] );
 				}
 				
-				if ( par.verbose ) cout << "Saving reflector file " << fname << '\n';
+				if ( ttcr::verbose ) cout << "Saving reflector file " << fname << '\n';
 				reflector.save_rcvfile();
 			}
 			

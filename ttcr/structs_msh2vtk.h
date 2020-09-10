@@ -17,7 +17,6 @@ struct input_parameters {
 	bool saveSlowness;
 	bool saveReflectors;
 	bool saveXYZ;
-	int verbose;
 	int nSecondary;
 	double d;
 	std::string mshFile;
@@ -26,7 +25,7 @@ struct input_parameters {
 	std::string sloFile;
 	
 	input_parameters() : rectilinear(false), crt(false), saveSlowness(false),
-	saveReflectors(false), saveXYZ(false), verbose(0), nSecondary(0), d(0.0),
+	saveReflectors(false), saveXYZ(false), nSecondary(0), d(0.0),
 	mshFile(""), vtkFile(""), velFile(""), sloFile("") {}
 };
 

@@ -114,6 +114,21 @@ namespace ttcr {
                       const size_t=0) const;
         
         void raytrace(const std::vector<sxyz<T1>>&,
+                      const std::vector<T1>& ,
+                      const std::vector<sxyz<T1>>&,
+                      std::vector<T1>&,
+                      std::vector<std::vector<sxyz<T1>>>&,
+                      std::vector<std::vector<sijv<T1>>>&,
+                      const size_t=0) const;
+        
+        void raytrace(const std::vector<sxyz<T1>>&,
+                      const std::vector<T1>& ,
+                      const std::vector<sxyz<T1>>&,
+                      std::vector<T1>&,
+                      std::vector<std::vector<sijv<T1>>>&,
+                      const size_t=0) const;
+        
+        void raytrace(const std::vector<sxyz<T1>>&,
                       const std::vector<T1>&,
                       const std::vector<const std::vector<sxyz<T1>>*>&,
                       std::vector<std::vector<T1>*>&,
@@ -907,6 +922,69 @@ namespace ttcr {
             for (size_t n=0; n<Rx.size(); ++n) {
                 this->getRaypath_blti(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
             }
+        }
+    }
+
+    template<typename T1, typename T2>
+    void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                      const std::vector<T1>& t0,
+                                      const std::vector<sxyz<T1>>& Rx,
+                                      std::vector<T1>& traveltimes,
+                                      std::vector<std::vector<sxyz<T1>>>& r_data,
+                                      std::vector<std::vector<sijv<T1>>>& m_data,
+                                      const size_t threadNo) const {
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( r_data.size() != Rx.size() ) {
+            r_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+            r_data[ni].resize( 0 );
+        }
+        if ( m_data.size() != Rx.size() ) {
+            m_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<m_data.size(); ++ni ) {
+            m_data[ni].resize( 0 );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+
+        if ( this->rp_method < 3 ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], n, traveltimes[n], threadNo);
+            }
+        } else {
+            throw std::runtime_error("BLTI method not implemented");
+        }
+    }
+
+    template<typename T1, typename T2>
+    void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+                                      const std::vector<T1>& t0,
+                                      const std::vector<sxyz<T1>>& Rx,
+                                      std::vector<T1>& traveltimes,
+                                      std::vector<std::vector<sijv<T1>>>& m_data,
+                                      const size_t threadNo) const {
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( m_data.size() != Rx.size() ) {
+            m_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<m_data.size(); ++ni ) {
+            m_data[ni].resize( 0 );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+
+        if ( this->rp_method < 3 ) {
+            for (size_t n=0; n<Rx.size(); ++n) {
+                this->getRaypath(Tx, t0, Rx[n], m_data[n], n, traveltimes[n], threadNo);
+            }
+        } else {
+            throw std::runtime_error("BLTI method not implemented");
         }
     }
 
