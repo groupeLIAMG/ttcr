@@ -2,10 +2,6 @@ notifications:
   email: false
 jobs:
   include:
-  - name: manylinux1
-    services:
-    - docker
-    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 PLAT=manylinux1_x86_64
   - name: manylinux2010
     services:
     - docker
