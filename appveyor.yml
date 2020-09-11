@@ -32,7 +32,7 @@ install:
   # compiled extensions and are not provided as pre-built wheel packages,
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture
-  - "%PYTHON%\\pip install -r requirements.txt"
+  - "%PYTHON%\\Scripts\\pip install -r requirements.txt"
 
 build_script:
   # Build the compiled extension
