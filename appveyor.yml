@@ -22,21 +22,21 @@ branches:
 install:
 
   # Check that we have the expected version and architecture for Python
-  - "%PYTHON%\python --version"
+  - "%PYTHON%\\python --version"
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "%PYTHON%\python -m pip install --upgrade pip"
+  - "%PYTHON%\\python -m pip install --upgrade pip"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture
-  - "%PYTHON%\pip install -r requirements.txt"
+  - "%PYTHON%\\pip install -r requirements.txt"
 
 build_script:
   # Build the compiled extension
-  - "%PYTHON%\python setup.py build"
+  - "%PYTHON%\\python setup.py build"
 
 # test_script:
 #   # Run the project tests and store results in .xml log
