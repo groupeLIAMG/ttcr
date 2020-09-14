@@ -44,16 +44,19 @@ install:
   - cmd: "%PYTHON%\\Scripts\\pip install -r requirements.txt"
   - cmd: "%PYTHON%\\Scripts\\pip install wheel"
 
-  - sh: "source $VENV/bin/activate"
-  - sh: "python --version"
-  - sh: "python -m pip install --upgrade pip"
-  - sh: "pip install -r requirements.txt"
-  - sh: "pip install wheel"
+  - sh: "ls $VENV"
+  - sh: "ls $VENV/bin"
+  - sh: "ls ~/venv3.8"
+  # - sh: "source $VENV/bin/activate"
+  # - sh: "python --version"
+  # - sh: "python -m pip install --upgrade pip"
+  # - sh: "pip install -r requirements.txt"
+  # - sh: "pip install wheel"
 
 build_script:
   # Build the compiled extension
   - cmd: "%PYTHON%\\python setup.py build"
-  - sh: "python setup.py build"
+  # - sh: "python setup.py build"
 
 # test_script:
 #   # Run the project tests and store results in .xml log
