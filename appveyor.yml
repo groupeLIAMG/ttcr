@@ -1,20 +1,29 @@
 environment:
   global:
-    CIBW_BUILD: cp38-*
-    CIBW_SKIP: "*-win32 *-manylinux_i686"
-    CIBW_BEFORE_BUILD: "python -m pip install -r requirements.txt"
+    CIBW_BEFORE_BUILD: "python -m pip install --upgrade pip && python -m pip install -r requirements.txt"
 
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: macos
       APPVEYOR_JOB_NAME: "python38-x64-macos"
+      CIBW_BUILD: cp38-macosx_x86_64
+    - APPVEYOR_BUILD_WORKER_IMAGE: macos
+      APPVEYOR_JOB_NAME: "python37-x64-macos"
+      CIBW_BUILD: cp37-macosx_x86_64
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       APPVEYOR_JOB_NAME: "python38-x64-vs2019"
+      CIBW_BUILD: cp38-win_amd64
+      PYTHON: "C:\\Python38-x64"
+      PYTHON_ARCH: "64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      APPVEYOR_JOB_NAME: "python37-x64-vs2019"
+      CIBW_BUILD: cp37-win_amd64
+      PYTHON: "C:\\Python37-x64"
       PYTHON_ARCH: "64"
 
-stack: python 3.8
+#stack: python 3.8
 
 init:
-  - cmd: set PATH=C:\Python38;C:\Python38\Scripts;%PATH%
+  - cmd: set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
 
 install:
   - python -m pip install --upgrade pip
