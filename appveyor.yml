@@ -4,7 +4,7 @@ environment:
 
     - job_name: python 3.8 on macos
       appveyor_build_worker_image: macos
-      sh: "VENV=~/venv3.8"
+      VENV: "~/venv3.8"
 
     # - job_name: python 3.6 on windows
     #   appveyor_build_worker_image: Visual Studio 2019
