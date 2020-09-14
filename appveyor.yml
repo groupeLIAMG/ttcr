@@ -1,93 +1,23 @@
-
-stack: python 3
-
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      APPVEYOR_JOB_NAME: "python38-x64-ubuntu"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      APPVEYOR_JOB_NAME: "python38-x64-vs2019"
+    - APPVEYOR_BUILD_WORKER_IMAGE: macos
+      APPVEYOR_JOB_NAME: "python38-x64-macos"
 
-    - job_name: python 3.8 on macos
-      appveyor_build_worker_image: macos
-      VENV: "$HOME/venv3.8"
-
-    # - job_name: python 3.6 on windows
-    #   appveyor_build_worker_image: Visual Studio 2019
-    #   PYTHON: "C:\\Python36-x64"
-    #   PYTHON_VERSION: "3.6.x" # currently 3.6.5
-    #   PYTHON_ARCH: "64"
-    #
-    # - job_name: python 3.7 on windows
-    #   appveyor_build_worker_image: Visual Studio 2019
-    #   PYTHON: "C:\\Python37-x64"
-    #   PYTHON_VERSION: "3.8.x"
-    #   PYTHON_ARCH: "64"
-    #
-    - job_name: python 3.8 on windows
-      appveyor_build_worker_image: Visual Studio 2019
-      PYTHON: "C:\\Python38-x64"
-      PYTHON_VERSION: "3.8.x"
-      PYTHON_ARCH: "64"
-
-branches:
-  only:
-    - master
+stack: python 3.8
 
 init:
-  - cmd: set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+  - cmd: set PATH=C:\Python37;C:\Python37\Scripts;%PATH%
 
 install:
+  - python -m pip install cibuildwheel==1.6.0
+  - python -m pip install -r requirements.txt
 
-  # Check that we have the expected version and architecture for Python
-  - cmd: "python --version"
+build_script: python -m cibuildwheel --output-dir wheelhouse
 
-  # Upgrade to the latest version of pip to avoid it displaying warnings
-  # about it being out of date.
-  - cmd: "%PYTHON%\\python -m pip install --upgrade pip"
-
-  # Install the build dependencies of the project. If some dependencies contain
-  # compiled extensions and are not provided as pre-built wheel packages,
-  # pip will build them from source using the MSVC compiler matching the
-  # target Python version and architecture
-  - cmd: "%PYTHON%\\Scripts\\pip install -r requirements.txt"
-  - cmd: "%PYTHON%\\Scripts\\pip install wheel"
-
-  - sh: "ls $VENV"
-  - sh: "ls $VENV/bin"
-  - sh: "ls ~/venv3.8"
-  # - sh: "source $VENV/bin/activate"
-  # - sh: "python --version"
-  # - sh: "python -m pip install --upgrade pip"
-  # - sh: "pip install -r requirements.txt"
-  # - sh: "pip install wheel"
-
-build_script:
-  # Build the compiled extension
-  - cmd: "%PYTHON%\\python setup.py build"
-  # - sh: "python setup.py build"
-
-# test_script:
-#   # Run the project tests and store results in .xml log
-#   - ps: |
-#       # this produces nosetests.xml which is uploaded on_finish
-#       &$env:PYTHON\python setup.py nosetests --with-xunit
-#       if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
-
-# after_build:
-#   # If tests are successful, create binary packages for the project.
-#   - cmd: "%PYTHON%\\python setup.py bdist_wheel"
-# #   - "%CMD_IN_ENV% python setup.py bdist_wininst"
-# #   - "%CMD_IN_ENV% python setup.py bdist_msi"
-#   - ps: "ls dist"
-
-# artifacts:
-#   # Archive the generated packages in the ci.appveyor.com build report.
-#   - path: dist\*
-
-#on_success:
-#  - TODO: upload the content of dist/*.whl to a public wheelhouse
-#
-
-# on_finish:
-#   # Upload test results to AppVeyor
-#   - ps: |
-#       # this uploads nosetests.xml produced in test_script step
-#       $wc = New-Object 'System.Net.WebClient'
-#       $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nosetests.xml))
+artifacts:
+  - path: "wheelhouse\\*.whl"
+    name: Wheels
