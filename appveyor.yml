@@ -11,13 +11,14 @@ environment:
       APPVEYOR_JOB_NAME: "python38-x64-vs2019"
       PYTHON_ARCH: "64"
 
+stack: python 3.8
+
 init:
   - cmd: set PATH=C:\Python38;C:\Python38\Scripts;%PATH%
 
 install:
   - python -m pip install --upgrade pip
   - python -m pip install cibuildwheel==1.6.0
-  - python -m pip install -r requirements.txt
 
 build_script: python -m cibuildwheel --output-dir wheelhouse
 
