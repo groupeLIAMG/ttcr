@@ -11,10 +11,6 @@ environment:
       APPVEYOR_JOB_NAME: "python38-x64-vs2019"
       PYTHON: "C:\\Python38-x64"
       PYTHON_ARCH: "64"
-    # - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    #   APPVEYOR_JOB_NAME: "python37-x64-vs2019"
-    #   PYTHON: "C:\\Python37-x64"
-    #   PYTHON_ARCH: "64"
 
 stack: python 3.8
 
@@ -25,7 +21,15 @@ install:
   - python -m pip install --upgrade pip
   - python -m pip install cibuildwheel==1.6.0
 
-build_script: python -m cibuildwheel --output-dir wheelhouse
+build_script:
+  - python -m cibuildwheel --output-dir wheelhouse
+  - >
+    IF "%APPVEYOR_REPO_TAG%" == "true"
+    (
+    python -m pip install twine
+    &&
+    python -m twine upload wheelhouse/*.whl
+    )
 
 artifacts:
   - path: "wheelhouse\\*.whl"
