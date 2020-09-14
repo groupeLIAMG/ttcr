@@ -1,9 +1,10 @@
-image:
-  - Visual Studio 2019
-  - macos
 
 environment:
   matrix:
+
+    - job_name: python 3.8 on macos
+      appveyor_build_worker_image: macos
+      sh: "VENV=~/venv3.8"
 
     # - job_name: python 3.6 on windows
     #   appveyor_build_worker_image: Visual Studio 2019
@@ -23,10 +24,6 @@ environment:
       PYTHON_VERSION: "3.8.x"
       PYTHON_ARCH: "64"
 
-    - job_name: python 3.8 on macos
-      appveyor_build_worker_image: macos
-      sh: "source ~/venv3.8/bin/activate"
-
 branches:
   only:
     - master
@@ -35,12 +32,10 @@ install:
 
   # Check that we have the expected version and architecture for Python
   - cmd: "%PYTHON%\\python --version"
-  - sh: "python --version"
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
   - cmd: "%PYTHON%\\python -m pip install --upgrade pip"
-  - sh: "python -m pip install --upgrade pip"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
@@ -48,6 +43,10 @@ install:
   # target Python version and architecture
   - cmd: "%PYTHON%\\Scripts\\pip install -r requirements.txt"
   - cmd: "%PYTHON%\\Scripts\\pip install wheel"
+
+  - sh: "source $VENV/bin/activate"
+  - sh: "python --version"
+  - sh: "python -m pip install --upgrade pip"
   - sh: "pip install -r requirements.txt"
   - sh: "pip install wheel"
 
