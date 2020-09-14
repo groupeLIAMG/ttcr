@@ -1,11 +1,10 @@
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      APPVEYOR_JOB_NAME: "python38-x64-ubuntu"
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      APPVEYOR_JOB_NAME: "python38-x64-vs2019"
     - APPVEYOR_BUILD_WORKER_IMAGE: macos
       APPVEYOR_JOB_NAME: "python38-x64-macos"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      APPVEYOR_JOB_NAME: "python38-x64-vs2019
+      PYTHON_ARCH: "64"
 
 stack: python 3.8
 
@@ -13,10 +12,11 @@ init:
   - cmd: set PATH=C:\Python37;C:\Python37\Scripts;%PATH%
 
 install:
-  - python -m pip install cibuildwheel==1.6.0
-  - python -m pip install -r requirements.txt
+  - python3 -m pip install --upgrade pip
+  - python3 -m pip install cibuildwheel==1.6.0
+  - python3 -m pip install -r requirements.txt
 
-build_script: python -m cibuildwheel --output-dir wheelhouse
+build_script: python3 -m cibuildwheel --output-dir wheelhouse
 
 artifacts:
   - path: "wheelhouse\\*.whl"
