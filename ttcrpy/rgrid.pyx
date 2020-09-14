@@ -373,7 +373,7 @@ cdef class Grid3d:
         shape = (self._x.size(), self._y.size(), self._z.size())
         return tt.reshape(shape)
 
-    def ind(self, i, j, k):
+    def ind(self, int i, int j, int k):
         """
         ind(i, j, k)
 
@@ -395,7 +395,7 @@ cdef class Grid3d:
         """
         return (i*self._y.size() + j)*self._z.size() + k
 
-    def indc(self, i, j, k):
+    def indc(self, int i, int j, int k):
         """
         return cell index
 
