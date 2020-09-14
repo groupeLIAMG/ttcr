@@ -1,10 +1,12 @@
 
+stack: python 3
+
 environment:
   matrix:
 
     - job_name: python 3.8 on macos
       appveyor_build_worker_image: macos
-      VENV: "~/venv3.8"
+      VENV: "$HOME/venv3.8"
 
     # - job_name: python 3.6 on windows
     #   appveyor_build_worker_image: Visual Studio 2019
@@ -28,10 +30,13 @@ branches:
   only:
     - master
 
+init:
+  - cmd: set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+
 install:
 
   # Check that we have the expected version and architecture for Python
-  - cmd: "%PYTHON%\\python --version"
+  - cmd: "python --version"
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
