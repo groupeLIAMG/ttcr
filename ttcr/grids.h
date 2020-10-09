@@ -26,6 +26,7 @@
 #define ttcr_grids_h
 
 #include <exception>
+#include <fstream>
 #include <chrono>
 #include <set>
 #include <string>
@@ -95,7 +96,7 @@ namespace ttcr {
         
         Grid3D<T,uint32_t> *g = nullptr;
         
-        ifstream fin;
+        std::ifstream fin;
         fin.open( par.modelfile.c_str() );
         
         if ( !fin.is_open() ) {
