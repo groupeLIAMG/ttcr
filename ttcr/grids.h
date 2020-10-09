@@ -1331,7 +1331,7 @@ namespace ttcr {
                                                   const size_t nt)
     {
         
-        ifstream fin;
+        std::ifstream fin;
         fin.open( par.modelfile.c_str() );
         
         if ( !fin.is_open() ) {
