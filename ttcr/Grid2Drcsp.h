@@ -474,7 +474,7 @@ namespace ttcr {
         
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
         
-        propagate(queue, inQueue, frozen, threadNo);
+        propagate_lw(queue, inQueue, frozen, threadNo);
         
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
