@@ -114,11 +114,15 @@ namespace ttcr {
             }
         }
         size_t getNumberOfCells() const { return ncx*ncz; }
+        
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             size_t nPrimary = (ncx+1) * (ncz+1);
             tt.resize(nPrimary);
-            for ( size_t n=0; n<nPrimary; ++n ) {
-                tt[n] = nodes[n].getTT(threadNo);
+            size_t n = 0;
+            for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn].isPrimary() ) {
+                    tt[n++] = nodes[nn].getTT(threadNo);
+                }
             }
         }
 
@@ -246,8 +250,10 @@ namespace ttcr {
             
             
             for ( size_t n=0; n<nodes.size(); ++n ) {
-                vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
-                newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+                if ( nodes[n].isPrimary() ) {
+                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), 0.0, nodes[n].getZ());
+                    newScalars->SetTuple1(id, nodes[n].getTT(nt) );
+                }
             }
             rgrid->GetPointData()->SetScalars(newScalars);
             
