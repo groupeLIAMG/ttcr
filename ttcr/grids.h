@@ -1728,6 +1728,12 @@ namespace ttcr {
                         std::cerr.flush();
                         return nullptr;
                     }
+                    case DYNAMIC_SHORTEST_PATH:
+                    {
+                        std::cerr << "Error: dynamic shortest path method not yet implemented for 2D rectilinear grids\n";
+                        std::cerr.flush();
+                        return nullptr;
+                    }
                         
                     default:
                         break;
