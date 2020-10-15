@@ -1819,6 +1819,7 @@ cdef class Grid2d:
         self.rotated_template = rotated_template
         self.nsnx = nsnx
         self.nsnz = nsnz
+        self.iso = b'i'
 
         for val in x:
             self._x.push_back(val)
@@ -1831,7 +1832,6 @@ cdef class Grid2d:
             if method == 'SPM':
                 self.method = b's'
                 if aniso == 'iso':
-                    self.iso = b'i'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, n_threads)
