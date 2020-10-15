@@ -32,7 +32,7 @@ namespace ttcr {
             }
             size_t nn=0;
             for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                if ( this->nodes[n].getPrimary() == 5 )
+                if ( this->nodes[n].isPrimary() )
                     this->nodes[n].setNodeSlowness( s[nn++] );
             }
             interpSlownessSecondary();
@@ -213,7 +213,7 @@ namespace ttcr {
                 this->nodes[n].setX( x );
                 this->nodes[n].setZ( z );
                 this->nodes[n].setGridIndex( n );
-                this->nodes[n].setPrimary(5);
+                this->nodes[n].setPrimary(true);
                 
                 ++n;
                 

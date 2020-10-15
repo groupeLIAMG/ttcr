@@ -157,7 +157,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             this->nodes[n].setXYZindex( no[n], n );
-            this->nodes[n].setPrimary(5);
+            this->nodes[n].setPrimary(true);
         }
         T2 nNodes = static_cast<T2>(this->nodes.size());
         

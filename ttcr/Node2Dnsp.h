@@ -43,7 +43,7 @@ namespace ttcr {
         nodeParent(0),
         cellParent(0),
         owners(0),
-        primary(0)
+        primary(false)
         {
             tt = new T1[nt];
             nodeParent = new T2[nt];
@@ -65,7 +65,7 @@ namespace ttcr {
         nodeParent(0),
         cellParent(0),
         owners(std::vector<T2>(0)),
-        primary(0)
+        primary(false)
         {
             tt = new T1[nt];
             nodeParent = new T2[nt];
@@ -145,8 +145,7 @@ namespace ttcr {
         T2 getCellParent(const size_t i) const { return cellParent[i]; }
         void setCellParent(const T2 index, const size_t i) { cellParent[i] = index; }
         
-        int getPrimary() const { return primary; };
-        void setPrimary( const int o ) { primary = o; }
+        void setPrimary( const bool o ) { primary = o; }
         
         void pushOwner(const T2 o) { owners.push_back(o); }
         const std::vector<T2>& getOwners() const { return owners; }
@@ -174,7 +173,7 @@ namespace ttcr {
         
         int getDimension() const { return 2; }
         
-        const bool isPrimary() const { return primary == 5; }
+        const bool isPrimary() const { return primary; }
         
     private:
         size_t nThreads;
@@ -186,7 +185,7 @@ namespace ttcr {
         T2 *nodeParent;                // index of parent node of the ray
         T2 *cellParent;                // index of cell traversed by the ray
         std::vector<T2> owners;        // indices of cells touching the node
-        int primary;				   // indicate the order of the node: 5= primary,
+        bool primary;				   // indicate the order of the node: 5= primary,
         
     };
     

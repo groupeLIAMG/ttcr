@@ -9,6 +9,7 @@ vtk.vtkObject.GlobalWarningDisplayOff()
 
 import ttcrpy.rgrid as rg
 
+
 def get_tt(filename):
     reader = vtk.vtkXMLRectilinearGridReader()
     reader.SetFileName(filename)
