@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Tests for verifying python wrappers, module rgrid in 3D"""
 
 import unittest
 import numpy as np

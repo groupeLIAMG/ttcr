@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Tests for verifying python wrappers, module rgrid in 2D"""
 
 import unittest
 
 import numpy as np
-import scipy.sparse as sp
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 
