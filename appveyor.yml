@@ -1,4 +1,5 @@
 environment:
+  TWINE_USERNAME: __token__
   global:
     CIBW_BUILD: cp3[678]-*
     CIBW_SKIP: "*-win32 *-manylinux_i686"
