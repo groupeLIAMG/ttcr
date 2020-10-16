@@ -52,9 +52,16 @@ def set_verbose(v):
 cdef class Mesh3d:
     """class to perform raytracing with tetrahedral meshes
 
+    Attributes
+    ----------
+    nparams: int
+        total number of parameters for grid
+    n_threads: int
+        number of threads for raytracing
+
     Constructor:
 
-    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_tertiary)
+    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_tertiary) -> Mesh3d
 
         Parameters
         ----------
@@ -503,7 +510,6 @@ cdef class Mesh3d:
                 - 3rd column is source easting
                 - 4th column is source northing
                 - 5th column is source elevation
-
         slowness : np ndarray, shape (nparams, ) (optional)
             slowness at grid nodes or cells (depending on cell_slowness)
 
@@ -560,9 +566,7 @@ cdef class Mesh3d:
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, return_rays=False):
         """
-        raytrace(source, rcv, slowness=None, thread_no=None,
-                 aggregate_src=False, compute_L=False,
-                 return_rays=False) -> tt, rays, L
+        raytrace(source, rcv, slowness=None, thread_no=None, aggregate_src=False, compute_L=False, return_rays=False) -> tt, rays, L
 
         Perform raytracing
 
@@ -958,9 +962,7 @@ cdef class Mesh3d:
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
                 double radius_tertiary=1.0):
         """
-        builder(filename, n_threads, cell_slowness, method, gradient_method,
-                tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary,
-                n_tertiary, radius_tertiary)
+        builder(filename, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_tertiary)
 
         Build instance of Mesh3d from VTK file
 
@@ -971,6 +973,7 @@ cdef class Mesh3d:
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'.  All cells must be of type vtkTetra
+
         Other parameters are defined in Constructor
 
         Returns
@@ -1023,15 +1026,22 @@ cdef class Mesh3d:
 cdef class Mesh2d:
     """class to perform raytracing with triangular meshes
 
+    Attributes
+    ----------
+    nparams: int
+        total number of parameters for grid
+    n_threads: int
+        number of threads for raytracing
+
     Constructor:
 
-    Mesh2d(nodes, tiangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary)
+    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary) -> Mesh2d
 
         Parameters
         ----------
         nodes : np.ndarray, shape (nnodes, 2)
             node coordinates
-        tiangles : np.ndarray of int, shape (ntriangles, 3)
+        triangles : np.ndarray of int, shape (ntriangles, 3)
             indices of nodes forming the triangles
         n_threads : int
             number of threads for raytracing (default is 1)
@@ -1051,7 +1061,6 @@ cdef class Mesh2d:
             with obtuse angle
         n_secondary : int
             number of secondary nodes (SPM) (default is 5)
-
     """
     cdef bool cell_slowness
     cdef bool process_obtuse
@@ -1545,8 +1554,7 @@ cdef class Mesh2d:
                 str method='FSM',double eps=1.e-15, int maxit=20,
                 bool process_obtuse=1,uint32_t n_secondary=5):
         """
-        builder(filename, n_threads, cell_slowness, method, eps, maxit,
-                process_obtuse, n_secondary)
+        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary)
 
         Build instance of Mesh2d from VTK file
 
@@ -1557,6 +1565,7 @@ cdef class Mesh2d:
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'.  All cells must be of type vtkTriangle
+
         Other parameters are defined in Constructor
 
         Returns

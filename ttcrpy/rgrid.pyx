@@ -73,9 +73,7 @@ cdef class Grid3d:
 
     Constructor:
 
-    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1,
-           interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
-           n_secondary=2, n_tertiary=2, radius_tertiary=1.0) -> Grid3d
+    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_tertiary=1.0) -> Grid3d
 
         Parameters
         ----------
@@ -1232,9 +1230,7 @@ cdef class Grid3d:
                 eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
                 n_secondary=2, n_tertiary=2, radius_tertiary=1.0):
         """
-        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0,
-                eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
-                n_secondary=2, n_tertiary=2, radius_tertiary=1.0)
+        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_tertiary=1.0)
 
         Build instance of Grid3d from VTK file
 
@@ -1245,6 +1241,7 @@ cdef class Grid3d:
             The grid must have point or cell attribute named either
             'Slowness', 'slowness', 'Velocity', 'velocity', or
             'P-wave velocity'
+
         Other parameters are defined in Constructor
 
         Returns
@@ -1750,9 +1747,7 @@ cdef class Grid2d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='FSM', iso='iso',
-           eps=1.e-15, maxit=20, weno=1, rotated_template=0,
-           nsnx=10, nsnz=10) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='FSM', iso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10) -> Grid2d
 
     Parameters
     ----------
@@ -2462,10 +2457,7 @@ cdef class Grid2d:
                  thread_no=None, aggregate_src=False, compute_L=False,
                  return_rays=False):
         """
-        raytrace(source, rcv, slowness=None, xi=None, theta=None,
-                 Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
-                 thread_no=None, aggregate_src=False, compute_L=False,
-                 return_rays=False) -> tt, rays, L
+        raytrace(source, rcv, slowness=None, xi=None, theta=None, Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None, thread_no=None, aggregate_src=False, compute_L=False, return_rays=False) -> tt, rays, L
 
         Perform raytracing
 
