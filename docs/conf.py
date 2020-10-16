@@ -24,7 +24,7 @@ copyright = '2020, Bernard Giroux'
 author = 'Bernard Giroux'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.1'
+release = get_distribution('ttcrpy').version
 
 
 # -- General configuration ---------------------------------------------------
