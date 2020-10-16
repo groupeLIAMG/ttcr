@@ -837,7 +837,7 @@ namespace ttcr {
         } else if ( format == 2 ) {
 #ifdef VTK
             
-            std::string filename = fname+".vtr";
+            std::string filename = fname+".vtu";
             
             vtkSmartPointer<vtkUnstructuredGrid> ugrid =
             vtkSmartPointer<vtkUnstructuredGrid>::New();
