@@ -54,9 +54,7 @@ cdef class Mesh3d:
 
     Constructor:
 
-    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method,
-           tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary,
-           n_tertiary, radius_tertiary)
+    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_tertiary)
 
         Parameters
         ----------
@@ -136,8 +134,14 @@ cdef class Mesh3d:
         self.radius_tertiary = radius_tertiary
 
         cdef double source_radius = 0.0
-
+        cdef vector[sxyz[double]] pts_ref
         cdef int n
+
+        if not nodes.flags['C_CONTIGUOUS']:
+            nodes = np.ascontiguousarray(nodes)
+        if not tetra.flags['C_CONTIGUOUS']:
+            tetra = np.ascontiguousarray(tetra)
+
         for n in range(nodes.shape[0]):
             self.no.push_back(sxyz[double](nodes[n, 0],
                                            nodes[n, 1],
@@ -148,11 +152,28 @@ cdef class Mesh3d:
                                                          tetra[n, 2],
                                                          tetra[n, 3]))
 
+        if method == 'FSM':
+            xmin = np.min(nodes[:, 0])
+            xmax = np.max(nodes[:, 0])
+            ymin = np.min(nodes[:, 1])
+            ymax = np.max(nodes[:, 1])
+            zmin = np.min(nodes[:, 2])
+            zmax = np.max(nodes[:, 2])
+            pts_ref.push_back(sxyz[double](xmin, ymin, zmin))
+            pts_ref.push_back(sxyz[double](xmin, ymin, zmax))
+            pts_ref.push_back(sxyz[double](xmin, ymax, zmin))
+            pts_ref.push_back(sxyz[double](xmin, ymax, zmax))
+            pts_ref.push_back(sxyz[double](xmax, ymin, zmin))
+            pts_ref.push_back(sxyz[double](xmax, ymin, zmax))
+            pts_ref.push_back(sxyz[double](xmax, ymax, zmin))
+            pts_ref.push_back(sxyz[double](xmax, ymax, zmax))
+
         if cell_slowness:
             if method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Ducfs[double,uint32_t](self.no, self.tet,
                                                             eps, maxit,
+                                                            pts_ref, 2,
                                                             gradient_method,
                                                             tt_from_rp,
                                                             min_dist, n_threads)
@@ -181,6 +202,7 @@ cdef class Mesh3d:
                 self.method = b'f'
                 self.grid = new Grid3Dunfs[double,uint32_t](self.no, self.tet,
                                                             eps, maxit,
+                                                            pts_ref, 2,
                                                             gradient_method,
                                                             interp_vel,
                                                             tt_from_rp,
@@ -1003,8 +1025,7 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, tiangles, n_threads, cell_slowness, method, eps, maxit,
-          process_obtuse, n_secondary)
+    Mesh2d(nodes, tiangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary)
 
         Parameters
         ----------
@@ -1056,7 +1077,14 @@ cdef class Mesh2d:
         self.process_obtuse = process_obtuse
         self.n_secondary = n_secondary
 
+        cdef vector[sxz[double]] pts_ref
         cdef int n
+
+        if not nodes.flags['C_CONTIGUOUS']:
+            nodes = np.ascontiguousarray(nodes)
+        if not triangles.flags['C_CONTIGUOUS']:
+            triangles = np.ascontiguousarray(triangles)
+
         for n in range(nodes.shape[0]):
             self.no.push_back(sxz[double](nodes[n, 0],
                                           nodes[n, 1]))
@@ -1065,6 +1093,16 @@ cdef class Mesh2d:
                                                       triangles[n, 1],
                                                       triangles[n, 2]))
 
+        if method == 'FSM':
+            xmin = np.min(nodes[:, 0])
+            xmax = np.max(nodes[:, 0])
+            zmin = np.min(nodes[:, 1])
+            zmax = np.max(nodes[:, 1])
+            pts_ref.push_back(sxz[double](xmin, zmin))
+            pts_ref.push_back(sxz[double](xmin, zmax))
+            pts_ref.push_back(sxz[double](xmax, zmin))
+            pts_ref.push_back(sxz[double](xmax, zmax))
+
         if cell_slowness:
             if method == 'FSM':
                 self.method = b'f'
@@ -1072,6 +1110,7 @@ cdef class Mesh2d:
                                                                                                  self.tri,
                                                                                                  eps,
                                                                                                  maxit,
+                                                                                                 pts_ref, 2,
                                                                                                  n_threads,
                                                                                                  process_obtuse)
             elif method == 'SPM':
@@ -1089,6 +1128,7 @@ cdef class Mesh2d:
                                                                                                  self.tri,
                                                                                                  eps,
                                                                                                  maxit,
+                                                                                                 pts_ref, 2,
                                                                                                  n_threads,
                                                                                                  process_obtuse)
             elif method == 'SPM':
@@ -1231,8 +1271,7 @@ cdef class Mesh2d:
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, return_rays=False):
         """
-        raytrace(source, rcv, slowness=None, thread_no=None,
-              aggregate_src=False, return_rays=False) -> tt, rays
+        raytrace(source, rcv, slowness=None, thread_no=None, aggregate_src=False, return_rays=False) -> tt, rays
 
         Perform raytracing
 

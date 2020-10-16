@@ -111,8 +111,9 @@ cdef extern from "Grid3Dun.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid3Ducfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Ducfs[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2]]):
-        Grid3Ducfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int, bool,
-                   bool, T1, size_t) except +
+        Grid3Ducfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int,
+                   vector[sxyz[T1]]& ref_pts, int order, bool, bool, T1,
+                   size_t) except +
 
 cdef extern from "Grid3Ducsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Ducsp[T1, T2](Grid3Duc[T1,T2,Node3Dcsp[T1,T2]]):
@@ -126,8 +127,9 @@ cdef extern from "Grid3Ducdsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid3Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dunfs[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
-        Grid3Dunfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int, int,
-                   bool, bool, T1, size_t) except +
+        Grid3Dunfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int,
+                   vector[sxyz[T1]]& ref_pts, int order, int, bool, bool, T1,
+                   size_t) except +
 
 cdef extern from "Grid3Dunsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dunsp[T1, T2](Grid3Dun[T1,T2,Node3Dnsp[T1,T2]]):
@@ -205,7 +207,8 @@ cdef extern from "Grid2Ducsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2Ducfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducfs[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
-        Grid2Ducfs(vector[S]&, vector[triangleElem[T2]]&, T1, int, size_t, bool) except +
+        Grid2Ducfs(vector[S]&, vector[triangleElem[T2]]&, T1, int,
+                   vector[S]& ref_pts, int order, size_t, bool) except +
 
 cdef extern from "Grid2Dunsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunsp[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
@@ -213,4 +216,5 @@ cdef extern from "Grid2Dunsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunfs[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
-        Grid2Dunfs(vector[S]&, vector[triangleElem[T2]]&, T1, int, size_t, bool) except +
+        Grid2Dunfs(vector[S]&, vector[triangleElem[T2]]&, T1, int,
+                   vector[S]& ref_pts, int order, size_t, bool) except +

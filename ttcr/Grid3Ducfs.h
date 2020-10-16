@@ -50,6 +50,20 @@ namespace ttcr {
             this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
         }
         
+        Grid3Ducfs(const std::vector<sxyz<T1>>& no,
+                   const std::vector<tetrahedronElem<T2>>& tet,
+                   const T1 eps, const int maxit,
+                   const std::vector<sxyz<T1>>& refPts, const int order,
+                   const bool rp, const bool rptt, const T1 md,
+                   const size_t nt=1) :
+        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt),
+        epsilon(eps), nitermax(maxit), niter_final(0), S()
+        {
+            this->buildGridNodes(no, nt);
+            this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
+            initOrdering(refPts, order);
+        }
+        
         ~Grid3Ducfs() {
         }
         

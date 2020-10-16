@@ -22,7 +22,14 @@ namespace ttcr {
     public:
         Grid2Drcfs(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T1 eps, const int maxit,
-                   const bool w, const bool rt, const size_t nt=1);
+                   const bool w, const bool rt, const size_t nt=1) :
+        Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
+        epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0),
+        weno3(w), rotated_template(rt)
+        {
+            buildGridNodes();
+            this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
+        }
         
         virtual ~Grid2Drcfs() {
         }
@@ -82,22 +89,6 @@ namespace ttcr {
         Grid2Drcfs<T1,T2,S>& operator=(const Grid2Drcfs<T1,T2,S>& g) {}
         
     };
-    
-    
-    template<typename T1, typename T2, typename S>
-    Grid2Drcfs<T1,T2,S>::Grid2Drcfs(const T2 nx, const T2 nz,
-                                    const T1 ddx, const T1 ddz,
-                                    const T1 minx, const T1 minz,
-                                    const T1 eps, const int maxit, const bool w,
-                                    const bool rt, const size_t nt) :
-    Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
-    epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0),
-    weno3(w), rotated_template(rt)
-    {
-        buildGridNodes();
-        this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
-    }
-    
     
     template<typename T1, typename T2, typename S>
     void Grid2Drcfs<T1,T2,S>::setSlowness(const std::vector<T1>& s) {
