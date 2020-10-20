@@ -604,12 +604,16 @@ namespace ttcr {
                 this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], 0);
             }
         } else if ( usePool ) {
+            std::vector<std::future<void>> results(Tx.size());
             for ( size_t n=0; n<Tx.size(); ++n ) {
-                pool.push(std::ref(*this),
-                          std::ref(Tx[n]),
-                          std::ref(t0[n]),
-                          std::ref(Rx[n]),
-                          std::ref(traveltimes[n]));
+                results[n] = pool.push(std::ref(*this),
+                                       std::ref(Tx[n]),
+                                       std::ref(t0[n]),
+                                       std::ref(Rx[n]),
+                                       std::ref(traveltimes[n]));
+            }
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                results[n].get();
             }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -647,13 +651,17 @@ namespace ttcr {
                 this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], 0);
             }
         } else if ( usePool ) {
+            std::vector<std::future<void>> results(Tx.size());
             for ( size_t n=0; n<Tx.size(); ++n ) {
-                pool.push(std::ref(*this),
-                          std::ref(Tx[n]),
-                          std::ref(t0[n]),
-                          std::ref(Rx[n]),
-                          std::ref(traveltimes[n]),
-                          std::ref(r_data[n]));
+                results[n] = pool.push(std::ref(*this),
+                                       std::ref(Tx[n]),
+                                       std::ref(t0[n]),
+                                       std::ref(Rx[n]),
+                                       std::ref(traveltimes[n]),
+                                       std::ref(r_data[n]));
+            }
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                results[n].get();
             }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -691,13 +699,17 @@ namespace ttcr {
                 this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], m_data[n], 0);
             }
         } else if ( usePool ) {
+            std::vector<std::future<void>> results(Tx.size());
             for ( size_t n=0; n<Tx.size(); ++n ) {
-                pool.push(std::ref(*this),
-                          std::ref(Tx[n]),
-                          std::ref(t0[n]),
-                          std::ref(Rx[n]),
-                          std::ref(traveltimes[n]),
-                          std::ref(m_data[n]));
+                results[n] = pool.push(std::ref(*this),
+                                       std::ref(Tx[n]),
+                                       std::ref(t0[n]),
+                                       std::ref(Rx[n]),
+                                       std::ref(traveltimes[n]),
+                                       std::ref(m_data[n]));
+            }
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                results[n].get();
             }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -736,14 +748,18 @@ namespace ttcr {
                 this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], m_data[n], 0);
             }
         } else if ( usePool ) {
+            std::vector<std::future<void>> results(Tx.size());
             for ( size_t n=0; n<Tx.size(); ++n ) {
-                pool.push(std::ref(*this),
-                          std::ref(Tx[n]),
-                          std::ref(t0[n]),
-                          std::ref(Rx[n]),
-                          std::ref(traveltimes[n]),
-                          std::ref(r_data[n]),
-                          std::ref(m_data[n]));
+                results[n] = pool.push(std::ref(*this),
+                                       std::ref(Tx[n]),
+                                       std::ref(t0[n]),
+                                       std::ref(Rx[n]),
+                                       std::ref(traveltimes[n]),
+                                       std::ref(r_data[n]),
+                                       std::ref(m_data[n]));
+            }
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                results[n].get();
             }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -781,13 +797,17 @@ namespace ttcr {
                 this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], 0);
             }
         } else if ( usePool ) {
+            std::vector<std::future<void>> results(Tx.size());
             for ( size_t n=0; n<Tx.size(); ++n ) {
-                pool.push(std::ref(*this),
-                          std::ref(Tx[n]),
-                          std::ref(t0[n]),
-                          std::ref(Rx[n]),
-                          std::ref(traveltimes[n]),
-                          std::ref(l_data[n]));
+                results[n] = pool.push(std::ref(*this),
+                                       std::ref(Tx[n]),
+                                       std::ref(t0[n]),
+                                       std::ref(Rx[n]),
+                                       std::ref(traveltimes[n]),
+                                       std::ref(l_data[n]));
+            }
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                results[n].get();
             }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
@@ -828,14 +848,18 @@ namespace ttcr {
                 this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], 0);
             }
         } else if ( usePool ) {
+            std::vector<std::future<void>> results(Tx.size());
             for ( size_t n=0; n<Tx.size(); ++n ) {
-                pool.push(std::ref(*this),
-                          std::ref(Tx[n]),
-                          std::ref(t0[n]),
-                          std::ref(Rx[n]),
-                          std::ref(traveltimes[n]),
-                          std::ref(r_data[n]),
-                          std::ref(l_data[n]));
+                results[n] = pool.push(std::ref(*this),
+                                       std::ref(Tx[n]),
+                                       std::ref(t0[n]),
+                                       std::ref(Rx[n]),
+                                       std::ref(traveltimes[n]),
+                                       std::ref(r_data[n]),
+                                       std::ref(l_data[n]));
+            }
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                results[n].get();
             }
         } else {
             std::vector<size_t> blk_size = get_blk_size(Tx.size());
