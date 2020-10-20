@@ -31,7 +31,9 @@
 #include <exception>
 #include <functional>
 #include <fstream>
+#include <future>
 #include <thread>
+#include <vector>
 
 #include "ctpl_stl.h"
 
