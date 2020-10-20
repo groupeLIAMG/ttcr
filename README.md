@@ -21,8 +21,8 @@ Matlab wrappers are provided as well.
 ## Python package
 
 ttcrpy is a package for computing traveltimes and raytracing that was
-developped with geophysical applications in mind, e.g. ray-based seismic/GPR
-tomography and microseismc event location (joint hypocenter-velocity
+developed with geophysical applications in mind, e.g. ray-based seismic/GPR
+tomography and microseismic event location (joint hypocenter-velocity
 inversion).  The package contains code to perform computation on 2D and 3D
 rectilinear grids, as well as 2D triangular and 3D tetrahedral meshes. Three
 different algorithms have been implemented: the Fast-Sweeping Method, the
