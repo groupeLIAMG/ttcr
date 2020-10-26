@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-
 """
-Code for raytracing on 2D triangular meshes based on the shortest path method
+.. deprecated:: v0.4.0
+    `cmesh2d` will be removed in ttcrpy v1.0.0, it is replaced by
+    `tmesh`.
 
+Code for raytracing on 2D triangular meshes based on the shortest path method
 
 This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 """

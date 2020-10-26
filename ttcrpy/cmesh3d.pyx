@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+.. deprecated:: v0.4.0
+    `cmesh3d` will be removed in ttcrpy v1.0.0, it is replaced by
+    `tmesh`.
+
+Code for raytracing on 3D tetrahedral meshes based on the shortest path method
+
+This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
+"""
 
 """
 Copyright 2016 Bernard Giroux

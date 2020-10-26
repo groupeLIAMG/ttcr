@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
-
 """
+.. deprecated:: v0.4.0
+    `cgrid2d` will be removed in ttcrpy v1.0.0, it is replaced by
+    `rgrid`.
+
     2D grid for raytracing based on the shortest path method
 
-    Important: the raytracing codes are based on a column-major order
-                for the slowness vector (Z is the "fast" axis).
-                To visualize the slowness model with Z axis vertical and X horizontal,
-                the vector should be reshaped as
-                slowness.reshape(nx,nz).T
+    Notes
+    -----
+        The raytracing codes are based on a column-major order
+        for the slowness vector (Z is the "fast" axis).
+        To visualize the slowness model with Z axis vertical and X horizontal,
+        the vector should be reshaped as
+        slowness.reshape(nx,nz).T
 
     This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 """

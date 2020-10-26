@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+.. deprecated:: v0.4.0
+    `cgrid3d` will be removed in ttcrpy v1.0.0, it is replaced by
+    `rgrid`.
+
     3D grid for raytracing based on the fast sweeping method
 
     This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
