@@ -510,6 +510,9 @@ namespace ttcr {
         for ( size_t ni=0; ni<m_data.size(); ++ni ) {
             m_data[ni].resize( 0 );
         }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
 
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], traveltimes[n], n, threadNo);
@@ -524,9 +527,6 @@ namespace ttcr {
                                  std::vector<std::vector<sxyz<T1>>>& r_data,
                                  std::vector<std::vector<siv<T1>>>& l_data,
                                  const size_t threadNo) const {
-        if ( verbose > 2 ) {
-            std::cout << "\nIn Grid3D::raytrace(..., r_data, l_data, threadNo)\n" << std::endl;
-        }
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
@@ -540,6 +540,9 @@ namespace ttcr {
         }
         for ( size_t ni=0; ni<l_data.size(); ++ni ) {
             l_data[ni].resize( 0 );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
         }
 
         for (size_t n=0; n<Rx.size(); ++n) {
@@ -561,6 +564,9 @@ namespace ttcr {
         }
         for ( size_t ni=0; ni<m_data.size(); ++ni ) {
             m_data[ni].resize( 0 );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
         }
 
         for (size_t n=0; n<Rx.size(); ++n) {
