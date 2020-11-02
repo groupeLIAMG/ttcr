@@ -17,8 +17,7 @@
 %  Raytracing
 %    [tt] = g.raytrace(s, Tx, Rx, t0)
 %    [tt, rays] = g.raytrace(s, Tx, Rx, t0)
-%    [tt, rays, v0] = g.raytrace(s, Tx, Rx, t0)
-%    [tt, rays, v0, M] = g.raytrace(s, Tx, Rx, t0)
+%    [tt, rays, M] = g.raytrace(s, Tx, Rx, t0)
 %
 %   Input
 %    g: grid instance
@@ -43,7 +42,6 @@
 %     tt: vector of traveltimes, nRx by 1
 %     rays: cell object containing the matrices of coordinates of the ray
 %           paths, nRx by 1.  Each matrix is nPts by 3
-%     v0:   value of velocity at source points, nRx by 1
 %     M:    cell object containing the matrices of partial derivative dt/dV and
 %           dt/dsc along rays (t is time, V is velocity ans sc is static
 %           correction)
@@ -78,17 +76,17 @@ classdef grid3dunfs < handle
         function this = grid3dunfs(varargin)
             this.objectHandle = grid3dunfs_mex('new', varargin{:});
         end
-        
+
         %% Destructor - Destroy the C++ class instance
         function delete(this)
             grid3dunfs_mex('delete', this.objectHandle);
         end
-        
+
         %% setSlowness
         function varargout = setSlowness(this, varargin)
             [varargout{1:nargout}] = grid3dunfs_mex('setSlowness', this.objectHandle, varargin{:});
         end
-        
+
         %% raytrace
         function varargout = raytrace(this, varargin)
             [varargout{1:nargout}] = grid3dunfs_mex('raytrace', this.objectHandle, varargin{:});

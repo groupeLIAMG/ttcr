@@ -4,7 +4,7 @@
 %
 %  Create and destroy instance of class
 %
-%    g = grid3dunsp(nodes, tetrahedra, nsecondary)
+%    g = grid3dunsp(nodes, tetrahedra, nsecondary, nthreads)
 %    clear g
 %
 %   Input for instantiation
@@ -13,6 +13,7 @@
 %             3rd contains Z coordinates
 %    tetrahedra: indices of nodes making mesh tetrahedra (nCells by 4)
 %    nsecondary: number of secondary nodes (optional: 5 if not set)
+%    nthreads: number of threads (optional, default = 1)
 %
 %  Raytracing
 %    [tt] = raytrace(g, s, Tx, Rx, t0)

@@ -68,22 +68,22 @@ classdef grid3drcfs < handle
         function this = grid3drcfs(varargin)
             this.objectHandle = grid3drcfs_mex('new', varargin{:});
         end
-        
+
         % Destructor - Destroy the C++ class instance
         function delete(this)
             grid3drcfs_mex('delete', this.objectHandle);
         end
-        
+
         % setSlowness
         function varargout = setSlowness(this, varargin)
             [varargout{1:nargout}] = grid3drcfs_mex('setSlowness', this.objectHandle, varargin{:});
         end
-        
+
         % raytrace
         function varargout = raytrace(this, varargin)
             [varargout{1:nargout}] = grid3drcfs_mex('raytrace', this.objectHandle, varargin{:});
         end
-        
+
         % for saving in mat-files
         function s = saveobj(obj)
             s.xmin = grid2drcfs_mex('get_xmin', obj.objectHandle);
