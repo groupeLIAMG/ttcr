@@ -69,7 +69,7 @@ namespace ttcr {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
             for ( size_t n=0; n<nodes.size(); ++n ) {
-                nodes[n].setSlowness( s[n] );
+                nodes[n].setNodeSlowness( s[n] );
             }
         }
         

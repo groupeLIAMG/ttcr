@@ -20,8 +20,7 @@
 %
 %     [tt] = g.raytrace(s, Tx, Rx, t0)
 %     [tt, rays] = g.raytrace(s, Tx, Rx, t0)
-%     [tt, rays, v0] = g.raytrace(s, Tx, Rx, t0)
-%     [tt, rays, v0, M] = g.raytrace(s, Tx, Rx, t0)
+%     [tt, rays, M] = g.raytrace(s, Tx, Rx, t0)
 %
 %    Input
 %     g: grid instance
@@ -44,7 +43,6 @@
 %     tt:   vector of traveltimes, nRx by 1
 %     rays: cell object containing the matrices of coordinates of the ray
 %           paths, nRx by 1.  Each matrix is nPts by 3
-%     v0:   value of velocity at source points, nRx by 1
 %     M:    cell object containing the matrices of partial derivative dt/dV and
 %           dt/dsc along rays (t is time, V is velocity ans sc is static
 %           correction)
@@ -86,11 +84,11 @@ classdef grid2dunsp < handle
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
-        %% Constructor - Create a new C++ class instance 
+        %% Constructor - Create a new C++ class instance
         function this = grid2dunsp(varargin)
             this.objectHandle = grid2dunsp_mex('new', varargin{:});
         end
-        
+
         %% Destructor - Destroy the C++ class instance
         function delete(this)
             grid2dunsp_mex('delete', this.objectHandle);

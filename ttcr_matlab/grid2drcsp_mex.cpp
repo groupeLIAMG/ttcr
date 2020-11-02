@@ -5,7 +5,21 @@
 //  Created by Bernard Giroux on 16-01-29.
 //  Copyright © 2016 Bernard Giroux. All rights reserved.
 //
-
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #include <exception>
 #include <thread>
 #include <vector>
@@ -19,6 +33,7 @@
 using namespace std;
 using namespace ttcr;
 
+typedef Grid2D<double,uint32_t> g2d;
 typedef Grid2Drcsp<double,uint32_t,sxz<double>,Cell<double, Node2Dcsp<double, uint32_t>, sxz<double>>> grid;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -27,7 +42,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     char cmd[64];
     if (nrhs < 1 || mxGetString(prhs[0], cmd, sizeof(cmd)))
         mexErrMsgTxt("First input should be a command string less than 64 characters long.");
-    
+
     //  ---------------------------------------------------------------------------
     // New
     if (!strcmp("new", cmd)) {
@@ -39,20 +54,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("New: max 2 input arguments needed.");
         }
         // Return a handle to a new C++ instance
-        
-        
+
+
         double        *xmin, *zmin;
         double        *dx, *dz, *nx_d, *nz_d;
         double        *nsx_d, *nsz_d;
         uint32_t      nx, nz, nsx, nsz;
         size_t        nthreads;
-        
+
         // ------------------------------------------------------
         //	 grid structure
         // ------------------------------------------------------
         if(!mxIsStruct(prhs[1]))
             mexErrMsgTxt("First argument must be a structure.");
-        
+
         xmin  = static_cast<double*>( mxGetPr( mxGetField(prhs[1], 0, "xmin") ) );
         zmin  = static_cast<double*>( mxGetPr( mxGetField(prhs[1], 0, "zmin") ) );
         dx    = static_cast<double*>( mxGetPr( mxGetField(prhs[1], 0, "dx") ) );
@@ -61,7 +76,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         nz_d  = static_cast<double*>( mxGetPr( mxGetField(prhs[1], 0, "nz") ) );
         nsx_d = static_cast<double*>( mxGetPr( mxGetField(prhs[1], 0, "nsx") ) );
         nsz_d = static_cast<double*>( mxGetPr( mxGetField(prhs[1], 0, "nsz") ) );
-        
+
         // ------------------------------------------------------
         // number of threads
         // ------------------------------------------------------
@@ -74,41 +89,41 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 mexErrMsgIdAndTxt( "MATLAB:timestwo:inputNotRealScalarDouble",
                                   "Input must be a noncomplex scalar double.");
             }
-            
+
             double *dtmp = mxGetPr( prhs[2] );
             nthreads = round( *dtmp );
         }
-        
+
         nx = uint32_t(round(*nx_d));
         nz = uint32_t(round(*nz_d));
         nsx = uint32_t(round(*nsx_d));
         nsz = uint32_t(round(*nsz_d));
-        
-        plhs[0] = convertPtr2Mat<grid>(new grid(nx, nz, *dx, *dz,
+
+        plhs[0] = convertPtr2Mat<g2d>(new grid(nx, nz, *dx, *dz,
                                                 *xmin, *zmin,
                                                 nsx, nsz, nthreads));
         return;
     }
-    
+
     // Check there is a second input, which should be the class instance handle
     if (nrhs < 2)
         mexErrMsgTxt("Second input should be a class instance handle.");
-    
+
     // ---------------------------------------------------------------------------
     // Delete
     //
     if (!strcmp("delete", cmd)) {
         // Destroy the C++ object
-        destroyObject<grid>(prhs[1]);
+        destroyObject<g2d>(prhs[1]);
         // Warn if other commands were ignored
         if (nlhs != 0 || nrhs != 2)
             mexWarnMsgTxt("Delete: Unexpected arguments ignored.");
         return;
     }
-    
+
     // Get the class instance pointer from the second input
-    grid *grid_instance = convertMat2Ptr<grid>(prhs[1]);
-    
+    g2d *grid_instance = convertMat2Ptr<g2d>(prhs[1]);
+
     // Call the various class methods
     // ---------------------------------------------------------------------------
     // setSlowness
@@ -118,7 +133,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if (nlhs < 0 || nrhs != 3)
             mexErrMsgTxt("setSlowness: Unexpected arguments.");
         // Call the method
-        
+
         if (!(mxIsDouble(prhs[2]))) {
             mexErrMsgTxt("Slowness must be double precision.");
         }
@@ -132,24 +147,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if ( dim_array[1] != 1 ) {
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
-        
+
         vector<double> slown(nSlowness);
         for ( size_t n=0; n<nSlowness; ++n ) slown[n] = slowness[n];
-        
+
         try {
             grid_instance->setSlowness(slown);
         } catch (std::exception& e) {
             mexErrMsgTxt("Slowness values must be defined for each grid node.");
         }
-        
+
         return;
     }
-    
+
     //  ---------------------------------------------------------------------------
     // raytrace
     if (!strcmp("raytrace", cmd)) {
         // Check parameters
-        
+
         if ( nrhs != 5 && nrhs != 6 ) {
             mexErrMsgTxt("raytrace: Unexpected arguments.");
         }
@@ -172,16 +187,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if ( dim_array[1] != 1 ) {
             mexErrMsgTxt("Slowness must be a vector (nSlowness by 1).");
         }
-        
+
         vector<double> slown(nSlowness);
         for ( size_t n=0; n<nSlowness; ++n ) slown[n] = slowness[n];
-        
+
         try{
             grid_instance->setSlowness(slown);
         } catch (std::exception& e) {
             mexErrMsgTxt("Slowness values must be defined for each grid cell.");
         }
-        
+
         //
         // Tx
         //
@@ -198,7 +213,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Tx: matrix nTx by 2.");
         }
         double *Tx = static_cast<double*>( mxGetPr(prhs[3]) );
-        
+
         //
         // Rx
         //
@@ -215,11 +230,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mexErrMsgTxt("Rx: matrix nRx by 2.");
         }
         double *Rx = static_cast<double*>( mxGetPr(prhs[4]) );
-        
+
         if ( nTx != nRx ) {
             mexErrMsgTxt("nTx should be equal to nRx.");
         }
-        
+
         //
         // t0
         //
@@ -242,21 +257,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             tTx = new double [nTx];
             for ( size_t n=0; n<nTx; ++n ) tTx[n] = 0.0;
         }
-        
+
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(nRx, 1, mxREAL);
         double *t_arr = mxGetPr(plhs[0]);
-        
-        
+
+
         /* ------------------------------------------------------
          Optional output variables
          ------------------------------------------------------ */
-        
+
         mxArray **Rays;
-        
+
         /*
          Looking for redundants Tx pts
          */
@@ -273,7 +288,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             sxz_tmp.x = Tx[ntx];
             sxz_tmp.z = Tx[ntx+nTx];
             bool found = false;
-            
+
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 if ( vTx[nv][0].x==sxz_tmp.x &&
                     vTx[nv][0].z==sxz_tmp.z ) {
@@ -288,124 +303,63 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 iTx.push_back( vector<size_t>(1, ntx) );
             }
         }
-        
+
         if ( nrhs == 5 ) {
             delete [] tTx;
         }
-        
-        
+
+
         /*
          Looping over all non redundant Tx
          */
-        
-        vector<sxz<double>> vRx;
+
+        vector<vector<sxz<double>>> vRx( vTx.size() );
         vector<vector<double>> tt( vTx.size() );
         vector<vector<vector<sxz<double>>>> r_data( vTx.size() );
         vector<vector<siv2<double> > > L_data(nTx);
         vector<vector<vector<siv2<double> > > > l_data( vTx.size() );
-        
-        if ( grid_instance->getNthreads() == 1 || vTx.size()<=grid_instance->getNthreads() ) {
-            for ( size_t nv=0; nv<vTx.size(); ++nv ) {
-                
-                vRx.resize( 0 );
-                for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                    sxz_tmp.x = Rx[ iTx[nv][ni] ];
-                    sxz_tmp.z = Rx[ iTx[nv][ni]+nRx ];
-                    vRx.push_back( sxz_tmp );
-                }
-                
-                if ( nlhs == 3 ) {
-                    try {
-                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv]);
-                    } catch (...) {
-                        mexErrMsgTxt("Problem while raytracing.");
-                    }
-                } else if ( nlhs == 2 ) {
-                    try {
-                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv]);
-                    } catch (...) {
-                        mexErrMsgTxt("Problem while raytracing.");
-                    }
-                } else {
-                    try {
-                        grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv]);
-                    } catch (...) {
-                        mexErrMsgTxt("Problem while raytracing.");
-                    }
-                }
+
+        for ( size_t nv=0; nv<vTx.size(); ++nv ) {
+
+            vRx[nv].resize( 0 );
+            for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
+                sxz_tmp.x = Rx[ iTx[nv][ni] ];
+                sxz_tmp.z = Rx[ iTx[nv][ni]+nRx ];
+                vRx[nv].push_back( sxz_tmp );
+            }
+        }
+
+        if ( nlhs == 3 ) {
+            try {
+                grid_instance->raytrace(vTx, t0, vRx, tt, r_data, l_data);
+            } catch (...) {
+                mexErrMsgTxt("Problem while raytracing.");
+            }
+        } else if ( nlhs == 2 ) {
+            try {
+                grid_instance->raytrace(vTx, t0, vRx, tt, r_data);
+            } catch (...) {
+                mexErrMsgTxt("Problem while raytracing.");
             }
         } else {
-            size_t num_threads = grid_instance->getNthreads() < vTx.size() ? grid_instance->getNthreads() : vTx.size();
-            vector<size_t> blk_size(num_threads, 0);
-            size_t nj = vTx.size();
-            while (nj > 0) {
-                for ( size_t i=0; i<num_threads; ++i ) {
-                    blk_size[i] += 1;
-                    nj -= 1;
-                    if ( nj == 0 ) {
-                        break;
-                    }
-                }
+            try {
+                grid_instance->raytrace(vTx, t0, vRx, tt);
+            } catch (...) {
+                mexErrMsgTxt("Problem while raytracing.");
             }
-            
-            vector<thread> threads(num_threads);
-            size_t blk_start = 0;
-            for ( size_t i=0; i<num_threads; ++i ) {
-                
-                size_t blk_end = blk_start + blk_size[i];
-                
-                threads[i]=thread( [&grid_instance,&vTx,&tt,&t0,&Rx,&iTx,&nRx,
-                                    &nlhs,&r_data,&l_data,blk_start,blk_end,i]{
-                    
-                    for ( size_t nv=blk_start; nv<blk_end; ++nv ) {
-                        
-                        sxz<double> sxz_tmp;
-                        vector<sxz<double>> vRx;
-                        for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
-                            sxz_tmp.x = Rx[ iTx[nv][ni] ];
-                            sxz_tmp.z = Rx[ iTx[nv][ni]+nRx ];
-                            vRx.push_back( sxz_tmp );
-                        }
-                        if ( nlhs == 3 ) {
-                            try {
-                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], l_data[nv], i);
-                            } catch (...) {
-                                mexErrMsgTxt("Problem while raytracing.");
-                            }
-                        } else if ( nlhs == 2 ) {
-                            try {
-                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], r_data[nv], i);
-                            } catch (...) {
-                                mexErrMsgTxt("Problem while raytracing.");
-                            }
-                        } else {
-                            try {
-                                grid_instance->raytrace(vTx[nv], t0[nv], vRx, tt[nv], i);
-                            } catch (...) {
-                                mexErrMsgTxt("Problem while raytracing.");
-                            }
-                        }
-                    }
-                });
-                
-                blk_start = blk_end;
-            }
-            
-            std::for_each(threads.begin(),threads.end(),
-                          std::mem_fn(&std::thread::join));
         }
-        
+
         for ( size_t nv=0; nv<vTx.size(); ++nv ) {
             for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                 t_arr[ iTx[nv][ni] ] = tt[nv][ni];
             }
         }
-        
+
         if ( nlhs >= 2 ) {
             // 2rd arg: rays.
             plhs[1] = mxCreateCellMatrix(nRx, 1);
             Rays = (mxArray **) mxCalloc(nRx, sizeof(mxArray *));
-            
+
             for ( size_t nv=0; nv<vTx.size(); ++nv ) {
                 for ( size_t ni=0; ni<iTx[nv].size(); ++ni ) {
                     size_t npts = r_data[nv][ni].size();
@@ -425,7 +379,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     L_data[ iTx[nv][ni] ] = l_data[nv][ni];
                 }
             }
-            
+
             mwSize nLmax = 0;
             for ( size_t n=0; n<L_data.size(); ++n ) {
                 nLmax += L_data[n].size();
@@ -434,7 +388,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             double *Lval = mxGetPr( plhs[2] );
             mwIndex *irL  = mxGetIr( plhs[2] );
             mwIndex *jcL  = mxGetJc( plhs[2] );
-            
+
             size_t k = 0;
             for ( size_t j=0; j<nSlowness; ++j ) {
                 jcL[j] = k;
@@ -449,209 +403,209 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 }
             }
             jcL[nSlowness] = k;
-            
+
         }
         return;
     }
-    
+
     if (!strcmp("get_nthreads", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_nthreads: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_nthreads: has a maximum of one output argument.");
         }
-        
+
         size_t nt = grid_instance->getNthreads();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
 
     if (!strcmp("get_xmin", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_xmin: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_xmin: has a maximum of one output argument.");
         }
-        
+
         double nt = grid_instance->getXmin();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
 
     if (!strcmp("get_zmin", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_zmin: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_zmin: has a maximum of one output argument.");
         }
-        
+
         double nt = grid_instance->getZmin();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
 
     if (!strcmp("get_dx", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_dx: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_dx: has a maximum of one output argument.");
         }
-        
+
         double nt = grid_instance->getDx();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
-    
+
     if (!strcmp("get_dz", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_dz: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_dz: has a maximum of one output argument.");
         }
-        
+
         double nt = grid_instance->getDz();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
-    
+
     if (!strcmp("get_nx", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_nx: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_nx: has a maximum of one output argument.");
         }
-        
+
         uint32_t nt = grid_instance->getNcx();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
-    
+
     if (!strcmp("get_nz", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_nz: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_nz: has a maximum of one output argument.");
         }
-        
+
         uint32_t nt = grid_instance->getNcz();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
-    
+
     if (!strcmp("get_nsx", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_nx: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_nx: has a maximum of one output argument.");
         }
-        
+
         uint32_t nt = grid_instance->getNsnx();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
-    
+
     if (!strcmp("get_nsz", cmd)) {
         // Check parameters
-        
+
         if ( nrhs > 2 ) {
             mexErrMsgTxt("get_nz: No arguments needed.");
         }
         if (nlhs > 1) {
             mexErrMsgTxt("get_nz: has a maximum of one output argument.");
         }
-        
+
         uint32_t nt = grid_instance->getNsnz();
         /* ------------------------------------------------------
          Output variable
          ------------------------------------------------------ */
-        
+
         plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
         double *ntp = mxGetPr(plhs[0]);
         ntp[0] = (double)nt;
-        
+
         return;
     }
-    
+
     // Got here, so command not recognized
     mexErrMsgTxt("Command not recognized.");
 }
