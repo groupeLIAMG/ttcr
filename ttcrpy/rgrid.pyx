@@ -2900,7 +2900,7 @@ cdef class Grid2d:
                                   np.ndarray[np.double_t, ndim=1] grz,
                                   aniso=False):
         """
-        data_kernel_straight_rays(Tx, Rx, grx, grz, iso=True) -> L
+        data_kernel_straight_rays(Tx, Rx, grx, grz, aniso=False) -> L
 
         Raytracing with straight rays in 2D
 
