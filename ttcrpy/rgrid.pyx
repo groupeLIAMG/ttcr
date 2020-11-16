@@ -1747,7 +1747,7 @@ cdef class Grid2d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='FSM', iso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10) -> Grid2d
 
     Parameters
     ----------
@@ -1763,6 +1763,13 @@ cdef class Grid2d:
         raytracing method (default is SPM)
             - 'FSM' : fast marching method
             - 'SPM' : shortest path method
+    aniso : string
+        type of anisotropy (implemented only for the SPM method)
+            - 'iso' : isotropic medium
+            - 'elliptical' : elliptical anisotropy
+            - 'tilted_elliptical' : tilted elliptical anisotropy
+            - 'vti_psv' : vertical transverse isotropy, P and SV waves
+            - 'vti_sh' : vertical transverse isotropy, SH waves
     eps : double
         convergence criterion (FSM) (default is 1e-15)
     maxit : int
@@ -2890,9 +2897,10 @@ cdef class Grid2d:
     def data_kernel_straight_rays(np.ndarray[np.double_t, ndim=2] Tx,
                                   np.ndarray[np.double_t, ndim=2] Rx,
                                   np.ndarray[np.double_t, ndim=1] grx,
-                                  np.ndarray[np.double_t, ndim=1] grz):
+                                  np.ndarray[np.double_t, ndim=1] grz,
+                                  aniso=False):
         """
-        data_kernel_straight_rays(Tx, Rx, grx, grz) -> L
+        data_kernel_straight_rays(Tx, Rx, grx, grz, iso=True) -> L
 
         Raytracing with straight rays in 2D
 
@@ -2907,9 +2915,12 @@ cdef class Grid2d:
                 - 1st column contains X coordinates,
                 - 2nd contains Z coordinates
         grx : np.ndarray
-                grid node coordinates along x
+            grid node coordinates along x
         grz : np.ndarray
-                grid node coordinates along z
+            grid node coordinates along z
+        aniso : bool
+            compute L for elliptically anisotropic medium (True) or isotropic
+            medium (False)
 
         Returns
         -------
@@ -2925,6 +2936,7 @@ cdef class Grid2d:
         cdef size_t nTx = Tx.shape[0]
         cdef size_t n_grx = grx.shape[0]
         cdef size_t n_grz = grz.shape[0]
+        cdef size_t nCells = (n_grx-1)*(n_grz-1)
 
         cdef double small = 1.e-10
 
@@ -3001,7 +3013,10 @@ cdef class Grid2d:
 
                     dlz = ( grz[iz+1] if grz[iz+1]<zr else zr ) - z
 
-                    indices_p.append(iCell)
+                    if not aniso:
+                        indices_p.append(iCell)
+                    else:
+                        indices_p.append(iCell + nCells)
                     data_p.append(dlz)
                     k += 1
 
@@ -3032,11 +3047,19 @@ cdef class Grid2d:
                             xe = (ze-b)/m
                             dlx = xe - x
                             dlz = ze - z
-                            dl = sqrt( dlx*dlx + dlz*dlz )
 
-                            indices_p.append(iCell)
-                            data_p.append(dl)
-                            k += 1
+                            if not aniso:
+                                dl = sqrt( dlx*dlx + dlz*dlz )
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+                            else:
+                                indices_p.append(iCell)
+                                data_p.append(dlx)
+                                k += 1
+                                indices_p.append(iCell+nCells)
+                                data_p.append(dlz)
+                                k += 1
 
                             x = xe
                             z = ze
@@ -3051,11 +3074,19 @@ cdef class Grid2d:
                             xe = (ze-b)/m
                             dlx = xe - x
                             dlz = ze - z
-                            dl = sqrt( dlx*dlx + dlz*dlz )
 
-                            indices_p.append(iCell)
-                            data_p.append(dl)
-                            k += 1
+                            if not aniso:
+                                dl = sqrt( dlx*dlx + dlz*dlz )
+                                indices_p.append(iCell)
+                                data_p.append(dl)
+                                k += 1
+                            else:
+                                indices_p.append(iCell)
+                                data_p.append(dlx)
+                                k += 1
+                                indices_p.append(iCell+nCells)
+                                data_p.append(dlz)
+                                k += 1
 
                             x = xe
                             z = ze
@@ -3066,7 +3097,12 @@ cdef class Grid2d:
                     x = grx[ix]
 
         indptr_p.append(k)
-        L = sp.csr_matrix((data_p, indices_p, indptr_p), shape=(nTx, (n_grx-1)*(n_grz-1)))
+        if not aniso:
+            L = sp.csr_matrix((data_p, indices_p, indptr_p),
+                              shape=(nTx, nCells))
+        else:
+            L = sp.csr_matrix((data_p, indices_p, indptr_p),
+                              shape=(nTx, 2*nCells))
         return L
 
 
