@@ -206,10 +206,10 @@ namespace ttcr {
         
         void localSolver(NODE *vertexC, const size_t threadNo) const;
         
-        void getRaypath_ho(const std::vector<sxz<T1>>& Tx,
-                           const sxz<T1> &Rx,
-                           std::vector<sxz<T1>> &r_data,
-                           const size_t threadNo) const;
+        void getRaypath(const std::vector<sxz<T1>>& Tx,
+                        const sxz<T1> &Rx,
+                        std::vector<sxz<T1>> &r_data,
+                        const size_t threadNo) const;
         
         bool findIntersection(const T2 i0, const T2 i1,
                               const sxz<T1> &g,
@@ -820,7 +820,7 @@ namespace ttcr {
     
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
+    void Grid2Dun<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                                const sxz<T1> &Rx,
                                                std::vector<sxz<T1>> &r_data,
                                                const size_t threadNo) const {

@@ -249,7 +249,7 @@ namespace ttcr {
         
         for (size_t n=0; n<Rx.size(); ++n) {
             traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-            this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
+            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
         }
     }
     
@@ -298,7 +298,7 @@ namespace ttcr {
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
                 (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
                 
-                this->getRaypath_ho(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
+                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
             }
         }
     }

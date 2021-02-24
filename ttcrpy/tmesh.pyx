@@ -84,7 +84,7 @@ cdef class Mesh3d:
                 - 1 : least-squares second-order
                 - 2 : Averaging-Based method
         tt_from_rp : bool
-            compute traveltimes from raypaths (SPM od DSPM) (default is 1)
+            compute traveltimes from raypaths (SPM or DSPM) (default is 1)
         interp_vel : bool
             interpolate velocity instead of slowness at nodes (for
             cell_slowness == False or FSM) (defauls is False)

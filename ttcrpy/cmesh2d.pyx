@@ -61,20 +61,31 @@ cdef extern from "Node2Dcsp.h" namespace "ttcr":
         Node2Dcsp(size_t) except +
 
 
-cdef extern from "Grid2Ducsp.h" namespace "ttcr":
-    cdef cppclass Grid2Ducsp[T1,T2,NODE,S]:
-        Grid2Ducsp(vector[S], vector[triangleElem[T2]], T2, size_t) except +
+cdef extern from "Grid2D.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2D[T1,T2,S]:
         size_t getNthreads()
         size_t getNumberOfCells()
         size_t getNumberOfNodes(bool)
+        void setSlowness(vector[T1]&) except +
         void setSlowness(T1 *, size_t) except +
+        void getSlowness(vector[T1]&) except +
+        void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[S]&, vector[T1]&, vector[S]&, vector[T1]&, size_t) except +
         void raytrace(vector[S]&, vector[T1]&, vector[S]&, vector[T1]&, vector[vector[S]]&, vector[vector[siv[T1]]]&, size_t) except +
-        void calculateArea(vector[T1] &) except +
         void interpolateAtNodes(vector[T1] &) except +
-        void getTT(vector[T1]&, size_t)
         void getNodes(vector[S]&)
         void getTriangles(vector[vector[T2]]&)
+
+
+cdef extern from "Grid2Duc.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Duc[T1,T2,NODE,S](Grid2D[T1,T2,S]):
+        pass
+
+
+cdef extern from "Grid2Ducsp.h" namespace "ttcr":
+    cdef cppclass Grid2Ducsp[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
+        Grid2Ducsp(vector[S], vector[triangleElem[T2]], T2, size_t) except +
+        void calculateArea(vector[T1] &) except +
 
 
 cdef class Mesh2D:
@@ -94,7 +105,7 @@ cdef class Mesh2D:
             nsecondary : number of secondary nodes in triangle edges (int)
             nthreads : number of threads/processes for raytracing (int)
     """
-    cdef Grid2Ducsp[double, uint32_t, Node2Dcsp[double, uint32_t], sxz[double]] *mesh
+    cdef Grid2D[double, uint32_t, sxz[double]] *mesh
     def __cinit__(self, nodes, triangles, uint32_t nsecondary, size_t nthreads):
         cdef vector[sxz[double]] no
         for n in nodes:

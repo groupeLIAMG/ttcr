@@ -14,7 +14,7 @@ with open("README.md", "r") as fh:
 if platform.system() == 'Darwin':
     os.environ['CC'] = 'clang'
     os.environ['CXX'] = 'clang++'
-    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.15'
+#    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '11.1'
     extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3']
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']

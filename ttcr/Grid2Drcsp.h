@@ -65,18 +65,6 @@ namespace ttcr {
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
-                      const size_t threadNo=0) const;
-        
-        void raytrace(const std::vector<S>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<const std::vector<S>*>& Rx,
-                      std::vector<std::vector<T1>*>& traveltimes,
-                      const size_t threadNo=0) const;
-        
-        void raytrace(const std::vector<S>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<S>& Rx,
-                      std::vector<T1>& traveltimes,
                       std::vector<std::vector<S>>& r_data,
                       const size_t threadNo=0) const;
         
@@ -175,6 +163,17 @@ namespace ttcr {
         Grid2Drcsp() {}
         Grid2Drcsp(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
         Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      const size_t threadNo) const;
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<const std::vector<S>*>& Rx,
+                      const size_t threadNo=0) const;
+        
         
     };
     
@@ -419,7 +418,6 @@ namespace ttcr {
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -440,21 +438,12 @@ namespace ttcr {
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
         
         propagate_lw(queue, inQueue, frozen, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = getTraveltime(Rx[n], this->nodes, threadNo);
-        }
     }
     
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
                                             const size_t threadNo) const {
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
@@ -476,15 +465,6 @@ namespace ttcr {
         
         propagate_lw(queue, inQueue, frozen, threadNo);
         
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-        }
     }
     
     template<typename T1, typename T2, typename S, typename CELL>

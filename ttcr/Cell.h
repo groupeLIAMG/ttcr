@@ -33,12 +33,12 @@
 #include "ttcr_t.h"
 
 namespace ttcr {
-    
+
     template <typename T, typename NODE, typename S>
     class Cell {
     public:
         Cell(const size_t n) : slowness(std::vector<T>(n)) { }
-        
+
         void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -51,53 +51,53 @@ namespace ttcr {
         const T getSlowness(const size_t i) const {
             return slowness.at(i);
         }
-        
+
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for Cell.");
         }
-        
+
         void setChi(const std::vector<T>& s) {
             throw std::logic_error("Error: chi not defined for Cell.");
         }
-        
+
         void setPsi(const std::vector<T>& s) {
             throw std::logic_error("Error: psi not defined for Cell.");
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for Cell.");
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vp0 not defined for Cell.");
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vs0 not defined for Cell.");
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             throw std::logic_error("Error: delta not defined for Cell.");
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             throw std::logic_error("Error: epsilon not defined for Cell.");
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for Cell.");
         }
-        
+
         T computeDt(const S& source, const S& node,
                     const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
         }
-        
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
@@ -106,14 +106,14 @@ namespace ttcr {
                              siv2<T>& cell) const {
             cell.v = source.getDistance( node );
         }
-        
+
     private:
         std::vector<T> slowness;
     };
-    
-    
+
+
     // Elliptical anisotropy in 2D (Y Dimension ignored)
-    
+
     template <typename T, typename NODE, typename S>
     class CellElliptical {
     public:
@@ -121,7 +121,7 @@ namespace ttcr {
         slowness(std::vector<T>(n)),
         xi(std::vector<T>(n,0.0)) {
         }
-        
+
         void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -130,7 +130,7 @@ namespace ttcr {
                 slowness[n] = s[n];
             }
         }
-        
+
         const T getSlowness(const size_t i) const {
             return slowness.at(i);
         }
@@ -143,38 +143,45 @@ namespace ttcr {
                 xi[n] = s[n]*s[n];
             }
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for CellElliptical.");
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vp0 not defined for CellElliptical.");
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vs0 not defined for CellElliptical.");
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             throw std::logic_error("Error: delta not defined for CellElliptical.");
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             throw std::logic_error("Error: epsilon not defined for CellElliptical.");
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for CellElliptical.");
         }
-        
+
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            T lx = node.x - source.x;
+            T lz = node.z - source.z;
+            return slowness[cellNo] * std::sqrt( lx*lx + xi[cellNo]*lz*lz );
+        }
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             T lx = node.x - source.getX();
             T lz = node.z - source.getZ();
             return slowness[cellNo] * std::sqrt( lx*lx + xi[cellNo]*lz*lz );
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             T lx = node.getX() - source.getX();
@@ -186,15 +193,15 @@ namespace ttcr {
             cell.v  = std::abs(node.x - source.getX());
             cell.v2 = std::abs(node.z - source.getZ());
         }
-        
+
     private:
         std::vector<T> slowness;
         std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
     };
-    
-    
+
+
     // Elliptical anisotropy in 2D (Y Dimension ignored)
-    
+
     template <typename T, typename NODE, typename S>
     class CellTiltedElliptical {
     public:
@@ -205,7 +212,7 @@ namespace ttcr {
         ca(std::vector<T>(n,1.0)),
         sa(std::vector<T>(n,0.0)) {
         }
-        
+
         void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -214,7 +221,7 @@ namespace ttcr {
                 slowness[n] = s[n];
             }
         }
-        
+
         const T getSlowness(const size_t i) const {
             return slowness.at(i);
         }
@@ -227,7 +234,7 @@ namespace ttcr {
                 xi[n] = s[n]*s[n];
             }
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             if ( tAngle.size() != s.size() ) {
                 throw std::length_error("Error: angle vectors of incompatible size.");
@@ -238,53 +245,63 @@ namespace ttcr {
                 sa[n] = std::sin(s[n]);
             }
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vp0 not defined for CellTiltedElliptical.");
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vs0 not defined for CellTiltedElliptical.");
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             throw std::logic_error("Error: delta not defined for CellTiltedElliptical.");
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             throw std::logic_error("Error: epsilon not defined for CellTiltedElliptical.");
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for CellTiltedElliptical.");
         }
-        
+
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            T lx = node.x - source.x;
+            T lz = node.z - source.z;
+            T t1 = lx * ca[cellNo] + lz * sa[cellNo];
+            T t2 = lz * ca[cellNo] - lx * sa[cellNo];
+
+            return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
+        }
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             T lx = node.x - source.getX();
             T lz = node.z - source.getZ();
             T t1 = lx * ca[cellNo] + lz * sa[cellNo];
             T t2 = lz * ca[cellNo] - lx * sa[cellNo];
-            
+
             return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             T lx = node.getX() - source.getX();
             T lz = node.getZ() - source.getZ();
             T t1 = lx * ca[cellNo] + lz * sa[cellNo];
             T t2 = lz * ca[cellNo] - lx * sa[cellNo];
-            
+
             return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
         }
-        
+
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
             cell.v2 = std::abs(node.z - source.getZ());
         }
-        
+
     private:
         std::vector<T> slowness;
         std::vector<T> xi;        // anisotropy ratio, xi = sz / sx, *** squared ***
@@ -292,10 +309,10 @@ namespace ttcr {
         std::vector<T> ca;        // cosine of tAngle
         std::vector<T> sa;        // sine of tAngle
     };
-    
-    
-    
-    
+
+
+
+
     //  VTI anisotropy, P or SV phase, in 2D (Y Dimension ignored)
     template <typename T, typename NODE, typename S>
     class CellVTI_PSV {
@@ -307,7 +324,7 @@ namespace ttcr {
         epsilon(std::vector<T>(n)),
         delta(std::vector<T>(n)) {
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             if ( Vp0.size() != s.size() ) {
                 throw std::length_error("Error: Vp0 vectors of incompatible size.");
@@ -316,7 +333,7 @@ namespace ttcr {
                 Vp0[n] = s[n];
             }
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
@@ -325,7 +342,7 @@ namespace ttcr {
                 Vs0[n] = s[n];
             }
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             if ( epsilon.size() != s.size() ) {
                 throw std::length_error("Error: epsilon vectors of incompatible size.");
@@ -334,7 +351,7 @@ namespace ttcr {
                 epsilon[n] = s[n];
             }
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             if ( delta.size() != s.size() ) {
                 throw std::length_error("Error: delta vectors of incompatible size.");
@@ -343,12 +360,12 @@ namespace ttcr {
                 delta[n] = s[n];
             }
         }
-        
+
         void setPhase(const int p) {
             if ( p==1 ) sign = 1.;  // P wave
             else sign = -1.;        // SV wave
         }
-        
+
         void setSlowness(const std::vector<T>& s) {
             throw std::logic_error("Error: slowness not defined for CellVTI_PSV.");
         }
@@ -360,51 +377,66 @@ namespace ttcr {
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_PSV.");
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for CellVTI_PSV.");
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for CellVTI_PSV.");
         }
-        
+
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            // theta: angle w/r to vertical axis
+            T theta = atan2(node.x - source.x, node.z - source.z);
+            T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
+
+            T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
+
+            tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
+            sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
+
+            T v = Vp0[cellNo] * sqrt( tmp );
+            return source.getDistance( node ) / v;
+        }
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
             T theta = atan2(node.x - source.getX(), node.z - source.getZ());
             T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-            
+
             T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-            
+
             tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
             sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-            
+
             T v = Vp0[cellNo] * sqrt( tmp );
             return source.getDistance( node ) / v;
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
             T theta = atan2(node.getX() - source.getX(), node.getZ() - source.getZ());
             T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-            
+
             T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-            
+
             tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
             sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-            
+
             T v = Vp0[cellNo] * sqrt( tmp );
             return source.getDistance( node ) / v;
         }
-        
+
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
             cell.v2 = std::abs(node.z - source.getZ());
         }
-        
+
     private:
         T sign;
         std::vector<T> Vp0;
@@ -412,9 +444,9 @@ namespace ttcr {
         std::vector<T> epsilon;
         std::vector<T> delta;
     };
-    
-    
-    
+
+
+
     //  VTI anisotropy, SH phase, in 2D (Y Dimension ignored)
     template <typename T, typename NODE, typename S>
     class CellVTI_SH {
@@ -423,7 +455,7 @@ namespace ttcr {
         Vs0(std::vector<T>(n)),
         gamma(std::vector<T>(n)) {
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
@@ -432,7 +464,7 @@ namespace ttcr {
                 Vs0[n] = s[n];
             }
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             if ( gamma.size() != s.size() ) {
                 throw std::length_error("Error: gamma vectors of incompatible size.");
@@ -441,11 +473,11 @@ namespace ttcr {
                 gamma[n] = s[n];
             }
         }
-        
+
         void setSlowness(const std::vector<T>& s) {
             throw std::logic_error("Error: slowness not defined for CellVTI_SH.");
         }
-        
+
         const T getSlowness(const size_t i) const {
             throw std::logic_error("Error: slowness not defined for CellVTI_SH.");
         }
@@ -453,23 +485,31 @@ namespace ttcr {
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_SH.");
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for CellVTI_SH.");
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vp0 not defined for CellVTI_SH.");
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             throw std::logic_error("Error: delta not defined for CellVTI_SH.");
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             throw std::logic_error("Error: epsilon not defined for CellVTI_SH.");
         }
-        
+
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            // theta: angle w/r to vertical axis
+            T theta = atan2(node.x - source.x, node.z - source.z);
+            T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
+            return source.getDistance( node ) / v;
+        }
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
@@ -477,7 +517,7 @@ namespace ttcr {
             T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
             return source.getDistance( node ) / v;
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
@@ -485,7 +525,7 @@ namespace ttcr {
             T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
             return source.getDistance( node ) / v;
         }
-        
+
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
@@ -496,11 +536,11 @@ namespace ttcr {
         std::vector<T> Vs0;
         std::vector<T> gamma;
     };
-    
-    
-    
+
+
+
     // Elliptical anisotropy in 3D
-    
+
     template <typename T, typename NODE, typename S>
     class CellElliptical3D {
     public:
@@ -509,7 +549,7 @@ namespace ttcr {
         chi(std::vector<T>(n)),
         psi(std::vector<T>(n)) {
         }
-        
+
         void setSlowness(const std::vector<T>& s) {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -518,7 +558,7 @@ namespace ttcr {
                 slowness[n] = s[n];
             }
         }
-        
+
         const T getSlowness(const size_t i) const {
             return slowness.at(i);
         }
@@ -531,7 +571,7 @@ namespace ttcr {
                 chi[n] = s[n]*s[n];
             }
         }
-        
+
         void setPsi(const std::vector<T>& s) {
             if ( psi.size() != s.size() ) {
                 throw std::length_error("Error: psi vectors of incompatible size.");
@@ -540,27 +580,27 @@ namespace ttcr {
                 psi[n] = s[n]*s[n];
             }
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for CellElliptical3D.");
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vp0 not defined for CellElliptical3D.");
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vs0 not defined for CellElliptical3D.");
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             throw std::logic_error("Error: delta not defined for CellElliptical3D.");
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             throw std::logic_error("Error: epsilon not defined for CellElliptical3D.");
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for CellElliptical3D.");
         }
@@ -580,7 +620,7 @@ namespace ttcr {
             T lz = node.z - source.getZ();
             return slowness[cellNo] * std::sqrt( chi[cellNo]*lx*lx + psi[cellNo]*ly*ly + lz*lz );
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             T lx = node.getX() - source.getX();
@@ -588,15 +628,15 @@ namespace ttcr {
             T lz = node.getZ() - source.getZ();
             return slowness[cellNo] * std::sqrt( chi[cellNo]*lx*lx + psi[cellNo]*ly*ly + lz*lz );
         }
-        
+
     private:
         std::vector<T> slowness;  // this vector contains sz
         std::vector<T> chi;       // anisotropy ratio, chi = sx / sz, *** squared ***
         std::vector<T> psi;       // anisotropy ratio, psi = sy / sz, *** squared ***
     };
-    
-    
-    
+
+
+
     //  VTI anisotropy, P or SV phase, in 2D (Y Dimension ignored)
     template <typename T, typename NODE, typename S>
     class CellVTI_PSV3D {
@@ -608,7 +648,7 @@ namespace ttcr {
         epsilon(std::vector<T>(n)),
         delta(std::vector<T>(n)) {
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             if ( Vp0.size() != s.size() ) {
                 throw std::length_error("Error: Vp0 vectors of incompatible size.");
@@ -617,7 +657,7 @@ namespace ttcr {
                 Vp0[n] = s[n];
             }
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
@@ -626,7 +666,7 @@ namespace ttcr {
                 Vs0[n] = s[n];
             }
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             if ( epsilon.size() != s.size() ) {
                 throw std::length_error("Error: epsilon vectors of incompatible size.");
@@ -635,7 +675,7 @@ namespace ttcr {
                 epsilon[n] = s[n];
             }
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             if ( delta.size() != s.size() ) {
                 throw std::length_error("Error: delta vectors of incompatible size.");
@@ -644,24 +684,24 @@ namespace ttcr {
                 delta[n] = s[n];
             }
         }
-        
+
         void setPhase(const int p) {
             if ( p==1 ) sign = 1.;  // P wave
             else sign = -1.;        // SV wave
         }
-        
+
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_PSV3D.");
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for CellVTI_PSV3D.");
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             throw std::logic_error("Error: gamma not defined for CellVTI_PSV3D.");
         }
-        
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
@@ -670,16 +710,16 @@ namespace ttcr {
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T theta = atan2(lx, node.z - source.getZ());
             T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-            
+
             T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-            
+
             tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
             sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-            
+
             T v = Vp0[cellNo] * sqrt( tmp );
             return source.getDistance( node ) / v;
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
@@ -688,16 +728,16 @@ namespace ttcr {
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T theta = atan2(lx, node.getZ() - source.getZ());
             T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-            
+
             T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-            
+
             tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
             sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-            
+
             T v = Vp0[cellNo] * sqrt( tmp );
             return source.getDistance( node ) / v;
         }
-        
+
     private:
         T sign;
         std::vector<T> Vp0;
@@ -705,9 +745,9 @@ namespace ttcr {
         std::vector<T> epsilon;
         std::vector<T> delta;
     };
-    
-    
-    
+
+
+
     //  VTI anisotropy, SH phase, in 2D (Y Dimension ignored)
     template <typename T, typename NODE, typename S>
     class CellVTI_SH3D {
@@ -716,7 +756,7 @@ namespace ttcr {
         Vs0(std::vector<T>(n)),
         gamma(std::vector<T>(n)) {
         }
-        
+
         void setVs0(const std::vector<T>& s) {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
@@ -725,7 +765,7 @@ namespace ttcr {
                 Vs0[n] = s[n];
             }
         }
-        
+
         void setGamma(const std::vector<T>& s) {
             if ( gamma.size() != s.size() ) {
                 throw std::length_error("Error: gamma vectors of incompatible size.");
@@ -734,27 +774,27 @@ namespace ttcr {
                 gamma[n] = s[n];
             }
         }
-        
+
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for CellVTI_SH3D.");
         }
-        
+
         void setTiltAngle(const std::vector<T>& s) {
             throw std::logic_error("Error: TiltAngle not defined for CellVTI_SH3D.");
         }
-        
+
         void setVp0(const std::vector<T>& s) {
             throw std::logic_error("Error: Vp0 not defined for CellVTI_SH3D.");
         }
-        
+
         void setDelta(const std::vector<T>& s) {
             throw std::logic_error("Error: delta not defined for CellVTI_SH3D.");
         }
-        
+
         void setEpsilon(const std::vector<T>& s) {
             throw std::logic_error("Error: epsilon not defined for CellVTI_SH3D.");
         }
-        
+
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
@@ -765,7 +805,7 @@ namespace ttcr {
             T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
             return source.getDistance( node ) / v;
         }
-        
+
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
@@ -776,12 +816,12 @@ namespace ttcr {
             T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
             return source.getDistance( node ) / v;
         }
-        
+
     private:
         std::vector<T> Vs0;
         std::vector<T> gamma;
     };
-    
+
 }
 
 #endif /* Cell_h */

@@ -62,7 +62,7 @@ namespace ttcr {
         Grid2Duc(const std::vector<S>& no,
                  const std::vector<triangleElem<T2>>& tri,
                  const size_t nt=1) :
-        Grid2D<T1,T2,S>(tri.size(), nt), nThreads(nt),
+        Grid2D<T1,T2,S>(tri.size(), nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
         slowness(std::vector<T1>(tri.size())),
@@ -163,8 +163,6 @@ namespace ttcr {
                           const bool saveSlowness=true) const;
 #endif
         
-        const size_t getNthreads() const { return nThreads; }
-        
         void calculateArea(std::vector<T1> &) const;
         void interpolateAtNodes(std::vector<T1> &) const;
         void interpolateAtNodes(const std::vector<T1> &,
@@ -197,13 +195,19 @@ namespace ttcr {
         }
 
     protected:
-        const size_t nThreads;
         T2 nPrimary;
         mutable std::vector<NODE> nodes;
         std::vector<T1> slowness;
         std::vector<triangleElemAngle<T1,T2>> triangles;
         std::map<T2, virtualNode<T1,NODE>> virtualNodes;
-                
+        
+        void buildGridNodes(const std::vector<S>&,
+                            const size_t);
+
+        void buildGridNodes(const std::vector<S>&,
+                            const int,
+                            const size_t);
+
         T1 computeDt(const NODE& source, const S& node,
                      const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
@@ -244,15 +248,27 @@ namespace ttcr {
         
         void localSolver(NODE *vertexC, const size_t threadNo) const;
         
+        void getRaypath_fo(const std::vector<sxz<T1>>& Tx,
+                           const sxz<T1> &Rx,
+                           std::vector<sxz<T1>> &r_data,
+                           const size_t threadNo) const;
+        
         void getRaypath(const std::vector<sxz<T1>>& Tx,
                         const sxz<T1> &Rx,
                         std::vector<sxz<T1>> &r_data,
                         const size_t threadNo) const;
         
-        void getRaypath_ho(const std::vector<sxz<T1>>& Tx,
-                           const sxz<T1> &Rx,
-                           std::vector<sxz<T1>> &r_data,
-                           const size_t threadNo) const;
+        void getRaypath(const std::vector<sxz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxz<T1>& Rx,
+                        std::vector<sxz<T1>>& r_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
+        
+        T1 getTraveltimeFromRaypath(const std::vector<sxz<T1>>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const sxz<T1>& Rx,
+                                    const size_t threadNo) const;
         
         bool findIntersection(const T2 i0, const T2 i1,
                               const sxz<T1> &g,
@@ -265,6 +281,106 @@ namespace ttcr {
 
     };
     
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+                                                const size_t nt) {
+        // primary nodes
+        for ( T2 n=0; n<no.size(); ++n ) {
+            nodes[n].setXZindex( no[n].x, no[n].z, n );
+        }
+        for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
+            for ( size_t nl=0; nl<3; ++nl ) {
+                // push owner for primary nodes
+                nodes[ triangles[ntri].i[nl] ].pushOwner( ntri );
+            }
+            
+            // distance between node 1 & 2 (opposite of node 0)
+            T1 a = nodes[ triangles[ntri].i[1] ].getDistance( nodes[ triangles[ntri].i[2] ] );
+            
+            // distance between node 0 & 2 (opposite of node 1)
+            T1 b = nodes[ triangles[ntri].i[0] ].getDistance( nodes[ triangles[ntri].i[2] ] );
+            
+            // distance between node 0 & 1 (opposite of node 2]
+            T1 c = nodes[ triangles[ntri].i[0] ].getDistance( nodes[ triangles[ntri].i[1] ] );
+            
+            triangles[ntri].l[0] = a;
+            triangles[ntri].l[1] = b;
+            triangles[ntri].l[2] = c;
+            
+            // angle at node 0
+            triangles[ntri].a[0] = acos((b*b + c*c - a*a)/(2.*b*c));
+            
+            // angle at node 1
+            triangles[ntri].a[1] = acos((c*c + a*a - b*b)/(2.*a*c));
+            
+            // angle at node 2
+            triangles[ntri].a[2] = acos((a*a + b*b - c*c)/(2.*a*b));
+            
+        }
+    }
+
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+                                                const int nsecondary,
+                                                const size_t nt) {
+
+        // primary nodes
+        for ( T2 n=0; n<no.size(); ++n ) {
+            nodes[n].setXYZindex( no[n], n );
+        }
+        T2 nNodes = static_cast<T2>(nodes.size());
+        
+        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+        std::array<T2,2> lineKey;
+        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+        
+        size_t estLineNo = (triangles.size()+triangles.size()/10) * 3/2;
+        nodes.reserve( nNodes + estLineNo*nsecondary );
+        
+        // edge nodes
+        NODE tmpNode(nt);
+        for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
+            
+            for ( size_t nl=0; nl<3; ++nl ) {
+                
+                // push owner for primary nodes
+                nodes[ triangles[ntri].i[nl] ].pushOwner( ntri );
+                
+                if ( nsecondary>0 ) {
+                    
+                    lineKey = { triangles[ntri].i[nl],
+                        triangles[ntri].i[(nl+1)%3] };
+                    std::sort(lineKey.begin(), lineKey.end());
+                    
+                    lineIt = lineMap.find( lineKey );
+                    if ( lineIt == lineMap.end() ) {
+                        // not found, insert new pair
+                        lineMap[ lineKey ] = std::vector<T2>(nsecondary);
+                    } else {
+                        for ( size_t n=0; n<lineIt->second.size(); ++n ) {
+                            // setting owners
+                            nodes[ lineIt->second[n] ].pushOwner( ntri );
+                        }
+                        continue;
+                    }
+                    
+                    S d = (no[lineKey[1]]-no[lineKey[0]])/static_cast<T1>(nsecondary+1);
+                    
+                    for ( size_t n2=0; n2<nsecondary; ++n2 ) {
+                        tmpNode.setXYZindex(no[lineKey[0]]+static_cast<T1>(1+n2)*d,
+                                            nNodes );
+                        lineMap[lineKey][n2] = nNodes++;
+                        nodes.push_back( tmpNode );
+                        nodes.back().pushOwner( ntri );
+                    }
+                }
+            }
+        }
+        
+        nodes.shrink_to_fit();
+    }
+
     template<typename T1, typename T2, typename NODE, typename S>
     T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
                                              const std::vector<NODE>& nodes,
@@ -852,15 +968,11 @@ namespace ttcr {
         }
     }
     
-    
-    
-    
-    
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
-                                            const sxz<T1> &Rx,
-                                            std::vector<sxz<T1>> &r_data,
-                                            const size_t threadNo) const {
+    void Grid2Duc<T1,T2,NODE,S>::getRaypath_fo(const std::vector<sxz<T1>>& Tx,
+                                               const sxz<T1> &Rx,
+                                               std::vector<sxz<T1>> &r_data,
+                                               const size_t threadNo) const {
         
         T1 minDist = small;
         r_data.push_back( Rx );
@@ -1245,10 +1357,10 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getRaypath_ho(const std::vector<sxz<T1>>& Tx,
-                                               const sxz<T1> &Rx,
-                                               std::vector<sxz<T1>> &r_data,
-                                               const size_t threadNo) const {
+    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+                                            const sxz<T1> &Rx,
+                                            std::vector<sxz<T1>> &r_data,
+                                            const size_t threadNo) const {
         
         T1 minDist = small;
         r_data.push_back( Rx );
@@ -1332,18 +1444,6 @@ namespace ttcr {
                     
                     T1 theta1 = acos( dot(v1, g) );
                     T1 theta2 = acos( dot(v1, v2) );
-                    
-                    //				std::cout << '\n';
-                    //				std::cout << "Node: " << nodes[ nodeNo ].getX() << ' ' << nodes[ nodeNo ].getZ() << '\t' << nodes[ nodeNo ].getTT(threadNo) << '\n';
-                    //				std::cout << "n0  : " << nodes[ nb[0] ].getX() << ' ' << nodes[ nb[0] ].getZ() << '\t' << nodes[ nb[0] ].getTT(threadNo) << '\n';
-                    //				std::cout << "n1  : " << nodes[ nb[1] ].getX() << ' ' << nodes[ nb[1] ].getZ() << '\t' << nodes[ nb[1] ].getTT(threadNo) << '\n';
-                    //
-                    //				std::cout << "grad: " << grad << '\n';
-                    //				std::cout << "v1  : " << v1 << '\n';
-                    //				std::cout << "v2  : " << v2 << '\n';
-                    //
-                    //				std::cout << "theta1: " << theta1 << '\n';
-                    //				std::cout << "theta2: " << theta2 << '\n';
                     
                     if ( theta1 > theta2 ) {
                         grads.push_back( g );
@@ -1637,6 +1737,817 @@ namespace ttcr {
         }
     }
     
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const sxz<T1> &Rx,
+                                            std::vector<sxz<T1>> &r_data,
+                                            T1 &tt,
+                                            const size_t threadNo) const {
+    
+        T1 minDist = small;
+        r_data.push_back( Rx );
+        tt = 0.0;
+        
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
+                return;
+            }
+        }
+        
+        std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<T2> txNode( Tx.size() );
+        std::vector<T2> txCell( Tx.size() );
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == Tx[nt] ) {
+                    txOnNode[nt] = true;
+                    txNode[nt] = nn;
+                    break;
+                }
+            }
+        }
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            if ( !txOnNode[nt] ) {
+                txCell[nt] = getCellNo( Tx[nt] );
+            }
+        }
+        
+        T2 cellNo, nodeNo;
+        sxz<T1> curr_pt( Rx );
+        
+        bool onNode=false;
+        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == curr_pt ) {
+                nodeNo = nn;
+                onNode = true;
+                break;
+            }
+        }
+        if ( !onNode ) {
+            cellNo = getCellNo( curr_pt );
+        }
+        
+        Grad2D_ls_so<T1,NODE> grad2d;
+        
+        bool reachedTx = false;
+        bool onEdge = false;
+        std::array<T2,2> edgeNodes;
+        
+        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            if ( cellNo == txCell[nt] ) {
+                tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                r_data.push_back( Tx[nt] );
+                reachedTx = true;
+                break;
+            }
+        }
+        
+        while ( reachedTx == false ) {
+            
+            if ( onNode ) {
+                
+                // find cell for which gradient intersect opposing segment
+                bool foundIntersection = false;
+                std::vector<sxz<T1>> grads;
+                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                    
+                    T2 nb[2];
+                    size_t n=0;
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                        if ( *nn != nodeNo ) {
+                            nb[n++] = *nn;
+                        }
+                    }
+                    if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
+                    
+                    std::set<NODE*> nnodes;
+                    getNeighborNodes(*nc, nnodes);
+                    
+                    sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                    
+                    sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
+                        nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
+                    sxz<T1> v2 = { nodes[ nb[1] ].getX() - nodes[ nodeNo ].getX(),
+                        nodes[ nb[1] ].getZ() - nodes[ nodeNo ].getZ() };
+                    
+                    g.normalize();
+                    v1.normalize();
+                    v2.normalize();
+                    
+                    T1 theta1 = acos( dot(v1, g) );
+                    T1 theta2 = acos( dot(v1, v2) );
+                    
+                    if ( theta1 > theta2 ) {
+                        grads.push_back( g );
+                        continue;
+                    }
+                    
+                    if ( boost::math::sign( cross(v1, g) ) != boost::math::sign( cross(v1, v2) ) ) {
+                        grads.push_back( g );
+                        continue;
+                    }
+                    
+                    foundIntersection = true;
+                    
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            tt += t0[nt] + slowness[*nc] * r_data.back().getDistance( Tx[nt] );
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+                    
+                    bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
+                    
+                    tt += slowness[*nc] * r_data.back().getDistance( curr_pt );
+                    r_data.push_back( curr_pt );
+                    if ( break_flag ) break;
+                    
+                    onEdge = true;
+                    edgeNodes[0] = nb[0];
+                    edgeNodes[1] = nb[1];
+                    
+                    // find next cell
+                    cellNo = findNextCell1(nb[0], nb[1], nodeNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                    }
+                    break;
+                }
+                
+                if ( foundIntersection == false ) {
+                    
+                    // compute average gradient
+                    sxz<T1> g = { 0., 0. };
+                    for ( size_t n=0; n<grads.size(); ++n ) {
+                        g.x += grads[n].x;
+                        g.z += grads[n].z;
+                    }
+                    g.x /= grads.size();
+                    g.z /= grads.size();
+                    
+                    
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                        
+                        T2 nb[2];
+                        size_t n=0;
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                            if ( *nn != nodeNo ) {
+                                nb[n++] = *nn;
+                            }
+                        }
+                        if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
+                        
+                        sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
+                            nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
+                        sxz<T1> v2 = { nodes[ nb[1] ].getX() - nodes[ nodeNo ].getX(),
+                            nodes[ nb[1] ].getZ() - nodes[ nodeNo ].getZ() };
+                        
+                        g.normalize();
+                        v1.normalize();
+                        v2.normalize();
+                        
+                        T1 theta1 = acos( dot(v1, g) );
+                        T1 theta2 = acos( dot(v1, v2) );
+                        
+                        if ( theta1 > theta2 ) {
+                            continue;
+                        }
+                        
+                        if ( boost::math::sign( cross(v1, g) ) != boost::math::sign( cross(v1, v2) ) ) {
+                            continue;
+                        }
+                        
+                        foundIntersection = true;
+                        
+                        bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
+                        
+                        tt += slowness[*nc] * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        if ( break_flag ) break;
+                        
+                        onEdge = true;
+                        edgeNodes[0] = nb[0];
+                        edgeNodes[1] = nb[1];
+                        
+                        // find next cell
+                        cellNo = findNextCell1(nb[0], nb[1], nodeNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                            << Rx.x << ' ' << Rx.z << std::endl;
+                            r_data.resize(1);
+                            r_data[0] = Rx;
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                }
+                if ( foundIntersection == false ) {
+                    std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.z << std::endl;
+                    r_data.resize(1);
+                    r_data[0] = Rx;
+                    reachedTx = true;
+                }
+                
+            } else {
+                
+                std::set<NODE*> nnodes;
+                getNeighborNodes(cellNo, nnodes);
+                
+                sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                
+                g.normalize();
+                
+                // we have 3 segments that we might intersect
+                T2 ind[3][2] = { {this->neighbors[cellNo][0], this->neighbors[cellNo][1]},
+                    {this->neighbors[cellNo][0], this->neighbors[cellNo][2]},
+                    {this->neighbors[cellNo][1], this->neighbors[cellNo][2]} };
+                
+                for ( size_t ns=0; ns<3; ++ns )
+                if ( ind[ns][0]>ind[ns][1] )
+                    std::swap( ind[ns][0], ind[ns][1] );
+                
+                sxz<T1> pt_i;
+                T1 m1, b1, m2, b2;
+                bool foundIntersection = false;
+                for ( size_t ns=0; ns<3; ++ns ) {
+                    
+                    // equation of the edge segment
+                    T1 den = nodes[ ind[ns][1] ].getX() - nodes[ ind[ns][0] ].getX();
+                    
+                    if ( den == 0.0 ) {
+                        m1 = INFINITY;
+                        b1 = nodes[ ind[ns][1] ].getX();
+                    } else {
+                        m1 = ( nodes[ ind[ns][1] ].getZ() - nodes[ ind[ns][0] ].getZ() ) / den;
+                        b1 = nodes[ ind[ns][1] ].getZ() - m1*nodes[ ind[ns][1] ].getX();
+                    }
+                    
+                    // equation of the vector starting at curr_pt & pointing along gradient
+                    if ( g.x == 0.0 ) {
+                        m2 = INFINITY;
+                        b2 = curr_pt.x;
+                    } else {
+                        m2 = g.z/g.x;
+                        b2 = curr_pt.z - m2*curr_pt.x;
+                    }
+                    
+                    if ( onEdge && ind[ns][0]==edgeNodes[0] && ind[ns][1]==edgeNodes[1] ) {
+                        
+                        if ( std::abs(m1-m2)<small ) {
+                            // curr_pt is on an edge and gradient is along the edge
+                            // den is the direction of vector P0->P1 along x
+                            if ( boost::math::sign(den) == boost::math::sign(g.x) ) {
+                                curr_pt.x = nodes[ ind[ns][1] ].getX();
+                                curr_pt.z = nodes[ ind[ns][1] ].getZ();
+                                sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
+                                cellNo = getCellNo(mid_pt);
+                                tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                                r_data.push_back( curr_pt );
+                                foundIntersection = true;
+                                break;
+                            } else {
+                                curr_pt.x = nodes[ ind[ns][0] ].getX();
+                                curr_pt.z = nodes[ ind[ns][0] ].getZ();
+                                sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
+                                cellNo = getCellNo(mid_pt);
+                                tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                                r_data.push_back( curr_pt );
+                                foundIntersection = true;
+                                break;
+                            }
+                            
+                        }
+                        continue;
+                    }
+                    // intersection of edge segment & gradient vector
+                    if ( m1 == INFINITY ) {
+                        pt_i.x = b1;
+                        pt_i.z = m2*pt_i.x + b2;
+                    } else if ( m2 == INFINITY ) {
+                        pt_i.x = b2;
+                        pt_i.z = m1*pt_i.x + b1;
+                    } else {
+                        pt_i.x = (b2-b1)/(m1-m2);
+                        pt_i.z = m2*pt_i.x + b2;
+                    }
+                    
+                    sxz<T1> vec(pt_i.x-curr_pt.x, pt_i.z-curr_pt.z);
+                    if ( dot(vec, g) <= 0.0 ) {
+                        // we are not pointing in the same direction
+                        continue;
+                    }
+                    
+                    
+                    if (((pt_i.x<=nodes[ ind[ns][1] ].getX() && pt_i.x>=nodes[ ind[ns][0] ].getX()) ||
+                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX())) &&
+                        ((pt_i.z<=nodes[ ind[ns][0] ].getZ() && pt_i.z>=nodes[ ind[ns][1] ].getZ()) ||
+                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ())))
+                    {
+                        foundIntersection = true;
+                        sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + pt_i);
+                        cellNo = getCellNo(mid_pt);
+                        tt += slowness[cellNo] * r_data.back().getDistance( pt_i );
+                        r_data.push_back( pt_i );
+                        curr_pt = pt_i;
+                        
+                        onEdge = true;
+                        edgeNodes[0] = ind[ns][0];
+                        edgeNodes[1] = ind[ns][1];
+                        
+                        // find next cell
+                        cellNo = findNextCell2(ind[ns][0], ind[ns][1], cellNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                            << Rx.x << ' ' << Rx.z << std::endl;
+                            r_data.resize(1);
+                            r_data[0] = Rx;
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                    
+                }
+                if ( foundIntersection == false ) {
+                    
+                    // we must be on an edge with gradient pointing slightly outside triangle
+                    sxz<T1> vec(nodes[ edgeNodes[1] ].getX() - nodes[ edgeNodes[0] ].getX(),
+                                nodes[ edgeNodes[1] ].getZ() - nodes[ edgeNodes[0] ].getZ());
+                    
+                    if ( dot(vec, g) > 0.0 ) {
+                        curr_pt.x = nodes[ edgeNodes[1] ].getX();
+                        curr_pt.z = nodes[ edgeNodes[1] ].getZ();
+                        sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
+                        cellNo = getCellNo(mid_pt);
+                        tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        foundIntersection = true;
+                    } else {
+                        curr_pt.x = nodes[ edgeNodes[0] ].getX();
+                        curr_pt.z = nodes[ edgeNodes[0] ].getZ();
+                        sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
+                        cellNo = getCellNo(mid_pt);
+                        tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        foundIntersection = true;
+                    }
+                }
+                
+            }
+            
+            onNode=false;
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == curr_pt ) {
+                    nodeNo = nn;
+                    onNode = true;
+                    onEdge = false;
+                    break;
+                }
+            }
+            
+            if ( onNode ) {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                        reachedTx = true;
+                        break;
+                    }
+                }
+            } else {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( txOnNode[nt] ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
+                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                            if ( cellNo == *nc ) {
+                                tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                                r_data.push_back( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        if ( cellNo == txCell[nt] ) {
+                            tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                            r_data.push_back( Tx[nt] );
+                            reachedTx = true;
+                        }
+                    }
+                    if ( reachedTx ) break;
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    T1 Grid2Duc<T1,T2,NODE,S>::getTraveltimeFromRaypath(const std::vector<sxz<T1>>& Tx,
+                                                        const std::vector<T1>& t0,
+                                                        const sxz<T1> &Rx,
+                                                        const size_t threadNo) const {
+        
+        T1 minDist = small;
+        T1 tt = 0.0;
+        
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
+                return tt;
+            }
+        }
+        
+        std::vector<bool> txOnNode( Tx.size(), false );
+        std::vector<T2> txNode( Tx.size() );
+        std::vector<T2> txCell( Tx.size() );
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == Tx[nt] ) {
+                    txOnNode[nt] = true;
+                    txNode[nt] = nn;
+                    break;
+                }
+            }
+        }
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            if ( !txOnNode[nt] ) {
+                txCell[nt] = getCellNo( Tx[nt] );
+            }
+        }
+        
+        T2 cellNo, nodeNo;
+        sxz<T1> prev_pt( Rx );
+        sxz<T1> curr_pt( Rx );
+        
+        bool onNode=false;
+        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == curr_pt ) {
+                nodeNo = nn;
+                onNode = true;
+                break;
+            }
+        }
+        if ( !onNode ) {
+            cellNo = getCellNo( curr_pt );
+        }
+        
+        Grad2D_ls_so<T1,NODE> grad2d;
+        
+        bool reachedTx = false;
+        bool onEdge = false;
+        std::array<T2,2> edgeNodes;
+        
+        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            if ( cellNo == txCell[nt] ) {
+                tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                reachedTx = true;
+                break;
+            }
+        }
+        
+        while ( reachedTx == false ) {
+            
+            if ( onNode ) {
+                
+                // find cell for which gradient intersect opposing segment
+                bool foundIntersection = false;
+                std::vector<sxz<T1>> grads;
+                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                    
+                    T2 nb[2];
+                    size_t n=0;
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                        if ( *nn != nodeNo ) {
+                            nb[n++] = *nn;
+                        }
+                    }
+                    if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
+                    
+                    std::set<NODE*> nnodes;
+                    getNeighborNodes(*nc, nnodes);
+                    
+                    sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                    
+                    sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
+                        nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
+                    sxz<T1> v2 = { nodes[ nb[1] ].getX() - nodes[ nodeNo ].getX(),
+                        nodes[ nb[1] ].getZ() - nodes[ nodeNo ].getZ() };
+                    
+                    g.normalize();
+                    v1.normalize();
+                    v2.normalize();
+                    
+                    T1 theta1 = acos( dot(v1, g) );
+                    T1 theta2 = acos( dot(v1, v2) );
+                    
+                    if ( theta1 > theta2 ) {
+                        grads.push_back( g );
+                        continue;
+                    }
+                    
+                    if ( boost::math::sign( cross(v1, g) ) != boost::math::sign( cross(v1, v2) ) ) {
+                        grads.push_back( g );
+                        continue;
+                    }
+                    
+                    foundIntersection = true;
+                    
+                    //  check if cell is (one of) TxCell(s)
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( *nc == txCell[nt] ) {
+                            tt += t0[nt] + slowness[*nc] * prev_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+                    
+                    bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
+                    
+                    tt += slowness[*nc] * prev_pt.getDistance( curr_pt );
+                    prev_pt = curr_pt;
+                    if ( break_flag ) break;
+                    
+                    onEdge = true;
+                    edgeNodes[0] = nb[0];
+                    edgeNodes[1] = nb[1];
+                    
+                    // find next cell
+                    cellNo = findNextCell1(nb[0], nb[1], nodeNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.z << std::endl;
+                        reachedTx = true;
+                    }
+                    break;
+                }
+                
+                if ( foundIntersection == false ) {
+                    
+                    // compute average gradient
+                    sxz<T1> g = { 0., 0. };
+                    for ( size_t n=0; n<grads.size(); ++n ) {
+                        g.x += grads[n].x;
+                        g.z += grads[n].z;
+                    }
+                    g.x /= grads.size();
+                    g.z /= grads.size();
+                    
+                    
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                        
+                        T2 nb[2];
+                        size_t n=0;
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                            if ( *nn != nodeNo ) {
+                                nb[n++] = *nn;
+                            }
+                        }
+                        if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
+                        
+                        sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
+                            nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
+                        sxz<T1> v2 = { nodes[ nb[1] ].getX() - nodes[ nodeNo ].getX(),
+                            nodes[ nb[1] ].getZ() - nodes[ nodeNo ].getZ() };
+                        
+                        g.normalize();
+                        v1.normalize();
+                        v2.normalize();
+                        
+                        T1 theta1 = acos( dot(v1, g) );
+                        T1 theta2 = acos( dot(v1, v2) );
+                        
+                        if ( theta1 > theta2 ) {
+                            continue;
+                        }
+                        
+                        if ( boost::math::sign( cross(v1, g) ) != boost::math::sign( cross(v1, v2) ) ) {
+                            continue;
+                        }
+                        
+                        foundIntersection = true;
+                        
+                        bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
+                        
+                        tt += slowness[*nc] * prev_pt.getDistance( curr_pt );
+                        prev_pt = curr_pt;
+                        if ( break_flag ) break;
+                        
+                        onEdge = true;
+                        edgeNodes[0] = nb[0];
+                        edgeNodes[1] = nb[1];
+                        
+                        // find next cell
+                        cellNo = findNextCell1(nb[0], nb[1], nodeNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                            << Rx.x << ' ' << Rx.z << std::endl;
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                }
+                if ( foundIntersection == false ) {
+                    std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.z << std::endl;
+                    reachedTx = true;
+                }
+                
+            } else {
+                
+                std::set<NODE*> nnodes;
+                getNeighborNodes(cellNo, nnodes);
+                
+                sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                
+                g.normalize();
+                
+                // we have 3 segments that we might intersect
+                T2 ind[3][2] = { {this->neighbors[cellNo][0], this->neighbors[cellNo][1]},
+                    {this->neighbors[cellNo][0], this->neighbors[cellNo][2]},
+                    {this->neighbors[cellNo][1], this->neighbors[cellNo][2]} };
+                
+                for ( size_t ns=0; ns<3; ++ns )
+                if ( ind[ns][0]>ind[ns][1] )
+                    std::swap( ind[ns][0], ind[ns][1] );
+                
+                sxz<T1> pt_i;
+                T1 m1, b1, m2, b2;
+                bool foundIntersection = false;
+                for ( size_t ns=0; ns<3; ++ns ) {
+                    
+                    // equation of the edge segment
+                    T1 den = nodes[ ind[ns][1] ].getX() - nodes[ ind[ns][0] ].getX();
+                    
+                    if ( den == 0.0 ) {
+                        m1 = INFINITY;
+                        b1 = nodes[ ind[ns][1] ].getX();
+                    } else {
+                        m1 = ( nodes[ ind[ns][1] ].getZ() - nodes[ ind[ns][0] ].getZ() ) / den;
+                        b1 = nodes[ ind[ns][1] ].getZ() - m1*nodes[ ind[ns][1] ].getX();
+                    }
+                    
+                    // equation of the vector starting at curr_pt & pointing along gradient
+                    if ( g.x == 0.0 ) {
+                        m2 = INFINITY;
+                        b2 = curr_pt.x;
+                    } else {
+                        m2 = g.z/g.x;
+                        b2 = curr_pt.z - m2*curr_pt.x;
+                    }
+                    
+                    if ( onEdge && ind[ns][0]==edgeNodes[0] && ind[ns][1]==edgeNodes[1] ) {
+                        
+                        if ( std::abs(m1-m2)<small ) {
+                            // curr_pt is on an edge and gradient is along the edge
+                            // den is the direction of vector P0->P1 along x
+                            if ( boost::math::sign(den) == boost::math::sign(g.x) ) {
+                                curr_pt.x = nodes[ ind[ns][1] ].getX();
+                                curr_pt.z = nodes[ ind[ns][1] ].getZ();
+                                sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                                cellNo = getCellNo(mid_pt);
+                                tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                                prev_pt = curr_pt;
+                                foundIntersection = true;
+                                break;
+                            } else {
+                                curr_pt.x = nodes[ ind[ns][0] ].getX();
+                                curr_pt.z = nodes[ ind[ns][0] ].getZ();
+                                sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                                cellNo = getCellNo(mid_pt);
+                                tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                                prev_pt = curr_pt;
+                                foundIntersection = true;
+                                break;
+                            }
+                            
+                        }
+                        continue;
+                    }
+                    // intersection of edge segment & gradient vector
+                    if ( m1 == INFINITY ) {
+                        pt_i.x = b1;
+                        pt_i.z = m2*pt_i.x + b2;
+                    } else if ( m2 == INFINITY ) {
+                        pt_i.x = b2;
+                        pt_i.z = m1*pt_i.x + b1;
+                    } else {
+                        pt_i.x = (b2-b1)/(m1-m2);
+                        pt_i.z = m2*pt_i.x + b2;
+                    }
+                    
+                    sxz<T1> vec(pt_i.x-curr_pt.x, pt_i.z-curr_pt.z);
+                    if ( dot(vec, g) <= 0.0 ) {
+                        // we are not pointing in the same direction
+                        continue;
+                    }
+                    
+                    
+                    if (((pt_i.x<=nodes[ ind[ns][1] ].getX() && pt_i.x>=nodes[ ind[ns][0] ].getX()) ||
+                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX())) &&
+                        ((pt_i.z<=nodes[ ind[ns][0] ].getZ() && pt_i.z>=nodes[ ind[ns][1] ].getZ()) ||
+                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ())))
+                    {
+                        foundIntersection = true;
+                        sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + pt_i);
+                        cellNo = getCellNo(mid_pt);
+                        tt += slowness[cellNo] * prev_pt.getDistance( pt_i );
+                        prev_pt = pt_i;
+                        curr_pt = pt_i;
+                        
+                        onEdge = true;
+                        edgeNodes[0] = ind[ns][0];
+                        edgeNodes[1] = ind[ns][1];
+                        
+                        // find next cell
+                        cellNo = findNextCell2(ind[ns][0], ind[ns][1], cellNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                            << Rx.x << ' ' << Rx.z << std::endl;
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                    
+                }
+                if ( foundIntersection == false ) {
+                    
+                    // we must be on an edge with gradient pointing slightly outside triangle
+                    sxz<T1> vec(nodes[ edgeNodes[1] ].getX() - nodes[ edgeNodes[0] ].getX(),
+                                nodes[ edgeNodes[1] ].getZ() - nodes[ edgeNodes[0] ].getZ());
+                    
+                    if ( dot(vec, g) > 0.0 ) {
+                        curr_pt.x = nodes[ edgeNodes[1] ].getX();
+                        curr_pt.z = nodes[ edgeNodes[1] ].getZ();
+                        sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                        cellNo = getCellNo(mid_pt);
+                        tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                        prev_pt = curr_pt;
+                        foundIntersection = true;
+                    } else {
+                        curr_pt.x = nodes[ edgeNodes[0] ].getX();
+                        curr_pt.z = nodes[ edgeNodes[0] ].getZ();
+                        sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                        cellNo = getCellNo(mid_pt);
+                        tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                        prev_pt = curr_pt;
+                        foundIntersection = true;
+                    }
+                }
+                
+            }
+            
+            onNode=false;
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == curr_pt ) {
+                    nodeNo = nn;
+                    onNode = true;
+                    onEdge = false;
+                    break;
+                }
+            }
+            
+            if ( onNode ) {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                        reachedTx = true;
+                        break;
+                    }
+                }
+            } else {
+                for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                    if ( txOnNode[nt] ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
+                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                            if ( cellNo == *nc ) {
+                                tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        if ( cellNo == txCell[nt] ) {
+                            tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                            reachedTx = true;
+                        }
+                    }
+                    if ( reachedTx ) break;
+                }
+            }
+        }
+        return tt;
+    }
+
     template<typename T1, typename T2, typename NODE, typename S>
     bool Grid2Duc<T1,T2,NODE,S>::findIntersection(const T2 i0, const T2 i1,
                                                   const sxz<T1> &g,

@@ -22,9 +22,6 @@
  *
  */
 
-
-
-
 #ifndef __GRID2DUCSP_H__
 #define __GRID2DUCSP_H__
 
@@ -33,7 +30,6 @@
 #include <queue>
 
 #include "Grid2Duc.h"
-#include "Node2Dcsp.h"
 
 namespace ttcr {
 
@@ -45,18 +41,12 @@ namespace ttcr {
                    const T2 ns, const size_t nt=1) :
         Grid2Duc<T1,T2,NODE,S>(no, tri, nt)
         {
-            buildGridNodes(no, ns, nt);
+            this->buildGridNodes(no, ns, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);
         }
 
         ~Grid2Ducsp() {
         }
-
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<S>&,
-                     std::vector<T1>&,
-                     const size_t=0) const;
 
         void raytrace(const std::vector<S>&,
                      const std::vector<T1>&,
@@ -87,10 +77,7 @@ namespace ttcr {
                      const size_t=0) const;
 
     private:
-        void buildGridNodes(const std::vector<S>&,
-                            const int,
-                            const size_t);
-
+        
         void initQueue(const std::vector<S>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<NODE*,
@@ -108,74 +95,16 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
+        void raytrace(const std::vector<S>&,
+                      const std::vector<T1>&,
+                      const std::vector<S>&,
+                      const size_t=0) const;
     };
-
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducsp<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
-                                                  const int nsecondary,
-                                                  const size_t nt) {
-
-        // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            this->nodes[n].setXYZindex( no[n], n );
-        }
-        T2 nNodes = static_cast<T2>(this->nodes.size());
-
-        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
-        std::array<T2,2> lineKey;
-        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
-
-        size_t estLineNo = (this->triangles.size()+this->triangles.size()/10) * 3/2;
-        this->nodes.reserve( nNodes + estLineNo*nsecondary );
-
-        // edge nodes
-        NODE tmpNode(nt);
-        for ( T2 ntri=0; ntri<this->triangles.size(); ++ntri ) {
-
-            for ( size_t nl=0; nl<3; ++nl ) {
-
-                // push owner for primary nodes
-                this->nodes[ this->triangles[ntri].i[nl] ].pushOwner( ntri );
-
-                if ( nsecondary>0 ) {
-
-                    lineKey = { this->triangles[ntri].i[nl],
-                        this->triangles[ntri].i[(nl+1)%3] };
-                    std::sort(lineKey.begin(), lineKey.end());
-
-                    lineIt = lineMap.find( lineKey );
-                    if ( lineIt == lineMap.end() ) {
-                        // not found, insert new pair
-                        lineMap[ lineKey ] = std::vector<T2>(nsecondary);
-                    } else {
-                        for ( size_t n=0; n<lineIt->second.size(); ++n ) {
-                            // setting owners
-                            this->nodes[ lineIt->second[n] ].pushOwner( ntri );
-                        }
-                        continue;
-                    }
-
-                    S d = (no[lineKey[1]]-no[lineKey[0]])/static_cast<T1>(nsecondary+1);
-
-                    for ( size_t n2=0; n2<nsecondary; ++n2 ) {
-                        tmpNode.setXYZindex(no[lineKey[0]]+static_cast<T1>(1+n2)*d,
-                                            nNodes );
-                        lineMap[lineKey][n2] = nNodes++;
-                        this->nodes.push_back( tmpNode );
-                        this->nodes.back().pushOwner( ntri );
-                    }
-                }
-            }
-        }
-
-        this->nodes.shrink_to_fit();
-    }
 
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
                                             const size_t threadNo) const {
 
         this->checkPts(Tx);
@@ -196,14 +125,6 @@ namespace ttcr {
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
 
         propagate(queue, inQueue, frozen, threadNo);
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-        }
     }
 
     template<typename T1, typename T2, typename NODE, typename S>

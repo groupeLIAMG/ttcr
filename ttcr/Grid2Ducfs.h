@@ -64,7 +64,7 @@ namespace ttcr {
         Grid2Duc<T1,T2,NODE,S>(no, tri, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);
             if ( procObtuse ) this->processObtuse();
         }
@@ -78,7 +78,7 @@ namespace ttcr {
         Grid2Duc<T1,T2,NODE,S>(no, tri, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);
             if ( procObtuse ) this->processObtuse();
             initOrdering(refPts, order);
@@ -91,88 +91,26 @@ namespace ttcr {
         
         const int get_niter() const { return niter_final; }
 
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<S>&,
-                     std::vector<T1>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<S>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>& ,
-                     const std::vector<S>&,
-                     std::vector<T1>&,
-                     std::vector<std::vector<S>>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<S>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     std::vector<std::vector<std::vector<S>>*>&,
-                     const size_t=0) const;
-        
     private:
         T1 epsilon;
         int nitermax;
         mutable int niter_final;
         std::vector<std::vector<NODE*>> sorted;
         
-        void buildGridNodes(const std::vector<S>&,
-                            const size_t);
-        
         void initTx(const std::vector<S>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
         
+        void raytrace(const std::vector<S>&,
+                      const std::vector<T1>&,
+                      const std::vector<S>&,
+                      const size_t=0) const final;
+
+        void raytrace(const std::vector<S>&,
+                     const std::vector<T1>&,
+                     const std::vector<const std::vector<S>*>&,
+                     const size_t=0) const final;
         
     };
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
-                                                  const size_t nt) {
-        
-        // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            this->nodes[n].setXZindex( no[n].x, no[n].z, n );
-        }
-        for ( T2 ntri=0; ntri<this->triangles.size(); ++ntri ) {
-            
-            for ( size_t nl=0; nl<3; ++nl ) {
-                
-                // push owner for primary nodes
-                this->nodes[ this->triangles[ntri].i[nl] ].pushOwner( ntri );
-            }
-            
-            // distance between node 1 & 2 (opposite of node 0)
-            T1 a = this->nodes[ this->triangles[ntri].i[1] ].getDistance( this->nodes[ this->triangles[ntri].i[2] ] );
-            
-            // distance between node 0 & 2 (opposite of node 1)
-            T1 b = this->nodes[ this->triangles[ntri].i[0] ].getDistance( this->nodes[ this->triangles[ntri].i[2] ] );
-            
-            // distance between node 0 & 1 (opposite of node 2]
-            T1 c = this->nodes[ this->triangles[ntri].i[0] ].getDistance( this->nodes[ this->triangles[ntri].i[1] ] );
-            
-            this->triangles[ntri].l[0] = a;
-            this->triangles[ntri].l[1] = b;
-            this->triangles[ntri].l[2] = c;
-            
-            // angle at node 0
-            this->triangles[ntri].a[0] = acos((b*b + c*c - a*a)/(2.*b*c));
-            
-            // angle at node 1
-            this->triangles[ntri].a[1] = acos((c*c + a*a - b*b)/(2.*a*c));
-            
-            // angle at node 2
-            this->triangles[ntri].a[2] = acos((a*a + b*b - c*c)/(2.*a*b));
-            
-        }
-    }
-    
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Ducfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
@@ -208,7 +146,6 @@ namespace ttcr {
     void Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -270,14 +207,6 @@ namespace ttcr {
             niter++;
         }
         niter_final = niter;
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-        }
     }
     
     
@@ -285,7 +214,6 @@ namespace ttcr {
     void Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -349,67 +277,7 @@ namespace ttcr {
             niter++;
         }
         niter_final = niter;
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-        }
     }
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
-                                            std::vector<std::vector<S>>& r_data,
-                                            const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath_ho(Tx, Rx[n], r_data[n], threadNo);
-        }
-    }
-    
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
-                                            std::vector<std::vector<std::vector<S>>*>& r_data,
-                                            const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            r_data[nr]->resize( Rx[nr]->size() );
-            for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
-                (*r_data[nr])[ni].resize( 0 );
-            }
-            
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath_ho(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-            }
-        }
-    }
-    
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Ducfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,

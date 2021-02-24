@@ -145,8 +145,6 @@ namespace ttcr {
         
         bool inPolygon(const S& p, const S poly[], const size_t N) const;
         
-        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
-        
         T1 getTraveltime(const S& Rx, T2& nodeParentRx, T2& cellParentRx,
                          const size_t threadNo) const;
         
@@ -220,6 +218,27 @@ namespace ttcr {
         Grid2Drn(const Grid2Drn<T1,T2,S,NODE>& g) {}
         Grid2Drn<T1,T2,S,NODE>& operator=(const Grid2Drn<T1,T2,S,NODE>& g) {}
         
+        T1 getTraveltime(const S& Rx, const size_t threadNo) const final;
+        
+        T1 getTraveltimeFromRaypath(const std::vector<S>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const S& Rx,
+                                    const size_t threadNo) const final;
+        
+        void getRaypath(const std::vector<S>& Tx,
+                        const std::vector<T1>& t0,
+                        const S& Rx,
+                        std::vector<S>& r_data,
+                        T1 &tt,
+                        const size_t threadNo) const final;
+
+        void getRaypath(const std::vector<S>& Tx,
+                        const std::vector<T1>& t0,
+                        const S& Rx,
+                        std::vector<S>& r_data,
+                        std::vector<siv<T1>> &l_data,
+                        T1 &tt,
+                        const size_t threadNo) const final;
     };
     
     template<typename T1, typename T2, typename S, typename NODE>
@@ -293,6 +312,8 @@ namespace ttcr {
     template<typename T1, typename T2, typename S, typename NODE>
     T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S &pt, const size_t nt) const {
         
+        static const size_t nnz = ncz+1;
+        
         // bilinear interpolation if not on node
         
         T1 tt;
@@ -302,12 +323,12 @@ namespace ttcr {
         
         if ( std::abs(pt.x - (xmin+i*dx))<small && std::abs(pt.z - (zmin+j*dz))<small ) {
             // on node
-            return nodes[i*(ncz+1)+j].getTT(nt);
+            return nodes[i*nnz+j].getTT(nt);
         } else if ( std::abs(pt.x - (xmin+i*dx))<small ) {
             
             // on edge
-            T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
-            T1 t2 = nodes[i*(ncz+1)+j+1].getTT(nt);
+            T1 t1 = nodes[i*nnz+j].getTT(nt);
+            T1 t2 = nodes[i*nnz+j+1].getTT(nt);
             
             T1 w1 = (zmin+(j+1)*dz - pt.z)/dz;
             T1 w2 = (pt.z - (zmin+j*dz))/dz;
@@ -317,8 +338,8 @@ namespace ttcr {
         } else if ( std::abs(pt.z - (zmin+j*dz))<small ) {
             
             // on edge
-            T1 t1 = nodes[i*(ncz+1)+j].getTT(nt);
-            T1 t2 = nodes[(i+1)*(ncz+1)+j].getTT(nt);
+            T1 t1 = nodes[i*nnz+j].getTT(nt);
+            T1 t2 = nodes[(i+1)*nnz+j].getTT(nt);
             
             T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
             T1 w2 = (pt.x - (xmin+i*dx))/dx;
@@ -327,10 +348,10 @@ namespace ttcr {
             
         } else {
             
-            T1 t1 = nodes[    i*(ncz+1)+j  ].getTT(nt);
-            T1 t2 = nodes[(i+1)*(ncz+1)+j  ].getTT(nt);
-            T1 t3 = nodes[    i*(ncz+1)+j+1].getTT(nt);
-            T1 t4 = nodes[(i+1)*(ncz+1)+j+1].getTT(nt);
+            T1 t1 = nodes[    i*nnz+j  ].getTT(nt);
+            T1 t2 = nodes[(i+1)*nnz+j  ].getTT(nt);
+            T1 t3 = nodes[    i*nnz+j+1].getTT(nt);
+            T1 t4 = nodes[(i+1)*nnz+j+1].getTT(nt);
             
             T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
             T1 w2 = (pt.x - (xmin+i*dx))/dx;
@@ -2306,6 +2327,402 @@ namespace ttcr {
         return s;
     }
     
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Drn<T1,T2,S,NODE>::getTraveltimeFromRaypath(const std::vector<S>& Tx,
+                                                        const std::vector<T1>& t0,
+                                                        const S& Rx,
+                                                        const size_t threadNo) const {
+        
+        T1 tt = 0.0;
+        T1 s1, s2;
+
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
+                return tt;
+            }
+        }
+
+        S prev_pt( Rx );
+        S curr_pt( Rx );
+        s1 = getSlowness( curr_pt );
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        S g;
+
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
+            
+            grad(g, curr_pt, threadNo);
+            g *= -1.0;
+            
+            long long i, k;
+            getIJ(curr_pt, i, k);
+            
+            // planes we will intersect
+            T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+            
+            if ( std::abs(xp-curr_pt.x)<small) {
+                xp += dx*boost::math::sign(g.x);
+            }
+            if ( std::abs(zp-curr_pt.z)<small) {
+                zp += dz*boost::math::sign(g.z);
+            }
+            
+            // dist to planes
+            T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+            T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+            
+            if ( tx<tz ) { // closer to xp
+                curr_pt += tx*g;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+            } else {
+                curr_pt += tz*g;
+                curr_pt.z = zp;
+            }
+            
+            if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                curr_pt.z < zmin || curr_pt.z > zmax ) {
+                //  we are going oustide the grid!
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
+            }
+            
+            s2 = getSlowness( curr_pt );
+            tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
+            s1 = s2;
+            prev_pt = curr_pt;
+            
+            // are we close enough to one the Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                T1 dist = curr_pt.getDistance( Tx[ns] );
+                if ( dist < maxDist ) {
+                    
+                    g = Tx[ns] - curr_pt;
+                    
+                    T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                    T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+                    
+                    if ( std::abs(xp-curr_pt.x)<small) {
+                        xp += dx*boost::math::sign(g.x);
+                    }
+                    if ( std::abs(zp-curr_pt.z)<small) {
+                        zp += dz*boost::math::sign(g.z);
+                    }
+                    
+                    // dist to planes
+                    T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                    T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+                    
+                    if ( tx<tz ) { // closer to xp
+                        curr_pt += tx*g;
+                        curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    } else {
+                        curr_pt += tz*g;
+                        curr_pt.z = zp;
+                    }
+                    
+                    if ( curr_pt.getDistance(prev_pt) > dist ||  // we do not intersect
+                        curr_pt == Tx[ns] ) {  // we have arrived
+                        s2 = getSlowness( Tx[ns] );
+                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( Tx[ns] );
+                    } else {
+                        // to intersection
+                        s2 = getSlowness( curr_pt );
+                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
+                        s1 = s2;
+                        // to Tx
+                        s2 = getSlowness( Tx[ns] );
+                        tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                    }
+                    
+                    tt += t0[ns];
+                    reachedTx = true;
+                }
+            }
+        }
+        return tt;
+    }
+
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Drn<T1,T2,S,NODE>::getRaypath(const std::vector<S>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const S& Rx,
+                                            std::vector<S>& r_data,
+                                            T1 &tt,
+                                            const size_t threadNo) const {
+        
+        tt = 0.0;
+        T1 s1, s2;
+        
+        r_data.push_back( Rx );
+
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
+                return;
+            }
+        }
+
+        S curr_pt( Rx );
+        s1 = getSlowness( curr_pt );
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        S g;
+
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
+            
+            grad(g, curr_pt, threadNo);
+            g *= -1.0;
+            
+            long long i, k;
+            getIJ(curr_pt, i, k);
+            
+            // planes we will intersect
+            T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+            
+            if ( std::abs(xp-curr_pt.x)<small) {
+                xp += dx*boost::math::sign(g.x);
+            }
+            if ( std::abs(zp-curr_pt.z)<small) {
+                zp += dz*boost::math::sign(g.z);
+            }
+            
+            // dist to planes
+            T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+            T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+            
+            if ( tx<tz ) { // closer to xp
+                curr_pt += tx*g;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+            } else {
+                curr_pt += tz*g;
+                curr_pt.z = zp;
+            }
+            
+            if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                curr_pt.z < zmin || curr_pt.z > zmax ) {
+                //  we are going oustide the grid!
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
+            }
+            
+            s2 = getSlowness( curr_pt );
+            tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+            s1 = s2;
+            r_data.push_back( curr_pt );
+            
+            // are we close enough to one the Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                T1 dist = curr_pt.getDistance( Tx[ns] );
+                if ( dist < maxDist ) {
+                    
+                    g = Tx[ns] - curr_pt;
+                    
+                    T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                    T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+                    
+                    if ( std::abs(xp-curr_pt.x)<small) {
+                        xp += dx*boost::math::sign(g.x);
+                    }
+                    if ( std::abs(zp-curr_pt.z)<small) {
+                        zp += dz*boost::math::sign(g.z);
+                    }
+                    
+                    // dist to planes
+                    T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                    T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+                    
+                    if ( tx<tz ) { // closer to xp
+                        curr_pt += tx*g;
+                        curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    } else {
+                        curr_pt += tz*g;
+                        curr_pt.z = zp;
+                    }
+                    
+                    if ( curr_pt.getDistance(r_data.back()) > dist ||  // we do not intersect
+                        curr_pt == Tx[ns] ) {  // we have arrived
+                        s2 = getSlowness( Tx[ns] );
+                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
+                        r_data.push_back( Tx[ns] );
+                    } else {
+                        // to intersection
+                        s2 = getSlowness( curr_pt );
+                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        s1 = s2;
+                        // to Tx
+                        s2 = getSlowness( Tx[ns] );
+                        tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                        r_data.push_back( Tx[ns] );
+                    }
+                    
+                    tt += t0[ns];
+                    reachedTx = true;
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Drn<T1,T2,S,NODE>::getRaypath(const std::vector<S>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const S& Rx,
+                                            std::vector<S>& r_data,
+                                            std::vector<siv<T1>> &l_data,
+                                            T1 &tt,
+                                            const size_t threadNo) const {
+        
+        tt = 0.0;
+        T1 s1, s2;
+        
+        r_data.push_back( Rx );
+        
+        for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+            if ( Rx == Tx[ns] ) {
+                tt = t0[ns];
+                return;
+            }
+        }
+        
+        S curr_pt( Rx );
+        s1 = getSlowness( curr_pt );
+        // distance between opposite nodes of a voxel
+        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        S g;
+        
+        siv<T1> cell;
+        bool reachedTx = false;
+        while ( reachedTx == false ) {
+            
+            grad(g, curr_pt, threadNo);
+            g *= -1.0;
+            
+            long long i, k;
+            getIJ(curr_pt, i, k);
+            
+            // planes we will intersect
+            T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+            T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+            
+            if ( std::abs(xp-curr_pt.x)<small) {
+                xp += dx*boost::math::sign(g.x);
+            }
+            if ( std::abs(zp-curr_pt.z)<small) {
+                zp += dz*boost::math::sign(g.z);
+            }
+            
+            // dist to planes
+            T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+            T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+            
+            if ( tx<tz ) { // closer to xp
+                curr_pt += tx*g;
+                curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+            } else {
+                curr_pt += tz*g;
+                curr_pt.z = zp;
+            }
+            
+            if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                curr_pt.z < zmin || curr_pt.z > zmax ) {
+                //  we are going oustide the grid!
+                std::ostringstream msg;
+                msg << "Error while computing raypaths: going outside grid \n\
+                Rx: " << Rx << "\n\
+                Tx: " << Tx[0] << "\n";
+                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                    msg << "\
+                    " << Tx[ns] << "\n";
+                }
+                throw std::runtime_error(msg.str());
+            }
+            S mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
+            cell.i = getCellNo(mid_pt);
+            cell.v = curr_pt.getDistance(r_data.back());
+            l_data.push_back(cell);
+            s2 = getSlowness( curr_pt );
+            tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+            s1 = s2;
+            r_data.push_back( curr_pt );
+            
+            // are we close enough to one the Tx nodes ?
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
+                T1 dist = curr_pt.getDistance( Tx[ns] );
+                if ( dist < maxDist ) {
+                    
+                    g = Tx[ns] - curr_pt;
+                    
+                    T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                    T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+                    
+                    if ( std::abs(xp-curr_pt.x)<small) {
+                        xp += dx*boost::math::sign(g.x);
+                    }
+                    if ( std::abs(zp-curr_pt.z)<small) {
+                        zp += dz*boost::math::sign(g.z);
+                    }
+                    
+                    // dist to planes
+                    T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                    T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+                    
+                    if ( tx<tz ) { // closer to xp
+                        curr_pt += tx*g;
+                        curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                    } else {
+                        curr_pt += tz*g;
+                        curr_pt.z = zp;
+                    }
+                    
+                    if ( curr_pt.getDistance(r_data.back()) > dist ||  // we do not intersect
+                        curr_pt == Tx[ns] ) {  // we have arrived
+                        cell.i = getCellNo(Tx[ns]);
+                        cell.v = Tx[ns].getDistance(r_data.back());
+                        l_data.push_back(cell);s2 = getSlowness( Tx[ns] );
+                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
+                        r_data.push_back( Tx[ns] );
+                    } else {
+                        // to intersection
+                        mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
+                        cell.i = getCellNo(mid_pt);
+                        cell.v = curr_pt.getDistance(r_data.back());
+                        l_data.push_back(cell);s2 = getSlowness( curr_pt );
+                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        s1 = s2;
+                        // to Tx
+                        cell.i = getCellNo(Tx[ns]);
+                        cell.v = Tx[ns].getDistance(r_data.back());
+                        l_data.push_back(cell);s2 = getSlowness( Tx[ns] );
+                        tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                        r_data.push_back( Tx[ns] );
+                    }
+                    
+                    tt += t0[ns];
+                    reachedTx = true;
+                }
+            }
+        }
+    }
 }
 
 #endif
