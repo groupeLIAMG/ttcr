@@ -26,6 +26,7 @@
 #ifndef ttcr_Grid2D_h
 #define ttcr_Grid2D_h
 
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <functional>
