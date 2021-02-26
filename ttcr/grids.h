@@ -50,9 +50,11 @@
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
+#include "Grid2Ducdsp.h"
 #include "Grid2Dunfm.h"
 #include "Grid2Dunfs.h"
 #include "Grid2Dunsp.h"
+#include "Grid2Dundsp.h"
 #include "Grid3Drcsp.h"
 #include "Grid3Drcdsp.h"
 #include "Grid3Drcfs.h"
@@ -2088,8 +2090,40 @@ namespace ttcr {
                 
                 break;
             }
+            case DYNAMIC_SHORTEST_PATH:
+            {
+                if ( verbose ) {
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells )
+                    g = new Grid2Ducdsp<T, uint32_t>(nodes,
+                                                     triangles,
+                                                     par.nn[0],
+                                                     par.nTertiary,
+                                                     par.radius_tertiary_nodes,
+                                                     nt);
+                else
+                    g = new Grid2Dundsp<T, uint32_t>(nodes,
+                                                     triangles,
+                                                     par.nn[0],
+                                                     par.nTertiary,
+                                                     par.radius_tertiary_nodes,
+                                                     nt);
+                
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( verbose ) {
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    << "\n";
+                    std::cout.flush();
+                }
+
+                break;
+            }
             default:
                 break;
+
         }
         if ( par.time ) {
             cout.precision(12);
@@ -2303,6 +2337,37 @@ namespace ttcr {
                     std::cout.flush();
                 }
                 
+                break;
+            }
+            case DYNAMIC_SHORTEST_PATH:
+            {
+                if ( verbose ) {
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells )
+                    g = new Grid2Ducdsp<T, uint32_t>(nodes,
+                                                     triangles,
+                                                     par.nn[0],
+                                                     par.nTertiary,
+                                                     par.radius_tertiary_nodes,
+                                                     nt);
+                else
+                    g = new Grid2Dundsp<T, uint32_t>(nodes,
+                                                     triangles,
+                                                     par.nn[0],
+                                                     par.nTertiary,
+                                                     par.radius_tertiary_nodes,
+                                                     nt);
+
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( verbose ) {
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    << "\n";
+                    std::cout.flush();
+                }
+
                 break;
             }
             default:

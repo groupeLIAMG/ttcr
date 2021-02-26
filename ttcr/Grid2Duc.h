@@ -228,11 +228,9 @@ namespace ttcr {
         }
         
         T1 getTraveltime(const S& Rx,
-                         const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
         
         T1 getTraveltime(const S& Rx,
-                         const std::vector<NODE>& nodes,
                          T2& nodeParentRx,
                          T2& cellParentRx,
                          const size_t threadNo) const;
@@ -327,7 +325,7 @@ namespace ttcr {
 
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
-            nodes[n].setXYZindex( no[n], n );
+            nodes[n].setXZindex( no[n].x, no[n].z, n );
         }
         T2 nNodes = static_cast<T2>(nodes.size());
         
@@ -383,7 +381,6 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE, typename S>
     T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
-                                             const std::vector<NODE>& nodes,
                                              const size_t threadNo) const {
         
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {
@@ -410,8 +407,8 @@ namespace ttcr {
     
     template<typename T1, typename T2, typename NODE, typename S>
     T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
-                                             const std::vector<NODE>& nodes,
-                                             T2& nodeParentRx, T2& cellParentRx,
+                                             T2& nodeParentRx,
+                                             T2& cellParentRx,
                                              const size_t threadNo) const {
         
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {

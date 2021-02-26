@@ -161,8 +161,7 @@ namespace ttcr {
         for (size_t nr=0; nr<Rx.size(); ++nr) {
             traveltimes[nr]->resize( Rx[nr]->size() );
             for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n],
-                                                            this->nodes, threadNo);
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
         }
     }
 
@@ -207,7 +206,7 @@ namespace ttcr {
 
         for (size_t n=0; n<Rx.size(); ++n) {
 
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, nodeParentRx,
+            traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx,
                                                  cellParentRx, threadNo);
 
             bool flag=false;
@@ -317,7 +316,7 @@ namespace ttcr {
 
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
 
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes,
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n],
                                                             nodeParentRx, cellParentRx,
                                                             threadNo);
 
@@ -428,7 +427,7 @@ namespace ttcr {
         T2 cellParentRx;
 
         for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
+            traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx, cellParentRx,
                                                  threadNo);
 
             bool flag=false;
