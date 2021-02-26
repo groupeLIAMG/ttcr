@@ -60,9 +60,9 @@ namespace ttcr {
     class Grid2Duc : public Grid2D<T1,T2,S> {
     public:
         Grid2Duc(const std::vector<S>& no,
-                 const std::vector<triangleElem<T2>>& tri,
+                 const std::vector<triangleElem<T2>>& tri, const bool ttrp,
                  const size_t nt=1) :
-        Grid2D<T1,T2,S>(tri.size(), nt),
+        Grid2D<T1,T2,S>(tri.size(), ttrp, nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
         slowness(std::vector<T1>(tri.size())),

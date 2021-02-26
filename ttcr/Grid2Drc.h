@@ -37,7 +37,16 @@ namespace ttcr {
     class Grid2Drc : public Grid2D<T1,T2,S> {
     public:
         Grid2Drc(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-                 const T1 minx, const T1 minz, const size_t nt=1);
+                 const T1 minx, const T1 minz, const bool ttrp,
+                 const size_t nt=1) :
+        Grid2D<T1,T2,S>(nx*nz, ttrp, nt),
+        dx(ddx), dz(ddz), xmin(minx), zmin(minz),
+        xmax(minx+nx*ddx), zmax(minz+nz*ddz),
+        ncx(nx), ncz(nz),
+        nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
+        cells(ncx*ncz)
+        {
+        }
         
         virtual ~Grid2Drc() {
         }

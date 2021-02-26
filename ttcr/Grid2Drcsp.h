@@ -56,7 +56,13 @@ namespace ttcr {
     public:
         Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
-                   const size_t nt=1);
+                   const size_t nt=1) :
+        Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,false,nt),
+        nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0)
+        {
+            buildGridNodes();
+            this->template buildGridNeighbors<Node2Dcsp<T1,T2>>(this->nodes);
+        }
         
         virtual ~Grid2Drcsp() {
         }
@@ -173,19 +179,6 @@ namespace ttcr {
                          const size_t threadNo) const;
         
     };
-    
-    template<typename T1, typename T2, typename S, typename CELL>
-    Grid2Drcsp<T1,T2,S,CELL>::Grid2Drcsp(const T2 nx, const T2 nz,
-                                         const T1 ddx, const T1 ddz,
-                                         const T1 minx, const T1 minz,
-                                         const T2 nnx, const T2 nnz,
-                                         const size_t nt) :
-    Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,nt),
-    nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0)
-    {
-        buildGridNodes();
-        this->template buildGridNeighbors<Node2Dcsp<T1,T2>>(this->nodes);
-    }
     
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::buildGridNodes() {

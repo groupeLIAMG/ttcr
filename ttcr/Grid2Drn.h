@@ -54,7 +54,15 @@ namespace ttcr {
     class Grid2Drn : public Grid2D<T1,T2,S> {
     public:
         Grid2Drn(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
-                 const T1 minx, const T1 minz, const size_t nt=1);
+                 const T1 minx, const T1 minz, const bool ttrp,
+                 const size_t nt=1) :
+        Grid2D<T1,T2,S>(nx*nz, ttrp, nt),
+        dx(ddx), dz(ddz), xmin(minx), zmin(minz),
+        xmax(minx+nx*ddx), zmax(minz+nz*ddz),
+        ncx(nx), ncz(nz),
+        nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) ))
+        {
+        }
         
         virtual ~Grid2Drn() {
         }
@@ -237,18 +245,6 @@ namespace ttcr {
                         T1 &tt,
                         const size_t threadNo) const final;
     };
-    
-    template<typename T1, typename T2, typename S, typename NODE>
-    Grid2Drn<T1,T2,S,NODE>::Grid2Drn(const T2 nx, const T2 nz,
-                                     const T1 ddx, const T1 ddz,
-                                     const T1 minx, const T1 minz,
-                                     const size_t nt) :
-    Grid2D<T1,T2,S>(nx*nz, nt),
-    dx(ddx), dz(ddz), xmin(minx), zmin(minz),
-    xmax(minx+nx*ddx), zmax(minz+nz*ddz),
-    ncx(nx), ncz(nz),
-    nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) ))
-    { }
     
     template<typename T1, typename T2, typename S, typename NODE>
     void Grid2Drn<T1,T2,S,NODE>::checkPts(const std::vector<S>& pts) const {

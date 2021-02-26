@@ -39,7 +39,7 @@ namespace ttcr {
         Grid2Ducsp(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T2 ns, const size_t nt=1) :
-        Grid2Duc<T1,T2,NODE,S>(no, tri, nt)
+        Grid2Duc<T1,T2,NODE,S>(no, tri, false, nt)
         {
             this->buildGridNodes(no, ns, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);

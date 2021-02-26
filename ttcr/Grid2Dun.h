@@ -44,9 +44,10 @@ namespace ttcr {
     class Grid2Dun : public Grid2D<T1,T2,S> {
     public:
         Grid2Dun(const std::vector<S>& no,
-                 const std::vector<triangleElem<T2>>& tri,
+                 const std::vector<triangleElem<T2>>& tri, const bool ttrp,
                  const size_t nt=1) :
-        Grid2D<T1,T2,S>(tri.size(), nt), nThreads(nt),
+        Grid2D<T1,T2,S>(tri.size(), ttrp, nt),
+        nThreads(nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
         triangles(), virtualNodes()

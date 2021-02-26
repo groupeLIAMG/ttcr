@@ -43,9 +43,10 @@ namespace ttcr {
     template<typename T1 = double, typename T2 = uint32_t, typename S = sxz<double>>
     class Grid2D {
     public:
-        Grid2D(const size_t ncells, const size_t nt=1, const bool up=1) :
-        nThreads(nt), neighbors(std::vector<std::vector<T2>>(ncells)),
-        usePool(up) {
+        Grid2D(const size_t ncells, const bool ttrp, const size_t nt=1, const bool up=1) :
+        nThreads(nt), usePool(up), tt_from_rp(ttrp),
+        neighbors(std::vector<std::vector<T2>>(ncells))
+        {
             if ( nThreads > 1 && usePool ) {
                 pool.resize(static_cast<int>(nThreads));
             }

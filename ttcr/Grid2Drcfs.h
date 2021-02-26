@@ -23,7 +23,7 @@ namespace ttcr {
         Grid2Drcfs(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T1 eps, const int maxit,
                    const bool w, const bool rt, const size_t nt=1) :
-        Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,nt),
+        Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,false,nt),
         epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0),
         weno3(w), rotated_template(rt)
         {
