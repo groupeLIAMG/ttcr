@@ -36,11 +36,10 @@ namespace ttcr {
     class Node2Dn : public Node<T1> {
     public:
         Node2Dn(const size_t nt=1) :
-        nThreads(nt),
-        tt(0),
+        nThreads(nt), tt(0),
         x(0.0), z(0.0), slowness(0.0),
         gridIndex(std::numeric_limits<T2>::max()),
-        owners(0)
+        owners(0), primary(false)
         {
             tt = new T1[nt];
             
@@ -49,12 +48,25 @@ namespace ttcr {
             }
         }
         
+        Node2Dn(const T1 t, const T1 _x, const T1 _z, const size_t nt, const size_t i) :
+        nThreads(nt), tt(0),
+        x(_x), z(_z), slowness(0.0),
+        gridIndex(std::numeric_limits<T2>::max()),
+        owners(std::vector<T2>(0)), primary(false)
+        {
+            tt = new T1[nt];
+
+            for ( size_t n=0; n<nt; ++n ) {
+                tt[n] = std::numeric_limits<T1>::max();
+            }
+            tt[i] = t;
+        }
+
         Node2Dn(const T1 t, const sxz<T1>& s, const size_t nt, const size_t i) :
-        nThreads(nt),
-        tt(0),
+        nThreads(nt), tt(0),
         x(s.x), z(s.z), slowness(0.0),
         gridIndex(std::numeric_limits<T2>::max()),
-        owners(std::vector<T2>(0))
+        owners(std::vector<T2>(0)), primary(false)
         {
             tt = new T1[nt];
             
@@ -65,11 +77,10 @@ namespace ttcr {
         }
         
         Node2Dn(const Node2Dn<T1,T2>& node) :
-        nThreads(node.nThreads),
-        tt(0),
+        nThreads(node.nThreads), tt(0),
         x(node.x), z(node.z), slowness(node.slowness),
         gridIndex(node.gridIndex),
-        owners(node.owners)
+        owners(node.owners), primary(node.primary)
         {
             tt = new T1[nThreads];
             
@@ -138,10 +149,11 @@ namespace ttcr {
         }
         
         int getDimension() const { return 2; }
+
+        void setPrimary(const bool p) { primary = p; }
+        const bool isPrimary() const { return primary; }
         
-        const bool isPrimary() const { return true; }
-        
-    private:
+    protected:
         size_t nThreads;
         T1 *tt;                        // travel time
         T1 x;                          // x coordinate
@@ -149,13 +161,16 @@ namespace ttcr {
         T1 slowness;
         T2 gridIndex;                  // index of this node in the list of the grid
         std::vector<T2> owners;        // indices of cells touching the node
+        bool primary;
     };
-    
-	
-//	template <typename T1, typename T2>
-//	Node2Dn<T1,T2> operator+(const Node2Dn<T1,T2>& lhs, const Node2Dn<T1,T2>& rhs)
-//	{
-//		return Node2Dn<T1,T2>(lhs.x+rhs.x, lhs.z+rhs.z);
-//	}
+
+	template <typename T1, typename T2>
+	sxz<T1> operator+(const Node2Dn<T1,T2>& lhs, const Node2Dn<T1,T2>& rhs) {
+		return sxz<T1>(lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ());
+	}
+    template <typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dn<T1,T2>& lhs, const Node2Dn<T1,T2>& rhs) {
+        return sxz<T1>(lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ());
+    }
 }
 #endif

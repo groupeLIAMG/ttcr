@@ -108,7 +108,11 @@ namespace ttcr {
         void setTT(const T1 t, const size_t i) { tt[i] = t; }
         
         void setXZindex(const T1 xx, const T1 zz, const T2 index) {
-            x=xx; z=zz; gridIndex = index;  }
+            x=xx; z=zz; gridIndex = index; }
+
+        template<typename SXZ>
+        void setXYZindex(const SXZ& s, const T2 index) {
+            x=s.x; z=s.z; gridIndex = index;  }
         
         T1 getX() const {
             return x;
@@ -156,7 +160,7 @@ namespace ttcr {
         
         const bool isPrimary() const { return true; }
         
-    private:
+    protected:
         size_t nThreads;
         T1 x;                          // x coordinate
         T1 z;                          // z coordinate
@@ -165,7 +169,27 @@ namespace ttcr {
         std::vector<T2> owners;        // indices of cells touching the node
         
     };
-    
+
+    template<typename T1, typename T2>
+    sxz<T1> operator+(const Node2Dc<T1,T2>& lhs, const Node2Dc<T1,T2>& rhs) {
+        return sxz<T1>( lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ() );
+    }
+
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dc<T1,T2>& lhs, const Node2Dc<T1,T2>& rhs) {
+        return sxz<T1>( lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ() );
+    }
+
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dc<T1,T2>& rhs) {
+        return sxz<T1>( lhs.x-rhs.getX(), lhs.z-rhs.getZ() );
+    }
+
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dc<T1,T2>& lhs, const sxz<T1>& rhs) {
+        return sxz<T1>( lhs.getX()-rhs.x, lhs.getZ()-rhs.z);
+    }
+
 }
 
 #endif
