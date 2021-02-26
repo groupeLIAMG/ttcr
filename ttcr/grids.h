@@ -1631,11 +1631,13 @@ namespace ttcr {
                 if ( strcmp(pd->GetArrayName(na), "P-wave velocity")==0 ||
                     strcmp(pd->GetArrayName(na), "Velocity")==0 ) {
                     slowness.resize( numberOfPoints );
-                    for ( size_t k=0,n=0; k<nnodes[2]; ++k ) {
-                        for ( size_t j=0; j<nnodes[1]; ++j ) {
-                            for ( size_t i=0; i<nnodes[0]; ++i,++n ) {
-                                slowness[n] = static_cast<T>(1./pd->GetArray(na)->GetTuple1(n));
-                            }
+                    for ( size_t i=0, n=0; i<nnodes[0]; ++i ) {
+                        for ( size_t k=0; k<nnodes[2]; ++k,++n ) {
+                            // make sure z is fast axis
+                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
+                                                              0.0,
+                                                              zrange[0] + k*d[2]);
+                            slowness[n] = static_cast<T>(1./pd->GetArray(na)->GetTuple1(ii));
                         }
                     }
                     foundSlowness = true;
@@ -1651,8 +1653,14 @@ namespace ttcr {
                     }
                     
                     slowness.resize( slo->GetSize() );
-                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
-                        slowness[n] = slo->GetComponent(n, 0);
+                    for ( size_t i=0, n=0; i<nnodes[0]; ++i ) {
+                        for ( size_t k=0; k<nnodes[2]; ++k,++n ) {
+                            // make sure z is fast axis
+                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
+                                                              0.0,
+                                                              zrange[0] + k*d[2]);
+                        slowness[n] = slo->GetComponent(ii, 0);
+                        }
                     }
                     foundSlowness = true;
                     break;
@@ -1752,11 +1760,13 @@ namespace ttcr {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
                     strcmp(cd->GetArrayName(na), "Velocity")==0 ) {
                     slowness.resize( numberOfCells );
-                    for ( size_t k=0,n=0; k<ncells[2]; ++k ) {
-                        for ( size_t j=0; j<ncells[1]; ++j ) {
-                            for ( size_t i=0; i<ncells[0]; ++i,++n ) {
-                                slowness[n] = static_cast<T>(1./cd->GetArray(na)->GetTuple1(n));
-                            }
+                    for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                        for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                            // make sure z is fast axis
+                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
+                                                              0.0,
+                                                              zrange[0] + k*d[2]);
+                            slowness[n] = static_cast<T>(1./cd->GetArray(na)->GetTuple1(ii));
                         }
                     }
                     foundSlowness = true;
@@ -1772,8 +1782,14 @@ namespace ttcr {
                     }
                     
                     slowness.resize( slo->GetSize() );
-                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
-                        slowness[n] = slo->GetComponent(n, 0);
+                    for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                        for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                            // make sure z is fast axis
+                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
+                                                              0.0,
+                                                              zrange[0] + k*d[2]);
+                            slowness[n] = slo->GetComponent(ii, 0);
+                        }
                     }
                     foundSlowness = true;
                     
@@ -1788,8 +1804,14 @@ namespace ttcr {
                         }
                         
                         xi.resize( x->GetSize() );
-                        for ( size_t n=0; n<x->GetSize(); ++n ) {
-                            xi[n] = x->GetComponent(n, 0);
+                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                                // make sure z is fast axis
+                                vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
+                                                                  0.0,
+                                                                  zrange[0] + k*d[2]);
+                                xi[n] = x->GetComponent(ii, 0);
+                            }
                         }
                         foundXi = true;
                         if ( verbose ) { cout << "Model contains anisotropy ratio\n"; }
@@ -1805,8 +1827,14 @@ namespace ttcr {
                         }
                         
                         theta.resize( x->GetSize() );
-                        for ( size_t n=0; n<x->GetSize(); ++n ) {
-                            theta[n] = x->GetComponent(n, 0);
+                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                                // make sure z is fast axis
+                                vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
+                                                                  0.0,
+                                                                  zrange[0] + k*d[2]);
+                                theta[n] = x->GetComponent(ii, 0);
+                            }
                         }
                         foundTheta = true;
                         if ( verbose ) { cout << "Model contains anisotropy tilt angle\n"; }
@@ -1969,7 +1997,6 @@ namespace ttcr {
         reader.readNodes2D(nodes, d);
         reader.readTriangleElements(triangles);
         reader.readSlowness(slowness, constCells);
-        
         
         if ( verbose ) {
             std::cout << "done.\n  Unstructured mesh in file has"
