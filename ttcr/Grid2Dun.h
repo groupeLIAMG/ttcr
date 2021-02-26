@@ -165,6 +165,10 @@ namespace ttcr {
         mutable std::vector<NODE> nodes;
         std::vector<triangleElemAngle<T1,T2>> triangles;
         std::map<T2, virtualNode<T1,NODE>> virtualNodes;
+
+        void buildGridNodes(const std::vector<S>&, const size_t);
+        void buildGridNodes(const std::vector<S>&, const T2, const size_t);
+
         
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
@@ -220,8 +224,112 @@ namespace ttcr {
         T2 findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const;
         
         void getNeighborNodes(const T2 cellNo, std::set<NODE*> &nnodes) const;
+
+        void interpSlownessSecondary(const T2 nSecondary);
+        void interpVelocitySecondary(const T2 nSecondary);
     };
-    
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Dun<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+                                                const size_t nt) {
+
+        // primary nodes
+        for ( T2 n=0; n<no.size(); ++n ) {
+            nodes[n].setXZindex( no[n].x, no[n].z, n );
+        }
+
+        for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
+            for ( size_t nl=0; nl<3; ++nl ) {
+                // push owner for primary nodes
+                nodes[ triangles[ntri].i[nl] ].pushOwner( ntri );
+
+                // distance between node 1 & 2 (opposite of node 0)
+                T1 a = nodes[ triangles[ntri].i[1] ].getDistance( nodes[ triangles[ntri].i[2] ] );
+
+                // distance between node 0 & 2 (opposite of node 1)
+                T1 b = nodes[ triangles[ntri].i[0] ].getDistance( nodes[ triangles[ntri].i[2] ] );
+
+                // distance between node 0 & 1 (opposite of node 2]
+                T1 c = nodes[ triangles[ntri].i[0] ].getDistance( nodes[ triangles[ntri].i[1] ] );
+
+                triangles[ntri].l[0] = a;
+                triangles[ntri].l[1] = b;
+                triangles[ntri].l[2] = c;
+
+                // angle at node 0
+                triangles[ntri].a[0] = acos((b*b + c*c - a*a)/(2.*b*c));
+
+                // angle at node 1
+                triangles[ntri].a[1] = acos((c*c + a*a - b*b)/(2.*a*c));
+
+                // angle at node 2
+                triangles[ntri].a[2] = acos((a*a + b*b - c*c)/(2.*a*b));
+
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Dun<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+                                                const T2 nSecondary,
+                                                const size_t nt) {
+        // primary nodes
+        for ( T2 n=0; n<no.size(); ++n ) {
+            nodes[n].setXYZindex( no[n], n );
+            nodes[n].setPrimary(true);
+        }
+        T2 nNodes = static_cast<T2>(nodes.size());
+
+        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+        std::array<T2,2> lineKey;
+        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+
+        size_t estLineNo = (triangles.size()+triangles.size()/10) * 3/2;
+        nodes.reserve( nNodes + estLineNo*nSecondary );
+
+        // edge nodes
+        NODE tmpNode(nt);
+        for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
+
+            for ( size_t nl=0; nl<3; ++nl ) {
+
+                // push owner for primary nodes
+                nodes[ triangles[ntri].i[nl] ].pushOwner( ntri );
+
+                if ( nSecondary>0 ) {
+
+                    lineKey = { triangles[ntri].i[nl],
+                        triangles[ntri].i[(nl+1)%3] };
+                    std::sort(lineKey.begin(), lineKey.end());
+
+                    lineIt = lineMap.find( lineKey );
+                    if ( lineIt == lineMap.end() ) {
+                        // not found, insert new pair
+                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+                    } else {
+                        for ( size_t n=0; n<lineIt->second.size(); ++n ) {
+                            // setting owners
+                            nodes[ lineIt->second[n] ].pushOwner( ntri );
+                        }
+                        continue;
+                    }
+
+                    S d = (no[lineKey[1]]-no[lineKey[0]])/static_cast<T1>(nSecondary+1);
+
+                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                        tmpNode.setXYZindex(no[lineKey[0]]+static_cast<T1>(1+n2)*d,
+                                            nNodes );
+                        lineMap[lineKey][n2] = nNodes++;
+                        nodes.push_back( tmpNode );
+                        nodes.back().pushOwner( ntri );
+                    }
+                }
+            }
+        }
+
+        nodes.shrink_to_fit();
+    }
+
     template<typename T1, typename T2, typename NODE, typename S>
     T1 Grid2Dun<T1,T2,NODE,S>::getTraveltime(const S& Rx,
                                              const std::vector<NODE>& nodes,
@@ -1319,7 +1427,81 @@ namespace ttcr {
             }
         }
     }
-    
+
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Dun<T1,T2,NODE,S>::interpVelocitySecondary(const T2 nSecondary) {
+
+    T2 nNodes = nPrimary;
+
+    std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+    std::array<T2,2> lineKey;
+    typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+
+    for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
+
+        for ( size_t nl=0; nl<3; ++nl ) {
+
+            lineKey = { this->triangles[ntri].i[nl],
+                this->triangles[ntri].i[(nl+1)%3] };
+            std::sort(lineKey.begin(), lineKey.end());
+
+            lineIt = lineMap.find( lineKey );
+            if ( lineIt == lineMap.end() ) {
+                // not found, insert new pair
+                lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+            } else {
+                continue;
+            }
+
+            T1 slope = (1.0/nodes[lineKey[1]].getNodeSlowness() - 1.0/nodes[lineKey[0]].getNodeSlowness())/
+            nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
+
+            for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                T1 s = 1.0/(1.0/nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]));
+                nodes[nNodes].setNodeSlowness( s );
+                lineMap[lineKey][n2] = nNodes++;
+            }
+        }
+    }
+}
+
+template<typename T1, typename T2, typename NODE, typename S>
+void Grid2Dun<T1,T2,NODE,S>::interpSlownessSecondary(const T2 nSecondary) {
+
+    T2 nNodes = nPrimary;
+
+    std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+    std::array<T2,2> lineKey;
+    typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+
+    for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
+
+        for ( size_t nl=0; nl<3; ++nl ) {
+
+            lineKey = { this->triangles[ntri].i[nl],
+                this->triangles[ntri].i[(nl+1)%3] };
+            std::sort(lineKey.begin(), lineKey.end());
+
+            lineIt = lineMap.find( lineKey );
+            if ( lineIt == lineMap.end() ) {
+                // not found, insert new pair
+                lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+            } else {
+                continue;
+            }
+
+            T1 slope = (nodes[lineKey[1]].getNodeSlowness() - nodes[lineKey[0]].getNodeSlowness())/
+            nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
+
+            for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                T1 s = nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]);
+                nodes[nNodes].setNodeSlowness( s );
+                lineMap[lineKey][n2] = nNodes++;
+            }
+        }
+    }
+}
+
 }
 
 #endif

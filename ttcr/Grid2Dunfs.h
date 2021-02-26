@@ -41,10 +41,10 @@ namespace ttcr {
                    const std::vector<triangleElem<T2>>& tri,
                    const T1 eps, const int maxit, const size_t nt=1,
                    const bool procObtuse=true) :
-        Grid2Dun<T1,T2,NODE,S>(no, tri, nt),
+        Grid2Dun<T1,T2,NODE,S>(no, tri, true, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);
             if ( procObtuse ) this->processObtuse();
         }
@@ -57,7 +57,7 @@ namespace ttcr {
         Grid2Dun<T1,T2,NODE,S>(no, tri, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
-            buildGridNodes(no, nt);
+            this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);
             if ( procObtuse ) this->processObtuse();
             initOrdering(refPts, order);
@@ -102,57 +102,12 @@ namespace ttcr {
         mutable int niter_final;
         std::vector<std::vector<NODE*>> sorted;
         
-        void buildGridNodes(const std::vector<S>&,
-                            const size_t);
-        
         void initTx(const std::vector<S>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
         
         
     };
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfs<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
-                                                  const size_t nt) {
-        
-        // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            this->nodes[n].setXZindex( no[n].x, no[n].z, n );
-        }
-        for ( T2 ntri=0; ntri<this->triangles.size(); ++ntri ) {
-            
-            for ( size_t nl=0; nl<3; ++nl ) {
-                
-                // push owner for primary nodes
-                this->nodes[ this->triangles[ntri].i[nl] ].pushOwner( ntri );
-            }
-            
-            // distance between node 1 & 2 (opposite of node 0)
-            T1 a = this->nodes[ this->triangles[ntri].i[1] ].getDistance( this->nodes[ this->triangles[ntri].i[2] ] );
-            
-            // distance between node 0 & 2 (opposite of node 1)
-            T1 b = this->nodes[ this->triangles[ntri].i[0] ].getDistance( this->nodes[ this->triangles[ntri].i[2] ] );
-            
-            // distance between node 0 & 1 (opposite of node 2]
-            T1 c = this->nodes[ this->triangles[ntri].i[0] ].getDistance( this->nodes[ this->triangles[ntri].i[1] ] );
-            
-            this->triangles[ntri].l[0] = a;
-            this->triangles[ntri].l[1] = b;
-            this->triangles[ntri].l[2] = c;
-            
-            // angle at node 0
-            this->triangles[ntri].a[0] = acos((b*b + c*c - a*a)/(2.*b*c));
-            
-            // angle at node 1
-            this->triangles[ntri].a[1] = acos((c*c + a*a - b*b)/(2.*a*c));
-            
-            // angle at node 2
-            this->triangles[ntri].a[2] = acos((a*a + b*b - c*c)/(2.*a*b));
-            
-        }
-    }
-    
-    
+
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Dunfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
                                                 const int order) {
