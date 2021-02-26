@@ -1035,7 +1035,7 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary) -> Mesh2d
+    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, tt_from_rp) -> Mesh2d
 
         Parameters
         ----------
@@ -1058,12 +1058,15 @@ cdef class Mesh2d:
             max number of sweeping iterations (FSM) (default is 20)
         process_obtuse : bool
             use method of Qian et al (2007) to improve accuracy for triangles
-            with obtuse angle
+            with obtuse angle (default is True)
         n_secondary : int
             number of secondary nodes (SPM) (default is 5)
+        tt_from_rp : bool
+            compute traveltimes using raypaths (default is False)
     """
     cdef bool cell_slowness
     cdef bool process_obtuse
+    cdef bool tt_from_rp
     cdef size_t _n_threads
     cdef double eps
     cdef int maxit
@@ -1077,7 +1080,7 @@ cdef class Mesh2d:
                   np.ndarray[np.int64_t, ndim=2] triangles,
                   size_t n_threads=1, bool cell_slowness=1,
                   str method='FSM', double eps=1.e-15, int maxit=20,
-                  bool process_obtuse=1, uint32_t n_secondary=5):
+                  bool process_obtuse=1, uint32_t n_secondary=5, tt_from_rp=0):
 
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
@@ -1085,6 +1088,7 @@ cdef class Mesh2d:
         self.maxit = maxit
         self.process_obtuse = process_obtuse
         self.n_secondary = n_secondary
+        self.tt_from_rp = tt_from_rp
 
         cdef vector[sxz[double]] pts_ref
         cdef int n
@@ -1120,6 +1124,7 @@ cdef class Mesh2d:
                                                                                                  eps,
                                                                                                  maxit,
                                                                                                  pts_ref, 2,
+                                                                                                 tt_from_rp,
                                                                                                  n_threads,
                                                                                                  process_obtuse)
             elif method == 'SPM':
@@ -1127,6 +1132,7 @@ cdef class Mesh2d:
                 self.grid = new Grid2Ducsp[double,uint32_t,Node2Dcsp[double,uint32_t],sxz[double]](self.no,
                                                                                                    self.tri,
                                                                                                    n_secondary,
+                                                                                                   tt_from_rp,
                                                                                                    n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -1138,6 +1144,7 @@ cdef class Mesh2d:
                                                                                                  eps,
                                                                                                  maxit,
                                                                                                  pts_ref, 2,
+                                                                                                 tt_from_rp,
                                                                                                  n_threads,
                                                                                                  process_obtuse)
             elif method == 'SPM':
@@ -1145,6 +1152,7 @@ cdef class Mesh2d:
                 self.grid = new Grid2Dunsp[double,uint32_t,Node2Dnsp[double,uint32_t],sxz[double]](self.no,
                                                                                                    self.tri,
                                                                                                    n_secondary,
+                                                                                                   tt_from_rp,
                                                                                                    n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -1173,7 +1181,7 @@ cdef class Mesh2d:
                               method, self.cell_slowness,
                               self._n_threads,
                               self.eps, self.maxit, self.process_obtuse,
-                              self.n_secondary)
+                              self.n_secondary, self.tt_from_rp)
         return (_rebuild2d, constructor_params)
 
     @property
@@ -1552,9 +1560,10 @@ cdef class Mesh2d:
     @staticmethod
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM',double eps=1.e-15, int maxit=20,
-                bool process_obtuse=1,uint32_t n_secondary=5):
+                bool process_obtuse=1, uint32_t n_secondary=5,
+                bool tt_from_rp=0):
         """
-        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary)
+        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, tt_from_rp)
 
         Build instance of Mesh2d from VTK file
 
@@ -1610,7 +1619,7 @@ cdef class Mesh2d:
             slowness = 1.0 / data
 
         m = Mesh2d(nod, tri, n_threads, cell_slowness, method, eps, maxit,
-                   process_obtuse, n_secondary)
+                   process_obtuse, n_secondary, tt_from_rp)
         m.set_slowness(slowness)
         return m
 
@@ -1627,8 +1636,8 @@ def _rebuild3d(constructor_params):
 
 def _rebuild2d(constructor_params):
     (nodes, triangles, method, cell_slowness, n_threads, eps, maxit,
-     process_obtuse, n_secondary) = constructor_params
+     process_obtuse, n_secondary, tt_from_rp) = constructor_params
 
     g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit,
-        process_obtuse, n_secondary)
+        process_obtuse, n_secondary, tt_from_rp)
     return g

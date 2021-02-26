@@ -39,9 +39,10 @@ namespace ttcr {
     public:
         Grid2Dunfs(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
-                   const T1 eps, const int maxit, const size_t nt=1,
+                   const T1 eps, const int maxit, const bool ttrp,
+                   const size_t nt=1,
                    const bool procObtuse=true) :
-        Grid2Dun<T1,T2,NODE,S>(no, tri, true, nt),
+        Grid2Dun<T1,T2,NODE,S>(no, tri, ttrp, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
             this->buildGridNodes(no, nt);
@@ -53,8 +54,9 @@ namespace ttcr {
                    const std::vector<triangleElem<T2>>& tri,
                    const T1 eps, const int maxit,
                    const std::vector<S>& refPts, const int order,
-                   const size_t nt=1, const bool procObtuse=true) :
-        Grid2Dun<T1,T2,NODE,S>(no, tri, nt),
+                   const bool ttrp, const size_t nt=1,
+                   const bool procObtuse=true) :
+        Grid2Dun<T1,T2,NODE,S>(no, tri, ttrp, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
             this->buildGridNodes(no, nt);

@@ -38,8 +38,8 @@ namespace ttcr {
     public:
         Grid2Ducsp(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
-                   const T2 ns, const size_t nt=1) :
-        Grid2Duc<T1,T2,NODE,S>(no, tri, false, nt)
+                   const T2 ns, const bool ttrp, const size_t nt=1) :
+        Grid2Duc<T1,T2,NODE,S>(no, tri, ttrp, nt)
         {
             this->buildGridNodes(no, ns, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);

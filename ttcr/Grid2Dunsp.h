@@ -40,8 +40,8 @@ namespace ttcr {
     public:
         Grid2Dunsp(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
-                   const T2 ns, const size_t nt=1) :
-        Grid2Dun<T1,T2,NODE,S>(no, tri, false, nt),
+                   const T2 ns, const bool ttrp, const size_t nt=1) :
+        Grid2Dun<T1,T2,NODE,S>(no, tri, ttrp, nt),
         nSecondary(ns)
         {
             this->buildGridNodes(no, ns, nt);

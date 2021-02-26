@@ -203,18 +203,18 @@ cdef extern from "Grid2Dun.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2Ducsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducsp[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
-        Grid2Ducsp(vector[S]&, vector[triangleElem[T2]]&, T2, size_t) except +
+        Grid2Ducsp(vector[S]&, vector[triangleElem[T2]]&, T2, bool, size_t) except +
 
 cdef extern from "Grid2Ducfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducfs[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
         Grid2Ducfs(vector[S]&, vector[triangleElem[T2]]&, T1, int,
-                   vector[S]& ref_pts, int order, size_t, bool) except +
+                   vector[S]& ref_pts, int order, bool, size_t, bool) except +
 
 cdef extern from "Grid2Dunsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunsp[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
-        Grid2Dunsp(vector[S]&, vector[triangleElem[T2]]&, T2, size_t) except +
+        Grid2Dunsp(vector[S]&, vector[triangleElem[T2]]&, T2, bool, size_t) except +
 
 cdef extern from "Grid2Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunfs[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
         Grid2Dunfs(vector[S]&, vector[triangleElem[T2]]&, T1, int,
-                   vector[S]& ref_pts, int order, size_t, bool) except +
+                   vector[S]& ref_pts, int order, bool, size_t, bool) except +

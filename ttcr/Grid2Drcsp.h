@@ -56,8 +56,8 @@ namespace ttcr {
     public:
         Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
-                   const size_t nt=1) :
-        Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,false,nt),
+                   const bool ttrp, const size_t nt=1) :
+        Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,ttrp,nt),
         nsnx(nnx), nsnz(nnz), nsgx(0), nsgz(0)
         {
             buildGridNodes();

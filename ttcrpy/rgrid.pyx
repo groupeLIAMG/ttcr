@@ -1747,7 +1747,7 @@ cdef class Grid2d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, tt_from_rp=0) -> Grid2d
 
     Parameters
     ----------
@@ -1783,6 +1783,8 @@ cdef class Grid2d:
         number of secondary nodes in x (SPM) (default is 10)
     nsnz : int
         number of secondary nodes in z (SPM) (default is 10)
+    tt_from_rp : bool
+        compute traveltime using raypaths
     """
     cdef vector[double] _x
     cdef vector[double] _z
@@ -1796,6 +1798,7 @@ cdef class Grid2d:
     cdef int maxit
     cdef bool weno
     cdef bool rotated_template
+    cdef bool tt_from_rp
     cdef uint32_t nsnx
     cdef uint32_t nsnz
 
@@ -1805,7 +1808,8 @@ cdef class Grid2d:
                   np.ndarray[np.double_t, ndim=1] z, size_t n_threads=1,
                   bool cell_slowness=1, str method='SPM', str aniso='iso',
                   double eps=1.e-15, int maxit=20, bool weno=1,
-                  bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10):
+                  bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
+                  bool tt_from_rp=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
@@ -1822,6 +1826,7 @@ cdef class Grid2d:
         self.nsnx = nsnx
         self.nsnz = nsnz
         self.iso = b'i'
+        self.tt_from_rp = tt_from_rp
 
         for val in x:
             self._x.push_back(val)
@@ -1836,34 +1841,34 @@ cdef class Grid2d:
                 if aniso == 'iso':
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, n_threads)
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'elliptical':
                     self.iso = b'e'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_e](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, n_threads)
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'tilted_elliptical':
                     self.iso = b't'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_te](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, n_threads)
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'vti_psv':
                     self.iso = b'p'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_p](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, n_threads)
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'vti_sh':
                     self.iso = b'h'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
                                     nx, nz, self._dx, self._dz,
-                                    xmin, zmin, nsnx, nsnz, n_threads)
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 else:
                     raise ValueError('Anisotropy model not implemented')
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drcfs[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin, eps,
-                                maxit, weno, rotated_template, n_threads)
+                                maxit, weno, rotated_template, tt_from_rp, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -1871,12 +1876,12 @@ cdef class Grid2d:
                 self.method = b's'
                 self.grid = new Grid2Drnsp[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin,
-                                nsnx, nsnz, n_threads)
+                                nsnx, nsnz, tt_from_rp, n_threads)
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drnfs[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin, eps,
-                                maxit, weno, rotated_template, n_threads)
+                                maxit, weno, rotated_template, tt_from_rp, n_threads)
 
     def __dealloc__(self):
         del self.grid
@@ -1902,7 +1907,8 @@ cdef class Grid2d:
 
         constructor_params = (self.n_threads, self.cell_slowness, method,
                               aniso, self.eps, self.maxit, self.weno,
-                              self.rotated_template, self.nsnx, self.nsnz)
+                              self.rotated_template, self.nsnx, self.nsnz,
+                              self.tt_from_rp)
         return (_rebuild2d, (self.x, self.z, constructor_params))
 
     @property
@@ -3117,7 +3123,7 @@ def _rebuild3d(x, y, z, constructor_params):
 
 def _rebuild2d(x, z, constructor_params):
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
-     rotated_template, nsnx, nsnz) = constructor_params
+     rotated_template, nsnx, nsnz, tt_from_rp) = constructor_params
     g = Grid2d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
-               rotated_template, nsnx, nsnz)
+               rotated_template, nsnx, nsnz, tt_from_rp)
     return g

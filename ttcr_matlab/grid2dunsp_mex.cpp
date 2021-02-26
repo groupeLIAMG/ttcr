@@ -143,7 +143,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             nthreads = round( *dtmp );
         }
 
-        plhs[0] = convertPtr2Mat<g2d>(new grid(nodes, triangles, nSecondary, nthreads));
+        plhs[0] = convertPtr2Mat<g2d>(new grid(nodes, triangles, nSecondary, false, nthreads));
         return;
     }
 

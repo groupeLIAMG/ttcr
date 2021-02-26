@@ -37,8 +37,9 @@ namespace ttcr {
     public:
         Grid2Dunfm(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
-                   const size_t nt=1, const bool procObtuse=true) :
-        Grid2Dun<T1, T2,NODE,S>(no, tri, true, nt)
+                   const bool ttrp, const size_t nt=1,
+                   const bool procObtuse=true) :
+        Grid2Dun<T1, T2,NODE,S>(no, tri, ttrp, nt)
         {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<NODE>(this->nodes);

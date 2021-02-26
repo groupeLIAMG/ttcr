@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
         plhs[0] = convertPtr2Mat<g2d>(new grid(nx, nz, *dx, *dz,
                                                 *xmin, *zmin,
-                                                1.e-15, 50, true, false,
+                                                1.e-15, 50, true, false, false,
                                                 nthreads));
         return;
     }
