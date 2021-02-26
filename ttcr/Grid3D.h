@@ -48,12 +48,13 @@ namespace ttcr {
                const size_t ncells,
                const size_t nt=1,
                const bool up=1) :
-            nThreads(nt), tt_from_rp(ttrp), usePool(up),
-            neighbors(std::vector<std::vector<T2>>(ncells)) {
-                if ( nThreads > 1 && usePool ) {
-                    pool.resize(static_cast<int>(nThreads));
-                }
+        nThreads(nt), usePool(up), tt_from_rp(ttrp),
+        neighbors(std::vector<std::vector<T2>>(ncells))
+        {
+            if ( nThreads > 1 && usePool ) {
+                pool.resize(static_cast<int>(nThreads));
             }
+        }
 
         virtual ~Grid3D() {}
         
