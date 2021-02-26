@@ -119,6 +119,40 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcsp)
     BOOST_TEST(error < 0.02);
 }
 
+BOOST_AUTO_TEST_CASE(testGrid2Drnfs)
+{
+    Src2D<double> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2d.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = FAST_SWEEPING;
+    par.weno3 = 1;
+    par.modelfile = "./files/gradient_fine2d.vtr";
+
+    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    g->saveTT("./files/grid2drnfs_tt_grid", 0, 0, 2);
+    vector<double> ref_tt;
+    get_ref_tt("./files/sol_analytique_gradient2d_tt.vtr", rcv.get_coord(), ref_tt);
+
+    // compute relative error
+    double error = 0.0;
+    for ( size_t n=1; n<ref_tt.size(); ++n ) {
+        // start at 1 to avoid node at source location where tt = 0
+        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
+    }
+    error /= (ref_tt.size() - 1);
+
+    BOOST_TEST(error < 0.003);
+}
+
 BOOST_AUTO_TEST_CASE(testGrid2Drnsp)
 {
     Src2D<double> src("./files/src2d.dat");
