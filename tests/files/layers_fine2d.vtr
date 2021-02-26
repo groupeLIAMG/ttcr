@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<VTKFile type="RectilinearGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <RectilinearGrid WholeExtent="0 100 0 0 0 100">
+  <Piece Extent="0 100 0 0 0 100">
+    <PointData>
+    </PointData>
+    <CellData Scalars="Slowness">
+      <DataArray type="Float64" Name="Slowness" format="binary" RangeMin="0.3389830508474576" RangeMax="0.9523809523809523">
+        AwAAAACAAACAOAAAqAAAAKkAAABcAAAAeJztxa0OQWEAgOEs2iQqwQ2oNo05xR3YyPLBVaAQTjtTREWxuQZJ9DNnZ0bXcBVf8Lx7tyfJ4iSLX82EJEmSJEkGc59Ho/HxQZIkSZIkA7pa/spJkiRJkmRAW5PCs7bNSJIkSZJkQKfl/m5dvJMkSZIkyYCmi16nnt5IkiRJkmRAh/OocRpcSZIkSZJkQGfV9vcLSZIkSZIM6KH03lS6Z/Iv/QB1PnsweJztxa0OQWEAgOGm2xQ/22m6Ys4EUZHNLQg20rkAQXURops4m1EFwc8xVM1sNpLjKr7gefduT1p6L6u9WyclSZIkycDOC8P8K0mSJEmSDGgcTZ+N1oUkSZIkSQZ03M2KyepMkiRJkiQDWttM8jOSJEmSJBnQ0S5p3tsnkiRJkiQZ0Nn6sx1ER5IkSZIkGdBK+deBJEmSJEkG9NF/xYv6niT5Z34BZcTTyHic7cWrAUBQAADAMWygi5JEkgRNVgXraBYwhE7wWcAACtUYT7grd9dPOsZndtu2bfsXF1HTr/lh27Zt27YDXrbJMPe7bdu2bdsO+NJV7zVttm3btm074B+16F4Q
+      </DataArray>
+    </CellData>
+    <Coordinates>
+      <DataArray type="Float64" Name="Array 0x7fa8fb607f00" format="binary" RangeMin="0" RangeMax="20">
+        AQAAAACAAAAoAwAA+wAAAA==eJwt0M0uBEEYBdARIoTIYDAYzP/0/Hd3zb7raXgm3kjCA1hb2UkkEomFtDp3U6nvnq/S6UYj5emxznOVzrdqE+q8u39USX2af1UP93W+9T/V60udX64R03wrJr8dU78T095uTGyP2+cOuEPuiGuaN/lj/Ym9U67Ftbgz7py74Npcm7vkrrhrrsN1uBvulrvjuuZdvhv/69Cz1+P6XJ/re2fADbghN+SG3IgbcWNuzI25CTfhMi7jMm7KTbkZN+Nm3JybcwtuwS24JbfkVtyKW3Frbs3l/lfO5/rcXs4VXMEVXMEVXMmVXMmVXMkF3xO4wAUucJv4B8K0HO0=
+      </DataArray>
+      <DataArray type="Float64" Name="Array 0x7fa8fb607ff0" format="binary" RangeMin="0" RangeMax="0">
+        AQAAAACAAAAIAAAACwAAAA==eJxjYIAAAAAIAAE=
+      </DataArray>
+      <DataArray type="Float64" Name="Array 0x7fa8fb607f00" format="binary" RangeMin="0" RangeMax="20">
+        AQAAAACAAAAoAwAA+wAAAA==eJwt0M0uBEEYBdARIoTIYDAYzP/0/Hd3zb7raXgm3kjCA1hb2UkkEomFtDp3U6nvnq/S6UYj5emxznOVzrdqE+q8u39USX2af1UP93W+9T/V60udX64R03wrJr8dU78T095uTGyP2+cOuEPuiGuaN/lj/Ym9U67Ftbgz7py74Npcm7vkrrhrrsN1uBvulrvjuuZdvhv/69Cz1+P6XJ/re2fADbghN+SG3IgbcWNuzI25CTfhMi7jMm7KTbkZN+Nm3JybcwtuwS24JbfkVtyKW3Frbs3l/lfO5/rcXs4VXMEVXMEVXMmVXMmVXMkF3xO4wAUucJv4B8K0HO0=
+      </DataArray>
+    </Coordinates>
+  </Piece>
+  </RectilinearGrid>
+</VTKFile>

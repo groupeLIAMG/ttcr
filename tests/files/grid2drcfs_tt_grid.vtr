@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<VTKFile type="RectilinearGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <RectilinearGrid WholeExtent="0 100 0 0 0 100">
+  <Piece Extent="0 100 0 0 0 100">
+    <PointData Scalars="Travel time">
+      <DataArray type="Float64" Name="Travel time" format="binary" RangeMin="0" RangeMax="0">
+        AwAAAACAAADIPgAANAAAADQAAAAmAAAAeJztwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAXic7cEBAQAAAICQ/q/uCAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGIAAAAF4nO3BMQEAAADCoPVPbQlPoAAAAAAAAAAAAAAAAAAAAOBnPsgAAQ==
+      </DataArray>
+    </PointData>
+    <CellData>
+    </CellData>
+    <Coordinates>
+      <DataArray type="Float64" Name="Array 0x10a9040c0" format="binary" RangeMin="0" RangeMax="20">
+        AQAAAACAAAAoAwAA+wAAAA==eJwt0M0uBEEYBdARIoTIYDAYzP/0/Hd3zb7raXgm3kjCA1hb2UkkEomFtDp3U6nvnq/S6UYj5emxznOVzrdqE+q8u39USX2af1UP93W+9T/V60udX64R03wrJr8dU78T095uTGyP2+cOuEPuiGuaN/lj/Ym9U67Ftbgz7py74Npcm7vkrrhrrsN1uBvulrvjuuZdvhv/69Cz1+P6XJ/re2fADbghN+SG3IgbcWNuzI25CTfhMi7jMm7KTbkZN+Nm3JybcwtuwS24JbfkVtyKW3Frbs3l/lfO5/rcXs4VXMEVXMEVXMmVXMmVXMkF3xO4wAUucJv4B8K0HO0=
+      </DataArray>
+      <DataArray type="Float64" Name="Array 0x10a904210" format="binary" RangeMin="0" RangeMax="0">
+        AQAAAACAAAAIAAAACwAAAA==eJxjYIAAAAAIAAE=
+      </DataArray>
+      <DataArray type="Float64" Name="Array 0x10a904410" format="binary" RangeMin="0" RangeMax="20">
+        AQAAAACAAAAoAwAA+wAAAA==eJwt0M0uBEEYBdARIoTIYDAYzP/0/Hd3zb7raXgm3kjCA1hb2UkkEomFtDp3U6nvnq/S6UYj5emxznOVzrdqE+q8u39USX2af1UP93W+9T/V60udX64R03wrJr8dU78T095uTGyP2+cOuEPuiGuaN/lj/Ym9U67Ftbgz7py74Npcm7vkrrhrrsN1uBvulrvjuuZdvhv/69Cz1+P6XJ/re2fADbghN+SG3IgbcWNuzI25CTfhMi7jMm7KTbkZN+Nm3JybcwtuwS24JbfkVtyKW3Frbs3l/lfO5/rcXs4VXMEVXMEVXMmVXMmVXMkF3xO4wAUucJv4B8K0HO0=
+      </DataArray>
+    </Coordinates>
+  </Piece>
+  </RectilinearGrid>
+</VTKFile>
