@@ -193,7 +193,39 @@ namespace ttcr {
             
             return 1.0/(w2/node1.getNodeSlowness() + w1/node2.getNodeSlowness());
         }
-        
+
+        template<typename NODE>
+        static T barycentricTriangle(const sxz<T>& node,
+                                     const NODE& node1,
+                                     const NODE& node2,
+                                     const NODE& node3) {
+            T den = (node2.getZ()-node3.getZ())*(node1.getX()-node3.getX()) +
+                    (node3.getX()-node2.getX())*(node1.getZ()-node3.getZ());
+            T w1 = ((node2.getZ()-node3.getZ())*(node.x-node3.getX()) +
+                    (node3.getX()-node2.getX())*(node.z-node3.getZ())) / den;
+            T w2 = ((node3.getZ()-node1.getZ())*(node.x-node3.getX()) +
+                    (node1.getX()-node3.getX())*(node.z-node3.getZ())) / den;
+            T w3 = 1. - w1 - w2;
+
+            return w1*node1.getNodeSlowness() + w2*node2.getNodeSlowness() + w3*node3.getNodeSlowness();
+        }
+
+        template<typename NODE>
+        static T barycentricTriangleVel(const sxz<T>& node,
+                                        const NODE& node1,
+                                        const NODE& node2,
+                                        const NODE& node3) {
+            T den = (node2.getZ()-node3.getZ())*(node1.getX()-node3.getX()) +
+                    (node3.getX()-node2.getX())*(node1.getZ()-node3.getZ());
+            T w1 = ((node2.getZ()-node3.getZ())*(node.x-node3.getX()) +
+                    (node3.getX()-node2.getX())*(node.z-node3.getZ())) / den;
+            T w2 = ((node3.getZ()-node1.getZ())*(node.x-node3.getX()) +
+                    (node1.getX()-node3.getX())*(node.z-node3.getZ())) / den;
+            T w3 = 1. - w1 - w2;
+
+            return (1.0/(w1/node1.getNodeSlowness() + w2/node2.getNodeSlowness() + w3/node3.getNodeSlowness()));
+        }
+
         template<typename NODE>
         static T bilinearTriangleVel(const sxyz<T>& node,
                                      const NODE& node1,
