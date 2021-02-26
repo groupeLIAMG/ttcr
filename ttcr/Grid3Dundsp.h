@@ -73,9 +73,9 @@ namespace ttcr {
             }
             if ( nSecondary>0 ) {
                 if ( this->interpVel )
-                    interpVelocitySecondary();
+                    this->interpVelocitySecondary(nSecondary);
                 else
-                    interpSlownessSecondary();
+                    this->interpSlownessSecondary(nSecondary);
             }
         }
 
@@ -88,9 +88,9 @@ namespace ttcr {
             }
             if ( nSecondary>0 ) {
                 if ( this->interpVel )
-                    interpVelocitySecondary();
+                    this->interpVelocitySecondary(nSecondary);
                 else
-                    interpSlownessSecondary();
+                    this->interpSlownessSecondary(nSecondary);
             }
         }
 
@@ -148,8 +148,8 @@ namespace ttcr {
         mutable std::vector<std::vector<Node3Dnd<T1,T2>>> tempNodes;
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
         
-        void interpSlownessSecondary();
-        void interpVelocitySecondary();
+//        void interpSlownessSecondary();
+//        void interpVelocitySecondary();
 
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
 
@@ -183,194 +183,193 @@ namespace ttcr {
     };
 
 
-    template<typename T1, typename T2>
-    void Grid3Dundsp<T1,T2>::interpVelocitySecondary() {
-    
-        T2 nNodes = this->nPrimary;
-        
-        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
-        std::array<T2,2> lineKey;
-        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
-        
-        size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
-        
-        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-            
-            // for each triangle
-            for ( T2 ntri=0; ntri<4; ++ntri ) {
-                
-                // start from ntri to avoid redundancy
-                for ( size_t nl=ntri; nl<3; ++nl ) {
-                    
-                    lineKey = {this->tetrahedra[ntet].i[ iNodes[ntri][nl] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
-                    std::sort(lineKey.begin(), lineKey.end());
-                    
-                    lineIt = lineMap.find( lineKey );
-                    if ( lineIt == lineMap.end() ) {
-                        // not found, insert new pair
-                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
-                    } else {
-                        continue;
-                    }
-                    
-                    T1 slope = (1.0/this->nodes[lineKey[1]].getNodeSlowness() - 1.0/this->nodes[lineKey[0]].getNodeSlowness())/
-                    this->nodes[lineKey[1]].getDistance(this->nodes[lineKey[0]]);
-                    
-                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
-                        T1 s = 1.0/(1.0/this->nodes[lineKey[0]].getNodeSlowness() + slope * this->nodes[nNodes].getDistance(this->nodes[lineKey[0]]));
-                        this->nodes[nNodes].setNodeSlowness( s );
-//                        std::cout << "1\t"  << this->nodes[nNodes].getX() << '\t' << this->nodes[nNodes].getY() << '\t' << this->nodes[nNodes].getZ() << '\t' << s << '\n';
-                        lineMap[lineKey][n2] = nNodes++;
-                    }
-                }
-            }
-        }
-        
-        
-        if ( nSecondary > 1 ) {
-            
-            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
-            std::array<T2,3> faceKey;
-            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
-            
-            int ncut = nSecondary - 1;
-            
-            for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-                
-                // for each triangle
-                for ( T2 ntri=0; ntri<4; ++ntri ) {
-                    
-                    faceKey = {this->tetrahedra[ntet].i[ iNodes[ntri][0] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][1] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][2] ]};
-                    std::sort(faceKey.begin(), faceKey.end());
-                    
-                    
-                    faceIt = faceMap.find( faceKey );
-                    if ( faceIt == faceMap.end() ) {
-                        // not found, insert new pair
-                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
-                    } else {
-                        continue;
-                    }
-                    
-                    std::vector<Node3Dn<T1,T2>*> inodes;
-                    inodes.push_back( &(this->nodes[faceKey[0]]) );
-                    inodes.push_back( &(this->nodes[faceKey[1]]) );
-                    inodes.push_back( &(this->nodes[faceKey[2]]) );
-                    
-                    size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
-                        size_t nseg = ncut+1-n;
-                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
-                            
-                            T1 s = Interpolator<T1>::bilinearTriangleVel(this->nodes[nNodes], inodes);
-                            this->nodes[nNodes].setNodeSlowness( s );
-//                            std::cout << "2\t"  << this->nodes[nNodes].getX() << '\t' << this->nodes[nNodes].getY() << '\t' << this->nodes[nNodes].getZ() << '\t' << s << '\n';
-                            faceMap[faceKey][ifn++] = nNodes++;
-                            
-                        }
-                    }
-                }
-            }
-        }
-    }
-        
-    template<typename T1, typename T2>
-    void Grid3Dundsp<T1,T2>::interpSlownessSecondary() {
-        
-        T2 nNodes = this->nPrimary;
-        
-        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
-        std::array<T2,2> lineKey;
-        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
-        
-        size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
-        
-        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-            
-            // for each triangle
-            for ( T2 ntri=0; ntri<4; ++ntri ) {
-                
-                // start from ntri to avoid redundancy
-                for ( size_t nl=ntri; nl<3; ++nl ) {
-                    
-                    lineKey = {this->tetrahedra[ntet].i[ iNodes[ntri][nl] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
-                    std::sort(lineKey.begin(), lineKey.end());
-                    
-                    lineIt = lineMap.find( lineKey );
-                    if ( lineIt == lineMap.end() ) {
-                        // not found, insert new pair
-                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
-                    } else {
-                        continue;
-                    }
-                    
-                    T1 slope = (this->nodes[lineKey[1]].getNodeSlowness() - this->nodes[lineKey[0]].getNodeSlowness())/
-                    this->nodes[lineKey[1]].getDistance(this->nodes[lineKey[0]]);
-                    
-                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
-                        T1 s = this->nodes[lineKey[0]].getNodeSlowness() + slope * this->nodes[nNodes].getDistance(this->nodes[lineKey[0]]);
-                        this->nodes[nNodes].setNodeSlowness( s );
-                        lineMap[lineKey][n2] = nNodes++;
-                    }
-                }
-            }
-        }
-        
-        
-        if ( nSecondary > 1 ) {
-            
-            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
-            std::array<T2,3> faceKey;
-            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
-            
-            int ncut = nSecondary - 1;
-            
-            for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
-                
-                // for each triangle
-                for ( T2 ntri=0; ntri<4; ++ntri ) {
-                    
-                    faceKey = {this->tetrahedra[ntet].i[ iNodes[ntri][0] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][1] ],
-                        this->tetrahedra[ntet].i[ iNodes[ntri][2] ]};
-                    std::sort(faceKey.begin(), faceKey.end());
-                    
-                    
-                    faceIt = faceMap.find( faceKey );
-                    if ( faceIt == faceMap.end() ) {
-                        // not found, insert new pair
-                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
-                    } else {
-                        continue;
-                    }
-                    
-                    std::vector<Node3Dn<T1,T2>*> inodes;
-                    inodes.push_back( &(this->nodes[faceKey[0]]) );
-                    inodes.push_back( &(this->nodes[faceKey[1]]) );
-                    inodes.push_back( &(this->nodes[faceKey[2]]) );
-                    
-                    size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
-                        size_t nseg = ncut+1-n;
-                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
-                            
-                            T1 s = Interpolator<T1>::bilinearTriangle(this->nodes[nNodes], inodes);
-                            this->nodes[nNodes].setNodeSlowness( s );
-                            
-                            faceMap[faceKey][ifn++] = nNodes++;
-                            
-                        }
-                    }
-                }
-            }
-        }
-    }
+//    template<typename T1, typename T2>
+//    void Grid3Dundsp<T1,T2>::interpVelocitySecondary() {
+//    
+//        T2 nNodes = this->nPrimary;
+//        
+//        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+//        std::array<T2,2> lineKey;
+//        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+//        
+//        size_t nFaceNodes = 0;
+//        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
+//        
+//        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
+//            
+//            // for each triangle
+//            for ( T2 ntri=0; ntri<4; ++ntri ) {
+//                
+//                // start from ntri to avoid redundancy
+//                for ( size_t nl=ntri; nl<3; ++nl ) {
+//                    
+//                    lineKey = {this->tetrahedra[ntet].i[ iNodes[ntri][nl] ],
+//                        this->tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
+//                    std::sort(lineKey.begin(), lineKey.end());
+//                    
+//                    lineIt = lineMap.find( lineKey );
+//                    if ( lineIt == lineMap.end() ) {
+//                        // not found, insert new pair
+//                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+//                    } else {
+//                        continue;
+//                    }
+//                    
+//                    T1 slope = (1.0/this->nodes[lineKey[1]].getNodeSlowness() - 1.0/this->nodes[lineKey[0]].getNodeSlowness())/
+//                    this->nodes[lineKey[1]].getDistance(this->nodes[lineKey[0]]);
+//                    
+//                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+//                        T1 s = 1.0/(1.0/this->nodes[lineKey[0]].getNodeSlowness() + slope * this->nodes[nNodes].getDistance(this->nodes[lineKey[0]]));
+//                        this->nodes[nNodes].setNodeSlowness( s );
+//                        lineMap[lineKey][n2] = nNodes++;
+//                    }
+//                }
+//            }
+//        }
+//        
+//        
+//        if ( nSecondary > 1 ) {
+//            
+//            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
+//            std::array<T2,3> faceKey;
+//            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
+//            
+//            int ncut = nSecondary - 1;
+//            
+//            for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
+//                
+//                // for each triangle
+//                for ( T2 ntri=0; ntri<4; ++ntri ) {
+//                    
+//                    faceKey = {this->tetrahedra[ntet].i[ iNodes[ntri][0] ],
+//                        this->tetrahedra[ntet].i[ iNodes[ntri][1] ],
+//                        this->tetrahedra[ntet].i[ iNodes[ntri][2] ]};
+//                    std::sort(faceKey.begin(), faceKey.end());
+//                    
+//                    
+//                    faceIt = faceMap.find( faceKey );
+//                    if ( faceIt == faceMap.end() ) {
+//                        // not found, insert new pair
+//                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
+//                    } else {
+//                        continue;
+//                    }
+//                    
+//                    std::vector<Node3Dn<T1,T2>*> inodes;
+//                    inodes.push_back( &(this->nodes[faceKey[0]]) );
+//                    inodes.push_back( &(this->nodes[faceKey[1]]) );
+//                    inodes.push_back( &(this->nodes[faceKey[2]]) );
+//                    
+//                    size_t ifn = 0;
+//                    for ( size_t n=0; n<ncut; ++n ) {
+//                        size_t nseg = ncut+1-n;
+//                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
+//                            
+//                            T1 s = Interpolator<T1>::bilinearTriangleVel(this->nodes[nNodes], inodes);
+//                            this->nodes[nNodes].setNodeSlowness( s );
+//
+//                            faceMap[faceKey][ifn++] = nNodes++;
+//                            
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//        
+//    template<typename T1, typename T2>
+//    void Grid3Dundsp<T1,T2>::interpSlownessSecondary() {
+//        
+//        T2 nNodes = this->nPrimary;
+//        
+//        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+//        std::array<T2,2> lineKey;
+//        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+//        
+//        size_t nFaceNodes = 0;
+//        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
+//        
+//        for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
+//            
+//            // for each triangle
+//            for ( T2 ntri=0; ntri<4; ++ntri ) {
+//                
+//                // start from ntri to avoid redundancy
+//                for ( size_t nl=ntri; nl<3; ++nl ) {
+//                    
+//                    lineKey = {this->tetrahedra[ntet].i[ iNodes[ntri][nl] ],
+//                        this->tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
+//                    std::sort(lineKey.begin(), lineKey.end());
+//                    
+//                    lineIt = lineMap.find( lineKey );
+//                    if ( lineIt == lineMap.end() ) {
+//                        // not found, insert new pair
+//                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+//                    } else {
+//                        continue;
+//                    }
+//                    
+//                    T1 slope = (this->nodes[lineKey[1]].getNodeSlowness() - this->nodes[lineKey[0]].getNodeSlowness())/
+//                    this->nodes[lineKey[1]].getDistance(this->nodes[lineKey[0]]);
+//                    
+//                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+//                        T1 s = this->nodes[lineKey[0]].getNodeSlowness() + slope * this->nodes[nNodes].getDistance(this->nodes[lineKey[0]]);
+//                        this->nodes[nNodes].setNodeSlowness( s );
+//                        lineMap[lineKey][n2] = nNodes++;
+//                    }
+//                }
+//            }
+//        }
+//        
+//        
+//        if ( nSecondary > 1 ) {
+//            
+//            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
+//            std::array<T2,3> faceKey;
+//            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
+//            
+//            int ncut = nSecondary - 1;
+//            
+//            for ( T2 ntet=0; ntet<this->tetrahedra.size(); ++ntet ) {
+//                
+//                // for each triangle
+//                for ( T2 ntri=0; ntri<4; ++ntri ) {
+//                    
+//                    faceKey = {this->tetrahedra[ntet].i[ iNodes[ntri][0] ],
+//                        this->tetrahedra[ntet].i[ iNodes[ntri][1] ],
+//                        this->tetrahedra[ntet].i[ iNodes[ntri][2] ]};
+//                    std::sort(faceKey.begin(), faceKey.end());
+//                    
+//                    
+//                    faceIt = faceMap.find( faceKey );
+//                    if ( faceIt == faceMap.end() ) {
+//                        // not found, insert new pair
+//                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
+//                    } else {
+//                        continue;
+//                    }
+//                    
+//                    std::vector<Node3Dn<T1,T2>*> inodes;
+//                    inodes.push_back( &(this->nodes[faceKey[0]]) );
+//                    inodes.push_back( &(this->nodes[faceKey[1]]) );
+//                    inodes.push_back( &(this->nodes[faceKey[2]]) );
+//                    
+//                    size_t ifn = 0;
+//                    for ( size_t n=0; n<ncut; ++n ) {
+//                        size_t nseg = ncut+1-n;
+//                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
+//                            
+//                            T1 s = Interpolator<T1>::bilinearTriangle(this->nodes[nNodes], inodes);
+//                            this->nodes[nNodes].setNodeSlowness( s );
+//                            
+//                            faceMap[faceKey][ifn++] = nNodes++;
+//                            
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
     
     template<typename T1, typename T2>
     void Grid3Dundsp<T1,T2>::addTemporaryNodes(const std::vector<sxyz<T1>>& Tx,
@@ -727,9 +726,7 @@ namespace ttcr {
             queue.pop();
             inQueue[ src->getGridIndex() ] = false;
             frozen[ src->getGridIndex() ] = true;
-            
-//            std::cout << src->getX() << '\t' << src->getY() << '\t' << src->getY() << '\t' << src->getTT(threadNo) << '\n';
-            
+
             for ( size_t no=0; no<src->getOwners().size(); ++no ) {
                 
                 T2 cellNo = src->getOwners()[no];
@@ -742,8 +739,7 @@ namespace ttcr {
                     
                     // compute dt
                     T1 dt = this->computeDt(*src, this->nodes[neibNo]);
-//                    std::cout << this->nodes[neibNo].getX() << '\t' << this->nodes[neibNo].getY() << '\t' << this->nodes[neibNo].getZ() << '\t' << this->nodes[neibNo].getNodeSlowness() << '\t' << dt << '\n';
-                    
+
                     if (src->getTT(threadNo)+dt < this->nodes[neibNo].getTT(threadNo)) {
                         this->nodes[neibNo].setTT( src->getTT(threadNo)+dt, threadNo );
                         
@@ -763,8 +759,6 @@ namespace ttcr {
                     // compute dt
                     T1 dt = this->computeDt(*src, tempNodes[threadNo][neibNo]);
                     
-//                    std::cout << tempNodes[threadNo][neibNo].getX() << '\t' << tempNodes[threadNo][neibNo].getY() << '\t' << tempNodes[threadNo][neibNo].getZ() << '\t' << tempNodes[threadNo][neibNo].getNodeSlowness() << '\t' << dt << '\n';
-
                     if (src->getTT(threadNo)+dt < tempNodes[threadNo][neibNo].getTT(0)) {
                         tempNodes[threadNo][neibNo].setTT( src->getTT(threadNo)+dt, 0 );
                         

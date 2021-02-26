@@ -395,6 +395,9 @@ namespace ttcr {
                            const std::array<T2,2>& edgeNodes,
                            const std::array<T2,3>& faceNodes) const;
 
+        void interpSlownessSecondary(const T2 nSecondary);
+        void interpVelocitySecondary(const T2 nSecondary);
+
         void printRaypathData(const sxyz<T1>& curr_pt,
                               const sxyz<T1>& g,
                               const bool onNode,
@@ -11108,8 +11111,8 @@ namespace ttcr {
 
         for ( size_t np=0; np<pts.size(); ++np ) {
             bool found = false;
-            for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
-                if ( this->nodes[nn].getDistance(pts[np])<small ) {
+            for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn].getDistance(pts[np])<small ) {
                     found = true;
                     d_data[np].push_back( {np, nn, 1.0} );
                     break;
@@ -11123,7 +11126,7 @@ namespace ttcr {
                 std::array<T1,4> weights;
                 T1 sum (0.0);
                 for ( size_t n=0; n<4; ++n ) {
-                    weights[n] = 1.0/this->nodes[this->neighbors[cellNO][n]].getDistance(pts[np]);
+                    weights[n] = 1.0/nodes[this->neighbors[cellNO][n]].getDistance(pts[np]);
                     sum += weights[n];
                 }
                 for ( size_t n=0; n<4; ++n ) {
@@ -11148,14 +11151,14 @@ namespace ttcr {
             std::copy(layer.begin(), layer.end(), std::inserter(surroundingNodes, surroundingNodes.end()));
             std::vector<T2> nextlayer;
             for ( auto nn=layer.begin(); nn!=layer.end(); ++nn ) {
-                for ( auto cel=this->nodes[*nn].getOwners().begin(); cel!=this->nodes[*nn].getOwners().end(); cel++ ) {
+                for ( auto cel=nodes[*nn].getOwners().begin(); cel!=nodes[*nn].getOwners().end(); cel++ ) {
                     for ( size_t i=0; i<4; ++i ) {
                         // first 4 nodes are the primary nodes
                         if ( surroundingNodes.find( this->neighbors[*cel][i] ) != surroundingNodes.end() )
                             continue;
-                        dx = (this->nodes[nodeNumber].getX() - this->nodes[this->neighbors[*cel][i]].getX());
-                        dy = (this->nodes[nodeNumber].getY() - this->nodes[this->neighbors[*cel][i]].getY());
-                        dz = (this->nodes[nodeNumber].getZ() - this->nodes[this->neighbors[*cel][i]].getZ());
+                        dx = (nodes[nodeNumber].getX() - nodes[this->neighbors[*cel][i]].getX());
+                        dy = (nodes[nodeNumber].getY() - nodes[this->neighbors[*cel][i]].getY());
+                        dz = (nodes[nodeNumber].getZ() - nodes[this->neighbors[*cel][i]].getZ());
                         if ( dx == 0.0 )
                             nzx++;
                         if ( dy == 0.0 )
@@ -11203,9 +11206,9 @@ namespace ttcr {
             W.setZero(npt, npt);
             size_t i = 0;
             for ( auto nd=surroundingNodes.begin();nd!=surroundingNodes.end(); ++nd ) {
-                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
-                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
-                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+                A(i,0) = nodes[*nd].getX() - nodes[nodeNumber].getX();
+                A(i,1) = nodes[*nd].getY() - nodes[nodeNumber].getY();
+                A(i,2) = nodes[*nd].getZ() - nodes[nodeNumber].getZ();
 
                 if ( order == 2 ) {
                     A(i,3) = 0.5*A(i,0)*A(i,0);
@@ -11224,9 +11227,9 @@ namespace ttcr {
         } else {
             size_t i = 0;
             for ( auto nd=surroundingNodes.begin(); nd!=surroundingNodes.end(); ++nd ) {
-                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
-                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
-                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+                A(i,0) = nodes[*nd].getX() - nodes[nodeNumber].getX();
+                A(i,1) = nodes[*nd].getY() - nodes[nodeNumber].getY();
+                A(i,2) = nodes[*nd].getZ() - nodes[nodeNumber].getZ();
 
                 if ( order == 2 ) {
                     A(i,3) = 0.5*A(i,0)*A(i,0);
@@ -11262,9 +11265,9 @@ namespace ttcr {
             W.setZero(npt, npt);
             size_t i = 0;
             for ( auto nd=surroundingNodes.begin();nd!=surroundingNodes.end(); ++nd ) {
-                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
-                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
-                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+                A(i,0) = nodes[*nd].getX() - nodes[nodeNumber].getX();
+                A(i,1) = nodes[*nd].getY() - nodes[nodeNumber].getY();
+                A(i,2) = nodes[*nd].getZ() - nodes[nodeNumber].getZ();
 
                 if ( order == 1 ) {
                     A(i,3) = 1.0;
@@ -11287,9 +11290,9 @@ namespace ttcr {
         } else {
             size_t i = 0;
             for ( auto nd=surroundingNodes.begin(); nd!=surroundingNodes.end(); ++nd ) {
-                A(i,0) = this->nodes[*nd].getX() - this->nodes[nodeNumber].getX();
-                A(i,1) = this->nodes[*nd].getY() - this->nodes[nodeNumber].getY();
-                A(i,2) = this->nodes[*nd].getZ() - this->nodes[nodeNumber].getZ();
+                A(i,0) = nodes[*nd].getX() - nodes[nodeNumber].getX();
+                A(i,1) = nodes[*nd].getY() - nodes[nodeNumber].getY();
+                A(i,2) = nodes[*nd].getZ() - nodes[nodeNumber].getZ();
 
                 if ( order == 1 ) {
                     A(i,3) = 1.0;
@@ -11462,6 +11465,195 @@ namespace ttcr {
 
         }  // end of for nnodes
     }
+
+template<typename T1, typename T2, typename NODE>
+void Grid3Dun<T1,T2,NODE>::interpVelocitySecondary(const T2 nSecondary) {
+
+    T2 nNodes = nPrimary;
+
+    std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+    std::array<T2,2> lineKey;
+    typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+
+    size_t nFaceNodes = 0;
+    for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
+
+    for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
+
+        // for each triangle
+        for ( T2 ntri=0; ntri<4; ++ntri ) {
+
+            // start from ntri to avoid redundancy
+            for ( size_t nl=ntri; nl<3; ++nl ) {
+
+                lineKey = {tetrahedra[ntet].i[ iNodes[ntri][nl] ],
+                    tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
+                std::sort(lineKey.begin(), lineKey.end());
+
+                lineIt = lineMap.find( lineKey );
+                if ( lineIt == lineMap.end() ) {
+                    // not found, insert new pair
+                    lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+                } else {
+                    continue;
+                }
+
+                T1 slope = (1.0/nodes[lineKey[1]].getNodeSlowness() - 1.0/nodes[lineKey[0]].getNodeSlowness())/
+                nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
+
+                for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                    T1 s = 1.0/(1.0/nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]));
+                    nodes[nNodes].setNodeSlowness( s );
+                    lineMap[lineKey][n2] = nNodes++;
+                }
+            }
+        }
+    }
+
+
+    if ( nSecondary > 1 ) {
+
+        std::map<std::array<T2,3>,std::vector<T2>> faceMap;
+        std::array<T2,3> faceKey;
+        typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
+
+        int ncut = nSecondary - 1;
+
+        for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
+
+            // for each triangle
+            for ( T2 ntri=0; ntri<4; ++ntri ) {
+
+                faceKey = {tetrahedra[ntet].i[ iNodes[ntri][0] ],
+                    tetrahedra[ntet].i[ iNodes[ntri][1] ],
+                    tetrahedra[ntet].i[ iNodes[ntri][2] ]};
+                std::sort(faceKey.begin(), faceKey.end());
+
+
+                faceIt = faceMap.find( faceKey );
+                if ( faceIt == faceMap.end() ) {
+                    // not found, insert new pair
+                    faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
+                } else {
+                    continue;
+                }
+
+                std::vector<NODE*> inodes;
+                inodes.push_back( &(nodes[faceKey[0]]) );
+                inodes.push_back( &(nodes[faceKey[1]]) );
+                inodes.push_back( &(nodes[faceKey[2]]) );
+
+                size_t ifn = 0;
+                for ( size_t n=0; n<ncut; ++n ) {
+                    size_t nseg = ncut+1-n;
+                    for ( size_t n2=0; n2<nseg-1; ++n2 ) {
+
+                        T1 s = Interpolator<T1>::bilinearTriangleVel(nodes[nNodes], inodes);
+                        nodes[nNodes].setNodeSlowness( s );
+
+                        faceMap[faceKey][ifn++] = nNodes++;
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+template<typename T1, typename T2, typename NODE>
+void Grid3Dun<T1,T2,NODE>::interpSlownessSecondary(const T2 nSecondary) {
+
+    T2 nNodes = this->nPrimary;
+
+    std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+    std::array<T2,2> lineKey;
+    typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+
+    size_t nFaceNodes = 0;
+    for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
+
+    for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
+
+        // for each triangle
+        for ( T2 ntri=0; ntri<4; ++ntri ) {
+
+            // start from ntri to avoid redundancy
+            for ( size_t nl=ntri; nl<3; ++nl ) {
+
+                lineKey = {tetrahedra[ntet].i[ iNodes[ntri][nl] ],
+                    tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
+                std::sort(lineKey.begin(), lineKey.end());
+
+                lineIt = lineMap.find( lineKey );
+                if ( lineIt == lineMap.end() ) {
+                    // not found, insert new pair
+                    lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+                } else {
+                    continue;
+                }
+
+                T1 slope = (nodes[lineKey[1]].getNodeSlowness() - nodes[lineKey[0]].getNodeSlowness())/
+                nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
+
+                for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                    T1 s = nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]);
+                    nodes[nNodes].setNodeSlowness( s );
+                    lineMap[lineKey][n2] = nNodes++;
+                }
+            }
+        }
+    }
+
+
+    if ( nSecondary > 1 ) {
+
+        std::map<std::array<T2,3>,std::vector<T2>> faceMap;
+        std::array<T2,3> faceKey;
+        typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
+
+        int ncut = nSecondary - 1;
+
+        for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
+
+            // for each triangle
+            for ( T2 ntri=0; ntri<4; ++ntri ) {
+
+                faceKey = {tetrahedra[ntet].i[ iNodes[ntri][0] ],
+                    tetrahedra[ntet].i[ iNodes[ntri][1] ],
+                    tetrahedra[ntet].i[ iNodes[ntri][2] ]};
+                std::sort(faceKey.begin(), faceKey.end());
+
+
+                faceIt = faceMap.find( faceKey );
+                if ( faceIt == faceMap.end() ) {
+                    // not found, insert new pair
+                    faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
+                } else {
+                    continue;
+                }
+
+                std::vector<NODE*> inodes;
+                inodes.push_back( &(nodes[faceKey[0]]) );
+                inodes.push_back( &(nodes[faceKey[1]]) );
+                inodes.push_back( &(nodes[faceKey[2]]) );
+
+                size_t ifn = 0;
+                for ( size_t n=0; n<ncut; ++n ) {
+                    size_t nseg = ncut+1-n;
+                    for ( size_t n2=0; n2<nseg-1; ++n2 ) {
+
+                        T1 s = Interpolator<T1>::bilinearTriangle(nodes[nNodes], inodes);
+                        nodes[nNodes].setNodeSlowness( s );
+
+                        faceMap[faceKey][ifn++] = nNodes++;
+
+                    }
+                }
+            }
+        }
+    }
+}
 
 }
 
