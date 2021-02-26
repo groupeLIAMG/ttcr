@@ -103,12 +103,16 @@ namespace ttcr {
             }
         }
         
-    protected:
+    private:
         T2 nsnx;    // number of secondary nodes in x
         T2 nsnz;    // number of secondary nodes in z
         T2 nsgx;    // number of subgrid cells in x
         T2 nsgz;    // number of subgrid cells in z
-        
+
+        Grid2Drcsp() {}
+        Grid2Drcsp(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
+        Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
+
         void buildGridNodes();
         
         void propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
@@ -145,25 +149,13 @@ namespace ttcr {
                       std::vector<bool>& frozen,
                       const size_t threadNo) const;
         
-        
-        T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
-                         const size_t threadNo) const;
-        
-        T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
-                         T2& nodeParentRx, T2& cellParentRx,
-                         const size_t threadNo) const;
-        
         T1 get_tt_corr(const siv2<T1>& cell,
                        const Grid2Drcsp<T1,T2,S,CELL> *grid,
                        const size_t i) const {
             return cell.v*(this->slowness[cell.i] - grid->slowness[i]);
         }
         
-    private:
-        Grid2Drcsp() {}
-        Grid2Drcsp(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
-        Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -174,6 +166,11 @@ namespace ttcr {
                       const std::vector<const std::vector<S>*>& Rx,
                       const size_t threadNo=0) const;
         
+        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
+
+        T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
+                         T2& nodeParentRx, T2& cellParentRx,
+                         const size_t threadNo) const;
         
     };
     
@@ -1002,32 +999,29 @@ namespace ttcr {
     }
     
     template<typename T1, typename T2, typename S, typename CELL>
-    T1 Grid2Drcsp<T1,T2,S,CELL>::getTraveltime(const S& Rx,
-                                               const std::vector<Node2Dcsp<T1,T2>>& nodes,
-                                               const size_t threadNo) const {
-
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Rx ) {
-                return nodes[nn].getTT(threadNo);
+    T1 Grid2Drcsp<T1,T2,S,CELL>::getTraveltime(const S& Rx, const size_t threadNo) const {
+    
+        for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
+            if ( this->nodes[nn] == Rx ) {
+                return this->nodes[nn].getTT(threadNo);
             }
         }
         
         T2 cellNo = this->getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];
-        T1 dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
+        T1 dt = this->cells.computeDt(this->nodes[neibNo], Rx, cellNo);
         
-        T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+        T1 traveltime = this->nodes[neibNo].getTT(threadNo)+dt;
         for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
             neibNo = this->neighbors[cellNo][k];
-            dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
-            if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-                traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+            dt = this->cells.computeDt(this->nodes[neibNo], Rx, cellNo);
+            if ( traveltime > this->nodes[neibNo].getTT(threadNo)+dt ) {
+                traveltime =  this->nodes[neibNo].getTT(threadNo)+dt;
             }
         }
         return traveltime;
     }
-    
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     T1 Grid2Drcsp<T1,T2,S,CELL>::getTraveltime(const S& Rx,
                                                const std::vector<Node2Dcsp<T1,T2>>& nodes,

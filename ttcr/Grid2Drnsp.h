@@ -123,6 +123,12 @@ namespace ttcr {
                       const std::vector<const std::vector<S>*>& Rx,
                       const size_t threadNo=0) const;
         
+        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
+        
+        T1 getTraveltime(const S& Rx, const std::vector<Node2Dnsp<T1,T2>>& nodes,
+                         T2& nodeParentRx, T2& cellParentRx,
+                         const size_t threadNo) const;
+        
     };
     
     template<typename T1, typename T2, typename S>
@@ -436,7 +442,8 @@ namespace ttcr {
         
         for (size_t n=0; n<Rx.size(); ++n) {
             
-            traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx, cellParentRx,
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes,
+                                                 nodeParentRx, cellParentRx,
                                                  threadNo);
             
             // Rx are in nodes (not txNodes)
@@ -536,7 +543,7 @@ namespace ttcr {
             
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
                 
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n],
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes,
                                                             nodeParentRx, cellParentRx,
                                                             threadNo);
                 
@@ -653,7 +660,8 @@ namespace ttcr {
         
         for (size_t n=0; n<Rx.size(); ++n) {
             
-            traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx, cellParentRx,
+            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes,
+                                                 nodeParentRx, cellParentRx,
                                                  threadNo);
             
             // Rx are in nodes (not txNodes)
@@ -780,6 +788,67 @@ namespace ttcr {
         }
     }
     
+    template<typename T1, typename T2, typename S>
+    T1 Grid2Drnsp<T1,T2,S>::getTraveltime(const S& Rx,
+                                          const size_t threadNo) const {
+
+        for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
+            if ( this->nodes[nn] == Rx ) {
+                return this->nodes[nn].getTT(threadNo);
+            }
+        }
+
+        T1 slownessRx = this->getSlowness( Rx );
+
+        T2 cellNo = this->getCellNo( Rx );
+        T2 neibNo = this->neighbors[cellNo][0];
+        T1 dt = this->computeDt(this->nodes[neibNo], Rx, slownessRx);
+        
+        T1 traveltime = this->nodes[neibNo].getTT(threadNo)+dt;
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
+            dt = this->computeDt(this->nodes[neibNo], Rx, slownessRx);
+            if ( traveltime > this->nodes[neibNo].getTT(threadNo)+dt ) {
+                traveltime =  this->nodes[neibNo].getTT(threadNo)+dt;
+            }
+        }
+        return traveltime;
+    }
+
+    template<typename T1, typename T2, typename S>
+    T1 Grid2Drnsp<T1,T2,S>::getTraveltime(const S& Rx, const std::vector<Node2Dnsp<T1,T2>>& nodes,
+                                          T2& nodeParentRx, T2& cellParentRx,
+                                          const size_t threadNo) const {
+    
+        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == Rx ) {
+                nodeParentRx = nodes[nn].getNodeParent(threadNo);
+                cellParentRx = nodes[nn].getCellParent(threadNo);
+                return nodes[nn].getTT(threadNo);
+            }
+        }
+        
+        T1 slownessRx = this->getSlowness( Rx );
+        
+        T2 cellNo = this->getCellNo( Rx );
+        T2 neibNo = this->neighbors[cellNo][0];
+        T1 dt = this->computeDt(nodes[neibNo], Rx, slownessRx);
+        
+        T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+        nodeParentRx = neibNo;
+        cellParentRx = cellNo;
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
+            dt = this->computeDt(nodes[neibNo], Rx, slownessRx);
+            if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+                traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+                nodeParentRx = neibNo;
+            }
+        }
+        return traveltime;
+    }
+
+
 }
 
 #endif /* Grid2Drnsp_h */

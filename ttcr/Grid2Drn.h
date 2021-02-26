@@ -145,9 +145,6 @@ namespace ttcr {
         
         bool inPolygon(const S& p, const S poly[], const size_t N) const;
         
-        T1 getTraveltime(const S& Rx, T2& nodeParentRx, T2& cellParentRx,
-                         const size_t threadNo) const;
-        
         void grad(S &g, const size_t i, const size_t j, const size_t nt=0) const;
         
         void grad(S &g, const S &pt, const size_t nt=0) const;
@@ -218,7 +215,7 @@ namespace ttcr {
         Grid2Drn(const Grid2Drn<T1,T2,S,NODE>& g) {}
         Grid2Drn<T1,T2,S,NODE>& operator=(const Grid2Drn<T1,T2,S,NODE>& g) {}
         
-        T1 getTraveltime(const S& Rx, const size_t threadNo) const final;
+        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
         
         T1 getTraveltimeFromRaypath(const std::vector<S>& Tx,
                                     const std::vector<T1>& t0,
@@ -278,36 +275,6 @@ namespace ttcr {
         }
         return c;
     }
-    
-    
-    
-    //template<typename T1, typename T2, typename S, typename NODE>
-    //T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S& Rx,
-    //                                       const std::vector<NODE>& nodes,
-    //                                       const size_t threadNo) const {
-    //
-    //    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-    //        if ( nodes[nn] == Rx ) {
-    //            return nodes[nn].getTT(threadNo);
-    //        }
-    //    }
-    //
-    //    T1 slownessRx = getSlowness( Rx );
-    //
-    //    T2 cellNo = getCellNo( Rx );
-    //    T2 neibNo = this->neighbors[cellNo][0];
-    //    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
-    //
-    //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    //    for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
-    //        neibNo = this->neighbors[cellNo][k];
-    //        dt = computeDt(nodes[neibNo], Rx, slownessRx);
-    //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-    //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-    //        }
-    //    }
-    //    return traveltime;
-    //}
     
     template<typename T1, typename T2, typename S, typename NODE>
     T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S &pt, const size_t nt) const {
@@ -369,40 +336,7 @@ namespace ttcr {
     }
     
     
-    template<typename T1, typename T2, typename S, typename NODE>
-    T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S& Rx,
-                                             T2& nodeParentRx, T2& cellParentRx,
-                                             const size_t threadNo) const {
-        
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Rx ) {
-                nodeParentRx = nodes[nn].getNodeParent(threadNo);
-                cellParentRx = nodes[nn].getCellParent(threadNo);
-                return nodes[nn].getTT(threadNo);
-            }
-        }
-        
-        T1 slownessRx = getSlowness( Rx );
-        
-        T2 cellNo = getCellNo( Rx );
-        T2 neibNo = this->neighbors[cellNo][0];
-        T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
-        
-        T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-        nodeParentRx = neibNo;
-        cellParentRx = cellNo;
-        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
-            neibNo = this->neighbors[cellNo][k];
-            dt = computeDt(nodes[neibNo], Rx, slownessRx);
-            if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-                traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-                nodeParentRx = neibNo;
-            }
-        }
-        return traveltime;
-    }
-    
-    //template<typename T1, typename T2, typename S, typename NODE>
+   //template<typename T1, typename T2, typename S, typename NODE>
     //T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S& Rx,
     //                                       const std::vector<NODE>& nodes,
     //                                       T2& nodeParentRx, T2& cellParentRx,

@@ -201,7 +201,7 @@ namespace ttcr {
 
     private:
         void grad(S &g, const S &pt, const size_t nt) const;
-        T1 getTraveltime(const S& pt, const size_t threadNo) const final;
+        T1 getTraveltime(const S& pt, const size_t threadNo) const;
         
         T1 getTraveltimeFromRaypath(const std::vector<S>& Tx,
                                     const std::vector<T1>& t0,
@@ -224,21 +224,7 @@ namespace ttcr {
                         const size_t threadNo) const final;
         
     };
-    
-    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
-    Grid2Drc<T1,T2,S,NODE,CELL>::Grid2Drc(const T2 nx, const T2 nz,
-                                          const T1 ddx, const T1 ddz,
-                                          const T1 minx, const T1 minz,
-                                          const size_t nt) :
-    Grid2D<T1,T2,S>(nx*nz, nt),
-    dx(ddx), dz(ddz), xmin(minx), zmin(minz),
-    xmax(minx+nx*ddx), zmax(minz+nz*ddz),
-    ncx(nx), ncz(nz),
-    nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) )),
-    cells(ncx*ncz)
-    { }
-    
-    
+
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
     void Grid2Drc<T1,T2,S,NODE,CELL>::saveTT(const std::string& fname,
                                              const int all,
