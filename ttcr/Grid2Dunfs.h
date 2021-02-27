@@ -72,32 +72,6 @@ namespace ttcr {
 
         const int get_niter() const { return niter_final; }
 
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<S>&,
-                     std::vector<T1>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<S>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>& ,
-                     const std::vector<S>&,
-                     std::vector<T1>&,
-                     std::vector<std::vector<S>>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<S>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     std::vector<std::vector<std::vector<S>>*>&,
-                     const size_t=0) const;
-        
     private:
         T1 epsilon;
         int nitermax;
@@ -107,7 +81,15 @@ namespace ttcr {
         void initTx(const std::vector<S>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
         
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      const size_t threadNo) const;
         
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<const std::vector<S>*>& Rx,
+                      const size_t threadNo) const;
     };
 
     template<typename T1, typename T2, typename NODE, typename S>
@@ -144,7 +126,6 @@ namespace ttcr {
     void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -206,14 +187,6 @@ namespace ttcr {
             niter++;
         }
         niter_final = niter;
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
-        }
     }
     
     
@@ -221,7 +194,6 @@ namespace ttcr {
     void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -285,66 +257,7 @@ namespace ttcr {
             niter++;
         }
         niter_final = niter;
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
-        }
     }
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
-                                            std::vector<std::vector<S>>& r_data,
-                                            const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
-        }
-    }
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
-                                            std::vector<std::vector<std::vector<S>>*>& r_data,
-                                            const size_t threadNo) const {
-        
-        raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            r_data[nr]->resize( Rx[nr]->size() );
-            for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
-                (*r_data[nr])[ni].resize( 0 );
-            }
-            
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-            }
-        }
-    }
-    
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Dunfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,

@@ -49,32 +49,6 @@ namespace ttcr {
         ~Grid2Dunfm() {
         }
         
-        void raytrace(const std::vector<S>& Tx,
-                     const std::vector<T1>& t0,
-                     const std::vector<S>& Rx,
-                     std::vector<T1>& traveltimes,
-                     const size_t threadNo=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<S>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>& ,
-                     const std::vector<S>&,
-                     std::vector<T1>&,
-                     std::vector<std::vector<S>>&,
-                     const size_t=0) const;
-        
-        void raytrace(const std::vector<S>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<S>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     std::vector<std::vector<std::vector<S>>*>&,
-                     const size_t=0) const;
-        
     private:
         
         void initBand(const std::vector<S>& Tx,
@@ -94,13 +68,21 @@ namespace ttcr {
                        std::vector<bool>&,
                        const size_t) const;
         
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      const size_t threadNo) const;
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<const std::vector<S>*>& Rx,
+                      const size_t threadNo) const;
     };
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -121,21 +103,12 @@ namespace ttcr {
         initBand(Tx, t0, narrow_band, txNodes, inQueue, frozen, threadNo);
         
         propagate(narrow_band, inQueue, frozen, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
-        }
     }
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
                                             const size_t threadNo) const {
         
         this->checkPts(Tx);
@@ -157,112 +130,7 @@ namespace ttcr {
         initBand(Tx, t0, narrow_band, txNodes, inBand, frozen, threadNo);
         
         propagate(narrow_band, inBand, frozen, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
-        }
     }
-    
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
-                                            std::vector<std::vector<S>>& r_data,
-                                            const size_t threadNo) const {
-        
-        this->checkPts(Tx);
-        this->checkPts(Rx);
-        
-        for ( size_t n=0; n<this->nodes.size(); ++n ) {
-            this->nodes[n].reinit( threadNo );
-        }
-        
-        CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< NODE*, std::vector<NODE*>,
-        CompareNodePtr<T1>> narrow_band( cmp );
-        
-        std::vector<NODE> txNodes;
-        std::vector<bool> inQueue( this->nodes.size(), false );
-        std::vector<bool> frozen( this->nodes.size(), false );
-        
-        initBand(Tx, t0, narrow_band, txNodes, inQueue, frozen, threadNo);
-        
-        propagate(narrow_band, inQueue, frozen, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
-            this->getRaypath(Tx, Rx[n], r_data[n], threadNo);
-        }
-    }
-    
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<const std::vector<S>*>& Rx,
-                                            std::vector<std::vector<T1>*>& traveltimes,
-                                            std::vector<std::vector<std::vector<S>>*>& r_data,
-                                            const size_t threadNo) const {
-        
-        this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-            this->checkPts(*Rx[n]);
-        
-        for ( size_t n=0; n<this->nodes.size(); ++n ) {
-            this->nodes[n].reinit( threadNo );
-        }
-        
-        CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< NODE*, std::vector<NODE*>,
-        CompareNodePtr<T1>> narrow_band( cmp );
-        
-        std::vector<NODE> txNodes;
-        std::vector<bool> inBand( this->nodes.size(), false );
-        std::vector<bool> frozen( this->nodes.size(), false );
-        
-        initBand(Tx, t0, narrow_band, txNodes, inBand, frozen, threadNo);
-        
-        propagate(narrow_band, inBand, frozen, threadNo);
-        
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            r_data[nr]->resize( Rx[nr]->size() );
-            for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
-                (*r_data[nr])[ni].resize( 0 );
-            }
-            
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
-                
-                this->getRaypath(Tx, (*Rx[nr])[n], (*r_data[nr])[n], threadNo);
-            }
-        }
-    }
-    
     
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Dunfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
