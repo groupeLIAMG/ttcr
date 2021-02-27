@@ -191,7 +191,6 @@ namespace ttcr {
         }
         
         T1 getTraveltime(const S& Rx,
-                         const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
         
         T1 getTraveltime(const S& Rx,
@@ -332,7 +331,6 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE, typename S>
     T1 Grid2Dun<T1,T2,NODE,S>::getTraveltime(const S& Rx,
-                                             const std::vector<NODE>& nodes,
                                              const size_t threadNo) const {
         
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {
