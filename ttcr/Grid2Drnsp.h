@@ -736,7 +736,7 @@ namespace ttcr {
             sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
             
             // the order should be from Tx to Rx, so we reorder...
-            iParent = r_tmp.size();
+            iParent = static_cast<T2>(r_tmp.size());
             r_data[n].resize( r_tmp.size() );
             for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
                 r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;

@@ -804,7 +804,7 @@ namespace ttcr {
                     T2 i1 = triangles[ntri].i[(n+1)%3];
                     T2 i2 = triangles[ntri].i[(n+2)%3];
                     
-                    T2 oppositeTriangle;
+                    T2 oppositeTriangle = 0;
                     bool found = false;
                     for ( size_t n1=0; n1<nodes[i1].getOwners().size(); ++n1) {
                         for ( size_t n2=0; n2<nodes[i2].getOwners().size(); ++n2) {
@@ -1389,7 +1389,8 @@ namespace ttcr {
             }
         }
         
-        T2 cellNo, nodeNo;
+        T2 cellNo = 0;
+        T2 nodeNo = 0;
         sxz<T1> curr_pt( Rx );
         
         bool onNode=false;
@@ -1774,7 +1775,8 @@ namespace ttcr {
             }
         }
         
-        T2 cellNo, nodeNo;
+        T2 cellNo = 0;
+        T2 nodeNo = 0;
         sxz<T1> curr_pt( Rx );
         
         bool onNode=false;
@@ -2183,7 +2185,8 @@ namespace ttcr {
             }
         }
         
-        T2 cellNo, nodeNo;
+        T2 cellNo = 0;
+        T2 nodeNo = 0;
         sxz<T1> prev_pt( Rx );
         sxz<T1> curr_pt( Rx );
         
