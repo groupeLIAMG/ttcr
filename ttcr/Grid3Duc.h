@@ -40,6 +40,11 @@
 #include <vector>
 
 #ifdef VTK
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include "vtkCellData.h"
 #include "vtkDoubleArray.h"
 #include "vtkPointData.h"
@@ -52,6 +57,7 @@
 #include "vtkTetra.h"
 #include "vtkXMLRectilinearGridWriter.h"
 #include "vtkXMLUnstructuredGridWriter.h"
+#pragma clang diagnostic pop
 #endif
 
 #include "Grad.h"

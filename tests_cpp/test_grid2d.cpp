@@ -1,22 +1,29 @@
 //
 //  main.cpp
-//  test_rgrid2d
+//  test_grid2d
 //
 //  Created by Bernard Giroux on 2021-02-24.
 //  Copyright © 2021 Bernard Giroux. All rights reserved.
 //
 
-#define BOOST_TEST_MODULE Test Grid2D
-#include <boost/test/included/unit_test.hpp>
-
 #include <cmath>
 #include <string>
 #include <vector>
+
+#define BOOST_TEST_MODULE Test Grid2D
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#include <boost/test/included/unit_test.hpp>
 
 #include <vtkPointData.h>
 #include <vtkRectilinearGrid.h>
 #include <vtkSmartPointer.h>
 #include <vtkXMLRectilinearGridReader.h>
+#pragma clang diagnostic pop
 
 #include "Grid2D.h"
 #include "Rcv2D.h"

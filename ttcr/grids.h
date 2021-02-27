@@ -33,6 +33,11 @@
 #include <vector>
 
 #ifdef VTK
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include <vtkCellData.h>
 #include <vtkDataSet.h>
 #include <vtkPointData.h>
@@ -40,6 +45,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkXMLReader.h>
 #include <vtkXMLRectilinearGridReader.h>
+#pragma clang diagnostic pop
 #endif
 
 #include "Cell.h"

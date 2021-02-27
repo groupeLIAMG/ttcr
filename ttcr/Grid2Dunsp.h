@@ -774,7 +774,8 @@ namespace ttcr {
             node_p = &(this->nodes);
             
             std::vector<S> r_tmp;
-            T2 iChild, iParent = nodeParentRx;
+            T2 iChild = 0;
+            T2 iParent = nodeParentRx;
             S child;
             
             // store the son's coord

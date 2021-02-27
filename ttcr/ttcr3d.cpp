@@ -30,7 +30,11 @@
 #include <iostream>
 #include <thread>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include <boost/asio/ip/host_name.hpp>
+#pragma clang diagnostic pop
 
 #include "Grid3D.h"
 #include "Rcv.h"

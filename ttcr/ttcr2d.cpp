@@ -30,7 +30,10 @@
 #include <iostream>
 #include <thread>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include <boost/asio/ip/host_name.hpp>
+#pragma clang diagnostic pop
 
 #include "Grid2D.h"
 #include "Rcv2D.h"

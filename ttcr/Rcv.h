@@ -32,10 +32,14 @@
 #include <vector>
 
 #ifdef VTK
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include "vtkPoints.h"
 #include "vtkPolyData.h"
 #include "vtkSmartPointer.h"
 #include "vtkXMLPolyDataWriter.h"
+#pragma clang diagnostic pop
 #endif
 
 #include "ttcr_t.h"

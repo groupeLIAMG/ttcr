@@ -32,7 +32,10 @@
 #include <set>
 #include <vector>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include <Eigen/Dense>
+#pragma clang diagnostic pop
 
 #include "ttcr_t.h"
 #include "Interpolator.h"

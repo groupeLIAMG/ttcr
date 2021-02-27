@@ -34,6 +34,8 @@
 #include <vector>
 
 #ifdef VTK
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "vtkCellData.h"
 #include "vtkDoubleArray.h"
 #include "vtkIntArray.h"
@@ -47,6 +49,7 @@
 #include "vtkTriangle.h"
 #include "vtkXMLRectilinearGridWriter.h"
 #include "vtkXMLUnstructuredGridWriter.h"
+#pragma clang diagnostic pop
 #endif
 
 #include <boost/math/special_functions/sign.hpp>
