@@ -303,7 +303,8 @@ namespace ttcr {
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes and "
+                    << par.nTertiary << " tertiary nodes... ";
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
@@ -532,7 +533,11 @@ namespace ttcr {
 
                     case DYNAMIC_SHORTEST_PATH:
 
-                        if ( verbose ) { std::cout << "Building grid (Grid3Drndsp) ... "; std::cout.flush(); }
+                        if ( verbose ) {
+                            std::cout << "Creating grid (Grid3Drndsp) using " << par.nn[0] << " secondary nodes and "
+                            << par.nTertiary << " tertiary nodes ... ";
+                            std::cout.flush();
+                        }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
 
                         g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
@@ -715,7 +720,11 @@ namespace ttcr {
 
                     case DYNAMIC_SHORTEST_PATH:
 
-                        if ( verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
+                        if ( verbose ) {
+                            std::cout << "Creating grid (Grid3Drcdsp) using " << par.nn[0] << " secondary nodes and "
+                            << par.nTertiary << " tertiary nodes ... ";
+                            std::cout.flush();
+                        }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drcdsp<T,uint32_t,Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                             d[0], d[1], d[2],
@@ -926,7 +935,8 @@ namespace ttcr {
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes and "
+                    << par.nTertiary << " tertiary nodes ... ";
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
@@ -1235,7 +1245,8 @@ namespace ttcr {
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes and "
+                    << par.nTertiary << " tertiary nodes ... ";
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
@@ -2138,7 +2149,8 @@ namespace ttcr {
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes and "
+                    << par.nTertiary << " tertiary nodes ... ";
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
@@ -2411,7 +2423,8 @@ namespace ttcr {
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes and "
+                    << par.nTertiary << " tertiary nodes ... ";
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
