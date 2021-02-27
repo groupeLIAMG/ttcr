@@ -41,10 +41,16 @@ public:
                 const size_t nt=1) :
     Grid2Duc<T1,T2,Node2Dc<T1,T2>,sxz<T1>>(no, tri, ttrp, nt),
     nSecondary(ns), nTertiary(nd), nPermanent(0),
-    dyn_radius(drad)
+    dyn_radius(drad),
+    tempNodes(std::vector<std::vector<Node2Dcd<T1,T2>>>(nt)),
+    tempNeighbors(std::vector<std::vector<std::vector<T2>>>(nt))
     {
         this->buildGridNodes(no, ns, nt);
         this->template buildGridNeighbors<Node2Dc<T1,T2>>(this->nodes);
+        nPermanent = static_cast<T2>(this->nodes.size());
+        for ( size_t n=0; n<nt; ++n ) {
+            tempNeighbors[n].resize(tri.size());
+        }
     }
     ~Grid2Ducdsp() {
     }
