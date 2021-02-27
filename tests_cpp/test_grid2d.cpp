@@ -38,7 +38,10 @@ namespace ttcr {
 using namespace std;
 using namespace ttcr;
 
-void get_ref_tt(const string& filename, const vector<sxz<double>>& x, vector<double>& tt) {
+double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
+    // compute relative error
+    
+    vector<double> ref_tt(rcv.get_coord().size());
     vtkSmartPointer<vtkXMLRectilinearGridReader> reader =
     vtkSmartPointer<vtkXMLRectilinearGridReader>::New();
     reader->SetFileName(filename.c_str());
@@ -47,11 +50,19 @@ void get_ref_tt(const string& filename, const vector<sxz<double>>& x, vector<dou
     vtkRectilinearGrid *dataSet = reader->GetOutput();
     
     vtkPointData *pd = dataSet->GetPointData();
-    tt.resize(x.size());
-    for ( size_t n=0; n<x.size(); ++n ) {
-        vtkIdType ii = dataSet->FindPoint(x[n].x, 0.0, x[n].z);
-        tt[n] = static_cast<double>(pd->GetArray(0)->GetTuple1(ii));
+    for ( size_t n=0; n<rcv.get_coord().size(); ++n ) {
+        vtkIdType ii = dataSet->FindPoint(rcv.get_coord()[n].x, 0.0, rcv.get_coord()[n].z);
+        ref_tt[n] = static_cast<double>(pd->GetArray(0)->GetTuple1(ii));
     }
+    // compute relative error
+    double error = 0.0;
+    for ( size_t n=1; n<ref_tt.size(); ++n ) {
+        // start at 1 to avoid node at source location where tt = 0
+        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
+//        cout << rcv.get_coord()[n] << '\t' << ref_tt[n] << '\t' << rcv.get_tt(0)[n] << '\n';
+    }
+    error /= (ref_tt.size() - 1);
+    return error;
 }
 
 BOOST_AUTO_TEST_CASE(testGrid2Drcfs)
@@ -74,18 +85,8 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcfs)
         abort();
     }
     g->saveTT("./files/grid2drcfs_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_couches2d_tt.vtr", rcv.get_coord(), ref_tt);
+    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
 
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-//        cout << rcv.get_coord()[n] << '\t' << ref_tt[n] << '\t' << rcv.get_tt(0)[n] << '\n';
-    }
-    error /= (ref_tt.size() - 1);
-    
     BOOST_TEST(error < 0.03);
 }
 
@@ -111,17 +112,7 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcsp)
         abort();
     }
     g->saveTT("./files/grid2drcsp_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_couches2d_tt.vtr", rcv.get_coord(), ref_tt);
-    
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-//        cout << rcv.get_coord()[n] << '\t' << ref_tt[n] << '\t' << rcv.get_tt(0)[n] << '\n';
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
     
     BOOST_TEST(error < 0.02);
 }
@@ -146,16 +137,7 @@ BOOST_AUTO_TEST_CASE(testGrid2Drnfs)
         abort();
     }
     g->saveTT("./files/grid2drnfs_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_gradient2d_tt.vtr", rcv.get_coord(), ref_tt);
-
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
 
     BOOST_TEST(error < 0.003);
 }
@@ -182,16 +164,7 @@ BOOST_AUTO_TEST_CASE(testGrid2Drnsp)
         abort();
     }
     g->saveTT("./files/grid2drnsp_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_gradient2d_tt.vtr", rcv.get_coord(), ref_tt);
-
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
 
     BOOST_TEST(error < 0.001);
 }
@@ -216,17 +189,7 @@ BOOST_AUTO_TEST_CASE(testGrid2Ducfs)
         abort();
     }
     g->saveTT("./files/grid2ducfs_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_couches2d_tt.vtr", rcv.get_coord(), ref_tt);
-
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-//        cout << rcv.get_coord()[n] << '\t' << ref_tt[n] << '\t' << rcv.get_tt(0)[n] << '\n';
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
     
     BOOST_TEST(error < 0.03);
 }
@@ -253,19 +216,37 @@ BOOST_AUTO_TEST_CASE(testGrid2Ducsp)
         abort();
     }
     g->saveTT("./files/grid2ducsp_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_couches2d_tt.vtr", rcv.get_coord(), ref_tt);
-    
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-//        cout << rcv.get_coord()[n] << '\t' << ref_tt[n] << '\t' << rcv.get_tt(0)[n] << '\n';
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
     
     BOOST_TEST(error < 0.02);
+}
+
+BOOST_AUTO_TEST_CASE(testGrid2Ducdsp)
+{
+    Src2D<double> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2d.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = DYNAMIC_SHORTEST_PATH;
+    par.radius_tertiary_nodes = 0.8;
+    par.nn[0] = 2;
+    par.nn[1] = 2;
+    par.nn[2] = 2;
+    par.modelfile = "./files/layers_fine2d.vtu";
+
+    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    g->saveTT("./files/grid2ducdsp_tt_grid", 0, 0, 2);
+    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
+    
+    BOOST_TEST(error < 0.03);
 }
 
 BOOST_AUTO_TEST_CASE(testGrid2Dunfs)
@@ -288,16 +269,7 @@ BOOST_AUTO_TEST_CASE(testGrid2Dunfs)
         abort();
     }
     g->saveTT("./files/grid2dunfs_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_gradient2d_tt.vtr", rcv.get_coord(), ref_tt);
-
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
 
     BOOST_TEST(error < 0.02);
 }
@@ -324,16 +296,35 @@ BOOST_AUTO_TEST_CASE(testGrid2Dunsp)
         abort();
     }
     g->saveTT("./files/grid2dunsp_tt_grid", 0, 0, 2);
-    vector<double> ref_tt;
-    get_ref_tt("./files/sol_analytique_gradient2d_tt.vtr", rcv.get_coord(), ref_tt);
-
-    // compute relative error
-    double error = 0.0;
-    for ( size_t n=1; n<ref_tt.size(); ++n ) {
-        // start at 1 to avoid node at source location where tt = 0
-        error += abs( (ref_tt[n] - rcv.get_tt(0)[n])/ref_tt[n] );
-    }
-    error /= (ref_tt.size() - 1);
+    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
 
     BOOST_TEST(error < 0.003);
+}
+
+BOOST_AUTO_TEST_CASE(testGrid2Dundsp)
+{
+    Src2D<double> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2d.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = DYNAMIC_SHORTEST_PATH;
+    par.radius_tertiary_nodes = 0.8;
+    par.nn[0] = 2;
+    par.nn[1] = 2;
+    par.nn[2] = 2;
+    par.modelfile = "./files/gradient_fine2d.vtu";
+
+    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    g->saveTT("./files/grid2dundsp_tt_grid", 0, 0, 2);
+    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
+
+    BOOST_TEST(error < 0.03);
 }
