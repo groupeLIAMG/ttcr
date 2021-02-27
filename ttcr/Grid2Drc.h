@@ -210,8 +210,10 @@ namespace ttcr {
 
     private:
         void grad(S &g, const S &pt, const size_t nt) const;
-        T1 getTraveltime(const S& pt, const size_t threadNo) const;
+        T1 interpolateTraveltime(const S& pt, const size_t threadNo) const;
         
+        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
+
         T1 getTraveltimeFromRaypath(const std::vector<S>& Tx,
                                     const std::vector<T1>& t0,
                                     const S& Rx,
@@ -339,8 +341,8 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
-    T1 Grid2Drc<T1,T2,S,NODE,CELL>::getTraveltime(const S& pt,
-                                                  const size_t nt) const {
+    T1 Grid2Drc<T1,T2,S,NODE,CELL>::interpolateTraveltime(const S& pt,
+                                                          const size_t nt) const {
     
         static const size_t nnz = ncz+1;
         
@@ -400,11 +402,35 @@ namespace ttcr {
         
         T1 p1 = pt.x - dx/2.0;
         T1 p2 = p1 + dx;
-        g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
+        g.x = (interpolateTraveltime({p2, pt.z}, nt) - interpolateTraveltime({p1, pt.z}, nt)) / dx;
         
         p1 = pt.z - dz/2.0;
         p2 = p1 + dz;
-        g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
+        g.z = (interpolateTraveltime({pt.x, p2}, nt) - interpolateTraveltime({pt.x, p1}, nt)) / dz;
+    }
+
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    T1 Grid2Drc<T1,T2,S,NODE,CELL>::getTraveltime(const S& Rx, const size_t threadNo) const {
+
+        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == Rx ) {
+                return nodes[nn].getTT(threadNo);
+            }
+        }
+    
+        T2 cellNo = getCellNo( Rx );
+        T2 neibNo = this->neighbors[cellNo][0];
+        T1 dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
+    
+        T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
+            dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
+            if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+                traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+            }
+        }
+        return traveltime;
     }
 
 
