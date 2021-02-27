@@ -42,7 +42,8 @@ namespace ttcr {
         x(0.0), z(0.0),
         gridIndex(std::numeric_limits<T2>::max()),
         tt(nullptr),
-        owners(0)
+        owners(0),
+        primary(true)
         {
             tt = new T1[nt];
             
@@ -158,7 +159,10 @@ namespace ttcr {
         
         int getDimension() const { return 2; }
         
-        const bool isPrimary() const { return true; }
+        void setPrimary(const bool p=true) {
+            primary = p;
+        }
+        const bool isPrimary() const { return primary; }
         
     protected:
         size_t nThreads;
@@ -167,7 +171,7 @@ namespace ttcr {
         T2 gridIndex;                  // index of this node in the list of the grid
         T1 *tt;                        // travel time
         std::vector<T2> owners;        // indices of cells touching the node
-        
+        bool primary;
     };
 
     template<typename T1, typename T2>
