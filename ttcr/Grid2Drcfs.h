@@ -40,7 +40,7 @@ namespace ttcr {
         const int get_niter() const { return niter_final; }
         const int get_niterw() const { return niterw_final; }
         
-    protected:
+    private:
         T1 epsilon;
         int nitermax;
         mutable int niter_final;
@@ -48,12 +48,11 @@ namespace ttcr {
         bool weno3;
         bool rotated_template;
         
-        void buildGridNodes();
-        
-    private:
         Grid2Drcfs() {}
         Grid2Drcfs(const Grid2Drcfs<T1,T2,S>& g) {}
         Grid2Drcfs<T1,T2,S>& operator=(const Grid2Drcfs<T1,T2,S>& g) {}
+        
+        void buildGridNodes();
         
         void raytrace(const std::vector<S>& Tx,
                      const std::vector<T1>& t0,

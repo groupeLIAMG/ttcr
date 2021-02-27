@@ -80,13 +80,18 @@ namespace ttcr {
             }
         }
         
-    protected:
+        
+    private:
         T2 nsnx;    // number of secondary nodes in x
         T2 nsnz;    // number of secondary nodes in z
         T2 nsgx;    // number of subgrid cells in x
         T2 nsgz;    // number of subgrid cells in z
         T2 nPrimary;
         
+        Grid2Drnsp() {}
+        Grid2Drnsp(const Grid2Drnsp<T1,T2,S>& g) {}
+        Grid2Drnsp<T1,T2,S>& operator=(const Grid2Drnsp<T1,T2,S>& g) {}
+
         void buildGridNodes();
         
         void interpSlownessSecondary();
@@ -107,11 +112,6 @@ namespace ttcr {
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
-        
-    private:
-        Grid2Drnsp() {}
-        Grid2Drnsp(const Grid2Drnsp<T1,T2,S>& g) {}
-        Grid2Drnsp<T1,T2,S>& operator=(const Grid2Drnsp<T1,T2,S>& g) {}
         
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
