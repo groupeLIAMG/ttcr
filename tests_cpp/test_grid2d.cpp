@@ -117,6 +117,34 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcsp)
     BOOST_TEST(error < 0.02);
 }
 
+BOOST_AUTO_TEST_CASE(testGrid2Drcdsp)
+{
+    Src2D<double> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2d.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = DYNAMIC_SHORTEST_PATH;
+    par.radius_tertiary_nodes = 0.8;
+    par.nn[0] = 2;
+    par.nn[1] = 2;
+    par.nn[2] = 2;
+    par.modelfile = "./files/layers_fine2d.vtr";
+
+    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    g->saveTT("./files/grid2drcdsp_tt_grid", 0, 0, 2);
+    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
+    
+    BOOST_TEST(error < 0.02);
+}
+
 BOOST_AUTO_TEST_CASE(testGrid2Drnfs)
 {
     Src2D<double> src("./files/src2d.dat");
