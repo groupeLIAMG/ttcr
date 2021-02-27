@@ -150,7 +150,8 @@ namespace ttcr {
         T2 cell_downLeft = 0;
         T2 cell_downRight = 0;
         
-        for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
+        T2 n = 0;
+        for ( T2 nc=0; nc<=this->ncx; ++nc ) {
             
             T1 x = this->xmin + nc*this->dx;
             
@@ -259,6 +260,11 @@ namespace ttcr {
                 //            std::cout << '\n';
             }
             //        std::cout << '\n';
+        }
+        // sanity check
+        if ( n != this->nodes.size() ) {
+            std::cerr << "Error building grid, wrong number of nodes\n";
+            abort();
         }
     }
     

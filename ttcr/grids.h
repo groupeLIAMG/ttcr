@@ -54,6 +54,7 @@
 #include "Grid2Drcdsp.h"
 #include "Grid2Drnfs.h"
 #include "Grid2Drnsp.h"
+#include "Grid2Drndsp.h"
 #include "Grid2Ducfm.h"
 #include "Grid2Ducfs.h"
 #include "Grid2Ducsp.h"
@@ -1573,7 +1574,14 @@ namespace ttcr {
                                                                                                     par.tt_from_rp,
                                                                                                     nt);
                 else
-                    std::cout << "TODO";
+                    g = new Grid2Drndsp<T, uint32_t, sxz<T>>(ncells[0], ncells[2],
+                                                             d[0], d[2],
+                                                             min[0], min[2],
+                                                             par.nn[0],
+                                                             par.nTertiary,
+                                                             par.radius_tertiary_nodes,
+                                                             par.tt_from_rp,
+                                                             nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1795,9 +1803,39 @@ namespace ttcr {
                     }
                     case DYNAMIC_SHORTEST_PATH:
                     {
-                        std::cerr << "Error: dynamic shortest path method not yet implemented for 2D rectilinear grids\n";
-                        std::cerr.flush();
-                        return nullptr;
+                        if ( verbose ) {
+                            std::cout << "Creating grid using " << par.nn[0] << " secondary nodes and "
+                            << par.nTertiary << " tertiary nodes ... ";
+                            std::cout.flush();
+                        }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid2Drndsp<T, uint32_t, sxz<T>>(ncells[0], ncells[2],
+                                                                 d[0], d[2],
+                                                                 xrange[0], zrange[0],
+                                                                 par.nn[0],
+                                                                 par.nTertiary,
+                                                                 par.radius_tertiary_nodes,
+                                                                 par.tt_from_rp,
+                                                                 nt);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            cerr << e.what() << endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        if ( par.time ) {
+                            std::cout.precision(12);
+                            std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                        }
+                        break;
                     }
                         
                     default:

@@ -197,6 +197,11 @@ namespace ttcr {
         
         bool inPolygon(const S& p, const S poly[], const size_t N) const;
         
+        void getCellIJ(const T2 cellNo, sij<T2>& ind) const {
+            ind.i = cellNo / ncz;
+            ind.j = cellNo - ncz * ind.i;
+        }
+        
         void getIJ(const S& pt, T2& i, T2& j) const {
             i = static_cast<T2>( small + (pt.x-xmin)/dx );
             j = static_cast<T2>( small + (pt.z-zmin)/dz );

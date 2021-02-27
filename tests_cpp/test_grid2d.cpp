@@ -67,6 +67,9 @@ double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
 
 BOOST_AUTO_TEST_CASE(testGrid2Drcfs)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -92,6 +95,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcfs)
 
 BOOST_AUTO_TEST_CASE(testGrid2Drcsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -119,6 +125,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcsp)
 
 BOOST_AUTO_TEST_CASE(testGrid2Drcdsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -147,6 +156,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcdsp)
 
 BOOST_AUTO_TEST_CASE(testGrid2Drnfs)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -172,6 +184,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Drnfs)
 
 BOOST_AUTO_TEST_CASE(testGrid2Drnsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -197,8 +212,42 @@ BOOST_AUTO_TEST_CASE(testGrid2Drnsp)
     BOOST_TEST(error < 0.001);
 }
 
+BOOST_AUTO_TEST_CASE(testGrid2Drndsp)
+{
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
+    Src2D<double> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2d.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = DYNAMIC_SHORTEST_PATH;
+    par.radius_tertiary_nodes = 0.8;
+    par.nn[0] = 2;
+    par.nn[1] = 2;
+    par.nn[2] = 2;
+    par.modelfile = "./files/gradient_fine2d.vtr";
+
+    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    g->saveTT("./files/grid2drndsp_tt_grid", 0, 0, 2);
+    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
+
+    BOOST_TEST(error < 0.003);
+}
+
 BOOST_AUTO_TEST_CASE(testGrid2Ducfs)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -224,6 +273,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Ducfs)
 
 BOOST_AUTO_TEST_CASE(testGrid2Ducsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -251,6 +303,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Ducsp)
 
 BOOST_AUTO_TEST_CASE(testGrid2Ducdsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -279,6 +334,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Ducdsp)
 
 BOOST_AUTO_TEST_CASE(testGrid2Dunfs)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -304,6 +362,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Dunfs)
 
 BOOST_AUTO_TEST_CASE(testGrid2Dunsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -331,6 +392,9 @@ BOOST_AUTO_TEST_CASE(testGrid2Dunsp)
 
 BOOST_AUTO_TEST_CASE(testGrid2Dundsp)
 {
+    if ( verbose > 0 ) {
+        cout << "\n*** Starting test ***\n";
+    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
