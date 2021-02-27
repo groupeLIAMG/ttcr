@@ -57,7 +57,10 @@ namespace ttcr {
         void init(const size_t ns, const size_t nr=0);
         const std::vector<sxz<T>>& get_coord() const { return coord; }
         std::vector<T>& get_tt(const size_t ns, const size_t nr=0) { return tt[ns][nr]; }
-        
+        const std::vector<T>& get_tt(const size_t ns, const size_t nr=0) const {
+            return tt[ns][nr];
+        }
+
         void save_tt( const std::string &f, const size_t ns) const;
         
         void add_coord(const sxz<T> &c) { coord.push_back(c); }
