@@ -319,6 +319,7 @@ namespace ttcr {
                         this->nodes[n].setX( x );
                         this->nodes[n].setZ( zsv );
                         this->nodes[n].setGridIndex( n );
+                        this->nodes[n].setPrimary(false);
                     }
                 }
                 
@@ -338,6 +339,7 @@ namespace ttcr {
                         this->nodes[n].setX( xsh );
                         this->nodes[n].setZ( z );
                         this->nodes[n].setGridIndex( n );
+                        this->nodes[n].setPrimary(false);
                     }
                 }
             }

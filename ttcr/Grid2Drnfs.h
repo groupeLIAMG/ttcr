@@ -170,6 +170,7 @@ namespace ttcr {
                 this->nodes[n].setX( x );
                 this->nodes[n].setZ( z );
                 this->nodes[n].setGridIndex( n );
+                this->nodes[n].setPrimary(true);
                 
                 ++n;
             }

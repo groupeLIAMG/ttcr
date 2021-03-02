@@ -234,6 +234,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             nodes[n].setXZindex( no[n].x, no[n].z, n );
+            nodes[n].setPrimary(true);
         }
 
         for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {

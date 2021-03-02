@@ -288,6 +288,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             nodes[n].setXZindex( no[n].x, no[n].z, n );
+            nodes[n].setPrimary(true);
         }
         for ( T2 ntri=0; ntri<triangles.size(); ++ntri ) {
             for ( size_t nl=0; nl<3; ++nl ) {
@@ -329,6 +330,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             nodes[n].setXZindex( no[n].x, no[n].z, n );
+            nodes[n].setPrimary(true);
         }
         T2 nNodes = static_cast<T2>(nodes.size());
         
