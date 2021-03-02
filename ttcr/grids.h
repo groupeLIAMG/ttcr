@@ -1695,10 +1695,8 @@ namespace ttcr {
                     slowness.resize( numberOfPoints );
                     for ( size_t i=0, n=0; i<nnodes[0]; ++i ) {
                         for ( size_t k=0; k<nnodes[2]; ++k,++n ) {
-                            // make sure z is fast axis
-                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
-                                                              0.0,
-                                                              zrange[0] + k*d[2]);
+                            // VTK: x is fast axis, we want z as fast axis
+                            vtkIdType ii = k * nnodes[0] + i;
                             slowness[n] = static_cast<T>(1./pd->GetArray(na)->GetTuple1(ii));
                         }
                     }
@@ -1717,10 +1715,8 @@ namespace ttcr {
                     slowness.resize( slo->GetSize() );
                     for ( size_t i=0, n=0; i<nnodes[0]; ++i ) {
                         for ( size_t k=0; k<nnodes[2]; ++k,++n ) {
-                            // make sure z is fast axis
-                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
-                                                              0.0,
-                                                              zrange[0] + k*d[2]);
+                            // VTK: x is fast axis, we want z as fast axis
+                            vtkIdType ii = k * nnodes[0] + i;
                         slowness[n] = slo->GetComponent(ii, 0);
                         }
                     }
@@ -1857,10 +1853,8 @@ namespace ttcr {
                     slowness.resize( numberOfCells );
                     for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                         for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                            // make sure z is fast axis
-                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
-                                                              0.0,
-                                                              zrange[0] + k*d[2]);
+                            // VTK: x is fast axis, we want z as fast axis
+                            vtkIdType ii = k * ncells[0] + i;
                             slowness[n] = static_cast<T>(1./cd->GetArray(na)->GetTuple1(ii));
                         }
                     }
@@ -1879,10 +1873,8 @@ namespace ttcr {
                     slowness.resize( slo->GetSize() );
                     for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                         for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                            // make sure z is fast axis
-                            vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
-                                                              0.0,
-                                                              zrange[0] + k*d[2]);
+                            // VTK: x is fast axis, we want z as fast axis
+                            vtkIdType ii = k * ncells[0] + i;
                             slowness[n] = slo->GetComponent(ii, 0);
                         }
                     }
@@ -1901,10 +1893,8 @@ namespace ttcr {
                         xi.resize( x->GetSize() );
                         for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                             for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                                // make sure z is fast axis
-                                vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
-                                                                  0.0,
-                                                                  zrange[0] + k*d[2]);
+                                // VTK: x is fast axis, we want z as fast axis
+                                vtkIdType ii = k * ncells[0] + i;
                                 xi[n] = x->GetComponent(ii, 0);
                             }
                         }
@@ -1924,10 +1914,8 @@ namespace ttcr {
                         theta.resize( x->GetSize() );
                         for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                             for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                                // make sure z is fast axis
-                                vtkIdType ii = dataSet->FindPoint(xrange[0] + i*d[0],
-                                                                  0.0,
-                                                                  zrange[0] + k*d[2]);
+                                // VTK: x is fast axis, we want z as fast axis
+                                vtkIdType ii = k * ncells[0] + i;
                                 theta[n] = x->GetComponent(ii, 0);
                             }
                         }
