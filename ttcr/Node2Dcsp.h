@@ -233,7 +233,10 @@ namespace ttcr {
         bool primary;
         
     };
-    
+    template <typename T1, typename T2>
+    sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dcsp<T1,T2>& rhs) {
+        return sxz<T1>(lhs.x-rhs.getX(), lhs.z-rhs.getZ());
+    }
 }
 
 #endif
