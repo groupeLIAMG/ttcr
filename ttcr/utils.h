@@ -115,6 +115,27 @@ namespace ttcr {
         return norm(v)<small2;
     }
 
+    /**
+     * Test if four points are colinear
+     *
+     *  Points are sxyz and Node objects
+     *
+     * @tparam T underlying type of sxz object
+     * @tparam NODE type of Node objects
+     * @param pt first point
+     * @param n0 second point
+     * @param n1 third point
+     * @returns result of test
+     */
+    template<typename T, typename NODE>
+    bool areCollinear(const sxz<T> &pt, const NODE &n0, const NODE &n1) {
+    
+        // http://mathworld.wolfram.com/Collinear.html
+        //
+        T v = cross(pt-n0, pt-n1);
+        return abs(v)<small2;
+    }
+
 /**
  * Compute area of triangle
  *
