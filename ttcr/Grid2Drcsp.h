@@ -547,6 +547,19 @@ namespace ttcr {
         T2 cellParentRx;
         
         for (size_t n=0; n<Rx.size(); ++n) {
+
+            // check if Rx is on one of Tx nodes
+            bool foundTx = false;
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                if (Tx[nt] == Rx[n]) {
+                    traveltimes[n] = t0[nt];
+                    r_data[n].push_back(Tx[nt]);
+                    foundTx = true;
+                    break;
+                }
+            }
+            if (foundTx)
+                continue;
             
             traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
                                            threadNo);
@@ -647,6 +660,19 @@ namespace ttcr {
             T2 cellParentRx;
             
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                
+                // check if Rx is on one of Tx nodes
+                bool foundTx = false;
+                for (size_t nt=0; nt<Tx.size(); ++nt) {
+                    if (Tx[nt] == (*Rx[nr])[n]) {
+                        (*traveltimes[nr])[n] = t0[nt];
+                        (*r_data[nr])[n].push_back(Tx[nt]);
+                        foundTx = true;
+                        break;
+                    }
+                }
+                if (foundTx)
+                    continue;
                 
                 (*traveltimes[nr])[n] = getTraveltime((*Rx[nr])[n], this->nodes,
                                                       nodeParentRx, cellParentRx,
