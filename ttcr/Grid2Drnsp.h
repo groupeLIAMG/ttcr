@@ -213,7 +213,59 @@ namespace ttcr {
                 this->nodes[n].setPrimary(true);
                 
                 ++n;
+            }
+        }
+        
+        // continue with secondary nodes
+        for ( T2 nc=0; nc<=this->ncx; ++nc ) {
+            
+            T1 x = this->xmin + nc*this->dx;
+            
+            for ( T2 nr=0; nr<=this->ncz; ++nr ) {
                 
+                T1 z = this->zmin + nr*this->dz;
+                
+                if ( nr < this->ncz && nc < this->ncx ) {
+                    cell_downRight = nc*this->ncz + nr;
+                }
+                else {
+                    cell_downRight = std::numeric_limits<T2>::max();
+                }
+                
+                if ( nr > 0 && nc < this->ncx ) {
+                    cell_upRight = nc*this->ncz + nr - 1;
+                }
+                else {
+                    cell_upRight = std::numeric_limits<T2>::max();
+                }
+                
+                if ( nr < this->ncz && nc > 0 ) {
+                    cell_downLeft = (nc-1)*this->ncz + nr;
+                }
+                else {
+                    cell_downLeft = std::numeric_limits<T2>::max();
+                }
+                
+                if ( nr > 0 && nc > 0 ) {
+                    cell_upLeft = (nc-1)*this->ncz + nr - 1;
+                }
+                else {
+                    cell_upLeft = std::numeric_limits<T2>::max();
+                }
+                
+                if ( cell_upLeft != std::numeric_limits<T2>::max() ) {
+                    this->nodes[n].pushOwner( cell_upLeft );
+                }
+                if ( cell_downLeft != std::numeric_limits<T2>::max() ) {
+                    this->nodes[n].pushOwner( cell_downLeft );
+                }
+                if ( cell_upRight != std::numeric_limits<T2>::max() ) {
+                    this->nodes[n].pushOwner( cell_upRight );
+                }
+                if ( cell_downRight != std::numeric_limits<T2>::max() ) {
+                    this->nodes[n].pushOwner( cell_downRight );
+                }
+
                 // secondary nodes on the vertical
                 if ( nr < this->ncz ) {
                     for (T2 ns=0; ns<nsnz; ++ns, ++n ) {
@@ -274,21 +326,15 @@ namespace ttcr {
         T1 dxs = this->dx/(nsnx+1);
         T1 dzs = this->dz/(nsnz+1);
         
-        for ( T2 n=0, nc=0; nc<=this->ncx; ++nc ) {
+        T2 nnz = this->ncz+1;
+        T2 n = (this->ncx+1) * nnz;
+        for ( T2 nc=0; nc<=this->ncx; ++nc ) {
             
             for ( T2 nr=0; nr<=this->ncz; ++nr ) {
                 
-                T2 np1 = n;
-                T2 np2v = np1 + nsnx+nsnz + 1;
-                if ( nc == this->ncx ) {
-                    np2v -= nsnx;
-                }
-                T2 np2h = np1 + (this->ncz+1)*nsnx + this->ncz*nsnz + this->ncz+1;
-                if ( nc == this->ncx -1 ) {
-                    np2h -= nr*nsnx;
-                }
-                
-                ++n;
+                T2 np1 = nc * nnz + nr;
+                T2 np2v = np1 + 1;
+                T2 np2h = np1 + nnz;
                 
                 // secondary nodes on the vertical
                 if ( nr < this->ncz ) {
