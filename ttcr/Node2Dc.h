@@ -43,7 +43,7 @@ namespace ttcr {
         gridIndex(std::numeric_limits<T2>::max()),
         tt(nullptr),
         owners(0),
-        primary(true)
+        primary(false)
         {
             tt = new T1[nt];
             
@@ -57,7 +57,8 @@ namespace ttcr {
         x(xx), z(zz),
         gridIndex(index),
         tt(nullptr),
-        owners(0)
+        owners(0),
+        primary(false)
         {
             tt = new T1[nt];
             
@@ -72,7 +73,8 @@ namespace ttcr {
         x(xx), z(zz),
         gridIndex(std::numeric_limits<T2>::max()),
         tt(nullptr),
-        owners(std::vector<T2>(0))
+        owners(std::vector<T2>(0)),
+        primary(false)
         {
             tt = new T1[nt];
             
@@ -87,7 +89,8 @@ namespace ttcr {
         x(node.x), z(node.z),
         gridIndex(node.gridIndex),
         tt(nullptr),
-        owners(node.owners)
+        owners(node.owners),
+        primary(node.primary)
         {
             tt = new T1[nThreads];
             
