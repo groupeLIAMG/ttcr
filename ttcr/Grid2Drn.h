@@ -698,12 +698,55 @@ namespace ttcr {
         // compute travel time gradient at point pt
         
         T1 p1 = pt.x - dx/2.0;
+        if (p1 < xmin) {
+            p1 = xmin;
+        }
         T1 p2 = p1 + dx;
-        g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
+        if (p2 > xmax) {
+            p2 = xmax;
+            p1 = xmax - dx;
+        }
+//        if (p1 == xmin) {
+//            // use 3-pt operator
+//            T1 p3 = p2 + dx;
+//            g.x = (-1.5*getTraveltime({p1, pt.z}, nt) +
+//                   2.0*getTraveltime({p2, pt.z}, nt) -
+//                   0.5*getTraveltime({p3, pt.z}, nt)) / dx;
+//        } else if (p2 == xmax) {
+//            T1 p3 = xmax;
+//            p2 = p1;
+//            p1 = p2 - dx;
+//            g.x = (1.5*getTraveltime({p3, pt.z}, nt) -
+//                   2.0*getTraveltime({p2, pt.z}, nt) +
+//                   0.5*getTraveltime({p1, pt.z}, nt)) / dx;
+//        } else {
+            g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
+//        }
         
         p1 = pt.z - dz/2.0;
+        if (p1 < zmin) {
+            p1 = zmin;
+        }
         p2 = p1 + dz;
-        g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
+        if (p2 > zmax) {
+            p2 = zmax;
+            p1 = zmax - dz;
+        }
+//        if (p1 == zmin) {
+//            T1 p3 = p2 + dz;
+//            g.z = (-1.5*getTraveltime({pt.x, p1}, nt) +
+//                   2.0*getTraveltime({pt.x, p2}, nt) -
+//                   0.5*getTraveltime({pt.x, p3}, nt)) / dz;
+//        } else if (p2 == zmax) {
+//            T1 p3 = zmax;
+//            p2 = p1;
+//            p1 = p2 - dx;
+//            g.z = (1.5*getTraveltime({pt.x, p3}, nt) -
+//                   2.0*getTraveltime({pt.x, p2}, nt) +
+//                   0.5*getTraveltime({pt.x, p1}, nt)) / dz;
+//        } else {
+            g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
+//        }
     }
     
     template<typename T1, typename T2, typename S, typename NODE>

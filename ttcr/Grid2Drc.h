@@ -406,11 +406,25 @@ namespace ttcr {
         // compute travel time gradient at point pt
         
         T1 p1 = pt.x - dx/2.0;
+        if (p1 < xmin) {
+            p1 = xmin;
+        }
         T1 p2 = p1 + dx;
+        if (p2 > xmax) {
+            p2 = xmax;
+            p1 = xmax - dx;
+        }
         g.x = (interpolateTraveltime({p2, pt.z}, nt) - interpolateTraveltime({p1, pt.z}, nt)) / dx;
         
         p1 = pt.z - dz/2.0;
+        if (p1 < zmin) {
+            p1 = zmin;
+        }
         p2 = p1 + dz;
+        if (p2 > zmax) {
+            p2 = zmax;
+            p1 = zmax - dz;
+        }
         g.z = (interpolateTraveltime({pt.x, p2}, nt) - interpolateTraveltime({pt.x, p1}, nt)) / dz;
     }
 
