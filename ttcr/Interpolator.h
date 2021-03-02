@@ -211,6 +211,20 @@ namespace ttcr {
         }
 
         template<typename NODE>
+        static T barycentricTriangle(const sxz<T>& node,
+                                     const std::vector<NODE*> &inodes) {
+            T den = (inodes[1]->getZ()-inodes[2]->getZ())*(inodes[0]->getX()-inodes[2]->getX()) +
+                    (inodes[2]->getX()-inodes[1]->getX())*(inodes[0]->getZ()-inodes[2]->getZ());
+            T w1 = ((inodes[1]->getZ()-inodes[2]->getZ())*(node.x-inodes[2]->getX()) +
+                    (inodes[2]->getX()-inodes[1]->getX())*(node.z-inodes[2]->getZ())) / den;
+            T w2 = ((inodes[2]->getZ()-inodes[0]->getZ())*(node.x-inodes[2]->getX()) +
+                    (inodes[0]->getX()-inodes[2]->getX())*(node.z-inodes[2]->getZ())) / den;
+            T w3 = 1. - w1 - w2;
+
+            return w1*inodes[0]->getNodeSlowness() + w2*inodes[1]->getNodeSlowness() + w3*inodes[2]->getNodeSlowness();
+        }
+
+        template<typename NODE>
         static T barycentricTriangleVel(const sxz<T>& node,
                                         const NODE& node1,
                                         const NODE& node2,
