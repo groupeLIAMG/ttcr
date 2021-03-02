@@ -2363,15 +2363,53 @@ namespace ttcr {
             if ( curr_pt.x < xmin || curr_pt.x > xmax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                std::ostringstream msg;
-                msg << "Error while computing raypaths: going outside grid \n\
-                Rx: " << Rx << "\n\
-                Tx: " << Tx[0] << "\n";
-                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
-                    msg << "\
-                    " << Tx[ns] << "\n";
+                // make gardient point along outside face
+                if ( abs(g.x) > abs(g.z) ) {
+                    g.x = boost::math::sign(g.x);
+                    g.z = 0.0;
+                } else {
+                    g.x = 0.0;
+                    g.z = boost::math::sign(g.z);
                 }
-                throw std::runtime_error(msg.str());
+
+                // put back previous coordinates
+                curr_pt = prev_pt;
+                
+                // planes we will intersect
+                T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+                
+                if ( std::abs(xp-curr_pt.x)<small) {
+                    xp += dx*boost::math::sign(g.x);
+                }
+                if ( std::abs(zp-curr_pt.z)<small) {
+                    zp += dz*boost::math::sign(g.z);
+                }
+                
+                // dist to planes
+                T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+                
+                if ( tx<tz ) { // closer to xp
+                    curr_pt += tx*g;
+                    curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                } else {
+                    curr_pt += tz*g;
+                    curr_pt.z = zp;
+                }
+                
+                if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                    curr_pt.z < zmin || curr_pt.z > zmax ) {
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
+                }
             }
             
             s2 = getSlowness( curr_pt );
@@ -2491,15 +2529,53 @@ namespace ttcr {
             if ( curr_pt.x < xmin || curr_pt.x > xmax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
                 //  we are going oustide the grid!
-                std::ostringstream msg;
-                msg << "Error while computing raypaths: going outside grid \n\
-                Rx: " << Rx << "\n\
-                Tx: " << Tx[0] << "\n";
-                for ( size_t ns=1; ns<Tx.size(); ++ns ) {
-                    msg << "\
-                    " << Tx[ns] << "\n";
+                // make gardient point along outside face
+                if ( abs(g.x) > abs(g.z) ) {
+                    g.x = boost::math::sign(g.x);
+                    g.z = 0.0;
+                } else {
+                    g.x = 0.0;
+                    g.z = boost::math::sign(g.z);
                 }
-                throw std::runtime_error(msg.str());
+
+                // put back previous coordinates
+                curr_pt = r_data.back();
+
+                // planes we will intersect
+                T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
+                T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
+
+                if ( std::abs(xp-curr_pt.x)<small) {
+                    xp += dx*boost::math::sign(g.x);
+                }
+                if ( std::abs(zp-curr_pt.z)<small) {
+                    zp += dz*boost::math::sign(g.z);
+                }
+
+                // dist to planes
+                T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
+                T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
+
+                if ( tx<tz ) { // closer to xp
+                    curr_pt += tx*g;
+                    curr_pt.x = xp;     // make sure we don't accumulate rounding errors
+                } else {
+                    curr_pt += tz*g;
+                    curr_pt.z = zp;
+                }
+
+                if ( curr_pt.x < xmin || curr_pt.x > xmax ||
+                    curr_pt.z < zmin || curr_pt.z > zmax ) {
+                    std::ostringstream msg;
+                    msg << "Error while computing raypaths: going outside grid \n\
+                    Rx: " << Rx << "\n\
+                    Tx: " << Tx[0] << "\n";
+                    for ( size_t ns=1; ns<Tx.size(); ++ns ) {
+                        msg << "\
+                        " << Tx[ns] << "\n";
+                    }
+                    throw std::runtime_error(msg.str());
+                }
             }
             
             s2 = getSlowness( curr_pt );
