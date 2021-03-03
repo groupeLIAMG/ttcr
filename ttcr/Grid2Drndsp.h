@@ -210,19 +210,6 @@ void Grid2Drndsp<T1,T2,S>::buildGridNodes() {
                 cell_upLeft = std::numeric_limits<T2>::max();
             }
             
-            if ( cell_upLeft != std::numeric_limits<T2>::max() ) {
-                this->nodes[n].pushOwner( cell_upLeft );
-            }
-            if ( cell_downLeft != std::numeric_limits<T2>::max() ) {
-                this->nodes[n].pushOwner( cell_downLeft );
-            }
-            if ( cell_upRight != std::numeric_limits<T2>::max() ) {
-                this->nodes[n].pushOwner( cell_upRight );
-            }
-            if ( cell_downRight != std::numeric_limits<T2>::max() ) {
-                this->nodes[n].pushOwner( cell_downRight );
-            }
-            
             // secondary nodes on the vertical
             if ( nr < this->ncz ) {
                 for (T2 ns=0; ns<nSecondary; ++ns, ++n ) {
