@@ -1,23 +1,23 @@
 <?xml version="1.0"?>
 <VTKFile type="RectilinearGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
-  <RectilinearGrid WholeExtent="0 20 0 0 0 20">
-  <Piece Extent="0 20 0 0 0 20">
+  <RectilinearGrid WholeExtent="0 40 0 0 0 40">
+  <Piece Extent="0 40 0 0 0 40">
     <PointData>
     </PointData>
     <CellData Scalars="Slowness">
       <DataArray type="Float64" Name="Slowness" format="binary" RangeMin="0.3389830508474576" RangeMax="0.9523809523809523">
-        AQAAAACAAACADAAAxAAAAA==eJyb97xy3vPKd/bzBim976VvftXl14OWnjUTBF4OWtqpmvOt6pbng5aukUrcuVzw2aCll04J8tJc+mTQ0qmTfc1upjwetPQkFU8gejRo6YMiP9dI+zwctPQEtkwgejBoaUv55s+GFvcHLV3gfkew/MjdQUvLHC8EojuDls69Um72yvr2oKXbj/26ECF/a9DSUpIgcHPQ0h/DvlkuUbsxaGk38diSi67XBy3tk24492jJtUFLXygI+v5049VBSwMAf1YbZw==
+        AQAAAACAAAAAMgAA8wAAAA==eJztxT1LQgEARuEtcBSC0AKXDBpdJGkIggpFF4doaQgKaZAMBLHaHFpFXQy6U9LSIri0BEEfq2FlltGnXlQURChs6vor3uUcDjyGmTTMZG/BQBR40Qrt7FU6iBKP8qNaiBIX921dd8lElHjg3Dg/tTcRJRZy4cBs4RtR4lY25K1tfiFKzEz7rT8RJV6OD88mgx+IEtNj29bviBJ9rtTAM/eGKDG2Urcnrl4RJU7d7lrXESVG7xPe9vwLosTDm7/ymusZUaLTMaqGKLG/+uM7mXlClLg8sR6/W6oiSgxGPMfX8UdEieVY+LdRfECU+A8bem2Z
       </DataArray>
     </CellData>
     <Coordinates>
-      <DataArray type="Float64" Name="Array 0x7ffafd863cf0" format="binary" RangeMin="0" RangeMax="20">
-        AQAAAACAAACoAAAAQAAAAA==eJxjYEAGH+yhDAcIxQGlBaC0CJSWgNIyUFoBSitBaRUorQalNaC0FpTWgdJ6UNoAShtCaSMobQylTRwAocEIgg==
+      <DataArray type="Float64" Name="Array 0x7fb8fa2c3b80" format="binary" RangeMin="0" RangeMax="20">
+        AQAAAACAAABIAQAAYQAAAA==eJxNxykOwlAUQNEnEAgEIaQhDWmAzsyTb5fGUlkCEon4R3DNyY347z0kP/wyxsSEU84454JLZlwx55oFN9xyx5IVazZs2bHnngceeeKZF16TL8bNM+6e8fCM5/gD74oTzg==
       </DataArray>
-      <DataArray type="Float64" Name="Array 0x7ffafd524de0" format="binary" RangeMin="0" RangeMax="0">
+      <DataArray type="Float64" Name="Array 0x7fb8fa2ca670" format="binary" RangeMin="0" RangeMax="0">
         AQAAAACAAAAIAAAACwAAAA==eJxjYIAAAAAIAAE=
       </DataArray>
-      <DataArray type="Float64" Name="Array 0x7ffafd863cf0" format="binary" RangeMin="0" RangeMax="20">
-        AQAAAACAAACoAAAAQAAAAA==eJxjYEAGH+yhDAcIxQGlBaC0CJSWgNIyUFoBSitBaRUorQalNaC0FpTWgdJ6UNoAShtCaSMobQylTRwAocEIgg==
+      <DataArray type="Float64" Name="Array 0x7fb8fa2c3b80" format="binary" RangeMin="0" RangeMax="20">
+        AQAAAACAAABIAQAAYQAAAA==eJxNxykOwlAUQNEnEAgEIaQhDWmAzsyTb5fGUlkCEon4R3DNyY347z0kP/wyxsSEU84454JLZlwx55oFN9xyx5IVazZs2bHnngceeeKZF16TL8bNM+6e8fCM5/gD74oTzg==
       </DataArray>
     </Coordinates>
   </Piece>

@@ -7,7 +7,9 @@
 //
 
 #include <cmath>
+#include <iostream>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 #define BOOST_TEST_MODULE Test Grid2D
@@ -18,6 +20,8 @@
 #pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/test/included/unit_test.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/test/data/monomorphic.hpp>
 
 #include <vtkPointData.h>
 #include <vtkRectilinearGrid.h>
@@ -30,13 +34,27 @@
 #include "Src2D.h"
 #include "structs_ttcr.h"
 #include "grids.h"
+#include "utils.h"
 
 namespace ttcr {
-    int verbose = 2;
+    int verbose = 0;
 }
+
+namespace bdata = boost::unit_test::data;
 
 using namespace std;
 using namespace ttcr;
+
+string get_class_name(const Grid2D<double,uint32_t,sxz<double>> *g) {
+    string name = typeid(*g).name();
+    size_t start = name.find("Grid2D");
+    name = name.substr(start, 11);
+    if ((name[8] == 'f' && name[9] == 's') ||
+        (name[8] == 's' && name[9] == 'p') ) {
+        name.pop_back();
+    }
+    return name;
+}
 
 double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
     // compute relative error
@@ -65,8 +83,32 @@ double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
     return error;
 }
 
-BOOST_AUTO_TEST_CASE(testGrid2Drcfs)
-{
+
+const char* models[] = {
+    "./files/layers_fine2d.vtr",
+    "./files/gradient_fine2d.vtr",
+    "./files/layers_fine2d.vtu",
+    "./files/gradient_fine2d.vtu"
+};
+const char* models_coarse[] = {
+    "./files/layers_coarse2d.vtr",
+    "./files/gradient_coarse2d.vtr",
+    "./files/layers_coarse2d.vtu",
+    "./files/gradient_coarse2d.vtu"
+};
+const char* references[] = {
+    "./files/sol_analytique_couches2d_tt.vtr",
+    "./files/sol_analytique_gradient2d_tt.vtr",
+    "./files/sol_analytique_couches2d_tt.vtr",
+    "./files/sol_analytique_gradient2d_tt.vtr"
+};
+raytracing_method methods[] = { DYNAMIC_SHORTEST_PATH, FAST_SWEEPING, SHORTEST_PATH };
+
+
+BOOST_DATA_TEST_CASE(
+                     testGrid2D,
+                     (bdata::make(models) ^ bdata::make(references)) * bdata::make(methods),
+                     model, ref, method) {
     if ( verbose > 0 ) {
         cout << "\n*** Starting test ***\n";
     }
@@ -76,347 +118,103 @@ BOOST_AUTO_TEST_CASE(testGrid2Drcfs)
     rcv.init(1);
 
     input_parameters par;
-    par.method = FAST_SWEEPING;
-    par.weno3 = 1;
-    par.modelfile = "./files/layers_fine2d.vtr";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
+    par.method = method;
+    switch(method) {
+        case FAST_SWEEPING:
+            par.weno3 = 1;
+            break;
+        case SHORTEST_PATH:
+            par.nn[0] = 10;
+            par.nn[1] = 10;
+            par.nn[2] = 10;
+            break;
+        case DYNAMIC_SHORTEST_PATH:
+            par.radius_tertiary_nodes = 0.8;
+            par.nn[0] = 3;
+            par.nn[1] = 3;
+            par.nn[2] = 3;
+            break;
+        default:
+            // do nothing
+            break;
+    }
+    par.modelfile = model;
+    Grid2D<double,uint32_t,sxz<double>> *g;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear2DfromVtr<double>(par, 1);
+    } else {
+        g = buildUnstructured2DfromVtu<double>(par, 1);
+    }
     try {
         g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         abort();
     }
-    g->saveTT("./files/grid2drcfs_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
-
-    BOOST_TEST(error < 0.03);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Drcsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = SHORTEST_PATH;
-    par.nn[0] = 10;
-    par.nn[1] = 10;
-    par.nn[2] = 10;
-    par.modelfile = "./files/layers_fine2d.vtr";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2drcsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
-    
-    BOOST_TEST(error < 0.02);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Drcdsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = DYNAMIC_SHORTEST_PATH;
-    par.radius_tertiary_nodes = 0.8;
-    par.nn[0] = 2;
-    par.nn[1] = 2;
-    par.nn[2] = 2;
-    par.modelfile = "./files/layers_fine2d.vtr";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2drcdsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
-    
-    BOOST_TEST(error < 0.02);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Drnfs)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = FAST_SWEEPING;
-    par.weno3 = 1;
-    par.modelfile = "./files/gradient_fine2d.vtr";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2drnfs_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
-
-    BOOST_TEST(error < 0.003);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Drnsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = SHORTEST_PATH;
-    par.nn[0] = 10;
-    par.nn[1] = 10;
-    par.nn[2] = 10;
-    par.modelfile = "./files/gradient_fine2d.vtr";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2drnsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
-
-    BOOST_TEST(error < 0.001);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Drndsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = DYNAMIC_SHORTEST_PATH;
-    par.radius_tertiary_nodes = 0.8;
-    par.nn[0] = 2;
-    par.nn[1] = 2;
-    par.nn[2] = 2;
-    par.modelfile = "./files/gradient_fine2d.vtr";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildRectilinear2DfromVtr<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2drndsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
-
-    BOOST_TEST(error < 0.003);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Ducfs)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = FAST_SWEEPING;
-    par.weno3 = 1;
-    par.modelfile = "./files/layers_fine2d.vtu";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2ducfs_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
-    
-    BOOST_TEST(error < 0.03);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Ducsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = SHORTEST_PATH;
-    par.nn[0] = 10;
-    par.nn[1] = 10;
-    par.nn[2] = 10;
-    par.modelfile = "./files/layers_fine2d.vtu";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2ducsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
-    
-    BOOST_TEST(error < 0.02);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Ducdsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = DYNAMIC_SHORTEST_PATH;
-    par.radius_tertiary_nodes = 0.8;
-    par.nn[0] = 2;
-    par.nn[1] = 2;
-    par.nn[2] = 2;
-    par.modelfile = "./files/layers_fine2d.vtu";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2ducdsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_couches2d_tt.vtr", rcv);
-    
-    BOOST_TEST(error < 0.03);
-}
-
-BOOST_AUTO_TEST_CASE(testGrid2Dunfs)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = FAST_SWEEPING;
-    par.weno3 = 1;
-    par.modelfile = "./files/gradient_fine2d.vtu";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2dunfs_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
+    string filename = "./files/" + get_class_name(g) + "_tt_grid";
+    g->saveTT(filename, 0, 0, 2);
+    double error = get_rel_error(ref, rcv);
+    if (verbose)
+        cout << "\n\t\t" << get_class_name(g) << '\t' << error << "\n\n";
 
     BOOST_TEST(error < 0.02);
 }
 
-BOOST_AUTO_TEST_CASE(testGrid2Dunsp)
-{
+BOOST_DATA_TEST_CASE(
+                     testGrid2D_ttrp,
+                     (bdata::make(models_coarse) ^ bdata::make(references)) * bdata::make(methods),
+                     model, ref, method) {
     if ( verbose > 0 ) {
         cout << "\n*** Starting test ***\n";
     }
-    Src2D<double> src("./files/src2d.dat");
+    Src2D<double> src("./files/src2d_in.dat");
     src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
+    Rcv2D<double> rcv("./files/rcv2d_in.dat");
     rcv.init(1);
 
     input_parameters par;
-    par.method = SHORTEST_PATH;
-    par.nn[0] = 10;
-    par.nn[1] = 10;
-    par.nn[2] = 10;
-    par.modelfile = "./files/gradient_fine2d.vtu";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
+    par.method = method;
+    par.tt_from_rp = true;
+    switch(method) {
+        case FAST_SWEEPING:
+            par.weno3 = 1;
+            break;
+        case SHORTEST_PATH:
+            par.nn[0] = 10;
+            par.nn[1] = 10;
+            par.nn[2] = 10;
+            break;
+        case DYNAMIC_SHORTEST_PATH:
+            par.radius_tertiary_nodes = 0.8;
+            par.nn[0] = 3;
+            par.nn[1] = 3;
+            par.nn[2] = 3;
+            break;
+        default:
+            // do nothing
+            break;
+    }
+    par.modelfile = model;
+    Grid2D<double,uint32_t,sxz<double>> *g;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear2DfromVtr<double>(par, 1);
+    } else {
+        g = buildUnstructured2DfromVtu<double>(par, 1);
+    }
+    vector<vector<sxz<double>>> r_data;
     try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0), r_data);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         abort();
     }
-    g->saveTT("./files/grid2dunsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
-
-    BOOST_TEST(error < 0.003);
+    string filename = "./files/" + get_class_name(g) + "_rp.vtp";
+    saveRayPaths(filename, r_data);
+    
+    double error = get_rel_error(ref, rcv);
+    if (verbose)
+        cout << "\n\t\t" << get_class_name(g) << '\t' << error << "\n\n";
+    
+    BOOST_TEST(error < 0.15);
 }
 
-BOOST_AUTO_TEST_CASE(testGrid2Dundsp)
-{
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
-    Src2D<double> src("./files/src2d.dat");
-    src.init();
-    Rcv2D<double> rcv("./files/rcv2d.dat");
-    rcv.init(1);
-
-    input_parameters par;
-    par.method = DYNAMIC_SHORTEST_PATH;
-    par.radius_tertiary_nodes = 0.8;
-    par.nn[0] = 2;
-    par.nn[1] = 2;
-    par.nn[2] = 2;
-    par.modelfile = "./files/gradient_fine2d.vtu";
-
-    Grid2D<double,uint32_t,sxz<double>> *g = buildUnstructured2DfromVtu<double>(par, 1);
-    try {
-        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        abort();
-    }
-    g->saveTT("./files/grid2dundsp_tt_grid", 0, 0, 2);
-    double error = get_rel_error("./files/sol_analytique_gradient2d_tt.vtr", rcv);
-
-    BOOST_TEST(error < 0.03);
-}
