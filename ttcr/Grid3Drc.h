@@ -355,8 +355,8 @@ namespace ttcr {
     T1 Grid3Drc<T1,T2,NODE,CELL>::getTraveltime(const sxyz<T1> &pt,
                                                 const size_t nt) const {
         
-        static const size_t nnx = ncx+1;
-        static const size_t nny = ncy+1;
+        const size_t nnx = ncx+1;
+        const size_t nny = ncy+1;
         
         // trilinear interpolation if not on node
         
@@ -549,7 +549,7 @@ namespace ttcr {
         sxyz<T1> prev_pt( Rx );
         sxyz<T1> curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
         
         bool reachedTx = false;
@@ -692,7 +692,7 @@ namespace ttcr {
         
         sxyz<T1> curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << "Starting at " << curr_pt << '\n';
@@ -843,7 +843,7 @@ namespace ttcr {
 
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << "Starting at " << curr_pt << '\n';
@@ -1003,7 +1003,7 @@ namespace ttcr {
 
         sxyz<T1> curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << "Starting at " << curr_pt << '\n';

@@ -280,7 +280,7 @@ namespace ttcr {
     template<typename T1, typename T2, typename S, typename NODE>
     T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S &pt, const size_t nt) const {
         
-        static const size_t nnz = ncz+1;
+        const size_t nnz = ncz+1;
         
         // bilinear interpolation if not on node
         
@@ -683,7 +683,7 @@ namespace ttcr {
         
         // compute average gradient for cell (i,j)
         
-        static const size_t nnz = ncz+1;
+        const size_t nnz = ncz+1;
         
         g.x = 0.5*(( nodes[(i+1)*nnz+j].getTT(nt)+nodes[(i+1)*nnz+j+1].getTT(nt) ) -
                    ( nodes[    i*nnz+j].getTT(nt)+nodes[    i*nnz+j+1].getTT(nt) ))/dx;
@@ -765,7 +765,7 @@ namespace ttcr {
         
         S curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
         
         bool reachedTx = false;
@@ -847,7 +847,7 @@ namespace ttcr {
         S gOut = {0.0, 0.0};
         
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         
         getIJ(curr_pt, iIn, kIn);
         
@@ -1024,7 +1024,7 @@ namespace ttcr {
         S gOut;
         
         // distance between opposite nodes of a cell
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         
         bool onNode=false;
         if ( std::abs(remainder(curr_pt.x,dx))<small && std::abs(remainder(curr_pt.z,dz))<small ) {
@@ -2325,7 +2325,7 @@ namespace ttcr {
         S curr_pt( Rx );
         s1 = getSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
 
         bool reachedTx = false;
@@ -2491,7 +2491,7 @@ namespace ttcr {
         S curr_pt( Rx );
         s1 = getSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
 
         bool reachedTx = false;
@@ -2660,7 +2660,7 @@ namespace ttcr {
         S curr_pt( Rx );
         s1 = getSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
         
         siv<T1> cell;

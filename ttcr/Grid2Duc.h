@@ -2800,7 +2800,6 @@ namespace ttcr {
         // calculate area of triangles
         static std::vector<T1> area;
         if ( area.size() == 0 ) {
-            std::cout << "Ici!!!\n";
             this->calculateArea(area);
         }
         
@@ -2831,7 +2830,6 @@ namespace ttcr {
         // calculate area of triangles
         static std::vector<T1> area;
         if ( area.size() == 0 ) {
-            std::cout << "Ici!!!\n";
             this->calculateArea(area);
         }
         

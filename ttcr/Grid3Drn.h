@@ -358,8 +358,8 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1> &pt, const size_t nt) const {
         
-        static const size_t nnx = ncx+1;
-        static const size_t nny = ncy+1;
+        const size_t nnx = ncx+1;
+        const size_t nny = ncy+1;
         
         // trilinear interpolation if not on node
         
@@ -601,8 +601,8 @@ namespace ttcr {
         
         // compute average gradient for voxel (i,j,k)
         
-        static const size_t nnx = ncx+1;
-        static const size_t nny = ncy+1;
+        const size_t nnx = ncx+1;
+        const size_t nny = ncy+1;
         
         g.x = 0.25*(nodes[(    k*nny+j  )*nnx+i+1].getTT(nt) - nodes[(    k*nny+j  )*nnx+i  ].getTT(nt) +
                     nodes[(    k*nny+j+1)*nnx+i+1].getTT(nt) - nodes[(    k*nny+j+1)*nnx+i  ].getTT(nt) +
@@ -749,7 +749,7 @@ namespace ttcr {
         sxyz<T1> curr_pt( Rx );
         s1 = computeSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 
         bool reachedTx = false;
@@ -890,7 +890,7 @@ namespace ttcr {
         
         sxyz<T1> curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << "\n\nStarting raypath computation\n  curr_pt = " << curr_pt << '\n';
@@ -988,7 +988,7 @@ namespace ttcr {
         sxyz<T1> curr_pt( Rx );
         s1 = computeSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << '\n' << curr_pt << '\n';
@@ -1141,8 +1141,8 @@ namespace ttcr {
         tt = 0.0;
         T1 s1, s2;
 
-        static const size_t nnx = ncx+1;
-        static const size_t nny = ncy+1;
+        const size_t nnx = ncx+1;
+        const size_t nny = ncy+1;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -1156,7 +1156,7 @@ namespace ttcr {
         m.i = RxNo;
         
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
         
         bool reachedTx = false;
@@ -1451,7 +1451,7 @@ namespace ttcr {
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         s1 = computeSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << "Starting at " << curr_pt << '\n';
@@ -1619,7 +1619,7 @@ namespace ttcr {
         sxyz<T1> curr_pt( Rx );
         s1 = computeSlowness( curr_pt );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
 #ifdef DEBUG_RP
         std::cout << "Starting at " << curr_pt << '\n';
@@ -1779,8 +1779,8 @@ namespace ttcr {
         tt = 0.0;
         T1 s1, s2;
 
-        static const size_t nnx = ncx+1;
-        static const size_t nny = ncy+1;
+        const size_t nnx = ncx+1;
+        const size_t nny = ncy+1;
 
         r_data.push_back( Rx );
         
@@ -1796,7 +1796,7 @@ namespace ttcr {
         m.i = RxNo;
         
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
         
         bool reachedTx = false;
@@ -2098,7 +2098,7 @@ namespace ttcr {
         sxyz<T1> gOut = {0.0, 0.0, 0.0};
         
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         
         getIJK(curr_pt, iIn, jIn, kIn);
         
@@ -2546,9 +2546,9 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& pt) const {
         
-        static const size_t nnx = ncx+1;
-        static const size_t nny = ncy+1;
-        static const size_t nnz = ncz+1;
+        const size_t nnx = ncx+1;
+        const size_t nny = ncy+1;
+        const size_t nnz = ncz+1;
 
         // are we on an node, an edge or a face?
         ptrdiff_t onX = -1;

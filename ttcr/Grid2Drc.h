@@ -349,7 +349,7 @@ namespace ttcr {
     T1 Grid2Drc<T1,T2,S,NODE,CELL>::interpolateTraveltime(const S& pt,
                                                           const size_t nt) const {
     
-        static const size_t nnz = ncz+1;
+        const size_t nnz = ncz+1;
         
         // bilinear interpolation if not on node
         
@@ -471,7 +471,7 @@ namespace ttcr {
         S prev_pt( Rx );
         S curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
         
         bool reachedTx = false;
@@ -633,7 +633,7 @@ namespace ttcr {
         
         S curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
         
         bool reachedTx = false;
@@ -798,7 +798,7 @@ namespace ttcr {
         
         S curr_pt( Rx );
         // distance between opposite nodes of a voxel
-        static const T1 maxDist = sqrt( dx*dx + dz*dz );
+        const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
         
         siv<T1> cell;
