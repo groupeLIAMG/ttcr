@@ -193,10 +193,18 @@ namespace ttcr {
     sxz<T1> operator+(const Node2Dnsp<T1,T2>& lhs, const Node2Dnsp<T1,T2>& rhs) {
         return sxz<T1>( lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ() );
     }
+
     template <typename T1, typename T2>
     sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dnsp<T1,T2>& rhs) {
         return sxz<T1>(lhs.x-rhs.getX(), lhs.z-rhs.getZ());
     }
+
+    template <typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const struct Node2Dnsp<T1,T2>& s) {
+        os << s.getX() << ' ' << s.getZ();
+        return os;
+    }
+
 }
 
 #endif
