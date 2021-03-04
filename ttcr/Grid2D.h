@@ -301,6 +301,8 @@ namespace ttcr {
         virtual void setGamma(const std::vector<T1>& s) {
                 throw std::runtime_error("Method setGamma should be implemented in subclass");
             }
+        
+        void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
 
         virtual size_t getNumberOfNodes(const bool primary=false) const { return 1; }
         virtual size_t getNumberOfCells() const { return 1; }

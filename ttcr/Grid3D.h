@@ -289,6 +289,8 @@ namespace ttcr {
             }
         }
         
+        void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
+        
         virtual void checkPts(const std::vector<sxyz<T1>>&) const {
             throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
