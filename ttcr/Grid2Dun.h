@@ -976,13 +976,13 @@ namespace ttcr {
                     cellNo = getCellNo( curr_pt );
                     if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[1]]) ) {
                         edgeNodes[0] = triangles[cellNo].i[0];
-                        edgeNodes[0] = triangles[cellNo].i[1];
+                        edgeNodes[1] = triangles[cellNo].i[1];
                     } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[2]]) ) {
                         edgeNodes[0] = triangles[cellNo].i[0];
-                        edgeNodes[0] = triangles[cellNo].i[2];
+                        edgeNodes[1] = triangles[cellNo].i[2];
                     } else {
                         edgeNodes[0] = triangles[cellNo].i[1];
-                        edgeNodes[0] = triangles[cellNo].i[2];
+                        edgeNodes[1] = triangles[cellNo].i[2];
                     }
                 }
                 break;
@@ -1002,15 +1002,15 @@ namespace ttcr {
                 if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
-                    edgeNodes[0] = triangles[cellNo].i[1];
+                    edgeNodes[1] = triangles[cellNo].i[1];
                 } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[2]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
-                    edgeNodes[0] = triangles[cellNo].i[2];
+                    edgeNodes[1] = triangles[cellNo].i[2];
                 } else {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[1];
-                    edgeNodes[0] = triangles[cellNo].i[2];
+                    edgeNodes[1] = triangles[cellNo].i[2];
                 }
             }
         }
@@ -1398,13 +1398,13 @@ namespace ttcr {
                     cellNo = getCellNo( curr_pt );
                     if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[1]]) ) {
                         edgeNodes[0] = triangles[cellNo].i[0];
-                        edgeNodes[0] = triangles[cellNo].i[1];
+                        edgeNodes[1] = triangles[cellNo].i[1];
                     } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[2]]) ) {
                         edgeNodes[0] = triangles[cellNo].i[0];
-                        edgeNodes[0] = triangles[cellNo].i[2];
+                        edgeNodes[1] = triangles[cellNo].i[2];
                     } else {
                         edgeNodes[0] = triangles[cellNo].i[1];
-                        edgeNodes[0] = triangles[cellNo].i[2];
+                        edgeNodes[1] = triangles[cellNo].i[2];
                     }
                 }
                 s1 = nodes[nodeNo].getNodeSlowness();
@@ -1429,15 +1429,18 @@ namespace ttcr {
                 if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
-                    edgeNodes[0] = triangles[cellNo].i[1];
+                    edgeNodes[1] = triangles[cellNo].i[1];
                 } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[2]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
-                    edgeNodes[0] = triangles[cellNo].i[2];
+                    edgeNodes[1] = triangles[cellNo].i[2];
                 } else {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[1];
-                    edgeNodes[0] = triangles[cellNo].i[2];
+                    edgeNodes[1] = triangles[cellNo].i[2];
+                }
+                if (onEdge) {
+                    s1 = computeSlowness(curr_pt, edgeNodes);
                 }
             }
         }
@@ -1853,13 +1856,13 @@ namespace ttcr {
                     cellNo = getCellNo( curr_pt );
                     if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[1]]) ) {
                         edgeNodes[0] = triangles[cellNo].i[0];
-                        edgeNodes[0] = triangles[cellNo].i[1];
+                        edgeNodes[1] = triangles[cellNo].i[1];
                     } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[2]]) ) {
                         edgeNodes[0] = triangles[cellNo].i[0];
-                        edgeNodes[0] = triangles[cellNo].i[2];
+                        edgeNodes[1] = triangles[cellNo].i[2];
                     } else {
                         edgeNodes[0] = triangles[cellNo].i[1];
-                        edgeNodes[0] = triangles[cellNo].i[2];
+                        edgeNodes[1] = triangles[cellNo].i[2];
                     }
                 }
                 s1 = nodes[nodeNo].getNodeSlowness();
@@ -1883,15 +1886,18 @@ namespace ttcr {
                 if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[1]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
-                    edgeNodes[0] = triangles[cellNo].i[1];
+                    edgeNodes[1] = triangles[cellNo].i[1];
                 } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[0]], nodes[triangles[cellNo].i[2]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
-                    edgeNodes[0] = triangles[cellNo].i[2];
+                    edgeNodes[1] = triangles[cellNo].i[2];
                 } else {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[1];
-                    edgeNodes[0] = triangles[cellNo].i[2];
+                    edgeNodes[1] = triangles[cellNo].i[2];
+                }
+                if (onEdge) {
+                    s1 = computeSlowness(curr_pt, edgeNodes);
                 }
             }
         }
