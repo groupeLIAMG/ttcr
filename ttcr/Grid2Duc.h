@@ -255,6 +255,12 @@ namespace ttcr {
 //                           std::vector<sxz<T1>> &r_data,
 //                           const size_t threadNo) const;
         
+        void initTxVars(const std::vector<sxz<T1>>& Tx,
+                        std::vector<bool>& txOnNode,
+                        std::vector<T2>& txNode,
+                        std::vector<T2>& txCell,
+                        std::vector<std::vector<T2>>& txCells) const;
+
         void getRaypath(const std::vector<sxz<T1>>& Tx,
                         const sxz<T1> &Rx,
                         std::vector<sxz<T1>> &r_data,
@@ -1358,7 +1364,56 @@ namespace ttcr {
 //            }
 //        }
 //    }
-    
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Duc<T1,T2,NODE,S>::initTxVars(const std::vector<sxz<T1>>& Tx,
+                                            std::vector<bool>& txOnNode,
+                                            std::vector<T2>& txNode,
+                                            std::vector<T2>& txCell,
+                                            std::vector<std::vector<T2>>& txCells) const {
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == Tx[nt] ) {
+                    txOnNode[nt] = true;
+                    txNode[nt] = nn;
+                    break;
+                }
+            }
+        }
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            if ( !txOnNode[nt] ) {
+                T2 txc = getCellNo( Tx[nt] );
+                txCell[nt] = txc;
+                // find cells surrounding txCell
+                // this is because gradient is inaccurate when we're getting
+                // close to Tx, so we want to check if we are reaching one of
+                // the surrounding cells
+                std::set<T2> indices;
+                indices.insert(triangles[txc].i[0]);
+                indices.insert(triangles[txc].i[1]);
+                indices.insert(triangles[txc].i[2]);
+                for ( T2 ntr=0; ntr<triangles.size(); ++ntr ) {
+                    if ( ntr == txc ) {
+                        continue;
+                    }
+                    if (indices.find(triangles[ntr].i[0])!=indices.end() ||
+                        indices.find(triangles[ntr].i[1])!=indices.end() ||
+                        indices.find(triangles[ntr].i[2])!=indices.end()) {
+                        txCells[nt].push_back(ntr);
+                    }
+                    //                    if ( indices.find(triangles[ntr].i[0])!=indices.end() &&
+                    //                        (indices.find(triangles[ntr].i[1])!=indices.end() ||
+                    //                         indices.find(triangles[ntr].i[2])!=indices.end()) ) {
+                    //                        txCells[nt].push_back(ntr);
+                    //                    }
+                    //                    else if ( indices.find(triangles[ntr].i[1])!=indices.end() &&
+                    //                               indices.find(triangles[ntr].i[2])!=indices.end() ) {
+                    //                        txCells[nt].push_back(ntr);
+                    //                    }
+                }
+            }
+        }
+    }
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const sxz<T1> &Rx,
@@ -1377,20 +1432,8 @@ namespace ttcr {
         std::vector<bool> txOnNode( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-            }
-        }
+        std::vector<std::vector<T2>> txCells( Tx.size() );
+        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
         
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -1599,6 +1642,15 @@ namespace ttcr {
                 
                 sxz<T1> g = grad2d.compute(nnodes, threadNo);
                 
+                for (size_t n=0; n<txCells.size(); ++n) {
+                    for (auto txn=txCells[n].begin(); txn!=txCells[n].end(); ++txn) {
+                        if (cellNo == *txn) {
+                            g = Tx[n] - curr_pt;
+                            break;
+                        }
+                    }
+                }
+
                 g.normalize();
                 //			std::cout << g.x << ' ' << g.z << '\n';
                 
@@ -1797,20 +1849,8 @@ namespace ttcr {
         std::vector<bool> txOnNode( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-            }
-        }
+        std::vector<std::vector<T2>> txCells( Tx.size() );
+        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
         
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -2036,6 +2076,15 @@ namespace ttcr {
                 
                 sxz<T1> g = grad2d.compute(nnodes, threadNo);
                 
+                for (size_t n=0; n<txCells.size(); ++n) {
+                    for (auto txn=txCells[n].begin(); txn!=txCells[n].end(); ++txn) {
+                        if (cellNo == *txn) {
+                            g = Tx[n] - curr_pt;
+                            break;
+                        }
+                    }
+                }
+
                 g.normalize();
                 
                 // we have 3 segments that we might intersect
@@ -2236,20 +2285,8 @@ namespace ttcr {
         std::vector<bool> txOnNode( Tx.size(), false );
         std::vector<T2> txNode( Tx.size() );
         std::vector<T2> txCell( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-            }
-        }
+        std::vector<std::vector<T2>> txCells( Tx.size() );
+        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
         
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -2467,6 +2504,15 @@ namespace ttcr {
                 
                 sxz<T1> g = grad2d.compute(nnodes, threadNo);
                 
+                for (size_t n=0; n<txCells.size(); ++n) {
+                    for (auto txn=txCells[n].begin(); txn!=txCells[n].end(); ++txn) {
+                        if (cellNo == *txn) {
+                            g = Tx[n] - curr_pt;
+                            break;
+                        }
+                    }
+                }
+
                 g.normalize();
                 
                 // we have 3 segments that we might intersect
