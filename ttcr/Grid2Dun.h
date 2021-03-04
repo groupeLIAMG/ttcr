@@ -178,8 +178,9 @@ namespace ttcr {
             return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
         }
         
-        T1 computeSlowness(const S& Rx ) const;
-        T1 computeSlowness(const S& Rx, const T2 cellNo ) const;
+        T1 computeSlowness(const S& Rx) const;
+        T1 computeSlowness(const S& Rx, const T2 cellNo) const;
+        T1 computeSlowness(const S& pt, std::array<T2,2>& edgeNodes) const;
         
         T2 getCellNo(const S& pt) const {
             for ( T2 n=0; n<triangles.size(); ++n ) {
@@ -415,7 +416,7 @@ namespace ttcr {
         
         T2 cellNo = this->getCellNo( pt );
         if ( cellNo == -1 ) {
-            std::cerr << "Error: cannot compute slowness, cell not found" << std::endl;
+            std::cerr << "Error: cannot compute slowness, cell not found for point " << pt << std::endl;
             return -1;
         }
         
@@ -446,7 +447,14 @@ namespace ttcr {
         }
         
         return Interpolator<T1>::barycentricTriangle( pt, interpNodes );
-        
+    }
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    T1 Grid2Dun<T1,T2,NODE,S>::computeSlowness(const S& pt,
+                                               std::array<T2,2>& edgeNodes) const {
+        T1 w1 = pt.getDistance(nodes[edgeNodes[0]]);
+        T1 w2 = pt.getDistance(nodes[edgeNodes[1]]);
+        return (w2*nodes[edgeNodes[0]].getNodeSlowness() + w1*nodes[edgeNodes[1]].getNodeSlowness())/(w1+w2);
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
@@ -1234,9 +1242,10 @@ namespace ttcr {
                     {this->neighbors[cellNo][0], this->neighbors[cellNo][2]},
                     {this->neighbors[cellNo][1], this->neighbors[cellNo][2]} };
                 
-                for ( size_t ns=0; ns<3; ++ns )
+                for ( size_t ns=0; ns<3; ++ns ) {
                     if ( ind[ns][0]>ind[ns][1] )
                         std::swap( ind[ns][0], ind[ns][1] );
+                }
                 
                 sxz<T1> pt_i;
                 T1 m1, b1, m2, b2;
@@ -1453,11 +1462,12 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            s1 = computeSlowness(curr_pt, cellNo);
+            if (!onEdge)
+                s1 = computeSlowness(curr_pt, cellNo);
         
             for ( auto nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
-                    s2 = computeSlowness(Tx[nt], cellNo);
+                    s2 = computeSlowness(Tx[nt], txCell[nt]);
                     tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
                     r_data.push_back( Tx[nt] );
                     reachedTx = true;
@@ -1535,7 +1545,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            s2 = computeSlowness(Tx[nt], cellNo);
+                            s2 = computeSlowness(Tx[nt], txCell[nt]);
                             tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
@@ -1548,16 +1558,25 @@ namespace ttcr {
                     
                     bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
                     
-                    s2 = computeSlowness(curr_pt);
+                    if (break_flag) {
+                        // we are on a node
+                        if (curr_pt == nodes[nb[0]]) {
+                            s2 = nodes[nb[0]].getNodeSlowness();
+                        } else {
+                            s2 = nodes[nb[1]].getNodeSlowness();
+                        }
+                    } else {
+                        onEdge = true;
+                        edgeNodes[0] = nb[0];
+                        edgeNodes[1] = nb[1];
+
+                        s2 = computeSlowness(curr_pt, edgeNodes);
+                    }
                     tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                     s1 = s2;
                     r_data.push_back( curr_pt );
                     
                     if ( break_flag ) break;
-                    
-                    onEdge = true;
-                    edgeNodes[0] = nb[0];
-                    edgeNodes[1] = nb[1];
                     
                     // find next cell
                     cellNo = findNextCell1(nb[0], nb[1], nodeNo);
@@ -1618,16 +1637,26 @@ namespace ttcr {
                         
                         bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
                         
-                        s2 = computeSlowness(curr_pt);
+                        if (break_flag) {
+                            // we are on a node
+                            if (curr_pt == nodes[nb[0]]) {
+                                s2 = nodes[nb[0]].getNodeSlowness();
+                            } else {
+                                s2 = nodes[nb[1]].getNodeSlowness();
+                            }
+                        } else {
+                            onEdge = true;
+                            edgeNodes[0] = nb[0];
+                            edgeNodes[1] = nb[1];
+
+                            s2 = computeSlowness(curr_pt, edgeNodes);
+                        }
+
                         tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                         s1 = s2;
                         r_data.push_back( curr_pt );
                         
                         if ( break_flag ) break;
-                        
-                        onEdge = true;
-                        edgeNodes[0] = nb[0];
-                        edgeNodes[1] = nb[1];
                         
                         // find next cell
                         cellNo = findNextCell1(nb[0], nb[1], nodeNo);
@@ -1674,9 +1703,10 @@ namespace ttcr {
                     {this->neighbors[cellNo][0], this->neighbors[cellNo][2]},
                     {this->neighbors[cellNo][1], this->neighbors[cellNo][2]} };
                 
-                for ( size_t ns=0; ns<3; ++ns )
-                if ( ind[ns][0]>ind[ns][1] )
-                    std::swap( ind[ns][0], ind[ns][1] );
+                for ( size_t ns=0; ns<3; ++ns ) {
+                    if ( ind[ns][0]>ind[ns][1] )
+                        std::swap( ind[ns][0], ind[ns][1] );
+                }
                 
                 sxz<T1> pt_i;
                 T1 m1, b1, m2, b2;
@@ -1711,7 +1741,7 @@ namespace ttcr {
                             if ( boost::math::sign(den) == boost::math::sign(g.x) ) {
                                 curr_pt.x = nodes[ ind[ns][1] ].getX();
                                 curr_pt.z = nodes[ ind[ns][1] ].getZ();
-                                s2 = computeSlowness(curr_pt);
+                                s2 = nodes[ ind[ns][1] ].getNodeSlowness();
                                 tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                                 s1 = s2;
                                 r_data.push_back( curr_pt );
@@ -1720,14 +1750,13 @@ namespace ttcr {
                             } else {
                                 curr_pt.x = nodes[ ind[ns][0] ].getX();
                                 curr_pt.z = nodes[ ind[ns][0] ].getZ();
-                                s2 = computeSlowness(curr_pt);
+                                s2 = nodes[ ind[ns][0] ].getNodeSlowness();
                                 tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                                 s1 = s2;
                                 r_data.push_back( curr_pt );
                                 foundIntersection = true;
                                 break;
                             }
-                            
                         }
                         continue;
                     }
@@ -1757,14 +1786,14 @@ namespace ttcr {
                         foundIntersection = true;
                         curr_pt = pt_i;
                         
-                        s2 = computeSlowness(curr_pt);
-                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
-                        s1 = s2;
-                        r_data.push_back( curr_pt );
-                        
                         onEdge = true;
                         edgeNodes[0] = ind[ns][0];
                         edgeNodes[1] = ind[ns][1];
+
+                        s2 = computeSlowness(curr_pt, edgeNodes);
+                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+                        s1 = s2;
+                        r_data.push_back( curr_pt );
                         
                         // find next cell
                         cellNo = findNextCell2(ind[ns][0], ind[ns][1], cellNo);
@@ -1789,7 +1818,7 @@ namespace ttcr {
                     if ( dot(vec, g) > 0.0 ) {
                         curr_pt.x = nodes[ edgeNodes[1] ].getX();
                         curr_pt.z = nodes[ edgeNodes[1] ].getZ();
-                        s2 = computeSlowness(curr_pt);
+                        s2 = nodes[ edgeNodes[1] ].getNodeSlowness();
                         tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                         s1 = s2;
                         r_data.push_back( curr_pt );
@@ -1797,7 +1826,7 @@ namespace ttcr {
                     } else {
                         curr_pt.x = nodes[ edgeNodes[0] ].getX();
                         curr_pt.z = nodes[ edgeNodes[0] ].getZ();
-                        s2 = computeSlowness(curr_pt);
+                        s2 = nodes[ edgeNodes[0] ].getNodeSlowness();
                         tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                         s1 = s2;
                         r_data.push_back( curr_pt );
@@ -1829,7 +1858,7 @@ namespace ttcr {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin();
                              nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                s2 = computeSlowness(curr_pt);
+                                s2 = computeSlowness(Tx[nt], txCell[nt]);
                                 tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[nt] );
                                 r_data.push_back( Tx[nt] );
                                 reachedTx = true;
@@ -1838,7 +1867,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            s2 = computeSlowness(curr_pt);
+                            s2 = computeSlowness(Tx[nt], txCell[nt]);
                             tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[nt] );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
@@ -1908,11 +1937,12 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            s1 = computeSlowness(curr_pt, cellNo);
+            if (!onEdge)
+                s1 = computeSlowness(curr_pt, cellNo);
         
             for ( auto nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
-                    s2 = computeSlowness(Tx[nt], cellNo);
+                    s2 = computeSlowness(Tx[nt], txCell[nt]);
                     tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
                     reachedTx = true;
                     break;
@@ -1989,7 +2019,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            s2 = computeSlowness(Tx[nt], cellNo);
+                            s2 = computeSlowness(Tx[nt], txCell[nt]);
                             tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                             break;
@@ -2000,17 +2030,26 @@ namespace ttcr {
                     }
                     
                     bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
-                    
-                    s2 = computeSlowness(curr_pt);
+
+                    if (break_flag) {
+                        // we are on a node
+                        if (curr_pt == nodes[nb[0]]) {
+                            s2 = nodes[nb[0]].getNodeSlowness();
+                        } else {
+                            s2 = nodes[nb[1]].getNodeSlowness();
+                        }
+                    } else {
+                        onEdge = true;
+                        edgeNodes[0] = nb[0];
+                        edgeNodes[1] = nb[1];
+
+                        s2 = computeSlowness(curr_pt, edgeNodes);
+                    }
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
                     
                     if ( break_flag ) break;
-                    
-                    onEdge = true;
-                    edgeNodes[0] = nb[0];
-                    edgeNodes[1] = nb[1];
                     
                     // find next cell
                     cellNo = findNextCell1(nb[0], nb[1], nodeNo);
@@ -2033,7 +2072,6 @@ namespace ttcr {
                     }
                     g.x /= grads.size();
                     g.z /= grads.size();
-                    
                     
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                         
@@ -2070,16 +2108,26 @@ namespace ttcr {
                         
                         bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
                         
-                        s2 = computeSlowness(curr_pt);
+                        if (break_flag) {
+                            // we are on a node
+                            if (curr_pt == nodes[nb[0]]) {
+                                s2 = nodes[nb[0]].getNodeSlowness();
+                            } else {
+                                s2 = nodes[nb[1]].getNodeSlowness();
+                            }
+                        } else {
+                            onEdge = true;
+                            edgeNodes[0] = nb[0];
+                            edgeNodes[1] = nb[1];
+
+                            s2 = computeSlowness(curr_pt, edgeNodes);
+                        }
+
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
                         prev_pt = curr_pt;
                         
                         if ( break_flag ) break;
-                        
-                        onEdge = true;
-                        edgeNodes[0] = nb[0];
-                        edgeNodes[1] = nb[1];
                         
                         // find next cell
                         cellNo = findNextCell1(nb[0], nb[1], nodeNo);
@@ -2122,9 +2170,10 @@ namespace ttcr {
                     {this->neighbors[cellNo][0], this->neighbors[cellNo][2]},
                     {this->neighbors[cellNo][1], this->neighbors[cellNo][2]} };
                 
-                for ( size_t ns=0; ns<3; ++ns )
+                for ( size_t ns=0; ns<3; ++ns ) {
                     if ( ind[ns][0]>ind[ns][1] )
                         std::swap( ind[ns][0], ind[ns][1] );
+                }
                 
                 sxz<T1> pt_i;
                 T1 m1, b1, m2, b2;
@@ -2159,7 +2208,7 @@ namespace ttcr {
                             if ( boost::math::sign(den) == boost::math::sign(g.x) ) {
                                 curr_pt.x = nodes[ ind[ns][1] ].getX();
                                 curr_pt.z = nodes[ ind[ns][1] ].getZ();
-                                s2 = computeSlowness(curr_pt);
+                                s2 = nodes[ ind[ns][1] ].getNodeSlowness();
                                 tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                                 s1 = s2;
                                 prev_pt = curr_pt;
@@ -2168,14 +2217,13 @@ namespace ttcr {
                             } else {
                                 curr_pt.x = nodes[ ind[ns][0] ].getX();
                                 curr_pt.z = nodes[ ind[ns][0] ].getZ();
-                                s2 = computeSlowness(curr_pt);
+                                s2 = nodes[ ind[ns][0] ].getNodeSlowness();
                                 tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                                 s1 = s2;
                                 prev_pt = curr_pt;
                                 foundIntersection = true;
                                 break;
                             }
-                            
                         }
                         continue;
                     }
@@ -2205,14 +2253,14 @@ namespace ttcr {
                         foundIntersection = true;
                         curr_pt = pt_i;
                         
-                        s2 = computeSlowness(curr_pt);
-                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
-                        s1 = s2;
-                        prev_pt = curr_pt;
-                        
                         onEdge = true;
                         edgeNodes[0] = ind[ns][0];
                         edgeNodes[1] = ind[ns][1];
+
+                        s2 = computeSlowness(curr_pt, edgeNodes);
+                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
+                        s1 = s2;
+                        prev_pt = curr_pt;
                         
                         // find next cell
                         cellNo = findNextCell2(ind[ns][0], ind[ns][1], cellNo);
@@ -2235,7 +2283,7 @@ namespace ttcr {
                     if ( dot(vec, g) > 0.0 ) {
                         curr_pt.x = nodes[ edgeNodes[1] ].getX();
                         curr_pt.z = nodes[ edgeNodes[1] ].getZ();
-                        s2 = computeSlowness(curr_pt);
+                        s2 = nodes[ edgeNodes[1] ].getNodeSlowness();
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
                         prev_pt = curr_pt;
@@ -2243,7 +2291,7 @@ namespace ttcr {
                     } else {
                         curr_pt.x = nodes[ edgeNodes[0] ].getX();
                         curr_pt.z = nodes[ edgeNodes[0] ].getZ();
-                        s2 = computeSlowness(curr_pt);
+                        s2 = nodes[ edgeNodes[0] ].getNodeSlowness();
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
                         prev_pt = curr_pt;
@@ -2275,7 +2323,7 @@ namespace ttcr {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin();
                              nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                s2 = computeSlowness(Tx[nt], cellNo);
+                                s2 = computeSlowness(Tx[nt], txCell[nt]);
                                 tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
                                 reachedTx = true;
                                 break;
@@ -2283,7 +2331,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            s2 = computeSlowness(Tx[nt], cellNo);
+                            s2 = computeSlowness(Tx[nt], txCell[nt]);
                             tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                         }
