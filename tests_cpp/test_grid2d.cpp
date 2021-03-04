@@ -37,7 +37,7 @@
 #include "utils.h"
 
 namespace ttcr {
-    int verbose = 0;
+    int verbose = 1;
 }
 
 namespace bdata = boost::unit_test::data;
@@ -94,7 +94,7 @@ const char* models_coarse[] = {
     "./files/layers_coarse2d.vtr",
     "./files/gradient_coarse2d.vtr",
     "./files/layers_coarse2d.vtu",
-    "./files/gradient_coarse2d.vtu"
+    "./files/gradient_gmsh2d.vtu"
 };
 const char* references[] = {
     "./files/sol_analytique_couches2d_tt.vtr",
