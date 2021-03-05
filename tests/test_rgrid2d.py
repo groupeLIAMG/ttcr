@@ -30,7 +30,7 @@ class TestGrid2dc(unittest.TestCase):
 
     def setUp(self):
         reader = vtk.vtkXMLRectilinearGridReader()
-        reader.SetFileName('./files/layers_coarse2d.vtr')
+        reader.SetFileName('./files/layers_fine2d.vtr')
         reader.Update()
 
         data = reader.GetOutput()
@@ -38,6 +38,8 @@ class TestGrid2dc(unittest.TestCase):
         self.z = vtk_to_numpy(data.GetZCoordinates())
 
         self.slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+        dim = (self.x.size-1, self.z.size-1)
+        self.slowness = self.slowness.reshape(dim, order='F').flatten()
 
         self.src = np.loadtxt('./files/src2d.dat',skiprows=1)
         self.src = self.src.reshape((1, 3))
@@ -48,16 +50,26 @@ class TestGrid2dc(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/fsm2d_d_p_lc_src2d_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid2Drcfs_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness in cells)')
 
     def test_Grid2Dsp(self):
-        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=5, nsnz=5)
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/spm2d_d_p_lc_05_src2d_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid2Drcsp_tt_grid.vtr')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (slowness in cells)')
+
+    def test_Grid2Ddsp(self):
+        g = rg.Grid2d(self.x, self.z, method='DSPM', n_secondary=3,
+                      n_tertiary=3)
+        tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Drcdsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (slowness in cells)')
 
@@ -66,7 +78,7 @@ class TestGrid2dn(unittest.TestCase):
 
     def setUp(self):
         reader = vtk.vtkXMLRectilinearGridReader()
-        reader.SetFileName('./files/gradient_coarse2d.vtr')
+        reader.SetFileName('./files/gradient_fine2d.vtr')
         reader.Update()
 
         data = reader.GetOutput()
@@ -74,7 +86,9 @@ class TestGrid2dn(unittest.TestCase):
         self.z = vtk_to_numpy(data.GetZCoordinates())
 
         self.slowness = vtk_to_numpy(data.GetPointData().GetArray('Slowness'))
-
+        dim = (self.x.size, self.z.size)
+        self.slowness = self.slowness.reshape(dim, order='F').flatten()
+        
         self.src = np.loadtxt('./files/src2d.dat',skiprows=1)
         self.src = self.src.reshape((1, 3))
         self.rcv = np.loadtxt('./files/rcv2d.dat',skiprows=1)
@@ -84,16 +98,26 @@ class TestGrid2dn(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/fsm2d_d_p_gc_src2d_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid2Drnfs_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness at nodes)')
 
     def test_Grid2Dsp(self):
-        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=5, nsnz=5, cell_slowness=0)
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10, cell_slowness=0)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/spm2d_d_p_gc_05_src2d_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid2Drnsp_tt_grid.vtr')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (slowness at nodes)')
+
+    def test_Grid2Ddsp(self):
+        g = rg.Grid2d(self.x, self.z, method='DSPM', n_secondary=3,
+                      n_tertiary=3, cell_slowness=0)
+        tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Drndsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (slowness at nodes)')
 

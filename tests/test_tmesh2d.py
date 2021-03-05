@@ -27,7 +27,7 @@ class TestMesh2dc(unittest.TestCase):
 
     def setUp(self):
         reader = vtk.vtkXMLUnstructuredGridReader()
-        reader.SetFileName('./files/layers_coarse2d.vtu')
+        reader.SetFileName('./files/layers_fine2d.vtu')
         reader.Update()
 
         self.nodes = np.empty((reader.GetOutput().GetNumberOfPoints(), 2 ))
@@ -36,7 +36,8 @@ class TestMesh2dc(unittest.TestCase):
             self.nodes[n, 0] = x[0]
             self.nodes[n, 1] = x[2]
 
-        self.tri = np.empty((reader.GetOutput().GetNumberOfCells(), 3 ), dtype=int)
+        self.tri = np.empty((reader.GetOutput().GetNumberOfCells(), 3 ),
+                            dtype=int)
         ind = vtk.vtkIdList()
         for n in range(reader.GetOutput().GetNumberOfCells()):
             reader.GetOutput().GetCellPoints(n, ind)
@@ -56,16 +57,26 @@ class TestMesh2dc(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/fsm2d_d_p_lc_u_src2d_all_tt.vtu')
+        tt_ref = get_tt('./files/Grid2Ducfs_tt_grid.vtu')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness in cells)')
 
     def test_Mesh2Dsp(self):
-        g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=5)
+        g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=10)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/spm2d_d_p_lc_05_u_src2d_all_tt.vtu')
+        tt_ref = get_tt('./files/Grid2Ducsp_tt_grid.vtu')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (slowness in cells)')
+
+    def test_Mesh2Ddsp(self):
+        g = tm.Mesh2d(self.nodes, self.tri, method='DSPM', n_secondary=3,
+                      n_tertiary=3)
+        tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Ducdsp_tt_grid.vtu')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (slowness in cells)')
 
@@ -74,7 +85,7 @@ class TestMesh2dn(unittest.TestCase):
 
     def setUp(self):
         reader = vtk.vtkXMLUnstructuredGridReader()
-        reader.SetFileName('./files/gradient_coarse2d.vtu')
+        reader.SetFileName('./files/gradient_fine2d.vtu')
         reader.Update()
 
         self.nodes = np.empty((reader.GetOutput().GetNumberOfPoints(), 2 ))
@@ -83,7 +94,8 @@ class TestMesh2dn(unittest.TestCase):
             self.nodes[n, 0] = x[0]
             self.nodes[n, 1] = x[2]
 
-        self.tri = np.empty((reader.GetOutput().GetNumberOfCells(), 3 ), dtype=int)
+        self.tri = np.empty((reader.GetOutput().GetNumberOfCells(), 3 ),
+                            dtype=int)
         ind = vtk.vtkIdList()
         for n in range(reader.GetOutput().GetNumberOfCells()):
             reader.GetOutput().GetCellPoints(n, ind)
@@ -103,16 +115,27 @@ class TestMesh2dn(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/fsm2d_d_p_gc_u_src2d_all_tt.vtu')
+        tt_ref = get_tt('./files/Grid2Dunfs_tt_grid.vtu')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness at nodes)')
 
     def test_Mesh2Dsp(self):
-        g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=5, cell_slowness=0)
+        g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=10,
+                      cell_slowness=0)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/spm2d_d_p_gc_05_u_src2d_all_tt.vtu')
+        tt_ref = get_tt('./files/Grid2Dunsp_tt_grid.vtu')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (slowness at nodes)')
+
+    def test_Mesh2Ddsp(self):
+        g = tm.Mesh2d(self.nodes, self.tri, method='DSPM', n_secondary=3,
+                      n_tertiary=3, cell_slowness=0)
+        tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Dundsp_tt_grid.vtu')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (slowness at nodes)')
 
