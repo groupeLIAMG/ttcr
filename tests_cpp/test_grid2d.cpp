@@ -37,7 +37,7 @@
 #include "utils.h"
 
 namespace ttcr {
-    int verbose = 1;
+    int verbose = 0;
 }
 
 namespace bdata = boost::unit_test::data;
@@ -109,9 +109,6 @@ BOOST_DATA_TEST_CASE(
                      testGrid2D,
                      (bdata::make(models) ^ bdata::make(references)) * bdata::make(methods),
                      model, ref, method) {
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
     Src2D<double> src("./files/src2d.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d.dat");
@@ -154,8 +151,7 @@ BOOST_DATA_TEST_CASE(
     string filename = "./files/" + get_class_name(g) + "_tt_grid";
     g->saveTT(filename, 0, 0, 2);
     double error = get_rel_error(ref, rcv);
-    if (verbose)
-        cout << "\n\t\t" << get_class_name(g) << '\t' << error << "\n\n";
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error << "\n" );
 
     BOOST_TEST(error < 0.02);
 }
@@ -164,9 +160,6 @@ BOOST_DATA_TEST_CASE(
                      testGrid2D_ttrp,
                      (bdata::make(models_coarse) ^ bdata::make(references)) * bdata::make(methods),
                      model, ref, method) {
-    if ( verbose > 0 ) {
-        cout << "\n*** Starting test ***\n";
-    }
     Src2D<double> src("./files/src2d_in.dat");
     src.init();
     Rcv2D<double> rcv("./files/rcv2d_in.dat");
@@ -212,8 +205,7 @@ BOOST_DATA_TEST_CASE(
     saveRayPaths(filename, r_data);
     
     double error = get_rel_error(ref, rcv);
-    if (verbose)
-        cout << "\n\t\t" << get_class_name(g) << '\t' << error << "\n\n";
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error << "\n" );
     
     BOOST_TEST(error < 0.15);
 }
