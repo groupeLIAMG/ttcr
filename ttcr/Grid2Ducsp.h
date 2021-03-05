@@ -48,6 +48,12 @@ namespace ttcr {
         ~Grid2Ducsp() {
         }
 
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      const size_t threadNo=0) const;
+
         void raytrace(const std::vector<S>&,
                      const std::vector<T1>&,
                      const std::vector<const std::vector<S>*>&,
@@ -125,6 +131,41 @@ namespace ttcr {
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
 
         propagate(queue, inQueue, frozen, threadNo);
+    }
+
+    template<typename T1, typename T2, typename NODE, typename S>
+    void Grid2Ducsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const std::vector<S>& Rx,
+                                            std::vector<T1>& traveltimes,
+                                            const size_t threadNo) const {
+
+        this->checkPts(Tx);
+        this->checkPts(Rx);
+
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+            this->nodes[n].reinit( threadNo );
+        }
+
+        CompareNodePtr<T1> cmp(threadNo);
+        std::priority_queue< NODE*, std::vector<NODE*>,
+        CompareNodePtr<T1>> queue( cmp );
+
+        std::vector<NODE> txNodes;
+        std::vector<bool> inQueue( this->nodes.size(), false );
+        std::vector<bool> frozen( this->nodes.size(), false );
+
+        initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
+
+        propagate(queue, inQueue, frozen, threadNo);
+
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
+        }
     }
 
     template<typename T1, typename T2, typename NODE, typename S>

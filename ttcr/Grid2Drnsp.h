@@ -44,6 +44,18 @@ namespace ttcr {
             }
             interpSlownessSecondary();
         }
+
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      const size_t threadNo=0) const;
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<const std::vector<S>*>& Rx,
+                      std::vector<std::vector<T1>*>& traveltimes,
+                      const size_t threadNo=0) const;
         
         void raytrace(const std::vector<S>& Tx,
                      const std::vector<T1>& t0,
@@ -443,6 +455,42 @@ namespace ttcr {
         propagate(queue, inQueue, frozen, threadNo);
     }
     
+    template<typename T1, typename T2, typename S>
+    void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       std::vector<T1>& traveltimes,
+                                       const size_t threadNo) const {
+        // this to make sure that we are no use tt_from _rp
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = getTraveltime(Rx[n], threadNo);
+        }
+    }
+
+    template<typename T1, typename T2, typename S>
+    void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       std::vector<std::vector<T1>*>& traveltimes,
+                                       const size_t threadNo) const {
+        // this to make sure that we are no use tt_from _rp
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        for (size_t nr=0; nr<Rx.size(); ++nr) {
+            traveltimes[nr]->resize( Rx[nr]->size() );
+            for (size_t n=0; n<Rx[nr]->size(); ++n)
+                (*traveltimes[nr])[n] = getTraveltime((*Rx[nr])[n], threadNo);
+        }
+    }
+
     template<typename T1, typename T2, typename S>
     void Grid2Drnsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
                                        const std::vector<T1>& t0,

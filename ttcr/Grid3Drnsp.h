@@ -574,21 +574,21 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        if ( this->tt_from_rp ) {
-            if ( verbose ) {
-                std::cout << "done.\n  Updating traveltimes from raypaths ... ";
-            }
-            for (size_t n=0; n<Rx.size(); ++n) {
-                if ( verbose > 1 ) {
-                    std::cout << "\n    Rx no " << n << std::flush;
-                }
-                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
-            }
-        } else {
+//        if ( this->tt_from_rp ) {
+//            if ( verbose ) {
+//                std::cout << "done.\n  Updating traveltimes from raypaths ... ";
+//            }
+//            for (size_t n=0; n<Rx.size(); ++n) {
+//                if ( verbose > 1 ) {
+//                    std::cout << "\n    Rx no " << n << std::flush;
+//                }
+//                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+//            }
+//        } else {
             for (size_t n=0; n<Rx.size(); ++n) {
                 traveltimes[n] = this->getTraveltime(Rx[n], threadNo);
             }
-        }
+//        }
     }
     
     template<typename T1, typename T2>
@@ -622,19 +622,19 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        if ( this->tt_from_rp ) {
-            for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
-            }
-        } else {
+//        if ( this->tt_from_rp ) {
+//            for (size_t nr=0; nr<Rx.size(); ++nr) {
+//                traveltimes[nr]->resize( Rx[nr]->size() );
+//                for (size_t n=0; n<Rx[nr]->size(); ++n)
+//                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+//            }
+//        } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
                 for (size_t n=0; n<Rx[nr]->size(); ++n)
                     (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
             }
-        }
+//        }
     }
     
     template<typename T1, typename T2>

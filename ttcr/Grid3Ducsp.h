@@ -118,8 +118,6 @@ namespace ttcr {
         
     };
     
-    
-    
     template<typename T1, typename T2>
     void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
@@ -150,15 +148,15 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        if ( this->tt_from_rp ) {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
-            }
-        } else {
+//        if ( this->tt_from_rp ) {
+//            for (size_t n=0; n<Rx.size(); ++n) {
+//                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
+//            }
+//        } else {
             for (size_t n=0; n<Rx.size(); ++n) {
                 traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
             }
-        }
+//        }
     }
     
     template<typename T1, typename T2>
@@ -192,19 +190,19 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
         
-        if ( this->tt_from_rp ) {
-            for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
-            }
-        } else {
+//        if ( this->tt_from_rp ) {
+//            for (size_t nr=0; nr<Rx.size(); ++nr) {
+//                traveltimes[nr]->resize( Rx[nr]->size() );
+//                for (size_t n=0; n<Rx[nr]->size(); ++n)
+//                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+//            }
+//        } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
                 for (size_t n=0; n<Rx[nr]->size(); ++n)
                     (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
             }
-        }
+//        }
     }
     
     template<typename T1, typename T2>

@@ -212,13 +212,12 @@ namespace ttcr {
             j = static_cast<long long>( small + (pt.z-zmin)/dz );
         }
 
+        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
 
     private:
         void grad(S &g, const S &pt, const size_t nt) const;
         T1 interpolateTraveltime(const S& pt, const size_t threadNo) const;
         
-        T1 getTraveltime(const S& Rx, const size_t threadNo) const;
-
         T1 getTraveltimeFromRaypath(const std::vector<S>& Tx,
                                     const std::vector<T1>& t0,
                                     const S& Rx,

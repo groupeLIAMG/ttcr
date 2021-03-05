@@ -71,6 +71,18 @@ namespace ttcr {
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
+                      const size_t threadNo=0) const;
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<const std::vector<S>*>& Rx,
+                      std::vector<std::vector<T1>*>& traveltimes,
+                      const size_t threadNo=0) const;
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
                       std::vector<std::vector<S>>& r_data,
                       const size_t threadNo=0) const;
         
@@ -496,6 +508,42 @@ namespace ttcr {
         
     }
     
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const std::vector<S>& Rx,
+                                            std::vector<T1>& traveltimes,
+                                            const size_t threadNo) const {
+        // this to make sure that we are no use tt_from _rp
+        raytrace(Tx, t0, Rx, threadNo);
+        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        for (size_t n=0; n<Rx.size(); ++n) {
+            traveltimes[n] = Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>::getTraveltime(Rx[n], threadNo);
+        }
+    }
+
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const std::vector<const std::vector<S>*>& Rx,
+                                            std::vector<std::vector<T1>*>& traveltimes,
+                                            const size_t threadNo) const {
+        // this to make sure that we are no use tt_from _rp
+        raytrace(Tx, t0, Rx, threadNo);
+
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        for (size_t nr=0; nr<Rx.size(); ++nr) {
+            traveltimes[nr]->resize( Rx[nr]->size() );
+            for (size_t n=0; n<Rx[nr]->size(); ++n)
+                (*traveltimes[nr])[n] = Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>::getTraveltime((*Rx[nr])[n], threadNo);
+        }
+    }
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
