@@ -2246,21 +2246,21 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Ducdsp<T, uint32_t>(nodes,
-                                                     triangles,
-                                                     par.nn[0],
-                                                     par.nTertiary,
-                                                     par.radius_tertiary_nodes,
-                                                     par.tt_from_rp,
-                                                     nt);
+                    g = new Grid2Ducdsp<T, uint32_t, sxz<T>>(nodes,
+                                                             triangles,
+                                                             par.nn[0],
+                                                             par.nTertiary,
+                                                             par.radius_tertiary_nodes,
+                                                             par.tt_from_rp,
+                                                             nt);
                 else
-                    g = new Grid2Dundsp<T, uint32_t>(nodes,
-                                                     triangles,
-                                                     par.nn[0],
-                                                     par.nTertiary,
-                                                     par.radius_tertiary_nodes,
-                                                     par.tt_from_rp,
-                                                     nt);
+                    g = new Grid2Dundsp<T, uint32_t, sxz<T>>(nodes,
+                                                             triangles,
+                                                             par.nn[0],
+                                                             par.nTertiary,
+                                                             par.radius_tertiary_nodes,
+                                                             par.tt_from_rp,
+                                                             nt);
                 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -2520,21 +2520,21 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid2Ducdsp<T, uint32_t>(nodes,
-                                                     triangles,
-                                                     par.nn[0],
-                                                     par.nTertiary,
-                                                     par.radius_tertiary_nodes,
-                                                     par.tt_from_rp,
-                                                     nt);
+                    g = new Grid2Ducdsp<T, uint32_t, sxz<T>>(nodes,
+                                                             triangles,
+                                                             par.nn[0],
+                                                             par.nTertiary,
+                                                             par.radius_tertiary_nodes,
+                                                             par.tt_from_rp,
+                                                             nt);
                 else
-                    g = new Grid2Dundsp<T, uint32_t>(nodes,
-                                                     triangles,
-                                                     par.nn[0],
-                                                     par.nTertiary,
-                                                     par.radius_tertiary_nodes,
-                                                     par.tt_from_rp,
-                                                     nt);
+                    g = new Grid2Dundsp<T, uint32_t, sxz<T>>(nodes,
+                                                             triangles,
+                                                             par.nn[0],
+                                                             par.nTertiary,
+                                                             par.radius_tertiary_nodes,
+                                                             par.tt_from_rp,
+                                                             nt);
 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {

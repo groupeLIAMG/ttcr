@@ -32,14 +32,14 @@
 
 namespace ttcr {
 
-template<typename T1, typename T2>
-class Grid2Ducdsp : public Grid2Duc<T1,T2,Node2Dc<T1,T2>,sxz<T1>> {
+template<typename T1, typename T2, typename S>
+class Grid2Ducdsp : public Grid2Duc<T1,T2,Node2Dc<T1,T2>,S> {
 public:
-    Grid2Ducdsp(const std::vector<sxz<T1>>& no,
+    Grid2Ducdsp(const std::vector<S>& no,
                 const std::vector<triangleElem<T2>>& tri,
                 const T2 ns, const int nd, const T1 drad, const bool ttrp,
                 const size_t nt=1) :
-    Grid2Duc<T1,T2,Node2Dc<T1,T2>,sxz<T1>>(no, tri, ttrp, nt),
+    Grid2Duc<T1,T2,Node2Dc<T1,T2>,S>(no, tri, ttrp, nt),
     nSecondary(ns), nTertiary(nd), nPermanent(0),
     dyn_radius(drad),
     tempNodes(std::vector<std::vector<Node2Dcd<T1,T2>>>(nt)),
@@ -67,9 +67,9 @@ private:
     mutable std::vector<std::vector<Node2Dcd<T1,T2>>> tempNodes;
     mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
 
-    void addTemporaryNodes(const std::vector<sxz<T1>>&, const size_t) const;
+    void addTemporaryNodes(const std::vector<S>&, const size_t) const;
 
-    void initQueue(const std::vector<sxz<T1>>& Tx,
+    void initQueue(const std::vector<S>& Tx,
                    const std::vector<T1>& t0,
                    std::priority_queue<Node2Dc<T1,T2>*,
                    std::vector<Node2Dc<T1,T2>*>,
@@ -86,20 +86,20 @@ private:
                    std::vector<bool>& frozen,
                    const size_t threadNo) const;
 
-    void raytrace(const std::vector<sxz<T1>>& Tx,
+    void raytrace(const std::vector<S>& Tx,
                   const std::vector<T1>& t0,
-                  const std::vector<sxz<T1>>& Rx,
+                  const std::vector<S>& Rx,
                   const size_t threadNo=0) const;
 
-    void raytrace(const std::vector<sxz<T1>>& Tx,
+    void raytrace(const std::vector<S>& Tx,
                   const std::vector<T1>& t0,
-                  const std::vector<const std::vector<sxz<T1>>*>& Rx,
+                  const std::vector<const std::vector<S>*>& Rx,
                   const size_t threadNo=0) const;
 };
 
-template<typename T1, typename T2>
-void Grid2Ducdsp<T1,T2>::addTemporaryNodes(const std::vector<sxz<T1>>& Tx,
-                                           const size_t threadNo) const {
+template<typename T1, typename T2, typename S>
+void Grid2Ducdsp<T1,T2,S>::addTemporaryNodes(const std::vector<S>& Tx,
+                                             const size_t threadNo) const {
     
     // clear previously assigned nodes
     tempNodes[threadNo].clear();
@@ -111,7 +111,7 @@ void Grid2Ducdsp<T1,T2>::addTemporaryNodes(const std::vector<sxz<T1>>& Tx,
     std::set<T2> txCells;
     for ( size_t nt=0; nt<this->triangles.size(); ++nt ) {
         // centroid of tet
-        sxz<T1> cent = sxz<T1>(this->nodes[this->triangles[nt].i[0]] +
+        S cent = S(this->nodes[this->triangles[nt].i[0]] +
                                this->nodes[this->triangles[nt].i[1]]);
         cent += this->nodes[this->triangles[nt].i[2]];
         cent *= 0.33333333;
@@ -163,7 +163,7 @@ void Grid2Ducdsp<T1,T2>::addTemporaryNodes(const std::vector<sxz<T1>>& Tx,
                 continue;
             }
 
-            sxz<T1> d = (this->nodes[lineKey[1]]-this->nodes[lineKey[0]])/static_cast<T1>(nDynTot+nSecondary+1);
+            S d = (this->nodes[lineKey[1]]-this->nodes[lineKey[0]])/static_cast<T1>(nDynTot+nSecondary+1);
 
             size_t nd = 0;
             for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
@@ -217,16 +217,16 @@ void Grid2Ducdsp<T1,T2>::addTemporaryNodes(const std::vector<sxz<T1>>& Tx,
         std::cout << "  *** thread no " << threadNo << ": " << tempNodes[threadNo].size() << " dynamic nodes were added ***" << std::endl;
 }
 
-template<typename T1, typename T2>
-void Grid2Ducdsp<T1,T2>::initQueue(const std::vector<sxz<T1>>& Tx,
-                                   const std::vector<T1>& t0,
-                                   std::priority_queue<Node2Dc<T1,T2>*,
-                                   std::vector<Node2Dc<T1,T2>*>,
-                                   CompareNodePtr<T1>>& queue,
-                                   std::vector<Node2Dcd<T1,T2>>& txNodes,
-                                   std::vector<bool>& inQueue,
-                                   std::vector<bool>& frozen,
-                                   const size_t threadNo) const {
+template<typename T1, typename T2, typename S>
+void Grid2Ducdsp<T1,T2,S>::initQueue(const std::vector<S>& Tx,
+                                     const std::vector<T1>& t0,
+                                     std::priority_queue<Node2Dc<T1,T2>*,
+                                     std::vector<Node2Dc<T1,T2>*>,
+                                     CompareNodePtr<T1>>& queue,
+                                     std::vector<Node2Dcd<T1,T2>>& txNodes,
+                                     std::vector<bool>& inQueue,
+                                     std::vector<bool>& frozen,
+                                     const size_t threadNo) const {
 
     for (size_t n=0; n<Tx.size(); ++n) {
         bool found = false;
@@ -266,13 +266,13 @@ void Grid2Ducdsp<T1,T2>::initQueue(const std::vector<sxz<T1>>& Tx,
     }
 }
 
-template<typename T1, typename T2>
-void Grid2Ducdsp<T1,T2>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
-                                   std::vector<Node2Dc<T1,T2>*>,
-                                   CompareNodePtr<T1>>& queue,
-                                   std::vector<bool>& inQueue,
-                                   std::vector<bool>& frozen,
-                                   const size_t threadNo) const {
+template<typename T1, typename T2, typename S>
+void Grid2Ducdsp<T1,T2,S>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
+                                     std::vector<Node2Dc<T1,T2>*>,
+                                     CompareNodePtr<T1>>& queue,
+                                     std::vector<bool>& inQueue,
+                                     std::vector<bool>& frozen,
+                                     const size_t threadNo) const {
 
     while ( !queue.empty() ) {
         const Node2Dc<T1,T2>* src = queue.top();
@@ -330,11 +330,11 @@ void Grid2Ducdsp<T1,T2>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
     }
 }
 
-template<typename T1, typename T2>
-void Grid2Ducdsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-                                  const std::vector<T1>& t0,
-                                  const std::vector<sxz<T1>>& Rx,
-                                  const size_t threadNo) const {
+template<typename T1, typename T2, typename S>
+void Grid2Ducdsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const std::vector<S>& Rx,
+                                    const size_t threadNo) const {
     this->checkPts(Tx);
     this->checkPts(Rx);
 
@@ -357,11 +357,11 @@ void Grid2Ducdsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
     propagate(queue, inQueue, frozen, threadNo);
 }
 
-template<typename T1, typename T2>
-void Grid2Ducdsp<T1,T2>::raytrace(const std::vector<sxz<T1>>& Tx,
-                                  const std::vector<T1>& t0,
-                                  const std::vector<const std::vector<sxz<T1>>*>& Rx,
-                                  const size_t threadNo) const {
+template<typename T1, typename T2, typename S>
+void Grid2Ducdsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                    const std::vector<T1>& t0,
+                                    const std::vector<const std::vector<S>*>& Rx,
+                                    const size_t threadNo) const {
     this->checkPts(Tx);
     for ( size_t n=0; n<Rx.size(); ++n )
     this->checkPts(*Rx[n]);
