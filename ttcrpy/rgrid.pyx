@@ -93,7 +93,7 @@ cdef class Grid3d:
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
         tt_from_rp : bool
-            compute traveltimes from raypaths (SPM od DSPM) (default is 1)
+            compute traveltimes from raypaths (FSM or DSPM only) (default is 1)
         interp_vel : bool
             interpolate velocity instead of slowness at nodes (for
             cell_slowness == False or FSM) (defauls is False)
@@ -1747,7 +1747,7 @@ cdef class Grid2d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, tt_from_rp=0) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_tertiary=1.0, tt_from_rp=0) -> Grid2d
 
     Parameters
     ----------
@@ -1783,6 +1783,13 @@ cdef class Grid2d:
         number of secondary nodes in x (SPM) (default is 10)
     nsnz : int
         number of secondary nodes in z (SPM) (default is 10)
+    n_secondary : int
+        number of secondary nodes (DSPM) (default is 3)
+    n_tertiary : int
+        number of tertiary nodes (DSPM) (default is 3)
+    radius_tertiary : double
+        radius of sphere around source that includes tertiary nodes (DSPM)
+        (default is 1)
     tt_from_rp : bool
         compute traveltime using raypaths
     """
@@ -1801,6 +1808,9 @@ cdef class Grid2d:
     cdef bool tt_from_rp
     cdef uint32_t nsnx
     cdef uint32_t nsnz
+    cdef uint32_t n_secondary
+    cdef uint32_t n_tertiary
+    cdef double radius_tertiary
 
     cdef Grid2D[double,uint32_t,sxz[double]]* grid
 
@@ -1809,7 +1819,8 @@ cdef class Grid2d:
                   bool cell_slowness=1, str method='SPM', str aniso='iso',
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
-                  bool tt_from_rp=0):
+                  uint32_t n_secondary=3, uint32_t n_tertiary=3,
+                  double radius_tertiary=1.0, bool tt_from_rp=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
@@ -1826,6 +1837,9 @@ cdef class Grid2d:
         self.nsnx = nsnx
         self.nsnz = nsnz
         self.iso = b'i'
+        self.n_secondary = n_secondary
+        self.n_tertiary = n_tertiary
+        self.radius_tertiary = radius_tertiary
         self.tt_from_rp = tt_from_rp
 
         for val in x:
@@ -1869,6 +1883,12 @@ cdef class Grid2d:
                 self.grid = new Grid2Drcfs[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin, eps,
                                 maxit, weno, rotated_template, tt_from_rp, n_threads)
+            elif method == 'DSPM':
+                self.method = b'd'
+                self.grid = new Grid2Drcdsp[double,uint32_t,sxz[double],cell2d](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, n_secondary, n_tertiary,
+                                    radius_tertiary, tt_from_rp, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -1882,6 +1902,14 @@ cdef class Grid2d:
                 self.grid = new Grid2Drnfs[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin, eps,
                                 maxit, weno, rotated_template, tt_from_rp, n_threads)
+            elif method == 'DSPM':
+                self.method = b'd'
+                self.grid = new Grid2Drndsp[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin,
+                                n_secondary, n_tertiary,
+                                radius_tertiary, tt_from_rp, n_threads)
+            else:
+                raise ValueError('Method {0:s} undefined'.format(method))
 
     def __dealloc__(self):
         del self.grid
@@ -1908,7 +1936,8 @@ cdef class Grid2d:
         constructor_params = (self.n_threads, self.cell_slowness, method,
                               aniso, self.eps, self.maxit, self.weno,
                               self.rotated_template, self.nsnx, self.nsnz,
-                              self.tt_from_rp)
+                              self.n_secondary, self.n_tertiary,
+                              self.radius_tertiary, self.tt_from_rp)
         return (_rebuild2d, (self.x, self.z, constructor_params))
 
     @property
@@ -3123,7 +3152,9 @@ def _rebuild3d(x, y, z, constructor_params):
 
 def _rebuild2d(x, z, constructor_params):
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
-     rotated_template, nsnx, nsnz, tt_from_rp) = constructor_params
+     rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
+     radius_tertiary, tt_from_rp) = constructor_params
     g = Grid2d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
-               rotated_template, nsnx, nsnz, tt_from_rp)
+               rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
+               radius_tertiary, tt_from_rp)
     return g

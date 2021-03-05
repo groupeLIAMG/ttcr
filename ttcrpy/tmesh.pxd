@@ -25,6 +25,7 @@ cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
         void setUsePool(bool up)
+        void setTraveltimeFromRaypath(bool)
         void checkPts(vector[sxyz[T1]]&) except +
         void computeD(vector[sxyz[T1]] &, vector[vector[sijv[T1]]] &)
         void computeK(vector[vector[vector[siv[T1]]]]&, int, int, bool, bool) except +
@@ -144,6 +145,8 @@ cdef extern from "Grid3Dundsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2D.h" namespace "ttcr" nogil:
     cdef cppclass Grid2D[T1,T2,S]:
+        void setUsePool(bool up)
+        void setTraveltimeFromRaypath(bool)
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void getSlowness(vector[T1]&) except +
@@ -205,6 +208,10 @@ cdef extern from "Grid2Ducsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducsp[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
         Grid2Ducsp(vector[S]&, vector[triangleElem[T2]]&, T2, bool, size_t) except +
 
+cdef extern from "Grid2Ducdsp.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Ducdsp[T1,T2,S](Grid2Duc[T1,T2,Node2Dc[T1,T2],S]):
+        Grid2Ducdsp(vector[S]&, vector[triangleElem[T2]]&, T2, int, T1, bool, size_t) except +
+
 cdef extern from "Grid2Ducfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducfs[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
         Grid2Ducfs(vector[S]&, vector[triangleElem[T2]]&, T1, int,
@@ -213,6 +220,10 @@ cdef extern from "Grid2Ducfs.h" namespace "ttcr" nogil:
 cdef extern from "Grid2Dunsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunsp[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):
         Grid2Dunsp(vector[S]&, vector[triangleElem[T2]]&, T2, bool, size_t) except +
+
+cdef extern from "Grid2Dundsp.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Dundsp[T1,T2,S](Grid2Dun[T1,T2,Node2Dn[T1,T2],S]):
+        Grid2Dundsp(vector[S]&, vector[triangleElem[T2]]&, int, int, T1, bool, size_t) except +
 
 cdef extern from "Grid2Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunfs[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):

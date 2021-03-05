@@ -84,7 +84,7 @@ cdef class Mesh3d:
                 - 1 : least-squares second-order
                 - 2 : Averaging-Based method
         tt_from_rp : bool
-            compute traveltimes from raypaths (SPM or DSPM) (default is 1)
+            compute traveltimes from raypaths (FSM or DSPM only) (default is 1)
         interp_vel : bool
             interpolate velocity instead of slowness at nodes (for
             cell_slowness == False or FSM) (defauls is False)
@@ -282,6 +282,10 @@ cdef class Mesh3d:
     def set_use_thread_pool(self, use_thread_pool):
         """bool: use thread pool instead of parallel loop"""
         self.grid.setUsePool(use_thread_pool)
+        
+    def set_traveltime_from_raypath(self, traveltime_from_raypath):
+        """bool: compute traveltime using raypath"""
+        self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
         """
@@ -1035,7 +1039,7 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, tt_from_rp) -> Mesh2d
+    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp) -> Mesh2d
 
         Parameters
         ----------
@@ -1061,6 +1065,11 @@ cdef class Mesh2d:
             with obtuse angle (default is True)
         n_secondary : int
             number of secondary nodes (SPM) (default is 5)
+        n_tertiary : int
+            number of tertiary nodes (DSPM) (default is 2)
+        radius_tertiary : double
+            radius of sphere around source that includes tertiary nodes (DSPM)
+            (default is 1)
         tt_from_rp : bool
             compute traveltimes using raypaths (default is False)
     """
@@ -1072,6 +1081,8 @@ cdef class Mesh2d:
     cdef int maxit
     cdef char method
     cdef uint32_t n_secondary
+    cdef uint32_t n_tertiary
+    cdef double radius_tertiary
     cdef vector[sxz[double]] no
     cdef vector[triangleElem[uint32_t]] tri
     cdef Grid2D[double, uint32_t,sxz[double]]* grid
@@ -1080,7 +1091,9 @@ cdef class Mesh2d:
                   np.ndarray[np.int64_t, ndim=2] triangles,
                   size_t n_threads=1, bool cell_slowness=1,
                   str method='FSM', double eps=1.e-15, int maxit=20,
-                  bool process_obtuse=1, uint32_t n_secondary=5, tt_from_rp=0):
+                  bool process_obtuse=1, uint32_t n_secondary=5,
+                  uint32_t n_tertiary=2, double radius_tertiary=1.0,
+                  bool tt_from_rp=0):
 
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
@@ -1088,6 +1101,8 @@ cdef class Mesh2d:
         self.maxit = maxit
         self.process_obtuse = process_obtuse
         self.n_secondary = n_secondary
+        self.n_tertiary = n_tertiary
+        self.radius_tertiary = radius_tertiary
         self.tt_from_rp = tt_from_rp
 
         cdef vector[sxz[double]] pts_ref
@@ -1134,6 +1149,15 @@ cdef class Mesh2d:
                                                                                                    n_secondary,
                                                                                                    tt_from_rp,
                                                                                                    n_threads)
+            elif method == 'DSPM':
+                self.method = b'd'
+                self.grid = new Grid2Ducdsp[double,uint32_t,sxz[double]](self.no,
+                                                                         self.tri,
+                                                                         n_secondary,
+                                                                         n_tertiary,
+                                                                         radius_tertiary,
+                                                                         tt_from_rp,
+                                                                         n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -1154,6 +1178,15 @@ cdef class Mesh2d:
                                                                                                    n_secondary,
                                                                                                    tt_from_rp,
                                                                                                    n_threads)
+            elif method == 'DSPM':
+                self.method = b'd'
+                self.grid = new Grid2Dundsp[double,uint32_t,sxz[double]](self.no,
+                                                                         self.tri,
+                                                                         n_secondary,
+                                                                         n_tertiary,
+                                                                         radius_tertiary,
+                                                                         tt_from_rp,
+                                                                         n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -1165,6 +1198,8 @@ cdef class Mesh2d:
             method = 'FSM'
         elif self.method == b's':
             method = 'SPM'
+        elif self.method == b'd':
+            method = 'DSPM'
 
         nodes = np.ndarray((self.no.size(), 2))
         triangles = np.ndarray((self.tri.size(), 3), dtype=int)
@@ -1181,7 +1216,8 @@ cdef class Mesh2d:
                               method, self.cell_slowness,
                               self._n_threads,
                               self.eps, self.maxit, self.process_obtuse,
-                              self.n_secondary, self.tt_from_rp)
+                              self.n_secondary, self.n_tertiary,
+                              self.radius_tertiary, self.tt_from_rp)
         return (_rebuild2d, constructor_params)
 
     @property
@@ -1196,6 +1232,14 @@ cdef class Mesh2d:
             return self.tri.size()
         else:
             return self.no.size()
+
+    def set_use_thread_pool(self, use_thread_pool):
+        """bool: use thread pool instead of parallel loop"""
+        self.grid.setUsePool(use_thread_pool)
+        
+    def set_traveltime_from_raypath(self, traveltime_from_raypath):
+        """bool: compute traveltime using raypath"""
+        self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def get_number_of_nodes(self):
         """
@@ -1561,9 +1605,10 @@ cdef class Mesh2d:
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM',double eps=1.e-15, int maxit=20,
                 bool process_obtuse=1, uint32_t n_secondary=5,
+                uint32_t n_tertiary=2, double radius_tertiary=1.0,
                 bool tt_from_rp=0):
         """
-        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, tt_from_rp)
+        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp)
 
         Build instance of Mesh2d from VTK file
 
@@ -1619,7 +1664,7 @@ cdef class Mesh2d:
             slowness = 1.0 / data
 
         m = Mesh2d(nod, tri, n_threads, cell_slowness, method, eps, maxit,
-                   process_obtuse, n_secondary, tt_from_rp)
+                   process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp)
         m.set_slowness(slowness)
         return m
 
@@ -1636,8 +1681,9 @@ def _rebuild3d(constructor_params):
 
 def _rebuild2d(constructor_params):
     (nodes, triangles, method, cell_slowness, n_threads, eps, maxit,
-     process_obtuse, n_secondary, tt_from_rp) = constructor_params
+     process_obtuse, n_secondary, n_tertiary, radius_tertiary,
+     tt_from_rp) = constructor_params
 
     g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit,
-        process_obtuse, n_secondary, tt_from_rp)
+        process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp)
     return g
