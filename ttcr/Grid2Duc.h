@@ -1486,7 +1486,7 @@ namespace ttcr {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
                     edgeNodes[1] = triangles[cellNo].i[2];
-                } else {
+                } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[1]], nodes[triangles[cellNo].i[2]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[1];
                     edgeNodes[1] = triangles[cellNo].i[2];
@@ -1904,7 +1904,7 @@ namespace ttcr {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
                     edgeNodes[1] = triangles[cellNo].i[2];
-                } else {
+                } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[1]], nodes[triangles[cellNo].i[2]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[1];
                     edgeNodes[1] = triangles[cellNo].i[2];
@@ -2340,7 +2340,7 @@ namespace ttcr {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[0];
                     edgeNodes[1] = triangles[cellNo].i[2];
-                } else {
+                } else if ( areCollinear(curr_pt, nodes[triangles[cellNo].i[1]], nodes[triangles[cellNo].i[2]]) ) {
                     onEdge = true;
                     edgeNodes[0] = triangles[cellNo].i[1];
                     edgeNodes[1] = triangles[cellNo].i[2];
