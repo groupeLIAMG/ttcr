@@ -36,7 +36,7 @@ The keywords are :
 -  **fast sweeping** : use fast sweeping method if value == 1
 - **dynamic shortest path** : use dynamic shortest path method if value == 1 (currently implemented on 3D unstructured meshes only)
 - **tertiary nodes** : number of tertiary nodes to use with DSPM
-- **radius tertiary nodes**: radius around source for including tertiary nodes
+- **src radius tertiary**: radius around source for including tertiary nodes
 -  **process reflectors** :
 -  **saveRayPaths** :
 -  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
