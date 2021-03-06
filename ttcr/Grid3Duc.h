@@ -399,7 +399,7 @@ namespace ttcr {
             }
         }
         T1 minVolumeDiff = std::numeric_limits<T1>::max();
-        T2 cell;
+        T2 cell = std::numeric_limits<T2>::max();
         
         for (auto tet=nodes[closestNode].getOwners().begin(); tet!=nodes[closestNode].getOwners().end(); ++tet) {
             T2 celli = *tet;
@@ -424,6 +424,9 @@ namespace ttcr {
                     }
                 }
             }
+        }
+        if ( cell >= tetrahedra.size() ) {
+            throw std::runtime_error("Node cannot be found in mesh");
         }
         return cell;
     }
@@ -574,6 +577,7 @@ namespace ttcr {
                             lineMap[lineKey][n2] = nNodes++;
                             nodes.push_back( tmpNode );
                             nodes.back().pushOwner( ntet );
+                            nodes.back().setPrimary(false);
                         }
                     }
                 }
@@ -641,6 +645,7 @@ namespace ttcr {
                             faceMap[faceKey][ifn++] = nNodes++;
                             nodes.push_back( tmpNode );
                             nodes.back().pushOwner( ntet );
+                            nodes.back().setPrimary(false);
                         }
                     }
                 }
@@ -1818,6 +1823,8 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} };
         std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
+        
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -1869,7 +1876,7 @@ namespace ttcr {
             for ( size_t n=0; n<4; ++n ) {
                 if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                     onFace = true;
-                    //  faceNodes shoud not be assigned, face was not intersected
+                    faceNodesStart = ind[n];
                     break;
                 }
             }
@@ -2312,9 +2319,15 @@ namespace ttcr {
                 
                 if ( foundIntersection == false ) {
                     
-                    // we must be on an face with gradient pointing slightly outward tetrahedron
-                    // return in other cell but keep gradient
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        // find adjacent cell
+                        cellNo = findAdjacentCell2(faceNodesStart, cellNo);
+                    } else {
+                        // we must be on an face with gradient pointing slightly outward tetrahedron
+                        // return in other cell but keep gradient
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    }
                     
                     std::array<T2,4> itmp = getPrimary(cellNo);
                     ind[0] = {itmp[0], itmp[1], itmp[2]};
@@ -2758,6 +2771,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} };
         std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
@@ -2810,7 +2824,7 @@ namespace ttcr {
             for ( size_t n=0; n<4; ++n ) {
                 if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                     onFace = true;
-                    //  faceNodes shoud not be assigned, face was not intersected
+                    faceNodesStart = ind[n];
                     break;
                 }
             }
@@ -3164,9 +3178,15 @@ namespace ttcr {
                 
                 if ( foundIntersection == false ) {
                     
-                    // we must be on an face with gradient pointing slightly outward tetrahedron
-                    // return in other cell but keep gradient
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        // find adjacent cell
+                        cellNo = findAdjacentCell2(faceNodesStart, cellNo);
+                    } else {
+                        // we must be on an face with gradient pointing slightly outward tetrahedron
+                        // return in other cell but keep gradient
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    }
                     
                     std::array<T2,4> itmp = getPrimary(cellNo);
                     ind[0] = {itmp[0], itmp[1], itmp[2]};
@@ -3521,6 +3541,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} };
         std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
@@ -3573,7 +3594,7 @@ namespace ttcr {
             for ( size_t n=0; n<4; ++n ) {
                 if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                     onFace = true;
-                    //  faceNodes shoud not be assigned, face was not intersected
+                    faceNodesStart = ind[n];
                     break;
                 }
             }
@@ -3989,9 +4010,15 @@ namespace ttcr {
                 
                 if ( foundIntersection == false ) {
                     
-                    // we must be on an face with gradient pointing slightly outward tetrahedron
-                    // return in other cell but keep gradient
-                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        // find adjacent cell
+                        cellNo = findAdjacentCell2(faceNodesStart, cellNo);
+                    } else {
+                        // we must be on an face with gradient pointing slightly outward tetrahedron
+                        // return in other cell but keep gradient
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    }
                     
                     std::array<T2,4> itmp = getPrimary(cellNo);
                     ind[0] = {itmp[0], itmp[1], itmp[2]};
