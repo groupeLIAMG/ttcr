@@ -892,6 +892,15 @@ namespace ttcr {
 //            }
 //        } else {
             for (size_t n=0; n<Rx.size(); ++n) {
+                bool onTx = false;
+                for (size_t nt=0; nt<Tx.size(); ++nt) {
+                    if ( Tx[nt] == Rx[n] ) {
+                        onTx = true;
+                        traveltimes[n] = t0[nt];
+                        break;
+                    }
+                }
+                if (onTx) { continue; }
                 traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
             }
 //        }
@@ -937,8 +946,18 @@ namespace ttcr {
 //        } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    bool onTx = false;
+                    for (size_t nt=0; nt<Tx.size(); ++nt) {
+                        if ( Tx[nt] == (*Rx[nr])[n] ) {
+                            onTx = true;
+                            (*traveltimes[nr])[n] = t0[nt];
+                            break;
+                        }
+                    }
+                    if (onTx) { continue; }
                     (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                }
             }
 //        }
     }
@@ -987,6 +1006,17 @@ namespace ttcr {
         T2 cellParentRx;
         
         for (size_t n=0; n<Rx.size(); ++n) {
+            bool onTx = false;
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                if ( Tx[nt] == Rx[n] ) {
+                    onTx = true;
+                    traveltimes[n] = t0[nt];
+                    r_data[n].push_back(Tx[nt]);
+                    break;
+                }
+            }
+            if (onTx) { continue; }
+            
             traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
                                                  threadNo);
             
