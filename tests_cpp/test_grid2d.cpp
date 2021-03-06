@@ -151,7 +151,7 @@ BOOST_DATA_TEST_CASE(
     string filename = "./files/" + get_class_name(g) + "_tt_grid";
     g->saveTT(filename, 0, 0, 2);
     double error = get_rel_error(ref, rcv);
-    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error << "\n" );
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
 
     BOOST_TEST(error < 0.02);
 }
@@ -205,7 +205,7 @@ BOOST_DATA_TEST_CASE(
     saveRayPaths(filename, r_data);
     
     double error = get_rel_error(ref, rcv);
-    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error << "\n" );
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " ttrp - error = " << error );
     
     BOOST_TEST(error < 0.15);
 }

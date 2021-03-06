@@ -9,7 +9,6 @@ import numpy as np
 
 import vtk
 from math import floor
-import copy
 
 import gmsh
 
