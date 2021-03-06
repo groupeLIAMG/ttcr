@@ -178,6 +178,12 @@ namespace ttcr {
     };
 
     template<typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const Node2Dc<T1, T2> &n) {
+        os << n.getX() << ' ' << n.getZ();
+        return os;
+    }
+
+    template<typename T1, typename T2>
     sxz<T1> operator+(const Node2Dc<T1,T2>& lhs, const Node2Dc<T1,T2>& rhs) {
         return sxz<T1>( lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ() );
     }
