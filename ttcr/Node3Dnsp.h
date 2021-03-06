@@ -155,7 +155,7 @@ namespace ttcr {
         T2 getCellParent(const size_t n) const { return cellParent[n]; }
         void setCellParent(const T2 index, const size_t n) { cellParent[n] = index; }
         
-        int getPrimary() const { return primary; }
+//        int getPrimary() const { return primary; }
         void setPrimary( const int o ) { primary = o; }
         
         T1 getNodeSlowness() const { return slowness; }
@@ -184,7 +184,7 @@ namespace ttcr {
         
         int getDimension() const { return 3; }
         
-        bool const isPrimary() const { return primary == 5; }
+        bool const isPrimary() const { return primary; }
         
     private:
         size_t nThreads;
@@ -197,9 +197,7 @@ namespace ttcr {
         T2 *cellParent;                 // index of cell traversed by the ray for each thread
         std::vector<T2> owners;         // indices of cells touching the node
         T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp
-        int primary;					// indicate the order of the node: 5= primary,
-        //  (25:48)= secondary on edges,
-        //  (50:71)= secondary on faces, only used by Grid3Dinterp
+        bool primary;					// indicate the order of the node
         
     };
     

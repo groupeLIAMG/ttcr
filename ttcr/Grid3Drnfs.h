@@ -228,7 +228,7 @@ namespace ttcr {
                     }
                     
                     this->nodes[n].setXYZindex( x, y, z, n );
-                    this->nodes[n].setPrimary();
+                    this->nodes[n].setPrimary(true);
                     ++n;
                 }
             }

@@ -123,8 +123,8 @@ namespace ttcr {
         T1 getZ() const { return z; }
         void setZ(const T1 zz) { z = zz; }
         
-        int getPrimary() const { return primary; }
-        void setPrimary( const int o=5 ) { primary = o; }
+//        int getPrimary() const { return primary; }
+        void setPrimary(const bool o) { primary = o; }
         
         T2 getGridIndex() const { return gridIndex; }
         void setGridIndex(const T2 index) { gridIndex = index; }
@@ -155,7 +155,7 @@ namespace ttcr {
         
         int getDimension() const { return 3; }
         
-        const bool isPrimary() const { return primary == 5; }
+        const bool isPrimary() const { return primary; }
         
     protected:
         size_t nThreads;
@@ -166,7 +166,7 @@ namespace ttcr {
         T2 gridIndex;                   // index of this node in the list of the grid
         std::vector<T2> owners;         // indices of cells touching the node
         T1 slowness;					// slowness at the node [s/km], only used by Grid3Dinterp
-        int primary;
+        bool primary;
     };
     
     template<typename T1, typename T2>

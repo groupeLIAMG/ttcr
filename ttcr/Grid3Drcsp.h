@@ -326,7 +326,7 @@ namespace ttcr {
                     }
                     
                     this->nodes[n].setXYZindex( x, y, z, n );
-                    this->nodes[n].setPrimary(5);
+                    this->nodes[n].setPrimary(true);
                 }
             }
         }

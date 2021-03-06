@@ -254,7 +254,7 @@ namespace ttcr {
                     }
                     
                     this->nodes[n].setXYZindex( x, y, z, n );
-                    this->nodes[n].setPrimary(5);
+                    this->nodes[n].setPrimary(true);
                 }
             }
         }
@@ -350,16 +350,16 @@ namespace ttcr {
                             this->nodes[n].setXYZindex( xsv, y, z, n );
                             
                             if (nj >0 && nk>0){
-                                this->nodes[n].setPrimary(28);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (nj==0 && nk>0){
-                                this->nodes[n].setPrimary(27);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (nj>0 && nk==0){
-                                this->nodes[n].setPrimary(26);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (nj==0 && nk==0){
-                                this->nodes[n].setPrimary(25);
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -385,16 +385,16 @@ namespace ttcr {
                             this->nodes[n].setXYZindex( x, ysv, z, n );
                             
                             if (ni >0 && nk>0){
-                                this->nodes[n].setPrimary(38);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni>0 && nk==0){
-                                this->nodes[n].setPrimary(37);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nk>0){
-                                this->nodes[n].setPrimary(36);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nk==0){
-                                this->nodes[n].setPrimary(35);
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -420,16 +420,16 @@ namespace ttcr {
                             this->nodes[n].setXYZindex( x, y, zsv, n );
                             
                             if (ni >0 && nj>0){
-                                this->nodes[n].setPrimary(48);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni>0 && nj==0){
-                                this->nodes[n].setPrimary(47);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nj>0){
-                                this->nodes[n].setPrimary(46);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nj==0){
-                                this->nodes[n].setPrimary(45);
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -451,10 +451,10 @@ namespace ttcr {
                                 this->nodes[n].setXYZindex( xsv, ysv, z, n );
                                 
                                 if (nk>0){
-                                    this->nodes[n].setPrimary(51);
+                                    this->nodes[n].setPrimary(false);
                                 }
                                 else if (nk==0){
-                                    this->nodes[n].setPrimary(50);
+                                    this->nodes[n].setPrimary(false);
                                 }
                             }
                         }
@@ -477,10 +477,10 @@ namespace ttcr {
                                 this->nodes[n].setXYZindex( xsv, y, zsv, n );
                                 
                                 if (nj>0){
-                                    this->nodes[n].setPrimary(61);
+                                    this->nodes[n].setPrimary(false);
                                 }
                                 else if (nj==0){
-                                    this->nodes[n].setPrimary(60);
+                                    this->nodes[n].setPrimary(false);
                                 }
                             }
                         }
@@ -503,10 +503,10 @@ namespace ttcr {
                                 this->nodes[n].setXYZindex( x, ysv, zsv, n );
                                 
                                 if (ni>0){
-                                    this->nodes[n].setPrimary(71);
+                                    this->nodes[n].setPrimary(false);
                                 }
                                 else if (ni==0){
-                                    this->nodes[n].setPrimary(70);
+                                    this->nodes[n].setPrimary(false);
                                 }
                             }
                         }

@@ -55,7 +55,7 @@ namespace ttcr {
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
 
         void buildGridNodes();
-        void linearInterpolation() const;
+//        void linearInterpolation() const;
 
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
 
@@ -220,7 +220,7 @@ namespace ttcr {
                     }
 
                     this->nodes[n].setXYZindex( x, y, z, n );
-                    this->nodes[n].setPrimary(5);
+                    this->nodes[n].setPrimary(true);
                 }
             }
         }
@@ -316,16 +316,16 @@ namespace ttcr {
                             this->nodes[n].setXYZindex( xsv, y, z, n );
 
                             if (nj >0 && nk>0){
-                                this->nodes[n].setPrimary(28);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (nj==0 && nk>0){
-                                this->nodes[n].setPrimary(27);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (nj>0 && nk==0){
-                                this->nodes[n].setPrimary(26);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (nj==0 && nk==0){
-                                this->nodes[n].setPrimary(25);
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -351,16 +351,16 @@ namespace ttcr {
                             this->nodes[n].setXYZindex( x, ysv, z, n );
 
                             if (ni >0 && nk>0){
-                                this->nodes[n].setPrimary(38);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni>0 && nk==0){
-                                this->nodes[n].setPrimary(37);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nk>0){
-                                this->nodes[n].setPrimary(36);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nk==0){
-                                this->nodes[n].setPrimary(35);
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -386,16 +386,16 @@ namespace ttcr {
                             this->nodes[n].setXYZindex( x, y, zsv, n );
 
                             if (ni >0 && nj>0){
-                                this->nodes[n].setPrimary(48);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni>0 && nj==0){
-                                this->nodes[n].setPrimary(47);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nj>0){
-                                this->nodes[n].setPrimary(46);
+                                this->nodes[n].setPrimary(false);
                             }
                             else if (ni==0 && nj==0){
-                                this->nodes[n].setPrimary(45);
+                                this->nodes[n].setPrimary(false);
                             }
                         }
                     }
@@ -417,10 +417,10 @@ namespace ttcr {
                                 this->nodes[n].setXYZindex( xsv, ysv, z, n );
 
                                 if (nk>0){
-                                    this->nodes[n].setPrimary(51);
+                                    this->nodes[n].setPrimary(false);
                                 }
                                 else if (nk==0){
-                                    this->nodes[n].setPrimary(50);
+                                    this->nodes[n].setPrimary(false);
                                 }
                             }
                         }
@@ -443,10 +443,10 @@ namespace ttcr {
                                 this->nodes[n].setXYZindex( xsv, y, zsv, n );
 
                                 if (nj>0){
-                                    this->nodes[n].setPrimary(61);
+                                    this->nodes[n].setPrimary(false);
                                 }
                                 else if (nj==0){
-                                    this->nodes[n].setPrimary(60);
+                                    this->nodes[n].setPrimary(false);
                                 }
                             }
                         }
@@ -469,10 +469,10 @@ namespace ttcr {
                                 this->nodes[n].setXYZindex( x, ysv, zsv, n );
 
                                 if (ni>0){
-                                    this->nodes[n].setPrimary(71);
+                                    this->nodes[n].setPrimary(false);
                                 }
                                 else if (ni==0){
-                                    this->nodes[n].setPrimary(70);
+                                    this->nodes[n].setPrimary(false);
                                 }
                             }
                         }
@@ -487,167 +487,167 @@ namespace ttcr {
         }
     }
     
-    template<typename T1, typename T2>
-    void Grid3Drndsp<T1,T2>::linearInterpolation() const {
-        
-        std::vector<size_t> list;
-        list.reserve(8);
-        T1 x[3], y[3], s[4];
-        
-        //Interpolation for the secondary nodes
-        for (size_t n=0; n<this->nodes.size(); ++n ){
-            T2 ind = this->nodes[n].getPrimary();
-            if( ind != 5 ){
-                
-                //Lists the primary nodes around the secondary node
-                list.resize(0);
-                T2 cellno = this->nodes[n].getOwners()[0];
-                for (size_t n3=0; n3 < this->neighbors[ cellno ].size(); n3++){
-                    if( this->nodes[this->neighbors[ cellno ][n3] ].isPrimary() ){
-                        list.push_back(this->neighbors[ cellno ][n3]);
-                    }
-                }
-                
-                // list elements are as following:
-                //
-                // list[0] = x_min, y_min, z_min
-                // list[1] = x_max, y_min, z_min
-                // list[2] = x_min, y_max, z_min
-                // list[3] = x_max, y_max, z_min
-                // list[4] = x_min, y_min, z_max
-                // list[5] = x_max, y_min, z_max
-                // list[6] = x_min, y_max, z_max
-                // list[7] = x_max, y_max, z_max
-                
-                switch (ind) {
-                    case 0:
-                    {
-                        std::ostringstream msg;
-                        msg << "Error: node " << n
-                        << " is not set, check grid construction.";
-                        throw std::runtime_error(msg.str());
-                    }
-                    case 25:
-                    case 27:
-                    case 45:
-                    case 47:
-                    case 60:
-                        x[0] = this->nodes[n].getX();
-                        y[0] = this->nodes[n].getZ();
-                        
-                        x[1] = this->nodes[ list[0] ].getX();
-                        x[2] = this->nodes[ list[1] ].getX();
-                        
-                        y[1] = this->nodes[ list[0] ].getZ();
-                        y[2] = this->nodes[ list[4] ].getZ();
-                        
-                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
-                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
-                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
-                        s[3] = this->nodes[ list[5] ].getNodeSlowness();
-                        
-                        break;
-                        
-                    case 35:
-                    case 36:
-                    case 46:
-                    case 70:
-                        x[0] = this->nodes[n].getY();
-                        y[0] = this->nodes[n].getZ();
-                        
-                        x[1] = this->nodes[ list[0] ].getY();
-                        x[2] = this->nodes[ list[2] ].getY();
-                        
-                        y[1] = this->nodes[ list[0] ].getZ();
-                        y[2] = this->nodes[ list[4] ].getZ();
-                        
-                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
-                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
-                        s[2] = this->nodes[ list[2] ].getNodeSlowness();
-                        s[3] = this->nodes[ list[6] ].getNodeSlowness();
-                        
-                        break;
-                        
-                    case 37:
-                    case 38:
-                    case 48:
-                    case 71:
-                        x[0] = this->nodes[n].getY();
-                        y[0] = this->nodes[n].getZ();
-                        
-                        x[1] = this->nodes[ list[1] ].getY();
-                        x[2] = this->nodes[ list[3] ].getY();
-                        
-                        y[1] = this->nodes[ list[1] ].getZ();
-                        y[2] = this->nodes[ list[5] ].getZ();
-                        
-                        s[0] = this->nodes[ list[1] ].getNodeSlowness();
-                        s[1] = this->nodes[ list[5] ].getNodeSlowness();
-                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
-                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
-                        
-                        break;
-                        
-                    case 26:
-                    case 50:
-                        x[0] = this->nodes[n].getX();
-                        y[0] = this->nodes[n].getY();
-                        
-                        x[1] = this->nodes[ list[0] ].getX();
-                        x[2] = this->nodes[ list[1] ].getX();
-                        
-                        y[1] = this->nodes[ list[0] ].getY();
-                        y[2] = this->nodes[ list[2] ].getY();
-                        
-                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
-                        s[1] = this->nodes[ list[2] ].getNodeSlowness();
-                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
-                        s[3] = this->nodes[ list[3] ].getNodeSlowness();
-                        
-                        break;
-                        
-                    case 28:
-                    case 51:
-                        x[0] = this->nodes[n].getX();
-                        y[0] = this->nodes[n].getY();
-                        
-                        x[1] = this->nodes[ list[4] ].getX();
-                        x[2] = this->nodes[ list[5] ].getX();
-                        
-                        y[1] = this->nodes[ list[4] ].getY();
-                        y[2] = this->nodes[ list[6] ].getY();
-                        
-                        s[0] = this->nodes[ list[4] ].getNodeSlowness();
-                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
-                        s[2] = this->nodes[ list[5] ].getNodeSlowness();
-                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
-                        
-                        break;
-                        
-                    case 61:
-                        x[0] = this->nodes[n].getX();
-                        y[0] = this->nodes[n].getZ();
-                        
-                        x[1] = this->nodes[ list[2] ].getX();
-                        x[2] = this->nodes[ list[3] ].getX();
-                        
-                        y[1] = this->nodes[ list[2] ].getZ();
-                        y[2] = this->nodes[ list[6] ].getZ();
-                        
-                        s[0] = this->nodes[ list[2] ].getNodeSlowness();
-                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
-                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
-                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
-                        
-                        break;
-                }
-                
-                this->nodes[n].setNodeSlowness( Interpolator<T1>::bilinear(x, y, s) );
-            }
-        }
-    }
-    
-
+//    template<typename T1, typename T2>
+//    void Grid3Drndsp<T1,T2>::linearInterpolation() const {
+//
+//        std::vector<size_t> list;
+//        list.reserve(8);
+//        T1 x[3], y[3], s[4];
+//
+//        //Interpolation for the secondary nodes
+//        for (size_t n=0; n<this->nodes.size(); ++n ){
+//            T2 ind = this->nodes[n].getPrimary();
+//            if( ind != 5 ){
+//
+//                //Lists the primary nodes around the secondary node
+//                list.resize(0);
+//                T2 cellno = this->nodes[n].getOwners()[0];
+//                for (size_t n3=0; n3 < this->neighbors[ cellno ].size(); n3++){
+//                    if( this->nodes[this->neighbors[ cellno ][n3] ].isPrimary() ){
+//                        list.push_back(this->neighbors[ cellno ][n3]);
+//                    }
+//                }
+//
+//                // list elements are as following:
+//                //
+//                // list[0] = x_min, y_min, z_min
+//                // list[1] = x_max, y_min, z_min
+//                // list[2] = x_min, y_max, z_min
+//                // list[3] = x_max, y_max, z_min
+//                // list[4] = x_min, y_min, z_max
+//                // list[5] = x_max, y_min, z_max
+//                // list[6] = x_min, y_max, z_max
+//                // list[7] = x_max, y_max, z_max
+//
+//                switch (ind) {
+//                    case 0:
+//                    {
+//                        std::ostringstream msg;
+//                        msg << "Error: node " << n
+//                        << " is not set, check grid construction.";
+//                        throw std::runtime_error(msg.str());
+//                    }
+//                    case 25:
+//                    case 27:
+//                    case 45:
+//                    case 47:
+//                    case 60:
+//                        x[0] = this->nodes[n].getX();
+//                        y[0] = this->nodes[n].getZ();
+//
+//                        x[1] = this->nodes[ list[0] ].getX();
+//                        x[2] = this->nodes[ list[1] ].getX();
+//
+//                        y[1] = this->nodes[ list[0] ].getZ();
+//                        y[2] = this->nodes[ list[4] ].getZ();
+//
+//                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
+//                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
+//                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
+//                        s[3] = this->nodes[ list[5] ].getNodeSlowness();
+//
+//                        break;
+//
+//                    case 35:
+//                    case 36:
+//                    case 46:
+//                    case 70:
+//                        x[0] = this->nodes[n].getY();
+//                        y[0] = this->nodes[n].getZ();
+//
+//                        x[1] = this->nodes[ list[0] ].getY();
+//                        x[2] = this->nodes[ list[2] ].getY();
+//
+//                        y[1] = this->nodes[ list[0] ].getZ();
+//                        y[2] = this->nodes[ list[4] ].getZ();
+//
+//                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
+//                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
+//                        s[2] = this->nodes[ list[2] ].getNodeSlowness();
+//                        s[3] = this->nodes[ list[6] ].getNodeSlowness();
+//
+//                        break;
+//
+//                    case 37:
+//                    case 38:
+//                    case 48:
+//                    case 71:
+//                        x[0] = this->nodes[n].getY();
+//                        y[0] = this->nodes[n].getZ();
+//
+//                        x[1] = this->nodes[ list[1] ].getY();
+//                        x[2] = this->nodes[ list[3] ].getY();
+//
+//                        y[1] = this->nodes[ list[1] ].getZ();
+//                        y[2] = this->nodes[ list[5] ].getZ();
+//
+//                        s[0] = this->nodes[ list[1] ].getNodeSlowness();
+//                        s[1] = this->nodes[ list[5] ].getNodeSlowness();
+//                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
+//                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
+//
+//                        break;
+//
+//                    case 26:
+//                    case 50:
+//                        x[0] = this->nodes[n].getX();
+//                        y[0] = this->nodes[n].getY();
+//
+//                        x[1] = this->nodes[ list[0] ].getX();
+//                        x[2] = this->nodes[ list[1] ].getX();
+//
+//                        y[1] = this->nodes[ list[0] ].getY();
+//                        y[2] = this->nodes[ list[2] ].getY();
+//
+//                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
+//                        s[1] = this->nodes[ list[2] ].getNodeSlowness();
+//                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
+//                        s[3] = this->nodes[ list[3] ].getNodeSlowness();
+//
+//                        break;
+//
+//                    case 28:
+//                    case 51:
+//                        x[0] = this->nodes[n].getX();
+//                        y[0] = this->nodes[n].getY();
+//
+//                        x[1] = this->nodes[ list[4] ].getX();
+//                        x[2] = this->nodes[ list[5] ].getX();
+//
+//                        y[1] = this->nodes[ list[4] ].getY();
+//                        y[2] = this->nodes[ list[6] ].getY();
+//
+//                        s[0] = this->nodes[ list[4] ].getNodeSlowness();
+//                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
+//                        s[2] = this->nodes[ list[5] ].getNodeSlowness();
+//                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
+//
+//                        break;
+//
+//                    case 61:
+//                        x[0] = this->nodes[n].getX();
+//                        y[0] = this->nodes[n].getZ();
+//
+//                        x[1] = this->nodes[ list[2] ].getX();
+//                        x[2] = this->nodes[ list[3] ].getX();
+//
+//                        y[1] = this->nodes[ list[2] ].getZ();
+//                        y[2] = this->nodes[ list[6] ].getZ();
+//
+//                        s[0] = this->nodes[ list[2] ].getNodeSlowness();
+//                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
+//                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
+//                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
+//
+//                        break;
+//                }
+//
+//                this->nodes[n].setNodeSlowness( Interpolator<T1>::bilinear(x, y, s) );
+//            }
+//        }
+//    }
+//
+//
     
     template<typename T1, typename T2>
     void Grid3Drndsp<T1,T2>::setSlowness(const std::vector<T1>& s) {

@@ -530,7 +530,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
-            nodes[n].setPrimary(5);
+            nodes[n].setPrimary(true);
         }
 
         //
@@ -576,7 +576,7 @@ namespace ttcr {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
             nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
-            nodes[n].setPrimary(5);
+            nodes[n].setPrimary(true);
         }
         T2 nNodes = static_cast<T2>(nodes.size());
 
