@@ -1737,14 +1737,14 @@ namespace ttcr {
                         continue;
                     }
                     
-                    
-                    //				std::cout << "plot(" << pt_i.x << "," << pt_i.z << ", 'go')\n";
-                    
-                    
                     if (((pt_i.x<=nodes[ ind[ns][1] ].getX() && pt_i.x>=nodes[ ind[ns][0] ].getX()) ||
-                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX())) &&
+                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX()) ||
+                         (abs(pt_i.x-nodes[ ind[ns][1] ].getX()) < small2) ||
+                         (abs(pt_i.x-nodes[ ind[ns][0] ].getX()) < small2) ) &&
                         ((pt_i.z<=nodes[ ind[ns][0] ].getZ() && pt_i.z>=nodes[ ind[ns][1] ].getZ()) ||
-                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ())))
+                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ()) ||
+                         (abs(pt_i.z-nodes[ ind[ns][1] ].getZ()) < small2) ||
+                         (abs(pt_i.z-nodes[ ind[ns][0] ].getZ()) < small2)))
                     {
                         foundIntersection = true;
                         r_data.push_back( pt_i );
@@ -2167,11 +2167,14 @@ namespace ttcr {
                         continue;
                     }
                     
-                    
                     if (((pt_i.x<=nodes[ ind[ns][1] ].getX() && pt_i.x>=nodes[ ind[ns][0] ].getX()) ||
-                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX())) &&
+                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX()) ||
+                         (abs(pt_i.x-nodes[ ind[ns][1] ].getX()) < small2) ||
+                         (abs(pt_i.x-nodes[ ind[ns][0] ].getX()) < small2) ) &&
                         ((pt_i.z<=nodes[ ind[ns][0] ].getZ() && pt_i.z>=nodes[ ind[ns][1] ].getZ()) ||
-                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ())))
+                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ()) ||
+                         (abs(pt_i.z-nodes[ ind[ns][1] ].getZ()) < small2) ||
+                         (abs(pt_i.z-nodes[ ind[ns][0] ].getZ()) < small2)))
                     {
                         foundIntersection = true;
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + pt_i);
@@ -2595,11 +2598,14 @@ namespace ttcr {
                         continue;
                     }
                     
-                    
                     if (((pt_i.x<=nodes[ ind[ns][1] ].getX() && pt_i.x>=nodes[ ind[ns][0] ].getX()) ||
-                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX())) &&
+                         (pt_i.x>=nodes[ ind[ns][1] ].getX() && pt_i.x<=nodes[ ind[ns][0] ].getX()) ||
+                         (abs(pt_i.x-nodes[ ind[ns][1] ].getX()) < small2) ||
+                         (abs(pt_i.x-nodes[ ind[ns][0] ].getX()) < small2) ) &&
                         ((pt_i.z<=nodes[ ind[ns][0] ].getZ() && pt_i.z>=nodes[ ind[ns][1] ].getZ()) ||
-                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ())))
+                         (pt_i.z>=nodes[ ind[ns][0] ].getZ() && pt_i.z<=nodes[ ind[ns][1] ].getZ()) ||
+                         (abs(pt_i.z-nodes[ ind[ns][1] ].getZ()) < small2) ||
+                         (abs(pt_i.z-nodes[ ind[ns][0] ].getZ()) < small2)))
                     {
                         foundIntersection = true;
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + pt_i);
