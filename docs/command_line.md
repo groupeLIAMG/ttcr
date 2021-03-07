@@ -34,11 +34,11 @@ The keywords are :
 -  **single precision** : work with float rather than double
 -  **fast marching** : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)
 -  **fast sweeping** : use fast sweeping method if value == 1
-- **dynamic shortest path** : use dynamic shortest path method if value == 1 (currently implemented on 3D unstructured meshes only)
+- **dynamic shortest path** : use dynamic shortest path method if value == 1
 - **tertiary nodes** : number of tertiary nodes to use with DSPM
 - **src radius tertiary**: radius around source for including tertiary nodes
--  **process reflectors** :
--  **saveRayPaths** :
+-  **process reflectors** : use reflectors as sources to compute reflected arrival times (experimental)
+-  **saveRayPaths** : Save raypaths in VTK format
 -  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
 -  **fsm high order** : use 3rd order weighted essentially non-oscillatory (WENO) operator with fast sweeping in rectilinear grid if value == 1 (default is 0)
 - **traveltime from raypath** : use backward raytracing step to compute traveltimes (currently implemented on 3D unstructured meshes only)
