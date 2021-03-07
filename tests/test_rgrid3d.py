@@ -28,7 +28,7 @@ class TestGrid3dc(unittest.TestCase):
 
     def setUp(self):
         reader = vtk.vtkXMLRectilinearGridReader()
-        reader.SetFileName('./files/layers_coarse.vtr')
+        reader.SetFileName('./files/layers_medium.vtr')
         reader.Update()
 
         data = reader.GetOutput()
@@ -44,12 +44,13 @@ class TestGrid3dc(unittest.TestCase):
         self.rcv = np.loadtxt('./files/rcv.dat',skiprows=1)
 
     def test_Grid3Dfs(self):
-        g = rg.Grid3d(self.x, self.y, self.z, method='FSM', tt_from_rp=False)
+        g = rg.Grid3d(self.x, self.y, self.z, method='FSM', weno=1,
+                      tt_from_rp=False)
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/fsm_d_p_lc_src_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid3Drcfs_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness in cells)')
 
@@ -60,27 +61,27 @@ class TestGrid3dc(unittest.TestCase):
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/spm_d_p_lc_05_src_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid3Drcsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
                         'SPM accuracy failed (slowness in cells)')
 
     def test_Grid3Ddsp(self):
         g = rg.Grid3d(self.x, self.y, self.z, method='DSPM', tt_from_rp=False,
-                      n_secondary=2, n_tertiary=2, radius_tertiary=2)
+                      n_secondary=2, n_tertiary=3, radius_tertiary=0.8)
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/dspm_d_p_lc_2_2_2_src_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid3Drcdsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
-                        'SPM accuracy failed (slowness in cells)')
+                        'DSPM accuracy failed (slowness in cells)')
 
 
 class TestGrid3dn(unittest.TestCase):
 
     def setUp(self):
         reader = vtk.vtkXMLRectilinearGridReader()
-        reader.SetFileName('./files/gradient_coarse.vtr')
+        reader.SetFileName('./files/gradient_medium.vtr')
         reader.Update()
 
         data = reader.GetOutput()
@@ -97,12 +98,12 @@ class TestGrid3dn(unittest.TestCase):
 
     def test_Grid3Dfs(self):
         g = rg.Grid3d(self.x, self.y, self.z, method='FSM', tt_from_rp=False,
-                      cell_slowness=0)
+                      cell_slowness=0, weno=1)
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/fsm_d_p_gc_src_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid3Drnfs_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'FSM accuracy failed (slowness at nodes)')
 
@@ -113,21 +114,21 @@ class TestGrid3dn(unittest.TestCase):
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/spm_d_p_gc_05_src_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid3Drnsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
                         'SPM accuracy failed (slowness at nodes)')
 
     def test_Grid3Ddsp(self):
         g = rg.Grid3d(self.x, self.y, self.z, method='DSPM', tt_from_rp=False,
-                      n_secondary=2, n_tertiary=2, radius_tertiary=2,
+                      n_secondary=2, n_tertiary=3, radius_tertiary=0.8,
                       cell_slowness=0)
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/dspm_d_p_gc_2_2_2_src_all_tt.vtr')
+        tt_ref = get_tt('./files/Grid3Drndsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.1,
-                        'SPM accuracy failed (slowness at nodes)')
+                        'DSPM accuracy failed (slowness at nodes)')
 
 
 class Data_kernel(unittest.TestCase):
