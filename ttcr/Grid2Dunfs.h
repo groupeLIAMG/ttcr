@@ -301,7 +301,9 @@ namespace ttcr {
                     T2 neibNo = this->neighbors[cellNo][k];
                     
                     // compute dt
-                    T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], cellNo);
+                    // first, get slowness at point
+                    T1 slowness_pt = this->computeSlowness(Tx[n], cellNo);
+                    T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], slowness_pt);
                     
                     this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                     frozen[neibNo] = true;
