@@ -104,14 +104,18 @@ interpolated values.  We have observed however that results are more
 accurate if traveltimes are computed in a subsequent step, in which
 raypaths are computed from the gradient of the traveltimes (as is done
 with the FSM when raypaths are needed), and traveltimes integrated
-along the raypaths.  
+along the raypaths.
 
 Computing traveltime from raypaths is available as an option for the
-subclasses of ``Grid3d`` and ``Mesh3d`` (in which the algorithms are
-actually implemented).  Because the computational cost of the second
-step is small in comparison to computing traveltime at the grid
-nodes, the option is activated by default.  We have observed however
+fast-sweeping and dynamic shortest-path methods.  Because the computational cost
+of the second step is small in comparison to computing traveltime at the grid
+nodes, the option is activated by default in 3D.  We have observed however
 that for some model with very complex velocity distributions,
 convergence issues might arise with this option activated, and we
-suggest to use the SPM method with the option disabled in the latter
-case.
+suggest to use the SPM method in the latter case.  By design, SPM
+implementations do not include that option, and traveltimes and
+raypaths are always computed with values at grid nodes.
+
+We have also observed that convergence issues arise when sources or receivers
+are in the cells at the edges of the modeling domain.  For that reason, special
+care should be put when defining input models and parameters.

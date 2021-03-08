@@ -7,10 +7,10 @@ raytracing on rectilinear grids:
     - `Grid2d` for 2D media
     - `Grid3d` for 3D media
 
-Two general algorithms are implemented
+Three algorithms are implemented
     - the Shortest-Path Method
     - the Fast-Sweeping Method
-and `Grid3d` also support the Dynamic Shortest-Path Method
+    - the Dynamic Shortest-Path Method
 
 Slowness model can be defined in two ways:
     1) slowness constant within the voxels of the grid (the default)
@@ -323,8 +323,30 @@ cdef class Grid3d:
             return self._x.size() * self._y.size() * self._z.size()
 
     def set_use_thread_pool(self, use_thread_pool):
-        """bool: use thread pool instead of parallel loop"""
+        """
+        set_use_thread_pool(use_thread_pool)
+
+        Set option to use thread pool instead of parallel loop
+
+        Parameters
+        ----------
+        use_thread_pool : bool
+            option value
+        """
         self.grid.setUsePool(use_thread_pool)
+
+    def set_traveltime_from_raypath(self, traveltime_from_raypath):
+        """
+        set_traveltime_from_raypath(ttrp)
+
+        Set option to compute traveltime using raypath
+
+        Parameters
+        ----------
+        ttrp : bool
+            option value
+        """
+        self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def get_number_of_nodes(self):
         """
@@ -1763,6 +1785,7 @@ cdef class Grid2d:
         raytracing method (default is SPM)
             - 'FSM' : fast marching method
             - 'SPM' : shortest path method
+            - 'DSPM' : dynamic shortest path method
     aniso : string
         type of anisotropy (implemented only for the SPM method)
             - 'iso' : isotropic medium
@@ -1791,7 +1814,8 @@ cdef class Grid2d:
         radius of sphere around source that includes tertiary nodes (DSPM)
         (default is 1)
     tt_from_rp : bool
-        compute traveltime using raypaths
+        compute traveltime using raypaths (available for FSM and DSPM only)
+        (default is False)
     """
     cdef vector[double] _x
     cdef vector[double] _z
@@ -1988,6 +2012,32 @@ cdef class Grid2d:
             return (self._x.size()-1) * (self._z.size()-1)
         else:
             return self._x.size() * self._z.size()
+
+    def set_use_thread_pool(self, use_thread_pool):
+        """
+        set_use_thread_pool(use_thread_pool)
+
+        Set option to use thread pool instead of parallel loop
+
+        Parameters
+        ----------
+        use_thread_pool : bool
+            option value
+        """
+        self.grid.setUsePool(use_thread_pool)
+
+    def set_traveltime_from_raypath(self, traveltime_from_raypath):
+        """
+        set_traveltime_from_raypath(ttrp)
+
+        Set option to compute traveltime using raypath
+
+        Parameters
+        ----------
+        ttrp : bool
+            option value
+        """
+        self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def get_number_of_nodes(self):
         """

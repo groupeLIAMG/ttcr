@@ -7,10 +7,10 @@ raytracing on unstructured meshes:
     - `Mesh2d` for 2D media
     - `Mesh3d` for 3D media
 
-    Two general algorithms are implemented
+    Three algorithms are implemented
         - the Shortest-Path Method
         - the Fast-Sweeping Method
-    and `Mesh3d` also support the Dynamic Shortest-Path Method
+        - the Dynamic Shortest-Path Method
 
     Slowness model can be defined in two ways:
         1) slowness constant within the voxels of the mesh (the default)
@@ -280,11 +280,29 @@ cdef class Mesh3d:
             return self.no.size()
 
     def set_use_thread_pool(self, use_thread_pool):
-        """bool: use thread pool instead of parallel loop"""
+        """
+        set_use_thread_pool(use_thread_pool)
+
+        Set option to use thread pool instead of parallel loop
+
+        Parameters
+        ----------
+        use_thread_pool : bool
+            option value
+        """
         self.grid.setUsePool(use_thread_pool)
-        
+
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
-        """bool: compute traveltime using raypath"""
+        """
+        set_traveltime_from_raypath(ttrp)
+
+        Set option to compute traveltime using raypath
+
+        Parameters
+        ----------
+        ttrp : bool
+            option value
+        """
         self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def is_outside(self, np.ndarray[np.double_t, ndim=2] pts):
@@ -1234,11 +1252,29 @@ cdef class Mesh2d:
             return self.no.size()
 
     def set_use_thread_pool(self, use_thread_pool):
-        """bool: use thread pool instead of parallel loop"""
+        """
+        set_use_thread_pool(use_thread_pool)
+
+        Set option to use thread pool instead of parallel loop
+
+        Parameters
+        ----------
+        use_thread_pool : bool
+            option value
+        """
         self.grid.setUsePool(use_thread_pool)
-        
+
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
-        """bool: compute traveltime using raypath"""
+        """
+        set_traveltime_from_raypath(ttrp)
+
+        Set option to compute traveltime using raypath
+
+        Parameters
+        ----------
+        ttrp : bool
+            option value
+        """
         self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def get_number_of_nodes(self):

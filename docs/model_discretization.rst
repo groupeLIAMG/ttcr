@@ -40,4 +40,4 @@ the problem is to use traveltime data to estimate the slowness model.  Rectiline
 grids contain less cells than nodes, hence the number of unknown parameters is
 less if slowness values are assigned to cells.  With tetrahedral meshes, the number of
 nodes is less than the number of cells, and the system to solve will be smaller
-if slowness values are assignied to the nodes.
+if slowness values are assigned to the nodes.
