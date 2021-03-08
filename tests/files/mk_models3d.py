@@ -34,7 +34,7 @@ z = np.arange(0.0, 20.0+0.01, dx)
 
 # %% Rcv
 
-with open('./files/rcv3d_in.dat', 'w') as f:
+with open('rcv3d_in.dat', 'w') as f:
     xx = np.arange(1, 20)
     print('{0:d}'.format(xx.size*xx.size), file=f)
     for x in xx:
@@ -70,16 +70,16 @@ for n in range(0, rgrid.GetNumberOfPoints()):
 rgrid.GetPointData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName( "./files/gradient_medium.vtr" )
+writer.SetFileName( "gradient_medium.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()
 
 
-# %%  
+# %%
 gmsh.initialize()
 
-# %% 
+# %%
 meshSize = 0.43
 gmsh.clear()
 
@@ -116,7 +116,7 @@ for n in range(ugrid.GetNumberOfCells()):
         ugrid2.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/gradient_medium.vtu')
+writer.SetFileName('gradient_medium.vtu')
 writer.SetInputData( ugrid2 )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -162,7 +162,7 @@ for n in range(ugrid.GetNumberOfCells()):
 ugrid2.GetCellData().SetScalars(slowness)
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/layers_medium.vtu')
+writer.SetFileName('layers_medium.vtu')
 writer.SetInputData( ugrid2 )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -190,7 +190,7 @@ for n in range(0, rgrid.GetNumberOfCells()):
 rgrid.GetCellData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName( "./files/layers_medium.vtr" )
+writer.SetFileName( "layers_medium.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()

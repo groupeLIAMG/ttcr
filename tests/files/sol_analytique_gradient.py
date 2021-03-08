@@ -59,7 +59,7 @@ for ix in range(len(x)):
 rgrid.GetPointData().SetScalars(ttData)
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName('./files/sol_analytique_gradient_tt.vtr')
+writer.SetFileName('sol_analytique_gradient_tt.vtr')
 writer.SetInputData(rgrid)
 writer.SetDataModeToBinary()
 writer.Update()
@@ -89,7 +89,7 @@ for ix in range(len(x)):
 rgrid.GetPointData().SetScalars(ttData)
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName('./files/sol_analytique_gradient2d_tt.vtr')
+writer.SetFileName('sol_analytique_gradient2d_tt.vtr')
 writer.SetInputData(rgrid)
 writer.SetDataModeToBinary()
 writer.Update()

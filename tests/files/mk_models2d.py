@@ -18,14 +18,14 @@ dx = 1.0
 
 # Rcv
 
-with open('./files/rcv2d.dat', 'w') as f:
+with open('rcv2d.dat', 'w') as f:
     xx = np.arange(0, N+1)
     print('{0:d}'.format(xx.size*xx.size), file=f)
     for x in xx:
         for z in xx:
             print('{0:d} {1:d}'.format(x, z), file=f)
 
-with open('./files/rcv2d_in.dat', 'w') as f:
+with open('rcv2d_in.dat', 'w') as f:
     xx = np.arange(1, N)
     print('{0:d}'.format(xx.size*xx.size), file=f)
     for x in xx:
@@ -81,7 +81,7 @@ for i in np.arange(N):
         ugrid.InsertNextCell( tri.GetCellType(), tri.GetPointIds() )
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/gradient_coarse2d.vtu')
+writer.SetFileName('gradient_coarse2d.vtu')
 writer.SetInputData( ugrid )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -113,7 +113,7 @@ for n in range(0, rgrid.GetNumberOfPoints()):
 rgrid.GetPointData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName( "./files/gradient_coarse2d.vtr" )
+writer.SetFileName( "gradient_coarse2d.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()
@@ -155,7 +155,7 @@ for i in np.arange(N):
 ugrid.GetCellData().SetScalars(slowness)
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/layers_coarse2d.vtu')
+writer.SetFileName('layers_coarse2d.vtu')
 writer.SetInputData( ugrid )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -188,7 +188,7 @@ for n in range(0, rgrid.GetNumberOfCells()):
 rgrid.GetCellData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName( "./files/layers_coarse2d.vtr" )
+writer.SetFileName( "layers_coarse2d.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()
@@ -239,7 +239,7 @@ for i in np.arange(N):
         ugrid.InsertNextCell( tri.GetCellType(), tri.GetPointIds() )
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/gradient_fine2d.vtu')
+writer.SetFileName('gradient_fine2d.vtu')
 writer.SetInputData( ugrid )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -272,7 +272,7 @@ for n in range(0, rgrid.GetNumberOfPoints()):
 rgrid.GetPointData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName( "./files/gradient_fine2d.vtr" )
+writer.SetFileName( "gradient_fine2d.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()
@@ -313,7 +313,7 @@ for i in np.arange(N):
 ugrid.GetCellData().SetScalars(slowness)
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/layers_fine2d.vtu')
+writer.SetFileName('layers_fine2d.vtu')
 writer.SetInputData( ugrid )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -347,16 +347,16 @@ for n in range(0, rgrid.GetNumberOfCells()):
 rgrid.GetCellData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
-writer.SetFileName( "./files/layers_fine2d.vtr" )
+writer.SetFileName( "layers_fine2d.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()
 
 
-# %%  
+# %%
 gmsh.initialize()
 
-# %% 
+# %%
 meshSize = 0.43
 gmsh.clear()
 tag = 1
@@ -364,7 +364,7 @@ tag = 1
 #     for z in range(21):
 #         gmsh.model.geo.addPoint(x, 0, z, meshSize=meshSize, tag=tag)
 #         tag += 1
-        
+
 # pts = []
 # for k in range(21):
 #     pts.append(k)
@@ -436,7 +436,7 @@ for n in range(ugrid.GetNumberOfCells()):
         ugrid2.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
-writer.SetFileName('./files/gradient_gmsh2d.vtu')
+writer.SetFileName('gradient_gmsh2d.vtu')
 writer.SetInputData( ugrid2 )
 writer.SetDataModeToBinary();
 writer.Update()
@@ -477,8 +477,7 @@ writer.Update()
 #     ugrid.InsertNextCell( tri.GetCellType(), tri.GetPointIds() )
 
 # writer = vtk.vtkXMLUnstructuredGridWriter()
-# writer.SetFileName('./files/gradient_gmsh2d.vtu')
+# writer.SetFileName('gradient_gmsh2d.vtu')
 # writer.SetInputData( ugrid )
 # writer.SetDataModeToBinary();
 # writer.Update()
-
