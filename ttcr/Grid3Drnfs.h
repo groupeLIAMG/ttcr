@@ -39,58 +39,6 @@ namespace ttcr {
         const int get_niter() const { return niter_final; }
         const int get_niterw() const { return niterw_final; }
 
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<sxyz<T1>>& Rx,
-                      std::vector<T1>& traveltimes,
-                      const size_t threadNo=0) const {
-            // this is here just to be able to compile cgrid3d.pyx cython code
-            // should be removed when cgrid3d be replace by rgrid
-            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, threadNo);
-        }
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<sxyz<T1>>& Rx,
-                      std::vector<T1>& traveltimes,
-                      std::vector<std::vector<sxyz<T1>>>& r_data,
-                      const size_t threadNo=0) const {
-            // this is here just to be able to compile cgrid3d.pyx cython code
-            // should be removed when cgrid3d be replace by rgrid
-            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, r_data, threadNo);
-        }
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<sxyz<T1>>& Rx,
-                      std::vector<T1>& traveltimes,
-                      std::vector<std::vector<sxyz<T1>>>& r_data,
-                      std::vector<std::vector<sijv<T1>>>& m_data,
-                      const size_t threadNo=0) const {
-            // this is here just to be able to compile cgrid3d.pyx cython code
-            // should be removed when cgrid3d be replace by rgrid
-            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, r_data, m_data, threadNo);
-        }
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<sxyz<T1>>& Rx,
-                      std::vector<T1>& traveltimes,
-                      std::vector<std::vector<sxyz<T1>>>& r_data,
-                      std::vector<std::vector<siv<T1>>>& l_data,
-                      const size_t threadNo=0) const {
-            // this is here just to be able to compile cgrid3d.pyx cython code
-            // should be removed when cgrid3d be replace by rgrid
-            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, threadNo);
-        }
-        void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<sxyz<T1>>& Rx,
-                      std::vector<T1>& traveltimes,
-                      std::vector<std::vector<siv<T1>>>& l_data,
-                      const size_t threadNo=0) const {
-            // this is here just to be able to compile cgrid3d.pyx cython code
-            // should be removed when cgrid3d be replace by rgrid
-            Grid3D<T1,T2>::raytrace(Tx, t0, Rx, traveltimes, l_data, threadNo);
-        }
-
     protected:
         T1 epsilon;
         int nitermax;

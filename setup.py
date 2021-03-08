@@ -40,30 +40,6 @@ extensions = [
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
               ),
-    Extension('ttcrpy.cgrid2d',
-              sources=['ttcrpy/cgrid2d.pyx', 'ttcrpy/Grid2Dttcr.cpp'],  # additional source file(s)
-              include_dirs=include_dirs,
-              language='c++',             # generate C++ code
-              extra_compile_args=extra_compile_args,
-              ),
-    Extension('ttcrpy.cgrid3d',
-              sources=['ttcrpy/cgrid3d.pyx', 'ttcrpy/verbose.cpp'],  # additional source file(s)
-              include_dirs=include_dirs,
-              language='c++',             # generate C++ code
-              extra_compile_args=extra_compile_args,
-              ),
-    Extension('ttcrpy.cmesh2d',
-              sources=['ttcrpy/cmesh2d.pyx'],
-              include_dirs=include_dirs,
-              language='c++',             # generate C++ code
-              extra_compile_args=extra_compile_args,
-              ),
-    Extension('ttcrpy.cmesh3d',
-              sources=['ttcrpy/cmesh3d.pyx', './ttcrpy/Mesh3Dttcr.cpp', 'ttcrpy/verbose.cpp'],
-              include_dirs=include_dirs,
-              language='c++',             # generate C++ code
-              extra_compile_args=extra_compile_args,
-              ),
 ]
 
 setup(
