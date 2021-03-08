@@ -50,3 +50,7 @@ test_pool/
 main.o
 
 ttcr_io.o
+
+tests/files/*_rp.vtp
+
+tests/files/*_tt_grid.vt*
