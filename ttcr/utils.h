@@ -145,7 +145,7 @@ namespace ttcr {
  * @param x2 x coordinate of second point
  * @param y2 y coordinate of second point
  * @param x3 x coordinate of third point
- * @param y3 y coordinate of thirs point
+ * @param y3 y coordinate of third point
  * @returns value of area
  */
     template<typename T>
