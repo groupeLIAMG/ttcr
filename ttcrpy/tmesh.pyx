@@ -662,12 +662,14 @@ cdef class Mesh3d:
             nTx = len(eid)
         elif source.shape[1] == 3:
             src = source
-            Tx = np.unique(source, axis=0)
+            _, ind = np.unique(source, axis=0, return_index=True)
+            Tx = source[np.sort(ind), :]     # this to keep the original order
             t0 = np.zeros((Tx.shape[0], 1))
             nTx = Tx.shape[0]
         elif source.shape[1] == 4:
             src = source[:,1:4]
-            tmp = np.unique(source, axis=0)
+            _, ind = np.unique(source, axis=0, return_index=True)
+            tmp = source[np.sort(ind), :]    # this to keep the original order
             nTx = tmp.shape[0]
             Tx = tmp[:,1:4]
             t0 = tmp[:,0]
@@ -1418,12 +1420,14 @@ cdef class Mesh2d:
 
         if source.shape[1] == 2:
             src = source
-            Tx = np.unique(source, axis=0)
+            _, ind = np.unique(source, axis=0, return_index=True)
+            Tx = source[np.sort(ind), :]     # this to keep the original order
             t0 = np.zeros((Tx.shape[0], 1))
             nTx = Tx.shape[0]
         elif source.shape[1] == 3:
             src = source[:,1:3]
-            tmp = np.unique(source, axis=0)
+            _, ind = np.unique(source, axis=0, return_index=True)
+            tmp = source[np.sort(ind), :]    # this to keep the original order
             nTx = tmp.shape[0]
             Tx = tmp[:,1:3]
             t0 = tmp[:,0]
