@@ -11,6 +11,9 @@ install:
 script:
 - docker run --rm -e PLAT=$PLAT -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-linux-wheels.sh
 - ls dist/
+- curl -O https://bootstrap.pypa.io/2.7/get-pip.py
+- python get-pip.py
+- python -m pip install --upgrade "pip < 21.0"
 deploy:
   cleanup: false
   provider: pypi
