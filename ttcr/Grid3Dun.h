@@ -4842,6 +4842,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -4857,6 +4858,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -5053,6 +5055,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -5072,6 +5075,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath (onEdge) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -5216,6 +5220,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -5287,6 +5292,7 @@ namespace ttcr {
                             std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                             << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                             tt = 0.0;
+                            m_data.resize(0);
                             reachedTx = true;
                         }
                         break;
@@ -5306,6 +5312,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath (onFace) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -5429,6 +5436,7 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -5437,6 +5445,7 @@ namespace ttcr {
                     std::cout << "\n\nWarning: finding raypath within cell failed to converge for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     tt = 0.0;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
             }
@@ -6050,6 +6059,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -6066,6 +6076,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -6342,6 +6353,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -6362,6 +6374,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -6561,6 +6574,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -6689,6 +6703,7 @@ namespace ttcr {
                             << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                             r_tmp.resize(1);
                             r_tmp[0] = Rx;
+                            m_data.resize(0);
                             reachedTx = true;
                         }
                         break;
@@ -6707,6 +6722,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -6822,6 +6838,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -6831,6 +6848,7 @@ namespace ttcr {
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_data.resize(1);
                     r_data[0] = Rx;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
             }
@@ -7398,6 +7416,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -7414,6 +7433,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -7618,6 +7638,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -7638,6 +7659,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -7785,6 +7807,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -7859,6 +7882,7 @@ namespace ttcr {
                             << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                             r_tmp.resize(1);
                             r_tmp[0] = Rx;
+                            m_data.resize(0);
                             reachedTx = true;
                         }
                         break;
@@ -7879,6 +7903,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                         break;
                     }
@@ -8007,6 +8032,7 @@ namespace ttcr {
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
+                        m_data.resize(0);
                         reachedTx = true;
                     }
                     break;
@@ -8016,6 +8042,7 @@ namespace ttcr {
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                     r_data.resize(1);
                     r_data[0] = Rx;
+                    m_data.resize(0);
                     reachedTx = true;
                 }
             }
