@@ -854,17 +854,24 @@ cdef class Mesh3d:
             L = []
             for n in range(nTx):
                 nnz = 0
+                num_row = vRx[n].size()+1
                 for ni in range(m_data[n].size()):
                     nnz += m_data[n][ni].size()
-                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                    if m_data[n][ni].size() == 0:
+                         num_row -= 1
+                indptr = np.empty((num_row,), dtype=np.int64)
                 indices = np.empty((nnz,), dtype=np.int64)
                 val = np.empty((nnz,))
 
                 k = 0
                 MM = vRx[n].size()
                 NN = self.get_number_of_nodes()
+                index = 0
                 for i in range(MM):
-                    indptr[i] = k
+                    if m_data[n][i].size() == 0:
+                         continue
+                    indptr[index] = k
+                    index +=1
                     for j in range(NN):
                         for nn in range(m_data[n][i].size()):
                             if m_data[n][i][nn].i == i and m_data[n][i][nn].j == j:
@@ -873,7 +880,8 @@ cdef class Mesh3d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append(sp.csr_matrix((val, indices, indptr),
+                         shape=(indptr.size - 1, NN)))
 
         if compute_L==False and return_rays==False:
             return tt
