@@ -892,6 +892,78 @@ cdef class Mesh3d:
         else:
             return tt, rays
 
+    def data_kernel_straight_rays(self, np.ndarray[np.double_t, ndim=2] Tx,
+                                  np.ndarray[np.double_t, ndim=2] Rx):
+        """
+        data_kernel_straight_rays(Tx, Rx) -> L
+
+        Raytracing with straight rays in 3D
+
+        Parameters
+        ----------
+        Tx : np.ndarray
+            source coordinates, nTx by 3
+                - 1st column contains X coordinates,
+                - 2nd contains Y coordinates
+                - 3rd contains Z coordinates
+        Rx : np.ndarray
+            receiver coordinates, nTx by 3
+                - 1st column contains X coordinates,
+                - 2nd contains Y coordinates
+                - 3rd contains Z coordinates
+        Returns
+        -------
+        L : scipy csr_matrix
+            data kernel matrix (tt = L*slowness)
+
+        Note
+        ----
+        Tx and Rx should contain the same number of rows, each row corresponding
+        to a source-receiver pair
+        """
+        if Tx.ndim != 2 or Rx.ndim != 2:
+            raise ValueError('Tx and Rx should be 2D arrays')
+        if Tx.shape[1] != 3 or Rx.shape[1] != 3:
+            raise ValueError('Tx and Rx should be ndata x 3')
+        if Tx.shape[0] != Rx.shape[0]:
+            raise ValueError('Tx and Rx should be of equal size')
+        
+        cdef long int n, ni, nnz, k
+        cdef vector[sxyz[double]] vTx
+        cdef vector[sxyz[double]] vRx
+        cdef vector[vector[siv[double]]] l_data
+        
+        vTx.resize(Tx.shape[0])
+        vRx.resize(Tx.shape[0])
+        l_data.resize(Tx.shape[0])
+        
+        for n in range(Tx.shape[0]):
+            vTx.push_back(sxyz[double](Tx[n, 0], Tx[n, 1], Tx[n, 2]))
+            vRx.push_back(sxyz[double](Rx[n, 0], Rx[n, 1], Rx[n, 2]))
+        
+        self.grid.getStraightRays(vTx, vRx, l_data)
+        
+        nnz = 0
+        for ni in range(l_data.size()):
+            nnz += l_data[ni].size()
+        indptr = np.empty((vRx.size()+1,), dtype=np.int64)
+        indices = np.empty((nnz,), dtype=np.int64)
+        val = np.empty((nnz,))
+        
+        k = 0
+        MM = vRx.size()
+        NN = self.get_number_of_cells()
+        for i in range(MM):
+            indptr[i] = k
+            for j in range(NN):
+                for nn in range(l_data[i].size()):
+                    if l_data[i][nn].i == j:
+                        indices[k] = j
+                        val[k] = l_data[i][nn].v
+                        k += 1
+        indptr[MM] = k
+        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+        
     def to_vtk(self, fields, filename):
         """
         to_vtk(fields, filename)

@@ -262,6 +262,14 @@ namespace ttcr {
                         std::vector<sxyz<T1>> &r_data,
                         const size_t threadNo) const;
         
+        void getStraightRays(const std::vector<sxyz<T1>>& Tx,
+                             const std::vector<sxyz<T1>>& Rx,
+                             std::vector<std::vector<siv<T1>>>& l_data) const;
+
+        void getStraightRays(const std::vector<sxyz<T1>>& Tx,
+                             const std::vector<sxyz<T1>>& Rx,
+                             std::vector<std::vector<sxyz<T1>>>& r_data) const;
+
         bool check_pt_location(sxyz<T1> &curr_pt,
                                const std::array<T2,3> &ind,
                                bool &onNode,
@@ -4304,7 +4312,1344 @@ namespace ttcr {
         delete grad3d;
     }
     
+
+template<typename T1, typename T2, typename NODE>
+void Grid3Duc<T1,T2,NODE>::getStraightRays(const std::vector<sxyz<T1>>& Tx,
+                                           const std::vector<sxyz<T1>>& Rx,
+                                           std::vector<std::vector<siv<T1>>>& l_data) const {
+    T1 minDist = small;
+    // Tx & Rx should have the same number of elements, corresponding to
+    // Tx-Rx pairs
+
+    l_data.resize(Tx.size());
     
+    // loop over pairs
+    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+        
+        if ( Rx[nt] == Tx[nt] ) {
+            continue;
+        }
+        
+        bool txOnNode = false;
+        bool txOnEdge = false;
+        bool txOnFace = false;
+        T2 txNode;
+        T2 txCell;
+        std::array<T2,2> txEdges;
+        std::array<T2,3> txFaces;
+        std::vector<T2> txNeighborCells;
+        
+        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn].isPrimary() ) {
+                if ( nodes[nn] == Tx[nt] ) {
+                    txOnNode = true;
+                    txNode = nn;
+                    break;
+                }
+            }
+        }
+        if ( !txOnNode ) {
+            txCell = getCellNo( Tx[nt] );
+            
+            std::array<T2,4> itmp = getPrimary(txCell);
+            // find adjacent cells
+            const T2 ind[6][2] = {
+                {itmp[0], itmp[1]},
+                {itmp[0], itmp[2]},
+                {itmp[0], itmp[3]},
+                {itmp[1], itmp[2]},
+                {itmp[1], itmp[3]},
+                {itmp[2], itmp[3]} };
+            
+            for ( size_t nedge=0; nedge<6; ++nedge ) {
+                for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
+                    if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
+                        txNeighborCells.push_back( *nc0 );
+                }
+            }
+            // check if on edge
+            for ( size_t nedge=0; nedge<6; ++nedge ) {
+                if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                    txOnEdge = true;
+                    txEdges[0] = ind[nedge][0];
+                    txEdges[1] = ind[nedge][1];
+                    break;
+                }
+            }
+            if ( !txOnEdge ) {
+                // check if on face
+                const T2 indf[4][3] = {
+                    {itmp[0], itmp[1], itmp[2]},
+                    {itmp[0], itmp[1], itmp[3]},
+                    {itmp[0], itmp[2], itmp[3]},
+                    {itmp[1], itmp[2], itmp[3]} };
+                for ( size_t nface=0; nface<4; ++nface ) {
+                    if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                        txOnFace = true;
+                        txFaces[0] = indf[nface][0];
+                        txFaces[1] = indf[nface][1];
+                        txFaces[2] = indf[nface][2];
+                        break;
+                    }
+                }
+            }
+        }
+        T2 cellNo, nodeNo;
+        sxyz<T1> curr_pt( Rx[nt] ), prev_pt( Rx[nt] );
+        
+        bool onNode = false;
+        bool onEdge = false;
+        bool onFace = false;
+        std::array<T2,2> edgeNodes{ {0, 0} };
+        std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
+        bool reachedTx = false;
+        
+        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == curr_pt ) {
+                nodeNo = nn;
+                onNode = true;
+                break;
+            }
+        }
+        if ( !onNode ) {
+            cellNo = getCellNo( curr_pt );
+            
+            std::array<T2,4> itmp = getPrimary(cellNo);
+            T2 ind[6][2] = {
+                {itmp[0], itmp[1]},
+                {itmp[0], itmp[2]},
+                {itmp[0], itmp[3]},
+                {itmp[1], itmp[2]},
+                {itmp[1], itmp[3]},
+                {itmp[2], itmp[3]} };
+            
+            for ( size_t n=0; n<6; ++n ) {
+                if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
+                    onEdge = true;
+                    edgeNodes[0] = ind[n][0];
+                    edgeNodes[1] = ind[n][1];
+                    break;
+                }
+            }
+            if ( !onEdge ) {
+                std::array<T2,4> itmp = getPrimary(cellNo);
+                std::array<T2,3> ind[4] = {
+                    { { itmp[0], itmp[1], itmp[2] } },
+                    { { itmp[0], itmp[1], itmp[3] } },
+                    { { itmp[0], itmp[2], itmp[3] } },
+                    { { itmp[1], itmp[2], itmp[3] } }
+                };
+                for ( size_t n=0; n<4; ++n )
+                std::sort( ind[n].begin(), ind[n].end() );
+                
+                for ( size_t n=0; n<4; ++n ) {
+                    if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
+                        onFace = true;
+                        //  faceNodes shoud not be assigned, face was not intersected
+                        break;
+                    }
+                }
+            }
+        }
+        
+        siv<T1> cell;
+        if ( cellNo == txCell ) {
+            cell.i = txCell;
+            cell.v = curr_pt.getDistance(Tx[nt]);
+            l_data[nt].push_back( cell );
+            reachedTx = true;
+            break;
+        }
+        
+        sxyz<T1> g = Tx[nt] - Rx[nt];
+        while ( reachedTx == false ) {
+            if ( onNode ) {
+                // find cell for which gradient intersect opposing face
+                bool foundIntersection = false;
+                for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                    
+                    std::array<T2,3> nb;
+                    size_t n=0;
+                    for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                        if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
+                            nb[n++] = *nn;
+                        }
+                    }
+                    std::sort(nb.begin(), nb.end());
+                    
+                    foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
+                    if ( !foundIntersection ) {
+                        continue;
+                    }
+                    
+                    //  check if cell is TxCell
+                    if ( *nc == txCell ) {
+                        cell.i = txCell;
+                        cell.v = curr_pt.getDistance(Tx[nt]);
+                        l_data[nt].push_back( cell );
+                        reachedTx = true;
+                        break;
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+                    
+                    bool break_flag = check_pt_location(curr_pt, nb, onNode,
+                                                        nodeNo, onEdge, edgeNodes,
+                                                        onFace, faceNodes);
+                    
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                    
+                    if ( break_flag ) break;
+                    
+                    // find next cell
+                    cellNo = findAdjacentCell1(faceNodes, nodeNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                    }
+                    break;
+                }
+                
+                if ( foundIntersection == false ) {
+                    // projet gradient on face and find intersection on next edge
+                    sxyz<T1> pt_i;
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                        break;
+                    }
+                    
+                    // find which cell we are in
+                    for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                        std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                            tetrahedra[nc].i[1],
+                            tetrahedra[nc].i[2],
+                            tetrahedra[nc].i[3]};
+                        // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                        if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                            std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                            cellNo = static_cast<T2>(nc);
+                            break;
+                        }
+                    }
+                    
+                    //  check if cell is TxCell
+                    if ( cellNo == txCell ) {
+                        cell.i = txCell;
+                        cell.v = curr_pt.getDistance(Tx[nt]);
+                        l_data[nt].push_back( cell );
+                        reachedTx = true;
+                        break;
+                    }
+                    if ( reachedTx ) {
+                        break;
+                    }
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                    } else {
+                        onEdge = true;
+                        onNode = false;
+                    }
+                    
+                    curr_pt = pt_i;
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                }
+                
+            } else if ( onEdge ) {
+                
+                // find cells common to edge
+                std::vector<T2> cells;
+                for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
+                    if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() ) {
+                        cells.push_back( *nc0 );
+                    }
+                }
+                
+                bool foundIntersection=false;
+                for (size_t n=0; n<cells.size(); ++n ) {
+                    
+                    T2 testCellNo = cells[n];
+                    
+                    // there are 2 faces that might be intersected
+                    std::array<T2,2> edgeNodes2;
+                    size_t n2=0;
+                    for ( auto nn=this->neighbors[testCellNo].begin(); nn!= this->neighbors[testCellNo].end(); ++nn ) {
+                        if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
+                            edgeNodes2[n2++] = *nn;
+                        }
+                    }
+                    
+                    sxyz<T1> pt_i;
+                    T2 itmpNode;
+                    foundIntersection = intersectVecTriangle(curr_pt, g,
+                                                             edgeNodes[0],
+                                                             edgeNodes2[0],
+                                                             edgeNodes2[1], pt_i);
+                    itmpNode = edgeNodes[0];
+                    if ( !foundIntersection ) {
+                        foundIntersection = intersectVecTriangle(curr_pt, g,
+                                                                 edgeNodes[1],
+                                                                 edgeNodes2[0],
+                                                                 edgeNodes2[1], pt_i);
+                        itmpNode = edgeNodes[1];
+                    }
+                    if ( !foundIntersection ) {
+                        continue;
+                    }
+                    
+                    cellNo = testCellNo;
+                    curr_pt = pt_i;
+                    
+                    bool break_flag = check_pt_location(curr_pt, this->neighbors[cellNo],
+                                                        {itmpNode, edgeNodes2[0], edgeNodes2[1]},
+                                                        onNode,
+                                                        nodeNo, onEdge, edgeNodes,
+                                                        onFace, faceNodes);
+                    
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                    
+                    if ( break_flag ) break;
+                    
+                    // find next cell
+                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                    }
+                    break;
+                }
+                if ( foundIntersection == false ) {
+                    sxyz<T1> pt_i;
+                    g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
+                    if ( g.x==0.0 && g.y==0.0 && g.z==0.0 ) {
+                        foundIntersection = false;
+                    } else {
+                        foundIntersection = true;
+                    }
+                    
+                    if ( foundIntersection == false || curr_pt == pt_i ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                    }
+                    
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                    }
+                    
+                    curr_pt = pt_i;
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                }
+                
+            } else if ( onFace ) {
+                
+                std::array<T2,4> itmp = getPrimary(cellNo);
+                
+                std::array<T2,3> ind[4] = {
+                    {itmp[0], itmp[1], itmp[2]},
+                    {itmp[0], itmp[1], itmp[3]},
+                    {itmp[0], itmp[2], itmp[3]},
+                    {itmp[1], itmp[2], itmp[3]}
+                };
+                for ( size_t n=0; n<4; ++n )
+                std::sort( ind[n].begin(), ind[n].end() );
+                // there are 3 faces that might be intersected
+                
+                bool foundIntersection = false;
+                for ( size_t n=0; n<4; ++n ) {
+                    if ( ind[n] == faceNodes ) continue;
+                    
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                             ind[n][1], ind[n][2],
+                                                             pt_i);
+                    
+                    if ( !foundIntersection )
+                        continue;
+                    
+                    curr_pt = pt_i;
+                    
+                    bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
+                                                        nodeNo, onEdge, edgeNodes,
+                                                        onFace, faceNodes);
+                    
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                    
+                    if ( break_flag ) break;
+                    
+                    // find next cell
+                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                    }
+                    break;
+                }
+                
+                if ( foundIntersection == false ) {
+                    
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        // find adjacent cell
+                        cellNo = findAdjacentCell2(faceNodesStart, cellNo);
+                    } else {
+                        // we must be on an face with gradient pointing slightly outward tetrahedron
+                        // return in other cell but keep gradient
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    }
+                    
+                    std::array<T2,4> itmp = getPrimary(cellNo);
+                    ind[0] = {itmp[0], itmp[1], itmp[2]};
+                    ind[1] = {itmp[0], itmp[1], itmp[3]};
+                    ind[2] = {itmp[0], itmp[2], itmp[3]};
+                    ind[3] = {itmp[1], itmp[2], itmp[3]};
+                    
+                    for ( size_t n=0; n<4; ++n )
+                    std::sort( ind[n].begin(), ind[n].end() );
+                    
+                    for ( size_t n=0; n<4; ++n ) {
+                        if ( ind[n] == faceNodes ) continue;
+                        
+                        sxyz<T1> pt_i;
+                        foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                                 ind[n][1], ind[n][2],
+                                                                 pt_i);
+                        
+                        if ( !foundIntersection ) {
+                            continue;
+                        }
+                        curr_pt = pt_i;
+                        
+                        bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
+                                                            nodeNo, onEdge, edgeNodes,
+                                                            onFace, faceNodes);
+                        
+                        sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                        cell.i = getCellNo(mid_pt);
+                        cell.v = curr_pt.getDistance(prev_pt);
+                        l_data[nt].push_back(cell);
+                        prev_pt = curr_pt;
+                        
+                        if ( break_flag ) break;
+                        
+                        // find next cell
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            l_data[nt].resize(0);
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                }
+                if ( foundIntersection == false ) {
+                    g = projectOnFace(g, faceNodes);
+                    
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecEdge(curr_pt, g, faceNodes, pt_i, edgeNodes);
+                    
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                        break;
+                    }
+                    
+                    // we might be on one of the nodes
+                    if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[0];
+                        pt_i = nodes[edgeNodes[0]];
+                        onEdge = false;
+                        onFace = false;
+                    } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                        onNode = true;
+                        nodeNo = edgeNodes[1];
+                        pt_i = nodes[edgeNodes[1]];
+                        onEdge = false;
+                        onFace = false;
+                    } else {
+                        onEdge = true;
+                        onFace = false;
+                    }
+                    curr_pt = pt_i;
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                }
+            } else { // at Rx, somewhere in a tetrahedron
+                
+                std::array<T2,4> itmp = getPrimary(cellNo);
+                
+                std::array<T2,3> ind[4] = {
+                    {itmp[0], itmp[1], itmp[2]},
+                    {itmp[0], itmp[1], itmp[3]},
+                    {itmp[0], itmp[2], itmp[3]},
+                    {itmp[1], itmp[2], itmp[3]}
+                    
+                };
+                for ( size_t n=0; n<4; ++n )
+                std::sort( ind[n].begin(), ind[n].end() );
+                
+                bool foundIntersection = false;
+                for ( size_t n=0; n<4; ++n ) {
+                    
+                    sxyz<T1> pt_i;
+                    foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                             ind[n][1], ind[n][2],
+                                                             pt_i);
+                    
+                    if ( !foundIntersection )
+                        continue;
+                    
+                    curr_pt = pt_i;
+                    
+                    bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
+                                                        nodeNo, onEdge, edgeNodes,
+                                                        onFace, faceNodes);
+                    
+                    sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
+                    cell.i = getCellNo(mid_pt);
+                    cell.v = curr_pt.getDistance(prev_pt);
+                    l_data[nt].push_back(cell);
+                    prev_pt = curr_pt;
+                    
+                    if ( break_flag ) break;
+                    
+                    // find next cell
+                    cellNo = findAdjacentCell2(faceNodes, cellNo);
+                    if ( cellNo == std::numeric_limits<T2>::max() ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        l_data[nt].resize(0);
+                        reachedTx = true;
+                    }
+                    break;
+                }
+                if ( foundIntersection == false ) {
+                    std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                    << nt << std::endl;
+                    l_data[nt].resize(0);
+                    reachedTx = true;
+                }
+            }
+            
+            if ( onNode ) {
+                if ( txOnNode ) {
+                    if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                        reachedTx = true;
+                        break;
+                    }
+                } else if ( txOnEdge ) {
+                    if ( curr_pt.getDistance(nodes[txEdges[0]]) < minDist ||
+                        curr_pt.getDistance(nodes[txEdges[1]]) < minDist ) {
+                        
+                        sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + Tx[nt]);
+                        cell.i = getCellNo(mid_pt);
+                        cell.v = curr_pt.getDistance(prev_pt);
+                        l_data[nt].push_back(cell);
+                        reachedTx = true;
+                        break;
+                    }
+                } else if ( txOnFace ) {
+                    if ( curr_pt.getDistance(nodes[txFaces[0]]) < minDist ||
+                        curr_pt.getDistance(nodes[txFaces[1]]) < minDist ||
+                        curr_pt.getDistance(nodes[txFaces[2]]) < minDist ) {
+                        
+                        sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + Tx[nt]);
+                        cell.i = getCellNo(mid_pt);
+                        cell.v = curr_pt.getDistance(prev_pt);
+                        l_data[nt].push_back(cell);
+                        reachedTx = true;
+                        break;
+                    }
+                }
+            } if ( onEdge ) {
+                if ( txOnNode ) {
+                    if ( txNode == edgeNodes[0] || txNode == edgeNodes[1] ) {
+                        sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + Tx[nt]);
+                        cell.i = getCellNo(mid_pt);
+                        cell.v = curr_pt.getDistance(prev_pt);
+                        l_data[nt].push_back(cell);
+                        reachedTx = true;
+                        break;
+                    }
+                } else {
+                    std::array<T2,4> itmp = getPrimary(txCell);
+                    // find adjacent cells
+                    const T2 ind[6][2] = {
+                        {itmp[0], itmp[1]},
+                        {itmp[0], itmp[2]},
+                        {itmp[0], itmp[3]},
+                        {itmp[1], itmp[2]},
+                        {itmp[1], itmp[3]},
+                        {itmp[2], itmp[3]} };
+                    for ( size_t ne=0; ne<6; ++ne ) {
+                        if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
+                            (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
+                            sxyz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + Tx[nt]);
+                            cell.i = getCellNo(mid_pt);
+                            cell.v = curr_pt.getDistance(prev_pt);
+                            l_data[nt].push_back(cell);
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                if ( txOnNode ) {
+                    for ( auto nc=nodes[txNode].getOwners().begin();
+                         nc!=nodes[txNode].getOwners().end(); ++nc ) {
+                        if ( cellNo == *nc ) {
+                            cell.i = cellNo;
+                            cell.v = curr_pt.getDistance(Tx[nt]);
+                            l_data[nt].push_back( cell );
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                } else {
+                    if ( cellNo == txCell ) {
+                        cell.i = txCell;
+                        cell.v = curr_pt.getDistance(Tx[nt]);
+                        l_data[nt].push_back( cell );
+                        reachedTx = true;
+                    } else {
+                        for ( size_t nn=0; nn<txNeighborCells.size(); ++nn ) {
+                            if ( cellNo == txNeighborCells[nn] ) {
+                                std::array<T2,4> itmp = getPrimary(txCell);
+                                std::array<T2,3> ind[4] = {
+                                    { { itmp[0], itmp[1], itmp[2] } },
+                                    { { itmp[0], itmp[1], itmp[3] } },
+                                    { { itmp[0], itmp[2], itmp[3] } },
+                                    { { itmp[1], itmp[2], itmp[3] } }
+                                };
+                                
+                                bool found = false;
+                                for ( size_t n=0; n<4; ++n ) {
+                                    std::sort( ind[n].begin(), ind[n].end() );
+                                    if ( faceNodes == ind[n] ) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if ( found ) {
+                                    cell.i = cellNo;
+                                    cell.v = curr_pt.getDistance(Tx[nt]);
+                                    l_data[nt].push_back( cell );
+                                    reachedTx = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if ( reachedTx ) break;
+            }
+        }
+    }
+}
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Duc<T1,T2,NODE>::getStraightRays(const std::vector<sxyz<T1>>& Tx,
+                                               const std::vector<sxyz<T1>>& Rx,
+                                               std::vector<std::vector<sxyz<T1>>>& r_data) const {
+        T1 minDist = small;
+        // Tx & Rx should have the same number of elements, corresponding to
+        // Tx-Rx pairs
+        r_data.resize(Tx.size());
+        // loop over pairs
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            r_data[nt].emplace_back( Rx[nt] );
+            
+            if ( Rx[nt] == Tx[nt] ) {
+                continue;
+            }
+            
+            bool txOnNode = false;
+            bool txOnEdge = false;
+            bool txOnFace = false;
+            T2 txNode;
+            T2 txCell;
+            std::array<T2,2> txEdges;
+            std::array<T2,3> txFaces;
+            std::vector<T2> txNeighborCells;
+            
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn].isPrimary() ) {
+                    if ( nodes[nn] == Tx[nt] ) {
+                        txOnNode = true;
+                        txNode = nn;
+                        break;
+                    }
+                }
+            }
+            if ( !txOnNode ) {
+                txCell = getCellNo( Tx[nt] );
+                
+                std::array<T2,4> itmp = getPrimary(txCell);
+                // find adjacent cells
+                const T2 ind[6][2] = {
+                    {itmp[0], itmp[1]},
+                    {itmp[0], itmp[2]},
+                    {itmp[0], itmp[3]},
+                    {itmp[1], itmp[2]},
+                    {itmp[1], itmp[3]},
+                    {itmp[2], itmp[3]} };
+                
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
+                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
+                            txNeighborCells.push_back( *nc0 );
+                    }
+                }
+                // check if on edge
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                        txOnEdge = true;
+                        txEdges[0] = ind[nedge][0];
+                        txEdges[1] = ind[nedge][1];
+                        break;
+                    }
+                }
+                if ( !txOnEdge ) {
+                    // check if on face
+                    const T2 indf[4][3] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]} };
+                    for ( size_t nface=0; nface<4; ++nface ) {
+                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                            txOnFace = true;
+                            txFaces[0] = indf[nface][0];
+                            txFaces[1] = indf[nface][1];
+                            txFaces[2] = indf[nface][2];
+                            break;
+                        }
+                    }
+                }
+            }
+            T2 cellNo, nodeNo;
+            sxyz<T1> curr_pt( Rx[nt] );
+            
+            bool onNode = false;
+            bool onEdge = false;
+            bool onFace = false;
+            std::array<T2,2> edgeNodes{ {0, 0} };
+            std::array<T2,3> faceNodes{ {0, 0, 0} };
+            std::array<T2,3> faceNodesStart{ {0, 0, 0} };
+            bool reachedTx = false;
+            
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == curr_pt ) {
+                    nodeNo = nn;
+                    onNode = true;
+                    break;
+                }
+            }
+            if ( !onNode ) {
+                cellNo = getCellNo( curr_pt );
+                
+                std::array<T2,4> itmp = getPrimary(cellNo);
+                T2 ind[6][2] = {
+                    {itmp[0], itmp[1]},
+                    {itmp[0], itmp[2]},
+                    {itmp[0], itmp[3]},
+                    {itmp[1], itmp[2]},
+                    {itmp[1], itmp[3]},
+                    {itmp[2], itmp[3]} };
+                
+                for ( size_t n=0; n<6; ++n ) {
+                    if ( areCollinear(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]]) ) {
+                        onEdge = true;
+                        edgeNodes[0] = ind[n][0];
+                        edgeNodes[1] = ind[n][1];
+                        break;
+                    }
+                }
+                if ( !onEdge ) {
+                    std::array<T2,4> itmp = getPrimary(cellNo);
+                    std::array<T2,3> ind[4] = {
+                        { { itmp[0], itmp[1], itmp[2] } },
+                        { { itmp[0], itmp[1], itmp[3] } },
+                        { { itmp[0], itmp[2], itmp[3] } },
+                        { { itmp[1], itmp[2], itmp[3] } }
+                    };
+                    for ( size_t n=0; n<4; ++n )
+                    std::sort( ind[n].begin(), ind[n].end() );
+                    
+                    for ( size_t n=0; n<4; ++n ) {
+                        if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
+                            onFace = true;
+                            //  faceNodes shoud not be assigned, face was not intersected
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if ( cellNo == txCell ) {
+                r_data[nt].push_back( Tx[nt] );
+                reachedTx = true;
+                break;
+            }
+            
+            sxyz<T1> g = Tx[nt] - Rx[nt];
+            while ( reachedTx == false ) {
+                if ( onNode ) {
+                    // find cell for which gradient intersect opposing face
+                    bool foundIntersection = false;
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                        
+                        std::array<T2,3> nb;
+                        size_t n=0;
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                            if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
+                                nb[n++] = *nn;
+                            }
+                        }
+                        std::sort(nb.begin(), nb.end());
+                        
+                        foundIntersection = intersectVecTriangle( nodeNo, g, nb[0], nb[1], nb[2], curr_pt);
+                        if ( !foundIntersection ) {
+                            continue;
+                        }
+                        
+                        //  check if cell is TxCell
+                        if ( *nc == txCell ) {
+                            r_data[nt].push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                        if ( reachedTx ) {
+                            break;
+                        }
+
+                        bool break_flag = check_pt_location(curr_pt, nb, onNode,
+                                                            nodeNo, onEdge, edgeNodes,
+                                                            onFace, faceNodes);
+
+                        r_data[nt].push_back( curr_pt );
+                        
+                        if ( break_flag ) break;
+                        
+                        // find next cell
+                        cellNo = findAdjacentCell1(faceNodes, nodeNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                    
+                    if ( foundIntersection == false ) {
+                        // projet gradient on face and find intersection on next edge
+                        sxyz<T1> pt_i;
+                        foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+
+                        if ( foundIntersection == false ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                            break;
+                        }
+
+                        // find which cell we are in
+                        for ( size_t nc=0; nc<tetrahedra.size(); ++nc ) {
+                            std::array<T2,4> itet = {tetrahedra[nc].i[0],
+                                tetrahedra[nc].i[1],
+                                tetrahedra[nc].i[2],
+                                tetrahedra[nc].i[3]};
+                            // because we are at the surface, there is only one cell with nodeNo & edgeNodes
+                            if (std::find(itet.begin(), itet.end(), nodeNo) != itet.end() &&
+                                std::find(itet.begin(), itet.end(), edgeNodes[0]) != itet.end() &&
+                                std::find(itet.begin(), itet.end(), edgeNodes[1]) != itet.end()) {
+                                cellNo = static_cast<T2>(nc);
+                                break;
+                            }
+                        }
+
+                        //  check if cell is TxCell
+                        if ( cellNo == txCell ) {
+                            r_data[nt].push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                        if ( reachedTx ) {
+                            break;
+                        }
+                        // we might be on one of the nodes
+                        if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                            onNode = true;
+                            nodeNo = edgeNodes[0];
+                            pt_i = nodes[edgeNodes[0]];
+                            onEdge = false;
+                        } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                            onNode = true;
+                            nodeNo = edgeNodes[1];
+                            pt_i = nodes[edgeNodes[1]];
+                            onEdge = false;
+                        } else {
+                            onEdge = true;
+                            onNode = false;
+                        }
+
+                        curr_pt = pt_i;
+                        r_data[nt].push_back( curr_pt );
+                    }
+                    
+                } else if ( onEdge ) {
+                    
+                    // find cells common to edge
+                    std::vector<T2> cells;
+                    for ( auto nc0=nodes[edgeNodes[0]].getOwners().begin(); nc0!=nodes[edgeNodes[0]].getOwners().end(); ++nc0 ) {
+                        if ( std::find(nodes[edgeNodes[1]].getOwners().begin(), nodes[edgeNodes[1]].getOwners().end(), *nc0)!=nodes[edgeNodes[1]].getOwners().end() ) {
+                            cells.push_back( *nc0 );
+                        }
+                    }
+                    
+                    bool foundIntersection=false;
+                    for (size_t n=0; n<cells.size(); ++n ) {
+                        
+                        T2 testCellNo = cells[n];
+                        
+                        // there are 2 faces that might be intersected
+                        std::array<T2,2> edgeNodes2;
+                        size_t n2=0;
+                        for ( auto nn=this->neighbors[testCellNo].begin(); nn!= this->neighbors[testCellNo].end(); ++nn ) {
+                            if ( *nn!=edgeNodes[0] && *nn!=edgeNodes[1] && nodes[*nn].isPrimary() ) {
+                                edgeNodes2[n2++] = *nn;
+                            }
+                        }
+                        
+                        sxyz<T1> pt_i;
+                        T2 itmpNode;
+                        foundIntersection = intersectVecTriangle(curr_pt, g,
+                                                                 edgeNodes[0],
+                                                                 edgeNodes2[0],
+                                                                 edgeNodes2[1], pt_i);
+                        itmpNode = edgeNodes[0];
+                        if ( !foundIntersection ) {
+                            foundIntersection = intersectVecTriangle(curr_pt, g,
+                                                                     edgeNodes[1],
+                                                                     edgeNodes2[0],
+                                                                     edgeNodes2[1], pt_i);
+                            itmpNode = edgeNodes[1];
+                        }
+                        if ( !foundIntersection ) {
+                            continue;
+                        }
+
+                        cellNo = testCellNo;
+                        curr_pt = pt_i;
+
+                        bool break_flag = check_pt_location(curr_pt, this->neighbors[cellNo],
+                                                            {itmpNode, edgeNodes2[0], edgeNodes2[1]},
+                                                            onNode,
+                                                            nodeNo, onEdge, edgeNodes,
+                                                            onFace, faceNodes);
+
+                        r_data[nt].push_back( curr_pt );
+                        
+                        if ( break_flag ) break;
+                        
+                        // find next cell
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                    if ( foundIntersection == false ) {
+                        sxyz<T1> pt_i;
+                        g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
+                        if ( g.x==0.0 && g.y==0.0 && g.z==0.0 ) {
+                            foundIntersection = false;
+                        } else {
+                            foundIntersection = true;
+                        }
+
+                        if ( foundIntersection == false || curr_pt == pt_i ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                        }
+
+                        // we might be on one of the nodes
+                        if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                            onNode = true;
+                            nodeNo = edgeNodes[0];
+                            pt_i = nodes[edgeNodes[0]];
+                            onEdge = false;
+                        } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                            onNode = true;
+                            nodeNo = edgeNodes[1];
+                            pt_i = nodes[edgeNodes[1]];
+                            onEdge = false;
+                        }
+
+                        curr_pt = pt_i;
+                        r_data[nt].push_back(curr_pt);
+                    }
+
+                } else if ( onFace ) {
+                    
+                    std::array<T2,4> itmp = getPrimary(cellNo);
+                    
+                    std::array<T2,3> ind[4] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]}
+                    };
+                    for ( size_t n=0; n<4; ++n )
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    // there are 3 faces that might be intersected
+                    
+                    bool foundIntersection = false;
+                    for ( size_t n=0; n<4; ++n ) {
+                        if ( ind[n] == faceNodes ) continue;
+                        
+                        sxyz<T1> pt_i;
+                        foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                                 ind[n][1], ind[n][2],
+                                                                 pt_i);
+                        
+                        if ( !foundIntersection )
+                            continue;
+                    
+                        curr_pt = pt_i;
+
+                        bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
+                                                            nodeNo, onEdge, edgeNodes,
+                                                            onFace, faceNodes);
+
+                        r_data[nt].push_back( curr_pt );
+                        
+                        if ( break_flag ) break;
+                        
+                        // find next cell
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                    
+                    if ( foundIntersection == false ) {
+                        
+                        if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                            // we have started on a face and cellNo was incorrectly picked
+                            // find adjacent cell
+                            cellNo = findAdjacentCell2(faceNodesStart, cellNo);
+                        } else {
+                            // we must be on an face with gradient pointing slightly outward tetrahedron
+                            // return in other cell but keep gradient
+                            cellNo = findAdjacentCell2(faceNodes, cellNo);
+                        }
+                        
+                        std::array<T2,4> itmp = getPrimary(cellNo);
+                        ind[0] = {itmp[0], itmp[1], itmp[2]};
+                        ind[1] = {itmp[0], itmp[1], itmp[3]};
+                        ind[2] = {itmp[0], itmp[2], itmp[3]};
+                        ind[3] = {itmp[1], itmp[2], itmp[3]};
+                        
+                        for ( size_t n=0; n<4; ++n )
+                            std::sort( ind[n].begin(), ind[n].end() );
+                        
+                        for ( size_t n=0; n<4; ++n ) {
+                            if ( ind[n] == faceNodes ) continue;
+                            
+                            sxyz<T1> pt_i;
+                            foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                                     ind[n][1], ind[n][2],
+                                                                     pt_i);
+                            
+                            if ( !foundIntersection ) {
+                                continue;
+                            }
+                            curr_pt = pt_i;
+
+                            bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
+                                                                nodeNo, onEdge, edgeNodes,
+                                                                onFace, faceNodes);
+
+                            r_data[nt].push_back( curr_pt );
+                            
+                            if ( break_flag ) break;
+                            
+                            // find next cell
+                            cellNo = findAdjacentCell2(faceNodes, cellNo);
+                            if ( cellNo == std::numeric_limits<T2>::max() ) {
+                                std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                                << nt << std::endl;
+                                r_data[nt].resize(1);
+                                r_data[nt][0] = Rx[nt];
+                                reachedTx = true;
+                            }
+                            break;
+                        }
+                    }
+                    if ( foundIntersection == false ) {
+                        g = projectOnFace(g, faceNodes);
+
+                        sxyz<T1> pt_i;
+                        foundIntersection = intersectVecEdge(curr_pt, g, faceNodes, pt_i, edgeNodes);
+
+                        if ( foundIntersection == false ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                            break;
+                        }
+
+                        // we might be on one of the nodes
+                        if ( pt_i.getDistance(nodes[edgeNodes[0]]) < min_dist ) {
+                            onNode = true;
+                            nodeNo = edgeNodes[0];
+                            pt_i = nodes[edgeNodes[0]];
+                            onEdge = false;
+                            onFace = false;
+                        } else if ( pt_i.getDistance(nodes[edgeNodes[1]]) < min_dist ) {
+                            onNode = true;
+                            nodeNo = edgeNodes[1];
+                            pt_i = nodes[edgeNodes[1]];
+                            onEdge = false;
+                            onFace = false;
+                        } else {
+                            onEdge = true;
+                            onFace = false;
+                        }
+                        curr_pt = pt_i;
+                        r_data[nt].push_back( curr_pt );
+                    }
+                } else { // at Rx, somewhere in a tetrahedron
+                    
+                    std::array<T2,4> itmp = getPrimary(cellNo);
+
+                    std::array<T2,3> ind[4] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]}
+
+                    };
+                    for ( size_t n=0; n<4; ++n )
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    
+                    bool foundIntersection = false;
+                    for ( size_t n=0; n<4; ++n ) {
+                        
+                        sxyz<T1> pt_i;
+                        foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
+                                                                 ind[n][1], ind[n][2],
+                                                                 pt_i);
+                        
+                        if ( !foundIntersection )
+                            continue;
+                        
+                        curr_pt = pt_i;
+
+                        bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
+                                                            nodeNo, onEdge, edgeNodes,
+                                                            onFace, faceNodes);
+
+                        r_data[nt].push_back( curr_pt );
+                        
+                        if ( break_flag ) break;
+                        
+                        // find next cell
+                        cellNo = findAdjacentCell2(faceNodes, cellNo);
+                        if ( cellNo == std::numeric_limits<T2>::max() ) {
+                            std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                            << nt << std::endl;
+                            r_data[nt].resize(1);
+                            r_data[nt][0] = Rx[nt];
+                            reachedTx = true;
+                        }
+                        break;
+                    }
+                    if ( foundIntersection == false ) {
+                        std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Tx-Rx pair no "
+                        << nt << std::endl;
+                        r_data[nt].resize(1);
+                        r_data[nt][0] = Rx[nt];
+                        reachedTx = true;
+                    }
+                }
+                
+                if ( onNode ) {
+                    if ( txOnNode ) {
+                        if ( curr_pt.getDistance( Tx[nt] ) < minDist ) {
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnEdge ) {
+                        if ( curr_pt.getDistance(nodes[txEdges[0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txEdges[1]]) < minDist ) {
+                            
+                            r_data[nt].push_back(Tx[nt]);
+                            reachedTx = true;
+                            break;
+                        }
+                    } else if ( txOnFace ) {
+                        if ( curr_pt.getDistance(nodes[txFaces[0]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[1]]) < minDist ||
+                            curr_pt.getDistance(nodes[txFaces[2]]) < minDist ) {
+                            
+                            r_data[nt].push_back(Tx[nt]);
+                            reachedTx = true;
+                            break;
+                        }
+                    }
+                } if ( onEdge ) {
+                    if ( txOnNode ) {
+                        if ( txNode == edgeNodes[0] || txNode == edgeNodes[1] ) {
+                            r_data[nt].push_back( Tx[nt] );
+                            reachedTx = true;
+                            break;
+                        }
+                    } else {
+                        std::array<T2,4> itmp = getPrimary(txCell);
+                        // find adjacent cells
+                        const T2 ind[6][2] = {
+                            {itmp[0], itmp[1]},
+                            {itmp[0], itmp[2]},
+                            {itmp[0], itmp[3]},
+                            {itmp[1], itmp[2]},
+                            {itmp[1], itmp[3]},
+                            {itmp[2], itmp[3]} };
+                        for ( size_t ne=0; ne<6; ++ne ) {
+                            if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
+                                (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
+                                r_data[nt].push_back( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    if ( txOnNode ) {
+                        for ( auto nc=nodes[txNode].getOwners().begin();
+                             nc!=nodes[txNode].getOwners().end(); ++nc ) {
+                            if ( cellNo == *nc ) {
+                                r_data[nt].push_back( Tx[nt] );
+                                reachedTx = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        if ( cellNo == txCell ) {
+                            r_data[nt].push_back( Tx[nt] );
+                            reachedTx = true;
+                        } else {
+                            for ( size_t nn=0; nn<txNeighborCells.size(); ++nn ) {
+                                if ( cellNo == txNeighborCells[nn] ) {
+                                    std::array<T2,4> itmp = getPrimary(txCell);
+                                    std::array<T2,3> ind[4] = {
+                                        { { itmp[0], itmp[1], itmp[2] } },
+                                        { { itmp[0], itmp[1], itmp[3] } },
+                                        { { itmp[0], itmp[2], itmp[3] } },
+                                        { { itmp[1], itmp[2], itmp[3] } }
+                                    };
+
+                                    bool found = false;
+                                    for ( size_t n=0; n<4; ++n ) {
+                                        std::sort( ind[n].begin(), ind[n].end() );
+                                        if ( faceNodes == ind[n] ) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if ( found ) {
+                                        r_data[nt].push_back( Tx[nt] );
+                                        reachedTx = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ( reachedTx ) break;
+                }
+            }
+        }
+    }
+
     template<typename T1, typename T2, typename NODE>
     bool Grid3Duc<T1,T2,NODE>::check_pt_location(sxyz<T1> &curr_pt,
                                                  const std::array<T2,3> &ind,

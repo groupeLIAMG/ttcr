@@ -201,6 +201,12 @@ namespace ttcr {
                        std::vector<std::vector<T1>>& traveltimes,
                        std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
                        std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+        
+        virtual void getStraightRays(const std::vector<sxyz<T1>>& Tx,
+                                     const std::vector<sxyz<T1>>& Rx,
+                                     std::vector<std::vector<siv<T1>>>& l_data) const {
+            throw std::runtime_error("Method should be implemented in subclass");
+        }
 
         virtual void setSlowness(const std::vector<T1>& s) {}
         virtual void setSlowness(const T1 *s, const size_t ns) {

@@ -101,6 +101,9 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
                       vector[vector[T1]]& traveltimes,
                       vector[vector[vector[sxyz[T1]]]]& r_data,
                       vector[vector[vector[siv[T1]]]]& l_data) except +
+        void getStraightRays(vector[sxyz[T1]]& Tx,
+                             vector[sxyz[T1]]& Rx,
+                             vector[vector[siv[T1]]]& l_data) except +
 
 cdef extern from "Grid3Duc.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Duc[T1,T2,N](Grid3D[T1,T2]):
