@@ -24,6 +24,7 @@ wrapped with cython.
    getting_started.rst
    model_discretization.rst
    algorithms.rst
+   performance.rst
    code.rst
    references.rst
 
