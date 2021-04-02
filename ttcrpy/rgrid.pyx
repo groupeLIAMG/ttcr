@@ -982,7 +982,7 @@ cdef class Grid3d:
         #     print('  size of tt = ',vtt[n].size())
 
         tt = np.zeros((rcv.shape[0],))
-        if nTx < self._n_threads or self._n_threads == 1:
+        if self._n_threads == 1:
             if compute_L==False and compute_M==False and return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
@@ -2734,7 +2734,7 @@ cdef class Grid2d:
                 vtt[n].resize(vRx[n].size())
 
         tt = np.zeros((rcv.shape[0],))
-        if nTx < self._n_threads or self._n_threads == 1:
+        if self._n_threads == 1:
             if compute_L==False and return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
