@@ -55,6 +55,7 @@ namespace ttcr {
         bool weno3;
         bool dump_secondary;
         bool tt_from_rp;
+        bool useEdgeLength;
         double epsilon;
         double source_radius;
         double min_distance_rp;
@@ -72,7 +73,7 @@ namespace ttcr {
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), interpVel(false), rotated_template(false),
-        weno3(false), dump_secondary(false), tt_from_rp(false),
+        weno3(false), dump_secondary(false), tt_from_rp(false), useEdgeLength(true),
         epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
         radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}

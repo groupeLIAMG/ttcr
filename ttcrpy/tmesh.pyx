@@ -61,7 +61,7 @@ cdef class Mesh3d:
 
     Constructor:
 
-    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_tertiary) -> Mesh3d
+    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary) -> Mesh3d
 
         Parameters
         ----------
@@ -98,9 +98,10 @@ cdef class Mesh3d:
             number of secondary nodes (SPM & DSPM) (default is 2)
         n_tertiary : int
             number of tertiary nodes (DSPM) (default is 2)
-        radius_tertiary : double
-            radius of sphere around source that includes tertiary nodes (DSPM)
-            (default is 1)
+        radius_factor_tertiary : double
+            multiplication factor used to compute radius of sphere around source
+            that includes tertiary nodes (DSPM).  The radius is the average edge
+            length multiplied by this factor (default is 2)
 
     """
     cdef bool cell_slowness
@@ -114,7 +115,7 @@ cdef class Mesh3d:
     cdef double min_dist
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
-    cdef double radius_tertiary
+    cdef double radius_factor_tertiary
     cdef vector[sxyz[double]] no
     cdef vector[tetrahedronElem[uint32_t]] tet
     cdef Grid3D[double, uint32_t]* grid
@@ -126,7 +127,7 @@ cdef class Mesh3d:
                   bool tt_from_rp=1, bool interp_vel=0,
                   double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                  double radius_tertiary=1.0):
+                  double radius_factor_tertiary=2.0):
 
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
@@ -138,11 +139,12 @@ cdef class Mesh3d:
         self.min_dist = min_dist
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
-        self.radius_tertiary = radius_tertiary
+        self.radius_factor_tertiary = radius_factor_tertiary
 
         cdef double source_radius = 0.0
         cdef vector[sxyz[double]] pts_ref
         cdef int n
+        cdef use_edge_length = True
 
         if not nodes.flags['C_CONTIGUOUS']:
             nodes = np.ascontiguousarray(nodes)
@@ -199,7 +201,8 @@ cdef class Mesh3d:
                                                              gradient_method,
                                                              tt_from_rp,
                                                              min_dist,
-                                                             radius_tertiary,
+                                                             radius_factor_tertiary,
+                                                             use_edge_length,
                                                              n_threads)
 
             else:
@@ -231,7 +234,8 @@ cdef class Mesh3d:
                                                              gradient_method,
                                                              tt_from_rp,
                                                              min_dist,
-                                                             radius_tertiary,
+                                                             radius_factor_tertiary,
+                                                             use_edge_length,
                                                              n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -263,7 +267,7 @@ cdef class Mesh3d:
                               self._n_threads, self.tt_from_rp, self.interp_vel,
                               self.eps, self.maxit, self.gradient_method,
                               self.min_dist, self.n_secondary, self.n_tertiary,
-                              self.radius_tertiary)
+                              self.radius_factor_tertiary)
         return (_rebuild3d, constructor_params)
 
     @property
@@ -698,7 +702,7 @@ cdef class Mesh3d:
         cdef vector[vector[vector[sijv[double]]]] m_data
         cdef size_t thread_nb
 
-        cdef int i, n, n2, nt
+        cdef int i, n, nn, n2, nt, nnz, num_row, index
 
         vTx.resize(nTx)
         vRx.resize(nTx)
@@ -864,22 +868,19 @@ cdef class Mesh3d:
                 val = np.empty((nnz,))
 
                 k = 0
-                MM = vRx[n].size()
                 NN = self.get_number_of_nodes()
                 index = 0
-                for i in range(MM):
+                for i in range(m_data[n].size()):
                     if m_data[n][i].size() == 0:
                          continue
                     indptr[index] = k
                     index +=1
-                    for j in range(NN):
-                        for nn in range(m_data[n][i].size()):
-                            if m_data[n][i][nn].i == i and m_data[n][i][nn].j == j:
-                                indices[k] = j
-                                val[k] = m_data[n][i][nn].v
-                                k += 1
+                    for nn in range(m_data[n][i].size()):
+                        indices[k] = m_data[n][i][nn].j
+                        val[k] = m_data[n][i][nn].v
+                        k += 1
 
-                indptr[MM] = k
+                indptr[index] = k
                 L.append(sp.csr_matrix((val, indices, indptr),
                          shape=(indptr.size - 1, NN)))
 
@@ -927,29 +928,29 @@ cdef class Mesh3d:
             raise ValueError('Tx and Rx should be ndata x 3')
         if Tx.shape[0] != Rx.shape[0]:
             raise ValueError('Tx and Rx should be of equal size')
-        
+
         cdef long int n, ni, nnz, k
         cdef vector[sxyz[double]] vTx
         cdef vector[sxyz[double]] vRx
         cdef vector[vector[siv[double]]] l_data
-        
+
         vTx.resize(Tx.shape[0])
         vRx.resize(Tx.shape[0])
         l_data.resize(Tx.shape[0])
-        
+
         for n in range(Tx.shape[0]):
             vTx.push_back(sxyz[double](Tx[n, 0], Tx[n, 1], Tx[n, 2]))
             vRx.push_back(sxyz[double](Rx[n, 0], Rx[n, 1], Rx[n, 2]))
-        
+
         self.grid.getStraightRays(vTx, vRx, l_data)
-        
+
         nnz = 0
         for ni in range(l_data.size()):
             nnz += l_data[ni].size()
         indptr = np.empty((vRx.size()+1,), dtype=np.int64)
         indices = np.empty((nnz,), dtype=np.int64)
         val = np.empty((nnz,))
-        
+
         k = 0
         MM = vRx.size()
         NN = self.get_number_of_cells()
@@ -963,7 +964,7 @@ cdef class Mesh3d:
                         k += 1
         indptr[MM] = k
         return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
-        
+
     def to_vtk(self, fields, filename):
         """
         to_vtk(fields, filename)
@@ -1064,9 +1065,9 @@ cdef class Mesh3d:
                 bool tt_from_rp=1, bool interp_vel=0,
                 double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                double radius_tertiary=1.0):
+                double radius_factor_tertiary=1.0):
         """
-        builder(filename, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_tertiary)
+        builder(filename, n_threads, cell_slowness, method, gradient_method, tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary)
 
         Build instance of Mesh3d from VTK file
 
@@ -1122,7 +1123,7 @@ cdef class Mesh3d:
 
         m = Mesh3d(nodes, tet, n_threads, cell_slowness, method, gradient_method,
                    tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary,
-                   n_tertiary, radius_tertiary)
+                   n_tertiary, radius_factor_tertiary)
         m.set_slowness(slowness)
         return m
 
@@ -1139,7 +1140,7 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp) -> Mesh2d
+    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp) -> Mesh2d
 
         Parameters
         ----------
@@ -1167,9 +1168,10 @@ cdef class Mesh2d:
             number of secondary nodes (SPM) (default is 5)
         n_tertiary : int
             number of tertiary nodes (DSPM) (default is 2)
-        radius_tertiary : double
-            radius of sphere around source that includes tertiary nodes (DSPM)
-            (default is 1)
+        radius_factor_tertiary : double
+            multiplication factor used to compute radius of sphere around source
+            that includes tertiary nodes (DSPM).  The radius is the average edge
+            length multiplied by this factor (default is 2)
         tt_from_rp : bool
             compute traveltimes using raypaths (default is False)
     """
@@ -1182,7 +1184,7 @@ cdef class Mesh2d:
     cdef char method
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
-    cdef double radius_tertiary
+    cdef double radius_factor_tertiary
     cdef vector[sxz[double]] no
     cdef vector[triangleElem[uint32_t]] tri
     cdef Grid2D[double, uint32_t,sxz[double]]* grid
@@ -1192,7 +1194,7 @@ cdef class Mesh2d:
                   size_t n_threads=1, bool cell_slowness=1,
                   str method='FSM', double eps=1.e-15, int maxit=20,
                   bool process_obtuse=1, uint32_t n_secondary=5,
-                  uint32_t n_tertiary=2, double radius_tertiary=1.0,
+                  uint32_t n_tertiary=2, double radius_factor_tertiary=2.0,
                   bool tt_from_rp=0):
 
         self.cell_slowness = cell_slowness
@@ -1202,11 +1204,12 @@ cdef class Mesh2d:
         self.process_obtuse = process_obtuse
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
-        self.radius_tertiary = radius_tertiary
+        self.radius_factor_tertiary = radius_factor_tertiary
         self.tt_from_rp = tt_from_rp
 
         cdef vector[sxz[double]] pts_ref
         cdef int n
+        cdef use_edge_length = True
 
         if not nodes.flags['C_CONTIGUOUS']:
             nodes = np.ascontiguousarray(nodes)
@@ -1255,8 +1258,9 @@ cdef class Mesh2d:
                                                                          self.tri,
                                                                          n_secondary,
                                                                          n_tertiary,
-                                                                         radius_tertiary,
+                                                                         radius_factor_tertiary,
                                                                          tt_from_rp,
+                                                                         use_edge_length,
                                                                          n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -1284,8 +1288,9 @@ cdef class Mesh2d:
                                                                          self.tri,
                                                                          n_secondary,
                                                                          n_tertiary,
-                                                                         radius_tertiary,
+                                                                         radius_factor_tertiary,
                                                                          tt_from_rp,
+                                                                         use_edge_length,
                                                                          n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -1317,7 +1322,7 @@ cdef class Mesh2d:
                               self._n_threads,
                               self.eps, self.maxit, self.process_obtuse,
                               self.n_secondary, self.n_tertiary,
-                              self.radius_tertiary, self.tt_from_rp)
+                              self.radius_factor_tertiary, self.tt_from_rp)
         return (_rebuild2d, constructor_params)
 
     @property
@@ -1725,10 +1730,10 @@ cdef class Mesh2d:
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM',double eps=1.e-15, int maxit=20,
                 bool process_obtuse=1, uint32_t n_secondary=5,
-                uint32_t n_tertiary=2, double radius_tertiary=1.0,
+                uint32_t n_tertiary=2, double radius_factor_tertiary=1.0,
                 bool tt_from_rp=0):
         """
-        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp)
+        builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp)
 
         Build instance of Mesh2d from VTK file
 
@@ -1784,7 +1789,7 @@ cdef class Mesh2d:
             slowness = 1.0 / data
 
         m = Mesh2d(nod, tri, n_threads, cell_slowness, method, eps, maxit,
-                   process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp)
+                   process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp)
         m.set_slowness(slowness)
         return m
 
@@ -1792,18 +1797,18 @@ cdef class Mesh2d:
 def _rebuild3d(constructor_params):
     (nodes, tetra, method, cell_slowness, n_threads, tt_from_rp, interp_vel, eps,
      maxit, gradient_method, min_dist, n_secondary, n_tertiary,
-     radius_tertiary) = constructor_params
+     radius_factor_tertiary) = constructor_params
 
     g = Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method,
                tt_from_rp, interp_vel, eps, maxit, min_dist, n_secondary,
-               n_tertiary, radius_tertiary)
+               n_tertiary, radius_factor_tertiary)
     return g
 
 def _rebuild2d(constructor_params):
     (nodes, triangles, method, cell_slowness, n_threads, eps, maxit,
-     process_obtuse, n_secondary, n_tertiary, radius_tertiary,
+     process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary,
      tt_from_rp) = constructor_params
 
     g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit,
-        process_obtuse, n_secondary, n_tertiary, radius_tertiary, tt_from_rp)
+        process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp)
     return g

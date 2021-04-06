@@ -45,7 +45,8 @@ namespace ttcr {
                     const std::vector<tetrahedronElem<T2>>& tet,
                     const int ns, const int nd, const T1 rad,
                     const bool iv, const int rp, const bool rptt, const T1 md,
-                    const T1 drad, const size_t nt=1) :
+                    const T1 drad, const bool useEdgeLength=true,
+                    const size_t nt=1) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dyn_radius(drad),
@@ -59,6 +60,7 @@ namespace ttcr {
             for ( size_t n=0; n<nt; ++n ) {
                 tempNeighbors[n].resize(tet.size());
             }
+            if (useEdgeLength) dyn_radius *= this->getAverageEdgeLength();
         }
         
         ~Grid3Dundsp() {

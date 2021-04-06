@@ -952,6 +952,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
+                                                     par.useEdgeLength,
                                                      nt);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
@@ -964,6 +965,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
+                                                     par.useEdgeLength,
                                                      nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -1262,6 +1264,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
+                                                     par.useEdgeLength,
                                                      nt);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
@@ -1274,6 +1277,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
+                                                     par.useEdgeLength,
                                                      nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -2252,6 +2256,7 @@ namespace ttcr {
                                                              par.nTertiary,
                                                              par.radius_tertiary_nodes,
                                                              par.tt_from_rp,
+                                                             par.useEdgeLength,
                                                              nt);
                 else
                     g = new Grid2Dundsp<T, uint32_t, sxz<T>>(nodes,
@@ -2260,6 +2265,7 @@ namespace ttcr {
                                                              par.nTertiary,
                                                              par.radius_tertiary_nodes,
                                                              par.tt_from_rp,
+                                                             par.useEdgeLength,
                                                              nt);
                 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -2526,6 +2532,7 @@ namespace ttcr {
                                                              par.nTertiary,
                                                              par.radius_tertiary_nodes,
                                                              par.tt_from_rp,
+                                                             par.useEdgeLength,
                                                              nt);
                 else
                     g = new Grid2Dundsp<T, uint32_t, sxz<T>>(nodes,
@@ -2534,6 +2541,7 @@ namespace ttcr {
                                                              par.nTertiary,
                                                              par.radius_tertiary_nodes,
                                                              par.tt_from_rp,
+                                                             par.useEdgeLength,
                                                              nt);
 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }

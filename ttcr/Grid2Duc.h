@@ -197,6 +197,8 @@ namespace ttcr {
                 tri[n] = {triangles[n].i[0], triangles[n].i[1], triangles[n].i[2]};
             }
         }
+        
+        const T1 getAverageEdgeLength() const;
 
     protected:
         T2 nPrimary;
@@ -2895,6 +2897,32 @@ namespace ttcr {
             interpolated[n] /= totalArea;
         }
     }
+
+template<typename T1, typename T2, typename NODE, typename S>
+const T1 Grid2Duc<T1,T2,NODE,S>::getAverageEdgeLength() const {
+    std::set<std::array<T2,2>> edges;
+    typename std::set<std::array<T2,2>>::iterator edgIt;
+    T2 iNodes[3][2] = {
+        {0,1},
+        {0,2},
+        {1,2}
+    };
+    T1 sum = 0.0;
+    for (size_t ntri=0; ntri<triangles.size(); ++ntri) {
+        for (size_t n=0; n<6; ++n) {
+            std::array<T2, 2> edgei = {triangles[ntri].i[iNodes[n][0]],
+                triangles[ntri].i[iNodes[n][1]]};
+            std::sort(edgei.begin(), edgei.end());
+            edgIt = edges.find(edgei);
+            if ( edgIt  == edges.end() ) {
+                T1 d = nodes[edgei[0]].getDistance(nodes[edgei[1]]);
+                sum += d;
+                edges.insert(edgei);
+            }
+        }
+    }
+    return (sum/edges.size());
+}
 
 }
 

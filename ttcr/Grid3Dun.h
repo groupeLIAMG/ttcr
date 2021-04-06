@@ -188,6 +188,8 @@ namespace ttcr {
         void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                       const int order=2, const int taylorSeriesOrder=2,
                       const bool weighting=1, const bool s0inside=0) const;
+        
+        const T1 getAverageEdgeLength() const;
 
     protected:
         int rp_method;
@@ -10330,7 +10332,6 @@ namespace ttcr {
     }
 
 
-
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
                                              sijv<T1>& m,
@@ -11680,6 +11681,36 @@ void Grid3Dun<T1,T2,NODE>::interpSlownessSecondary(const T2 nSecondary) {
             }
         }
     }
+}
+
+
+template<typename T1, typename T2, typename NODE>
+const T1 Grid3Dun<T1,T2,NODE>::getAverageEdgeLength() const {
+    std::set<std::array<T2,2>> edges;
+    typename std::set<std::array<T2,2>>::iterator edgIt;
+    T2 iNodes[6][2] = {
+        {0,1},
+        {0,2},
+        {0,3},
+        {1,2},
+        {1,3},
+        {2,3}
+    };
+    T1 sum = 0.0;
+    for (size_t ntet=0; ntet<tetrahedra.size(); ++ntet) {
+        for (size_t n=0; n<6; ++n) {
+            std::array<T2, 2> edgei = {tetrahedra[ntet].i[iNodes[n][0]],
+                tetrahedra[ntet].i[iNodes[n][1]]};
+            std::sort(edgei.begin(), edgei.end());
+            edgIt = edges.find(edgei);
+            if ( edgIt  == edges.end() ) {
+                T1 d = nodes[edgei[0]].getDistance(nodes[edgei[1]]);
+                sum += d;
+                edges.insert(edgei);
+            }
+        }
+    }
+    return (sum/edges.size());
 }
 
 }

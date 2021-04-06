@@ -127,7 +127,7 @@ cdef extern from "Grid3Ducsp.h" namespace "ttcr" nogil:
 cdef extern from "Grid3Ducdsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Ducdsp[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2]]):
         Grid3Ducdsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]],
-                    int, int, T1, int, bool, T1, T1, size_t) except +
+                    int, int, T1, int, bool, T1, T1, bool, size_t) except +
 
 cdef extern from "Grid3Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dunfs[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
@@ -143,7 +143,7 @@ cdef extern from "Grid3Dunsp.h" namespace "ttcr" nogil:
 cdef extern from "Grid3Dundsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dundsp[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
         Grid3Dundsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], int, int, T1,
-                    bool, int, bool, T1, T1, size_t) except +
+                    bool, int, bool, T1, T1, bool, size_t) except +
 
 
 cdef extern from "Grid2D.h" namespace "ttcr" nogil:
@@ -213,7 +213,7 @@ cdef extern from "Grid2Ducsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2Ducdsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducdsp[T1,T2,S](Grid2Duc[T1,T2,Node2Dc[T1,T2],S]):
-        Grid2Ducdsp(vector[S]&, vector[triangleElem[T2]]&, T2, int, T1, bool, size_t) except +
+        Grid2Ducdsp(vector[S]&, vector[triangleElem[T2]]&, T2, int, T1, bool, bool, size_t) except +
 
 cdef extern from "Grid2Ducfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Ducfs[T1,T2,NODE,S](Grid2Duc[T1,T2,NODE,S]):
@@ -226,7 +226,7 @@ cdef extern from "Grid2Dunsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2Dundsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dundsp[T1,T2,S](Grid2Dun[T1,T2,Node2Dn[T1,T2],S]):
-        Grid2Dundsp(vector[S]&, vector[triangleElem[T2]]&, int, int, T1, bool, size_t) except +
+        Grid2Dundsp(vector[S]&, vector[triangleElem[T2]]&, int, int, T1, bool, bool, size_t) except +
 
 cdef extern from "Grid2Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Dunfs[T1,T2,NODE,S](Grid2Dun[T1,T2,NODE,S]):

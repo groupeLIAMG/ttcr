@@ -365,6 +365,10 @@ namespace ttcr {
                              std::vector<std::vector<siv<T1>>>& d_data) const {
             throw std::runtime_error("Method computeD should be implemented in subclass");
         }
+        
+        virtual const T1 getAverageEdgeLength() const {
+            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+        }
 
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,

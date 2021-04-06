@@ -38,7 +38,7 @@ public:
     Grid2Ducdsp(const std::vector<S>& no,
                 const std::vector<triangleElem<T2>>& tri,
                 const T2 ns, const int nd, const T1 drad, const bool ttrp,
-                const size_t nt=1) :
+                const bool useEdgeLength=true, const size_t nt=1) :
     Grid2Duc<T1,T2,Node2Dc<T1,T2>,S>(no, tri, ttrp, nt),
     nSecondary(ns), nTertiary(nd), nPermanent(0),
     dyn_radius(drad),
@@ -51,6 +51,7 @@ public:
         for ( size_t n=0; n<nt; ++n ) {
             tempNeighbors[n].resize(tri.size());
         }
+        if (useEdgeLength) dyn_radius *= this->getAverageEdgeLength();
     }
     ~Grid2Ducdsp() {
     }
