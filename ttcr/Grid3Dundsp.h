@@ -74,7 +74,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( this->interpVel )
+                if ( this->processVel )
                     this->interpVelocitySecondary(nSecondary);
                 else
                     this->interpSlownessSecondary(nSecondary);
@@ -89,7 +89,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( this->interpVel )
+                if ( this->processVel )
                     this->interpVelocitySecondary(nSecondary);
                 else
                     this->interpSlownessSecondary(nSecondary);
@@ -150,9 +150,6 @@ namespace ttcr {
         mutable std::vector<std::vector<Node3Dnd<T1,T2>>> tempNodes;
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
         
-//        void interpSlownessSecondary();
-//        void interpVelocitySecondary();
-
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
 
         void initQueue(const std::vector<sxyz<T1>>& Tx,
@@ -458,7 +455,7 @@ namespace ttcr {
                     
                     sxyz<T1> d = (this->nodes[lineKey[1]]-this->nodes[lineKey[0]])/static_cast<T1>(nDynTot+nSecondary+1);
                     
-                    if ( this->interpVel )
+                    if ( this->processVel )
                         slope = (1.0/this->nodes[lineKey[1]].getNodeSlowness() - 1.0/this->nodes[lineKey[0]].getNodeSlowness())/
                             this->nodes[lineKey[1]].getDistance(this->nodes[lineKey[0]]);
                     else
@@ -472,7 +469,7 @@ namespace ttcr {
                                                 this->nodes[lineKey[0]].getY()+(1+n2*(nTertiary+1)+n3)*d.y,
                                                 this->nodes[lineKey[0]].getZ()+(1+n2*(nTertiary+1)+n3)*d.z,
                                                 nPermanent+nTmpNodes );
-                            if ( this->interpVel )
+                            if ( this->processVel )
                                 islown = 1.0/(1.0/this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]));
                             else
                                 islown = this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]);
@@ -539,7 +536,7 @@ namespace ttcr {
                                                 pt1.y+(1+n4)*d.y,
                                                 pt1.z+(1+n4)*d.z,
                                                 nPermanent+nTmpNodes );
-                            if ( this->interpVel )
+                            if ( this->processVel )
                                 islown = Interpolator<T1>::bilinearTriangleVel(tmpNode, inodes);
                             else
                                 islown = Interpolator<T1>::bilinearTriangle(tmpNode, inodes);
@@ -567,7 +564,7 @@ namespace ttcr {
                                                 nPermanent+nTmpNodes );
                             n5++;
                             
-                            if ( this->interpVel )
+                            if ( this->processVel )
                                 islown = Interpolator<T1>::bilinearTriangleVel(tmpNode, inodes);
                             else
                                 islown = Interpolator<T1>::bilinearTriangle(tmpNode, inodes);
@@ -690,7 +687,7 @@ namespace ttcr {
                                                              txNodes.size()-1) );
                 
                 T1 s;
-                if ( this->interpVel )
+                if ( this->processVel )
                     s = Interpolator<T1>::trilinearTriangleVel(txNodes.back(),
                                                                this->nodes[this->neighbors[cn][0]],
                                                                this->nodes[this->neighbors[cn][1]],

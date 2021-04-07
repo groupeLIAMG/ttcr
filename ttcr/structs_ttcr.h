@@ -50,7 +50,7 @@ namespace ttcr {
         bool time;
         bool processReflectors;
         bool projectTxRx;
-        bool interpVel;
+        bool processVel;
         bool rotated_template;
         bool weno3;
         bool dump_secondary;
@@ -72,7 +72,7 @@ namespace ttcr {
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
-        projectTxRx(false), interpVel(false), rotated_template(false),
+        projectTxRx(false), processVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false), useEdgeLength(true),
         epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
         radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),

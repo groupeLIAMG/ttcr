@@ -284,7 +284,7 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
-                ip.interpVel = (test == 1);
+                ip.processVel = (test == 1);
             }
             else if (par.find("traveltime from raypath") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();

@@ -256,7 +256,7 @@ namespace ttcr {
                                                     min[0], min[1], min[2],
                                                     par.nn[0], par.nn[1], par.nn[2],
                                                     par.tt_from_rp,
-                                                    par.interpVel, nt);
+                                                    par.processVel, nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -285,14 +285,14 @@ namespace ttcr {
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, par.tt_from_rp,
-                                                    par.interpVel, nt);
+                                                    par.processVel, nt);
                 }
                 else
                     g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, par.tt_from_rp,
-                                                    par.interpVel, nt);
+                                                    par.processVel, nt);
                 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -327,7 +327,7 @@ namespace ttcr {
                                                      par.tt_from_rp,
                                                      par.nTertiary,
                                                      par.radius_tertiary_nodes,
-                                                     par.interpVel,
+                                                     par.processVel,
                                                      nt);
                 }
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -483,7 +483,7 @@ namespace ttcr {
                                                         xrange[0], yrange[0], zrange[0],
                                                         par.nn[0], par.nn[1], par.nn[2],
                                                         par.tt_from_rp,
-                                                        par.interpVel, nt);
+                                                        par.processVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -510,7 +510,7 @@ namespace ttcr {
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp,
-                                                        par.interpVel, nt);
+                                                        par.processVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -549,7 +549,7 @@ namespace ttcr {
                                                          par.tt_from_rp,
                                                          par.nTertiary,
                                                          par.radius_tertiary_nodes,
-                                                         par.interpVel,
+                                                         par.processVel,
                                                          nt);
 
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -697,7 +697,7 @@ namespace ttcr {
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp,
-                                                        par.interpVel, nt);
+                                                        par.processVel, nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -836,7 +836,7 @@ namespace ttcr {
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.nn[0],
-                                                    par.interpVel,
+                                                    par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
                                                     nt);
@@ -866,7 +866,7 @@ namespace ttcr {
                 else
                     g = new Grid3Dunfm<T, uint32_t>(nodes, tetrahedra,
                                                     par.raypath_method,
-                                                    par.interpVel,
+                                                    par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
                                                     nt);
@@ -900,7 +900,7 @@ namespace ttcr {
                                                     par.epsilon,
                                                     par.nitermax,
                                                     par.raypath_method,
-                                                    par.interpVel,
+                                                    par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
                                                     nt);
@@ -960,7 +960,7 @@ namespace ttcr {
                                                      par.nn[0],
                                                      par.nTertiary,
                                                      par.source_radius,
-                                                     par.interpVel,
+                                                     par.processVel,
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,
@@ -1140,7 +1140,7 @@ namespace ttcr {
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.nn[0],
-                                                    par.interpVel,
+                                                    par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
                                                     nt);
@@ -1171,7 +1171,7 @@ namespace ttcr {
                     g = new Grid3Dunfm<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.raypath_method,
-                                                    par.interpVel,
+                                                    par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
                                                     nt);
@@ -1211,7 +1211,7 @@ namespace ttcr {
                                                     par.epsilon,
                                                     par.nitermax,
                                                     par.raypath_method,
-                                                    par.interpVel,
+                                                    par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
                                                     nt);
@@ -1272,7 +1272,7 @@ namespace ttcr {
                                                      par.nn[0],
                                                      par.nTertiary,
                                                      par.source_radius,
-                                                     par.interpVel,
+                                                     par.processVel,
                                                      par.raypath_method,
                                                      par.tt_from_rp,
                                                      par.min_distance_rp,

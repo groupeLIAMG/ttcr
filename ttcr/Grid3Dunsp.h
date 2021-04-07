@@ -66,7 +66,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( this->interpVel )
+                if ( this->processVel )
                     this->interpVelocitySecondary(nSecondary);
                 else
                     this->interpSlownessSecondary(nSecondary);
@@ -82,7 +82,7 @@ namespace ttcr {
                 this->nodes[n].setNodeSlowness( s[n] );
             }
             if ( nSecondary>0 ) {
-                if ( this->interpVel )
+                if ( this->processVel )
                     this->interpVelocitySecondary(nSecondary);
                 else
                     this->interpSlownessSecondary(nSecondary);
@@ -128,9 +128,6 @@ namespace ttcr {
         
     private:
         T2 nSecondary;
-        
-//        void interpSlownessSecondary();
-//        void interpVelocitySecondary();
         
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,
@@ -647,7 +644,7 @@ namespace ttcr {
                 frozen.push_back( true );
                 
                 T1 s;
-                if ( this->interpVel )
+                if ( this->processVel )
                     s = Interpolator<T1>::trilinearTriangleVel(txNodes.back(),
                                                                this->nodes[this->neighbors[cn][0]],
                                                                this->nodes[this->neighbors[cn][1]],

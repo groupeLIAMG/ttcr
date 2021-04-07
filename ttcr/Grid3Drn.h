@@ -65,12 +65,12 @@ namespace ttcr {
         Grid3Drn(const T2 nx, const T2 ny, const T2 nz,
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
-                 const bool ttrp, const bool intVel, const size_t nt=1) :
+                 const bool ttrp, const bool procVel, const size_t nt=1) :
         Grid3D<T1,T2>(ttrp, nx*ny*nz, nt),
         dx(ddx), dy(ddy), dz(ddz),
         xmin(minx), ymin(miny), zmin(minz),
         xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
-        ncx(nx), ncy(ny), ncz(nz), interpVel(intVel),
+        ncx(nx), ncy(ny), ncz(nz), processVel(procVel),
         nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt)))
         { }
         
@@ -176,7 +176,7 @@ namespace ttcr {
         T2 ncy;                  // number of cells in y
         T2 ncz;                  // number of cells in z
 
-        bool interpVel;
+        bool processVel;
         
         mutable std::vector<NODE> nodes;
         
@@ -2579,7 +2579,7 @@ namespace ttcr {
             T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
             T1 s[2];
             T1 x[3];
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[(k*nny+onY)*nnx+onX].getNodeSlowness();
                 s[1] = 1.0 / nodes[((k+1)*nny+onY)*nnx+onX].getNodeSlowness();
             } else {
@@ -2590,7 +2590,7 @@ namespace ttcr {
             x[1] = zmin + k*dz;
             x[2] = zmin + (k+1)*dz;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::linear(x, s);
             else
                 return Interpolator<T1>::linear(x, s);
@@ -2599,7 +2599,7 @@ namespace ttcr {
             T2 j = static_cast<T2>( small + (pt.y-ymin)/dy );
             T1 s[2];
             T1 x[3];
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[(onZ*nny+j)*nnx+onX].getNodeSlowness();
                 s[1] = 1.0 / nodes[(onZ*nny+j+1)*nnx+onX].getNodeSlowness();
             } else {
@@ -2610,7 +2610,7 @@ namespace ttcr {
             x[1] = ymin + j*dy;
             x[2] = ymin + (j+1)*dy;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::linear(x, s);
             else
                 return Interpolator<T1>::linear(x, s);
@@ -2619,7 +2619,7 @@ namespace ttcr {
             T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
             T1 s[2];
             T1 x[3];
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[(onZ*nny+onY)*nnx+i].getNodeSlowness();
                 s[1] = 1.0 / nodes[(onZ*nny+onY)*nnx+i+1].getNodeSlowness();
             } else {
@@ -2630,7 +2630,7 @@ namespace ttcr {
             x[1] = xmin + i*dx;
             x[2] = xmin + (i+1)*dx;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::linear(x, s);
             else
                 return Interpolator<T1>::linear(x, s);
@@ -2640,7 +2640,7 @@ namespace ttcr {
             T1 s[4];
             T1 x[3];
             T1 y[3];
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[((k  )*nny+j  )*nnx+onX].getNodeSlowness();
                 s[1] = 1.0 / nodes[((k+1)*nny+j  )*nnx+onX].getNodeSlowness();
                 s[2] = 1.0 / nodes[((k  )*nny+j+1)*nnx+onX].getNodeSlowness();
@@ -2658,7 +2658,7 @@ namespace ttcr {
             x[2] = ymin + (j+1)*dy;
             y[2] = zmin + (k+1)*dz;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::bilinear(x, y, s);
             else
                 return Interpolator<T1>::bilinear(x, y, s);
@@ -2669,7 +2669,7 @@ namespace ttcr {
             T1 s[4];
             T1 x[3];
             T1 y[3];
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[((k  )*nny+onY)*nnx+i  ].getNodeSlowness();
                 s[1] = 1.0 / nodes[((k+1)*nny+onY)*nnx+i  ].getNodeSlowness();
                 s[2] = 1.0 / nodes[((k  )*nny+onY)*nnx+i+1].getNodeSlowness();
@@ -2687,7 +2687,7 @@ namespace ttcr {
             x[2] = xmin + (i+1)*dx;
             y[2] = zmin + (k+1)*dz;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::bilinear(x, y, s);
             else
                 return Interpolator<T1>::bilinear(x, y, s);
@@ -2698,7 +2698,7 @@ namespace ttcr {
             T1 s[4];
             T1 x[3];
             T1 y[3];
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[(onZ*nny+j  )*nnx+i  ].getNodeSlowness();
                 s[1] = 1.0 / nodes[(onZ*nny+j+1)*nnx+i  ].getNodeSlowness();
                 s[2] = 1.0 / nodes[(onZ*nny+j  )*nnx+i+1].getNodeSlowness();
@@ -2716,7 +2716,7 @@ namespace ttcr {
             x[2] = xmin + (i+1)*dx;
             y[2] = ymin + (j+1)*dy;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::bilinear(x, y, s);
             else
                 return Interpolator<T1>::bilinear(x, y, s);
@@ -2730,7 +2730,7 @@ namespace ttcr {
             T1 y[3];
             T1 z[3];
 
-            if ( interpVel ) {
+            if ( processVel ) {
                 s[0] = 1.0 / nodes[((k  )*nny+j  )*nnx+i  ].getNodeSlowness();
                 s[1] = 1.0 / nodes[((k+1)*nny+j  )*nnx+i  ].getNodeSlowness();
                 s[2] = 1.0 / nodes[((k  )*nny+j+1)*nnx+i  ].getNodeSlowness();
@@ -2759,7 +2759,7 @@ namespace ttcr {
             y[2] = ymin + (j+1)*dy;
             z[2] = zmin + (k+1)*dz;
 
-            if ( interpVel )
+            if ( processVel )
                 return 1.0 / Interpolator<T1>::trilinear(x, y, z, s);
             else
                 return Interpolator<T1>::trilinear(x, y, z, s);
