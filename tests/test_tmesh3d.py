@@ -74,7 +74,7 @@ class TestMesh3Dc(unittest.TestCase):
 
     def test_Mesh3Ddsp(self):
         g = tm.Mesh3d(self.nodes, self.tet, method='DSPM', n_secondary=2,
-                      n_tertiary=3, radius_factor_tertiary=0.8, tt_from_rp=0)
+                      n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
@@ -135,7 +135,7 @@ class TestMesh3Dn(unittest.TestCase):
 
     def test_Mesh3Ddsp(self):
         g = tm.Mesh3d(self.nodes, self.tet, method='DSPM', n_secondary=2,
-                      n_tertiary=3, radius_factor_tertiary=0.8, cell_slowness=0,
+                      n_tertiary=3, radius_factor_tertiary=3.0, cell_slowness=0,
                       tt_from_rp=0)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()

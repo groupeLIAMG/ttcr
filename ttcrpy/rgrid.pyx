@@ -73,7 +73,7 @@ cdef class Grid3d:
 
     Constructor:
 
-    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_tertiary=1.0) -> Grid3d
+    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0) -> Grid3d
 
         Parameters
         ----------
@@ -114,9 +114,10 @@ cdef class Grid3d:
             number of secondary nodes (DSPM) (default is 2)
         n_tertiary : int
             number of tertiary nodes (DSPM) (default is 2)
-        radius_tertiary : double
-            radius of sphere around source that includes tertiary nodes (DSPM)
-            (default is 1)
+        radius_factor_tertiary : double
+            multiplication factor used to compute radius of sphere around source
+            that includes tertiary nodes (DSPM).  The radius is the average edge
+            length multiplied by this factor (default is 3)
     """
     cdef vector[double] _x
     cdef vector[double] _y
@@ -137,7 +138,7 @@ cdef class Grid3d:
     cdef uint32_t nsnz
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
-    cdef double radius_tertiary
+    cdef double radius_factor_tertiary
     cdef Grid3D[double, uint32_t]* grid
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
@@ -149,7 +150,7 @@ cdef class Grid3d:
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                  double radius_tertiary=1.0):
+                  double radius_factor_tertiary=3.0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t ny = y.size-1
@@ -172,7 +173,9 @@ cdef class Grid3d:
         self.nsnz = nsnz
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
-        self.radius_tertiary = radius_tertiary
+        self.radius_factor_tertiary = radius_factor_tertiary
+        
+        cdef use_edge_length = True
 
         if method == 'FSM':
             if np.abs(self._dx - self._dy)>0.000001 or np.abs(self._dx - self._dz)>0.000001:
@@ -210,8 +213,8 @@ cdef class Grid3d:
                                                            self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
                                                            n_secondary, tt_from_rp,
-                                                           n_tertiary, radius_tertiary,
-                                                           n_threads)
+                                                           n_tertiary, radius_factor_tertiary,
+                                                           use_edge_length, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -236,8 +239,9 @@ cdef class Grid3d:
                                                              self._dx, self._dy, self._dz,
                                                              xmin, ymin, zmin,
                                                              n_secondary, tt_from_rp,
-                                                             n_tertiary, radius_tertiary,
-                                                             interp_vel, n_threads)
+                                                             n_tertiary, radius_factor_tertiary,
+                                                             interp_vel, use_edge_length,
+                                                             n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -256,7 +260,7 @@ cdef class Grid3d:
                               self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
-                              self.radius_tertiary)
+                              self.radius_factor_tertiary)
         return (_rebuild3d, (self.x, self.y, self.z, constructor_params))
 
     @property
@@ -1252,9 +1256,9 @@ cdef class Grid3d:
     @staticmethod
     def builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0,
                 eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
-                n_secondary=2, n_tertiary=2, radius_tertiary=1.0):
+                n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0):
         """
-        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_tertiary=1.0)
+        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0)
 
         Build instance of Grid3d from VTK file
 
@@ -1306,7 +1310,7 @@ cdef class Grid3d:
 
         g = Grid3d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                    interp_vel, eps, maxit, weno, nsnx, nsny, nsnz,
-                   n_secondary, n_tertiary, radius_tertiary)
+                   n_secondary, n_tertiary, radius_factor_tertiary)
         g.set_slowness(slowness)
         return g
 
@@ -1771,7 +1775,7 @@ cdef class Grid2d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_tertiary=1.0, tt_from_rp=0) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0) -> Grid2d
 
     Parameters
     ----------
@@ -1812,9 +1816,10 @@ cdef class Grid2d:
         number of secondary nodes (DSPM) (default is 3)
     n_tertiary : int
         number of tertiary nodes (DSPM) (default is 3)
-    radius_tertiary : double
-        radius of sphere around source that includes tertiary nodes (DSPM)
-        (default is 1)
+    radius_factor_tertiary : double
+            multiplication factor used to compute radius of sphere around source
+            that includes tertiary nodes (DSPM).  The radius is the average edge
+            length multiplied by this factor (default is 3)
     tt_from_rp : bool
         compute traveltime using raypaths (available for FSM and DSPM only)
         (default is False)
@@ -1836,7 +1841,7 @@ cdef class Grid2d:
     cdef uint32_t nsnz
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
-    cdef double radius_tertiary
+    cdef double radius_factor_tertiary
 
     cdef Grid2D[double,uint32_t,sxz[double]]* grid
 
@@ -1846,7 +1851,7 @@ cdef class Grid2d:
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
                   uint32_t n_secondary=3, uint32_t n_tertiary=3,
-                  double radius_tertiary=1.0, bool tt_from_rp=0):
+                  double radius_factor_tertiary=3.0, bool tt_from_rp=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
@@ -1865,8 +1870,10 @@ cdef class Grid2d:
         self.iso = b'i'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
-        self.radius_tertiary = radius_tertiary
+        self.radius_factor_tertiary = radius_factor_tertiary
         self.tt_from_rp = tt_from_rp
+        
+        cdef use_edge_length = True
 
         for val in x:
             self._x.push_back(val)
@@ -1914,7 +1921,8 @@ cdef class Grid2d:
                 self.grid = new Grid2Drcdsp[double,uint32_t,sxz[double],cell2d](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, n_secondary, n_tertiary,
-                                    radius_tertiary, tt_from_rp, n_threads)
+                                    radius_factor_tertiary, tt_from_rp,
+                                    use_edge_length, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -1933,7 +1941,8 @@ cdef class Grid2d:
                 self.grid = new Grid2Drndsp[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin,
                                 n_secondary, n_tertiary,
-                                radius_tertiary, tt_from_rp, n_threads)
+                                radius_factor_tertiary, tt_from_rp,
+                                use_edge_length, n_threads)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -1963,7 +1972,7 @@ cdef class Grid2d:
                               aniso, self.eps, self.maxit, self.weno,
                               self.rotated_template, self.nsnx, self.nsnz,
                               self.n_secondary, self.n_tertiary,
-                              self.radius_tertiary, self.tt_from_rp)
+                              self.radius_factor_tertiary, self.tt_from_rp)
         return (_rebuild2d, (self.x, self.z, constructor_params))
 
     @property
@@ -3198,17 +3207,17 @@ cdef class Grid2d:
 def _rebuild3d(x, y, z, constructor_params):
     (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
      weno, nsnx, nsny, nsnz, n_secondary,
-     n_tertiary, radius_tertiary) = constructor_params
+     n_tertiary, radius_factor_tertiary) = constructor_params
     g = Grid3d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
-               n_tertiary, radius_tertiary)
+               n_tertiary, radius_factor_tertiary)
     return g
 
 def _rebuild2d(x, z, constructor_params):
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
-     radius_tertiary, tt_from_rp) = constructor_params
+     radius_factor_tertiary, tt_from_rp) = constructor_params
     g = Grid2d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
-               radius_tertiary, tt_from_rp)
+               radius_factor_tertiary, tt_from_rp)
     return g

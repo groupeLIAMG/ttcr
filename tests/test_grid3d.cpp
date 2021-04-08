@@ -124,7 +124,7 @@ BOOST_DATA_TEST_CASE(
             par.nn[2] = 5;
             break;
         case DYNAMIC_SHORTEST_PATH:
-            par.radius_tertiary_nodes = 0.8;
+            par.radius_tertiary_nodes = 3.0;
             par.nn[0] = 2;
             par.nn[1] = 2;
             par.nn[2] = 2;
@@ -177,7 +177,7 @@ BOOST_DATA_TEST_CASE(
             par.nn[2] = 5;
             break;
         case DYNAMIC_SHORTEST_PATH:
-            par.radius_tertiary_nodes = 0.8;
+            par.radius_tertiary_nodes = 3.0;
             par.nn[0] = 2;
             par.nn[1] = 2;
             par.nn[2] = 2;

@@ -67,7 +67,7 @@ class TestGrid3dc(unittest.TestCase):
 
     def test_Grid3Ddsp(self):
         g = rg.Grid3d(self.x, self.y, self.z, method='DSPM', tt_from_rp=False,
-                      n_secondary=2, n_tertiary=3, radius_tertiary=0.8)
+                      n_secondary=2, n_tertiary=3, radius_factor_tertiary=3.0)
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)
         tt = g.get_grid_traveltimes()
@@ -120,7 +120,7 @@ class TestGrid3dn(unittest.TestCase):
 
     def test_Grid3Ddsp(self):
         g = rg.Grid3d(self.x, self.y, self.z, method='DSPM', tt_from_rp=False,
-                      n_secondary=2, n_tertiary=3, radius_tertiary=0.8,
+                      n_secondary=2, n_tertiary=3, radius_factor_tertiary=3.0,
                       cell_slowness=0)
         tt = g.raytrace(self.src, self.rcv, self.slowness)
         dim = (self.x.size, self.y.size, self.z.size)

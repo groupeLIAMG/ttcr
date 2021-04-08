@@ -318,6 +318,7 @@ namespace ttcr {
                                                                                         par.tt_from_rp,
                                                                                         par.nTertiary,
                                                                                         par.radius_tertiary_nodes,
+                                                                                        par.useEdgeLength,
                                                                                         nt);
                 else {
                     g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
@@ -328,6 +329,7 @@ namespace ttcr {
                                                      par.nTertiary,
                                                      par.radius_tertiary_nodes,
                                                      par.processVel,
+                                                     par.useEdgeLength,
                                                      nt);
                 }
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -550,6 +552,7 @@ namespace ttcr {
                                                          par.nTertiary,
                                                          par.radius_tertiary_nodes,
                                                          par.processVel,
+                                                         par.useEdgeLength,
                                                          nt);
 
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -735,6 +738,7 @@ namespace ttcr {
                                                                                             par.tt_from_rp,
                                                                                             par.nTertiary,
                                                                                             par.radius_tertiary_nodes,
+                                                                                            par.useEdgeLength,
                                                                                             nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
@@ -1576,6 +1580,7 @@ namespace ttcr {
                                                                                                     par.nTertiary,
                                                                                                     par.radius_tertiary_nodes,
                                                                                                     par.tt_from_rp,
+                                                                                                    par.useEdgeLength,
                                                                                                     nt);
                 else
                     g = new Grid2Drndsp<T, uint32_t, sxz<T>>(ncells[0], ncells[2],
@@ -1585,6 +1590,7 @@ namespace ttcr {
                                                              par.nTertiary,
                                                              par.radius_tertiary_nodes,
                                                              par.tt_from_rp,
+                                                             par.useEdgeLength,
                                                              nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -1816,6 +1822,7 @@ namespace ttcr {
                                                                  par.nTertiary,
                                                                  par.radius_tertiary_nodes,
                                                                  par.tt_from_rp,
+                                                                 par.useEdgeLength,
                                                                  nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
@@ -2051,6 +2058,7 @@ namespace ttcr {
                                                                                                         par.nTertiary,
                                                                                                         par.radius_tertiary_nodes,
                                                                                                         par.tt_from_rp,
+                                                                                                        par.useEdgeLength,
                                                                                                         nt);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {

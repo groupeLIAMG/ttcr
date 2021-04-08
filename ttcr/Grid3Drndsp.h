@@ -22,7 +22,8 @@ namespace ttcr {
                     const T1 ddx, const T1 ddy, const T1 ddz,
                     const T1 minx, const T1 miny, const T1 minz,
                     const T2 ns, const bool ttrp, const T2 nd, const T1 drad,
-                    const bool intVel, const size_t nt=1) :
+                    const bool intVel, const bool useEdgeLength=true,
+                    const size_t nt=1) :
         Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, intVel, nt),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dynRadius(drad),
@@ -34,6 +35,10 @@ namespace ttcr {
             nPermanent = static_cast<T2>(this->nodes.size());
             for ( size_t n=0; n<nt; ++n ) {
                 tempNeighbors[n].resize(this->ncx * this->ncy * this->ncz);
+            }
+            if (useEdgeLength) {
+                T1 dx = 0.3333333 * (ddx+ddy+ddz);
+                dynRadius *= dx;
             }
         }
 
@@ -55,7 +60,6 @@ namespace ttcr {
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
 
         void buildGridNodes();
-//        void linearInterpolation() const;
 
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
 

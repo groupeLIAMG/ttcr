@@ -20,7 +20,8 @@ class Grid2Drndsp : public Grid2Drn<T1,T2,S,Node2Dn<T1,T2>> {
 public:
     Grid2Drndsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                 const T1 minx, const T1 minz, const T2 ns, const T2 nd,
-                const T1 drad, const bool ttrp, const size_t nt=1) :
+                const T1 drad, const bool ttrp, const bool useEdgeLength=true,
+                const size_t nt=1) :
     Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,ttrp,nt),
     nSecondary(ns), nTertiary(nd), nPermanent(0),
     dynRadius(drad),
@@ -32,6 +33,10 @@ public:
         nPermanent = static_cast<T2>(this->nodes.size());
         for ( size_t n=0; n<nt; ++n ) {
             tempNeighbors[n].resize(this->ncx * this->ncz);
+        }
+        if (useEdgeLength) {
+            T1 dx = 0.5 * (ddx+ddz);
+            dynRadius *= dx;
         }
     }
     

@@ -29,7 +29,7 @@ namespace ttcr {
                     const T1 ddx, const T1 ddy, const T1 ddz,
                     const T1 minx, const T1 miny, const T1 minz,
                     const T2 ns, const bool ttrp, const T2 nd, const T1 drad,
-                    const size_t nt=1) :
+                    const bool useEdgeLength=true, const size_t nt=1) :
         Grid3Drc<T1,T2,Node3Dc<T1,T2>,CELL>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dynRadius(drad),
@@ -42,6 +42,10 @@ namespace ttcr {
             for ( size_t n=0; n<nt; ++n ) {
                 tempNeighbors[n].resize(this->ncx * this->ncy * this->ncz);
             }
+            if (useEdgeLength) {
+                T1 dx = 0.3333333 * (ddx+ddy+ddz);
+                dynRadius *= dx;
+            }
         }
         
         ~Grid3Drcdsp() {
@@ -49,7 +53,7 @@ namespace ttcr {
 
     private:
         T2 nSecondary;                 // number of permanent secondary
-        T2 nTertiary;                   // number of temporary secondary
+        T2 nTertiary;                  // number of temporary secondary
         T2 nPermanent;                 // total nb of primary & permanent secondary
         T1 dynRadius;
 

@@ -65,7 +65,7 @@ class TestGrid2dc(unittest.TestCase):
 
     def test_Grid2Ddsp(self):
         g = rg.Grid2d(self.x, self.z, method='DSPM', n_secondary=3,
-                      n_tertiary=3)
+                      n_tertiary=3, radius_factor_tertiary=3.0)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
@@ -114,7 +114,7 @@ class TestGrid2dn(unittest.TestCase):
 
     def test_Grid2Ddsp(self):
         g = rg.Grid2d(self.x, self.z, method='DSPM', n_secondary=3,
-                      n_tertiary=3, cell_slowness=0)
+                      n_tertiary=3, radius_factor_tertiary=3.0, cell_slowness=0)
         tt = g.raytrace(self.src, self.rcv, slowness=self.slowness)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()

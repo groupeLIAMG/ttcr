@@ -102,7 +102,7 @@ cdef class Mesh3d:
         radius_factor_tertiary : double
             multiplication factor used to compute radius of sphere around source
             that includes tertiary nodes (DSPM).  The radius is the average edge
-            length multiplied by this factor (default is 2)
+            length multiplied by this factor (default is 3)
 
     """
     cdef bool cell_slowness
@@ -128,7 +128,7 @@ cdef class Mesh3d:
                   bool tt_from_rp=1, bool process_vel=0,
                   double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                  double radius_factor_tertiary=2.0):
+                  double radius_factor_tertiary=3.0):
 
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
@@ -1067,7 +1067,7 @@ cdef class Mesh3d:
                 bool tt_from_rp=1, bool process_vel=0,
                 double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                double radius_factor_tertiary=1.0):
+                double radius_factor_tertiary=3.0):
         """
         builder(filename, n_threads, cell_slowness, method, gradient_method, tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary)
 
@@ -1732,7 +1732,7 @@ cdef class Mesh2d:
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM',double eps=1.e-15, int maxit=20,
                 bool process_obtuse=1, uint32_t n_secondary=5,
-                uint32_t n_tertiary=2, double radius_factor_tertiary=1.0,
+                uint32_t n_tertiary=2, double radius_factor_tertiary=3.0,
                 bool tt_from_rp=0):
         """
         builder(filename, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp)
