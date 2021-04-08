@@ -183,7 +183,7 @@ namespace ttcr {
         //    // on faces
         //    size_t ncut = nDynTot + nSecondary - 1;
         //    size_t nSecNodes = 0;
-        //    for ( int n=1; n<=(nSecondary-1); ++n ) nSecNodes += n;
+        //    for ( int n=1; n<=(nSecondary-1); ++n ) { nSecNodes += n; }
         //
 
         for ( auto cell=txCells.begin(); cell!=txCells.end(); ++cell ) {
@@ -363,8 +363,9 @@ namespace ttcr {
                                         const std::vector<const std::vector<S>*>& Rx,
                                         const size_t threadNo) const {
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );

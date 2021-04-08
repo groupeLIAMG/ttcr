@@ -474,14 +474,16 @@ namespace ttcr {
         if ( this->tt_from_rp ) {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                }
             }
         } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+                }
             }
         }
     }

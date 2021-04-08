@@ -139,8 +139,9 @@ namespace ttcr {
         initTx(Tx, t0, frozen, threadNo);
 
         std::vector<T1> times( this->nodes.size() );
-        for ( size_t n=0; n<this->nodes.size(); ++n )
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
             times[n] = this->nodes[n].getTT( threadNo );
+        }
 
         int niter=0;
         T1 change = std::numeric_limits<T1>::max();
@@ -197,8 +198,9 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
+        for ( size_t n=0; n<Rx.size(); ++n ) {
             this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -208,8 +210,9 @@ namespace ttcr {
         initTx(Tx, t0, frozen, threadNo);
 
         std::vector<T1> times( this->nodes.size() );
-        for ( size_t n=0; n<this->nodes.size(); ++n )
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
             times[n] = this->nodes[n].getTT( threadNo );
+        }
 
         int niter=0;
         T1 change = std::numeric_limits<T1>::max();

@@ -131,38 +131,45 @@ namespace ttcr {
 
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            xmin = xmin<it->getX() ? xmin : it->getX();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                xmin = xmin<it->getX() ? xmin : it->getX();
+            }
             return xmin;
         }
         const T1 getXmax() const {
             T1 xmax = nodes[0].getX();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            xmax = xmax>it->getX() ? xmax : it->getX();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                xmax = xmax>it->getX() ? xmax : it->getX();
+            }
             return xmax;
         }
         const T1 getYmin() const {
             T1 ymin = nodes[0].getY();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            ymin = ymin<it->getY() ? ymin : it->getY();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                ymin = ymin<it->getY() ? ymin : it->getY();
+            }
             return ymin;
         }
         const T1 getYmax() const {
             T1 ymax = nodes[0].getY();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            ymax = ymax>it->getY() ? ymax : it->getY();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                ymax = ymax>it->getY() ? ymax : it->getY();
+            }
             return ymax;
         }
         const T1 getZmin() const {
             T1 zmin = nodes[0].getZ();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            zmin = zmin<it->getZ() ? zmin : it->getZ();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                zmin = zmin<it->getZ() ? zmin : it->getZ();
+            }
             return zmin;
         }
         const T1 getZmax() const {
             T1 zmax = nodes[0].getZ();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            zmax = zmax>it->getZ() ? zmax : it->getZ();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                zmax = zmax>it->getZ() ? zmax : it->getZ();
+
+            }
             return zmax;
         }
 
@@ -590,7 +597,9 @@ namespace ttcr {
         T2 nNodes = static_cast<T2>(nodes.size());
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nsecondary-1); ++n ) nFaceNodes += n;
+        for ( int n=1; n<=(nsecondary-1); ++n ) {
+            nFaceNodes += n;
+        }
 
         std::map<std::array<T2,2>,std::vector<T2>> lineMap;
         std::array<T2,2> lineKey;
@@ -1752,8 +1761,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -2200,8 +2210,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -2257,8 +2268,9 @@ namespace ttcr {
                     ind[2] = { { itmp[0], itmp[2], itmp[3] } };
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
-                    for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                    for ( size_t n=0; n<4; ++n ) {
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    }
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -2384,8 +2396,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
 
@@ -2538,8 +2551,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -2831,8 +2843,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -3153,8 +3166,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -3203,8 +3217,9 @@ namespace ttcr {
                     ind[2] = { { itmp[0], itmp[2], itmp[3] } };
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
-                    for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                    for ( size_t n=0; n<4; ++n ) {
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    }
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -3305,8 +3320,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -3407,8 +3423,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
@@ -3643,8 +3658,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -4079,8 +4095,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -4134,8 +4151,9 @@ namespace ttcr {
                     ind[2] = { { itmp[0], itmp[2], itmp[3] } };
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
-                    for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                    for ( size_t n=0; n<4; ++n ) {
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    }
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -4249,8 +4267,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 4 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -4395,8 +4414,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -4649,8 +4667,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -5212,8 +5231,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
@@ -5295,8 +5315,9 @@ namespace ttcr {
                     ind[2] = { { itmp[0], itmp[2], itmp[3] } };
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
-                    for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                    for ( size_t n=0; n<4; ++n ) {
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    }
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -5458,8 +5479,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 4 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -5694,8 +5716,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -5986,8 +6007,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -6651,8 +6673,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 //                onFacePrev = onFace;
@@ -6803,8 +6826,9 @@ namespace ttcr {
                     ind[2] = { { itmp[0], itmp[2], itmp[3] } };
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
-                    for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                    for ( size_t n=0; n<4; ++n ) {
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    }
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -7028,8 +7052,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 4 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -7221,8 +7246,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
@@ -7489,8 +7513,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -8073,8 +8098,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
@@ -8160,8 +8186,9 @@ namespace ttcr {
                     ind[2] = { { itmp[0], itmp[2], itmp[3] } };
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
-                    for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                    for ( size_t n=0; n<4; ++n ) {
+                        std::sort( ind[n].begin(), ind[n].end() );
+                    }
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -8330,8 +8357,9 @@ namespace ttcr {
                     { { itmp[0], itmp[2], itmp[3] } },
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 4 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -8573,8 +8601,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -8849,8 +8876,9 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
 
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -9284,8 +9312,9 @@ namespace ttcr {
                     { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } },
                     { { this->neighbors[cellNo1][1], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } }
                 };
-                for ( size_t n=0; n<8; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<8; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 T1 t_i=std::numeric_limits<T1>::max();
@@ -9538,8 +9567,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -9735,8 +9763,9 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
 
-                for ( size_t n=0; n<4; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<4; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -10175,8 +10204,9 @@ namespace ttcr {
                     { { this->neighbors[cellNo1][0], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } },
                     { { this->neighbors[cellNo1][1], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } }
                 };
-                for ( size_t n=0; n<8; ++n )
-                std::sort( ind[n].begin(), ind[n].end() );
+                for ( size_t n=0; n<8; ++n ) {
+                    std::sort( ind[n].begin(), ind[n].end() );
+                }
                 // there are 3 faces that might be intersected
 
                 T1 t_i=std::numeric_limits<T1>::max();
@@ -10396,8 +10426,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -11933,7 +11962,9 @@ namespace ttcr {
         typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
+        for ( int n=1; n<=(nSecondary-1); ++n ) {
+            nFaceNodes += n;
+        }
 
         for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 
@@ -12028,7 +12059,9 @@ namespace ttcr {
         typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
+        for ( int n=1; n<=(nSecondary-1); ++n ) {
+            nFaceNodes += n;
+        }
 
         for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 

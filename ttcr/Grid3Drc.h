@@ -1171,14 +1171,17 @@ namespace ttcr {
             int nn[3] = {static_cast<int>(ncx+1), static_cast<int>(ncy+1), static_cast<int>(ncz+1)};
 
             vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[0]; ++n)
-            xCoords->InsertNextValue( xmin + n*dx );
+            for (size_t n=0; n<nn[0]; ++n) {
+                xCoords->InsertNextValue( xmin + n*dx );
+            }
             vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[1]; ++n)
-            yCoords->InsertNextValue( ymin + n*dy );
+            for (size_t n=0; n<nn[1]; ++n) {
+                yCoords->InsertNextValue( ymin + n*dy );
+            }
             vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[2]; ++n)
-            zCoords->InsertNextValue( zmin + n*dz );
+            for (size_t n=0; n<nn[2]; ++n) {
+                zCoords->InsertNextValue( zmin + n*dz );
+            }
 
             vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
             rgrid->SetDimensions( nn );

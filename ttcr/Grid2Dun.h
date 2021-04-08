@@ -113,26 +113,30 @@ namespace ttcr {
 
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            xmin = xmin<it->getX() ? xmin : it->getX();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                xmin = xmin<it->getX() ? xmin : it->getX();
+            }
             return xmin;
         }
         const T1 getXmax() const {
             T1 xmax = nodes[0].getX();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            xmax = xmax>it->getX() ? xmax : it->getX();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                xmax = xmax>it->getX() ? xmax : it->getX();
+            }
             return xmax;
         }
         const T1 getZmin() const {
             T1 zmin = nodes[0].getZ();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            zmin = zmin<it->getZ() ? zmin : it->getZ();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                zmin = zmin<it->getZ() ? zmin : it->getZ();
+            }
             return zmin;
         }
         const T1 getZmax() const {
             T1 zmax = nodes[0].getZ();
-            for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-            zmax = zmax>it->getZ() ? zmax : it->getZ();
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
+                zmax = zmax>it->getZ() ? zmax : it->getZ();
+            }
             return zmax;
         }
 
@@ -652,9 +656,6 @@ namespace ttcr {
             // precompute centroids of all triangles
             S stmp = S(nodes[triangles[n].i[0]]) + S(nodes[triangles[n].i[1]]) + S(nodes[triangles[n].i[2]]);
             centroid[n] =  static_cast<T1>(1./3.) * stmp;
-            //            for ( size_t nn = 0; nn<3; ++nn )
-            //                std::cout << nodes[triangles[n].i[nn]].getX() << ' ' << nodes[triangles[n].i[nn]].getY() << ' ' << nodes[triangles[n].i[nn]].getZ() << '\n';
-            //            std::cout << "   " << centroid[n].x << ' ' << centroid[n].y << ' ' << centroid[n].z << '\n';
         }
         for ( size_t nt=0; nt<pts.size(); ++nt ) {
             // find closest triangle
@@ -1385,8 +1386,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 r_data.push_back( Tx[nt] );
                                 reachedTx = true;
@@ -1864,8 +1864,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 s2 = computeSlowness(Tx[nt], txCell[nt]);
                                 tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[nt] );
@@ -2333,8 +2332,7 @@ namespace ttcr {
             } else {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
-                        for ( auto nc=nodes[txNode[nt]].getOwners().begin();
-                             nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                        for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
                                 s2 = computeSlowness(Tx[nt], txCell[nt]);
                                 tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );

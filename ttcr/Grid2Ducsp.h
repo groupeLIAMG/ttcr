@@ -176,8 +176,9 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -201,8 +202,9 @@ namespace ttcr {
 
         for (size_t nr=0; nr<Rx.size(); ++nr) {
             traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-            (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+            }
         }
     }
 
@@ -318,8 +320,9 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -631,16 +634,20 @@ namespace ttcr {
 
             sprintf(fname, "in_queue%04zd", n);
             of.open(fname);
-            for ( size_t ni=0; ni<inQueue.size(); ++ni )
-            if ( inQueue[ni]==true ) of << ni << '\n';
+            for ( size_t ni=0; ni<inQueue.size(); ++ni ) {
+                if ( inQueue[ni]==true ) {
+                    of << ni << '\n';
+                }
+            }
             of.close();
 
             sprintf(fname, "timed%04zd", n);
             of.open(fname);
-            for ( size_t ni=0; ni<this->nodes.size(); ++ni )
-            if ( this->nodes[ni].getTT(threadNo)<std::numeric_limits<T1>::max() &&
-                inQueue[ni]==false &&
-                source->getGridIndex()!=ni ) of << ni << '\n';
+            for ( size_t ni=0; ni<this->nodes.size(); ++ni ) {
+                if ( this->nodes[ni].getTT(threadNo)<std::numeric_limits<T1>::max() && inQueue[ni]==false && source->getGridIndex()!=ni ) {
+                    of << ni << '\n';
+                }
+            }
             of.close();
 
             sprintf(fname, "neighbors%04zd", n);

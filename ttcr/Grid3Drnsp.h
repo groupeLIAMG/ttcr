@@ -624,8 +624,9 @@ namespace ttcr {
                                      const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -647,13 +648,6 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
 
-        //        if ( this->tt_from_rp ) {
-        //            for (size_t nr=0; nr<Rx.size(); ++nr) {
-        //                traveltimes[nr]->resize( Rx[nr]->size() );
-        //                for (size_t n=0; n<Rx[nr]->size(); ++n)
-        //                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
-        //            }
-        //        } else {
         for (size_t nr=0; nr<Rx.size(); ++nr) {
             traveltimes[nr]->resize( Rx[nr]->size() );
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
@@ -670,7 +664,6 @@ namespace ttcr {
                 (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
             }
         }
-        //        }
     }
 
     template<typename T1, typename T2>
@@ -792,8 +785,9 @@ namespace ttcr {
                                      const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -1186,14 +1180,17 @@ namespace ttcr {
 
 #ifdef VTK
             vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t ni=0; ni<=this->ncx; ++ni)
-            xCoords->InsertNextValue(this->xmin + ni*this->dx);
+            for (size_t ni=0; ni<=this->ncx; ++ni) {
+                xCoords->InsertNextValue(this->xmin + ni*this->dx);
+            }
             vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t nj=0; nj<=this->ncy; ++nj)
-            yCoords->InsertNextValue(this->ymin + nj*this->dy);
+            for (size_t nj=0; nj<=this->ncy; ++nj) {
+                yCoords->InsertNextValue(this->ymin + nj*this->dy);
+            }
             vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t nk=0; nk<=this->ncz; ++nk)
-            zCoords->InsertNextValue(this->zmin + nk*this->dz);
+            for (size_t nk=0; nk<=this->ncz; ++nk) {
+                zCoords->InsertNextValue(this->zmin + nk*this->dz);
+            }
 
             vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
             rgrid->SetDimensions(this->ncx, this->ncy, this->ncz);
@@ -1264,7 +1261,7 @@ namespace ttcr {
 
                 for ( size_t nj=0; nj<=this->ncy; ++nj ) {
 
-                    for (size_t ni=0; ni<=this->ncx; ++ni ) {
+                    for ( size_t ni=0; ni<=this->ncx; ++ni ) {
 
                         fout << this->nodes[n++].getTT(nt) << '\n';
 

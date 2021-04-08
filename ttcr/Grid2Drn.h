@@ -395,13 +395,15 @@ namespace ttcr {
             int nn[3] = {static_cast<int>(ncx+1), 1, static_cast<int>(ncz+1)};
 
             vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[0]; ++n)
-            xCoords->InsertNextValue( xmin + n*dx );
+            for (size_t n=0; n<nn[0]; ++n) {
+                xCoords->InsertNextValue( xmin + n*dx );
+            }
             vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
             yCoords->InsertNextValue( 0.0 );
             vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[2]; ++n)
-            zCoords->InsertNextValue( zmin + n*dz );
+            for (size_t n=0; n<nn[2]; ++n) {
+                zCoords->InsertNextValue( zmin + n*dz );
+            }
 
             vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
             rgrid->SetDimensions( nn );
@@ -463,13 +465,15 @@ namespace ttcr {
             int nn[3] = {static_cast<int>(ncx), 1, static_cast<int>(ncz)};
 
             vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[0]; ++n)
-            xCoords->InsertNextValue( xmin + (0.5+n)*dx );
+            for (size_t n=0; n<nn[0]; ++n) {
+                xCoords->InsertNextValue( xmin + (0.5+n)*dx );
+            }
             vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
             yCoords->InsertNextValue( 0.0 );
             vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
-            for (size_t n=0; n<nn[2]; ++n)
-            zCoords->InsertNextValue( zmin + (0.5+n)*dz );
+            for (size_t n=0; n<nn[2]; ++n) {
+                zCoords->InsertNextValue( zmin + (0.5+n)*dz );
+            }
 
             vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
             rgrid->SetDimensions( nn );

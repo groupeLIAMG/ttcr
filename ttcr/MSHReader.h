@@ -50,10 +50,12 @@ namespace ttcr {
         void setFilename(const char *fname) {  // we reset the reader
             filename = fname;
             valid = checkFormat();
-            for ( auto it=physicalNames.begin(); it!=physicalNames.end(); ++it )
-            it->clear();
-            for ( auto it = physicalIndices.begin(); it!=physicalIndices.end(); ++it )
-            it->clear();
+            for ( auto it=physicalNames.begin(); it!=physicalNames.end(); ++it ) {
+                it->clear();
+            }
+            for ( auto it = physicalIndices.begin(); it!=physicalIndices.end(); ++it ) {
+                it->clear();
+            }
         }
 
         bool is2D() const {

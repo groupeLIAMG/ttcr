@@ -197,8 +197,9 @@ namespace ttcr {
         initTx(Tx, t0, frozen, threadNo);
 
         std::vector<T1> times( this->nodes.size() );
-        for ( size_t n=0; n<this->nodes.size(); ++n )
-        times[n] = this->nodes[n].getTT( threadNo );
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+            times[n] = this->nodes[n].getTT( threadNo );
+        }
 
         int niter = 0;
         T1 change = std::numeric_limits<T1>::max();
@@ -278,8 +279,9 @@ namespace ttcr {
                                      const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -289,8 +291,9 @@ namespace ttcr {
         initTx(Tx, t0, frozen, threadNo);
 
         std::vector<T1> times( this->nodes.size() );
-        for ( size_t n=0; n<this->nodes.size(); ++n )
-        times[n] = this->nodes[n].getTT( threadNo );
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+            times[n] = this->nodes[n].getTT( threadNo );
+        }
 
         int niter = 0;
         T1 change = std::numeric_limits<T1>::max();
@@ -356,14 +359,16 @@ namespace ttcr {
         if ( this->tt_from_rp ) {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                }
             }
         } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                }
             }
         }
     }

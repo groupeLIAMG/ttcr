@@ -311,8 +311,9 @@ namespace ttcr {
         this->initFSM(Tx, t0, frozen, npts, threadNo);
 
         std::vector<T1> times( this->nodes.size() );
-        for ( size_t n=0; n<this->nodes.size(); ++n )
-        times[n] = this->nodes[n].getTT( threadNo );
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+            times[n] = this->nodes[n].getTT( threadNo );
+        }
 
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {
@@ -371,8 +372,9 @@ namespace ttcr {
                                      const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -385,8 +387,9 @@ namespace ttcr {
         this->initFSM(Tx, t0, frozen, npts, threadNo);
 
         std::vector<T1> times( this->nodes.size() );
-        for ( size_t n=0; n<this->nodes.size(); ++n )
-        times[n] = this->nodes[n].getTT( threadNo );
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+            times[n] = this->nodes[n].getTT( threadNo );
+        }
 
         T1 change = std::numeric_limits<T1>::max();
         if ( weno3 == true ) {

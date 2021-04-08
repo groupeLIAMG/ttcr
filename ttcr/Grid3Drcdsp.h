@@ -1086,8 +1086,9 @@ namespace ttcr {
                                            const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                            const size_t threadNo) const {
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );

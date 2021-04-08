@@ -304,9 +304,11 @@ int body(const input_parameters &par) {
             filename = par.basename+"_M.dat";
             if ( verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
             ofstream fout(filename);
-            for ( size_t n1=0; n1<m_data[0].size(); ++n1 )
-            for ( size_t n2=0; n2<m_data[0][n1].size(); ++n2 )
-            fout << m_data[0][n1][n2].i << ' ' << m_data[0][n1][n2].j << ' ' << m_data[0][n1][n2].v << '\n';
+            for ( size_t n1=0; n1<m_data[0].size(); ++n1 ) {
+                for ( size_t n2=0; n2<m_data[0][n1].size(); ++n2 ) {
+                    fout << m_data[0][n1][n2].i << ' ' << m_data[0][n1][n2].j << ' ' << m_data[0][n1][n2].v << '\n';
+                }
+            }
             fout.close();
             if ( verbose ) cout << "done.\n";
         }
@@ -336,9 +338,11 @@ int body(const input_parameters &par) {
                 filename = par.basename+"_"+srcname+"_M.dat";
                 if ( verbose ) cout << "Saving matrix of partial derivatives in " << filename <<  " ... ";
                 ofstream fout(filename);
-                for ( size_t n1=0; n1<m_data[ns].size(); ++n1 )
-                for ( size_t n2=0; n2<m_data[ns][n1].size(); ++n2 )
-                fout << m_data[ns][n1][n2].i << ' ' << m_data[ns][n1][n2].j << ' ' << m_data[ns][n1][n2].v << '\n';
+                for ( size_t n1=0; n1<m_data[ns].size(); ++n1 ) {
+                    for ( size_t n2=0; n2<m_data[ns][n1].size(); ++n2 ) {
+                        fout << m_data[ns][n1][n2].i << ' ' << m_data[ns][n1][n2].j << ' ' << m_data[ns][n1][n2].v << '\n';
+                    }
+                }
                 fout.close();
                 if ( verbose ) cout << "done.\n";
             }

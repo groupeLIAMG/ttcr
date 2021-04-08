@@ -66,7 +66,9 @@ namespace ttcr {
         void add_coord(const sxz<T> &c) { coord.push_back(c); }
         void init_tt(const size_t nsrc) {
             tt.resize(nsrc);
-            for (size_t ns=0; ns<nsrc; ++ns ) tt[ns].resize( 1 );
+            for (size_t ns=0; ns<nsrc; ++ns ) {
+                tt[ns].resize( 1 );
+            }
         }
 
         void save_rcvfile() const;
@@ -87,8 +89,9 @@ namespace ttcr {
             exit(1);
         }
         tt.resize(nsrc);
-        for (size_t ns=0; ns<nsrc; ++ns )
-        tt[ns].resize( nrefl+1 );
+        for (size_t ns=0; ns<nsrc; ++ns ) {
+            tt[ns].resize( nrefl+1 );
+        }
 
         std::string test;
         std::getline(fin, test);
@@ -115,9 +118,11 @@ namespace ttcr {
             float tmp;
             sin >> test >> nrcv;
             coord.resize( nrcv );
-            for (size_t n=0; n<nsrc; ++n )
-            for ( size_t nr=0; nr<=nrefl; ++nr )
-            tt[n][nr].resize( nrcv );
+            for (size_t n=0; n<nsrc; ++n ) {
+                for ( size_t nr=0; nr<=nrefl; ++nr ) {
+                    tt[n][nr].resize( nrcv );
+                }
+            }
             size_t nread = 0;
             while ( fin && nread<nrcv ) {
                 fin >> coord[nread].x >> tmp >> coord[nread].z;  // discard y coord
@@ -135,17 +140,21 @@ namespace ttcr {
                     coord.push_back( co );
                 }
             }
-            for (size_t ns=0; ns<nsrc; ++ns )
-            for ( size_t nr=0; nr<=nrefl; ++nr )
-            tt[ns][nr].resize( coord.size() );
+            for (size_t ns=0; ns<nsrc; ++ns ) {
+                for ( size_t nr=0; nr<=nrefl; ++nr ) {
+                    tt[ns][nr].resize( coord.size() );
+                }
+            }
         } else {
             fin.seekg(std::ios_base::beg);
             size_t nrcv;
             fin >> nrcv;
             coord.resize( nrcv );
-            for (size_t ns=0; ns<nsrc; ++ns )
-            for ( size_t nr=0; nr<=nrefl; ++nr )
-            tt[ns][nr].resize( nrcv );
+            for (size_t ns=0; ns<nsrc; ++ns ) {
+                for ( size_t nr=0; nr<=nrefl; ++nr ) {
+                    tt[ns][nr].resize( nrcv );
+                }
+            }
             size_t nread = 0;
             while ( fin && nread<nrcv ) {
                 fin >> coord[nread].x >> coord[nread].z;
@@ -168,8 +177,9 @@ namespace ttcr {
         fout.precision(9);
         for ( size_t n=0; n<tt[ns][0].size(); ++n ) {
             fout << tt[ns][0][n];
-            for ( size_t nr=1; nr<nrefl; ++nr )
-            fout << '\t' << tt[ns][nr][n];
+            for ( size_t nr=1; nr<nrefl; ++nr ) {
+                fout << '\t' << tt[ns][nr][n];
+            }
             fout << '\n';
         }
         fout.close();
@@ -187,8 +197,9 @@ namespace ttcr {
         fout << coord.size() << '\n';
         fout.precision(17);
         fout << std::scientific;
-        for ( size_t n=0; n<coord.size(); ++n )
-        fout << coord[n].x << '\t' << coord[n].z << '\n';
+        for ( size_t n=0; n<coord.size(); ++n ) {
+            fout << coord[n].x << '\t' << coord[n].z << '\n';
+        }
         fout.close();
     }
 

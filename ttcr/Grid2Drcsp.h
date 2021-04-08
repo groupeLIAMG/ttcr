@@ -486,8 +486,9 @@ namespace ttcr {
                                             const std::vector<const std::vector<S>*>& Rx,
                                             const size_t threadNo) const {
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -538,8 +539,9 @@ namespace ttcr {
         }
         for (size_t nr=0; nr<Rx.size(); ++nr) {
             traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
-            (*traveltimes[nr])[n] = Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>::getTraveltime((*Rx[nr])[n], threadNo);
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+                (*traveltimes[nr])[n] = Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>::getTraveltime((*Rx[nr])[n], threadNo);
+            }
         }
     }
 
@@ -657,8 +659,9 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
-        this->checkPts(*Rx[n]);
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+            this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
