@@ -6,8 +6,24 @@
 //  Copyright © 2018 Bernard Giroux. All rights reserved.
 //
 
-#ifndef Grid3Drndsp_h
-#define Grid3Drndsp_h
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef ttcr_Grid3Drndsp_h
+#define ttcr_Grid3Drndsp_h
 
 #include "Grid3Drn.h"
 #include "Node3Dn.h"
@@ -44,9 +60,9 @@ namespace ttcr {
 
         ~Grid3Drndsp() {
         }
-        
+
         void setSlowness(const std::vector<T1>& s);
-        
+
     private:
         T2 nSecondary;                 // number of permanent secondary
         T2 nTertiary;                   // number of temporary secondary
@@ -72,19 +88,19 @@ namespace ttcr {
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
-        
+
         void propagate(std::priority_queue<Node3Dn<T1,T2>*,
                        std::vector<Node3Dn<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
-        
+
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       const size_t threadNo) const;
-        
+
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<sxyz<T1>>*>& Rx,
@@ -490,172 +506,172 @@ namespace ttcr {
             abort();
         }
     }
-    
-//    template<typename T1, typename T2>
-//    void Grid3Drndsp<T1,T2>::linearInterpolation() const {
-//
-//        std::vector<size_t> list;
-//        list.reserve(8);
-//        T1 x[3], y[3], s[4];
-//
-//        //Interpolation for the secondary nodes
-//        for (size_t n=0; n<this->nodes.size(); ++n ){
-//            T2 ind = this->nodes[n].getPrimary();
-//            if( ind != 5 ){
-//
-//                //Lists the primary nodes around the secondary node
-//                list.resize(0);
-//                T2 cellno = this->nodes[n].getOwners()[0];
-//                for (size_t n3=0; n3 < this->neighbors[ cellno ].size(); n3++){
-//                    if( this->nodes[this->neighbors[ cellno ][n3] ].isPrimary() ){
-//                        list.push_back(this->neighbors[ cellno ][n3]);
-//                    }
-//                }
-//
-//                // list elements are as following:
-//                //
-//                // list[0] = x_min, y_min, z_min
-//                // list[1] = x_max, y_min, z_min
-//                // list[2] = x_min, y_max, z_min
-//                // list[3] = x_max, y_max, z_min
-//                // list[4] = x_min, y_min, z_max
-//                // list[5] = x_max, y_min, z_max
-//                // list[6] = x_min, y_max, z_max
-//                // list[7] = x_max, y_max, z_max
-//
-//                switch (ind) {
-//                    case 0:
-//                    {
-//                        std::ostringstream msg;
-//                        msg << "Error: node " << n
-//                        << " is not set, check grid construction.";
-//                        throw std::runtime_error(msg.str());
-//                    }
-//                    case 25:
-//                    case 27:
-//                    case 45:
-//                    case 47:
-//                    case 60:
-//                        x[0] = this->nodes[n].getX();
-//                        y[0] = this->nodes[n].getZ();
-//
-//                        x[1] = this->nodes[ list[0] ].getX();
-//                        x[2] = this->nodes[ list[1] ].getX();
-//
-//                        y[1] = this->nodes[ list[0] ].getZ();
-//                        y[2] = this->nodes[ list[4] ].getZ();
-//
-//                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
-//                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
-//                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
-//                        s[3] = this->nodes[ list[5] ].getNodeSlowness();
-//
-//                        break;
-//
-//                    case 35:
-//                    case 36:
-//                    case 46:
-//                    case 70:
-//                        x[0] = this->nodes[n].getY();
-//                        y[0] = this->nodes[n].getZ();
-//
-//                        x[1] = this->nodes[ list[0] ].getY();
-//                        x[2] = this->nodes[ list[2] ].getY();
-//
-//                        y[1] = this->nodes[ list[0] ].getZ();
-//                        y[2] = this->nodes[ list[4] ].getZ();
-//
-//                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
-//                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
-//                        s[2] = this->nodes[ list[2] ].getNodeSlowness();
-//                        s[3] = this->nodes[ list[6] ].getNodeSlowness();
-//
-//                        break;
-//
-//                    case 37:
-//                    case 38:
-//                    case 48:
-//                    case 71:
-//                        x[0] = this->nodes[n].getY();
-//                        y[0] = this->nodes[n].getZ();
-//
-//                        x[1] = this->nodes[ list[1] ].getY();
-//                        x[2] = this->nodes[ list[3] ].getY();
-//
-//                        y[1] = this->nodes[ list[1] ].getZ();
-//                        y[2] = this->nodes[ list[5] ].getZ();
-//
-//                        s[0] = this->nodes[ list[1] ].getNodeSlowness();
-//                        s[1] = this->nodes[ list[5] ].getNodeSlowness();
-//                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
-//                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
-//
-//                        break;
-//
-//                    case 26:
-//                    case 50:
-//                        x[0] = this->nodes[n].getX();
-//                        y[0] = this->nodes[n].getY();
-//
-//                        x[1] = this->nodes[ list[0] ].getX();
-//                        x[2] = this->nodes[ list[1] ].getX();
-//
-//                        y[1] = this->nodes[ list[0] ].getY();
-//                        y[2] = this->nodes[ list[2] ].getY();
-//
-//                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
-//                        s[1] = this->nodes[ list[2] ].getNodeSlowness();
-//                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
-//                        s[3] = this->nodes[ list[3] ].getNodeSlowness();
-//
-//                        break;
-//
-//                    case 28:
-//                    case 51:
-//                        x[0] = this->nodes[n].getX();
-//                        y[0] = this->nodes[n].getY();
-//
-//                        x[1] = this->nodes[ list[4] ].getX();
-//                        x[2] = this->nodes[ list[5] ].getX();
-//
-//                        y[1] = this->nodes[ list[4] ].getY();
-//                        y[2] = this->nodes[ list[6] ].getY();
-//
-//                        s[0] = this->nodes[ list[4] ].getNodeSlowness();
-//                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
-//                        s[2] = this->nodes[ list[5] ].getNodeSlowness();
-//                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
-//
-//                        break;
-//
-//                    case 61:
-//                        x[0] = this->nodes[n].getX();
-//                        y[0] = this->nodes[n].getZ();
-//
-//                        x[1] = this->nodes[ list[2] ].getX();
-//                        x[2] = this->nodes[ list[3] ].getX();
-//
-//                        y[1] = this->nodes[ list[2] ].getZ();
-//                        y[2] = this->nodes[ list[6] ].getZ();
-//
-//                        s[0] = this->nodes[ list[2] ].getNodeSlowness();
-//                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
-//                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
-//                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
-//
-//                        break;
-//                }
-//
-//                this->nodes[n].setNodeSlowness( Interpolator<T1>::bilinear(x, y, s) );
-//            }
-//        }
-//    }
-//
-//
-    
+
+    //    template<typename T1, typename T2>
+    //    void Grid3Drndsp<T1,T2>::linearInterpolation() const {
+    //
+    //        std::vector<size_t> list;
+    //        list.reserve(8);
+    //        T1 x[3], y[3], s[4];
+    //
+    //        //Interpolation for the secondary nodes
+    //        for (size_t n=0; n<this->nodes.size(); ++n ){
+    //            T2 ind = this->nodes[n].getPrimary();
+    //            if( ind != 5 ){
+    //
+    //                //Lists the primary nodes around the secondary node
+    //                list.resize(0);
+    //                T2 cellno = this->nodes[n].getOwners()[0];
+    //                for (size_t n3=0; n3 < this->neighbors[ cellno ].size(); n3++){
+    //                    if( this->nodes[this->neighbors[ cellno ][n3] ].isPrimary() ){
+    //                        list.push_back(this->neighbors[ cellno ][n3]);
+    //                    }
+    //                }
+    //
+    //                // list elements are as following:
+    //                //
+    //                // list[0] = x_min, y_min, z_min
+    //                // list[1] = x_max, y_min, z_min
+    //                // list[2] = x_min, y_max, z_min
+    //                // list[3] = x_max, y_max, z_min
+    //                // list[4] = x_min, y_min, z_max
+    //                // list[5] = x_max, y_min, z_max
+    //                // list[6] = x_min, y_max, z_max
+    //                // list[7] = x_max, y_max, z_max
+    //
+    //                switch (ind) {
+    //                    case 0:
+    //                    {
+    //                        std::ostringstream msg;
+    //                        msg << "Error: node " << n
+    //                        << " is not set, check grid construction.";
+    //                        throw std::runtime_error(msg.str());
+    //                    }
+    //                    case 25:
+    //                    case 27:
+    //                    case 45:
+    //                    case 47:
+    //                    case 60:
+    //                        x[0] = this->nodes[n].getX();
+    //                        y[0] = this->nodes[n].getZ();
+    //
+    //                        x[1] = this->nodes[ list[0] ].getX();
+    //                        x[2] = this->nodes[ list[1] ].getX();
+    //
+    //                        y[1] = this->nodes[ list[0] ].getZ();
+    //                        y[2] = this->nodes[ list[4] ].getZ();
+    //
+    //                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
+    //                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
+    //                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
+    //                        s[3] = this->nodes[ list[5] ].getNodeSlowness();
+    //
+    //                        break;
+    //
+    //                    case 35:
+    //                    case 36:
+    //                    case 46:
+    //                    case 70:
+    //                        x[0] = this->nodes[n].getY();
+    //                        y[0] = this->nodes[n].getZ();
+    //
+    //                        x[1] = this->nodes[ list[0] ].getY();
+    //                        x[2] = this->nodes[ list[2] ].getY();
+    //
+    //                        y[1] = this->nodes[ list[0] ].getZ();
+    //                        y[2] = this->nodes[ list[4] ].getZ();
+    //
+    //                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
+    //                        s[1] = this->nodes[ list[4] ].getNodeSlowness();
+    //                        s[2] = this->nodes[ list[2] ].getNodeSlowness();
+    //                        s[3] = this->nodes[ list[6] ].getNodeSlowness();
+    //
+    //                        break;
+    //
+    //                    case 37:
+    //                    case 38:
+    //                    case 48:
+    //                    case 71:
+    //                        x[0] = this->nodes[n].getY();
+    //                        y[0] = this->nodes[n].getZ();
+    //
+    //                        x[1] = this->nodes[ list[1] ].getY();
+    //                        x[2] = this->nodes[ list[3] ].getY();
+    //
+    //                        y[1] = this->nodes[ list[1] ].getZ();
+    //                        y[2] = this->nodes[ list[5] ].getZ();
+    //
+    //                        s[0] = this->nodes[ list[1] ].getNodeSlowness();
+    //                        s[1] = this->nodes[ list[5] ].getNodeSlowness();
+    //                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
+    //                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
+    //
+    //                        break;
+    //
+    //                    case 26:
+    //                    case 50:
+    //                        x[0] = this->nodes[n].getX();
+    //                        y[0] = this->nodes[n].getY();
+    //
+    //                        x[1] = this->nodes[ list[0] ].getX();
+    //                        x[2] = this->nodes[ list[1] ].getX();
+    //
+    //                        y[1] = this->nodes[ list[0] ].getY();
+    //                        y[2] = this->nodes[ list[2] ].getY();
+    //
+    //                        s[0] = this->nodes[ list[0] ].getNodeSlowness();
+    //                        s[1] = this->nodes[ list[2] ].getNodeSlowness();
+    //                        s[2] = this->nodes[ list[1] ].getNodeSlowness();
+    //                        s[3] = this->nodes[ list[3] ].getNodeSlowness();
+    //
+    //                        break;
+    //
+    //                    case 28:
+    //                    case 51:
+    //                        x[0] = this->nodes[n].getX();
+    //                        y[0] = this->nodes[n].getY();
+    //
+    //                        x[1] = this->nodes[ list[4] ].getX();
+    //                        x[2] = this->nodes[ list[5] ].getX();
+    //
+    //                        y[1] = this->nodes[ list[4] ].getY();
+    //                        y[2] = this->nodes[ list[6] ].getY();
+    //
+    //                        s[0] = this->nodes[ list[4] ].getNodeSlowness();
+    //                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
+    //                        s[2] = this->nodes[ list[5] ].getNodeSlowness();
+    //                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
+    //
+    //                        break;
+    //
+    //                    case 61:
+    //                        x[0] = this->nodes[n].getX();
+    //                        y[0] = this->nodes[n].getZ();
+    //
+    //                        x[1] = this->nodes[ list[2] ].getX();
+    //                        x[2] = this->nodes[ list[3] ].getX();
+    //
+    //                        y[1] = this->nodes[ list[2] ].getZ();
+    //                        y[2] = this->nodes[ list[6] ].getZ();
+    //
+    //                        s[0] = this->nodes[ list[2] ].getNodeSlowness();
+    //                        s[1] = this->nodes[ list[6] ].getNodeSlowness();
+    //                        s[2] = this->nodes[ list[3] ].getNodeSlowness();
+    //                        s[3] = this->nodes[ list[7] ].getNodeSlowness();
+    //
+    //                        break;
+    //                }
+    //
+    //                this->nodes[n].setNodeSlowness( Interpolator<T1>::bilinear(x, y, s) );
+    //            }
+    //        }
+    //    }
+    //
+    //
+
     template<typename T1, typename T2>
     void Grid3Drndsp<T1,T2>::setSlowness(const std::vector<T1>& s) {
-        
+
         if ( ((this->ncx+1)*(this->ncy+1)*(this->ncz+1)) != s.size() ) {
             throw std::length_error("Error: slowness vector of incompatible size.");
         }
@@ -735,7 +751,7 @@ namespace ttcr {
         T2 nny = this->ncy+1;
 
         T1 slope, islown;
-        
+
         // edge nodes
         T2 nTmpNodes = 0;
         Node3Dnd<T1,T2> tmpNode;
@@ -804,7 +820,7 @@ namespace ttcr {
                         lineMap[ lineKey ] = std::vector<T2>(nTemp);
 
                         slope = (this->nodes[lineKey[1]].getNodeSlowness() - this->nodes[lineKey[0]].getNodeSlowness())/this->dx;
-                        
+
                         size_t nd = 0;
                         for ( size_t n2=0; n2<nSecondary+1; ++n2 ) {
                             for ( size_t n3=0; n3<nTertiary; ++n3 ) {
@@ -843,7 +859,7 @@ namespace ttcr {
                     if ( lineIt == lineMap.end() ) {
                         // not found, insert new pair
                         lineMap[ lineKey ] = std::vector<T2>(nTemp);
-                        
+
                         slope = (this->nodes[lineKey[1]].getNodeSlowness() - this->nodes[lineKey[0]].getNodeSlowness())/this->dy;
 
                         size_t nd = 0;
@@ -884,7 +900,7 @@ namespace ttcr {
                     if ( lineIt == lineMap.end() ) {
                         // not found, insert new pair
                         lineMap[ lineKey ] = std::vector<T2>(nTemp);
-                        
+
                         slope = (this->nodes[lineKey[1]].getNodeSlowness() - this->nodes[lineKey[0]].getNodeSlowness())/this->dz;
 
                         size_t nd = 0;
@@ -896,7 +912,7 @@ namespace ttcr {
                                                     nPermanent+nTmpNodes );
                                 islown = this->nodes[lineKey[0]].getNodeSlowness() + slope * tmpNode.getDistance(this->nodes[lineKey[0]]);
                                 tmpNode.setNodeSlowness( islown );
-                                
+
                                 lineMap[lineKey][nd++] = nTmpNodes++;
                                 tempNodes[threadNo].push_back( tmpNode );
                                 tempNodes[threadNo].back().pushOwner( *cell );
@@ -941,7 +957,7 @@ namespace ttcr {
                     }
                     continue;
                 }
-                
+
                 T1 x[3];
                 T1 y[3];
                 T1 s[4];
@@ -1024,7 +1040,7 @@ namespace ttcr {
                     }
                     continue;
                 }
-                
+
                 T1 x[3];
                 T1 y[3];
                 T1 s[4];
@@ -1107,7 +1123,7 @@ namespace ttcr {
                     }
                     continue;
                 }
-                
+
                 T1 x[3];
                 T1 y[3];
                 T1 s[4];
@@ -1302,8 +1318,8 @@ namespace ttcr {
         if ( verbose )
             std::cout << "  *** thread no " << threadNo << ": " << tempNodes[threadNo].size() << " dynamic nodes were added ***" << std::endl;
     }
-    
-    
+
+
     template<typename T1, typename T2>
     void Grid3Drndsp<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
                                        const std::vector<T1>& t0,
@@ -1314,7 +1330,7 @@ namespace ttcr {
                                        std::vector<bool>& inQueue,
                                        std::vector<bool>& frozen,
                                        const size_t threadNo) const {
-        
+
         for (size_t n=0; n<Tx.size(); ++n){
             bool found = false;
             for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
@@ -1322,10 +1338,10 @@ namespace ttcr {
                     found = true;
                     this->nodes[nn].setTT( t0[n], threadNo );
                     frozen[nn] = true;
-                    
+
                     queue.push( &(this->nodes[nn]) );
                     inQueue[nn] = true;
-                    
+
                     break;
                 }
             }
@@ -1337,15 +1353,15 @@ namespace ttcr {
                 frozen.push_back( true );
                 T1 slo = this->computeSlowness( Tx[n] );
                 txNodes.back().setNodeSlowness( slo );
-                
+
                 queue.push( &(txNodes.back()) );
                 inQueue.push_back( true );
-                
+
             }
         }
     }
-    
-    
+
+
     template<typename T1, typename T2>
     void Grid3Drndsp<T1,T2>::propagate(std::priority_queue<Node3Dn<T1,T2>*,
                                        std::vector<Node3Dn<T1,T2>*>,
@@ -1358,42 +1374,42 @@ namespace ttcr {
             queue.pop();
             inQueue[ src->getGridIndex() ] = false;
             frozen[ src->getGridIndex() ] = true;
-            
+
             for ( size_t no=0; no<src->getOwners().size(); ++no ) {
-                
+
                 T2 cellNo = src->getOwners()[no];
-                
+
                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                     T2 neibNo = this->neighbors[cellNo][k];
                     if ( neibNo == src->getGridIndex() || frozen[neibNo] ) {
                         continue;
                     }
-                    
+
                     // compute dt
                     T1 dt = this->computeDt(*src, this->nodes[neibNo]);
-                    
+
                     if (src->getTT(threadNo)+dt < this->nodes[neibNo].getTT(threadNo)) {
                         this->nodes[neibNo].setTT( src->getTT(threadNo)+dt, threadNo );
-                        
+
                         if ( !inQueue[neibNo] ) {
                             queue.push( &(this->nodes[neibNo]) );
                             inQueue[neibNo] = true;
                         }
                     }
                 }
-                
+
                 for ( size_t k=0; k < tempNeighbors[threadNo][cellNo].size(); ++k ) {
                     T2 neibNo = tempNeighbors[threadNo][cellNo][k];
                     if ( neibNo == src->getGridIndex()-nPermanent || frozen[nPermanent+neibNo] ) {
                         continue;
                     }
-                    
+
                     // compute dt
                     T1 dt = this->computeDt(*src, tempNodes[threadNo][neibNo]);
-                    
+
                     if (src->getTT(threadNo)+dt < tempNodes[threadNo][neibNo].getTT(0)) {
                         tempNodes[threadNo][neibNo].setTT( src->getTT(threadNo)+dt, 0 );
-                        
+
                         if ( !inQueue[nPermanent+neibNo] ) {
                             queue.push( &(tempNodes[threadNo][neibNo]) );
                             inQueue[nPermanent+neibNo] = true;
@@ -1403,7 +1419,7 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2>
     void Grid3Drndsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
@@ -1411,23 +1427,23 @@ namespace ttcr {
                                       const size_t threadNo) const {
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Dn<T1,T2>*, std::vector<Node3Dn<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
-        
+
         addTemporaryNodes(Tx, threadNo);
-        
+
         std::vector<Node3Dnd<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
     }
 
@@ -1438,24 +1454,24 @@ namespace ttcr {
                                       const size_t threadNo) const {
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
-            this->checkPts(*Rx[n]);
-        
+        this->checkPts(*Rx[n]);
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Dn<T1,T2>*, std::vector<Node3Dn<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
-        
+
         addTemporaryNodes(Tx, threadNo);
-        
+
         std::vector<Node3Dnd<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size()+tempNodes[threadNo].size(), false );
         std::vector<bool> frozen( this->nodes.size()+tempNodes[threadNo].size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
     }
 

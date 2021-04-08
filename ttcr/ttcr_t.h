@@ -23,8 +23,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef __TTCR_T_H__
-#define __TTCR_T_H__
+#ifndef ttcr_ttrc_t_h
+#define ttcr_ttrc_t_h
 
 #include <cmath>
 #include <type_traits>
@@ -48,32 +48,32 @@ namespace ttcr {
     };
 
     /*
-      
-                    1
-                  ,/|`\
-                ,/  |  `\
-              ,0    '.   `4
-            ,/       1     `\
-          ,/         |       `\
-         0-----5-----'.--------3
-          `\.         |      ,/
-             `\.      |     3
-                `2.   '. ,/
-                   `\. |/
-                      `2
-      
-      
-        triangle 0:  0-1  1-2  2-0     (first occurence of edge underlined)
-                     ---  ---  ---
-        triangle 1:  1-2  2-3  3-1
-                          ---  ---
-        triangle 2:  0-2  2-3  3-0
-                               ---
-        triangle 3:  0-1  1-3  3-0
 
-       for triangle "itri", indices of length for edge "iedge" are
-       iLength[itri][iedge] = {{0,1,2},{1,3,4},{2,3,5},{0,4,5}}
-     
+     1
+     ,/|`\
+     ,/  |  `\
+     ,0    '.   `4
+     ,/       1     `\
+     ,/         |       `\
+     0-----5-----'.--------3
+     `\.         |      ,/
+     `\.      |     3
+     `2.   '. ,/
+     `\. |/
+     `2
+
+
+     triangle 0:  0-1  1-2  2-0     (first occurence of edge underlined)
+     ---  ---  ---
+     triangle 1:  1-2  2-3  3-1
+     ---  ---
+     triangle 2:  0-2  2-3  3-0
+     ---
+     triangle 3:  0-1  1-3  3-0
+
+     for triangle "itri", indices of length for edge "iedge" are
+     iLength[itri][iedge] = {{0,1,2},{1,3,4},{2,3,5},{0,4,5}}
+
      */
 
     template<typename T>
@@ -459,7 +459,7 @@ namespace ttcr {
     struct triangleElem {
         T i[3];
         T physical_entity;
-        
+
         triangleElem() : i{ 0,0,0 }, physical_entity(0) {}
         triangleElem(const T i0, const T i1, const T i2, const T pe=0) : i{ i0,i1,i2 }, physical_entity(pe) {}
     };
@@ -544,11 +544,11 @@ namespace ttcr {
         return v1.x*v2.x + v1.z*v2.z;
     }
 
-//    template<typename T>
-//    T dot(const T v1, const sxz<T>& v2) {
-//        // v1 considered to be a vector along y
-//        return 0.0;
-//    }
+    //    template<typename T>
+    //    T dot(const T v1, const sxz<T>& v2) {
+    //        // v1 considered to be a vector along y
+    //        return 0.0;
+    //    }
 
     template<typename T>
     T dot(const T v1, const T v2) {
@@ -598,27 +598,27 @@ namespace ttcr {
     template<typename T>
     void projNorm(const sxyz<T>& b, const sxyz<T>& c, const sxyz<T>& p, T& xi0, T& zeta0) {
         /*
-                          B
-                          o
-                        /   \
-                     /          \
-                  /       o P       \
-              A o----------------------o  C
-          
-           b is _unit_ vector AC
-           c is _unit_ vector AB
-           p is vector AP
-           xi0 & zeta0 are normalized coordinates of P in plane ABC (Lelièvre et al, 2011, GJI 184, 885-896)
+         B
+         o
+         /   \
+         /          \
+         /       o P       \
+         A o----------------------o  C
 
-           solved using xi*c + zeta*b = p
+         b is _unit_ vector AC
+         c is _unit_ vector AB
+         p is vector AP
+         xi0 & zeta0 are normalized coordinates of P in plane ABC (Lelièvre et al, 2011, GJI 184, 885-896)
 
-                 | c.x b.x |                        | p.x |
-            A =  | c.y b.y |   x = |  xi0  |    b = | p.y |
-                 | c.z b.z |       | zeta0 |        | p.z |
+         solved using xi*c + zeta*b = p
 
-           solve AT A x = AT b
+         | c.x b.x |                        | p.x |
+         A =  | c.y b.y |   x = |  xi0  |    b = | p.y |
+         | c.z b.z |       | zeta0 |        | p.z |
+
+         solve AT A x = AT b
          */
-        
+
         T ata11 = norm2(c);
         T ata12 = b.x*c.x + b.y*c.y + b.z*c.z;
         T ata21 = ata12;

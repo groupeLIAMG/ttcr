@@ -1,20 +1,20 @@
 /*********************************************************
-*
-*  Copyright (C) 2014 by Vitaliy Vitsentiy
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-*
-*********************************************************/
+ *
+ *  Copyright (C) 2014 by Vitaliy Vitsentiy
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *********************************************************/
 
 
 #ifndef __ctpl_stl_thread_pool_H__
@@ -159,8 +159,8 @@ namespace ctpl {
                 this->cv.notify_all();  // stop all waiting threads
             }
             for (int i = 0; i < static_cast<int>(this->threads.size()); ++i) {  // wait for the computing threads to finish
-                    if (this->threads[i]->joinable())
-                        this->threads[i]->join();
+                if (this->threads[i]->joinable())
+                    this->threads[i]->join();
             }
             // if there were no threads in the pool but some functors in the queue, the functors are not deleted by the threads
             // therefore delete them here
@@ -172,8 +172,8 @@ namespace ctpl {
         template<typename F, typename... Rest>
         auto push(F && f, Rest&&... rest) ->std::future<decltype(f(0, rest...))> {
             auto pck = std::make_shared<std::packaged_task<decltype(f(0, rest...))(int)>>(
-                std::bind(std::forward<F>(f), std::placeholders::_1, std::forward<Rest>(rest)...)
-                );
+                                                                                          std::bind(std::forward<F>(f), std::placeholders::_1, std::forward<Rest>(rest)...)
+                                                                                          );
             auto _f = new std::function<void(int id)>([pck](int id) {
                 (*pck)(id);
             });

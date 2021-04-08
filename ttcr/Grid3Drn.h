@@ -22,9 +22,8 @@
  *
  */
 
-#ifndef __GRID3DRI_H__
-#define __GRID3DRI_H__
-
+#ifndef ttcr_Grid3Drn_h
+#define ttcr_Grid3Drn_h
 
 #include <algorithm>
 #include <cmath>
@@ -51,11 +50,11 @@
 #include "Interpolator.h"
 
 namespace ttcr {
-    
+
     template<typename T1, typename T2, typename NODE>
     class Grid3Drn : public Grid3D<T1,T2> {
     public:
-        
+
         /* Constructor Format:
          Grid3Drn<T1,T2>::Grid3Drn(nb cells in x, nb cells in y, nb cells in z,
          x cells size, y cells size, z cells size,
@@ -73,9 +72,9 @@ namespace ttcr {
         ncx(nx), ncy(ny), ncz(nz), processVel(procVel),
         nodes(std::vector<NODE>((nx+1)*(ny+1)*(nz+1), NODE(nt)))
         { }
-        
+
         virtual ~Grid3Drn() {}
-        
+
         virtual void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -92,7 +91,7 @@ namespace ttcr {
                 slowness[n] = nodes[n].getNodeSlowness();
             }
         }
-        
+
         size_t getNumberOfNodes() const { return nodes.size(); }
         size_t getNumberOfCells() const { return ncx*ncy*ncz; }
 
@@ -117,7 +116,7 @@ namespace ttcr {
             }
             fout.close();
         }
-        
+
         size_t getNeighborsSize() const {
             size_t n_elem = 0;
             for ( size_t n=0; n<this->neighbors.size(); ++n ) {
@@ -132,12 +131,12 @@ namespace ttcr {
             }
             return size;
         }
-        
+
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
         void loadTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
-        
+
         const T1 getXmin() const { return xmin; }
         const T1 getYmin() const { return ymin; }
         const T1 getZmin() const { return zmin; }
@@ -147,7 +146,7 @@ namespace ttcr {
         const T2 getNcx() const { return ncx; }
         const T2 getNcy() const { return ncy; }
         const T2 getNcz() const { return ncz; }
-        
+
         void dump_secondary(std::ofstream& os) const {
             size_t nPrimary = (ncx+1) * (ncy+1) * (ncz+1);
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
@@ -177,11 +176,11 @@ namespace ttcr {
         T2 ncz;                  // number of cells in z
 
         bool processVel;
-        
+
         mutable std::vector<NODE> nodes;
-        
+
         void interpSecondary();
-        
+
         T2 getCellNo(const sxyz<T1>& pt) const {
             T1 x = xmax-pt.x < small2 ? xmax-.5*dx : pt.x;
             T1 y = ymax-pt.y < small2 ? ymax-.5*dy : pt.y;
@@ -191,7 +190,7 @@ namespace ttcr {
             T2 nz = static_cast<T2>( small2 + (z-zmin)/dz );
             return ny*ncx + nz*(ncx*ncy) + nx;
         }
-        
+
         T2 getCellNo(const NODE& node) const {
             T1 x = xmax-node.getX() < small2 ? xmax-.5*dx : node.getX();
             T1 y = ymax-node.getY() < small2 ? ymax-.5*dy : node.getY();
@@ -201,7 +200,7 @@ namespace ttcr {
             T2 nz = static_cast<T2>( small2 + (z-zmin)/dz );
             return ny*ncx + nz*(ncx*ncy) + nx;
         }
-        
+
         void getCellIJK(const T2 cellNo, sijk<T2> &ind) const {
             ind.k = cellNo / (ncx*ncy);
             ind.j = (cellNo - ind.k*ncx*ncy) / ncx;
@@ -213,43 +212,43 @@ namespace ttcr {
             j = static_cast<T2>( small2 + (pt.y-ymin)/dy );
             k = static_cast<T2>( small2 + (pt.z-zmin)/dz );
         }
-        
+
         void getIJK(const sxyz<T1>& pt, long long& i, long long& j, long long& k) const {
             i = static_cast<long long>( small2 + (pt.x-xmin)/dx );
             j = static_cast<long long>( small2 + (pt.y-ymin)/dy );
             k = static_cast<long long>( small2 + (pt.z-zmin)/dz );
         }
-        
+
         void checkPts(const std::vector<sxyz<T1>>&) const;
-        
+
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2. * source.getDistance( node );
         }
-        
+
         T1 computeDt(const NODE& source, const sxyz<T1>& node, T1 slo) const {
             return (slo+source.getNodeSlowness())/2. * source.getDistance( node );
         }
-        
+
         bool isNearInt( double value ) const {
             return ( remainder(value, 1.)  <= small );
         }
-        
+
         T1 getTraveltime(const sxyz<T1> &pt, const size_t nt) const;
-        
+
         //    T1 getTraveltime(const sxyz<T1>& Rx,
         //                     const std::vector<NODE>& nodes,
         //                     const size_t threadNo) const;
-        
+
         T1 getTraveltime(const sxyz<T1>& Rx,
                          T2&, T2&, const size_t threadNo) const;
-        
+
         //    T1 getTraveltime(const sxyz<T1>& Rx,
         //                     const std::vector<NODE>& nodes,
         //                     T2&, T2&, const size_t threadNo) const;
-        
+
         void grad(sxyz<T1>& g, const size_t i, const size_t j, const size_t k,
                   const size_t nt) const;
-        
+
         void gradO2(sxyz<T1>& g, const sxyz<T1> &pt, const size_t nt) const;
         void grad(sxyz<T1>& g, const sxyz<T1> &pt, const size_t nt) const;
 
@@ -262,7 +261,7 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         const size_t threadNo) const;
-        
+
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1> &Rx,
@@ -277,7 +276,7 @@ namespace ttcr {
                         T1 &tt,
                         const size_t RxNo,
                         const size_t threadNo) const;
-        
+
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
@@ -306,29 +305,29 @@ namespace ttcr {
                             const sxyz<T1> &Rx,
                             std::vector<sxyz<T1>> &r_data,
                             const size_t threadNo=0) const;
-        
+
         void sweep(const std::vector<bool>& frozen,
                    const size_t threadNo) const;
         void sweep_weno3(const std::vector<bool>& frozen,
                          const size_t threadNo) const;
-        
+
         void update_node(const size_t, const size_t, const size_t, const size_t=0) const;
         void update_node_weno3(const size_t, const size_t, const size_t, const size_t=0) const;
-        
+
         void initFSM(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      std::vector<bool>& frozen,
                      const int npts,
                      const size_t threadNo) const;
-        
+
     private:
         Grid3Drn() {}
         Grid3Drn(const Grid3Drn<T1,T2,NODE>& g) {}
         Grid3Drn<T1,T2,NODE>& operator=(const Grid3Drn<T1,T2,NODE>& g) { return *this; }
-        
+
     };
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::interpSecondary() {
         T2 nPrimary = (ncx+1)*(ncy+1)*(ncz+1);
@@ -337,10 +336,10 @@ namespace ttcr {
                 nodes[n].getY(), nodes[n].getZ()}) );
         }
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
-        
+
         // Check if the points from a vector are in the grid
         for ( size_t n=0; n<pts.size(); ++n ) {
             if ( pts[n].x < xmin || pts[n].x > xmax ||
@@ -349,25 +348,25 @@ namespace ttcr {
                 std::ostringstream msg;
                 msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
                 throw std::runtime_error(msg.str());
-                
+
             }
         }
     }
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1> &pt, const size_t nt) const {
-        
+
         const size_t nnx = ncx+1;
         const size_t nny = ncy+1;
-        
+
         // trilinear interpolation if not on node
-        
+
         T1 tt;
         T2 i, j, k;
-        
+
         getIJK(pt, i, j, k);
-        
+
         if ( std::abs(pt.x - (xmin+i*dx))<small2 &&
             std::abs(pt.y - (ymin+j*dy))<small2 &&
             std::abs(pt.z - (zmin+k*dz))<small2 ) {
@@ -378,88 +377,88 @@ namespace ttcr {
             // on edge
             T1 t1 = nodes[(    k*nny+j)*nnx+i].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j)*nnx+i].getTT(nt);
-            
+
             T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
             T1 w2 = (pt.z - (zmin+k*dz))/dz;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         } else if ( std::abs(pt.x - (xmin+i*dx))<small2 &&
                    std::abs(pt.z - (zmin+k*dz))<small2 ) {
             // on edge
             T1 t1 = nodes[(k*nny+j  )*nnx+i].getTT(nt);
             T1 t2 = nodes[(k*nny+j+1)*nnx+i].getTT(nt);
-            
+
             T1 w1 = (ymin+(j+1)*dy - pt.y)/dy;
             T1 w2 = (pt.y - (ymin+j*dy))/dy;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         } else if ( std::abs(pt.y - (ymin+j*dy))<small2 &&
                    std::abs(pt.z - (zmin+k*dz))<small2 ) {
             // on edge
             T1 t1 = nodes[(k*nny+j)*nnx+i  ].getTT(nt);
             T1 t2 = nodes[(k*nny+j)*nnx+i+1].getTT(nt);
-            
+
             T1 w1 = (xmin+(i+1)*dx - pt.x)/dx;
             T1 w2 = (pt.x - (xmin+i*dx))/dx;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         } else if ( std::abs(pt.x - (xmin+i*dx))<small2 ) {
             // on YZ face
             T1 t1 = nodes[(    k*nny+j  )*nnx+i].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j  )*nnx+i].getTT(nt);
             T1 t3 = nodes[(    k*nny+j+1)*nnx+i].getTT(nt);
             T1 t4 = nodes[((k+1)*nny+j+1)*nnx+i].getTT(nt);
-            
+
             T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
             T1 w2 = (pt.z - (zmin+k*dz))/dz;
-            
+
             t1 = t1*w1 + t2*w2;
             t2 = t3*w1 + t4*w2;
-            
+
             w1 = (ymin+(j+1)*dy - pt.y)/dy;
             w2 = (pt.y - (ymin+j*dy))/dy;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         } else if ( std::abs(pt.y - (ymin+j*dy))<small2 ) {
             // on XZ face
             T1 t1 = nodes[(    k*nny+j)*nnx+i  ].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j)*nnx+i  ].getTT(nt);
             T1 t3 = nodes[(    k*nny+j)*nnx+i+1].getTT(nt);
             T1 t4 = nodes[((k+1)*nny+j)*nnx+i+1].getTT(nt);
-            
+
             T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
             T1 w2 = (pt.z - (zmin+k*dz))/dz;
-            
+
             t1 = t1*w1 + t2*w2;
             t2 = t3*w1 + t4*w2;
-            
+
             w1 = (xmin+(i+1)*dx - pt.x)/dx;
             w2 = (pt.x - (xmin+i*dx))/dx;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         } else if ( std::abs(pt.z - (zmin+k*dz))<small2 ) {
             // on XY face
             T1 t1 = nodes[(k*nny+j  )*nnx+i  ].getTT(nt);
             T1 t2 = nodes[(k*nny+j+1)*nnx+i  ].getTT(nt);
             T1 t3 = nodes[(k*nny+j  )*nnx+i+1].getTT(nt);
             T1 t4 = nodes[(k*nny+j+1)*nnx+i+1].getTT(nt);
-            
+
             T1 w1 = (ymin+(j+1)*dy - pt.y)/dy;
             T1 w2 = (pt.y - (ymin+j*dy))/dy;
-            
+
             t1 = t1*w1 + t2*w2;
             t2 = t3*w1 + t4*w2;
-            
+
             w1 = (xmin+(i+1)*dx - pt.x)/dx;
             w2 = (pt.x - (xmin+i*dx))/dx;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         } else {
             T1 t1 = nodes[(    k*nny+j  )*nnx+i  ].getTT(nt);
             T1 t2 = nodes[((k+1)*nny+j  )*nnx+i  ].getTT(nt);
@@ -469,31 +468,31 @@ namespace ttcr {
             T1 t6 = nodes[((k+1)*nny+j  )*nnx+i+1].getTT(nt);
             T1 t7 = nodes[(    k*nny+j+1)*nnx+i+1].getTT(nt);
             T1 t8 = nodes[((k+1)*nny+j+1)*nnx+i+1].getTT(nt);
-            
+
             T1 w1 = (zmin+(k+1)*dz - pt.z)/dz;
             T1 w2 = (pt.z - (zmin+k*dz))/dz;
-            
+
             t1 = t1*w1 + t2*w2;
             t2 = t3*w1 + t4*w2;
             t3 = t5*w1 + t6*w2;
             t4 = t7*w1 + t8*w2;
-            
+
             w1 = (ymin+(j+1)*dy - pt.y)/dy;
             w2 = (pt.y - (ymin+j*dy))/dy;
-            
+
             t1 = t1*w1 + t2*w2;
             t2 = t3*w1 + t4*w2;
-            
+
             w1 = (xmin+(i+1)*dx - pt.x)/dx;
             w2 = (pt.x - (xmin+i*dx))/dx;
-            
+
             tt = t1*w1 + t2*w2;
-            
+
         }
-        
+
         return tt;
     }
-    
+
     //template<typename T1, typename T2, typename NODE>
     //T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     //                                    const std::vector<NODE>& nodes,
@@ -524,12 +523,12 @@ namespace ttcr {
     //    }
     //    return traveltime;
     //}
-    
+
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
                                            T2& nodeParentRx, T2& cellParentRx,
                                            const size_t threadNo) const {
-        
+
         // Calculate and return the traveltime for a Rx point.
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {
             if ( nodes[nn] == Rx ) {
@@ -540,11 +539,11 @@ namespace ttcr {
         }
         //If Rx is not on a node:
         T1 slo = computeSlowness( Rx );
-        
+
         T2 cellNo = getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = computeDt(nodes[neibNo], Rx, slo);
-        
+
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         nodeParentRx = neibNo;
         cellParentRx = cellNo;
@@ -558,7 +557,7 @@ namespace ttcr {
         }
         return traveltime;
     }
-    
+
     //template<typename T1, typename T2, typename NODE>
     //T1 Grid3Drn<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
     //                                       const std::vector<NODE>& nodes,
@@ -593,17 +592,17 @@ namespace ttcr {
     //    }
     //    return traveltime;
     //}
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::grad(sxyz<T1>& g, const size_t i, const size_t j, const size_t k,
                                     const size_t nt) const {
-        
+
         // compute average gradient for voxel (i,j,k)
-        
+
         const size_t nnx = ncx+1;
         const size_t nny = ncy+1;
-        
+
         g.x = 0.25*(nodes[(    k*nny+j  )*nnx+i+1].getTT(nt) - nodes[(    k*nny+j  )*nnx+i  ].getTT(nt) +
                     nodes[(    k*nny+j+1)*nnx+i+1].getTT(nt) - nodes[(    k*nny+j+1)*nnx+i  ].getTT(nt) +
                     nodes[((k+1)*nny+j  )*nnx+i+1].getTT(nt) - nodes[((k+1)*nny+j  )*nnx+i  ].getTT(nt) +
@@ -617,14 +616,14 @@ namespace ttcr {
                     nodes[((k+1)*nny+j+1)*nnx+i  ].getTT(nt) - nodes[(    k*nny+j+1)*nnx+i  ].getTT(nt) +
                     nodes[((k+1)*nny+j+1)*nnx+i+1].getTT(nt) - nodes[(    k*nny+j+1)*nnx+i+1].getTT(nt))/dz;
     }
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::gradO2(sxyz<T1>& g, const sxyz<T1> &pt,
                                       const size_t nt) const {
-        
+
         // compute travel time gradient (2nd order centered operator) at point pt
-        
+
         T1 p1 = pt.x - dx/2.0;
         T1 p2 = p1 + dx;
         if ( p1 <= xmin ) {  // check if on grid edge or out of grid
@@ -635,7 +634,7 @@ namespace ttcr {
             p1 = p2 - dx;
         }
         g.x = (getTraveltime({p2, pt.y, pt.z}, nt) - getTraveltime({p1, pt.y, pt.z}, nt)) / dx;
-        
+
         p1 = pt.y - dy/2.0;
         p2 = p1 + dy;
         if ( p1 <= ymin ) {
@@ -646,7 +645,7 @@ namespace ttcr {
             p1 = p2 - dy;
         }
         g.y = (getTraveltime({pt.x, p2, pt.z}, nt) - getTraveltime({pt.x, p1, pt.z}, nt)) / dy;
-        
+
         p1 = pt.z - dz/2.0;
         p2 = p1 + dz;
         if ( p1 <= zmin ) {
@@ -657,12 +656,12 @@ namespace ttcr {
             p1 = p2 - dz;
         }
         g.z = (getTraveltime({pt.x, pt.y, p2}, nt) - getTraveltime({pt.x, pt.y, p1}, nt)) / dz;
-        
+
     }
 
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::grad(sxyz<T1>& g, const sxyz<T1> &pt,
-                                      const size_t nt) const {
+                                    const size_t nt) const {
 
         // compute travel time gradient (4th order centered operator) at point pt
 
@@ -872,22 +871,22 @@ namespace ttcr {
 
         return tt;
     }
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>> &r_data,
                                           const size_t threadNo) const {
-        
+
         r_data.push_back( Rx );
-        
+
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
                 return;
             }
         }
-        
+
         sxyz<T1> curr_pt( Rx );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
@@ -897,7 +896,7 @@ namespace ttcr {
 #endif
         bool reachedTx = false;
         while ( reachedTx == false ) {
-            
+
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 #ifdef DEBUG_RP
@@ -905,12 +904,12 @@ namespace ttcr {
 #endif
             long long i, j, k;
             getIJK(curr_pt, i, j, k);
-            
+
             // planes we will intersect
             T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
             T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
             T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
-            
+
             if ( std::abs(xp-curr_pt.x)<small2) {
                 xp += dx*boost::math::sign(g.x);
             }
@@ -920,12 +919,12 @@ namespace ttcr {
             if ( std::abs(zp-curr_pt.z)<small2) {
                 zp += dz*boost::math::sign(g.z);
             }
-            
+
             // dist to planes
             T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
             T1 ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
             T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
-            
+
             if ( tx<ty && tx<tz ) { // closer to xp
                 curr_pt += tx*g;
                 curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -953,9 +952,9 @@ namespace ttcr {
                 }
                 throw std::runtime_error(msg.str());
             }
-            
+
             r_data.push_back( curr_pt );
-            
+
             // are we close enough to one the Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
                 if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
@@ -1128,8 +1127,8 @@ namespace ttcr {
             }
         }
     }
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::getRaypath(const std::vector<sxyz<T1>>& Tx,
                                           const std::vector<T1>& t0,
@@ -1149,30 +1148,30 @@ namespace ttcr {
                 return;
             }
         }
-        
+
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx ), mid_pt;
         s1 = computeSlowness( curr_pt );
         sijv<T1> m;
         m.i = RxNo;
-        
+
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
-        
+
         bool reachedTx = false;
         while ( reachedTx == false ) {
-            
+
             grad(g, curr_pt, threadNo);
             g *= -1.0;
-            
+
             long long i, j, k;
             getIJK(curr_pt, i, j, k);
-            
+
             // planes we will intersect
             T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
             T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
             T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
-            
+
             if ( std::abs(xp-curr_pt.x)<small2) {
                 xp += dx*boost::math::sign(g.x);
             }
@@ -1182,12 +1181,12 @@ namespace ttcr {
             if ( std::abs(zp-curr_pt.z)<small2) {
                 zp += dz*boost::math::sign(g.z);
             }
-            
+
             // dist to planes
             T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
             T1 ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
             T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
-            
+
             if ( tx<ty && tx<tz ) { // closer to xp
                 curr_pt += tx*g;
                 curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -1198,7 +1197,7 @@ namespace ttcr {
                 curr_pt += tz*g;
                 curr_pt.z = zp;
             }
-            
+
             if ( curr_pt.x < xmin || curr_pt.x > xmax ||
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
@@ -1213,18 +1212,18 @@ namespace ttcr {
                 }
                 throw std::runtime_error(msg.str());
             }
-            
+
             s2 = computeSlowness( curr_pt );
             tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
             s1 = s2;
             prev_pt = curr_pt;
-            
+
             // compute terms of matrix M
             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
             T1 s = computeSlowness(mid_pt);
             s *= s;
             T1 ds = curr_pt.getDistance( prev_pt );
-            
+
             size_t ix = (mid_pt.x-xmin)/dx;
             size_t iy = (mid_pt.y-ymin)/dy;
             size_t iz = (mid_pt.z-zmin)/dz;
@@ -1237,10 +1236,10 @@ namespace ttcr {
                         T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                         (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                         (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                        
+
                         m.j = (kv*nny+jv)*nnx+iv;
                         m.v = -s * ds * dvdv;
-                        
+
                         bool found = false;
                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                             if ( m_data[nm].j == m.j ) {
@@ -1255,22 +1254,22 @@ namespace ttcr {
                     }
                 }
             }
-            
-            
+
+
             // are we close enough to one of the Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
                 T1 dist = curr_pt.getDistance( Tx[ns] );
                 if ( dist < maxDist ) {
-                    
+
                     g = Tx[ns] - curr_pt;
                     // check if we intersect a plane between curr_pt & Tx
-                    
+
                     getIJK(curr_pt, i, j, k);
-                    
+
                     xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
                     yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
                     zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
-                    
+
                     if ( std::abs(xp-curr_pt.x)<small2) {
                         xp += dx*boost::math::sign(g.x);
                     }
@@ -1280,12 +1279,12 @@ namespace ttcr {
                     if ( std::abs(zp-curr_pt.z)<small2) {
                         zp += dz*boost::math::sign(g.z);
                     }
-                    
+
                     // dist to planes
                     tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
                     ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
                     tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
-                    
+
                     if ( tx<ty && tx<tz ) { // closer to xp
                         curr_pt += tx*g;
                         curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -1296,19 +1295,19 @@ namespace ttcr {
                         curr_pt += tz*g;
                         curr_pt.z = zp;
                     }
-                    
+
                     if ( curr_pt.getDistance(prev_pt) > dist  ||  // we do not intersect a plane
                         curr_pt == Tx[ns] ) {  // we have arrived
-                        
+
                         s2 = computeSlowness( Tx[ns] );
                         tt += t0[ns] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[ns] );
-                        
+
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
                         s = computeSlowness(mid_pt);
                         s *= s;
                         ds = Tx[ns].getDistance( prev_pt );
-                        
+
                         ix = (mid_pt.x-xmin)/dx;
                         iy = (mid_pt.y-ymin)/dy;
                         iz = (mid_pt.z-zmin)/dz;
@@ -1321,10 +1320,10 @@ namespace ttcr {
                                     T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                                     (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                                     (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                                    
+
                                     m.j = (kv*nny+jv)*nnx+iv;
                                     m.v = -s * ds * dvdv;
-                                    
+
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -1344,13 +1343,13 @@ namespace ttcr {
                         s2 = computeSlowness( curr_pt );
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
-                        
+
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                         s = computeSlowness(mid_pt);
                         s *= s;
                         ds = curr_pt.getDistance( prev_pt );
-                        
+
                         ix = (mid_pt.x-xmin)/dx;
                         iy = (mid_pt.y-ymin)/dy;
                         iz = (mid_pt.z-zmin)/dz;
@@ -1363,10 +1362,10 @@ namespace ttcr {
                                     T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                                     (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                                     (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                                    
+
                                     m.j = (kv*nny+jv)*nnx+iv;
                                     m.v = -s * ds * dvdv;
-                                    
+
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -1378,21 +1377,21 @@ namespace ttcr {
                                     if ( found == false ) {
                                         m_data.push_back(m);
                                     }
-                                    
+
                                 }
                             }
                         }
-                        
+
                         // to Tx
                         s2 = computeSlowness( Tx[ns] );
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
-                        
+
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + curr_pt);
                         s = computeSlowness(mid_pt);
                         s *= s;
                         ds = Tx[ns].getDistance( curr_pt );
-                        
+
                         ix = (mid_pt.x-xmin)/dx;
                         iy = (mid_pt.y-ymin)/dy;
                         iz = (mid_pt.z-zmin)/dz;
@@ -1405,10 +1404,10 @@ namespace ttcr {
                                     T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                                     (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                                     (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                                    
+
                                     m.j = (kv*nny+jv)*nnx+iv;
                                     m.v = -s * ds * dvdv;
-                                    
+
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -1783,36 +1782,36 @@ namespace ttcr {
         const size_t nny = ncy+1;
 
         r_data.push_back( Rx );
-        
+
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
                 return;
             }
         }
-        
+
         sxyz<T1> curr_pt( Rx ), prev_pt, mid_pt;
         s1 = computeSlowness( curr_pt );
         sijv<T1> m;
         m.i = RxNo;
-        
+
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
-        
+
         bool reachedTx = false;
         while ( reachedTx == false ) {
-            
+
             grad(g, curr_pt, threadNo);
             g *= -1.0;
-            
+
             long long i, j, k;
             getIJK(curr_pt, i, j, k);
-            
+
             // planes we will intersect
             T1 xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
             T1 yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
             T1 zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
-            
+
             if ( std::abs(xp-curr_pt.x)<small2) {
                 xp += dx*boost::math::sign(g.x);
             }
@@ -1822,12 +1821,12 @@ namespace ttcr {
             if ( std::abs(zp-curr_pt.z)<small2) {
                 zp += dz*boost::math::sign(g.z);
             }
-            
+
             // dist to planes
             T1 tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
             T1 ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
             T1 tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
-            
+
             if ( tx<ty && tx<tz ) { // closer to xp
                 curr_pt += tx*g;
                 curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -1838,7 +1837,7 @@ namespace ttcr {
                 curr_pt += tz*g;
                 curr_pt.z = zp;
             }
-            
+
             if ( curr_pt.x < xmin || curr_pt.x > xmax ||
                 curr_pt.y < ymin || curr_pt.y > ymax ||
                 curr_pt.z < zmin || curr_pt.z > zmax ) {
@@ -1853,19 +1852,19 @@ namespace ttcr {
                 }
                 throw std::runtime_error(msg.str());
             }
-            
+
             prev_pt = r_data.back();
             s2 = computeSlowness( curr_pt );
             tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
             s1 = s2;
             r_data.push_back( curr_pt );
-            
+
             // compute terms of matrix M
             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
             T1 s = computeSlowness(mid_pt);
             s *= s;
             T1 ds = curr_pt.getDistance( prev_pt );
-            
+
             size_t ix = (mid_pt.x-xmin)/dx;
             size_t iy = (mid_pt.y-ymin)/dy;
             size_t iz = (mid_pt.z-zmin)/dz;
@@ -1878,10 +1877,10 @@ namespace ttcr {
                         T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                         (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                         (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                        
+
                         m.j = (kv*nny+jv)*nnx+iv;
                         m.v = -s * ds * dvdv;
-                        
+
                         bool found = false;
                         for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                             if ( m_data[nm].j == m.j ) {
@@ -1896,22 +1895,22 @@ namespace ttcr {
                     }
                 }
             }
-            
-            
+
+
             // are we close enough to one of the Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
                 T1 dist = curr_pt.getDistance( Tx[ns] );
                 if ( dist < maxDist ) {
-                    
+
                     g = Tx[ns] - curr_pt;
                     // check if we intersect a plane between curr_pt & Tx
-                    
+
                     getIJK(curr_pt, i, j, k);
-                    
+
                     xp = xmin + dx*(i + (boost::math::sign(g.x)>0.0 ? 1.0 : 0.0));
                     yp = ymin + dy*(j + (boost::math::sign(g.y)>0.0 ? 1.0 : 0.0));
                     zp = zmin + dz*(k + (boost::math::sign(g.z)>0.0 ? 1.0 : 0.0));
-                    
+
                     if ( std::abs(xp-curr_pt.x)<small2) {
                         xp += dx*boost::math::sign(g.x);
                     }
@@ -1921,12 +1920,12 @@ namespace ttcr {
                     if ( std::abs(zp-curr_pt.z)<small2) {
                         zp += dz*boost::math::sign(g.z);
                     }
-                    
+
                     // dist to planes
                     tx = g.x!=0.0 ? (xp - curr_pt.x)/g.x : std::numeric_limits<T1>::max();
                     ty = g.y!=0.0 ? (yp - curr_pt.y)/g.y : std::numeric_limits<T1>::max();
                     tz = g.z!=0.0 ? (zp - curr_pt.z)/g.z : std::numeric_limits<T1>::max();
-                    
+
                     if ( tx<ty && tx<tz ) { // closer to xp
                         curr_pt += tx*g;
                         curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -1937,21 +1936,21 @@ namespace ttcr {
                         curr_pt += tz*g;
                         curr_pt.z = zp;
                     }
-                    
+
                     if ( curr_pt.getDistance(r_data.back()) > dist  ||  // we do not intersect a plane
                         curr_pt == Tx[ns] ) {  // we have arrived
-                        
+
                         prev_pt = r_data.back();
                         s2 = computeSlowness( Tx[ns] );
                         tt += t0[ns] + 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
-                        
+
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
                         s = computeSlowness(mid_pt);
                         s *= s;
                         ds = Tx[ns].getDistance( prev_pt );
-                        
+
                         ix = (mid_pt.x-xmin)/dx;
                         iy = (mid_pt.y-ymin)/dy;
                         iz = (mid_pt.z-zmin)/dz;
@@ -1964,10 +1963,10 @@ namespace ttcr {
                                     T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                                     (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                                     (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                                    
+
                                     m.j = (kv*nny+jv)*nnx+iv;
                                     m.v = -s * ds * dvdv;
-                                    
+
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -1988,14 +1987,14 @@ namespace ttcr {
                         tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
                         s1 = s2;
-                        
+
                         prev_pt = r_data.back();
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                         s = computeSlowness(mid_pt);
                         s *= s;
                         ds = curr_pt.getDistance( prev_pt );
-                        
+
                         ix = (mid_pt.x-xmin)/dx;
                         iy = (mid_pt.y-ymin)/dy;
                         iz = (mid_pt.z-zmin)/dz;
@@ -2008,10 +2007,10 @@ namespace ttcr {
                                     T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                                     (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                                     (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                                    
+
                                     m.j = (kv*nny+jv)*nnx+iv;
                                     m.v = -s * ds * dvdv;
-                                    
+
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -2023,23 +2022,23 @@ namespace ttcr {
                                     if ( found == false ) {
                                         m_data.push_back(m);
                                     }
-                                    
+
                                 }
                             }
                         }
-                        
+
                         // to Tx
                         prev_pt = r_data.back();
                         s2 = computeSlowness( Tx[ns] );
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
-                        
+
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
                         s = computeSlowness(mid_pt);
                         s *= s;
                         ds = Tx[ns].getDistance( prev_pt );
-                        
+
                         ix = (mid_pt.x-xmin)/dx;
                         iy = (mid_pt.y-ymin)/dy;
                         iz = (mid_pt.z-zmin)/dz;
@@ -2052,10 +2051,10 @@ namespace ttcr {
                                     T1 dvdv = (1. - std::abs(mid_pt.x - iv*dx)/dx) *
                                     (1. - std::abs(mid_pt.y - jv*dy)/dy) *
                                     (1. - std::abs(mid_pt.z - kv*dz)/dz);
-                                    
+
                                     m.j = (kv*nny+jv)*nnx+iv;
                                     m.v = -s * ds * dvdv;
-                                    
+
                                     bool found = false;
                                     for ( size_t nm=0; nm<m_data.size(); ++nm ) {
                                         if ( m_data[nm].j == m.j ) {
@@ -2077,39 +2076,39 @@ namespace ttcr {
             }
         }
     }
-    
-    
+
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::getRaypath_old(const std::vector<sxyz<T1>>& Tx,
                                               const sxyz<T1> &Rx,
                                               std::vector<sxyz<T1>> &r_data,
                                               const size_t threadNo) const {
-        
+
         r_data.push_back( Rx );
-        
+
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
                 return;
             }
         }
-        
+
         long long int iIn, jIn, kIn, iOut=-1, jOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
         sxyz<T1> curr_pt( Rx );
         sxyz<T1> gOut = {0.0, 0.0, 0.0};
-        
+
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
-        
+
         getIJK(curr_pt, iIn, jIn, kIn);
-        
+
         bool reachedTx = false;
         while ( reachedTx == false ) {
-            
+
             bool onNode=false;
             bool onEdgeX=false;
             bool onEdgeY=false;
             bool onEdgeZ=false;
-            
+
             if ( std::abs(remainder(curr_pt.x,dx))<small &&
                 std::abs(remainder(curr_pt.y,dy))<small &&
                 std::abs(remainder(curr_pt.z,dz))<small ) {
@@ -2124,13 +2123,13 @@ namespace ttcr {
                        std::abs(remainder(curr_pt.y,dy))<small ) {
                 onEdgeZ = true;
             }
-            
+
             if ( onNode ) {
-                
+
                 T2 i, j, k;
                 getIJK(curr_pt, i, j, k);
                 std::vector<sijk<T2>> voxels;
-                
+
                 // find voxels touching node
                 if ( i<=ncx && j<=ncy && k<=ncz )
                     voxels.push_back( {i,j,k} );
@@ -2148,7 +2147,7 @@ namespace ttcr {
                     voxels.push_back( {i-1,j-1,k} );
                 if ( i>0 && j>0 && k>0 )
                     voxels.push_back( {i-1,j-1,k-1} );
-                
+
                 gOut = static_cast<T1>(0.0);
                 sxyz<T1> g;
                 T2 nc;
@@ -2158,7 +2157,7 @@ namespace ttcr {
                     gOut += g;
                 }
                 gOut /= nc;  // gOut holds average grad
-                
+
                 if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
@@ -2173,21 +2172,21 @@ namespace ttcr {
                     }
                     throw std::runtime_error(msg.str());
                 }
-                
+
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
                 jOut = boost::math::sign(gOut.y)<0.0 ? j-1 : j;
                 kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
-                
+
                 // planes we will intersect
                 T1 xp = xmin + dx*(i + boost::math::sign(gOut.x));
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y));
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
-                
+
                 // dist to planes
                 T1 tx = (xp - curr_pt.x)/gOut.x;
                 T1 ty = (yp - curr_pt.y)/gOut.y;
                 T1 tz = (zp - curr_pt.z)/gOut.z;
-                
+
                 if ( tx<ty && tx<tz ) { // closer to xp
                     curr_pt += tx*gOut;
                     curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -2207,13 +2206,13 @@ namespace ttcr {
                     jIn = jOut;
                     kIn = kOut + boost::math::sign(gOut.z);
                 }
-                
+
             } else if ( onEdgeX ) {
-                
+
                 T2 i, j, k;
                 getIJK(curr_pt, i, j, k);
                 std::vector<sijk<T2>> voxels;
-                
+
                 // find voxels touching edge
                 if ( i<=ncx && j<=ncy && k<=ncz )
                     voxels.push_back( {i,j,k} );
@@ -2223,7 +2222,7 @@ namespace ttcr {
                     voxels.push_back( {i,j-1,k} );
                 if ( i<=ncx && j>0 && k>0 )
                     voxels.push_back( {i,j-1,k-1} );
-                
+
                 gOut = static_cast<T1>(0.0);
                 sxyz<T1> g;
                 T2 nc;
@@ -2233,7 +2232,7 @@ namespace ttcr {
                     gOut += g;
                 }
                 gOut /= nc;  // gOut holds average grad
-                
+
                 if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
@@ -2248,26 +2247,26 @@ namespace ttcr {
                     }
                     throw std::runtime_error(msg.str());
                 }
-                
+
                 iOut = i;
                 jOut = boost::math::sign(gOut.y)<0.0 ? j-1 : j;
                 kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
-                
+
                 // planes we will intersect
                 T1 xp = xmin + dx*(i + boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0);
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y));
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
-                
+
                 if ( std::abs(xp-curr_pt.x)<small) {
                     xp += dx*boost::math::sign(gOut.x);
                     iOut += boost::math::sign(gOut.x);
                 }
-                
+
                 // dist to planes
                 T1 tx = (xp - curr_pt.x)/gOut.x;
                 T1 ty = (yp - curr_pt.y)/gOut.y;
                 T1 tz = (zp - curr_pt.z)/gOut.z;
-                
+
                 if ( tx<ty && tx<tz ) { // closer to xp
                     curr_pt += tx*gOut;
                     curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -2287,13 +2286,13 @@ namespace ttcr {
                     jIn = jOut;
                     kIn = kOut + boost::math::sign(gOut.z);
                 }
-                
+
             } else if ( onEdgeY ) {
-                
+
                 T2 i, j, k;
                 getIJK(curr_pt, i, j, k);
                 std::vector<sijk<T2>> voxels;
-                
+
                 // find voxels touching node
                 if ( i<=ncx && j<=ncy && k<=ncz )
                     voxels.push_back( {i,j,k} );
@@ -2303,7 +2302,7 @@ namespace ttcr {
                     voxels.push_back( {i-1,j,k} );
                 if ( i>0 && j<=ncy && k>0 )
                     voxels.push_back( {i-1,j,k-1} );
-                
+
                 gOut = static_cast<T1>(0.0);
                 sxyz<T1> g;
                 T2 nc;
@@ -2313,7 +2312,7 @@ namespace ttcr {
                     gOut += g;
                 }
                 gOut /= nc;  // gOut holds average grad
-                
+
                 if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
@@ -2328,26 +2327,26 @@ namespace ttcr {
                     }
                     throw std::runtime_error(msg.str());
                 }
-                
+
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
                 jOut = j;
                 kOut = boost::math::sign(gOut.z)<0.0 ? k-1 : k;
-                
+
                 // planes we will intersect
                 T1 xp = xmin + dx*(i + boost::math::sign(gOut.x));
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y)>0.0 ? 1.0 : 0.0);
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z));
-                
+
                 if ( std::abs(yp-curr_pt.y)<small) {
                     yp += dy*boost::math::sign(gOut.y);
                     jOut += boost::math::sign(gOut.y);
                 }
-                
+
                 // dist to planes
                 T1 tx = (xp - curr_pt.x)/gOut.x;
                 T1 ty = (yp - curr_pt.y)/gOut.y;
                 T1 tz = (zp - curr_pt.z)/gOut.z;
-                
+
                 if ( tx<ty && tx<tz ) { // closer to xp
                     curr_pt += tx*gOut;
                     curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -2367,13 +2366,13 @@ namespace ttcr {
                     jIn = jOut;
                     kIn = kOut + boost::math::sign(gOut.z);
                 }
-                
+
             } else if ( onEdgeZ ) {
-                
+
                 T2 i, j, k;
                 getIJK(curr_pt, i, j, k);
                 std::vector<sijk<T2>> voxels;
-                
+
                 // find voxels touching node
                 if ( i<=ncx && j<=ncy && k<=ncz )
                     voxels.push_back( {i,j,k} );
@@ -2383,7 +2382,7 @@ namespace ttcr {
                     voxels.push_back( {i-1,j,k} );
                 if ( i>0 && j>0 && k<=ncz )
                     voxels.push_back( {i-1,j-1,k} );
-                
+
                 gOut = static_cast<T1>(0.0);
                 sxyz<T1> g;
                 T2 nc;
@@ -2393,7 +2392,7 @@ namespace ttcr {
                     gOut += g;
                 }
                 gOut /= nc;  // gOut holds average grad
-                
+
                 if ((gOut.x<0.0 && i==0) || (gOut.x>0.0 && i==ncx+1) ||
                     (gOut.y<0.0 && j==0) || (gOut.y>0.0 && j==ncy+1) ||
                     (gOut.z<0.0 && k==0) || (gOut.z>0.0 && k==ncz+1)) {
@@ -2408,26 +2407,26 @@ namespace ttcr {
                     }
                     throw std::runtime_error(msg.str());
                 }
-                
+
                 iOut = boost::math::sign(gOut.x)<0.0 ? i-1 : i;
                 jOut = boost::math::sign(gOut.y)<0.0 ? j-1 : j;
                 kOut = k;
-                
+
                 // planes we will intersect
                 T1 xp = xmin + dx*(i + boost::math::sign(gOut.x));
                 T1 yp = ymin + dy*(j + boost::math::sign(gOut.y));
                 T1 zp = zmin + dz*(k + boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0);
-                
+
                 if ( std::abs(zp-curr_pt.z)<small) {
                     zp += dz*boost::math::sign(gOut.z);
                     kOut += boost::math::sign(gOut.z);
                 }
-                
+
                 // dist to planes
                 T1 tx = (xp - curr_pt.x)/gOut.x;
                 T1 ty = (yp - curr_pt.y)/gOut.y;
                 T1 tz = (zp - curr_pt.z)/gOut.z;
-                
+
                 if ( tx<ty && tx<tz ) { // closer to xp
                     curr_pt += tx*gOut;
                     curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -2447,29 +2446,29 @@ namespace ttcr {
                     jIn = jOut;
                     kIn = kOut + boost::math::sign(gOut.z);
                 }
-                
+
             } else {
-                
+
                 sxyz<T1> gIn;
                 grad( gIn, iIn, jIn, kIn, threadNo );
                 gIn *= -1.0;
-                
+
                 if ( iIn == iOut && jIn == jOut && kIn == kOut) {
                     // ray is returning to cell it was exiting
                     // we might be at grazing incidence
                     // check if gIn is significantly different from gOut
-                    
+
                     sxyz<T1> diff = normalize(gOut)-normalize(gIn);
                     if ( norm(diff) > small ) {
                         throw std::runtime_error("Error while computing raypaths: raypath not converging!");
                     }
                 }
-                
+
                 gOut = gIn;
                 iOut = iIn;
                 jOut = jIn;
                 kOut = kIn;
-                
+
                 if ((gOut.x<0.0 && iOut==0) || (gOut.x>0.0 && iOut==ncx+1) ||
                     (gOut.y<0.0 && jOut==0) || (gOut.y>0.0 && jOut==ncy+1) ||
                     (gOut.z<0.0 && kOut==0) || (gOut.z>0.0 && kOut==ncz+1)) {
@@ -2484,12 +2483,12 @@ namespace ttcr {
                     }
                     throw std::runtime_error(msg.str());
                 }
-                
+
                 // planes we will intersect
                 T1 xp = xmin + dx*(iIn + boost::math::sign(gOut.x)>0.0 ? 1.0 : 0.0);
                 T1 yp = ymin + dy*(jIn + boost::math::sign(gOut.y)>0.0 ? 1.0 : 0.0);
                 T1 zp = zmin + dz*(kIn + boost::math::sign(gOut.z)>0.0 ? 1.0 : 0.0);
-                
+
                 if ( std::abs(xp-curr_pt.x)<small) {
                     xp += dx*boost::math::sign(gOut.x);
                     iOut += boost::math::sign(gOut.x);
@@ -2502,12 +2501,12 @@ namespace ttcr {
                     zp += dz*boost::math::sign(gOut.z);
                     kOut += boost::math::sign(gOut.z);
                 }
-                
+
                 // dist to planes
                 T1 tx = (xp - curr_pt.x)/gOut.x;
                 T1 ty = (yp - curr_pt.y)/gOut.y;
                 T1 tz = (zp - curr_pt.z)/gOut.z;
-                
+
                 if ( tx<ty && tx<tz ) { // closer to xp
                     curr_pt += tx*gOut;
                     curr_pt.x = xp;     // make sure we don't accumulate rounding errors
@@ -2527,12 +2526,12 @@ namespace ttcr {
                     jIn = jOut;
                     kIn = kOut + boost::math::sign(gOut.z);
                 }
-                
+
             }
-            
-            
+
+
             r_data.push_back( curr_pt );
-            
+
             // are we close enough to one the of Tx nodes ?
             for ( size_t ns=0; ns<Tx.size(); ++ns ) {
                 if ( curr_pt.getDistance( Tx[ns] ) < maxDist ) {
@@ -2542,10 +2541,10 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& pt) const {
-        
+
         const size_t nnx = ncx+1;
         const size_t nny = ncy+1;
         const size_t nnz = ncz+1;
@@ -2767,12 +2766,12 @@ namespace ttcr {
         }
 
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::saveTT(const std::string & fname, const int all,
                                       const size_t nt,
                                       const int format) const {
-        
+
         if ( format == 1 ) {
             std::string filename = fname+".dat";
             std::ofstream fout(filename.c_str());
@@ -2788,33 +2787,33 @@ namespace ttcr {
             fout.close();
         } else if ( format == 2 ) {
 #ifdef VTK
-            
+
             std::string filename = fname+".vtr";
             int nn[3] = {static_cast<int>(ncx+1), static_cast<int>(ncy+1), static_cast<int>(ncz+1)};
-            
+
             vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
             for (size_t n=0; n<nn[0]; ++n)
-                xCoords->InsertNextValue( xmin + n*dx );
+            xCoords->InsertNextValue( xmin + n*dx );
             vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
             for (size_t n=0; n<nn[1]; ++n)
-                yCoords->InsertNextValue( ymin + n*dy );
+            yCoords->InsertNextValue( ymin + n*dy );
             vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
             for (size_t n=0; n<nn[2]; ++n)
-                zCoords->InsertNextValue( zmin + n*dz );
-            
+            zCoords->InsertNextValue( zmin + n*dz );
+
             vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
             rgrid->SetDimensions( nn );
             rgrid->SetXCoordinates(xCoords);
             rgrid->SetYCoordinates(yCoords);
             rgrid->SetZCoordinates(zCoords);
-            
+
             vtkSmartPointer<vtkDoubleArray> newScalars =
             vtkSmartPointer<vtkDoubleArray>::New();
-            
+
             newScalars->SetName("Travel time");
             newScalars->SetNumberOfComponents(1);
             newScalars->SetNumberOfTuples( rgrid->GetNumberOfPoints() );
-            
+
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() ) {
                     vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
@@ -2822,10 +2821,10 @@ namespace ttcr {
                 }
             }
             rgrid->GetPointData()->SetScalars(newScalars);
-            
+
             vtkSmartPointer<vtkXMLRectilinearGridWriter> writer =
             vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
-            
+
             writer->SetFileName( filename.c_str() );
             writer->SetInputData( rgrid );
             writer->SetDataModeToBinary();
@@ -2847,7 +2846,7 @@ namespace ttcr {
             throw std::runtime_error("Unsupported format for saving traveltimes");
         }
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::loadTT(const std::string & fname, const int all,
                                       const size_t nt,
@@ -2899,11 +2898,11 @@ namespace ttcr {
         }
     }
 
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::sweep(const std::vector<bool>& frozen,
                                      const size_t threadNo) const {
-        
+
         // sweep first direction
         for ( size_t k=0; k<=ncz; ++k ) {
             for ( size_t j=0; j<=ncy; ++j ) {
@@ -2985,12 +2984,12 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::update_node(const size_t i, const size_t j, const size_t k,
                                            const size_t threadNo) const {
         T1 a1, a2, a3, t;
-        
+
         if (k==0)
             a1 = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
         else if (k==ncz)
@@ -3000,7 +2999,7 @@ namespace ttcr {
             t  = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
             a1 = a1<t ? a1 : t;
         }
-        
+
         if (j==0)
             a2 = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
         else if (j==ncy)
@@ -3010,7 +3009,7 @@ namespace ttcr {
             t  = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
             a2 = a2<t ? a2 : t;
         }
-        
+
         if (i==0)
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
         else if (i==ncx)
@@ -3020,32 +3019,32 @@ namespace ttcr {
             t  = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
             a3 = a3<t ? a3 : t;
         }
-        
+
         if ( a1>a2 ) std::swap(a1, a2);
         if ( a1>a3 ) std::swap(a1, a3);
         if ( a2>a3 ) std::swap(a2, a3);
-        
+
         T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
-        
+
         t = a1 + fh;
         if ( t > a2 ) {
-            
+
             t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
-            
+
             if ( t > a3 ) {
-                
+
                 t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 - 2.*a2*a2 +
                                                    2.*a1*a3 + 2.*a2*a3 -
                                                    2.*a3*a3 + 3.*fh*fh));
-                
+
             }
         }
-        
+
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
-        
+
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::sweep_weno3(const std::vector<bool>& frozen,
                                            const size_t threadNo) const {
@@ -3130,14 +3129,14 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::update_node_weno3(const size_t i,
                                                  const size_t j,
                                                  const size_t k,
                                                  const size_t threadNo) const {
         T1 a1, a2, a3, t;
-        
+
         if (k==0) {
             a1 = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);  // first order
         } else if (k==1) {
@@ -3151,18 +3150,18 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 ap = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(-nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
                4.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-            
+
             t = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a1 = a1<t ? a1 : t;
-            
+
         } else if (k==ncz) {
             a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
         } else if (k==ncz-1) {
@@ -3176,18 +3175,18 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 am = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                4.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
                nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-            
+
             t = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a1 = a1<t ? a1 : t;
-            
+
         } else {
             T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
@@ -3199,33 +3198,33 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 ap = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(-nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
                4.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-            
+
             num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
             nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
             num *= num;
             r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             w = 1./(1.+2.*r*r);
-            
+
             T1 am = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                4.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
                nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
             a1 = a1<t ? a1 : t;
-            
+
         }
-        
+
         if (j==0) {
             a2 = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
         } else if (j==1) {
@@ -3239,18 +3238,18 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(-nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) +
                4.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-            
+
             t = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a2 = a2<t ? a2 : t;
-            
+
         } else if (j==ncy) {
             a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
         } else if (j==ncy-1) {
@@ -3264,18 +3263,18 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                4.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
                nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-            
+
             t = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a2 = a2<t ? a2 : t;
-            
+
         } else {
             T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
@@ -3287,33 +3286,33 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(-nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) +
                4.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-            
+
             num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo);
             num *= num;
             r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             w = 1./(1.+2.*r*r);
-            
+
             T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
             w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                4.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
                nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
             a2 = a2<t ? a2 : t;
-            
+
         }
-        
+
         if (i==0) {
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
         } else if (i==1) {
@@ -3327,18 +3326,18 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
             w*(-nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) +
                4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-            
+
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo); // first order for left
             a3 = a3<t ? a3 : t;
-            
+
         } else if (i==ncx) {
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
         } else if (i==ncx-1) {
@@ -3352,18 +3351,18 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
             w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
                nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
-            
+
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-            
+
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo); // first order for right
             a3 = a3<t ? a3 : t;
-            
+
         } else {
             T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
@@ -3375,65 +3374,65 @@ namespace ttcr {
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
-            
+
             T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
             w*(-nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) +
                4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-            
+
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-            
+
             num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo);
             num *= num;
             r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             w = 1./(1.+2.*r*r);
-            
+
             T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
             w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
                4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
                nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
-            
+
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-            
+
             a3 = a3<t ? a3 : t;
         }
-        
+
         if ( a1>a2 ) std::swap(a1, a2);
         if ( a1>a3 ) std::swap(a1, a3);
         if ( a2>a3 ) std::swap(a2, a3);
-        
+
         T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
-        
+
         t = a1 + fh;
         if ( t > a2 ) {
-            
+
             t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
-            
+
             if ( t > a3 ) {
-                
+
                 t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 -
                                                    2.*a2*a2 + 2.*a1*a3 + 2.*a2*a3 -
                                                    2.*a3*a3 + 3.*fh*fh));
-                
+
             }
         }
-        
+
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
-        
+
     }
-    
+
     template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::initFSM(const std::vector<sxyz<T1>>& Tx,
                                        const std::vector<T1>& t0,
                                        std::vector<bool>& frozen,
                                        const int npts,
                                        const size_t threadNo) const {
-        
+
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
             for ( long long nn=0; nn<nodes.size(); ++nn ) {
@@ -3441,54 +3440,54 @@ namespace ttcr {
                     found = true;
                     nodes[nn].setTT( t0[n], threadNo );
                     frozen[nn] = true;
-                    
+
                     long long k = nn/((ncy+1)*(ncx+1));
                     long long j = (nn-k*(ncy+1)*(ncx+1))/(ncx+1);
                     long long i = nn - (k*(ncy+1)+j)*(ncx+1);
-                    
+
                     for ( long long kk=k-npts; kk<=k+npts; ++kk ) {
                         if ( kk>=0 && kk<=ncz ) {
                             for ( long long jj=j-npts; jj<=j+npts; ++jj ) {
                                 if ( jj>=0 && jj<=ncy ) {
                                     for ( long long ii=i-npts; ii<=i+npts; ++ii ) {
                                         if ( ii>=0 && ii<=ncx && !(ii==i && jj==j && kk==k) ) {
-                                            
+
                                             size_t nnn = (kk*(ncy+1)+jj)*(ncx+1)+ii;
                                             T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
                                             nodes[nnn].setTT( tt, threadNo );
                                             frozen[nnn] = true;
-                                            
+
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    
+
                     break;
                 }
             }
             if ( found==false ) {
-                
+
                 // find cell where Tx resides
                 long long cellNo = getCellNo(Tx[n]);
-                
+
                 long long k = cellNo/(ncy*ncx);
                 long long j = (cellNo-k*ncy*ncx)/ncx;
                 long long i = cellNo - (k*ncy+j)*ncx;
-                
+
                 for ( long long kk=k-(npts-1); kk<=k+npts; ++kk ) {
                     if ( kk>=0 && kk<=ncz ) {
                         for ( long long jj=j-(npts-1); jj<=j+npts; ++jj ) {
                             if ( jj>=0 && jj<=ncy ) {
                                 for ( long long ii=i-(npts-1); ii<=i+npts; ++ii ) {
                                     if ( ii>=0 && ii<=ncx && !(ii==i && jj==j && kk==k) ) {
-                                        
+
                                         size_t nnn = (kk*(ncy+1)+jj)*(ncx+1)+ii;
                                         T1 tt = t0[n] + nodes[nnn].getDistance(Tx[n]) * nodes[nnn].getNodeSlowness();
                                         nodes[nnn].setTT( tt, threadNo );
                                         frozen[nnn] = true;
-                                        
+
                                     }
                                 }
                             }
@@ -3508,13 +3507,13 @@ namespace ttcr {
 
         vtkSmartPointer<vtkDoubleArray> xCoords = vtkSmartPointer<vtkDoubleArray>::New();
         for (size_t n=0; n<nn[0]; ++n)
-            xCoords->InsertNextValue( xmin + n*dx );
+        xCoords->InsertNextValue( xmin + n*dx );
         vtkSmartPointer<vtkDoubleArray> yCoords = vtkSmartPointer<vtkDoubleArray>::New();
         for (size_t n=0; n<nn[1]; ++n)
-            yCoords->InsertNextValue( ymin + n*dy );
+        yCoords->InsertNextValue( ymin + n*dy );
         vtkSmartPointer<vtkDoubleArray> zCoords = vtkSmartPointer<vtkDoubleArray>::New();
         for (size_t n=0; n<nn[2]; ++n)
-            zCoords->InsertNextValue( zmin + n*dz );
+        zCoords->InsertNextValue( zmin + n*dz );
 
         vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
         rgrid->SetDimensions( nn );

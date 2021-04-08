@@ -22,7 +22,6 @@
  *
  */
 
-
 #ifndef ttcr_Grid2D_h
 #define ttcr_Grid2D_h
 
@@ -281,27 +280,27 @@ namespace ttcr {
             throw std::runtime_error("Method setSlowness should be implemented in subclass");
         }
         virtual void setXi(const std::vector<T1>& x) {
-                throw std::runtime_error("Method setXi should be implemented in subclass");
-            }
+            throw std::runtime_error("Method setXi should be implemented in subclass");
+        }
         virtual void setTiltAngle(const std::vector<T1>& x) {
-                throw std::runtime_error("Method setTiltAngle should be implemented in subclass");
-            }
+            throw std::runtime_error("Method setTiltAngle should be implemented in subclass");
+        }
         virtual void setVp0(const std::vector<T1>& s) {
-                throw std::runtime_error("Method setVp0 should be implemented in subclass");
-            }
+            throw std::runtime_error("Method setVp0 should be implemented in subclass");
+        }
         virtual void setVs0(const std::vector<T1>& s) {
-                throw std::runtime_error("Method setVs0 should be implemented in subclass");
-            }
+            throw std::runtime_error("Method setVs0 should be implemented in subclass");
+        }
         virtual void setDelta(const std::vector<T1>& s) {
-                throw std::runtime_error("Method setDelta should be implemented in subclass");
-            }
+            throw std::runtime_error("Method setDelta should be implemented in subclass");
+        }
         virtual void setEpsilon(const std::vector<T1>& s) {
-                throw std::runtime_error("Method setEpsilon should be implemented in subclass");
-            }
+            throw std::runtime_error("Method setEpsilon should be implemented in subclass");
+        }
         virtual void setGamma(const std::vector<T1>& s) {
-                throw std::runtime_error("Method setGamma should be implemented in subclass");
-            }
-        
+            throw std::runtime_error("Method setGamma should be implemented in subclass");
+        }
+
         void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
 
         virtual size_t getNumberOfNodes(const bool primary=false) const { return 1; }
@@ -365,7 +364,7 @@ namespace ttcr {
                              std::vector<std::vector<siv<T1>>>& d_data) const {
             throw std::runtime_error("Method computeD should be implemented in subclass");
         }
-        
+
         virtual const T1 getAverageEdgeLength() const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
@@ -398,9 +397,9 @@ namespace ttcr {
         }
 
         virtual void raytrace(const std::vector<S>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<const std::vector<S>*>& Rx,
-                      const size_t threadNo=0) const {
+                              const std::vector<T1>& t0,
+                              const std::vector<const std::vector<S>*>& Rx,
+                              const size_t threadNo=0) const {
             throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
 
@@ -495,13 +494,13 @@ namespace ttcr {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
                 for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
             }
         } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
                 for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
             }
         }
     }

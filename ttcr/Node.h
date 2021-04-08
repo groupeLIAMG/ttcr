@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef __NODE_H__
-#define __NODE_H__
+#ifndef ttcr_Node_h
+#define ttcr_Node_h
 
 namespace ttcr {
-    
+
     template<typename T>
     class Node {
     public:
@@ -37,9 +37,8 @@ namespace ttcr {
         virtual T getZ() const = 0;
         virtual const bool isPrimary() const = 0;
     };
-    
-    
-    
+
+
     template<typename T>
     class CompareNodePtr {
         // Overloaded operator for the priority queue, compare the "n"th traveltimes of two nodes.
@@ -52,7 +51,7 @@ namespace ttcr {
             return n1->getTT(n) > n2->getTT(n);
         }
     };
-    
+
 }
 
 #endif

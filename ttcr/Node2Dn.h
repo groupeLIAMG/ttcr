@@ -31,7 +31,7 @@
 #include "Node.h"
 
 namespace ttcr {
-    
+
     template<typename T1, typename T2>
     class Node2Dn : public Node<T1> {
     public:
@@ -42,12 +42,12 @@ namespace ttcr {
         owners(0), primary(false)
         {
             tt = new T1[nt];
-            
+
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
             }
         }
-        
+
         Node2Dn(const T1 t, const T1 _x, const T1 _z, const size_t nt, const size_t i) :
         nThreads(nt), tt(0),
         x(_x), z(_z), slowness(0.0),
@@ -69,13 +69,13 @@ namespace ttcr {
         owners(std::vector<T2>(0)), primary(false)
         {
             tt = new T1[nt];
-            
+
             for ( size_t n=0; n<nt; ++n ) {
                 tt[n] = std::numeric_limits<T1>::max();
             }
             tt[i] = t;
         }
-        
+
         Node2Dn(const Node2Dn<T1,T2>& node) :
         nThreads(node.nThreads), tt(0),
         x(node.x), z(node.z), slowness(node.slowness),
@@ -83,76 +83,76 @@ namespace ttcr {
         owners(node.owners), primary(node.primary)
         {
             tt = new T1[nThreads];
-            
+
             for ( size_t n=0; n<nThreads; ++n ) {
                 tt[n] = node.tt[n];
             }
         }
-        
-        
+
+
         virtual ~Node2Dn() {
             delete [] tt;
         }
-        
+
         void reinit(const size_t thread_no) { //=0) {
             tt[thread_no] = std::numeric_limits<T1>::max();
         }
-        
+
         T1 getTT(const size_t i) const { return tt[i]; }
         void setTT(const T1 t, const size_t i) { tt[i] = t; }
-        
+
         void setXZindex(const T1 xx, const T1 zz, const T2 index) {
             x=xx; z=zz; gridIndex = index;  }
-        
+
         template<typename SXZ>
         void setXYZindex(const SXZ& s, const T2 index) {
             x=s.x; z=s.z; gridIndex = index;  }
-        
+
         T1 getX() const {
             return x;
         }
         void setX(const T1 xx) { x = xx; }
-        
+
         T1 getY() const { return 0.0; }
-        
+
         T1 getZ() const { return z; }
         void setZ(const T1 zz) { z = zz; }
-        
+
         T1 getNodeSlowness() const { return slowness; }
         void setNodeSlowness(const T1 s) { slowness = s; }
-        
+
         T2 getGridIndex() const { return gridIndex; }
         void setGridIndex(const T2 index) { gridIndex = index; }
-        
+
         void pushOwner(const T2 o) { owners.push_back(o); }
         const std::vector<T2>& getOwners() const { return owners; }
-        
+
         T1 getDistance( const Node2Dn<T1,T2>& node ) const {
             return sqrt( (x-node.x)*(x-node.x) + (z-node.z)*(z-node.z) );
         }
-        
+
         T1 getDistance( const sxz<T1>& node ) const {
             return sqrt( (x-node.x)*(x-node.x) + (z-node.z)*(z-node.z) );
         }
-        
+
         T1 getDistanceX( const sxz<T1>& node ) const {
             return std::abs( x-node.x );
         }
-        
+
         T1 getDistanceZ( const sxz<T1>& node ) const {
             return std::abs( z-node.z );
         }
-        
+
         // operator to test if same location
         bool operator==( const sxz<T1>& node ) const {
             return std::abs(x-node.x)<small && std::abs(z-node.z)<small;
         }
-        
+
         int getDimension() const { return 2; }
 
         void setPrimary(const bool p) { primary = p; }
         const bool isPrimary() const { return primary; }
-        
+
     protected:
         size_t nThreads;
         T1 *tt;                        // travel time
@@ -164,10 +164,10 @@ namespace ttcr {
         bool primary;
     };
 
-	template <typename T1, typename T2>
-	sxz<T1> operator+(const Node2Dn<T1,T2>& lhs, const Node2Dn<T1,T2>& rhs) {
-		return sxz<T1>(lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ());
-	}
+    template <typename T1, typename T2>
+    sxz<T1> operator+(const Node2Dn<T1,T2>& lhs, const Node2Dn<T1,T2>& rhs) {
+        return sxz<T1>(lhs.getX()+rhs.getX(), lhs.getZ()+rhs.getZ());
+    }
     template <typename T1, typename T2>
     sxz<T1> operator-(const Node2Dn<T1,T2>& lhs, const Node2Dn<T1,T2>& rhs) {
         return sxz<T1>(lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ());

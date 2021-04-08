@@ -132,37 +132,37 @@ namespace ttcr {
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-                xmin = xmin<it->getX() ? xmin : it->getX();
+            xmin = xmin<it->getX() ? xmin : it->getX();
             return xmin;
         }
         const T1 getXmax() const {
             T1 xmax = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-                xmax = xmax>it->getX() ? xmax : it->getX();
+            xmax = xmax>it->getX() ? xmax : it->getX();
             return xmax;
         }
         const T1 getYmin() const {
             T1 ymin = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-                ymin = ymin<it->getY() ? ymin : it->getY();
+            ymin = ymin<it->getY() ? ymin : it->getY();
             return ymin;
         }
         const T1 getYmax() const {
             T1 ymax = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-                ymax = ymax>it->getY() ? ymax : it->getY();
+            ymax = ymax>it->getY() ? ymax : it->getY();
             return ymax;
         }
         const T1 getZmin() const {
             T1 zmin = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-                zmin = zmin<it->getZ() ? zmin : it->getZ();
+            zmin = zmin<it->getZ() ? zmin : it->getZ();
             return zmin;
         }
         const T1 getZmax() const {
             T1 zmax = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it )
-                zmax = zmax>it->getZ() ? zmax : it->getZ();
+            zmax = zmax>it->getZ() ? zmax : it->getZ();
             return zmax;
         }
 
@@ -188,7 +188,7 @@ namespace ttcr {
         void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                       const int order=2, const int taylorSeriesOrder=2,
                       const bool weighting=1, const bool s0inside=0) const;
-        
+
         const T1 getAverageEdgeLength() const;
 
     protected:
@@ -295,9 +295,9 @@ namespace ttcr {
                              const size_t threadNo) const;
 
         bool blti_solver_around_source(const sxyz<T1>& Source,
-                                      const sxyz<T1>& curr_pt,
-                                      const std::array<T2,3>& face,
-                                      std::array<T1,3>& barycenters) const;
+                                       const sxyz<T1>& curr_pt,
+                                       const std::array<T2,3>& face,
+                                       std::array<T1,3>& barycenters) const;
         bool blti_raytrace(const sxyz<T1>& curr_pt,
                            const std::array<T2, 3>& faces,
                            sxyz<T1>& next_pt,
@@ -429,10 +429,10 @@ namespace ttcr {
         }
 
         void checkCloseToTx(const sxyz<T1>& curr_pt,
-                       sxyz<T1>& g,
-                       const T2 cellNo,
-                       const std::vector<sxyz<T1>>& Tx,
-                       const std::vector<T2>& txCell) const {
+                            sxyz<T1>& g,
+                            const T2 cellNo,
+                            const std::vector<sxyz<T1>>& Tx,
+                            const std::vector<T2>& txCell) const {
 
             for (size_t nt=0; nt<Tx.size(); ++nt) {
                 std::array<T2,4> itmp = getPrimary(txCell[nt]);
@@ -838,7 +838,7 @@ namespace ttcr {
             nodes[ tetrahedra[nt].i[3] ].getZ() };
 
         return sameSide(v1, v2, v3, v4, p) && sameSide(v2, v3, v4, v1, p) &&
-            sameSide(v3, v4, v1, v2, p) && sameSide(v4, v1, v2, v3, p);
+        sameSide(v3, v4, v1, v2, p) && sameSide(v4, v1, v2, v3, p);
     }
 
     template<typename T1, typename T2, typename NODE>
@@ -1176,7 +1176,7 @@ namespace ttcr {
 
                 // check for negative value
                 T1 w_tilde = vertexD->getNodeSlowness()*vertexD->getNodeSlowness()*phi*phi -
-                                  u*u*b*b - v*v*c*c + 2.*u*v*d2;
+                u*u*b*b - v*v*c*c + 2.*u*v*d2;
                 if ( w_tilde > 0.0 ) {
 
                     w_tilde = sqrt( w_tilde );
@@ -1278,7 +1278,7 @@ namespace ttcr {
         pt.z = vertexA->getZ() + k*v_c.z;
 
         T1 rho0 = vertexC->getDistance( pt );
-//        T1 xi0 = vertexA->getDistance( pt )/c;
+        //        T1 xi0 = vertexA->getDistance( pt )/c;
         T1 xi0 = k;
 
         T1 xi = xi0 - u*rho0/(w*c);
@@ -1753,7 +1753,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -1895,7 +1895,7 @@ namespace ttcr {
 #endif
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -1998,7 +1998,7 @@ namespace ttcr {
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -2082,7 +2082,7 @@ namespace ttcr {
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -2143,7 +2143,7 @@ namespace ttcr {
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -2201,7 +2201,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -2227,7 +2227,7 @@ namespace ttcr {
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -2258,7 +2258,7 @@ namespace ttcr {
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
                     for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
+                    std::sort( ind[n].begin(), ind[n].end() );
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -2282,7 +2282,7 @@ namespace ttcr {
 
                         s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                              faceNodes);
-                        
+
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
                         prev_pt = curr_pt;
@@ -2345,7 +2345,7 @@ namespace ttcr {
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -2385,7 +2385,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
 
@@ -2408,7 +2408,7 @@ namespace ttcr {
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                     s1 = s2;
                     prev_pt = curr_pt;
@@ -2604,17 +2604,17 @@ namespace ttcr {
                                             break;
                                         }
                                     }
-//                                    for ( T2 i=0; i<4; ++i ) {
-//                                        T2 iA = itmp[(i+1)%4];
-//                                        T2 iB = itmp[(i+2)%4];
-//                                        T2 iC = itmp[(i+3)%4];
-//                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
-//                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
-//                                            found = true;
-//                                            break;
-//                                        }
-//                                    }
+                                    //                                    for ( T2 i=0; i<4; ++i ) {
+                                    //                                        T2 iA = itmp[(i+1)%4];
+                                    //                                        T2 iB = itmp[(i+2)%4];
+                                    //                                        T2 iC = itmp[(i+3)%4];
+                                    //                                        if (nodes[iA].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iA])<minDist*minDist||
+                                    //                                            nodes[iA].getDistance(curr_pt)+nodes[iC].getDistance(curr_pt)-nodes[iC].getDistance(nodes[iA])<minDist*minDist||
+                                    //                                            nodes[iC].getDistance(curr_pt)+nodes[iB].getDistance(curr_pt)-nodes[iB].getDistance(nodes[iC])<minDist*minDist){
+                                    //                                            found = true;
+                                    //                                            break;
+                                    //                                        }
+                                    //                                    }
                                     if ( found ) {
                                         std::array<T2,4> itmp = getPrimary(cellNo);
 
@@ -2832,7 +2832,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -3154,7 +3154,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -3204,7 +3204,7 @@ namespace ttcr {
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
                     for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
+                    std::sort( ind[n].begin(), ind[n].end() );
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -3306,7 +3306,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -3644,7 +3644,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -4080,7 +4080,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -4135,7 +4135,7 @@ namespace ttcr {
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
                     for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
+                    std::sort( ind[n].begin(), ind[n].end() );
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -4250,7 +4250,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 4 faces that might be intersected
 
                 bool foundIntersection = false;
@@ -4629,7 +4629,7 @@ namespace ttcr {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
-                    
+
                     if ( processVel )
                         s1 = Interpolator<T1>::linearVel(curr_pt,
                                                          nodes[edgeNodes[0]],
@@ -4638,7 +4638,7 @@ namespace ttcr {
                         s1 = Interpolator<T1>::linear(curr_pt,
                                                       nodes[edgeNodes[0]],
                                                       nodes[edgeNodes[1]]);
-                    
+
                     break;
                 }
             }
@@ -4650,7 +4650,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -4710,7 +4710,7 @@ namespace ttcr {
 
                 mid_pt = static_cast<T1>(0.5)*(curr_pt + Tx[nt]);
                 T1 ds = curr_pt.getDistance( Tx[nt] );
-                
+
                 std::set<T2> allNodes;
                 allNodes.insert( itmp[0] );
                 allNodes.insert( itmp[1] );
@@ -4723,7 +4723,7 @@ namespace ttcr {
                 } else {
                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                 }
-                
+
                 tt += t0[nt] + 0.5*(s1 + s2) * ds;
                 reachedTx = true;
                 break;
@@ -4777,7 +4777,7 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
+
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
@@ -4797,7 +4797,7 @@ namespace ttcr {
                                                                          nodes[itmp[3]]);
 
                             tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -4815,7 +4815,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             reachedTx = true;
                             break;
                         }
@@ -4826,11 +4826,11 @@ namespace ttcr {
 
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
-                    
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
 
@@ -4860,9 +4860,9 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell1(faceNodes, nodeNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -4924,9 +4924,9 @@ namespace ttcr {
 
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + Tx[nt]);
                             ds = curr_pt.getDistance( Tx[nt] );
-                            
+
                             tt += t0[nt] + 0.5*(s1 + s2) * ds;
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert( itmp[0] );
                             allNodes.insert( itmp[1] );
@@ -5061,7 +5061,7 @@ namespace ttcr {
                                                         onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
 
@@ -5070,7 +5070,7 @@ namespace ttcr {
                     ds = curr_pt.getDistance( prev_pt );
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
                     allNodes.insert( edgeNodesPrev[0] );
                     allNodes.insert( edgeNodesPrev[1] );
@@ -5106,7 +5106,7 @@ namespace ttcr {
                     break;
                 }
                 if ( foundIntersection == false ) {
-                    
+
                     edgeNodesPrev = edgeNodes;
                     sxyz<T1> pt_i;
                     g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
@@ -5148,13 +5148,13 @@ namespace ttcr {
                     ds = curr_pt.getDistance( prev_pt );
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
                     allNodes.insert( edgeNodesPrev[0] );
                     allNodes.insert( edgeNodesPrev[1] );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -5213,7 +5213,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
@@ -5232,18 +5232,18 @@ namespace ttcr {
 
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
-                    
+
                     bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
-                    
+
                     // compute terms of matrix M
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
 
@@ -5268,9 +5268,9 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -5296,7 +5296,7 @@ namespace ttcr {
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
                     for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
+                    std::sort( ind[n].begin(), ind[n].end() );
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -5311,17 +5311,17 @@ namespace ttcr {
                         }
                         prev_pt = curr_pt;
                         curr_pt = pt_i;
-                        
+
                         bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                             nodeNo, onEdge, edgeNodes,
                                                             onFace, faceNodes);
-                        
+
                         s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                              faceNodes);
 
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                         ds = curr_pt.getDistance( prev_pt );
-                        
+
                         tt += 0.5*(s1 + s2) * ds;
                         s1 = s2;
 
@@ -5346,9 +5346,9 @@ namespace ttcr {
                         } else {
                             update_m_data(m_data, m, allNodes, mid_pt, ds);
                         }
-                        
+
                         if ( break_flag ) break;
-                        
+
                         // find next cell
                         cellNo = findAdjacentCell2(faceNodes, cellNo);
                         if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -5365,7 +5365,7 @@ namespace ttcr {
                     // we must be going outside the mesh
                     // hack: project gradient on face and continue
                     faceNodesPrev = faceNodes;
-                    
+
                     g = projectOnFace(g, faceNodes);
 
                     sxyz<T1> pt_i;
@@ -5397,7 +5397,7 @@ namespace ttcr {
                         onEdge = true;
                         onFace = false;
                     }
-                    
+
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
 
@@ -5409,15 +5409,15 @@ namespace ttcr {
 
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
-                    
+
                     allNodes.insert( faceNodesPrev[0] );
                     allNodes.insert( faceNodesPrev[1] );
                     allNodes.insert( faceNodesPrev[2] );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -5425,10 +5425,10 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                 }
             } else { // at Rx, somewhere in a tetrahedron
-                
+
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
                     std::set<NODE*> nnodes;
@@ -5451,7 +5451,7 @@ namespace ttcr {
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
                 checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
-                
+
                 std::array<T2,3> ind[4] = {
                     { { itmp[0], itmp[1], itmp[2] } },
                     { { itmp[0], itmp[1], itmp[3] } },
@@ -5459,33 +5459,33 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 4 faces that might be intersected
-                
+
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
-                    
+
                     sxyz<T1> pt_i;
                     foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
                                                              ind[n][1], ind[n][2],
                                                              pt_i);
-                    
+
                     if ( !foundIntersection )
                         continue;
-                    
+
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
-                    
+
                     bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
 
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
 
@@ -5494,7 +5494,7 @@ namespace ttcr {
                     allNodes.insert( tetrahedra[cellNo].i[1] );
                     allNodes.insert( tetrahedra[cellNo].i[2] );
                     allNodes.insert( tetrahedra[cellNo].i[3] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -5502,9 +5502,9 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -5524,7 +5524,7 @@ namespace ttcr {
                     reachedTx = true;
                 }
             }
-            
+
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
@@ -5547,13 +5547,13 @@ namespace ttcr {
                                                               nodes[txEdges[nt][1]]);
 
                             reachedTx = true;
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                             ds = curr_pt.getDistance( prev_pt );
                             tt += t0[nt] + 0.5*(s1 + s2) * ds;
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert(txEdges[nt][0]);
                             allNodes.insert(txEdges[nt][1]);
@@ -5566,7 +5566,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             break;
                         }
                     } else if ( txOnFace[nt] ) {
@@ -5585,15 +5585,15 @@ namespace ttcr {
                                                                         nodes[txFaces[nt][1]],
                                                                         nodes[txFaces[nt][2]]);
                             }
-                            
+
                             reachedTx = true;
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                             ds = curr_pt.getDistance( prev_pt );
                             tt += t0[nt] + 0.5*(s1 + s2) * ds;
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert(txFaces[nt][0]);
                             allNodes.insert(txFaces[nt][1]);
@@ -5607,7 +5607,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             break;
                         }
                     }
@@ -5665,7 +5665,7 @@ namespace ttcr {
                                                                              nodes[itmp[2]],
                                                                              nodes[itmp[3]]);
                                 reachedTx = true;
-                                
+
                                 prev_pt = curr_pt;
                                 curr_pt = Tx[nt];
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -5677,7 +5677,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[1]);
                                 allNodes.insert(itmp[2]);
                                 allNodes.insert(itmp[3]);
-                                
+
                                 if ( processVel ) {
                                     T1 s_sq = computeSlowness(mid_pt);
                                     s_sq *= s_sq;  // slowness squared
@@ -5685,7 +5685,7 @@ namespace ttcr {
                                 } else {
                                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                                 }
-                                
+
                                 break;
                             }
                         }
@@ -5712,7 +5712,7 @@ namespace ttcr {
                                                                              nodes[itmp[2]],
                                                                              nodes[itmp[3]]);
                                 reachedTx = true;
-                                
+
                                 prev_pt = curr_pt;
                                 curr_pt = Tx[nt];
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -5724,7 +5724,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[1]);
                                 allNodes.insert(itmp[2]);
                                 allNodes.insert(itmp[3]);
-                                
+
                                 if ( processVel ) {
                                     T1 s_sq = computeSlowness(mid_pt);
                                     s_sq *= s_sq;  // slowness squared
@@ -5732,7 +5732,7 @@ namespace ttcr {
                                 } else {
                                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                                 }
-                                
+
                                 break;
                             }
                         }
@@ -5758,13 +5758,13 @@ namespace ttcr {
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                             ds = curr_pt.getDistance( prev_pt );
                             tt += t0[nt] + 0.5*(s1 + s2) * ds;
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert(itmp[0]);
                             allNodes.insert(itmp[1]);
                             allNodes.insert(itmp[2]);
                             allNodes.insert(itmp[3]);
-                            
+
                             if ( processVel ) {
                                 T1 s_sq = computeSlowness(mid_pt);
                                 s_sq *= s_sq;  // slowness squared
@@ -5772,7 +5772,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                         } else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
@@ -5807,7 +5807,7 @@ namespace ttcr {
                                                                                      nodes[itmp[3]]);
 
                                         reachedTx = true;
-                                        
+
                                         prev_pt = curr_pt;
                                         curr_pt = Tx[nt];
                                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -5819,7 +5819,7 @@ namespace ttcr {
                                         allNodes.insert(itmp[1]);
                                         allNodes.insert(itmp[2]);
                                         allNodes.insert(itmp[3]);
-                                        
+
                                         if ( processVel ) {
                                             T1 s_sq = computeSlowness(mid_pt);
                                             s_sq *= s_sq;  // slowness squared
@@ -5827,7 +5827,7 @@ namespace ttcr {
                                         } else {
                                             update_m_data(m_data, m, allNodes, mid_pt, ds);
                                         }
-                                        
+
                                         break;
                                     }
                                 }
@@ -5937,9 +5937,9 @@ namespace ttcr {
         bool onNode = false;
         bool onEdge = false;
         bool onFace = false;
-//        bool onNodePrev = false;
-//        bool onEdgePrev = false;
-//        bool onFacePrev = false;
+        //        bool onNodePrev = false;
+        //        bool onEdgePrev = false;
+        //        bool onFacePrev = false;
         std::array<T2,2> edgeNodes, edgeNodesPrev;
         std::array<T2,3> faceNodes, faceNodesPrev;
         Grad3D<T1,NODE>* grad3d = nullptr;
@@ -5987,7 +5987,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -6007,7 +6007,7 @@ namespace ttcr {
             }
         }
 
-//        T1 s;
+        //        T1 s;
         T1 ds;
         sxyz<T1> g;
         while ( reachedTx == false ) {
@@ -6038,7 +6038,7 @@ namespace ttcr {
                 }
 
                 nodeNoPrev = nodeNo;
-//                onNodePrev = onNode;
+                //                onNodePrev = onNode;
 
                 // find cell for which gradient intersect opposing face
                 bool foundIntersection = false;
@@ -6058,14 +6058,14 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
+
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
                             std::array<T2,4> itmp = getPrimary(*nc);
 
                             r_tmp.push_back( Tx[nt] );
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -6083,7 +6083,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             reachedTx = true;
                             break;
                         }
@@ -6100,16 +6100,16 @@ namespace ttcr {
                     if ( r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-//                        s = computeSlowness(mid_pt);
-//                        s *= s;
+                        //                        s = computeSlowness(mid_pt);
+                        //                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
 
                     bool break_flag=false;
                     for ( n=0; n<3; ++n ) {
                         if ( nodes[ nb[n] ].getDistance( curr_pt ) < small ) {
-//                            onEdgePrev = onEdge;
-//                            onFacePrev = onFace;
+                            //                            onEdgePrev = onEdge;
+                            //                            onFacePrev = onFace;
 
                             nodeNo = nb[n];
                             onNode = true;
@@ -6140,8 +6140,8 @@ namespace ttcr {
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nodes[nb[n1]], nodes[nb[n2]]) ) {
                             edgeNodesPrev = edgeNodes;
-//                            onEdgePrev = onEdge;
-//                            onFacePrev = onFace;
+                            //                            onEdgePrev = onEdge;
+                            //                            onFacePrev = onFace;
 
                             edgeNodes[0] = nb[n1];
                             edgeNodes[1] = nb[n2];
@@ -6170,8 +6170,8 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
 
-//                    onEdgePrev = onEdge;
-//                    onFacePrev = onFace;
+                    //                    onEdgePrev = onEdge;
+                    //                    onFacePrev = onFace;
                     onNode = false;
                     onEdge = false;
                     onFace = true;
@@ -6243,16 +6243,16 @@ namespace ttcr {
                         if ( cellNo == txCell[nt] ) {
 
                             r_tmp.push_back( Tx[nt] );
-                            
+
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + Tx[nt]);
                             ds = curr_pt.getDistance( Tx[nt] );
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert( tetrahedra[cellNo].i[0] );
                             allNodes.insert( tetrahedra[cellNo].i[1] );
                             allNodes.insert( tetrahedra[cellNo].i[2] );
                             allNodes.insert( tetrahedra[cellNo].i[3] );
-                            
+
                             if ( processVel ) {
                                 T1 s_sq = computeSlowness(mid_pt);
                                 s_sq *= s_sq;  // slowness squared
@@ -6296,7 +6296,7 @@ namespace ttcr {
                     allNodes.insert( nodeNoPrev );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -6338,7 +6338,7 @@ namespace ttcr {
                 checkCloseToTx(curr_pt, g, edgeNodes, Tx, txCell);
 
                 edgeNodesPrev = edgeNodes;
-//                onEdgePrev = onEdge;
+                //                onEdgePrev = onEdge;
 
                 bool foundIntersection = false;
                 for (size_t n=0; n<cells.size(); ++n ) {
@@ -6380,16 +6380,16 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-//                        s = computeSlowness(mid_pt);
-//                        s *= s;
+                        //                        s = computeSlowness(mid_pt);
+                        //                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
 
                     bool break_flag = false;
                     for ( size_t n2=0; n2<4; ++n2 ) {
                         if ( nodes[ this->neighbors[cellNo][n2] ].getDistance( curr_pt ) < small ) {
-//                            onNodePrev = onNode;
-//                            onFacePrev = onFace;
+                            //                            onNodePrev = onNode;
+                            //                            onFacePrev = onFace;
 
                             nodeNo = this->neighbors[cellNo][n2];
                             onNode = true;
@@ -6418,8 +6418,8 @@ namespace ttcr {
                     if ( break_flag ) break;
 
                     if ( areCollinear(curr_pt, nodes[itmpNode], nodes[edgeNodes2[0]]) ) {
-//                        onNodePrev = onNode;
-//                        onFacePrev = onFace;
+                        //                        onNodePrev = onNode;
+                        //                        onFacePrev = onFace;
 
                         edgeNodes[0] = itmpNode;
                         edgeNodes[1] = edgeNodes2[0];
@@ -6446,8 +6446,8 @@ namespace ttcr {
                         break_flag = true;
                         break;
                     } else if ( areCollinear(curr_pt, nodes[itmpNode], nodes[edgeNodes2[1]]) ) {
-//                        onNodePrev = onNode;
-//                        onFacePrev = onFace;
+                        //                        onNodePrev = onNode;
+                        //                        onFacePrev = onFace;
 
                         edgeNodes[0] = itmpNode;
                         edgeNodes[1] = edgeNodes2[1];
@@ -6474,8 +6474,8 @@ namespace ttcr {
                         break_flag = true;
                         break;
                     } else if ( areCollinear(curr_pt, nodes[edgeNodes2[0]], nodes[edgeNodes2[1]]) ) {
-//                        onNodePrev = onNode;
-//                        onFacePrev = onFace;
+                        //                        onNodePrev = onNode;
+                        //                        onFacePrev = onFace;
 
                         edgeNodes[0] = edgeNodes2[0];
                         edgeNodes[1] = edgeNodes2[1];
@@ -6504,8 +6504,8 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
 
-//                    onNodePrev = onNode;
-//                    onFacePrev = onFace;
+                    //                    onNodePrev = onNode;
+                    //                    onFacePrev = onFace;
                     onNode = false;
                     onEdge = false;
                     onFace = true;
@@ -6546,7 +6546,7 @@ namespace ttcr {
                     break;
                 }
                 if ( foundIntersection == false ) {
-                    
+
                     edgeNodesPrev = edgeNodes;
                     sxyz<T1> pt_i;
                     g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
@@ -6583,16 +6583,16 @@ namespace ttcr {
                     curr_pt = pt_i;
 
                     r_tmp.push_back( curr_pt );
-                    
+
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
                     std::set<T2> allNodes;
-                    
+
                     allNodes.insert( edgeNodesPrev[0] );
                     allNodes.insert( edgeNodesPrev[1] );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -6652,10 +6652,10 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
-//                onFacePrev = onFace;
+                //                onFacePrev = onFace;
                 faceNodesPrev = faceNodes;
 
                 bool foundIntersection = false;
@@ -6677,8 +6677,8 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-//                        s = computeSlowness(mid_pt);
-//                        s *= s;
+                        //                        s = computeSlowness(mid_pt);
+                        //                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
 
@@ -6686,8 +6686,8 @@ namespace ttcr {
                     for ( size_t n2=0; n2<3; ++n2 ) {
                         if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
                             nodeNoPrev = nodeNo;
-//                            onNodePrev = onNode;
-//                            onEdgePrev = onEdge;
+                            //                            onNodePrev = onNode;
+                            //                            onEdgePrev = onEdge;
 
                             nodeNo = ind[n][n2];
                             onNode = true;
@@ -6720,8 +6720,8 @@ namespace ttcr {
                         size_t n2 = (n1+1)%3;
                         if ( areCollinear(curr_pt, nodes[ind[n][n1]], nodes[ind[n][n2]]) ) {
                             edgeNodesPrev = edgeNodes;
-//                            onNodePrev = onNode;
-//                            onEdgePrev = onEdge;
+                            //                            onNodePrev = onNode;
+                            //                            onEdgePrev = onEdge;
 
                             edgeNodes[0] = ind[n][n1];
                             edgeNodes[1] = ind[n][n2];
@@ -6752,8 +6752,8 @@ namespace ttcr {
                     }
                     if ( break_flag ) break;
 
-//                    onNodePrev = onNode;
-//                    onEdgePrev = onEdge;
+                    //                    onNodePrev = onNode;
+                    //                    onEdgePrev = onEdge;
                     onNode = false;
                     onEdge = false;
                     onFace = true;
@@ -6804,7 +6804,7 @@ namespace ttcr {
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
                     for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
+                    std::sort( ind[n].begin(), ind[n].end() );
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -6824,8 +6824,8 @@ namespace ttcr {
                         if (r_tmp.size() > 1 ) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-//                            s = computeSlowness(mid_pt);
-//                            s *= s;
+                            //                            s = computeSlowness(mid_pt);
+                            //                            s *= s;
                             ds = curr_pt.getDistance( prev_pt );
                         }
 
@@ -6833,8 +6833,8 @@ namespace ttcr {
                         for ( size_t n2=0; n2<3; ++n2 ) {
                             if ( nodes[ ind[n][n2] ].getDistance( curr_pt ) < small ) {
                                 nodeNoPrev = nodeNo;
-//                                onNodePrev = onNode;
-//                                onEdgePrev = onEdge;
+                                //                                onNodePrev = onNode;
+                                //                                onEdgePrev = onEdge;
 
                                 nodeNo = ind[n][n2];
                                 onNode = true;
@@ -6867,8 +6867,8 @@ namespace ttcr {
                             size_t n2 = (n1+1)%3;
                             if ( areCollinear(curr_pt, nodes[ind[n][n1]], nodes[ind[n][n2]]) ) {
                                 edgeNodesPrev = edgeNodes;
-//                                onNodePrev = onNode;
-//                                onEdgePrev = onEdge;
+                                //                                onNodePrev = onNode;
+                                //                                onEdgePrev = onEdge;
 
                                 edgeNodes[0] = ind[n][n1];
                                 edgeNodes[1] = ind[n][n2];
@@ -6899,8 +6899,8 @@ namespace ttcr {
                         }
                         if ( break_flag ) break;
 
-//                        onNodePrev = onNode;
-//                        onEdgePrev = onEdge;
+                        //                        onNodePrev = onNode;
+                        //                        onEdgePrev = onEdge;
                         onNode = false;
                         onEdge = false;
                         onFace = true;
@@ -6940,7 +6940,7 @@ namespace ttcr {
                 }
                 if ( foundIntersection == false ) {
                     faceNodesPrev = faceNodes;
-                    
+
                     g = projectOnFace(g, faceNodes);
 
                     sxyz<T1> pt_i;
@@ -6973,22 +6973,22 @@ namespace ttcr {
                         onEdge = true;
                         onFace = false;
                     }
-                    
+
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
 
                     r_tmp.push_back( curr_pt );
-                    
+
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
                     std::set<T2> allNodes;
-                    
+
                     allNodes.insert( faceNodesPrev[0] );
                     allNodes.insert( faceNodesPrev[1] );
                     allNodes.insert( faceNodesPrev[2] );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -6998,7 +6998,7 @@ namespace ttcr {
                     }
                 }
             } else { // at Rx, somewhere in a tetrahedron
-                
+
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
                     std::set<NODE*> nnodes;
@@ -7021,7 +7021,7 @@ namespace ttcr {
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
                 checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
-                
+
                 std::array<T2,3> ind[4] = {
                     { { itmp[0], itmp[1], itmp[2] } },
                     { { itmp[0], itmp[1], itmp[3] } },
@@ -7029,32 +7029,32 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 4 faces that might be intersected
-                
+
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
-                    
+
                     sxyz<T1> pt_i;
                     foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
                                                              ind[n][1], ind[n][2],
                                                              pt_i);
-                    
+
                     if ( !foundIntersection )
                         continue;
-                    
+
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
                     r_tmp.push_back( curr_pt );
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     std::set<T2> allNodes;
                     allNodes.insert( tetrahedra[cellNo].i[0] );
                     allNodes.insert( tetrahedra[cellNo].i[1] );
                     allNodes.insert( tetrahedra[cellNo].i[2] );
                     allNodes.insert( tetrahedra[cellNo].i[3] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -7062,13 +7062,13 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -7090,7 +7090,7 @@ namespace ttcr {
                     reachedTx = true;
                 }
             }
-            
+
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
@@ -7104,7 +7104,7 @@ namespace ttcr {
 
                             r_tmp.push_back(Tx[nt]);
                             reachedTx = true;
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -7121,7 +7121,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             break;
                         }
                     } else if ( txOnFace[nt] ) {
@@ -7131,7 +7131,7 @@ namespace ttcr {
 
                             r_tmp.push_back(Tx[nt]);
                             reachedTx = true;
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -7149,7 +7149,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             break;
                         }
                     }
@@ -7194,7 +7194,7 @@ namespace ttcr {
                                 (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
-                                
+
                                 prev_pt = curr_pt;
                                 curr_pt = Tx[nt];
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -7204,7 +7204,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[1]);
                                 allNodes.insert(itmp[2]);
                                 allNodes.insert(itmp[3]);
-                                
+
                                 if ( processVel ) {
                                     T1 s_sq = computeSlowness(mid_pt);
                                     s_sq *= s_sq;  // slowness squared
@@ -7212,7 +7212,7 @@ namespace ttcr {
                                 } else {
                                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                                 }
-                                
+
                                 break;
                             }
                         }
@@ -7226,7 +7226,7 @@ namespace ttcr {
                             if ( cellNo == *nc ) {
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
-                                
+
                                 std::array<T2,4> itmp = getPrimary(cellNo);
                                 prev_pt = curr_pt;
                                 curr_pt = Tx[nt];
@@ -7237,7 +7237,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[1]);
                                 allNodes.insert(itmp[2]);
                                 allNodes.insert(itmp[3]);
-                                
+
                                 if ( processVel ) {
                                     T1 s_sq = computeSlowness(mid_pt);
                                     s_sq *= s_sq;  // slowness squared
@@ -7245,14 +7245,14 @@ namespace ttcr {
                                 } else {
                                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                                 }
-                                
+
                                 break;
                             }
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
                             r_tmp.push_back( Tx[nt] );
-                            
+
                             std::array<T2,4> itmp = getPrimary(cellNo);
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
@@ -7263,7 +7263,7 @@ namespace ttcr {
                             allNodes.insert(itmp[1]);
                             allNodes.insert(itmp[2]);
                             allNodes.insert(itmp[3]);
-                            
+
                             if ( processVel ) {
                                 T1 s_sq = computeSlowness(mid_pt);
                                 s_sq *= s_sq;  // slowness squared
@@ -7271,7 +7271,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             reachedTx = true;
                         } else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
@@ -7294,7 +7294,7 @@ namespace ttcr {
                                     if ( found ) {
                                         r_tmp.push_back( Tx[nt] );
                                         reachedTx = true;
-                                        
+
                                         prev_pt = curr_pt;
                                         curr_pt = Tx[nt];
                                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -7304,7 +7304,7 @@ namespace ttcr {
                                         allNodes.insert(itmp[1]);
                                         allNodes.insert(itmp[2]);
                                         allNodes.insert(itmp[3]);
-                                        
+
                                         if ( processVel ) {
                                             T1 s_sq = computeSlowness(mid_pt);
                                             s_sq *= s_sq;  // slowness squared
@@ -7312,7 +7312,7 @@ namespace ttcr {
                                         } else {
                                             update_m_data(m_data, m, allNodes, mid_pt, ds);
                                         }
-                                        
+
                                         break;
                                     }
                                 }
@@ -7469,7 +7469,7 @@ namespace ttcr {
                     onEdge = true;
                     edgeNodes[0] = ind[n][0];
                     edgeNodes[1] = ind[n][1];
-                    
+
                     if ( processVel )
                         s1 = Interpolator<T1>::linearVel(r_tmp.back(),
                                                          nodes[edgeNodes[0]],
@@ -7478,7 +7478,7 @@ namespace ttcr {
                         s1 = Interpolator<T1>::linear(r_tmp.back(),
                                                       nodes[edgeNodes[0]],
                                                       nodes[edgeNodes[1]]);
-                    
+
                     break;
                 }
             }
@@ -7490,7 +7490,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -7549,13 +7549,13 @@ namespace ttcr {
 
                 mid_pt = static_cast<T1>(0.5)*(curr_pt + Tx[nt]);
                 T1 ds = curr_pt.getDistance( Tx[nt] );
-                
+
                 std::set<T2> allNodes;
                 allNodes.insert( itmp[0] );
                 allNodes.insert( itmp[1] );
                 allNodes.insert( itmp[2] );
                 allNodes.insert( itmp[3] );
-                
+
                 if ( processVel ) {
                     T1 s_sq = computeSlowness(mid_pt);
                     s_sq *= s_sq;  // slowness squared
@@ -7563,7 +7563,7 @@ namespace ttcr {
                 } else {
                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                 }
-                
+
                 tt += t0[nt] + 0.5*(s1 + s2) * ds;
                 r_tmp.push_back( Tx[nt] );
                 reachedTx = true;
@@ -7620,7 +7620,7 @@ namespace ttcr {
                     if ( !foundIntersection ) {
                         continue;
                     }
-                    
+
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
@@ -7641,7 +7641,7 @@ namespace ttcr {
 
                             tt += t0[nt] + 0.5*(s1 + s2) * r_tmp.back().getDistance( Tx[nt] );
                             r_tmp.push_back( Tx[nt] );
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -7659,7 +7659,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             reachedTx = true;
                             break;
                         }
@@ -7670,11 +7670,11 @@ namespace ttcr {
 
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
-                    
+
                     bool break_flag = check_pt_location(curr_pt, nb, onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
 
@@ -7699,7 +7699,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[1] );
                         allNodes.insert( faceNodes[2] );
                     }
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -7707,7 +7707,7 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     if ( break_flag ) break;
 
                     // find next cell
@@ -7772,7 +7772,7 @@ namespace ttcr {
                                                                          nodes[itmp[3]]);
 
                             r_tmp.push_back( Tx[nt] );
-                            
+
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + Tx[nt]);
                             ds = curr_pt.getDistance( Tx[nt] );
 
@@ -7783,7 +7783,7 @@ namespace ttcr {
                             allNodes.insert( itmp[1] );
                             allNodes.insert( itmp[2] );
                             allNodes.insert( itmp[3] );
-                            
+
                             if ( processVel ) {
                                 T1 s_sq = computeSlowness(mid_pt);
                                 s_sq *= s_sq;  // slowness squared
@@ -7826,15 +7826,15 @@ namespace ttcr {
 
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
                     allNodes.insert( nodeNoPrev );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -7917,7 +7917,7 @@ namespace ttcr {
                                                         onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     r_tmp.push_back( curr_pt );
 
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
@@ -7928,7 +7928,7 @@ namespace ttcr {
                     ds = curr_pt.getDistance( prev_pt );
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
                     allNodes.insert( edgeNodesPrev[0] );
                     allNodes.insert( edgeNodesPrev[1] );
@@ -7942,7 +7942,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[1] );
                         allNodes.insert( faceNodes[2] );
                     }
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -7952,7 +7952,7 @@ namespace ttcr {
                     }
 
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -7966,7 +7966,7 @@ namespace ttcr {
                     break;
                 }
                 if ( foundIntersection == false ) {
-                    
+
                     edgeNodesPrev = edgeNodes;
                     sxyz<T1> pt_i;
                     g = projectOnFace(curr_pt, g, edgeNodes, cells, pt_i);
@@ -8008,16 +8008,16 @@ namespace ttcr {
                     tt += 0.5*(s1 + s2) * r_tmp.back().getDistance( curr_pt );
                     s1 = s2;
                     r_tmp.push_back( curr_pt );
-                    
+
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
                     std::set<T2> allNodes;
-                    
+
                     allNodes.insert( edgeNodesPrev[0] );
                     allNodes.insert( edgeNodesPrev[1] );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -8074,7 +8074,7 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
@@ -8093,11 +8093,11 @@ namespace ttcr {
 
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
-                    
+
                     bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
 
@@ -8106,7 +8106,7 @@ namespace ttcr {
                     // compute terms of matrix M
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
 
@@ -8124,7 +8124,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[1] );
                         allNodes.insert( faceNodes[2] );
                     }
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -8132,9 +8132,9 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -8161,7 +8161,7 @@ namespace ttcr {
                     ind[3] = { { itmp[1], itmp[2], itmp[3] } };
 
                     for ( size_t n=0; n<4; ++n )
-                        std::sort( ind[n].begin(), ind[n].end() );
+                    std::sort( ind[n].begin(), ind[n].end() );
 
                     for ( size_t n=0; n<4; ++n ) {
                         if ( ind[n] == faceNodes ) continue;
@@ -8176,11 +8176,11 @@ namespace ttcr {
                         }
                         prev_pt = curr_pt;
                         curr_pt = pt_i;
-                        
+
                         bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                             nodeNo, onEdge, edgeNodes,
                                                             onFace, faceNodes);
-                        
+
                         s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                              faceNodes);
 
@@ -8188,7 +8188,7 @@ namespace ttcr {
 
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                         ds = curr_pt.getDistance( prev_pt );
-                        
+
                         tt += 0.5*(s1 + s2) * ds;
                         s1 = s2;
 
@@ -8206,7 +8206,7 @@ namespace ttcr {
                             allNodes.insert( faceNodes[1] );
                             allNodes.insert( faceNodes[2] );
                         }
-                        
+
                         if ( processVel ) {
                             T1 s_sq = computeSlowness(mid_pt);
                             s_sq *= s_sq;  // slowness squared
@@ -8214,7 +8214,7 @@ namespace ttcr {
                         } else {
                             update_m_data(m_data, m, allNodes, mid_pt, ds);
                         }
-                        
+
                         if ( break_flag ) break;
 
                         // find next cell
@@ -8234,7 +8234,7 @@ namespace ttcr {
                     // we must be going outside the mesh
                     // hack: project gradient on face and continue
                     faceNodesPrev = faceNodes;
-                    
+
                     g = projectOnFace(g, faceNodes);
 
                     sxyz<T1> pt_i;
@@ -8267,7 +8267,7 @@ namespace ttcr {
                         onEdge = true;
                         onFace = false;
                     }
-                    
+
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
 
@@ -8275,21 +8275,21 @@ namespace ttcr {
                                          faceNodes);
 
                     r_tmp.push_back( curr_pt );
-                    
+
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
-                    
+
                     allNodes.insert( faceNodesPrev[0] );
                     allNodes.insert( faceNodesPrev[1] );
                     allNodes.insert( faceNodesPrev[2] );
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -8297,10 +8297,10 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                 }
             } else { // at Rx, somewhere in a tetrahedron
-                
+
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
                     std::set<NODE*> nnodes;
@@ -8323,7 +8323,7 @@ namespace ttcr {
                     g = dynamic_cast<Grad3D_ab<T1,NODE>*>(grad3d)->compute(curr_pt, ref_pt, opp_pts, threadNo);
                 }
                 checkCloseToTx(curr_pt, g, cellNo, Tx, txCell);
-                
+
                 std::array<T2,3> ind[4] = {
                     { { itmp[0], itmp[1], itmp[2] } },
                     { { itmp[0], itmp[1], itmp[3] } },
@@ -8331,27 +8331,27 @@ namespace ttcr {
                     { { itmp[1], itmp[2], itmp[3] } }
                 };
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 4 faces that might be intersected
-                
+
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
-                    
+
                     sxyz<T1> pt_i;
                     foundIntersection = intersectVecTriangle(curr_pt, g, ind[n][0],
                                                              ind[n][1], ind[n][2],
                                                              pt_i);
-                    
+
                     if ( !foundIntersection )
                         continue;
-                    
+
                     prev_pt = curr_pt;
                     curr_pt = pt_i;
-                    
+
                     bool break_flag = check_pt_location(curr_pt, ind[n], onNode,
                                                         nodeNo, onEdge, edgeNodes,
                                                         onFace, faceNodes);
-                    
+
                     s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                          faceNodes);
 
@@ -8359,16 +8359,16 @@ namespace ttcr {
 
                     mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                     ds = curr_pt.getDistance( prev_pt );
-                    
+
                     tt += 0.5*(s1 + s2) * ds;
                     s1 = s2;
-                    
+
                     std::set<T2> allNodes;
                     allNodes.insert( tetrahedra[cellNo].i[0] );
                     allNodes.insert( tetrahedra[cellNo].i[1] );
                     allNodes.insert( tetrahedra[cellNo].i[2] );
                     allNodes.insert( tetrahedra[cellNo].i[3] );
-                    
+
                     if ( processVel ) {
                         T1 s_sq = computeSlowness(mid_pt);
                         s_sq *= s_sq;  // slowness squared
@@ -8376,9 +8376,9 @@ namespace ttcr {
                     } else {
                         update_m_data(m_data, m, allNodes, mid_pt, ds);
                     }
-                    
+
                     if ( break_flag ) break;
-                    
+
                     // find next cell
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
@@ -8400,7 +8400,7 @@ namespace ttcr {
                     reachedTx = true;
                 }
             }
-            
+
             if ( onNode ) {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
@@ -8424,7 +8424,7 @@ namespace ttcr {
 
                             r_tmp.push_back(Tx[nt]);
                             reachedTx = true;
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -8443,7 +8443,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             break;
                         }
                     } else if ( txOnFace[nt] ) {
@@ -8464,13 +8464,13 @@ namespace ttcr {
 
                             r_tmp.push_back(Tx[nt]);
                             reachedTx = true;
-                            
+
                             prev_pt = curr_pt;
                             curr_pt = Tx[nt];
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                             ds = curr_pt.getDistance( prev_pt );
                             tt += t0[nt] + 0.5*(s1 + s2) * ds;
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert(txFaces[nt][0]);
                             allNodes.insert(txFaces[nt][1]);
@@ -8484,7 +8484,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                             break;
                         }
                     }
@@ -8544,7 +8544,7 @@ namespace ttcr {
                                                                              nodes[itmp[3]]);
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
-                                
+
                                 prev_pt = curr_pt;
                                 curr_pt = Tx[nt];
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -8556,7 +8556,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[1]);
                                 allNodes.insert(itmp[2]);
                                 allNodes.insert(itmp[3]);
-                                
+
                                 if ( processVel ) {
                                     T1 s_sq = computeSlowness(mid_pt);
                                     s_sq *= s_sq;  // slowness squared
@@ -8564,7 +8564,7 @@ namespace ttcr {
                                 } else {
                                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                                 }
-                                
+
                                 break;
                             }
                         }
@@ -8592,7 +8592,7 @@ namespace ttcr {
                                                                              nodes[itmp[3]]);
                                 r_tmp.push_back( Tx[nt] );
                                 reachedTx = true;
-                                
+
                                 prev_pt = curr_pt;
                                 curr_pt = Tx[nt];
                                 mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -8604,7 +8604,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[1]);
                                 allNodes.insert(itmp[2]);
                                 allNodes.insert(itmp[3]);
-                                
+
                                 if ( processVel ) {
                                     T1 s_sq = computeSlowness(mid_pt);
                                     s_sq *= s_sq;  // slowness squared
@@ -8612,7 +8612,7 @@ namespace ttcr {
                                 } else {
                                     update_m_data(m_data, m, allNodes, mid_pt, ds);
                                 }
-                                
+
                                 break;
                             }
                         }
@@ -8639,13 +8639,13 @@ namespace ttcr {
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
                             ds = curr_pt.getDistance( prev_pt );
                             tt += t0[nt] + 0.5*(s1 + s2) * ds;
-                            
+
                             std::set<T2> allNodes;
                             allNodes.insert(itmp[0]);
                             allNodes.insert(itmp[1]);
                             allNodes.insert(itmp[2]);
                             allNodes.insert(itmp[3]);
-                            
+
                             if ( processVel ) {
                                 T1 s_sq = computeSlowness(mid_pt);
                                 s_sq *= s_sq;  // slowness squared
@@ -8653,7 +8653,7 @@ namespace ttcr {
                             } else {
                                 update_m_data(m_data, m, allNodes, mid_pt, ds);
                             }
-                            
+
                         } else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
                                 if ( cellNo == txNeighborCells[nt][nn] ) {
@@ -8688,7 +8688,7 @@ namespace ttcr {
                                                                                      nodes[itmp[3]]);
                                         r_tmp.push_back( Tx[nt] );
                                         reachedTx = true;
-                                        
+
                                         prev_pt = curr_pt;
                                         curr_pt = Tx[nt];
                                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
@@ -8700,7 +8700,7 @@ namespace ttcr {
                                         allNodes.insert(itmp[1]);
                                         allNodes.insert(itmp[2]);
                                         allNodes.insert(itmp[3]);
-                                        
+
                                         if ( processVel ) {
                                             T1 s_sq = computeSlowness(mid_pt);
                                             s_sq *= s_sq;  // slowness squared
@@ -8708,7 +8708,7 @@ namespace ttcr {
                                         } else {
                                             update_m_data(m_data, m, allNodes, mid_pt, ds);
                                         }
-                                        
+
                                         break;
                                     }
                                 }
@@ -8732,9 +8732,9 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Dun<T1,T2,NODE>::getTraveltime_blti(const std::vector<sxyz<T1>>& Tx,
-                                                  const std::vector<T1>& t0,
-                                                  const sxyz<T1> &Rx,
-                                                  const size_t threadNo) const {
+                                                const std::vector<T1>& t0,
+                                                const sxyz<T1> &Rx,
+                                                const size_t threadNo) const {
         T1 minDist = min_dist;
         T1 tt = 0.0;
         T1 tt_s1, tt_s2;
@@ -8850,7 +8850,7 @@ namespace ttcr {
                 };
 
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -9285,7 +9285,7 @@ namespace ttcr {
                     { { this->neighbors[cellNo1][1], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } }
                 };
                 for ( size_t n=0; n<8; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 T1 t_i=std::numeric_limits<T1>::max();
@@ -9717,12 +9717,12 @@ namespace ttcr {
 
                     if ( processVel )
                         tt_s1 = Interpolator<T1>::linearVel(r_tmp.back(),
-                                                         nodes[edgeNodes[0]],
-                                                         nodes[edgeNodes[1]]);
+                                                            nodes[edgeNodes[0]],
+                                                            nodes[edgeNodes[1]]);
                     else
                         tt_s1 = Interpolator<T1>::linear(r_tmp.back(),
-                                                      nodes[edgeNodes[0]],
-                                                      nodes[edgeNodes[1]]);
+                                                         nodes[edgeNodes[0]],
+                                                         nodes[edgeNodes[1]]);
 
                     break;
                 }
@@ -9736,7 +9736,7 @@ namespace ttcr {
                 };
 
                 for ( size_t n=0; n<4; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
 
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
@@ -9765,32 +9765,32 @@ namespace ttcr {
             std::array<T2,4> itmp = getPrimary(cellNo);
             if ( processVel )
                 tt_s1 = Interpolator<T1>::trilinearTriangleVel(curr_pt,
+                                                               nodes[itmp[0]],
+                                                               nodes[itmp[1]],
+                                                               nodes[itmp[2]],
+                                                               nodes[itmp[3]]);
+            else
+                tt_s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
                                                             nodes[itmp[0]],
                                                             nodes[itmp[1]],
                                                             nodes[itmp[2]],
                                                             nodes[itmp[3]]);
-            else
-                tt_s1 = Interpolator<T1>::trilinearTriangle(curr_pt,
-                                                         nodes[itmp[0]],
-                                                         nodes[itmp[1]],
-                                                         nodes[itmp[2]],
-                                                         nodes[itmp[3]]);
         }
         for(auto nt=0;nt<txCell.size();++nt){
             if (getCellNo( Rx )==txCell[nt]){
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( processVel )
                     tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                   nodes[itmp[0]],
+                                                                   nodes[itmp[1]],
+                                                                   nodes[itmp[2]],
+                                                                   nodes[itmp[3]]);
+                else
+                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                 nodes[itmp[0]],
                                                                 nodes[itmp[1]],
                                                                 nodes[itmp[2]],
                                                                 nodes[itmp[3]]);
-                else
-                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                             nodes[itmp[0]],
-                                                             nodes[itmp[1]],
-                                                             nodes[itmp[2]],
-                                                             nodes[itmp[3]]);
 
                 tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                 r_tmp.push_back(Tx[nt]);
@@ -9962,23 +9962,23 @@ namespace ttcr {
 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-//                tt_s2 = computeSlowness(curr_pt);
+                //                tt_s2 = computeSlowness(curr_pt);
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onNode){
                     nodeNo=newNode;
                 }
                 tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-                                     faceNodes);
+                                        faceNodes);
                 tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
                 tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
                 if (!NearSource && t_i==std::numeric_limits<T1>::max()){
-                        std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        tt = 0.0;
-                        reachedTx = true;
+                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    r_tmp.resize(1);
+                    r_tmp[0] = Rx;
+                    tt = 0.0;
+                    reachedTx = true;
                 }
 
             } else if ( onEdge ) {
@@ -10134,12 +10134,12 @@ namespace ttcr {
                     // find next cell
                 }
                 if (!NearSource && t_i==std::numeric_limits<T1>::max()) {
-                        std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
-                        << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                        r_tmp.resize(1);
-                        r_tmp[0] = Rx;
-                        tt = 0.0;
-                        reachedTx = true;
+                    std::cout << "\n\nWarning: finding raypath on edge failed to converge for Rx "
+                    << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    r_tmp.resize(1);
+                    r_tmp[0] = Rx;
+                    tt = 0.0;
+                    reachedTx = true;
                 }
                 if (onEdge){
                     edgeNodes[0] = edgeNodestmp[0];
@@ -10147,9 +10147,9 @@ namespace ttcr {
                 }
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-//                tt_s2 = computeSlowness(curr_pt);
+                //                tt_s2 = computeSlowness(curr_pt);
                 tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
-                                     faceNodes);
+                                        faceNodes);
                 tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
                 tt_s1 = tt_s2;
                 r_tmp.push_back( curr_pt );
@@ -10176,7 +10176,7 @@ namespace ttcr {
                     { { this->neighbors[cellNo1][1], this->neighbors[cellNo1][2], this->neighbors[cellNo1][3] } }
                 };
                 for ( size_t n=0; n<8; ++n )
-                    std::sort( ind[n].begin(), ind[n].end() );
+                std::sort( ind[n].begin(), ind[n].end() );
                 // there are 3 faces that might be intersected
 
                 T1 t_i=std::numeric_limits<T1>::max();
@@ -10347,7 +10347,7 @@ namespace ttcr {
 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-//                tt_s2 = computeSlowness(curr_pt);
+                //                tt_s2 = computeSlowness(curr_pt);
                 inlimitD=false;
                 if (std::abs(curr_pt.x-Xmax)<=minDist*minDist ||std::abs(curr_pt.x-Xmin)<=minDist*minDist )
                     inlimitD=true;
@@ -10403,16 +10403,16 @@ namespace ttcr {
 
                                 if ( processVel )
                                     tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                                   nodes[itmp[0]],
+                                                                                   nodes[itmp[1]],
+                                                                                   nodes[itmp[2]],
+                                                                                   nodes[itmp[3]]);
+                                else
+                                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                                 nodes[itmp[0]],
                                                                                 nodes[itmp[1]],
                                                                                 nodes[itmp[2]],
                                                                                 nodes[itmp[3]]);
-                                else
-                                    tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                                             nodes[itmp[0]],
-                                                                             nodes[itmp[1]],
-                                                                             nodes[itmp[2]],
-                                                                             nodes[itmp[3]]);
 
                                 tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                                 r_tmp.push_back( Tx[nt] );
@@ -10425,16 +10425,16 @@ namespace ttcr {
                             std::array<T2,4> itmp = getPrimary(cellNo);
                             if ( processVel )
                                 tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                               nodes[itmp[0]],
+                                                                               nodes[itmp[1]],
+                                                                               nodes[itmp[2]],
+                                                                               nodes[itmp[3]]);
+                            else
+                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                             nodes[itmp[0]],
                                                                             nodes[itmp[1]],
                                                                             nodes[itmp[2]],
                                                                             nodes[itmp[3]]);
-                            else
-                                tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                                         nodes[itmp[0]],
-                                                                         nodes[itmp[1]],
-                                                                         nodes[itmp[2]],
-                                                                         nodes[itmp[3]]);
 
                             tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                             r_tmp.push_back( Tx[nt] );
@@ -10445,16 +10445,16 @@ namespace ttcr {
                                     std::array<T2,4> itmp = getPrimary(cellNo);
                                     if ( processVel )
                                         tt_s2 = Interpolator<T1>::trilinearTriangleVel(Tx[nt],
+                                                                                       nodes[itmp[0]],
+                                                                                       nodes[itmp[1]],
+                                                                                       nodes[itmp[2]],
+                                                                                       nodes[itmp[3]]);
+                                    else
+                                        tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
                                                                                     nodes[itmp[0]],
                                                                                     nodes[itmp[1]],
                                                                                     nodes[itmp[2]],
                                                                                     nodes[itmp[3]]);
-                                    else
-                                        tt_s2 = Interpolator<T1>::trilinearTriangle(Tx[nt],
-                                                                                 nodes[itmp[0]],
-                                                                                 nodes[itmp[1]],
-                                                                                 nodes[itmp[2]],
-                                                                                 nodes[itmp[3]]);
 
                                     tt += t0[nt] + 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( Tx[nt] );
                                     r_tmp.push_back( Tx[nt] );
@@ -10734,7 +10734,7 @@ namespace ttcr {
                                              const std::set<T2>& allNodes,
                                              const sxyz<T1>& mid_pt,
                                              const T1 ds) const {
-        // valid for slowness 
+        // valid for slowness
         std::vector<T1> w;
         T1 sum_w = 0.0;
         for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
@@ -10760,37 +10760,37 @@ namespace ttcr {
     }
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
-                                         sijv<T1>& m,
-                                         const std::set<T2>& allNodes,
-                                         const sxyz<T1>& mid_pt,
-                                         const T1 ds,
-                                         const T1 s_sq) const {
-    // valid for velocity
-    std::vector<T1> w;
-    T1 sum_w = 0.0;
-    for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-        w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
-        sum_w += w.back();
-    }
-    size_t nn=0;
-    for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
-        m.j = *it;
-        m.v = -s_sq * ds * w[nn++]/sum_w;
-        bool found = false;
-        for ( size_t nm=0; nm<m_data.size(); ++nm ) {
-            if ( m_data[nm].j == m.j ) {
-                m_data[nm].v += m.v;
-                found = true;
-                break;
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
+                                             sijv<T1>& m,
+                                             const std::set<T2>& allNodes,
+                                             const sxyz<T1>& mid_pt,
+                                             const T1 ds,
+                                             const T1 s_sq) const {
+        // valid for velocity
+        std::vector<T1> w;
+        T1 sum_w = 0.0;
+        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+            w.push_back( 1./nodes[*it].getDistance( mid_pt ) );
+            sum_w += w.back();
+        }
+        size_t nn=0;
+        for ( auto it=allNodes.begin(); it!=allNodes.end(); ++it ) {
+            m.j = *it;
+            m.v = -s_sq * ds * w[nn++]/sum_w;
+            bool found = false;
+            for ( size_t nm=0; nm<m_data.size(); ++nm ) {
+                if ( m_data[nm].j == m.j ) {
+                    m_data[nm].v += m.v;
+                    found = true;
+                    break;
+                }
+            }
+            if ( found == false ) {
+                m_data.push_back(m);
             }
         }
-        if ( found == false ) {
-            m_data.push_back(m);
-        }
     }
-}
 
 
     template<typename T1, typename T2, typename NODE>
@@ -11126,14 +11126,14 @@ void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
             }
         }
 
-//        std::cout << curr_pt << "\n\n";
+        //        std::cout << curr_pt << "\n\n";
 
 
         for ( auto nc=AdjacentCells.begin();nc!=AdjacentCells.end();++nc ) {
-//            std::cout << '\t' << nodes[this->neighbors[*nc][0]] << '\n';
-//            std::cout << '\t' << nodes[this->neighbors[*nc][1]] << '\n';
-//            std::cout << '\t' << nodes[this->neighbors[*nc][2]] << '\n';
-//            std::cout << '\t' << nodes[this->neighbors[*nc][3]] << '\n';
+            //            std::cout << '\t' << nodes[this->neighbors[*nc][0]] << '\n';
+            //            std::cout << '\t' << nodes[this->neighbors[*nc][1]] << '\n';
+            //            std::cout << '\t' << nodes[this->neighbors[*nc][2]] << '\n';
+            //            std::cout << '\t' << nodes[this->neighbors[*nc][3]] << '\n';
             for ( T2 iD=0; iD<4; ++iD ) {
                 T2 iA((iD+1)%4), iB((iD+2)%4), iC((iD+3)%4);
                 if (testInTriangle(&nodes[this->neighbors[*nc][iA]],
@@ -11143,7 +11143,7 @@ void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
                     return (*nc);
                 }
             }
-//            std::cout << '\n';
+            //            std::cout << '\n';
         }
         return std::numeric_limits<T2>::max();
     }
@@ -11923,224 +11923,223 @@ void Grid3Dun<T1,T2,NODE>::update_m_data(std::vector<sijv<T1>>& m_data,
         }  // end of for nnodes
     }
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Dun<T1,T2,NODE>::interpVelocitySecondary(const T2 nSecondary) {
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::interpVelocitySecondary(const T2 nSecondary) {
 
-    T2 nNodes = nPrimary;
+        T2 nNodes = nPrimary;
 
-    std::map<std::array<T2,2>,std::vector<T2>> lineMap;
-    std::array<T2,2> lineKey;
-    typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+        std::array<T2,2> lineKey;
+        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
 
-    size_t nFaceNodes = 0;
-    for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
-
-    for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
-
-        // for each triangle
-        for ( T2 ntri=0; ntri<4; ++ntri ) {
-
-            // start from ntri to avoid redundancy
-            for ( size_t nl=ntri; nl<3; ++nl ) {
-
-                lineKey = {tetrahedra[ntet].i[ iNodes[ntri][nl] ],
-                    tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
-                std::sort(lineKey.begin(), lineKey.end());
-
-                lineIt = lineMap.find( lineKey );
-                if ( lineIt == lineMap.end() ) {
-                    // not found, insert new pair
-                    lineMap[ lineKey ] = std::vector<T2>(nSecondary);
-                } else {
-                    continue;
-                }
-
-                T1 slope = (1.0/nodes[lineKey[1]].getNodeSlowness() - 1.0/nodes[lineKey[0]].getNodeSlowness())/
-                nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
-
-                for ( size_t n2=0; n2<nSecondary; ++n2 ) {
-                    T1 s = 1.0/(1.0/nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]));
-                    nodes[nNodes].setNodeSlowness( s );
-                    lineMap[lineKey][n2] = nNodes++;
-                }
-            }
-        }
-    }
-
-
-    if ( nSecondary > 1 ) {
-
-        std::map<std::array<T2,3>,std::vector<T2>> faceMap;
-        std::array<T2,3> faceKey;
-        typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
-
-        int ncut = nSecondary - 1;
+        size_t nFaceNodes = 0;
+        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
 
         for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 
             // for each triangle
             for ( T2 ntri=0; ntri<4; ++ntri ) {
 
-                faceKey = {tetrahedra[ntet].i[ iNodes[ntri][0] ],
-                    tetrahedra[ntet].i[ iNodes[ntri][1] ],
-                    tetrahedra[ntet].i[ iNodes[ntri][2] ]};
-                std::sort(faceKey.begin(), faceKey.end());
+                // start from ntri to avoid redundancy
+                for ( size_t nl=ntri; nl<3; ++nl ) {
 
+                    lineKey = {tetrahedra[ntet].i[ iNodes[ntri][nl] ],
+                        tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
+                    std::sort(lineKey.begin(), lineKey.end());
 
-                faceIt = faceMap.find( faceKey );
-                if ( faceIt == faceMap.end() ) {
-                    // not found, insert new pair
-                    faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
-                } else {
-                    continue;
-                }
+                    lineIt = lineMap.find( lineKey );
+                    if ( lineIt == lineMap.end() ) {
+                        // not found, insert new pair
+                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+                    } else {
+                        continue;
+                    }
 
-                std::vector<NODE*> inodes;
-                inodes.push_back( &(nodes[faceKey[0]]) );
-                inodes.push_back( &(nodes[faceKey[1]]) );
-                inodes.push_back( &(nodes[faceKey[2]]) );
+                    T1 slope = (1.0/nodes[lineKey[1]].getNodeSlowness() - 1.0/nodes[lineKey[0]].getNodeSlowness())/
+                    nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
 
-                size_t ifn = 0;
-                for ( size_t n=0; n<ncut; ++n ) {
-                    size_t nseg = ncut+1-n;
-                    for ( size_t n2=0; n2<nseg-1; ++n2 ) {
-
-                        T1 s = Interpolator<T1>::bilinearTriangleVel(nodes[nNodes], inodes);
+                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                        T1 s = 1.0/(1.0/nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]));
                         nodes[nNodes].setNodeSlowness( s );
+                        lineMap[lineKey][n2] = nNodes++;
+                    }
+                }
+            }
+        }
 
-                        faceMap[faceKey][ifn++] = nNodes++;
 
+        if ( nSecondary > 1 ) {
+
+            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
+            std::array<T2,3> faceKey;
+            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
+
+            int ncut = nSecondary - 1;
+
+            for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
+
+                // for each triangle
+                for ( T2 ntri=0; ntri<4; ++ntri ) {
+
+                    faceKey = {tetrahedra[ntet].i[ iNodes[ntri][0] ],
+                        tetrahedra[ntet].i[ iNodes[ntri][1] ],
+                        tetrahedra[ntet].i[ iNodes[ntri][2] ]};
+                    std::sort(faceKey.begin(), faceKey.end());
+
+
+                    faceIt = faceMap.find( faceKey );
+                    if ( faceIt == faceMap.end() ) {
+                        // not found, insert new pair
+                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
+                    } else {
+                        continue;
+                    }
+
+                    std::vector<NODE*> inodes;
+                    inodes.push_back( &(nodes[faceKey[0]]) );
+                    inodes.push_back( &(nodes[faceKey[1]]) );
+                    inodes.push_back( &(nodes[faceKey[2]]) );
+
+                    size_t ifn = 0;
+                    for ( size_t n=0; n<ncut; ++n ) {
+                        size_t nseg = ncut+1-n;
+                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
+
+                            T1 s = Interpolator<T1>::bilinearTriangleVel(nodes[nNodes], inodes);
+                            nodes[nNodes].setNodeSlowness( s );
+
+                            faceMap[faceKey][ifn++] = nNodes++;
+
+                        }
                     }
                 }
             }
         }
     }
-}
 
 
-template<typename T1, typename T2, typename NODE>
-void Grid3Dun<T1,T2,NODE>::interpSlownessSecondary(const T2 nSecondary) {
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Dun<T1,T2,NODE>::interpSlownessSecondary(const T2 nSecondary) {
 
-    T2 nNodes = this->nPrimary;
+        T2 nNodes = this->nPrimary;
 
-    std::map<std::array<T2,2>,std::vector<T2>> lineMap;
-    std::array<T2,2> lineKey;
-    typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
+        std::map<std::array<T2,2>,std::vector<T2>> lineMap;
+        std::array<T2,2> lineKey;
+        typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
 
-    size_t nFaceNodes = 0;
-    for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
-
-    for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
-
-        // for each triangle
-        for ( T2 ntri=0; ntri<4; ++ntri ) {
-
-            // start from ntri to avoid redundancy
-            for ( size_t nl=ntri; nl<3; ++nl ) {
-
-                lineKey = {tetrahedra[ntet].i[ iNodes[ntri][nl] ],
-                    tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
-                std::sort(lineKey.begin(), lineKey.end());
-
-                lineIt = lineMap.find( lineKey );
-                if ( lineIt == lineMap.end() ) {
-                    // not found, insert new pair
-                    lineMap[ lineKey ] = std::vector<T2>(nSecondary);
-                } else {
-                    continue;
-                }
-
-                T1 slope = (nodes[lineKey[1]].getNodeSlowness() - nodes[lineKey[0]].getNodeSlowness())/
-                nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
-
-                for ( size_t n2=0; n2<nSecondary; ++n2 ) {
-                    T1 s = nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]);
-                    nodes[nNodes].setNodeSlowness( s );
-                    lineMap[lineKey][n2] = nNodes++;
-                }
-            }
-        }
-    }
-
-
-    if ( nSecondary > 1 ) {
-
-        std::map<std::array<T2,3>,std::vector<T2>> faceMap;
-        std::array<T2,3> faceKey;
-        typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
-
-        int ncut = nSecondary - 1;
+        size_t nFaceNodes = 0;
+        for ( int n=1; n<=(nSecondary-1); ++n ) nFaceNodes += n;
 
         for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 
             // for each triangle
             for ( T2 ntri=0; ntri<4; ++ntri ) {
 
-                faceKey = {tetrahedra[ntet].i[ iNodes[ntri][0] ],
-                    tetrahedra[ntet].i[ iNodes[ntri][1] ],
-                    tetrahedra[ntet].i[ iNodes[ntri][2] ]};
-                std::sort(faceKey.begin(), faceKey.end());
+                // start from ntri to avoid redundancy
+                for ( size_t nl=ntri; nl<3; ++nl ) {
 
+                    lineKey = {tetrahedra[ntet].i[ iNodes[ntri][nl] ],
+                        tetrahedra[ntet].i[ iNodes[ntri][(nl+1)%3] ]};
+                    std::sort(lineKey.begin(), lineKey.end());
 
-                faceIt = faceMap.find( faceKey );
-                if ( faceIt == faceMap.end() ) {
-                    // not found, insert new pair
-                    faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
-                } else {
-                    continue;
-                }
+                    lineIt = lineMap.find( lineKey );
+                    if ( lineIt == lineMap.end() ) {
+                        // not found, insert new pair
+                        lineMap[ lineKey ] = std::vector<T2>(nSecondary);
+                    } else {
+                        continue;
+                    }
 
-                std::vector<NODE*> inodes;
-                inodes.push_back( &(nodes[faceKey[0]]) );
-                inodes.push_back( &(nodes[faceKey[1]]) );
-                inodes.push_back( &(nodes[faceKey[2]]) );
+                    T1 slope = (nodes[lineKey[1]].getNodeSlowness() - nodes[lineKey[0]].getNodeSlowness())/
+                    nodes[lineKey[1]].getDistance(nodes[lineKey[0]]);
 
-                size_t ifn = 0;
-                for ( size_t n=0; n<ncut; ++n ) {
-                    size_t nseg = ncut+1-n;
-                    for ( size_t n2=0; n2<nseg-1; ++n2 ) {
-
-                        T1 s = Interpolator<T1>::bilinearTriangle(nodes[nNodes], inodes);
+                    for ( size_t n2=0; n2<nSecondary; ++n2 ) {
+                        T1 s = nodes[lineKey[0]].getNodeSlowness() + slope * nodes[nNodes].getDistance(nodes[lineKey[0]]);
                         nodes[nNodes].setNodeSlowness( s );
+                        lineMap[lineKey][n2] = nNodes++;
+                    }
+                }
+            }
+        }
 
-                        faceMap[faceKey][ifn++] = nNodes++;
 
+        if ( nSecondary > 1 ) {
+
+            std::map<std::array<T2,3>,std::vector<T2>> faceMap;
+            std::array<T2,3> faceKey;
+            typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
+
+            int ncut = nSecondary - 1;
+
+            for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
+
+                // for each triangle
+                for ( T2 ntri=0; ntri<4; ++ntri ) {
+
+                    faceKey = {tetrahedra[ntet].i[ iNodes[ntri][0] ],
+                        tetrahedra[ntet].i[ iNodes[ntri][1] ],
+                        tetrahedra[ntet].i[ iNodes[ntri][2] ]};
+                    std::sort(faceKey.begin(), faceKey.end());
+
+
+                    faceIt = faceMap.find( faceKey );
+                    if ( faceIt == faceMap.end() ) {
+                        // not found, insert new pair
+                        faceMap[ faceKey ] = std::vector<T2>(nFaceNodes);
+                    } else {
+                        continue;
+                    }
+
+                    std::vector<NODE*> inodes;
+                    inodes.push_back( &(nodes[faceKey[0]]) );
+                    inodes.push_back( &(nodes[faceKey[1]]) );
+                    inodes.push_back( &(nodes[faceKey[2]]) );
+
+                    size_t ifn = 0;
+                    for ( size_t n=0; n<ncut; ++n ) {
+                        size_t nseg = ncut+1-n;
+                        for ( size_t n2=0; n2<nseg-1; ++n2 ) {
+
+                            T1 s = Interpolator<T1>::bilinearTriangle(nodes[nNodes], inodes);
+                            nodes[nNodes].setNodeSlowness( s );
+
+                            faceMap[faceKey][ifn++] = nNodes++;
+
+                        }
                     }
                 }
             }
         }
     }
-}
 
-
-template<typename T1, typename T2, typename NODE>
-const T1 Grid3Dun<T1,T2,NODE>::getAverageEdgeLength() const {
-    std::set<std::array<T2,2>> edges;
-    typename std::set<std::array<T2,2>>::iterator edgIt;
-    T2 iNodes[6][2] = {
-        {0,1},
-        {0,2},
-        {0,3},
-        {1,2},
-        {1,3},
-        {2,3}
-    };
-    T1 sum = 0.0;
-    for (size_t ntet=0; ntet<tetrahedra.size(); ++ntet) {
-        for (size_t n=0; n<6; ++n) {
-            std::array<T2, 2> edgei = {tetrahedra[ntet].i[iNodes[n][0]],
-                tetrahedra[ntet].i[iNodes[n][1]]};
-            std::sort(edgei.begin(), edgei.end());
-            edgIt = edges.find(edgei);
-            if ( edgIt  == edges.end() ) {
-                T1 d = nodes[edgei[0]].getDistance(nodes[edgei[1]]);
-                sum += d;
-                edges.insert(edgei);
+    template<typename T1, typename T2, typename NODE>
+    const T1 Grid3Dun<T1,T2,NODE>::getAverageEdgeLength() const {
+        std::set<std::array<T2,2>> edges;
+        typename std::set<std::array<T2,2>>::iterator edgIt;
+        T2 iNodes[6][2] = {
+            {0,1},
+            {0,2},
+            {0,3},
+            {1,2},
+            {1,3},
+            {2,3}
+        };
+        T1 sum = 0.0;
+        for (size_t ntet=0; ntet<tetrahedra.size(); ++ntet) {
+            for (size_t n=0; n<6; ++n) {
+                std::array<T2, 2> edgei = {tetrahedra[ntet].i[iNodes[n][0]],
+                    tetrahedra[ntet].i[iNodes[n][1]]};
+                std::sort(edgei.begin(), edgei.end());
+                edgIt = edges.find(edgei);
+                if ( edgIt  == edges.end() ) {
+                    T1 d = nodes[edgei[0]].getDistance(nodes[edgei[1]]);
+                    sum += d;
+                    edges.insert(edgei);
+                }
             }
         }
+        return (sum/edges.size());
     }
-    return (sum/edges.size());
-}
 
 }
 

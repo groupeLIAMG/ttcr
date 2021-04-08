@@ -54,7 +54,7 @@
 #include "Node3Dc.h"
 
 namespace ttcr {
-    
+
     template<typename T1, typename T2>
     class Grid3Ducfm : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
     public:
@@ -67,38 +67,38 @@ namespace ttcr {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
         }
-        
+
         ~Grid3Ducfm() {
         }
-        
+
         void raytrace(const std::vector<sxyz<T1>>& Tx,
-                     const std::vector<T1>& t0,
-                     const std::vector<sxyz<T1>>& Rx,
-                     std::vector<T1>& traveltimes,
-                     const size_t threadNo=0) const;
-        
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      std::vector<T1>& traveltimes,
+                      const size_t threadNo=0) const;
+
         void raytrace(const std::vector<sxyz<T1>>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<sxyz<T1>>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     const size_t=0) const;
-        
+                      const std::vector<T1>&,
+                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      std::vector<std::vector<T1>*>&,
+                      const size_t=0) const;
+
         void raytrace(const std::vector<sxyz<T1>>&,
-                     const std::vector<T1>& ,
-                     const std::vector<sxyz<T1>>&,
-                     std::vector<T1>&,
-                     std::vector<std::vector<sxyz<T1>>>&,
-                     const size_t=0) const;
-        
+                      const std::vector<T1>& ,
+                      const std::vector<sxyz<T1>>&,
+                      std::vector<T1>&,
+                      std::vector<std::vector<sxyz<T1>>>&,
+                      const size_t=0) const;
+
         void raytrace(const std::vector<sxyz<T1>>&,
-                     const std::vector<T1>&,
-                     const std::vector<const std::vector<sxyz<T1>>*>&,
-                     std::vector<std::vector<T1>*>&,
-                     std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
-                     const size_t=0) const;
-        
+                      const std::vector<T1>&,
+                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      std::vector<std::vector<T1>*>&,
+                      std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
+                      const size_t=0) const;
+
     private:
-        
+
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       std::priority_queue<Node3Dc<T1,T2>*,
@@ -107,45 +107,45 @@ namespace ttcr {
                       std::vector<bool>&,
                       std::vector<bool>&,
                       const size_t) const;
-        
+
         void propagate(std::priority_queue<Node3Dc<T1,T2>*,
                        std::vector<Node3Dc<T1,T2>*>,
                        CompareNodePtr<T1>>&,
                        std::vector<bool>&,
                        std::vector<bool>&,
                        const size_t) const;
-        
+
     };
-    
+
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<T1>& traveltimes,
                                      const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Dc<T1,T2>*, std::vector<Node3Dc<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
-        
+
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initBand(Tx, t0, narrow_band, inQueue, frozen, threadNo);
-        
+
         propagate(narrow_band, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
-        
+
         if ( this->tt_from_rp ) {
             for (size_t n=0; n<Rx.size(); ++n) {
                 traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
@@ -156,52 +156,52 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
                                      const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
-            this->checkPts(*Rx[n]);
-        
+        this->checkPts(*Rx[n]);
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Dc<T1,T2>*, std::vector<Node3Dc<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
-        
+
         std::vector<bool> inBand( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initBand(Tx, t0, narrow_band, inBand, frozen, threadNo);
-        
+
         propagate(narrow_band, inBand, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
-        
+
         if ( this->tt_from_rp ) {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
                 for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
             }
         } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
                 traveltimes[nr]->resize( Rx[nr]->size() );
                 for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
             }
         }
     }
-    
+
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
@@ -209,25 +209,25 @@ namespace ttcr {
                                      std::vector<T1>& traveltimes,
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
                                      const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Dc<T1,T2>*, std::vector<Node3Dc<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
-        
+
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initBand(Tx, t0, narrow_band, inQueue, frozen, threadNo);
-        
+
         propagate(narrow_band, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
@@ -237,13 +237,13 @@ namespace ttcr {
         for ( size_t ni=0; ni<r_data.size(); ++ni ) {
             r_data[ni].resize( 0 );
         }
-        
+
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
     }
-    
-    
+
+
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
@@ -251,47 +251,47 @@ namespace ttcr {
                                      std::vector<std::vector<T1>*>& traveltimes,
                                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                      const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n )
-            this->checkPts(*Rx[n]);
-        
+        this->checkPts(*Rx[n]);
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node3Dc<T1,T2>*, std::vector<Node3Dc<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
-        
+
         std::vector<bool> inBand( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initBand(Tx, t0, narrow_band, inBand, frozen, threadNo);
-        
+
         propagate(narrow_band, inBand, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
         }
-        
+
         for (size_t nr=0; nr<Rx.size(); ++nr) {
             traveltimes[nr]->resize( Rx[nr]->size() );
             r_data[nr]->resize( Rx[nr]->size() );
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
-            
+
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
                 this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
                                  (*traveltimes[nr])[n], threadNo);
             }
         }
     }
-    
+
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::initBand(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<T1>& t0,
@@ -301,7 +301,7 @@ namespace ttcr {
                                      std::vector<bool>& inBand,
                                      std::vector<bool>& frozen,
                                      const size_t threadNo) const {
-        
+
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
             for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
@@ -311,21 +311,21 @@ namespace ttcr {
                     narrow_band.push( &(this->nodes[nn]) );
                     inBand[nn] = true;
                     frozen[nn] = true;
-                    
+
                     if ( Tx.size()==1 ) {
                         if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius == 0.0 ) {
                             // populate around Tx
                             for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
-                                
+
                                 T2 cellNo = this->nodes[nn].getOwners()[no];
                                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                                     T2 neibNo = this->neighbors[cellNo][k];
                                     if ( neibNo == nn ) continue;
                                     T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
-                                    
+
                                     if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                                         this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                                        
+
                                         if ( !inBand[neibNo] ) {
                                             narrow_band.push( &(this->nodes[neibNo]) );
                                             inBand[neibNo] = true;
@@ -335,16 +335,16 @@ namespace ttcr {
                                 }
                             }
                         } else {
-                            
+
                             // find nodes within source radius
                             size_t nodes_added = 0;
                             for ( size_t no=0; no<this->nodes.size(); ++no ) {
-                                
+
                                 if ( no == nn ) continue;
-                                
+
                                 T1 d = this->nodes[nn].getDistance( this->nodes[no] );
                                 if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius ) {
-                                    
+
                                     // compute average slowness with cells touching the source node
                                     T1 slown = 0.0;
                                     for ( size_t nc=0; nc<this->nodes[nn].getOwners().size(); ++nc ) {
@@ -352,10 +352,10 @@ namespace ttcr {
                                     }
                                     slown /= this->nodes[nn].getOwners().size();
                                     T1 dt = d * slown;
-                                    
+
                                     if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
                                         this->nodes[no].setTT( t0[n]+dt, threadNo );
-                                        
+
                                         if ( !inBand[no] ) {
                                             narrow_band.push( &(this->nodes[no]) );
                                             inBand[no] = true;
@@ -373,41 +373,41 @@ namespace ttcr {
                             }
                         }
                     }
-                    
+
                     break;
                 }
             }
             if ( found==false ) {
-                
+
                 T2 cellNo = this->getCellNo(Tx[n]);
                 if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius == 0.0 ) {
                     // populate around Tx
-                    
+
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                         T2 neibNo = this->neighbors[cellNo][k];
-                        
+
                         // compute dt
                         T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], cellNo);
-                        
+
                         this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                         narrow_band.push( &(this->nodes[neibNo]) );
                         inBand[neibNo] = true;
                         frozen[neibNo] = true;
                     }
                 } else if ( Tx.size()==1 ) { // look into source radius only for point sources
-                    
+
                     // find nodes within source radius
                     size_t nodes_added = 0;
                     for ( size_t no=0; no<this->nodes.size(); ++no ) {
-                        
+
                         T1 d = this->nodes[no].getDistance( Tx[n] );
                         if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius ) {
-                            
+
                             T1 dt = d * Grid3Duc<T1,T2,Node3Dc<T1,T2>>::slowness[cellNo];
-                            
+
                             if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
                                 this->nodes[no].setTT( t0[n]+dt, threadNo );
-                                
+
                                 if ( !inBand[no] ) {
                                     narrow_band.push( &(this->nodes[no]) );
                                     inBand[no] = true;
@@ -427,7 +427,7 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2>
     void Grid3Ducfm<T1,T2>::propagate(std::priority_queue<Node3Dc<T1,T2>*,
                                       std::vector<Node3Dc<T1,T2>*>,
@@ -435,27 +435,27 @@ namespace ttcr {
                                       std::vector<bool>& inNarrowBand,
                                       std::vector<bool>& frozen,
                                       const size_t threadNo) const {
-        
+
         while ( !narrow_band.empty() ) {
-            
+
             const Node3Dc<T1,T2>* source = narrow_band.top();
             narrow_band.pop();
             inNarrowBand[ source->getGridIndex() ] = false;
             frozen[ source->getGridIndex() ] = true;   // marked as known
-            
+
             for ( size_t no=0; no<source->getOwners().size(); ++no ) {
-                
+
                 T2 cellNo = source->getOwners()[no];
-                
+
                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                     T2 neibNo = this->neighbors[cellNo][k];
                     if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
                         continue;
                     }
-                    
+
                     //				this->local3Dsolver( &(this->nodes[neibNo]), threadNo );
                     this->localUpdate3D( &(this->nodes[neibNo]), threadNo );
-                    
+
                     if ( !inNarrowBand[neibNo] ) {
                         narrow_band.push( &(this->nodes[neibNo]) );
                         inNarrowBand[neibNo] = true;
@@ -464,7 +464,7 @@ namespace ttcr {
             }
         }
     }
-    
+
 }
 
 #endif

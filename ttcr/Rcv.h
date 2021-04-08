@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef __ttcr__Rcv__
-#define __ttcr__Rcv__
+#ifndef ttcr_Rcv_h
+#define ttcr_Rcv_h
 
 #include <fstream>
 #include <iostream>
@@ -45,13 +45,13 @@
 #include "ttcr_t.h"
 
 namespace ttcr {
-    
+
     template<typename T>
     class Rcv {
     public:
         Rcv(const std::string &f) : filename(f) {
         }
-        
+
         void init(const size_t, const size_t nr=0);
         const std::vector<sxyz<T>>& get_coord() const { return coord; }
         std::vector<sxyz<T>>& get_coord() { return coord; }
@@ -59,13 +59,13 @@ namespace ttcr {
         const std::vector<T>& get_tt(const size_t n, const size_t nr=0) const { return tt[n][nr]; }
 
         void save_tt( const std::string &, const size_t) const;
-        
+
         void add_coord(const sxyz<T> &c) { coord.push_back(c); }
         void init_tt(const size_t nsrc) {
             tt.resize(nsrc);
             for (size_t ns=0; ns<nsrc; ++ns ) tt[ns].resize( 1 );
         }
-        
+
         void save_rcvfile() const;
         void toVTK(const std::string &) const;
     private:
@@ -73,54 +73,54 @@ namespace ttcr {
         std::vector<sxyz<T>> coord;
         std::vector<std::vector<std::vector<T>>> tt;
     };
-    
+
     template<typename T>
     void Rcv<T>::init(const size_t nsrc, const size_t nrefl) {
         std::ifstream fin;
         fin.open(filename);
-        
+
         if ( !fin ) {
             std::cerr << "Cannot open file " << filename << " for reading.\n";
             exit(1);
         }
         tt.resize(nsrc);
         for (size_t ns=0; ns<nsrc; ++ns )
-            tt[ns].resize( nrefl+1 );
-        
+        tt[ns].resize( nrefl+1 );
+
         std::string test;
         std::getline(fin, test);
-        
+
         char lastChar = ' ';
-		bool vtk = false;
+        bool vtk = false;
         if (!test.empty()) {
             lastChar = *test.rbegin();
-			if ( test.find("vtk") != std::string::npos ) vtk = true;
+            if ( test.find("vtk") != std::string::npos ) vtk = true;
         }
-		
-		if ( vtk == true ) {
-			std::getline(fin, test);  // 2nd line should be vtk output
-			std::getline(fin, test);  // 3rd line should be ASCII
-			if ( test.find("ASCII") == std::string::npos ) {
-				std::cerr << "Error: vtk file should be ascii.\n";
-				exit(1);
-			}
-			while ( test.find("POINTS") == std::string::npos ) {
-				std::getline(fin, test);
-			}
-			std::istringstream sin( test );
-			size_t nrcv;
-			sin >> test >> nrcv;
-			coord.resize( nrcv );
-			for (size_t n=0; n<nsrc; ++n )
-				for ( size_t nr=0; nr<=nrefl; ++nr )
-					tt[n][nr].resize( nrcv );
-			size_t nread = 0;
-			while ( fin && nread<nrcv ) {
-				fin >> coord[nread].x >> coord[nread].y >> coord[nread].z;
-				nread++;
-			}
-			
-		} else if ( lastChar == '/' ) {
+
+        if ( vtk == true ) {
+            std::getline(fin, test);  // 2nd line should be vtk output
+            std::getline(fin, test);  // 3rd line should be ASCII
+            if ( test.find("ASCII") == std::string::npos ) {
+                std::cerr << "Error: vtk file should be ascii.\n";
+                exit(1);
+            }
+            while ( test.find("POINTS") == std::string::npos ) {
+                std::getline(fin, test);
+            }
+            std::istringstream sin( test );
+            size_t nrcv;
+            sin >> test >> nrcv;
+            coord.resize( nrcv );
+            for (size_t n=0; n<nsrc; ++n )
+            for ( size_t nr=0; nr<=nrefl; ++nr )
+            tt[n][nr].resize( nrcv );
+            size_t nread = 0;
+            while ( fin && nread<nrcv ) {
+                fin >> coord[nread].x >> coord[nread].y >> coord[nread].z;
+                nread++;
+            }
+
+        } else if ( lastChar == '/' ) {
             // CRT format
             coord.resize(0);
             sxyz<T> co;
@@ -132,16 +132,16 @@ namespace ttcr {
                 }
             }
             for (size_t n=0; n<nsrc; ++n )
-                for ( size_t nr=0; nr<=nrefl; ++nr )
-                    tt[n][nr].resize( coord.size() );
+            for ( size_t nr=0; nr<=nrefl; ++nr )
+            tt[n][nr].resize( coord.size() );
         } else {
             fin.seekg(std::ios_base::beg);
             size_t nrcv;
             fin >> nrcv;
             coord.resize( nrcv );
             for (size_t n=0; n<nsrc; ++n )
-                for ( size_t nr=0; nr<=nrefl; ++nr )
-                    tt[n][nr].resize( nrcv );
+            for ( size_t nr=0; nr<=nrefl; ++nr )
+            tt[n][nr].resize( nrcv );
             size_t nread = 0;
             while ( fin && nread<nrcv ) {
                 fin >> coord[nread].x >> coord[nread].y >> coord[nread].z;
@@ -150,11 +150,11 @@ namespace ttcr {
         }
         fin.close();
     }
-    
+
     template<typename T>
     void Rcv<T>::save_tt( const std::string &filename,
                          const size_t ns) const {
-        
+
         std::ofstream fout;
         fout.open( filename );
         if ( !fout ) {
@@ -166,15 +166,15 @@ namespace ttcr {
         for ( size_t n=0; n<tt[ns][0].size(); ++n ) {
             fout << tt[ns][0][n];
             for ( size_t nr=1; nr<nrefl; ++nr )
-                fout << '\t' << tt[ns][nr][n];
+            fout << '\t' << tt[ns][nr][n];
             fout << '\n';
         }
         fout.close();
     }
-    
+
     template<typename T>
     void Rcv<T>::save_rcvfile() const {
-        
+
         std::ofstream fout;
         fout.open( filename );
         if ( !fout ) {
@@ -185,22 +185,22 @@ namespace ttcr {
         fout.precision(17);
         fout << std::scientific;
         for ( size_t n=0; n<coord.size(); ++n )
-            fout << coord[n].x << '\t' << coord[n].y << '\t' << coord[n].z << '\n';
+        fout << coord[n].x << '\t' << coord[n].y << '\t' << coord[n].z << '\n';
         fout.close();
     }
-    
+
     template<typename T>
     void Rcv<T>::toVTK(const std::string &fname) const {
 #ifdef VTK
         vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
         vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
-        
+
         pts->SetNumberOfPoints(coord.size());
         for ( size_t n=0; n<coord.size(); ++n ) {
-                pts->InsertPoint(n, coord[n].x, coord[n].y, coord[n].z);
+            pts->InsertPoint(n, coord[n].x, coord[n].y, coord[n].z);
         }
         polydata->SetPoints(pts);
-        
+
         vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
         writer->SetFileName( fname.c_str() );
         writer->SetInputData( polydata );
@@ -208,7 +208,7 @@ namespace ttcr {
         writer->Update();
 #endif
     }
-    
+
 }
 
 #endif /* defined(__ttcr__Rcv__) */

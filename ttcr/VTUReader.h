@@ -39,16 +39,16 @@
 #include "ttcr_t.h"
 
 namespace ttcr {
-    
+
     class VTUReader {
     public:
         VTUReader(const char *fname) : filename(fname), valid(false), nNodes(0),
         nElements(0) {
             valid = check_format();
         }
-        
+
         bool isValid() const { return valid; }
-        
+
         int get2Ddim() const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -61,7 +61,7 @@ namespace ttcr {
             double ymax=0.0;
             double zmin=0.0;
             double zmax=0.0;
-            
+
             reader->GetOutput()->GetPoint(0, x);
             xmin = xmax = x[0];
             ymin = ymax = x[1];
@@ -89,7 +89,7 @@ namespace ttcr {
             return 0;
         }
 
-        
+
         size_t getNumberOfElements() {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -97,7 +97,7 @@ namespace ttcr {
             reader->Update();
             return reader->GetOutput()->GetNumberOfCells();
         }
-        
+
         size_t getNumberOfNodes() {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -105,14 +105,14 @@ namespace ttcr {
             reader->Update();
             return reader->GetOutput()->GetNumberOfPoints();
         }
-        
+
         template<typename T>
         void readNodes2D(std::vector<sxz<T>>& nodes, const int d) {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
             reader->Update();
-            
+
             double x[3];
             nodes.resize( reader->GetOutput()->GetNumberOfPoints() );
             for ( size_t n=0; n<reader->GetOutput()->GetNumberOfPoints(); ++n ) {
@@ -121,14 +121,14 @@ namespace ttcr {
                 nodes[n].z = x[d];
             }
         }
-        
+
         template<typename T>
         void readNodes3D(std::vector<sxyz<T>>& nodes) {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
             reader->Update();
-            
+
             double x[3];
             nodes.resize( reader->GetOutput()->GetNumberOfPoints() );
             for ( size_t n=0; n<reader->GetOutput()->GetNumberOfPoints(); ++n ) {
@@ -138,14 +138,14 @@ namespace ttcr {
                 nodes[n].z = x[2];
             }
         }
-        
+
         template<typename T>
         void readTriangleElements(std::vector<triangleElem<T>>& tri) {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
             reader->Update();
-            
+
             vtkSmartPointer<vtkIdList> list = vtkSmartPointer<vtkIdList>::New();
             tri.resize( reader->GetOutput()->GetNumberOfCells() );
             for ( size_t n=0; n<reader->GetOutput()->GetNumberOfCells(); ++n ) {
@@ -159,14 +159,14 @@ namespace ttcr {
                 tri[n].i[2] = static_cast<T>( list->GetId( 2 ) );
             }
         }
-        
+
         template<typename T>
         void readTetrahedronElements(std::vector<tetrahedronElem<T>>& tet) {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
             reader->Update();
-            
+
             vtkSmartPointer<vtkIdList> list = vtkSmartPointer<vtkIdList>::New();
             tet.resize( reader->GetOutput()->GetNumberOfCells() );
             for ( size_t n=0; n<reader->GetOutput()->GetNumberOfCells(); ++n ) {
@@ -181,33 +181,33 @@ namespace ttcr {
                 tet[n].i[3] = static_cast<T>( list->GetId( 3 ) );
             }
         }
-        
+
         template<typename T>
         int readSlowness(std::vector<T>& slowness, const bool constCells=true) {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
             reader->Update();
-            
+
             if ( constCells ) {
                 if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
                     reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {
                     std::cerr << "No Slowness data in file " << filename << std::endl;
                     return 0;
                 }
-                
+
                 if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
-                    
+
                     vtkSmartPointer<vtkCellData> cd = vtkSmartPointer<vtkCellData>::New();
                     cd = reader->GetOutput()->GetCellData();
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
-                    
+
                     if ( slo->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return 0;
                     }
-                    
+
                     slowness.resize( slo->GetSize() );
                     for ( size_t n=0; n<slo->GetSize(); ++n ) {
                         slowness[n] = slo->GetComponent(n, 0);
@@ -217,12 +217,12 @@ namespace ttcr {
                     cd = reader->GetOutput()->GetCellData();
                     vtkSmartPointer<vtkDoubleArray> vel = vtkSmartPointer<vtkDoubleArray>::New();
                     vel = vtkDoubleArray::SafeDownCast( cd->GetArray("Velocity") );
-                    
+
                     if ( vel->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return 0;
                     }
-                    
+
                     slowness.resize( vel->GetSize() );
                     for ( size_t n=0; n<vel->GetSize(); ++n ) {
                         slowness[n] = 1./vel->GetComponent(n, 0);
@@ -258,10 +258,10 @@ namespace ttcr {
 
                 }
             }
-            
+
             return 1;
         }
-        
+
         bool isConstCell() const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -270,33 +270,33 @@ namespace ttcr {
             return reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ||
             reader->GetOutput()->GetCellData()->HasArray("Velocity") == 1;
         }
-        
-        
+
+
     private:
         std::string filename;
         bool valid;
         size_t nNodes;
         size_t nElements;
-        
+
         bool check_format() const {
-            
+
             bool constCells = isConstCell();
-            
+
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
             reader->Update();
-            
+
             if ( reader->GetOutput() ) {
-                
+
                 if ( constCells ) { // slowness defined at cells
-                    
+
                     if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
                         reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {
                         std::cerr << "No Slowness data in file " << filename << std::endl;
                         return false;
                     }
-                    
+
                     if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
                         if ( reader->GetOutput()->GetCellData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
                             std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
@@ -308,17 +308,17 @@ namespace ttcr {
                             return false;
                         }
                     }
-                    
+
                     return true;
-                    
+
                 } else {  // slowness defined at grid nodes
-                    
+
                     if ( reader->GetOutput()->GetPointData()->HasArray( "Slowness") == 0 &&
                         reader->GetOutput()->GetPointData()->HasArray( "Velocity") == 0 ) {
                         std::cerr << "No Slowness data in file " << filename << std::endl;
                         return false;
                     }
-                    
+
                     if ( reader->GetOutput()->GetPointData()->HasArray("Slowness") == 1 ) {
                         if ( reader->GetOutput()->GetPointData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfPoints() ) {
                             std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
@@ -337,7 +337,7 @@ namespace ttcr {
             return false;
         }
     };
-    
+
 }
 
 #endif
