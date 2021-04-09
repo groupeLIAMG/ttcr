@@ -59,32 +59,6 @@ namespace ttcr {
         ~Grid3Ducdsp() {
         }
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<sxyz<T1>>&,
-                      std::vector<T1>&,
-                      const size_t=0) const;
-
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<const std::vector<sxyz<T1>>*>&,
-                      std::vector<std::vector<T1>*>&,
-                      const size_t=0) const;
-
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<sxyz<T1>>&,
-                      std::vector<T1>&,
-                      std::vector<std::vector<sxyz<T1>>>&,
-                      const size_t=0) const;
-
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<const std::vector<sxyz<T1>>*>&,
-                      std::vector<std::vector<T1>*>&,
-                      std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
-                      const size_t=0) const;
-
     private:
         T2 nSecondary;
         T2 nTertiary;
@@ -387,29 +361,6 @@ namespace ttcr {
     template<typename T1, typename T2>
     void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
-                                      const std::vector<sxyz<T1>>& Rx,
-                                      std::vector<T1>& traveltimes,
-                                      const size_t threadNo) const {
-        raytrace(Tx, t0, Rx, threadNo);
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-
-        if ( this->tt_from_rp ) {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
-            }
-        } else {
-            for (size_t n=0; n<Rx.size(); ++n) {
-                traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
-            }
-        }
-    }
-
-    template<typename T1, typename T2>
-    void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                      const std::vector<T1>& t0,
                                       const std::vector<const std::vector<sxyz<T1>>*>& Rx,
                                       const size_t threadNo) const {
         this->checkPts(Tx);
@@ -435,93 +386,6 @@ namespace ttcr {
 
         propagate(queue, inQueue, frozen, threadNo);
     }
-
-    template<typename T1, typename T2>
-    void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                      const std::vector<T1>& t0,
-                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                      std::vector<std::vector<T1>*>& traveltimes,
-                                      const size_t threadNo) const {
-        raytrace(Tx, t0, Rx, threadNo);
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-
-        if ( this->tt_from_rp ) {
-            for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
-                }
-            }
-        } else {
-            for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
-                }
-            }
-        }
-    }
-
-    template<typename T1, typename T2>
-    void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                      const std::vector<T1>& t0,
-                                      const std::vector<sxyz<T1>>& Rx,
-                                      std::vector<T1>& traveltimes,
-                                      std::vector<std::vector<sxyz<T1>>>& r_data,
-                                      const size_t threadNo) const {
-
-        raytrace(Tx, t0, Rx, threadNo);
-
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-
-        for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n],
-                             threadNo);
-        }
-    }
-
-    template<typename T1, typename T2>
-    void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
-                                      const std::vector<T1>& t0,
-                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                                      std::vector<std::vector<T1>*>& traveltimes,
-                                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
-                                      const size_t threadNo) const {
-
-        raytrace(Tx, t0, Rx, threadNo);
-
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-
-        for (size_t nr=0; nr<Rx.size(); ++nr) {
-            r_data[nr]->resize( Rx[nr]->size() );
-            for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
-                (*r_data[nr])[ni].resize( 0 );
-            }
-            traveltimes[nr]->resize( Rx[nr]->size() );
-
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
-                                 (*traveltimes[nr])[n], threadNo);
-            }
-        }
-    }
-
 
     template<typename T1, typename T2>
     void Grid3Ducdsp<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,

@@ -216,6 +216,9 @@ namespace ttcr {
         }
 
         T1 getTraveltime(const sxyz<T1>& Rx,
+                         const size_t threadNo) const;
+
+        T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
 
@@ -766,6 +769,36 @@ namespace ttcr {
 
         nodes.shrink_to_fit();
     }
+
+    template<typename T1, typename T2, typename NODE>
+    T1 Grid3Dun<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,
+                                           const size_t threadNo) const {
+
+        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
+            if ( nodes[nn] == Rx ) {
+                return nodes[nn].getTT(threadNo);
+            }
+        }
+        // TODO : proceed by interpolation
+        // If Rx is not on a node
+        T1 slo = computeSlowness( Rx );
+
+        T2 cellNo = getCellNo( Rx );
+
+        T2 neibNo = this->neighbors[cellNo][0];
+        T1 dt = computeDt(nodes[neibNo], Rx, slo);
+
+        T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
+        for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
+            neibNo = this->neighbors[cellNo][k];
+            dt = computeDt(nodes[neibNo], Rx, slo);
+            if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
+                traveltime =  nodes[neibNo].getTT(threadNo)+dt;
+            }
+        }
+        return traveltime;
+    }
+
 
     template<typename T1, typename T2, typename NODE>
     T1 Grid3Dun<T1,T2,NODE>::getTraveltime(const sxyz<T1>& Rx,

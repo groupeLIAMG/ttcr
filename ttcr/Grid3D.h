@@ -519,9 +519,6 @@ namespace ttcr {
                                  std::vector<std::vector<T1>*>& traveltimes,
                                  std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                  const size_t threadNo) const {
-        if ( verbose > 2 ) {
-            std::cout << "\nIn Grid3D::raytrace(..., r_data, threadNo)\n" << std::endl;
-        }
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
