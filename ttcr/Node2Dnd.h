@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef Node2Dnd_h
-#define Node2Dnd_h
+#ifndef ttcr_Node2Dnd_h
+#define ttcr_Node2Dnd_h
 
 #include "Node2Dn.h"
 
@@ -33,53 +33,53 @@
 
 namespace ttcr {
 
-template<typename T1, typename T2>
-class Node2Dnd : public Node2Dn<T1,T2> {
-public:
-    Node2Dnd() : Node2Dn<T1,T2>(1) {}
-    
-    virtual ~Node2Dnd() {}
-    
-    Node2Dnd(const T1 t, const T1 xx, const T1 zz, const size_t nt,
-             const size_t i) : Node2Dn<T1,T2>(t, xx, zz, 1, 0) {}
-    
-    Node2Dnd(const T1 t, const sxz<T1>& s, const size_t nt,
-             const size_t i) : Node2Dn<T1,T2>(t, s, 1, 0) {}
-    
-    Node2Dnd(const Node2Dnd<T1,T2>& node) :
-    Node2Dn<T1,T2>(node.tt[0], node.x, node.z, 1, 0)
-    {
-        this->gridIndex = node.gridIndex;
-        this->owners = node.owners;
-        this->slowness = node.slowness;
-        this->primary = node.primary;
+    template<typename T1, typename T2>
+    class Node2Dnd : public Node2Dn<T1,T2> {
+    public:
+        Node2Dnd() : Node2Dn<T1,T2>(1) {}
+
+        virtual ~Node2Dnd() {}
+
+        Node2Dnd(const T1 t, const T1 xx, const T1 zz, const size_t nt,
+                 const size_t i) : Node2Dn<T1,T2>(t, xx, zz, 1, 0) {}
+
+        Node2Dnd(const T1 t, const sxz<T1>& s, const size_t nt,
+                 const size_t i) : Node2Dn<T1,T2>(t, s, 1, 0) {}
+
+        Node2Dnd(const Node2Dnd<T1,T2>& node) :
+        Node2Dn<T1,T2>(node.tt[0], node.x, node.z, 1, 0)
+        {
+            this->gridIndex = node.gridIndex;
+            this->owners = node.owners;
+            this->slowness = node.slowness;
+            this->primary = node.primary;
+        }
+
+        T1 getTT(const size_t n) const { return this->tt[0]; }
+        void setTT(const T1 t, const size_t n ) { this->tt[0] = t; }
+
+    };
+
+    template<typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const Node2Dnd<T1, T2> &n) {
+        os << n.getX() << ' ' << n.getZ();
+        return os;
     }
-    
-    T1 getTT(const size_t n) const { return this->tt[0]; }
-    void setTT(const T1 t, const size_t n ) { this->tt[0] = t; }
-    
-};
 
-template<typename T1, typename T2>
-std::ostream& operator<< (std::ostream& os, const Node2Dnd<T1, T2> &n) {
-    os << n.getX() << ' ' << n.getZ();
-    return os;
-}
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dnd<T1,T2>& lhs, const Node2Dnd<T1,T2>& rhs) {
+        return sxz<T1>( lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ() );
+    }
 
-template<typename T1, typename T2>
-sxz<T1> operator-(const Node2Dnd<T1,T2>& lhs, const Node2Dnd<T1,T2>& rhs) {
-    return sxz<T1>( lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ() );
-}
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dnd<T1,T2>& rhs) {
+        return sxz<T1>( lhs.x-rhs.getX(), lhs.z-rhs.getZ() );
+    }
 
-template<typename T1, typename T2>
-sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dnd<T1,T2>& rhs) {
-    return sxz<T1>( lhs.x-rhs.getX(), lhs.z-rhs.getZ() );
-}
-
-template<typename T1, typename T2>
-sxz<T1> operator-(const Node2Dnd<T1,T2>& lhs, const sxz<T1>& rhs) {
-    return sxz<T1>( lhs.getX()-rhs.x, lhs.getZ()-rhs.z );
-}
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dnd<T1,T2>& lhs, const sxz<T1>& rhs) {
+        return sxz<T1>( lhs.getX()-rhs.x, lhs.getZ()-rhs.z );
+    }
 
 }
 

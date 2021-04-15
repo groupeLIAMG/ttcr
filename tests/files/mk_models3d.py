@@ -20,9 +20,11 @@ a = 1.0
 V20 = 3.0
 b = (V20-a)/20.0
 
+################################################################################
 #
-# Coarse grid
+# Medium grid
 #
+################################################################################
 
 frac = 2
 N *= frac
@@ -31,6 +33,9 @@ dx /= frac
 
 x = np.arange(0.0, 20.0+0.01, dx)
 z = np.arange(0.0, 20.0+0.01, dx)
+
+x_offset = 319640.45
+y_offset = 5180561.39
 
 # %% Rcv
 
@@ -41,15 +46,28 @@ with open('rcv3d_in.dat', 'w') as f:
         for z in xx:
             print('{0:d} {1:d} {2:d}'.format(x, x, z), file=f)
 
+with open('rcv3d_in2.dat', 'w') as f:
+    xx = np.arange(1, 20)
+    print('{0:d}'.format(xx.size*xx.size), file=f)
+    for x in xx:
+        for z in xx:
+            print('{0:f} {1:f} {2:d}'.format(x+x_offset, x+y_offset, z), file=f)
 
-# %% gradient
+with open('src3d_in2.dat', 'w') as f:
+    print('1\n{0:f} {1:f} 1.0 0.0'.format(1+x_offset, 1+y_offset), file=f)
+
+################################################################################
+#
+# %% gradient - Rectilinear
 
 xCoords = vtk.vtkDoubleArray()
+yCoords = vtk.vtkDoubleArray()
+zCoords = vtk.vtkDoubleArray()
 for n in range(0, N+1):
     xCoords.InsertNextValue( n*dx )
 yCoords = vtk.vtkDoubleArray()
-yCoords = xCoords
-zCoords = xCoords
+yCoords.DeepCopy(xCoords)
+zCoords.DeepCopy(xCoords)
 
 rgrid = vtk.vtkRectilinearGrid()
 rgrid.SetDimensions( N+1, N+1, N+1 )
@@ -75,8 +93,31 @@ writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()
 
+#
+# %% shift grid
+#
+for n in range(0, N+1):
+    xCoords.InsertValue(n, n*dx+x_offset)
+    yCoords.InsertValue(n, n*dx+y_offset)
+rgrid.SetXCoordinates(xCoords)
+rgrid.SetYCoordinates(yCoords)
 
-# %%
+writer = vtk.vtkXMLRectilinearGridWriter()
+writer.SetFileName( "gradient_medium2.vtr" )
+writer.SetInputData( rgrid )
+writer.SetDataModeToBinary()
+writer.Update()
+
+for n in range(0, N+1):
+    xCoords.InsertValue(n, n*dx)
+    yCoords.InsertValue(n, n*dx)
+rgrid.SetXCoordinates(xCoords)
+rgrid.SetYCoordinates(yCoords)
+
+
+################################################################################
+#
+# %% gradient - Unstructured grid
 gmsh.initialize()
 
 # %%
@@ -121,8 +162,25 @@ writer.SetInputData( ugrid2 )
 writer.SetDataModeToBinary();
 writer.Update()
 
+#
+# %% shift grid
+#
+tr = vtk.vtkTransform()
+tr.Translate(x_offset, y_offset, 0.0)
+tf = vtk.vtkTransformFilter()
+tf.SetInputData(ugrid2)
+tf.SetTransform(tr)
+tf.Update()
 
-# %%
+writer = vtk.vtkXMLUnstructuredGridWriter()
+writer.SetFileName( "gradient_medium2.vtu" )
+writer.SetInputData( tf.GetOutput() )
+writer.SetDataModeToBinary()
+writer.Update()
+
+################################################################################
+#
+# %%  layers - unstructured grid
 
 gmsh.clear()
 
@@ -167,8 +225,25 @@ writer.SetInputData( ugrid2 )
 writer.SetDataModeToBinary();
 writer.Update()
 
+#
+# %% shift grid
+#
+tr = vtk.vtkTransform()
+tr.Translate(x_offset, y_offset, 0.0)
+tf = vtk.vtkTransformFilter()
+tf.SetInputData(ugrid2)
+tf.SetTransform(tr)
+tf.Update()
 
-# %%
+writer = vtk.vtkXMLUnstructuredGridWriter()
+writer.SetFileName( "layers_medium2.vtu" )
+writer.SetInputData( tf.GetOutput() )
+writer.SetDataModeToBinary()
+writer.Update()
+
+################################################################################
+#
+# %% layers - rectilinear
 
 rgrid = vtk.vtkRectilinearGrid()
 rgrid.SetDimensions( N+1, N+1, N+1 )
@@ -191,6 +266,21 @@ rgrid.GetCellData().SetScalars( slowness );
 
 writer = vtk.vtkXMLRectilinearGridWriter()
 writer.SetFileName( "layers_medium.vtr" )
+writer.SetInputData( rgrid )
+writer.SetDataModeToBinary()
+writer.Update()
+
+#
+# %% shift grid
+#
+for n in range(0, N+1):
+    xCoords.InsertValue(n, n*dx+x_offset)
+    yCoords.InsertValue(n, n*dx+y_offset)
+rgrid.SetXCoordinates(xCoords)
+rgrid.SetYCoordinates(yCoords)
+
+writer = vtk.vtkXMLRectilinearGridWriter()
+writer.SetFileName( "layers_medium2.vtr" )
 writer.SetInputData( rgrid )
 writer.SetDataModeToBinary()
 writer.Update()

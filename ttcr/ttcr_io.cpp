@@ -51,12 +51,12 @@ namespace ttcr {
         << std::endl;
         exit (exit_code);
     }
-    
-    
+
+
     string parse_input(int argc, char * argv[], input_parameters &ip ) {
-        
+
         string param_file;
-        
+
         int next_option;
         const char* const short_options = "hk†p:vts";
         bool no_option = true;
@@ -65,76 +65,76 @@ namespace ttcr {
             next_option = getopt (argc, argv, short_options);
             switch (next_option)
             {
-                    
+
                 case  'h' : // -h or --help
                     // User has requested usage information. Print it to standard
                     //   output, and exit with exit code zero (normal termination).
                     no_option = false;
                     print_usage (cout, argv[0], 0);
                     break;
-                    
+
                 case  'k' :
                     no_option = false;
                     ip.saveModelVTK = true;
                     break;
-                    
+
                 case  'p' :
                     // This option takes an argument, the name of the input file.
                     no_option = false;
                     param_file = optarg;
                     break;
-                    
+
                 case  'v' : // -v or --verbose
                     no_option = false;
                     verbose++;
                     break;
-                    
+
                 case  't' :
                     no_option = false;
                     ip.time = true;
                     break;
-                    
+
                 case  's' :
                     no_option = false;
                     ip.dump_secondary = true;
                     break;
-                    
+
                 case  '?' : // The user specified an invalid option.
                     // Print usage information to standard error, and exit with exit
                     //code one (indicating abnormal termination).
                     print_usage (cerr, argv[0], 1);
                     break;
-                    
+
                 case -1: // Done with options.
                     break;
-                    
+
                 default: // Something else: unexpected.
                     abort ();
             }
         } while (next_option != -1);
         if ( no_option || param_file == "" ) print_usage (cout, argv[0], 0);
-        
+
         return param_file;
     }
-    
+
     void get_params(const std::string &filename, input_parameters &ip) {
-        
+
         ifstream fin;
         fin.open( filename.c_str() );
-        
+
         if ( !fin.is_open() ) {
             std::cerr << "Cannot open " << filename << std::endl;
             exit(1);
         }
-        
+
         if ( verbose )
             std::cout << "\nReading file " << filename << std::endl;
-        
+
         char value[100];
         char parameter[200];
         std::string par;
         std::istringstream sin( value );
-        
+
         while (!fin.eof()) {
             fin.get(value, 100, '#');
             if (strlen(value) == 0) {
@@ -144,7 +144,7 @@ namespace ttcr {
             }
             fin.get(parameter, 200, ',');
             par = parameter;
-            
+
             if (par.find("basename") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.basename;
@@ -296,10 +296,16 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.min_distance_rp;
             }
+            else if (par.find("translate grid origin") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                int test;
+                sin >> test;
+                ip.translateOrigin = (test == 1);
+            }
             fin.getline(parameter, 200);
         }
         fin.close();
-        
+
     }
-    
+
 }

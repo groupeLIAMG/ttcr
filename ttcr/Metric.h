@@ -30,7 +30,7 @@
 #include "Node.h"
 
 namespace ttcr {
-    
+
     template <typename T>
     class Metric {
     public:
@@ -38,8 +38,8 @@ namespace ttcr {
         virtual T l(const Node<T>&, const sxyz<T>&) const = 0;
         virtual ~Metric() {}
     };
-    
-    
+
+
     template <typename T>
     class Metric1 : public Metric<T> {
     public:
@@ -51,7 +51,8 @@ namespace ttcr {
         }
         ~Metric1() {}
     };
-    
+
+
     template <typename T>
     class Metric2 : public Metric<T> {
     public:
@@ -66,7 +67,7 @@ namespace ttcr {
         }
         ~Metric2() {}
     };
-    
+
 }
 
 #endif

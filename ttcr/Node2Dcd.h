@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef Node2Dcd_h
-#define Node2Dcd_h
+#ifndef ttcr_Node2Dcd_h
+#define ttcr_Node2Dcd_h
 
 #include "Node2Dc.h"
 
@@ -31,44 +31,44 @@
 
 namespace ttcr {
 
-template<typename T1, typename T2>
-class Node2Dcd : public Node2Dc<T1,T2> {
-public:
-    Node2Dcd() : Node2Dc<T1,T2>(1) {}
-    
-    Node2Dcd(const T1 t, const T1 xx, const T1 zz, const size_t nt,
-             const size_t i) : Node2Dc<T1,T2>(t, xx, zz, 1, 0) {}
-    
-    Node2Dcd(const Node2Dcd<T1,T2>& node) :
-    Node2Dc<T1,T2>(node.tt[0], node.x, node.z, 1, 0)
-    {
-        this->gridIndex = node.gridIndex;
-        this->owners = node.owners;
+    template<typename T1, typename T2>
+    class Node2Dcd : public Node2Dc<T1,T2> {
+    public:
+        Node2Dcd() : Node2Dc<T1,T2>(1) {}
+
+        Node2Dcd(const T1 t, const T1 xx, const T1 zz, const size_t nt,
+                 const size_t i) : Node2Dc<T1,T2>(t, xx, zz, 1, 0) {}
+
+        Node2Dcd(const Node2Dcd<T1,T2>& node) :
+        Node2Dc<T1,T2>(node.tt[0], node.x, node.z, 1, 0)
+        {
+            this->gridIndex = node.gridIndex;
+            this->owners = node.owners;
+        }
+
+        T1 getTT(const size_t n) const { return this->tt[0]; }
+        void setTT(const T1 t, const size_t n ) { this->tt[0] = t; }
+    };
+
+    template<typename T1, typename T2>
+    std::ostream& operator<< (std::ostream& os, const Node2Dcd<T1, T2> &n) {
+        os << n.getX() << ' ' << n.getZ();
+        return os;
     }
-    
-    T1 getTT(const size_t n) const { return this->tt[0]; }
-    void setTT(const T1 t, const size_t n ) { this->tt[0] = t; }
-};
 
-template<typename T1, typename T2>
-std::ostream& operator<< (std::ostream& os, const Node2Dcd<T1, T2> &n) {
-    os << n.getX() << ' ' << n.getZ();
-    return os;
-}
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dcd<T1,T2>& lhs, const Node2Dcd<T1,T2>& rhs) {
+        return sxz<T1>( lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ() );
+    }
 
-template<typename T1, typename T2>
-sxz<T1> operator-(const Node2Dcd<T1,T2>& lhs, const Node2Dcd<T1,T2>& rhs) {
-    return sxz<T1>( lhs.getX()-rhs.getX(), lhs.getZ()-rhs.getZ() );
-}
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dcd<T1,T2>& rhs) {
+        return sxz<T1>( lhs.x-rhs.getX(), lhs.z-rhs.getZ() );
+    }
 
-template<typename T1, typename T2>
-sxz<T1> operator-(const sxz<T1>& lhs, const Node2Dcd<T1,T2>& rhs) {
-    return sxz<T1>( lhs.x-rhs.getX(), lhs.z-rhs.getZ() );
-}
-
-template<typename T1, typename T2>
-sxz<T1> operator-(const Node2Dcd<T1,T2>& lhs, const sxz<T1>& rhs) {
-    return sxz<T1>( lhs.getX()-rhs.x, lhs.getZ()-rhs.z );
-}
+    template<typename T1, typename T2>
+    sxz<T1> operator-(const Node2Dcd<T1,T2>& lhs, const sxz<T1>& rhs) {
+        return sxz<T1>( lhs.getX()-rhs.x, lhs.getZ()-rhs.z );
+    }
 }
 #endif /* Node2Dcd_h */

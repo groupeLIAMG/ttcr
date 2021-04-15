@@ -40,37 +40,37 @@
 #include "ttcr_t.h"
 
 namespace ttcr {
-    
+
     template<typename T>
     class Src2D {
     public:
         Src2D(const std::string &f) : filename(f) {
         }
-        
+
         void init();
         const std::vector<sxz<T>>& get_coord() const { return coord; }
         const std::vector<T>& get_t0() const { return t0; }
-        
+
         void toVTK(const std::string &) const;
     private:
         std::string filename;
         std::vector<sxz<T>> coord;
         std::vector<T> t0;
     };
-    
+
     template<typename T>
     void Src2D<T>::init() {
         std::ifstream fin;
         fin.open(filename);
-        
+
         if ( !fin ) {
             std::cerr << "Cannot open file " << filename << ".\n";
             exit(1);
         }
-        
+
         std::string test;
         std::getline(fin, test);
-        
+
         char lastChar = '\n';
         if (!test.empty()) {
             lastChar = *test.rbegin();
@@ -102,19 +102,19 @@ namespace ttcr {
         }
         fin.close();
     }
-    
+
     template<typename T>
     void Src2D<T>::toVTK(const std::string &fname) const {
 #ifdef VTK
         vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
         vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
-        
+
         pts->SetNumberOfPoints(coord.size());
         for ( size_t n=0; n<coord.size(); ++n ) {
             pts->InsertPoint(n, coord[n].x, 0.0, coord[n].z);
         }
         polydata->SetPoints(pts);
-        
+
         vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
         writer->SetFileName( fname.c_str() );
         writer->SetInputData( polydata );

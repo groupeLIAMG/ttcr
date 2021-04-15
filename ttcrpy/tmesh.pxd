@@ -117,33 +117,33 @@ cdef extern from "Grid3Ducfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Ducfs[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2]]):
         Grid3Ducfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int,
                    vector[sxyz[T1]]& ref_pts, int order, bool, bool, T1,
-                   size_t) except +
+                   size_t, bool) except +
 
 cdef extern from "Grid3Ducsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Ducsp[T1, T2](Grid3Duc[T1,T2,Node3Dcsp[T1,T2]]):
         Grid3Ducsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]],
-                   int, bool, T1, size_t) except +
+                   int, bool, T1, size_t, bool) except +
 
 cdef extern from "Grid3Ducdsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Ducdsp[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2]]):
         Grid3Ducdsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]],
-                    int, int, T1, int, bool, T1, T1, bool, size_t) except +
+                    int, int, T1, int, bool, T1, T1, bool, size_t, bool) except +
 
 cdef extern from "Grid3Dunfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dunfs[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
         Grid3Dunfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int,
                    vector[sxyz[T1]]& ref_pts, int order, int, bool, bool, T1,
-                   size_t) except +
+                   size_t, bool) except +
 
 cdef extern from "Grid3Dunsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dunsp[T1, T2](Grid3Dun[T1,T2,Node3Dnsp[T1,T2]]):
         Grid3Dunsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], int, bool,
-                   bool, T1, size_t) except +
+                   bool, T1, size_t, bool) except +
 
 cdef extern from "Grid3Dundsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dundsp[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
         Grid3Dundsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], int, int, T1,
-                    bool, int, bool, T1, T1, bool, size_t) except +
+                    bool, int, bool, T1, T1, bool, size_t, bool) except +
 
 
 cdef extern from "Grid2D.h" namespace "ttcr" nogil:

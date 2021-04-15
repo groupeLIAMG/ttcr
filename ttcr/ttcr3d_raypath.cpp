@@ -6,6 +6,22 @@
 //  Copyright © 2019 Bernard Giroux. All rights reserved.
 //
 
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include <iostream>
 
 #include "Grid3D.h"
@@ -130,13 +146,13 @@ int body(const input_parameters &par) {
 
     if ( src.size() == 1 ) {
         string filename = par.basename+"_tt2.dat";
-        
+
         if ( par.rcvfile != "" ) {
             if ( verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
             rcv.save_tt(filename, 0);
             if ( verbose ) cout << "done.\n";
         }
-        
+
         if ( par.saveRaypaths && par.rcvfile != "" ) {
             filename = par.basename+"_rp2.vtp";
             if ( verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
@@ -145,22 +161,22 @@ int body(const input_parameters &par) {
         }
     } else {
         for ( size_t ns=0; ns<src.size(); ++ns ) {
-        
+
             string srcname = par.srcfiles[ns];
             size_t pos = srcname.rfind("/");
             srcname.erase(0, pos+1);
             pos = srcname.rfind(".");
             size_t len = srcname.length()-pos;
             srcname.erase(pos, len);
-            
+
             string filename = par.basename+"_"+srcname+"_tt2.dat";
-            
+
             if ( par.rcvfile != "" ) {
                 if ( verbose ) cout << "Saving traveltimes in " << filename <<  " ... ";
                 rcv.save_tt(filename, ns);
                 if ( verbose ) cout << "done.\n";
             }
-            
+
             if ( par.saveRaypaths && par.rcvfile != "" ) {
                 filename = par.basename+"_"+srcname+"_rp2.vtp";
                 if ( verbose ) cout << "Saving raypaths in " << filename <<  " ... ";
@@ -169,7 +185,7 @@ int body(const input_parameters &par) {
             }
         }
     }
-    
+
     if ( verbose ) cout << "Normal termination of program.\n";
     return 0;
 }

@@ -61,7 +61,7 @@ cdef class Mesh3d:
 
     Constructor:
 
-    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary) -> Mesh3d
+    Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method, tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary, translate_grid=False) -> Mesh3d
 
         Parameters
         ----------
@@ -88,7 +88,8 @@ cdef class Mesh3d:
         process_vel : bool
             process velocity instead of slowness at nodes when interpolating and
             computing matrix of partial derivative of traveltime w/r to model
-            parameters (for cell_slowness == False or FSM) (defauls is False)
+            parameters (interpolation: for cell_slowness == False or FSM)
+            (defauls is False)
         eps : double
             convergence criterion (FSM) (default is 1e-15)
         maxit : int
@@ -103,13 +104,19 @@ cdef class Mesh3d:
             multiplication factor used to compute radius of sphere around source
             that includes tertiary nodes (DSPM).  The radius is the average edge
             length multiplied by this factor (default is 3)
-
+        translate_grid : bool
+            Translate the grid such that origin is (0, 0, 0) to perform
+            computations, which may increase accuracy when large values, e.g.
+            UTM coordinates, are used.  When raytracing, src and rcv should be
+            given in the original system, and output raypath coordinates are
+            also given in the original system (default if False)
     """
     cdef bool cell_slowness
     cdef size_t _n_threads
     cdef char method
     cdef bool tt_from_rp
     cdef bool process_vel
+    cdef bool translate_grid
     cdef double eps
     cdef int maxit
     cdef int gradient_method
@@ -128,7 +135,8 @@ cdef class Mesh3d:
                   bool tt_from_rp=1, bool process_vel=0,
                   double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                  double radius_factor_tertiary=3.0):
+                  double radius_factor_tertiary=3.0,
+                  bool translate_grid=0):
 
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
@@ -141,6 +149,7 @@ cdef class Mesh3d:
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
+        self.translate_grid = translate_grid
 
         cdef double source_radius = 0.0
         cdef vector[sxyz[double]] pts_ref
@@ -186,13 +195,15 @@ cdef class Mesh3d:
                                                             pts_ref, 2,
                                                             gradient_method,
                                                             tt_from_rp,
-                                                            min_dist, n_threads)
+                                                            min_dist, n_threads,
+                                                            translate_grid)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Ducsp[double,uint32_t](self.no, self.tet,
                                                             n_secondary,
                                                             tt_from_rp,
-                                                            min_dist, n_threads)
+                                                            min_dist, n_threads,
+                                                            translate_grid)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Ducdsp[double,uint32_t](self.no, self.tet,
@@ -204,7 +215,8 @@ cdef class Mesh3d:
                                                              min_dist,
                                                              radius_factor_tertiary,
                                                              use_edge_length,
-                                                             n_threads)
+                                                             n_threads,
+                                                             translate_grid)
 
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
@@ -217,14 +229,16 @@ cdef class Mesh3d:
                                                             gradient_method,
                                                             process_vel,
                                                             tt_from_rp,
-                                                            min_dist, n_threads)
+                                                            min_dist, n_threads,
+                                                            translate_grid)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Dunsp[double,uint32_t](self.no, self.tet,
                                                             n_secondary,
                                                             process_vel,
                                                             tt_from_rp,
-                                                            min_dist, n_threads)
+                                                            min_dist, n_threads,
+                                                            translate_grid)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Dundsp[double,uint32_t](self.no, self.tet,
@@ -237,7 +251,8 @@ cdef class Mesh3d:
                                                              min_dist,
                                                              radius_factor_tertiary,
                                                              use_edge_length,
-                                                             n_threads)
+                                                             n_threads,
+                                                             translate_grid)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -268,7 +283,7 @@ cdef class Mesh3d:
                               self._n_threads, self.tt_from_rp, self.process_vel,
                               self.eps, self.maxit, self.gradient_method,
                               self.min_dist, self.n_secondary, self.n_tertiary,
-                              self.radius_factor_tertiary)
+                              self.radius_factor_tertiary, self.translate_grid)
         return (_rebuild3d, constructor_params)
 
     @property
@@ -1067,9 +1082,9 @@ cdef class Mesh3d:
                 bool tt_from_rp=1, bool process_vel=0,
                 double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                double radius_factor_tertiary=3.0):
+                double radius_factor_tertiary=3.0, bool translate_grid=0):
         """
-        builder(filename, n_threads, cell_slowness, method, gradient_method, tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary)
+        builder(filename, n_threads, cell_slowness, method, gradient_method, tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary, n_tertiary, radius_factor_tertiary, translate_grid=0)
 
         Build instance of Mesh3d from VTK file
 
@@ -1125,7 +1140,7 @@ cdef class Mesh3d:
 
         m = Mesh3d(nodes, tet, n_threads, cell_slowness, method, gradient_method,
                    tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary,
-                   n_tertiary, radius_factor_tertiary)
+                   n_tertiary, radius_factor_tertiary, translate_grid)
         m.set_slowness(slowness)
         return m
 
@@ -1799,11 +1814,11 @@ cdef class Mesh2d:
 def _rebuild3d(constructor_params):
     (nodes, tetra, method, cell_slowness, n_threads, tt_from_rp, process_vel, eps,
      maxit, gradient_method, min_dist, n_secondary, n_tertiary,
-     radius_factor_tertiary) = constructor_params
+     radius_factor_tertiary, translate_grid) = constructor_params
 
     g = Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method,
                tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary,
-               n_tertiary, radius_factor_tertiary)
+               n_tertiary, radius_factor_tertiary, translate_grid)
     return g
 
 def _rebuild2d(constructor_params):

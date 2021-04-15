@@ -22,7 +22,6 @@
  *
  */
 
-
 /*
  * Reference paper
  *
@@ -43,14 +42,14 @@
  *
  */
 
-#ifndef __GRID2DRCSP_H__
-#define __GRID2DRCSP_H__
+#ifndef ttcr_Grid2Drcsp_h
+#define ttcr_Grid2Drcsp_h
 
 #include "Grid2Drc.h"
 #include "Node2Dcsp.h"
 
 namespace ttcr {
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     class Grid2Drcsp : public Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL> {
     public:
@@ -63,36 +62,36 @@ namespace ttcr {
             buildGridNodes();
             this->template buildGridNeighbors<Node2Dcsp<T1,T2>>(this->nodes);
         }
-        
+
         virtual ~Grid2Drcsp() {
         }
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       const size_t threadNo=0) const;
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,
                       std::vector<std::vector<T1>*>& traveltimes,
                       const size_t threadNo=0) const;
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<S>>& r_data,
                       const size_t threadNo=0) const;
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,
                       std::vector<std::vector<T1>*>& traveltimes,
                       std::vector<std::vector<std::vector<S>>*>& r_data,
                       const size_t threadNo=0) const;
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -110,7 +109,7 @@ namespace ttcr {
 
         const T2 getNsnx() const { return nsnx; }
         const T2 getNsnz() const { return nsnz; }
-        
+
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             size_t nPrimary = (this->ncx+1) * (this->ncz+1);
             tt.resize(nPrimary);
@@ -120,7 +119,7 @@ namespace ttcr {
                 }
             }
         }
-        
+
     private:
         T2 nsnx;    // number of secondary nodes in x
         T2 nsnz;    // number of secondary nodes in z
@@ -132,21 +131,21 @@ namespace ttcr {
         Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
 
         void buildGridNodes();
-        
+
         void propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
                        std::vector<Node2Dcsp<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
-        
+
         void propagate_lw(std::priority_queue<Node2Dcsp<T1,T2>*,
                           std::vector<Node2Dcsp<T1,T2>*>,
                           CompareNodePtr<T1>>& queue,
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
                           const size_t threadNo) const;
-        
+
         void initQueue(const std::vector<S>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node2Dcsp<T1,T2>*,
@@ -156,7 +155,7 @@ namespace ttcr {
                        std::vector<bool>& inQueue,
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
-        
+
         void initBand(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       std::priority_queue<Node2Dcsp<T1,T2>*,
@@ -166,77 +165,77 @@ namespace ttcr {
                       std::vector<bool>& inQueue,
                       std::vector<bool>& frozen,
                       const size_t threadNo) const;
-        
+
         T1 get_tt_corr(const siv2<T1>& cell,
                        const Grid2Drcsp<T1,T2,S,CELL> *grid,
                        const size_t i) const {
             return cell.v*(this->slowness[cell.i] - grid->slowness[i]);
         }
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       const size_t threadNo) const;
-        
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,
                       const size_t threadNo=0) const;
-        
+
         T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
                          T2& nodeParentRx, T2& cellParentRx,
                          const size_t threadNo) const;
-        
+
     };
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::buildGridNodes() {
-        
+
         this->nodes.resize( // noeuds secondaires
                            this->ncx*nsnx*(this->ncz+1) +
                            this->ncz*nsnz*(this->ncx+1) +
                            // noeuds primaires
                            (this->ncx+1) * (this->ncz+1),
                            Node2Dcsp<T1,T2>(this->nThreads));
-        
+
         T1 dxs = this->dx/(nsnx+1);
         T1 dzs = this->dz/(nsnz+1);
-        
+
         T2 cell_upLeft = std::numeric_limits<T2>::max();
         T2 cell_upRight = std::numeric_limits<T2>::max();
         T2 cell_downLeft = 0;
         T2 cell_downRight = 0;
-        
+
         T2 n = 0;
         for ( T2 nc=0; nc<=this->ncx; ++nc ) {
-            
+
             T1 x = this->xmin + nc*this->dx;
-            
+
             for ( T2 nr=0; nr<=this->ncz; ++nr ) {
-                
+
                 T1 z = this->zmin + nr*this->dz;
-                
+
                 if ( nr < this->ncz && nc < this->ncx ) {
                     cell_downRight = nc*this->ncz + nr;
                 }
                 else {
                     cell_downRight = std::numeric_limits<T2>::max();
                 }
-                
+
                 if ( nr > 0 && nc < this->ncx ) {
                     cell_upRight = nc*this->ncz + nr - 1;
                 }
                 else {
                     cell_upRight = std::numeric_limits<T2>::max();
                 }
-                
+
                 if ( nr < this->ncz && nc > 0 ) {
                     cell_downLeft = (nc-1)*this->ncz + nr;
                 }
                 else {
                     cell_downLeft = std::numeric_limits<T2>::max();
                 }
-                
+
                 if ( nr > 0 && nc > 0 ) {
                     cell_upLeft = (nc-1)*this->ncz + nr - 1;
                 }
@@ -256,46 +255,46 @@ namespace ttcr {
                 if ( cell_downRight != std::numeric_limits<T2>::max() ) {
                     this->nodes[n].pushOwner( cell_downRight );
                 }
-                
+
                 this->nodes[n].setX( x );
                 this->nodes[n].setZ( z );
                 this->nodes[n].setGridIndex( n );
                 this->nodes[n].setPrimary(true);
-                
+
                 ++n;
             }
         }
-        
+
         // continue with secondary nodes
         for ( T2 nc=0; nc<=this->ncx; ++nc ) {
-            
+
             T1 x = this->xmin + nc*this->dx;
-            
+
             for ( T2 nr=0; nr<=this->ncz; ++nr ) {
-                
+
                 T1 z = this->zmin + nr*this->dz;
-                
+
                 if ( nr < this->ncz && nc < this->ncx ) {
                     cell_downRight = nc*this->ncz + nr;
                 }
                 else {
                     cell_downRight = std::numeric_limits<T2>::max();
                 }
-                
+
                 if ( nr > 0 && nc < this->ncx ) {
                     cell_upRight = nc*this->ncz + nr - 1;
                 }
                 else {
                     cell_upRight = std::numeric_limits<T2>::max();
                 }
-                
+
                 if ( nr < this->ncz && nc > 0 ) {
                     cell_downLeft = (nc-1)*this->ncz + nr;
                 }
                 else {
                     cell_downLeft = std::numeric_limits<T2>::max();
                 }
-                
+
                 if ( nr > 0 && nc > 0 ) {
                     cell_upLeft = (nc-1)*this->ncz + nr - 1;
                 }
@@ -315,27 +314,27 @@ namespace ttcr {
                         if ( cell_downRight != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_downRight );
                         }
-                        
+
                         this->nodes[n].setX( x );
                         this->nodes[n].setZ( zsv );
                         this->nodes[n].setGridIndex( n );
                         this->nodes[n].setPrimary(false);
                     }
                 }
-                
+
                 // secondary nodes on the horizontal
                 if ( nc < this->ncx ) {
                     for ( T2 ns=0; ns<nsnx; ++ns, ++n ) {
-                        
+
                         T1 xsh = this->xmin + nc*this->dx + (ns+1)*dxs;
-                        
+
                         if ( cell_upRight != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_upRight );
                         }
                         if ( cell_downRight != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_downRight );
                         }
-                        
+
                         this->nodes[n].setX( xsh );
                         this->nodes[n].setZ( z );
                         this->nodes[n].setGridIndex( n );
@@ -345,9 +344,9 @@ namespace ttcr {
             }
         }
     }
-    
-    
-    
+
+
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::initQueue(const std::vector<S>& Tx,
                                              const std::vector<T1>& t0,
@@ -358,7 +357,7 @@ namespace ttcr {
                                              std::vector<bool>& inQueue,
                                              std::vector<bool>& frozen,
                                              const size_t threadNo) const {
-        
+
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
             for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
@@ -378,15 +377,15 @@ namespace ttcr {
                 txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
                 txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+
                                                              txNodes.size()-1) );
-                
+
                 queue.push( &(txNodes.back()) );
                 inQueue.push_back( true );
                 frozen.push_back( true );
             }
         }
     }
-    
-    
+
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::initBand(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
@@ -397,7 +396,7 @@ namespace ttcr {
                                             std::vector<bool>& inBand,
                                             std::vector<bool>& frozen,
                                             const size_t threadNo) const {
-        
+
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
             for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
@@ -407,22 +406,22 @@ namespace ttcr {
                     narrow_band.push( &(this->nodes[nn]) );
                     inBand[nn] = true;
                     frozen[nn] = true;
-                    
+
                     if ( Tx.size()==1 ) {
                         // populate around Tx
                         for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
-                            
+
                             T2 cellNo = this->nodes[nn].getOwners()[no];
                             for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                                 T2 neibNo = this->neighbors[cellNo][k];
                                 if ( neibNo == nn ) continue;
                                 T1 dt = this->cells.computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
-                                
+
                                 if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                                     this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                                     this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
                                     this->nodes[neibNo].setCellParent(cellNo, threadNo );
-                                    
+
                                     if ( !inBand[neibNo] ) {
                                         narrow_band.push( &(this->nodes[neibNo]) );
                                         inBand[neibNo] = true;
@@ -436,78 +435,79 @@ namespace ttcr {
                 }
             }
             if ( found==false ) {
-                
+
                 T2 cellNo = getCellNo(Tx[n]);
                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                     T2 neibNo = this->neighbors[cellNo][k];
-                    
+
                     // compute dt
                     T1 dt = this->cells.computeDt(this->nodes[neibNo], Tx[n], cellNo);
-                    
+
                     this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                     narrow_band.push( &(this->nodes[neibNo]) );
                     inBand[neibNo] = true;
                     frozen[neibNo] = true;
-                    
+
                 }
             }
         }
     }
-    
-    
+
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         this->checkPts(Rx);
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
-        
+
         std::vector<Node2Dcsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate_lw(queue, inQueue, frozen, threadNo);
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             const size_t threadNo) const {
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
+        for ( size_t n=0; n<Rx.size(); ++n ) {
             this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
-        
+
         std::vector<Node2Dcsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate_lw(queue, inQueue, frozen, threadNo);
-        
+
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
@@ -516,7 +516,7 @@ namespace ttcr {
                                             const size_t threadNo) const {
         // this to make sure that we are no use tt_from _rp
         raytrace(Tx, t0, Rx, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
@@ -539,8 +539,9 @@ namespace ttcr {
         }
         for (size_t nr=0; nr<Rx.size(); ++nr) {
             traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n)
+            for (size_t n=0; n<Rx[nr]->size(); ++n) {
                 (*traveltimes[nr])[n] = Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>::getTraveltime((*Rx[nr])[n], threadNo);
+            }
         }
     }
 
@@ -551,25 +552,25 @@ namespace ttcr {
                                             std::vector<T1>& traveltimes,
                                             std::vector<std::vector<S>>& r_data,
                                             const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
         std::vector<Node2Dcsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
@@ -581,7 +582,7 @@ namespace ttcr {
         }
         T2 nodeParentRx;
         T2 cellParentRx;
-        
+
         for (size_t n=0; n<Rx.size(); ++n) {
 
             // check if Rx is on one of Tx nodes
@@ -596,30 +597,30 @@ namespace ttcr {
             }
             if (foundTx)
                 continue;
-            
+
             traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
                                            threadNo);
-            
+
             // Rx are in nodes (not txNodes)
             std::vector<Node2Dcsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
-            
+
             std::vector<sxz<double>> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             sxz<double> child;
-            
+
             // store the son's coord
             child.x = Rx[n].x;
             child.z = Rx[n].z;
             while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
-                
+
                 r_tmp.push_back( child );
-                
+
                 // we now go up in time - parent becomes the child of grand'pa
                 iChild = iParent;
                 child.x = (*node_p)[iChild].getX();
                 child.z = (*node_p)[iChild].getZ();
-                
+
                 // grand'pa is now papa
                 iParent = (*node_p)[iChild].getNodeParent(threadNo);
                 if ( iParent >= this->nodes.size() ) {
@@ -630,15 +631,15 @@ namespace ttcr {
                     node_p = &(this->nodes);
                 }
             }
-            
+
             // parent is now at Tx
             r_tmp.push_back( child );
-            
+
             // finally, store Tx position
             child.x = (*node_p)[iParent].getX();
             child.z = (*node_p)[iParent].getZ();
             r_tmp.push_back( child );
-            
+
             // the order should be from Tx to Rx, so we reorder...
             iParent = static_cast<T2>(r_tmp.size());
             r_data[n].resize( r_tmp.size() );
@@ -648,7 +649,7 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
@@ -656,47 +657,48 @@ namespace ttcr {
                                             std::vector<std::vector<T1>*>& traveltimes,
                                             std::vector<std::vector<std::vector<S>>*>& r_data,
                                             const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
-        for ( size_t n=0; n<Rx.size(); ++n )
+        for ( size_t n=0; n<Rx.size(); ++n ) {
             this->checkPts(*Rx[n]);
+        }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
-        
+
         std::vector<Node2Dcsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
         if ( r_data.size() != Rx.size() ) {
             r_data.resize( Rx.size() );
         }
-        
+
         for (size_t nr=0; nr<Rx.size(); ++nr) {
-            
+
             traveltimes[nr]->resize( Rx[nr]->size() );
             r_data[nr]->resize( Rx[nr]->size() );
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
-            
+
             T2 nodeParentRx;
             T2 cellParentRx;
-            
+
             for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                
+
                 // check if Rx is on one of Tx nodes
                 bool foundTx = false;
                 for (size_t nt=0; nt<Tx.size(); ++nt) {
@@ -709,46 +711,46 @@ namespace ttcr {
                 }
                 if (foundTx)
                     continue;
-                
+
                 (*traveltimes[nr])[n] = getTraveltime((*Rx[nr])[n], this->nodes,
                                                       nodeParentRx, cellParentRx,
                                                       threadNo);
-                
+
                 bool flag=false;
                 for ( size_t ns=0; ns<Tx.size(); ++ns ) {
                     if ( (*Rx[nr])[n] == Tx[ns] ) {
-                        
+
                         (*r_data[nr])[n].resize( 1 );
                         (*r_data[nr])[n][0].x = (*Rx[nr])[n].x;
                         (*r_data[nr])[n][0].z = (*Rx[nr])[n].z;
-                        
+
                         flag = true;
                         break;
                     }
                 }
                 if ( flag ) continue;
-                
+
                 // Rx are in nodes (not txNodes)
                 std::vector<Node2Dcsp<T1,T2>> *node_p;
                 node_p = &(this->nodes);
-                
+
                 std::vector<S> r_tmp;
                 T2 iChild, iParent = nodeParentRx;
                 S child;
-                
+
                 // store the son's coord
                 child.x = (*Rx[nr])[n].x;
                 child.z = (*Rx[nr])[n].z;
                 while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                        std::numeric_limits<T2>::max() ) {
-                    
+
                     r_tmp.push_back( child );
-                    
+
                     // we now go up in time - parent becomes the child of grand'pa
                     iChild = iParent;
                     child.x = (*node_p)[iChild].getX();
                     child.z = (*node_p)[iChild].getZ();
-                    
+
                     // grand'pa is now papa
                     iParent = (*node_p)[iChild].getNodeParent(threadNo);
                     if ( iParent >= this->nodes.size() ) {
@@ -759,15 +761,15 @@ namespace ttcr {
                         node_p = &(this->nodes);
                     }
                 }
-                
+
                 // parent is now at Tx
                 r_tmp.push_back( child );
-                
+
                 // finally, store Tx position
                 child.x = (*node_p)[iParent].getX();
                 child.z = (*node_p)[iParent].getZ();
                 r_tmp.push_back( child );
-                
+
                 // the order should be from Tx to Rx, so we reorder...
                 iParent = static_cast<T2>(r_tmp.size());
                 (*r_data[nr])[n].resize( r_tmp.size() );
@@ -775,11 +777,11 @@ namespace ttcr {
                     (*r_data[nr])[n][nn].x = r_tmp[ iParent-1-nn ].x;
                     (*r_data[nr])[n][nn].z = r_tmp[ iParent-1-nn ].z;
                 }
-                
+
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
@@ -788,25 +790,25 @@ namespace ttcr {
                                             std::vector<std::vector<sxz<double>>>& r_data,
                                             std::vector<std::vector<siv2<double>>>& l_data,
                                             const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
         std::vector<Node2Dcsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
@@ -824,29 +826,29 @@ namespace ttcr {
         }
         T2 nodeParentRx;
         T2 cellParentRx;
-        
+
         for (size_t n=0; n<Rx.size(); ++n) {
-            
+
             traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
                                            threadNo);
-            
+
             // Rx are in nodes (not txNodes)
             std::vector<Node2Dcsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
-            
+
             std::vector<sxz<double>> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             sxz<double> child;
             siv2<double> cell;
-            
+
             // store the son's coord
             child.x = Rx[n].x;
             child.z = Rx[n].z;
             cell.i = cellParentRx;
             while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
-                
+
                 r_tmp.push_back( child );
-                
+
                 //cell.v = (*node_p)[iParent].getDistance( child );
                 this->cells.computeDistance( (*node_p)[iParent], child, cell);
                 bool found=false;
@@ -860,13 +862,13 @@ namespace ttcr {
                 if ( found == false ) {
                     l_data[n].push_back( cell );
                 }
-                
+
                 // we now go up in time - parent becomes the child of grand'pa
                 iChild = iParent;
                 child.x = (*node_p)[iChild].getX();
                 child.z = (*node_p)[iChild].getZ();
                 cell.i = (*node_p)[iChild].getCellParent(threadNo);
-                
+
                 // grand'pa is now papa
                 iParent = (*node_p)[iChild].getNodeParent(threadNo);
                 if ( iParent >= this->nodes.size() ) {
@@ -877,10 +879,10 @@ namespace ttcr {
                     node_p = &(this->nodes);
                 }
             }
-            
+
             // parent is now at Tx
             r_tmp.push_back( child );
-            
+
             //cell.v = (*node_p)[iParent].getDistance( child );
             this->cells.computeDistance( (*node_p)[iParent], child, cell);
             bool found=false;
@@ -894,15 +896,15 @@ namespace ttcr {
             if ( found == false ) {
                 l_data[n].push_back( cell );
             }
-            
+
             // finally, store Tx position
             child.x = (*node_p)[iParent].getX();
             child.z = (*node_p)[iParent].getZ();
             r_tmp.push_back( child );
-            
+
             //  must be sorted to build matrix L
             sort(l_data[n].begin(), l_data[n].end(), CompareSiv2_i<T1>());
-            
+
             // the order should be from Tx to Rx, so we reorder...
             iParent = static_cast<T2>(r_tmp.size());
             r_data[n].resize( r_tmp.size() );
@@ -912,7 +914,7 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
@@ -920,25 +922,25 @@ namespace ttcr {
                                             std::vector<T1>& traveltimes,
                                             std::vector<std::vector<siv2<double>>>& l_data,
                                             const size_t threadNo) const {
-        
+
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
-        
+
         CompareNodePtr<T1> cmp(threadNo);
         std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
         CompareNodePtr<T1>> queue( cmp );
         std::vector<Node2Dcsp<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
-        
+
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
@@ -950,26 +952,26 @@ namespace ttcr {
         }
         T2 nodeParentRx;
         T2 cellParentRx;
-        
+
         for (size_t n=0; n<Rx.size(); ++n) {
-            
+
             traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx,
                                            cellParentRx, threadNo);
-            
+
             // Rx are in nodes (not txNodes)
             std::vector<Node2Dcsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
-            
+
             T2 iChild, iParent = nodeParentRx;
             sxz<double> child;
             siv2<double> cell;
-            
+
             // store the son's coord
             child.x = Rx[n].x;
             child.z = Rx[n].z;
             cell.i = cellParentRx;
             while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
-                
+
                 this->cells.computeDistance( (*node_p)[iParent], child, cell);
                 bool found=false;
                 for (size_t nc=0; nc<l_data[n].size(); ++nc) {
@@ -982,13 +984,13 @@ namespace ttcr {
                 if ( found == false ) {
                     l_data[n].push_back( cell );
                 }
-                
+
                 // we now go up in time - parent becomes the child of grand'pa
                 iChild = iParent;
                 child.x = (*node_p)[iChild].getX();
                 child.z = (*node_p)[iChild].getZ();
                 cell.i = (*node_p)[iChild].getCellParent(threadNo);
-                
+
                 // grand'pa is now papa
                 iParent = (*node_p)[iChild].getNodeParent(threadNo);
                 if ( iParent >= this->nodes.size() ) {
@@ -999,9 +1001,9 @@ namespace ttcr {
                     node_p = &(this->nodes);
                 }
             }
-            
+
             // parent is now at Tx
-           
+
             //cell.v = (*node_p)[iParent].getDistance( child );
             this->cells.computeDistance( (*node_p)[iParent], child, cell);
             bool found=false;
@@ -1015,16 +1017,16 @@ namespace ttcr {
             if ( found == false ) {
                 l_data[n].push_back( cell );
             }
-            
+
             // finally, store Tx position
             child.x = (*node_p)[iParent].getX();
             child.z = (*node_p)[iParent].getZ();
-            
+
             //  must be sorted to build matrix L
             sort(l_data[n].begin(), l_data[n].end(), CompareSiv2_i<T1>());
         }
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::propagate(std::priority_queue<Node2Dcsp<T1,T2>*,
                                              std::vector<Node2Dcsp<T1,T2>*>,
@@ -1032,31 +1034,31 @@ namespace ttcr {
                                              std::vector<bool>& inQueue,
                                              std::vector<bool>& frozen,
                                              const size_t threadNo) const {
-        
+
         while ( !queue.empty() ) {
             const Node2Dcsp<T1,T2>* source = queue.top();
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
             frozen[ source->getGridIndex() ] = true;
-            
+
             for ( size_t no=0; no<source->getOwners().size(); ++no ) {
-                
+
                 T2 cellNo = source->getOwners()[no];
-                
+
                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                     T2 neibNo = this->neighbors[cellNo][k];
                     if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
                         continue;
                     }
-                    
+
                     // compute dt
                     T1 dt = this->cells.computeDt(*source, this->nodes[neibNo], cellNo);
-                    
+
                     if ( source->getTT(threadNo)+dt < this->nodes[neibNo].getTT(threadNo) ) {
                         this->nodes[neibNo].setTT( source->getTT(threadNo)+dt, threadNo );
                         this->nodes[neibNo].setnodeParent( source->getGridIndex(), threadNo );
                         this->nodes[neibNo].setCellParent( cellNo, threadNo );
-                        
+
                         if ( !inQueue[neibNo] ) {
                             queue.push( &(this->nodes[neibNo]) );
                             inQueue[neibNo] = true;
@@ -1066,7 +1068,7 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::propagate_lw(std::priority_queue<Node2Dcsp<T1,T2>*,
                                                 std::vector<Node2Dcsp<T1,T2>*>,
@@ -1080,7 +1082,7 @@ namespace ttcr {
             queue.pop();
             inQueue[ source->getGridIndex() ] = false;
             frozen[ source->getGridIndex() ] = true;
-            
+
             for ( size_t no=0; no<source->getOwners().size(); ++no ) {
                 T2 cellNo = source->getOwners()[no];
                 for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
@@ -1088,10 +1090,10 @@ namespace ttcr {
                     if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
                         continue;
                     }
-                    
+
                     // compute dt
                     T1 dt = this->cells.computeDt(*source, this->nodes[neibNo], cellNo);
-                    
+
                     if ( source->getTT(threadNo)+dt < this->nodes[neibNo].getTT(threadNo) ) {
                         this->nodes[neibNo].setTT( source->getTT(threadNo)+dt, threadNo );
                         if ( !inQueue[neibNo] ) {
@@ -1103,13 +1105,13 @@ namespace ttcr {
             }
         }
     }
-    
+
     template<typename T1, typename T2, typename S, typename CELL>
     T1 Grid2Drcsp<T1,T2,S,CELL>::getTraveltime(const S& Rx,
                                                const std::vector<Node2Dcsp<T1,T2>>& nodes,
                                                T2& nodeParentRx, T2& cellParentRx,
                                                const size_t threadNo) const {
-        
+
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {
             if ( nodes[nn] == Rx ) {
                 nodeParentRx = nodes[nn].getNodeParent(threadNo);
@@ -1117,11 +1119,11 @@ namespace ttcr {
                 return nodes[nn].getTT(threadNo);
             }
         }
-        
+
         T2 cellNo = this->getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];
         T1 dt = this->cells.computeDt(nodes[neibNo], Rx, cellNo);
-        
+
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         nodeParentRx = neibNo;
         cellParentRx = cellNo;
@@ -1135,7 +1137,7 @@ namespace ttcr {
         }
         return traveltime;
     }
-    
+
 }
 
 #endif

@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _MSHReader_h
-#define _MSHReader_h
+#ifndef ttcr_MSHReader_h
+#define ttcr_MSHReader_h
 
 #include <fstream>
 #include <string>
@@ -35,7 +35,7 @@
 #include "ttcr_t.h"
 
 namespace ttcr {
-    
+
     // A class to read Gmsh's native "MSH" ASCII format
     class MSHReader {
     public:
@@ -44,18 +44,20 @@ namespace ttcr {
         physicalIndices(std::vector<std::vector<int>>(4)){
             valid = checkFormat();
         }
-        
+
         bool isValid() const { return valid; }
-        
+
         void setFilename(const char *fname) {  // we reset the reader
             filename = fname;
             valid = checkFormat();
-            for ( auto it=physicalNames.begin(); it!=physicalNames.end(); ++it )
+            for ( auto it=physicalNames.begin(); it!=physicalNames.end(); ++it ) {
                 it->clear();
-            for ( auto it = physicalIndices.begin(); it!=physicalIndices.end(); ++it )
+            }
+            for ( auto it = physicalIndices.begin(); it!=physicalIndices.end(); ++it ) {
                 it->clear();
+            }
         }
-        
+
         bool is2D() const {
             std::vector<sxyz<double>> nodes;
             readNodes3D(nodes);
@@ -78,7 +80,7 @@ namespace ttcr {
             }
             return ymin == ymax || zmin == zmax;
         }
-        
+
         int get2Ddim() const {
             std::vector<sxyz<double>> nodes;
             readNodes3D(nodes);
@@ -114,7 +116,7 @@ namespace ttcr {
             }
             return 0;
         }
-        
+
         size_t getNumberOfElements() {
             std::ifstream fin(filename.c_str());
             std::string line;
@@ -129,7 +131,7 @@ namespace ttcr {
             fin.close();
             return nElements;
         }
-        
+
         size_t getNumberOfNodes() const {
             std::ifstream fin(filename.c_str());
             std::string line;
@@ -144,7 +146,7 @@ namespace ttcr {
             fin.close();
             return nNodes;
         }
-        
+
         //
         // Return names of physical entities and their corresponding indices
         //  Note: indices start at 0, not 1 like in MSH file
@@ -155,14 +157,14 @@ namespace ttcr {
             }
             return physicalNames[i];
         }
-        
+
         const std::vector<int>& getPhysicalIndices(size_t i=3) const {
             if ( physicalIndices[i].empty() ) {
                 readPhysicalNames(i);
             }
             return physicalIndices[i];
         }
-        
+
         size_t getNumberOfLines() const {
             return getNumberOfElements(1);
         }
@@ -172,9 +174,9 @@ namespace ttcr {
         size_t getNumberOfTetra() const {
             return getNumberOfElements(4);
         }
-        
-        
-        
+
+
+
         template<typename T>
         void readNodes2D(std::vector<sxz<T>>& nodes, const int d) const {
             std::ifstream fin(filename.c_str());
@@ -198,7 +200,7 @@ namespace ttcr {
             }
             fin.close();
         }
-        
+
         template<typename T>
         void readNodes3D(std::vector<sxyz<T>>& nodes) const {
             std::ifstream fin(filename.c_str());
@@ -220,7 +222,7 @@ namespace ttcr {
             }
             fin.close();
         }
-        
+
         template<typename T>
         void readLineElements(std::vector<lineElem<T>>& lineElem) const {
             std::ifstream fin(filename.c_str());
@@ -260,7 +262,7 @@ namespace ttcr {
             }
             fin.close();
         }
-        
+
         template<typename T>
         void readTriangleElements(std::vector<triangleElem<T>>& tri) const {
             std::ifstream fin(filename.c_str());
@@ -302,7 +304,7 @@ namespace ttcr {
             }
             fin.close();
         }
-        
+
         template<typename T>
         void readTetrahedronElements(std::vector<tetrahedronElem<T>>& tet) const {
             std::ifstream fin(filename.c_str());
@@ -346,7 +348,7 @@ namespace ttcr {
             }
             fin.close();
         }
-        
+
         double getVersion() const {
             std::ifstream fin(filename.c_str());
             std::string line;
@@ -361,13 +363,13 @@ namespace ttcr {
             }
             return version;
         }
-        
+
     private:
         std::string filename;
         bool valid;
         mutable std::vector<std::vector<std::string>> physicalNames;
         mutable std::vector<std::vector<int>> physicalIndices;
-        
+
         bool checkFormat() const {
             bool format_ok = false;
             std::ifstream fin;
@@ -395,11 +397,11 @@ namespace ttcr {
             }
             return format_ok;
         }
-        
+
         void readPhysicalNames(const size_t dim) const {
             std::ifstream fin(filename.c_str());
             std::string line;
-            
+
             while ( fin ) {
                 getline( fin, line );
                 if ( line.find("$PhysicalNames") != std::string::npos ) {
@@ -422,9 +424,9 @@ namespace ttcr {
             }
             fin.close();
         }
-                
+
         size_t getNumberOfElements(const int type) const {
-            
+
             std::ifstream fin(filename.c_str());
             std::string line;
             size_t tmp;
@@ -449,7 +451,7 @@ namespace ttcr {
             return nElem;
         }
     };
-    
+
 }
 
 #endif

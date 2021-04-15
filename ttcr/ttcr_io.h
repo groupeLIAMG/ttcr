@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef __ttcr__ttcr_io__
-#define __ttcr__ttcr_io__
+#ifndef ttcr_ttcr_io_h
+#define ttcr_ttcr_io_h
 
 #include <iostream>
 #include <string>
@@ -33,11 +33,11 @@
 #include "structs_ttcr.h"
 
 namespace ttcr {
-    
+
     void print_usage (std::ostream&, char *, int);
     std::string parse_input(int argc, char * argv[], input_parameters &);
     void get_params(const std::string &, input_parameters &);
-    
+
     class AtomicWriter {
         std::ostringstream st;
         std::ostream &stream;

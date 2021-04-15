@@ -73,7 +73,7 @@ cdef class Grid3d:
 
     Constructor:
 
-    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0) -> Grid3d
+    Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False) -> Grid3d
 
         Parameters
         ----------
@@ -118,6 +118,12 @@ cdef class Grid3d:
             multiplication factor used to compute radius of sphere around source
             that includes tertiary nodes (DSPM).  The radius is the average edge
             length multiplied by this factor (default is 3)
+        translate_grid : bool
+            Translate the grid such that origin is (0, 0, 0) to perform
+            computations, which may increase accuracy when large values, e.g.
+            UTM coordinates, are used.  When raytracing, src and rcv should be
+            given in the original system, and output raypath coordinates are
+            also given in the original system (default if False)
     """
     cdef vector[double] _x
     cdef vector[double] _y
@@ -130,6 +136,7 @@ cdef class Grid3d:
     cdef char method
     cdef bool tt_from_rp
     cdef bool interp_vel
+    cdef bool translate_grid
     cdef double eps
     cdef int maxit
     cdef bool weno
@@ -150,7 +157,8 @@ cdef class Grid3d:
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
-                  double radius_factor_tertiary=3.0):
+                  double radius_factor_tertiary=3.0,
+                  bool translate_grid=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t ny = y.size-1
@@ -174,7 +182,8 @@ cdef class Grid3d:
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
-        
+        self.translate_grid = translate_grid
+
         cdef use_edge_length = True
 
         if method == 'FSM':
@@ -198,7 +207,8 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             eps, maxit, weno,
                                                             tt_from_rp, interp_vel,
-                                                            n_threads)
+                                                            n_threads,
+                                                            translate_grid)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Drcsp[double,uint32_t,Cell[double,Node3Dcsp[double,uint32_t],sxyz[double]]](nx, ny, nz,
@@ -206,7 +216,8 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             nsnx, nsny, nsnz,
                                                             tt_from_rp,
-                                                            n_threads)
+                                                            n_threads,
+                                                            translate_grid)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Drcdsp[double,uint32_t,Cell[double,Node3Dc[double,uint32_t],sxyz[double]]](nx, ny, nz,
@@ -214,7 +225,8 @@ cdef class Grid3d:
                                                            xmin, ymin, zmin,
                                                            n_secondary, tt_from_rp,
                                                            n_tertiary, radius_factor_tertiary,
-                                                           use_edge_length, n_threads)
+                                                           use_edge_length, n_threads,
+                                                           translate_grid)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
@@ -224,7 +236,8 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             eps, maxit, weno,
                                                             tt_from_rp, interp_vel,
-                                                            n_threads)
+                                                            n_threads,
+                                                            translate_grid)
             elif method == 'SPM':
                 self.method = b's'
                 self.grid = new Grid3Drnsp[double,uint32_t](nx, ny, nz,
@@ -232,7 +245,8 @@ cdef class Grid3d:
                                                             xmin, ymin, zmin,
                                                             nsnx, nsny, nsnz,
                                                             tt_from_rp, interp_vel,
-                                                            n_threads)
+                                                            n_threads,
+                                                            translate_grid)
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Drndsp[double,uint32_t](nx, ny, nz,
@@ -241,7 +255,8 @@ cdef class Grid3d:
                                                              n_secondary, tt_from_rp,
                                                              n_tertiary, radius_factor_tertiary,
                                                              interp_vel, use_edge_length,
-                                                             n_threads)
+                                                             n_threads,
+                                                             translate_grid)
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
 
@@ -260,7 +275,7 @@ cdef class Grid3d:
                               self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
-                              self.radius_factor_tertiary)
+                              self.radius_factor_tertiary, self.translate_grid)
         return (_rebuild3d, (self.x, self.y, self.z, constructor_params))
 
     @property
@@ -1254,11 +1269,15 @@ cdef class Grid3d:
 
 
     @staticmethod
-    def builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0,
-                eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5,
-                n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0):
+    def builder(filename, size_t n_threads=1, str method='FSM',
+                bool tt_from_rp=1, bool interp_vel=0,
+                double eps=1.e-15, int maxit=20, bool weno=1,
+                uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
+                uint32_t n_secondary=2, uint32_t n_tertiary=2,
+                double radius_factor_tertiary=3.0,
+                bool translate_grid=0):
         """
-        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0)
+        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=0)
 
         Build instance of Grid3d from VTK file
 
@@ -1310,7 +1329,8 @@ cdef class Grid3d:
 
         g = Grid3d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                    interp_vel, eps, maxit, weno, nsnx, nsny, nsnz,
-                   n_secondary, n_tertiary, radius_factor_tertiary)
+                   n_secondary, n_tertiary, radius_factor_tertiary,
+                   translate_grid)
         g.set_slowness(slowness)
         return g
 
@@ -1872,7 +1892,7 @@ cdef class Grid2d:
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
         self.tt_from_rp = tt_from_rp
-        
+
         cdef use_edge_length = True
 
         for val in x:
@@ -3207,10 +3227,10 @@ cdef class Grid2d:
 def _rebuild3d(x, y, z, constructor_params):
     (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
      weno, nsnx, nsny, nsnz, n_secondary,
-     n_tertiary, radius_factor_tertiary) = constructor_params
+     n_tertiary, radius_factor_tertiary, translate_grid) = constructor_params
     g = Grid3d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
-               n_tertiary, radius_factor_tertiary)
+               n_tertiary, radius_factor_tertiary, translate_grid)
     return g
 
 def _rebuild2d(x, z, constructor_params):

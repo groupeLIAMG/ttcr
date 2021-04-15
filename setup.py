@@ -3,27 +3,48 @@
 
 import platform
 import os
+import subprocess
 import numpy as np
 from setuptools import setup
+from setuptools.command.build_ext import build_ext
 from setuptools.extension import Extension
 from Cython.Build import cythonize
+
+class custom_build_ext(build_ext):
+    def build_extensions(self):
+        # Override the compiler executables. Importantly, this
+        # removes the "default" compiler flags that would
+        # otherwise get passed on to to the compiler, i.e.,
+        # distutils.sysconfig.get_var("CFLAGS").
+        # Done here to remove "-Wsign-compare"
+        if platform.system() == 'Darwin':
+            self.compiler.set_executable("compiler_so", "/usr/bin/clang")
+            self.compiler.set_executable("compiler_cxx", "/usr/bin/clang++")
+            self.compiler.set_executable("linker_so", "/usr/bin/clang++")
+        build_ext.build_extensions(self)
+
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 if platform.system() == 'Darwin':
-    os.environ['CC'] = 'clang'
-    os.environ['CXX'] = 'clang++'
-#    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '11.1'
-    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3']
+    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3',
+                          '-Wno-unused-result', '-Wunreachable-code',
+                          '-fno-common', '-dynamic', '-DNDEBUG', '-fwrapv',
+                          '-pipe', '-isysroot/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk']
+    extra_link_args = ['-bundle', '-undefined', 'dynamic_lookup',
+                       '-L/opt/local/lib', '-Wl,-headerpad_max_install_names',
+                       '-Wl,-syslibroot,/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk']
 elif platform.system() == 'Windows':
     extra_compile_args = ['/O2']
+    extra_link_args = []
 elif platform.system() == 'Linux':
     if 'readthedocs.org/user_builds/ttcrpy' in os.path.dirname(__file__):
         # do not optimize when building on readthedocs server
         extra_compile_args = ['-std=c++11', '-O0']
     else:
         extra_compile_args = ['-std=c++11', '-O3']
+    extra_link_args = []
 
 include_dirs = ['ttcr', 'boost_1_72_0', 'eigen-3.3.7', np.get_include()]
 
@@ -33,12 +54,14 @@ extensions = [
               include_dirs=include_dirs,
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
+              extra_link_args=extra_link_args,
               ),
     Extension('ttcrpy.tmesh',
               sources=['ttcrpy/tmesh.pyx', 'ttcrpy/verbose.cpp'],  # additional source file(s)
               include_dirs=include_dirs,
               language='c++',             # generate C++ code
               extra_compile_args=extra_compile_args,
+              extra_link_args=extra_link_args,
               ),
 ]
 
@@ -69,5 +92,6 @@ setup(
     package_data={
         # If any package contains *.txt or *.rst files, include them:
         "": ["docs/*.md"],
-        }
+        },
+    cmdclass={"build_ext": custom_build_ext}
 )

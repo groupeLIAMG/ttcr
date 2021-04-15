@@ -40,15 +40,18 @@
 #include "ttcr_t.h"
 
 namespace ttcr {
-    
+
     template<typename T1, typename T2>
     class Grid3D {
     public:
         Grid3D(const bool ttrp,
                const size_t ncells,
                const size_t nt=1,
-               const bool up=1) :
-        nThreads(nt), usePool(up), tt_from_rp(ttrp),
+               const bool _translateOrigin=false,
+               const bool _usePool=1) :
+        usePool(_usePool), nThreads(nt), tt_from_rp(ttrp),
+        translateOrigin(_translateOrigin),
+        origin({0.0, 0.0, 0.0}),
         neighbors(std::vector<std::vector<T2>>(ncells))
         {
             if ( nThreads > 1 && usePool ) {
@@ -57,7 +60,7 @@ namespace ttcr {
         }
 
         virtual ~Grid3D() {}
-        
+
         // operators: for usage with thread pool
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
@@ -65,7 +68,7 @@ namespace ttcr {
                         std::vector<T1>& traveltimes) const {
             this->raytrace(Tx, t0, Rx, traveltimes, id);
         }
-        
+
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -73,7 +76,7 @@ namespace ttcr {
                         std::vector<std::vector<sxyz<T1>>>& r_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, id);
         }
-        
+
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -81,7 +84,7 @@ namespace ttcr {
                         std::vector<std::vector<sijv<T1>>>& m_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, m_data, id);
         }
-        
+
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -90,7 +93,7 @@ namespace ttcr {
                         std::vector<std::vector<sijv<T1>>>& m_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, m_data, id);
         }
-        
+
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -98,7 +101,7 @@ namespace ttcr {
                         std::vector<std::vector<siv<T1>>>& l_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, l_data, id);
         }
-        
+
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -107,33 +110,33 @@ namespace ttcr {
                         std::vector<std::vector<siv<T1>>>& l_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, id);
         }
-        
+
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
                               std::vector<T1>& traveltimes,
                               const size_t threadNo=0) const;
-        
+
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
-                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                              const std::vector<std::vector<sxyz<T1>>>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
                               const size_t threadNo=0) const;
-        
+
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
                               std::vector<T1>& traveltimes,
                               std::vector<std::vector<sxyz<T1>>>& r_data,
                               const size_t threadNo=0) const;
-        
+
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
-                              const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                              const std::vector<std::vector<sxyz<T1>>>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
                               std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                               const size_t threadNo=0) const;
-        
+
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -166,42 +169,42 @@ namespace ttcr {
 
         // methods for threaded raytracing
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                       const std::vector<std::vector<T1>>& t0,
-                       const std::vector<std::vector<sxyz<T1>>>& Rx,
-                       std::vector<std::vector<T1>>& traveltimes) const;
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes) const;
 
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                       const std::vector<std::vector<T1>>& t0,
-                       const std::vector<std::vector<sxyz<T1>>>& Rx,
-                       std::vector<std::vector<T1>>& traveltimes,
-                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const;
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const;
 
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                       const std::vector<std::vector<T1>>& t0,
-                       const std::vector<std::vector<sxyz<T1>>>& Rx,
-                       std::vector<std::vector<T1>>& traveltimes,
-                       std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
 
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                       const std::vector<std::vector<T1>>& t0,
-                       const std::vector<std::vector<sxyz<T1>>>& Rx,
-                       std::vector<std::vector<T1>>& traveltimes,
-                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
-                       std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                      std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
 
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                       const std::vector<std::vector<T1>>& t0,
-                       const std::vector<std::vector<sxyz<T1>>>& Rx,
-                       std::vector<std::vector<T1>>& traveltimes,
-                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
 
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
-                       const std::vector<std::vector<T1>>& t0,
-                       const std::vector<std::vector<sxyz<T1>>>& Rx,
-                       std::vector<std::vector<T1>>& traveltimes,
-                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
-                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
-        
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
+                      std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+
         virtual void getStraightRays(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<std::vector<siv<T1>>>& l_data) const {
@@ -217,15 +220,15 @@ namespace ttcr {
         }
         virtual void setChi(const std::vector<T1>& x) {}
         virtual void setPsi(const std::vector<T1>& x) {}
-        
+
         virtual void setSourceRadius(const double) {}
-        
+
         virtual size_t getNumberOfNodes() const { return 1; }
         virtual size_t getNumberOfCells() const { return 1; }
         virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             throw std::runtime_error("Method should be implemented in subclass");
         }
-        
+
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}
         virtual void loadTT(const std::string &, const int, const size_t nt=0,
@@ -279,43 +282,43 @@ namespace ttcr {
 
         virtual const int get_niter() const { return 0; }
         virtual const int get_niterw() const { return 0; }
-        
+
         const size_t getNthreads() const { return nThreads; }
-        
+
         virtual void dump_secondary(std::ofstream&) const {}
 
         virtual T1 computeSlowness(const sxyz<T1>&) const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
-        
+
         void setUsePool(const bool up) {
             usePool = up;
             if ( nThreads > 1 && usePool && pool.size() != nThreads ) {
                 pool.resize(static_cast<int>(nThreads));
             }
         }
-        
+
         void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
-        
+
         virtual void checkPts(const std::vector<sxyz<T1>>&) const {
             throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
-        
+
         virtual void computeD(const std::vector<sxyz<T1>> &pts,
                               std::vector<std::vector<sijv<T1>>> &d_data) const {
             throw std::runtime_error("Method computeD should be implemented in subclass");
         }
-        
+
         virtual void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                               const int order, const int taylorSeriesOrder,
                               const bool weighting, const bool s0inside) const {
             throw std::runtime_error("Method computeK should be implemented in subclass");
         }
-        
+
         virtual const T1 getAverageEdgeLength() const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
-        
+
 #ifdef VTK
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,
                                   const bool savePhysicalEntity=false) const {}
@@ -327,6 +330,8 @@ namespace ttcr {
     protected:
         size_t nThreads;         // number of threads
         bool tt_from_rp;
+        bool translateOrigin;
+        sxyz<T1> origin;
         std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
 
         template<typename N>
@@ -347,9 +352,9 @@ namespace ttcr {
         }
 
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
-                      const size_t threadNo=0) const {
+                              const std::vector<T1>& t0,
+                              const std::vector<std::vector<sxyz<T1>>>& Rx,
+                              const size_t threadNo=0) const {
             throw std::runtime_error("Method should be implemented in subclass");
         }
 
@@ -385,13 +390,13 @@ namespace ttcr {
         }
 
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1>& Rx,
-                        std::vector<sxyz<T1>>& r_data,
-                        std::vector<sijv<T1>>& m_data,
-                        T1 &tt,
-                        const size_t RxNo,
-                        const size_t threadNo) const {
+                                const std::vector<T1>& t0,
+                                const sxyz<T1>& Rx,
+                                std::vector<sxyz<T1>>& r_data,
+                                std::vector<sijv<T1>>& m_data,
+                                T1 &tt,
+                                const size_t RxNo,
+                                const size_t threadNo) const {
             throw std::runtime_error("Method should be implemented in subclass");
         }
 
@@ -417,7 +422,7 @@ namespace ttcr {
     private:
         bool usePool;
         mutable ctpl::thread_pool pool;
-        
+
         const std::vector<size_t> get_blk_size(const size_t nTx) const {
             size_t n_blk = nThreads < nTx ? nThreads : nTx;
             std::vector<size_t> blk_size ( n_blk, 0 );
@@ -437,11 +442,23 @@ namespace ttcr {
 
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<sxyz<T1>>& Rx,
+                                 const std::vector<sxyz<T1>>& _Rx,
                                  std::vector<T1>& traveltimes,
                                  const size_t threadNo) const {
+
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= origin;
+            }
+        }
+
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( traveltimes.size() != Rx.size() ) {
@@ -460,11 +477,24 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                 const std::vector<std::vector<sxyz<T1>>>& _Rx,
                                  std::vector<std::vector<T1>*>& traveltimes,
                                  const size_t threadNo) const {
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<std::vector<sxyz<T1>>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                for ( size_t nn=0; nn<Rx[n].size(); ++nn ) {
+                    Rx[n][nn] = _Rx[n][nn] - origin;
+                }
+            }
+        }
+
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( traveltimes.size() != Rx.size() ) {
@@ -473,26 +503,39 @@ namespace ttcr {
 
         if ( this->tt_from_rp ) {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, (*Rx[nr])[n], threadNo);
+                traveltimes[nr]->resize( Rx[nr].size() );
+                for (size_t n=0; n<Rx[nr].size(); ++n) {
+                    (*traveltimes[nr])[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[nr][n], threadNo);
+                }
             }
         } else {
             for (size_t nr=0; nr<Rx.size(); ++nr) {
-                traveltimes[nr]->resize( Rx[nr]->size() );
-                for (size_t n=0; n<Rx[nr]->size(); ++n)
-                    (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], threadNo);
+                traveltimes[nr]->resize( Rx[nr].size() );
+                for (size_t n=0; n<Rx[nr].size(); ++n) {
+                    (*traveltimes[nr])[n] = this->getTraveltime(Rx[nr][n], threadNo);
+                }
             }
         }
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<sxyz<T1>>& Rx,
+                                 const std::vector<sxyz<T1>>& _Rx,
                                  std::vector<T1>& traveltimes,
                                  std::vector<std::vector<sxyz<T1>>>& r_data,
                                  const size_t threadNo) const {
+
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= origin;
+            }
+        }
 
         this->raytrace(Tx, t0, Rx, threadNo);
 
@@ -508,18 +551,35 @@ namespace ttcr {
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], traveltimes[n], threadNo);
         }
+        if ( translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n].size(); ++nn) {
+                    r_data[n][nn] += origin;
+                }
+            }
+        }
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                 const std::vector<std::vector<sxyz<T1>>>& _Rx,
                                  std::vector<std::vector<T1>*>& traveltimes,
                                  std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                  const size_t threadNo) const {
-        if ( verbose > 2 ) {
-            std::cout << "\nIn Grid3D::raytrace(..., r_data, threadNo)\n" << std::endl;
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<std::vector<sxyz<T1>>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                for ( size_t nn=0; nn<Rx[n].size(); ++nn ) {
+                    Rx[n][nn] = _Rx[n][nn] - origin;
+                }
+            }
         }
+        
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
@@ -530,27 +590,47 @@ namespace ttcr {
         }
 
         for (size_t nr=0; nr<Rx.size(); ++nr) {
-            r_data[nr]->resize( Rx[nr]->size() );
+            r_data[nr]->resize( Rx[nr].size() );
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
-            traveltimes[nr]->resize( Rx[nr]->size() );
+            traveltimes[nr]->resize( Rx[nr].size() );
 
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                this->getRaypath(Tx, t0, (*Rx[nr])[n], (*r_data[nr])[n],
+            for (size_t n=0; n<Rx[nr].size(); ++n) {
+                this->getRaypath(Tx, t0, Rx[nr][n], (*r_data[nr])[n],
                                  (*traveltimes[nr])[n], threadNo);
+            }
+        }
+        if ( translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n]->size(); ++nn) {
+                    for (size_t nnn=0; nnn<(*r_data[n])[nn].size(); ++nnn) {
+                        (*r_data[n])[nn][nnn] += origin;
+                    }
+                }
             }
         }
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<sxyz<T1>>& Rx,
+                                 const std::vector<sxyz<T1>>& _Rx,
                                  std::vector<T1>& traveltimes,
                                  std::vector<std::vector<sxyz<T1>>>& r_data,
                                  std::vector<std::vector<sijv<T1>>>& m_data,
                                  const size_t threadNo) const {
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= origin;
+            }
+        }
+
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
@@ -572,16 +652,34 @@ namespace ttcr {
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], traveltimes[n], n, threadNo);
         }
+        if ( translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n].size(); ++nn) {
+                    r_data[n][nn] += origin;
+                }
+            }
+        }
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<sxyz<T1>>& Rx,
+                                 const std::vector<sxyz<T1>>& _Rx,
                                  std::vector<T1>& traveltimes,
                                  std::vector<std::vector<sxyz<T1>>>& r_data,
                                  std::vector<std::vector<siv<T1>>>& l_data,
                                  const size_t threadNo) const {
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= origin;
+            }
+        }
+
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( r_data.size() != Rx.size() ) {
@@ -603,15 +701,33 @@ namespace ttcr {
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], l_data[n], traveltimes[n], threadNo);
         }
+        if ( translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n].size(); ++nn) {
+                    r_data[n][nn] += origin;
+                }
+            }
+        }
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<sxyz<T1>>& Rx,
+                                 const std::vector<sxyz<T1>>& _Rx,
                                  std::vector<T1>& traveltimes,
                                  std::vector<std::vector<sijv<T1>>>& m_data,
                                  const size_t threadNo) const {
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= origin;
+            }
+        }
+
         this->raytrace(Tx, t0, Rx, threadNo);
 
         if ( m_data.size() != Rx.size() ) {
@@ -630,12 +746,23 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2>
-    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                  const std::vector<T1>& t0,
-                                 const std::vector<sxyz<T1>>& Rx,
+                                 const std::vector<sxyz<T1>>& _Rx,
                                  std::vector<T1>& traveltimes,
                                  std::vector<std::vector<siv<T1>>>& l_data,
                                  const size_t threadNo) const {
+
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= origin;
+            }
+        }
 
         this->raytrace(Tx, t0, Rx, threadNo);
 

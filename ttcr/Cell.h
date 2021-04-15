@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef Cell_h
-#define Cell_h
+#ifndef ttcr_Cell_h
+#define ttcr_Cell_h
 
 #include <cmath>
 #include <iostream>
