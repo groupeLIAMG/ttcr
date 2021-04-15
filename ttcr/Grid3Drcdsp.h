@@ -45,8 +45,9 @@ namespace ttcr {
                     const T1 ddx, const T1 ddy, const T1 ddz,
                     const T1 minx, const T1 miny, const T1 minz,
                     const T2 ns, const bool ttrp, const T2 nd, const T1 drad,
-                    const bool useEdgeLength=true, const size_t nt=1) :
-        Grid3Drc<T1,T2,Node3Dc<T1,T2>,CELL>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt),
+                    const bool useEdgeLength=true, const size_t nt=1,
+                    const bool _translateOrigin=false) :
+        Grid3Drc<T1,T2,Node3Dc<T1,T2>,CELL>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, nt, _translateOrigin),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dynRadius(drad),
         tempNodes(std::vector<std::vector<Node3Dcd<T1,T2>>>(nt)),
@@ -105,7 +106,7 @@ namespace ttcr {
 
         void raytrace(const std::vector<sxyz<T1>>&,
                       const std::vector<T1>&,
-                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      const std::vector<std::vector<sxyz<T1>>>&,
                       const size_t=0) const;
     };
 
@@ -717,11 +718,11 @@ namespace ttcr {
     template<typename T1, typename T2, typename CELL>
     void Grid3Drcdsp<T1,T2,CELL>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                            const std::vector<T1>& t0,
-                                           const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                           const std::vector<std::vector<sxyz<T1>>>& Rx,
                                            const size_t threadNo) const {
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(*Rx[n]);
+            this->checkPts(Rx[n]);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {

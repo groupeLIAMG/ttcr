@@ -296,6 +296,12 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.min_distance_rp;
             }
+            else if (par.find("translate grid origin") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                int test;
+                sin >> test;
+                ip.translateOrigin = (test == 1);
+            }
             fin.getline(parameter, 200);
         }
         fin.close();

@@ -73,8 +73,10 @@ namespace ttcr {
                  const bool procVel,
                  const bool ttrp,
                  const T1 md,
-                 const size_t nt=1) :
-        Grid3D<T1,T2>(ttrp, tet.size(), nt), rp_method(rp), processVel(procVel),
+                 const size_t nt=1,
+                 const bool _translateOrigin=false) :
+        Grid3D<T1,T2>(ttrp, tet.size(), nt, _translateOrigin),
+        rp_method(rp), processVel(procVel),
         nPrimary(static_cast<T2>(no.size())),
         source_radius(0.0), min_dist(md),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
@@ -546,9 +548,25 @@ namespace ttcr {
     void Grid3Dun<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                               const size_t nt) {
 
+        if ( this->translateOrigin ) {
+            T1 xmin = no[0].x;
+            T1 ymin = no[0].y;
+            T1 zmin = no[0].z;
+            for ( T2 n=1; n<no.size(); ++n ) {
+                xmin = xmin < no[n].x ? xmin : no[n].x;
+                ymin = ymin < no[n].y ? ymin : no[n].y;
+                zmin = zmin < no[n].z ? zmin : no[n].z;
+            }
+            this->origin = {xmin, ymin, zmin};
+        } else {
+            this->origin = {0.0, 0.0, 0.0};
+        }
+
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
-            nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
+            nodes[n].setXYZindex(no[n].x - this->origin.x,
+                                 no[n].y - this->origin.y,
+                                 no[n].z - this->origin.z, n );
             nodes[n].setPrimary(true);
         }
 
@@ -591,6 +609,20 @@ namespace ttcr {
     void Grid3Dun<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
                                               const int nsecondary,
                                               const size_t nt) {
+
+        if ( this->translateOrigin ) {
+            T1 xmin = no[0].x;
+            T1 ymin = no[0].y;
+            T1 zmin = no[0].z;
+            for ( T2 n=1; n<no.size(); ++n ) {
+                xmin = xmin < no[n].x ? xmin : no[n].x;
+                ymin = ymin < no[n].y ? ymin : no[n].y;
+                zmin = zmin < no[n].z ? zmin : no[n].z;
+            }
+            this->origin = {xmin, ymin, zmin};
+        } else {
+            this->origin = {0.0, 0.0, 0.0};
+        }
 
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
@@ -768,6 +800,12 @@ namespace ttcr {
         }
 
         nodes.shrink_to_fit();
+
+        if ( this->translateOrigin ) {
+            for (auto node=nodes.begin(); node!=nodes.end(); ++node) {
+                *node -= this->origin;
+            }
+        }
     }
 
     template<typename T1, typename T2, typename NODE>

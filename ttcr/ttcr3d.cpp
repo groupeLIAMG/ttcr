@@ -188,13 +188,13 @@ int body(const input_parameters &par) {
         cout << "Radius for tertiary nodes: " << par.radius_tertiary_nodes << '\n';
     }
 
-    vector<const vector<sxyz<T>>*> all_rcv;
-    if ( par.rcvfile != "" )
-        all_rcv.push_back( &(rcv.get_coord()) );
-    for ( size_t n=0; n<reflectors.size(); ++n ) {
-        all_rcv.push_back( &(reflectors[n].get_coord()) );
+    vector<vector<sxyz<T>>> all_rcv;
+    if ( par.rcvfile != "" ) {
+        all_rcv.push_back( rcv.get_coord() );
     }
-
+    for ( size_t n=0; n<reflectors.size(); ++n ) {
+        all_rcv.push_back( reflectors[n].get_coord() );
+    }
 
     chrono::high_resolution_clock::time_point begin, end;
     std::vector<std::vector<std::vector<sxyz<T>>>> r_data(src.size());

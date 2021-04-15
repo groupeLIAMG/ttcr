@@ -249,14 +249,16 @@ namespace ttcr {
                                                                                            d[0], d[1], d[2],
                                                                                            min[0], min[1], min[2],
                                                                                            par.nn[0], par.nn[1], par.nn[2],
-                                                                                           par.tt_from_rp, nt);
+                                                                                           par.tt_from_rp, nt,
+                                                                                           par.translateOrigin);
                 else
                     g = new Grid3Drnsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], d[1], d[2],
                                                     min[0], min[1], min[2],
                                                     par.nn[0], par.nn[1], par.nn[2],
                                                     par.tt_from_rp,
-                                                    par.processVel, nt);
+                                                    par.processVel, nt,
+                                                    par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -285,14 +287,16 @@ namespace ttcr {
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, par.tt_from_rp,
-                                                    par.processVel, nt);
+                                                    par.processVel, nt,
+                                                    par.translateOrigin);
                 }
                 else
                     g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                     d[0], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, par.tt_from_rp,
-                                                    par.processVel, nt);
+                                                    par.processVel, nt,
+                                                    par.translateOrigin);
 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -319,7 +323,8 @@ namespace ttcr {
                                                                                         par.nTertiary,
                                                                                         par.radius_tertiary_nodes,
                                                                                         par.useEdgeLength,
-                                                                                        nt);
+                                                                                        nt,
+                                                                                        par.translateOrigin);
                 else {
                     g = new Grid3Drndsp<T, uint32_t>(ncells[0], ncells[1], ncells[2],
                                                      d[0], d[1], d[2],
@@ -330,7 +335,8 @@ namespace ttcr {
                                                      par.radius_tertiary_nodes,
                                                      par.processVel,
                                                      par.useEdgeLength,
-                                                     nt);
+                                                     nt,
+                                                     par.translateOrigin);
                 }
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -485,7 +491,8 @@ namespace ttcr {
                                                         xrange[0], yrange[0], zrange[0],
                                                         par.nn[0], par.nn[1], par.nn[2],
                                                         par.tt_from_rp,
-                                                        par.processVel, nt);
+                                                        par.processVel, nt,
+                                                        par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -512,7 +519,8 @@ namespace ttcr {
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp,
-                                                        par.processVel, nt);
+                                                        par.processVel, nt,
+                                                        par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -553,7 +561,8 @@ namespace ttcr {
                                                          par.radius_tertiary_nodes,
                                                          par.processVel,
                                                          par.useEdgeLength,
-                                                         nt);
+                                                         nt,
+                                                         par.translateOrigin);
 
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
@@ -663,12 +672,14 @@ namespace ttcr {
                             g = new Grid3Drcsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                                                d[0], d[1], d[2],
                                                                                                                xrange[0], yrange[0], zrange[0],
-                                                                                                               par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt);
+                                                                                                               par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt,
+                                                                                                               par.translateOrigin);
                         } else {
                             g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
                                                                                                    d[0], d[1], d[2],
                                                                                                    xrange[0], yrange[0], zrange[0],
-                                                                                                   par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt);
+                                                                                                   par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt,
+                                                                                                   par.translateOrigin);
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
@@ -700,7 +711,8 @@ namespace ttcr {
                                                         d[0], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp,
-                                                        par.processVel, nt);
+                                                        par.processVel, nt,
+                                                        par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -739,7 +751,8 @@ namespace ttcr {
                                                                                             par.nTertiary,
                                                                                             par.radius_tertiary_nodes,
                                                                                             par.useEdgeLength,
-                                                                                            nt);
+                                                                                            nt,
+                                                                                            par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -835,7 +848,8 @@ namespace ttcr {
                                                     par.nn[0],
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 else
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -843,7 +857,8 @@ namespace ttcr {
                                                     par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -866,14 +881,16 @@ namespace ttcr {
                                                     par.raypath_method,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 else
                     g = new Grid3Dunfm<T, uint32_t>(nodes, tetrahedra,
                                                     par.raypath_method,
                                                     par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\n";
@@ -897,7 +914,8 @@ namespace ttcr {
                                                     par.raypath_method,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 else
                     g = new Grid3Dunfs<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -907,7 +925,8 @@ namespace ttcr {
                                                     par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 T xmin = g->getXmin();
                 T xmax = g->getXmax();
                 T ymin = g->getYmin();
@@ -957,7 +976,8 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      par.useEdgeLength,
-                                                     nt);
+                                                     nt,
+                                                     par.translateOrigin);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
@@ -970,7 +990,8 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      par.useEdgeLength,
-                                                     nt);
+                                                     nt,
+                                                     par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1139,7 +1160,8 @@ namespace ttcr {
                                                     par.nn[0],
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 else
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -1147,7 +1169,8 @@ namespace ttcr {
                                                     par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -1170,7 +1193,8 @@ namespace ttcr {
                                                     par.raypath_method,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 else
                     g = new Grid3Dunfm<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -1178,7 +1202,8 @@ namespace ttcr {
                                                     par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\n";
@@ -1208,7 +1233,8 @@ namespace ttcr {
                                                     par.raypath_method,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
                 else
                     g = new Grid3Dunfs<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -1218,7 +1244,8 @@ namespace ttcr {
                                                     par.processVel,
                                                     par.tt_from_rp,
                                                     par.min_distance_rp,
-                                                    nt);
+                                                    nt,
+                                                    par.translateOrigin);
 
                 T xmin = g->getXmin();
                 T xmax = g->getXmax();
@@ -1269,7 +1296,8 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      par.useEdgeLength,
-                                                     nt);
+                                                     nt,
+                                                     par.translateOrigin);
                 else
                     g = new Grid3Dundsp<T, uint32_t>(nodes,
                                                      tetrahedra,
@@ -1282,7 +1310,8 @@ namespace ttcr {
                                                      par.min_distance_rp,
                                                      par.radius_tertiary_nodes,
                                                      par.useEdgeLength,
-                                                     nt);
+                                                     nt,
+                                                     par.translateOrigin);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
                     std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()

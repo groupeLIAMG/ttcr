@@ -64,8 +64,9 @@ namespace ttcr {
         Grid3Drn(const T2 nx, const T2 ny, const T2 nz,
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
-                 const bool ttrp, const bool procVel, const size_t nt=1) :
-        Grid3D<T1,T2>(ttrp, nx*ny*nz, nt),
+                 const bool ttrp, const bool procVel, const size_t nt=1,
+                 const bool _translateOrigin=false) :
+        Grid3D<T1,T2>(ttrp, nx*ny*nz, nt, _translateOrigin),
         dx(ddx), dy(ddy), dz(ddz),
         xmin(minx), ymin(miny), zmin(minz),
         xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
@@ -345,6 +346,15 @@ namespace ttcr {
                          // primary nodes
                          (ncx+1) * (ncy+1) * (ncz+1),
                          NODE(this->nThreads));
+        }
+
+        if ( this->translateOrigin ) {
+            this->origin = {xmin, ymin, zmin};
+            xmin = 0.0;
+            ymin = 0.0;
+            zmin = 0.0;
+        } else {
+            this->origin = {0.0, 0.0, 0.0};
         }
 
         // Create the grid, assign a number for each node, determine the type of the node and find the owners
@@ -648,11 +658,11 @@ namespace ttcr {
 
                         // Secondary nodes on the xy0 planes
                         if ( ni < ncx && nj < ncy ) {
-                            for(T2 sy=0; sy < nsny; ++sy){
-                                for(T2 sx=0; sx < nsnx; ++sx, n++){
+                            for (T2 sy=0; sy < nsny; ++sy){
+                                for (T2 sx=0; sx < nsnx; ++sx, n++) {
 
-                                    T1 ysv= ymin+ nj* dy+ (sy+1)*dys;
-                                    T1 xsv= xmin+ ni* dx+ (sx+1)*dxs;
+                                    T1 ysv = ymin + nj*dy + (sy+1)*dys;
+                                    T1 xsv = xmin + ni*dx + (sx+1)*dxs;
 
                                     if ( cell_XpYpZm != std::numeric_limits<T2>::max() ) {
                                         nodes[n].pushOwner( cell_XpYpZm );
@@ -677,8 +687,8 @@ namespace ttcr {
                             for(T2 sz=0; sz < nsnz; ++sz){
                                 for(T2 sx=0; sx < nsnx; ++sx, n++){
 
-                                    T1 zsv= zmin+ nk* dz+ (sz+1)*dzs;
-                                    T1 xsv= xmin+ ni* dx+ (sx+1)*dxs;
+                                    T1 zsv = zmin + nk*dz + (sz+1)*dzs;
+                                    T1 xsv = xmin + ni*dx + (sx+1)*dxs;
 
                                     if ( cell_XpYmZp != std::numeric_limits<T2>::max() ) {
                                         nodes[n].pushOwner( cell_XpYmZp );
@@ -703,8 +713,8 @@ namespace ttcr {
                             for(T2 sz=0; sz < nsnz; ++sz){
                                 for(T2 sy=0; sy < nsny; ++sy, n++){
 
-                                    T1 zsv= zmin + nk*dz + (sz+1)*dzs;
-                                    T1 ysv= ymin + nj*dy + (sy+1)*dys;
+                                    T1 zsv = zmin + nk*dz + (sz+1)*dzs;
+                                    T1 ysv = ymin + nj*dy + (sy+1)*dys;
 
                                     if ( cell_XmYpZp != std::numeric_limits<T2>::max() ) {
                                         nodes[n].pushOwner( cell_XmYpZp );

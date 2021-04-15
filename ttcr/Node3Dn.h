@@ -148,6 +148,13 @@ namespace ttcr {
             return std::abs(x-node.x)<small && std::abs(y-node.y)<small && std::abs(z-node.z)<small;
         }
 
+        Node3Dn<T1, T2>& operator-=(const sxyz<T1>& node) {
+            this->x -= node.x;
+            this->y -= node.y;
+            this->z -= node.z;
+            return *this;
+        }
+
         size_t getSize() const {
             return 2*sizeof(size_t) + nThreads*sizeof(T1) + 4*sizeof(T1) +
             (1+2*nThreads)*sizeof(T2) + owners.size() * sizeof(T2);

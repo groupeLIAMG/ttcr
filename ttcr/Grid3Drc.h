@@ -66,8 +66,10 @@ namespace ttcr {
         Grid3Drc(const T2 nx, const T2 ny, const T2 nz,
                  const T1 ddx, const T1 ddy, const T1 ddz,
                  const T1 minx, const T1 miny, const T1 minz,
-                 const bool ttrp, const size_t nt=1) :
-        Grid3D<T1,T2>(ttrp, nx*ny*nz, nt), dx(ddx), dy(ddy), dz(ddz),
+                 const bool ttrp, const size_t nt=1,
+                 const bool _translateOrigin=false) :
+        Grid3D<T1,T2>(ttrp, nx*ny*nz, nt, _translateOrigin),
+        dx(ddx), dy(ddy), dz(ddz),
         xmin(minx), ymin(miny), zmin(minz),
         xmax(minx+nx*ddx), ymax(miny+ny*ddy), zmax(minz+nz*ddz),
         ncx(nx), ncy(ny), ncz(nz),
@@ -296,6 +298,15 @@ namespace ttcr {
                          NODE(this->nThreads));
         }
 
+        if ( this->translateOrigin ) {
+            this->origin = {xmin, ymin, zmin};
+            xmin = 0.0;
+            ymin = 0.0;
+            zmin = 0.0;
+        } else {
+            this->origin = {0.0, 0.0, 0.0};
+        }
+
         // Create the grid, assign a number for each node and find the owners
         // Nodes and cells are first indexed in z, then y, and x.
         // Secondary nodes are placed on the faces and edges of every cells.
@@ -423,181 +434,88 @@ namespace ttcr {
 
             for ( T2 nk=0; nk<=ncz; ++nk ) {
 
-            T1 z = zmin + nk*dz;
+                T1 z = zmin + nk*dz;
 
-            for ( T2 nj=0; nj<=ncy; ++nj ) {
+                for ( T2 nj=0; nj<=ncy; ++nj ) {
 
-                T1 y = ymin + nj*dy;
+                    T1 y = ymin + nj*dy;
 
-                for ( T2 ni=0; ni<=ncx; ++ni ){
+                    for ( T2 ni=0; ni<=ncx; ++ni ){
 
-                    T1 x = xmin + ni*dx;
+                        T1 x = xmin + ni*dx;
 
-                    // Find the adjacent cells for each primary node
+                        // Find the adjacent cells for each primary node
 
-                    if (ni < ncx && nj < ncy && nk < ncz){
-                        cXpYpZp = nj*ncx + nk*(ncx*ncy) + ni;
-                    }
-                    else {
-                        cXpYpZp = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni > 0 && nj < ncy && nk < ncz){
-                        cXmYpZp = nj*ncx + nk*(ncx*ncy) + ni - 1;
-                    }
-                    else {
-                        cXmYpZp = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni < ncx && nj > 0 && nk < ncz){
-                        cXpYmZp = (nj-1)*ncx + nk*(ncx*ncy) + ni;
-                    }
-                    else {
-                        cXpYmZp = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni > 0 && nj > 0 && nk < ncz){
-                        cXmYmZp = (nj-1)*ncx + nk*(ncx * ncy) + ni - 1;
-                    }
-                    else {
-                        cXmYmZp = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni < ncx && nj < ncy && nk > 0){
-                        cXpYpZm = nj*ncx + (nk-1)*(ncx*ncy) + ni;
-                    }
-                    else {
-                        cXpYpZm = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni > 0 && nj < ncy && nk > 0){
-                        cXmYpZm = nj*ncx + (nk-1)*(ncx*ncy) + ni - 1;
-                    }
-                    else {
-                        cXmYpZm = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni < ncx && nj > 0 && nk > 0){
-                        cXpYmZm = (nj-1)*ncx + (nk-1)*(ncx*ncy) + ni;
-                    }
-                    else {
-                        cXpYmZm = std::numeric_limits<T2>::max();
-                    }
-
-                    if (ni > 0 && nj > 0 && nk > 0){
-                        cXmYmZm = (nj-1)*ncx + (nk-1)*(ncx*ncy) + ni-1;
-                    }
-                    else {
-                        cXmYmZm = std::numeric_limits<T2>::max();
-                    }
-
-                    // Secondary nodes on x edge
-                    if ( ni < ncx ) {
-                        for (T2 ns=0; ns< nsnx; ++ns, ++n ) {
-
-                            T1 xsv = xmin + ni* dx + (ns+1)*dxs;
-
-                            if ( cXpYmZm != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYmZm );
-                            }
-                            if ( cXpYpZm != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYpZm );
-                            }
-                            if ( cXpYmZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYmZp );
-                            }
-                            if ( cXpYpZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYpZp );
-                            }
-                            nodes[n].setXYZindex( xsv, y, z, n );
+                        if (ni < ncx && nj < ncy && nk < ncz){
+                            cXpYpZp = nj*ncx + nk*(ncx*ncy) + ni;
                         }
-                    }
-
-                    // Secondary nodes on y edge
-                    if ( nj < ncy ) {
-                        for (T2 ns=0; ns< nsny; ++ns, ++n ) {
-
-                            T1 ysv = ymin + nj* dy + (ns+1)*dys;
-
-                            if ( cXmYpZm != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXmYpZm );
-                            }
-                            if ( cXpYpZm != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYpZm );
-                            }
-                            if ( cXmYpZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXmYpZp );
-                            }
-                            if ( cXpYpZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYpZp );
-                            }
-                            nodes[n].setXYZindex( x, ysv, z, n );
+                        else {
+                            cXpYpZp = std::numeric_limits<T2>::max();
                         }
-                    }
 
-                    // Secondary nodes on z edge
-                    if ( nk < ncz ) {
-                        for (T2 ns=0; ns< nsnz; ++ns, ++n ) {
-
-                            T1 zsv = zmin + nk* dz + (ns+1)*dzs;
-
-                            if ( cXmYmZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXmYmZp );
-                            }
-                            if ( cXpYmZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYmZp );
-                            }
-                            if ( cXmYpZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXmYpZp );
-                            }
-                            if ( cXpYpZp != std::numeric_limits<T2>::max() )
-                            {
-                                nodes[n].pushOwner( cXpYpZp );
-                            }
-                            nodes[n].setXYZindex( x, y, zsv, n );
+                        if (ni > 0 && nj < ncy && nk < ncz){
+                            cXmYpZp = nj*ncx + nk*(ncx*ncy) + ni - 1;
                         }
-                    }
+                        else {
+                            cXmYpZp = std::numeric_limits<T2>::max();
+                        }
 
-                    // Secondary nodes on the xy0 planes
-                    if ( ni < ncx && nj < ncy ) {
-                        for ( T2 sy=0; sy < nsny; ++sy ) {
-                            for ( T2 sx=0; sx < nsnx; ++sx, n++ ) {
+                        if (ni < ncx && nj > 0 && nk < ncz){
+                            cXpYmZp = (nj-1)*ncx + nk*(ncx*ncy) + ni;
+                        }
+                        else {
+                            cXpYmZp = std::numeric_limits<T2>::max();
+                        }
 
-                                T1 ysv = ymin+ nj* dy+ (sy+1)*dys;
-                                T1 xsv = xmin+ ni* dx+ (sx+1)*dxs;
+                        if (ni > 0 && nj > 0 && nk < ncz){
+                            cXmYmZp = (nj-1)*ncx + nk*(ncx * ncy) + ni - 1;
+                        }
+                        else {
+                            cXmYmZp = std::numeric_limits<T2>::max();
+                        }
 
+                        if (ni < ncx && nj < ncy && nk > 0){
+                            cXpYpZm = nj*ncx + (nk-1)*(ncx*ncy) + ni;
+                        }
+                        else {
+                            cXpYpZm = std::numeric_limits<T2>::max();
+                        }
+
+                        if (ni > 0 && nj < ncy && nk > 0){
+                            cXmYpZm = nj*ncx + (nk-1)*(ncx*ncy) + ni - 1;
+                        }
+                        else {
+                            cXmYpZm = std::numeric_limits<T2>::max();
+                        }
+
+                        if (ni < ncx && nj > 0 && nk > 0){
+                            cXpYmZm = (nj-1)*ncx + (nk-1)*(ncx*ncy) + ni;
+                        }
+                        else {
+                            cXpYmZm = std::numeric_limits<T2>::max();
+                        }
+
+                        if (ni > 0 && nj > 0 && nk > 0){
+                            cXmYmZm = (nj-1)*ncx + (nk-1)*(ncx*ncy) + ni-1;
+                        }
+                        else {
+                            cXmYmZm = std::numeric_limits<T2>::max();
+                        }
+
+                        // Secondary nodes on x edge
+                        if ( ni < ncx ) {
+                            for (T2 ns=0; ns< nsnx; ++ns, ++n ) {
+
+                                T1 xsv = xmin + ni* dx + (ns+1)*dxs;
+
+                                if ( cXpYmZm != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXpYmZm );
+                                }
                                 if ( cXpYpZm != std::numeric_limits<T2>::max() )
                                 {
                                     nodes[n].pushOwner( cXpYpZm );
                                 }
-                                if ( cXpYpZp != std::numeric_limits<T2>::max() )
-                                {
-                                    nodes[n].pushOwner( cXpYpZp );
-                                }
-                                nodes[n].setXYZindex( xsv, ysv, z, n );
-                            }
-                        }
-                    }
-
-                    // Secondary nodes on the x0z planes
-                    if ( ni < ncx && nk < ncz ) {
-                        for ( T2 sz=0; sz < nsnz; ++sz ) {
-                            for ( T2 sx=0; sx < nsnx; ++sx, n++ ) {
-
-                                T1 zsv = zmin+ nk* dz+ (sz+1)*dzs;
-                                T1 xsv = xmin+ ni* dx+ (sx+1)*dxs;
-
                                 if ( cXpYmZp != std::numeric_limits<T2>::max() )
                                 {
                                     nodes[n].pushOwner( cXpYmZp );
@@ -606,19 +524,24 @@ namespace ttcr {
                                 {
                                     nodes[n].pushOwner( cXpYpZp );
                                 }
-                                nodes[n].setXYZindex( xsv, y, zsv, n );
+                                nodes[n].setXYZindex( xsv, y, z, n );
                             }
                         }
-                    }
 
-                    // Secondary nodes on the 0yz planes
-                    if ( nj < ncy && nk < ncz ) {
-                        for ( T2 sz=0; sz < nsnz; ++sz ) {
-                            for ( T2 sy=0; sy < nsny; ++sy, n++ ) {
+                        // Secondary nodes on y edge
+                        if ( nj < ncy ) {
+                            for (T2 ns=0; ns< nsny; ++ns, ++n ) {
 
-                                T1 zsv = zmin+ nk* dz+ (sz+1)*dzs;
-                                T1 ysv = ymin+ nj* dy+ (sy+1)*dys;
+                                T1 ysv = ymin + nj* dy + (ns+1)*dys;
 
+                                if ( cXmYpZm != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXmYpZm );
+                                }
+                                if ( cXpYpZm != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXpYpZm );
+                                }
                                 if ( cXmYpZp != std::numeric_limits<T2>::max() )
                                 {
                                     nodes[n].pushOwner( cXmYpZp );
@@ -627,13 +550,101 @@ namespace ttcr {
                                 {
                                     nodes[n].pushOwner( cXpYpZp );
                                 }
-                                nodes[n].setXYZindex( x, ysv, zsv, n );
+                                nodes[n].setXYZindex( x, ysv, z, n );
+                            }
+                        }
+
+                        // Secondary nodes on z edge
+                        if ( nk < ncz ) {
+                            for (T2 ns=0; ns< nsnz; ++ns, ++n ) {
+
+                                T1 zsv = zmin + nk* dz + (ns+1)*dzs;
+
+                                if ( cXmYmZp != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXmYmZp );
+                                }
+                                if ( cXpYmZp != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXpYmZp );
+                                }
+                                if ( cXmYpZp != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXmYpZp );
+                                }
+                                if ( cXpYpZp != std::numeric_limits<T2>::max() )
+                                {
+                                    nodes[n].pushOwner( cXpYpZp );
+                                }
+                                nodes[n].setXYZindex( x, y, zsv, n );
+                            }
+                        }
+
+                        // Secondary nodes on the xy0 planes
+                        if ( ni < ncx && nj < ncy ) {
+                            for ( T2 sy=0; sy < nsny; ++sy ) {
+                                for ( T2 sx=0; sx < nsnx; ++sx, n++ ) {
+
+                                    T1 ysv = ymin+ nj* dy+ (sy+1)*dys;
+                                    T1 xsv = xmin+ ni* dx+ (sx+1)*dxs;
+
+                                    if ( cXpYpZm != std::numeric_limits<T2>::max() )
+                                    {
+                                        nodes[n].pushOwner( cXpYpZm );
+                                    }
+                                    if ( cXpYpZp != std::numeric_limits<T2>::max() )
+                                    {
+                                        nodes[n].pushOwner( cXpYpZp );
+                                    }
+                                    nodes[n].setXYZindex( xsv, ysv, z, n );
+                                }
+                            }
+                        }
+
+                        // Secondary nodes on the x0z planes
+                        if ( ni < ncx && nk < ncz ) {
+                            for ( T2 sz=0; sz < nsnz; ++sz ) {
+                                for ( T2 sx=0; sx < nsnx; ++sx, n++ ) {
+
+                                    T1 zsv = zmin+ nk* dz+ (sz+1)*dzs;
+                                    T1 xsv = xmin+ ni* dx+ (sx+1)*dxs;
+
+                                    if ( cXpYmZp != std::numeric_limits<T2>::max() )
+                                    {
+                                        nodes[n].pushOwner( cXpYmZp );
+                                    }
+                                    if ( cXpYpZp != std::numeric_limits<T2>::max() )
+                                    {
+                                        nodes[n].pushOwner( cXpYpZp );
+                                    }
+                                    nodes[n].setXYZindex( xsv, y, zsv, n );
+                                }
+                            }
+                        }
+
+                        // Secondary nodes on the 0yz planes
+                        if ( nj < ncy && nk < ncz ) {
+                            for ( T2 sz=0; sz < nsnz; ++sz ) {
+                                for ( T2 sy=0; sy < nsny; ++sy, n++ ) {
+
+                                    T1 zsv = zmin+ nk* dz+ (sz+1)*dzs;
+                                    T1 ysv = ymin+ nj* dy+ (sy+1)*dys;
+
+                                    if ( cXmYpZp != std::numeric_limits<T2>::max() )
+                                    {
+                                        nodes[n].pushOwner( cXmYpZp );
+                                    }
+                                    if ( cXpYpZp != std::numeric_limits<T2>::max() )
+                                    {
+                                        nodes[n].pushOwner( cXpYpZp );
+                                    }
+                                    nodes[n].setXYZindex( x, ysv, zsv, n );
+                                }
                             }
                         }
                     }
                 }
             }
-        }
         }
         // sanity check
         if ( n != nodes.size() ) {
@@ -641,7 +652,6 @@ namespace ttcr {
             abort();
         }
     }
-
 
 
     template<typename T1, typename T2, typename NODE, typename CELL>

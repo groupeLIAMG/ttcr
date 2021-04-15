@@ -46,8 +46,8 @@ namespace ttcr {
                     const int ns, const int nd, const T1 rad,
                     const bool iv, const int rp, const bool rptt, const T1 md,
                     const T1 drad, const bool useEdgeLength=true,
-                    const size_t nt=1) :
-        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt),
+                    const size_t nt=1, const bool _translateOrigin=false) :
+        Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt, _translateOrigin),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dnd<T1,T2>>>(nt)),
@@ -134,7 +134,7 @@ namespace ttcr {
 
         void raytrace(const std::vector<sxyz<T1>>&,
                       const std::vector<T1>&,
-                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      const std::vector<std::vector<sxyz<T1>>>&,
                       const size_t=0) const;
 
     };
@@ -576,11 +576,11 @@ namespace ttcr {
     template<typename T1, typename T2>
     void Grid3Dundsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
-                                      const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                      const std::vector<std::vector<sxyz<T1>>>& Rx,
                                       const size_t threadNo) const {
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(*Rx[n]);
+            this->checkPts(Rx[n]);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {

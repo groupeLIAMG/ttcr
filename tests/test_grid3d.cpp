@@ -103,6 +103,17 @@ raytracing_method methods[] = {
     DYNAMIC_SHORTEST_PATH
 };
 
+const char* models_tr[] = {
+    "./files/layers_medium2.vtr",
+    "./files/gradient_medium2.vtr",
+    "./files/layers_medium2.vtu",
+    "./files/gradient_medium2.vtu"
+};
+raytracing_method methods_tr[] = {
+    DYNAMIC_SHORTEST_PATH,
+    SHORTEST_PATH
+};
+
 BOOST_DATA_TEST_CASE(
                      testGrid3D,
                      (bdata::make(models) ^ bdata::make(references)) * bdata::make(methods),
@@ -207,4 +218,115 @@ BOOST_DATA_TEST_CASE(
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << ", r_data - error = " << error );
 
     BOOST_TEST(error < 0.15);
+}
+
+BOOST_DATA_TEST_CASE(
+                     translate,
+                     (bdata::make(models) ^ bdata::make(models_tr)) * bdata::make(methods_tr),
+                     model, model2, method) {
+    Src<double> src("./files/src3d_in.dat");
+    src.init();
+    Rcv<double> rcv("./files/rcv3d_in.dat");
+    rcv.init(1);
+
+    Src<double> src2("./files/src3d_in2.dat");
+    src2.init();
+    Rcv<double> rcv2("./files/rcv3d_in2.dat");
+    rcv2.init(1);
+    Rcv<double> rcv3("./files/rcv3d_in2.dat");
+    rcv3.init(1);
+
+    input_parameters par;
+    par.method = method;
+    switch(method) {
+        case SHORTEST_PATH:
+            par.nn[0] = 5;
+            par.nn[1] = 5;
+            par.nn[2] = 5;
+            break;
+        case DYNAMIC_SHORTEST_PATH:
+            par.radius_tertiary_nodes = 3.0;
+            par.nn[0] = 2;
+            par.nn[1] = 2;
+            par.nn[2] = 2;
+            break;
+        default:
+            // do nothing
+            break;
+    }
+    par.modelfile = model;
+    Grid3D<double,uint32_t> *g;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear3DfromVtr<double>(par, 1);
+    } else {
+        g = buildUnstructured3DfromVtu<double>(par, 1);
+    }
+
+    par.modelfile = model2;
+    Grid3D<double,uint32_t> *g2;
+    if (string(model2).find("vtr") != string::npos) {
+        g2 = buildRectilinear3DfromVtr<double>(par, 1);
+    } else {
+        g2 = buildUnstructured3DfromVtu<double>(par, 1);
+    }
+
+    par.translateOrigin = true;
+    Grid3D<double,uint32_t> *g3;
+    if (string(model2).find("vtr") != string::npos) {
+        g3 = buildRectilinear3DfromVtr<double>(par, 1);
+    } else {
+        g3 = buildUnstructured3DfromVtu<double>(par, 1);
+    }
+
+    vector<vector<sxyz<double>>> r_data;
+    vector<vector<sxyz<double>>> r_data2;
+    vector<vector<sxyz<double>>> r_data3;
+
+    bool ignore2 = false;
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0), r_data);
+    } catch (std::exception& e) {
+        BOOST_TEST_MESSAGE( "\n\n\t\tRaytracing failed for model: " << model
+                           << ", with translateGrid false\n\t\t" << e.what() << "\n\n");
+    }
+
+    try {
+        g2->raytrace(src2.get_coord(), src2.get_t0(), rcv2.get_coord(), rcv2.get_tt(0), r_data2);
+    } catch (std::exception& e) {
+        BOOST_TEST_MESSAGE( "\n\n\t\tRaytracing failed for model: " << model2
+                           << ", with translateGrid false\n\t\t" << e.what()
+                           << "\n\t\tThis is expected.\n\n");
+        // this is expected
+        ignore2 = true;
+    }
+
+    try {
+        g3->raytrace(src2.get_coord(), src2.get_t0(), rcv3.get_coord(), rcv3.get_tt(0), r_data3);
+    } catch (std::exception& e) {
+        BOOST_TEST_MESSAGE( "\n\n\t\tRaytracing failed for model: " << model2
+                           << ", with translateGrid true\n\t\t" << e.what() << "\n\n");
+    }
+
+    string filename = "./files/" + get_class_name(g) + "_rp_tr.vtp";
+    saveRayPaths(filename, r_data2);
+    filename = "./files/" + get_class_name(g) + "_rp_tr2.vtp";
+    saveRayPaths(filename, r_data3);
+
+    double diff = 0.0;
+    double diff2 = 0.0;
+    vector<double> tt = rcv.get_tt(0);
+    vector<double> tt2 = rcv2.get_tt(0);
+    vector<double> tt3 = rcv3.get_tt(0);
+    for (size_t n=1; n<tt.size(); ++n) {
+        diff += abs((tt[n] - tt2[n]) / tt[n]);
+        diff2 += abs((tt[n] - tt3[n]) / tt[n]);
+    }
+    diff /= (tt.size() - 1);
+    diff2 /= (tt.size() - 1);
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << ",\t translate - diff = "
+                       << diff << ",\t diff2 = " << diff2);
+    if (!ignore2 ) {
+        BOOST_TEST(diff < 0.01);
+    }
+    BOOST_TEST(diff2 < 0.01);
 }

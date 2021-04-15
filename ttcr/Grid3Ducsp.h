@@ -45,8 +45,8 @@ namespace ttcr {
         Grid3Ducsp(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const int ns, const bool rptt, const T1 md,
-                   const size_t nt=1) :
-        Grid3Duc<T1,T2,Node3Dcsp<T1,T2>>(no, tet, 1, rptt, md, nt)
+                   const size_t nt=1, const bool _translateOrigin=false) :
+        Grid3Duc<T1,T2,Node3Dcsp<T1,T2>>(no, tet, 1, rptt, md, nt, _translateOrigin)
         {
             this->buildGridNodes(no, ns, nt);
             this->template buildGridNeighbors<Node3Dcsp<T1,T2>>(this->nodes);
@@ -63,7 +63,7 @@ namespace ttcr {
 
         void raytrace(const std::vector<sxyz<T1>>&,
                       const std::vector<T1>&,
-                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      const std::vector<std::vector<sxyz<T1>>>&,
                       std::vector<std::vector<T1>*>&,
                       const size_t=0) const;
 
@@ -76,7 +76,7 @@ namespace ttcr {
 
         void raytrace(const std::vector<sxyz<T1>>&,
                       const std::vector<T1>&,
-                      const std::vector<const std::vector<sxyz<T1>>*>&,
+                      const std::vector<std::vector<sxyz<T1>>>&,
                       std::vector<std::vector<T1>*>&,
                       std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
                       const size_t=0) const;
@@ -119,11 +119,22 @@ namespace ttcr {
     };
 
     template<typename T1, typename T2>
-    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                      const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
+                                     const std::vector<sxyz<T1>>& _Rx,
                                      std::vector<T1>& traveltimes,
                                      const size_t threadNo) const {
+
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( this->translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= this->origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= this->origin;
+            }
+        }
 
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -160,15 +171,28 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2>
-    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                      const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     const std::vector<std::vector<sxyz<T1>>>& _Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
                                      const size_t threadNo) const {
 
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<std::vector<sxyz<T1>>> Rx = _Rx;
+        if ( this->translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= this->origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                for ( size_t nn=0; nn<Rx[n].size(); ++nn ) {
+                    Rx[n][nn] =  _Rx[n][nn] - this->origin;
+                }
+            }
+        }
+
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(*Rx[n]);
+            this->checkPts(Rx[n]);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -192,20 +216,31 @@ namespace ttcr {
         }
 
         for (size_t nr=0; nr<Rx.size(); ++nr) {
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes, threadNo);
+            traveltimes[nr]->resize( Rx[nr].size() );
+            for (size_t n=0; n<Rx[nr].size(); ++n) {
+                (*traveltimes[nr])[n] = this->getTraveltime(Rx[nr][n], this->nodes, threadNo);
             }
         }
     }
 
     template<typename T1, typename T2>
-    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                      const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
+                                     const std::vector<sxyz<T1>>& _Rx,
                                      std::vector<T1>& traveltimes,
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
                                      const size_t threadNo) const {
+
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( this->translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= this->origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= this->origin;
+            }
+        }
 
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -300,19 +335,39 @@ namespace ttcr {
                 r_data[n][nn] = r_tmp[ iParent-1-nn ];
             }
         }
+        if ( this->translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n].size(); ++nn) {
+                    r_data[n][nn] += this->origin;
+                }
+            }
+        }
     }
 
     template<typename T1, typename T2>
-    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                      const std::vector<T1>& t0,
-                                     const std::vector<const std::vector<sxyz<T1>>*>& Rx,
+                                     const std::vector<std::vector<sxyz<T1>>>& _Rx,
                                      std::vector<std::vector<T1>*>& traveltimes,
                                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                                      const size_t threadNo) const {
 
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<std::vector<sxyz<T1>>> Rx = _Rx;
+        if ( this->translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= this->origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                for ( size_t nn=0; nn<Rx[n].size(); ++nn ) {
+                    Rx[n][nn] =  _Rx[n][nn] - this->origin;
+                }
+            }
+        }
+
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(*Rx[n]);
+            this->checkPts(Rx[n]);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -340,8 +395,8 @@ namespace ttcr {
 
         for (size_t nr=0; nr<Rx.size(); ++nr) {
 
-            traveltimes[nr]->resize( Rx[nr]->size() );
-            r_data[nr]->resize( Rx[nr]->size() );
+            traveltimes[nr]->resize( Rx[nr].size() );
+            r_data[nr]->resize( Rx[nr].size() );
             for ( size_t ni=0; ni<r_data[nr]->size(); ++ni ) {
                 (*r_data[nr])[ni].resize( 0 );
             }
@@ -349,18 +404,18 @@ namespace ttcr {
             T2 nodeParentRx;
             T2 cellParentRx;
 
-            for (size_t n=0; n<Rx[nr]->size(); ++n) {
+            for (size_t n=0; n<Rx[nr].size(); ++n) {
 
-                (*traveltimes[nr])[n] = this->getTraveltime((*Rx[nr])[n], this->nodes,
+                (*traveltimes[nr])[n] = this->getTraveltime(Rx[nr][n], this->nodes,
                                                             nodeParentRx, cellParentRx,
                                                             threadNo);
 
                 bool flag=false;
                 for ( size_t ns=0; ns<Tx.size(); ++ns ) {
-                    if ( (*Rx[nr])[n] == Tx[ns] ) {
+                    if ( Rx[nr][n] == Tx[ns] ) {
 
                         (*r_data[nr])[n].resize( 1 );
-                        (*r_data[nr])[n][0] = (*Rx[nr])[n];
+                        (*r_data[nr])[n][0] = Rx[nr][n];
 
                         flag = true;
                         break;
@@ -377,7 +432,7 @@ namespace ttcr {
                 sxyz<T1> child;
 
                 // store the son's coord
-                child = (*Rx[nr])[n];
+                child = Rx[nr][n];
                 while ( (*node_p)[iParent].getNodeParent(threadNo) !=
                        std::numeric_limits<T2>::max() ) {
 
@@ -413,16 +468,36 @@ namespace ttcr {
                 }
             }
         }
+        if ( this->translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n]->size(); ++nn) {
+                    for (size_t nnn=0; nnn<(*r_data[n])[nn].size(); ++nnn) {
+                        (*r_data[n])[nn][nnn] += this->origin;
+                    }
+                }
+            }
+        }
     }
 
     template<typename T1, typename T2>
-    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    void Grid3Ducsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,
                                      const std::vector<T1>& t0,
-                                     const std::vector<sxyz<T1>>& Rx,
+                                     const std::vector<sxyz<T1>>& _Rx,
                                      std::vector<T1>& traveltimes,
                                      std::vector<std::vector<sxyz<T1>>>& r_data,
                                      std::vector<std::vector<siv<T1>>>& l_data,
                                      const size_t threadNo) const {
+
+        std::vector<sxyz<T1>> Tx = _Tx;
+        std::vector<sxyz<T1>> Rx = _Rx;
+        if ( this->translateOrigin ) {
+            for ( size_t n=0; n<Tx.size(); ++n ) {
+                Tx[n] -= this->origin;
+            }
+            for ( size_t n=0; n<Rx.size(); ++n ) {
+                Rx[n] -= this->origin;
+            }
+        }
 
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -554,6 +629,13 @@ namespace ttcr {
             r_data[n].resize( r_tmp.size() );
             for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
                 r_data[n][nn] = r_tmp[ iParent-1-nn ];
+            }
+        }
+        if ( this->translateOrigin ) {
+            for (size_t n=0; n<r_data.size(); ++n) {
+                for (size_t nn=0; nn<r_data[n].size(); ++nn) {
+                    r_data[n][nn] += this->origin;
+                }
             }
         }
     }
