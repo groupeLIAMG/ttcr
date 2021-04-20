@@ -193,7 +193,9 @@ namespace ttcr {
                     return n;
                 }
             }
-            return -1;
+            std::ostringstream msg;
+            msg << "Point " << pt << " cannot be found in mesh.";
+            throw std::runtime_error(msg.str());
         }
 
         T1 getTraveltime(const S& Rx,
@@ -520,6 +522,11 @@ namespace ttcr {
     template<typename T1, typename T2, typename NODE, typename S>
     bool Grid2Dun<T1,T2,NODE,S>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
 
+        if ( !testInTriangleBoundingBox(&(nodes[ triangles[nt].i[0] ]),
+                                        &(nodes[ triangles[nt].i[1] ]),
+                                        &(nodes[ triangles[nt].i[2] ]), v) ) {
+            return false;
+        }
 
         // from http://mathworld.wolfram.com/TriangleInterior.html
 
@@ -533,12 +540,17 @@ namespace ttcr {
         T1 invDenom = 1. / det(v1, v2);
         T1 a = (det(v, v2) - det(v0, v2)) * invDenom;
         T1 b = -(det(v, v1) - det(v0, v1)) * invDenom;
-        return (a >= 0.) && (b >= 0.) && (a + b < 1.);
+        return (a >= -small3) && (b >= -small3) && (a + b < 1.+small3);
     }
 
     template<typename T1, typename T2, typename NODE, typename S>
     bool Grid2Dun<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
 
+        if ( !testInTriangleBoundingBox(&(nodes[ triangles[nt].i[0] ]),
+                                        &(nodes[ triangles[nt].i[1] ]),
+                                        &(nodes[ triangles[nt].i[2] ]), p) ) {
+            return false;
+        }
 
         sxyz<T1> a = { nodes[ triangles[nt].i[0] ].getX(),
             nodes[ triangles[nt].i[0] ].getY(),

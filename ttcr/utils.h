@@ -302,6 +302,39 @@ namespace ttcr {
     /**
      * Test if a point is within a box bounding a triangle
      *
+     * @tparam T underlying type of sxyz object
+     * @tparam NODE type of Node objects
+     * @param vertexA 1st point defining triangle
+     * @param vertexB 2nd point defining triangle
+     * @param vertexC 3rd point defining triangle
+     * @param E point to test
+     * @returns test value
+     */
+    template<typename T, typename NODE>
+    bool testInTriangleBoundingBox(const NODE *vertexA,
+                                   const NODE *vertexB,
+                                   const NODE *vertexC,
+                                   const sxz<T> &E) {
+        T xMin = vertexA->getX() < vertexB->getX() ? vertexA->getX() : vertexB->getX();
+        xMin = xMin < vertexC->getX() ? xMin : vertexC->getX();
+        T xMax = vertexA->getX() > vertexB->getX() ? vertexA->getX() : vertexB->getX();
+        xMax = xMax > vertexC->getX() ? xMax : vertexC->getX();
+
+        T zMin = vertexA->getZ() < vertexB->getZ() ? vertexA->getZ() : vertexB->getZ();
+        zMin = zMin < vertexC->getZ() ? zMin : vertexC->getZ();
+        T zMax = vertexA->getZ() > vertexB->getZ() ? vertexA->getZ() : vertexB->getZ();
+        zMax = zMax > vertexC->getZ() ? zMax : vertexC->getZ();
+
+        if (E.x < xMin-small2 || xMax+small2 < E.x ||
+            E.z < zMin-small2 || zMax+small2 < E.z)
+            return false;
+        else
+            return true;
+    }
+
+    /**
+     * Test if a point is within a box bounding a triangle
+     *
      * @tparam T underlying type of sxyz objects
      * @param vertexA 1st point defining triangle
      * @param vertexB 2nd point defining triangle
@@ -331,6 +364,37 @@ namespace ttcr {
 
         if (E.x < xMin-small2 || xMax+small2 < E.x ||
             E.y < yMin-small2 || yMax+small2 < E.y ||
+            E.z < zMin-small2 || zMax+small2 < E.z)
+            return false;
+        else
+            return true;
+    }
+
+    /**
+     * Test if a point is within a box bounding a triangle
+     *
+     * @tparam T underlying type of sxyz objects
+     * @param vertexA 1st point defining triangle
+     * @param vertexB 2nd point defining triangle
+     * @param vertexC 3rd point defining triangle
+     * @param E point to test
+     * @returns test value
+     */
+    template<typename T>
+    bool testInTriangleBoundingBox(const sxz<T> &vertexA,
+                                   const sxz<T> &vertexB,
+                                   const sxz<T> &vertexC,
+                                   const sxz<T> &E) {
+        T xMin = vertexA.x < vertexB.x ? vertexA.x : vertexB.x;
+        xMin = xMin < vertexC.x ? xMin : vertexC.x;
+        T xMax = vertexA.x > vertexB.x ? vertexA.x : vertexB.x;
+        xMax = xMax > vertexC.x ? xMax : vertexC.x;
+        T zMin = vertexA.z < vertexB.z ? vertexA.z : vertexB.z;
+        zMin = zMin < vertexC.z ? zMin : vertexC.z;
+        T zMax = vertexA.z > vertexB.z ? vertexA.z : vertexB.z;
+        zMax = zMax > vertexC.z ? zMax : vertexC.z;
+
+        if (E.x < xMin-small2 || xMax+small2 < E.x ||
             E.z < zMin-small2 || zMax+small2 < E.z)
             return false;
         else
