@@ -1678,10 +1678,10 @@ cdef class Mesh2d:
         for n in range(self.no.size()):
             tPts.InsertPoint(n, self.no[n].x, 0.0, self.no[n].z)
         ugrid.SetPoints(tPts)
-        tri = vtk.vtkTriangle
+        tri = vtk.vtkTriangle()
         for n in range(self.tri.size()):
             for nn in range(3):
-                tri.GetPointIds().SetId(nn, self.tet[n].i[nn])
+                tri.GetPointIds().SetId(nn, self.tri[n].i[nn])
             ugrid.InsertNextCell(tri.GetCellType(), tri.GetPointIds())
 
         save_grid = False
