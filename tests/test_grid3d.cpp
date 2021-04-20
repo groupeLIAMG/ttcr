@@ -307,9 +307,11 @@ BOOST_DATA_TEST_CASE(
                            << ", with translateGrid true\n\t\t" << e.what() << "\n\n");
     }
 
-    string filename = "./files/" + get_class_name(g) + "_rp_tr.vtp";
-    saveRayPaths(filename, r_data2);
+    string filename = "./files/" + get_class_name(g) + "_rp_tr1.vtp";
+    saveRayPaths(filename, r_data);
     filename = "./files/" + get_class_name(g) + "_rp_tr2.vtp";
+    saveRayPaths(filename, r_data2);
+    filename = "./files/" + get_class_name(g) + "_rp_tr3.vtp";
     saveRayPaths(filename, r_data3);
 
     double diff = 0.0;
