@@ -290,6 +290,16 @@ namespace ttcr {
                 }
             }
             if ( flag ) continue;
+            for ( size_t ns=0; ns<txNodes.size(); ++ns ) {
+                if ( nodeParentRx == txNodes[ns].getGridIndex() ) {
+                    // insert Tx at begining
+                    r_data[n].push_back(sxyz<T1>(txNodes[ns]));
+                    r_data[n].push_back(Rx[n]);
+                    flag = true;
+                    break;
+                }
+            }
+            if ( flag ) continue;
 
             // Rx are in nodes (not txNodes)
             std::vector<Node3Dcsp<T1,T2>> *node_p;
@@ -417,6 +427,16 @@ namespace ttcr {
                         (*r_data[nr])[n].resize( 1 );
                         (*r_data[nr])[n][0] = Rx[nr][n];
 
+                        flag = true;
+                        break;
+                    }
+                }
+                if ( flag ) continue;
+                for ( size_t ns=0; ns<txNodes.size(); ++ns ) {
+                    if ( nodeParentRx == txNodes[ns].getGridIndex() ) {
+                        // insert Tx at begining
+                        (*r_data[nr])[n].push_back(sxyz<T1>(txNodes[ns]));
+                        (*r_data[nr])[n].push_back(Rx[nr][n]);
                         flag = true;
                         break;
                     }
@@ -555,6 +575,21 @@ namespace ttcr {
             }
             if ( flag ) continue;
 
+            siv<T1> cell;
+            for ( size_t ns=0; ns<txNodes.size(); ++ns ) {
+                if ( nodeParentRx == txNodes[ns].getGridIndex() ) {
+                    // insert Tx at begining
+                    r_data[n].push_back(sxyz<T1>(txNodes[ns]));
+                    r_data[n].push_back(Rx[n]);
+                    cell.i = cellParentRx;
+                    cell.v = Rx[n].getDistance(txNodes[ns]);
+                    l_data[n].push_back( cell );
+                    flag = true;
+                    break;
+                }
+            }
+            if ( flag ) continue;
+
             // Rx are in nodes (not txNodes)
             std::vector<Node3Dcsp<T1,T2>> *node_p;
             node_p = &this->nodes;
@@ -562,7 +597,6 @@ namespace ttcr {
             std::vector<sxyz<T1>> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             sxyz<T1> child;
-            siv<T1> cell;
 
             // store the son's coord
             child = Rx[n];
