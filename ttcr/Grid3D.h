@@ -383,8 +383,8 @@ namespace ttcr {
                                 const std::vector<T1>& t0,
                                 const sxyz<T1>& Rx,
                                 std::vector<sijv<T1>>& m_data,
-                                T1 &tt,
                                 const size_t RxNo,
+                                T1 &tt,
                                 const size_t threadNo) const {
             throw std::runtime_error("Method should be implemented in subclass");
         }
@@ -394,8 +394,8 @@ namespace ttcr {
                                 const sxyz<T1>& Rx,
                                 std::vector<sxyz<T1>>& r_data,
                                 std::vector<sijv<T1>>& m_data,
-                                T1 &tt,
                                 const size_t RxNo,
+                                T1 &tt,
                                 const size_t threadNo) const {
             throw std::runtime_error("Method should be implemented in subclass");
         }
@@ -650,7 +650,7 @@ namespace ttcr {
         }
 
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], traveltimes[n], n, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], r_data[n], m_data[n], n, traveltimes[n], threadNo);
         }
         if ( translateOrigin ) {
             for (size_t n=0; n<r_data.size(); ++n) {
@@ -741,7 +741,7 @@ namespace ttcr {
         }
 
         for (size_t n=0; n<Rx.size(); ++n) {
-            this->getRaypath(Tx, t0, Rx[n], m_data[n], traveltimes[n], n, threadNo);
+            this->getRaypath(Tx, t0, Rx[n], m_data[n], n, traveltimes[n], threadNo);
         }
     }
 
