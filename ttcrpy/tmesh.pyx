@@ -490,7 +490,7 @@ cdef class Mesh3d:
         return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
 
     def compute_K(self, order=2, taylor_order=2, weighting=True, squared=True,
-                  s0inside=False):
+                  s0inside=False, additional_points=0):
         """
         Compute smoothing matrices (spatial derivative)
 
@@ -508,6 +508,10 @@ cdef class Mesh3d:
         s0inside : bool
             (experimental) ignore slowness value at local node (value is a
             filtered estimate) (False by default)
+        additional_points : int
+            use additional points to compute derivatives (minimum sometimes
+            yield noisy results when rays are close to domain limits)
+            (0 by default)
 
         Returns
         -------
@@ -519,11 +523,12 @@ cdef class Mesh3d:
         cdef int to = taylor_order
         cdef bool w = weighting
         cdef bool s = s0inside
+        cdef int add_pts = additional_points
         cdef vector[vector[vector[siv[double]]]] k_data
 
         if order == 2 and squared:
             o = 1
-        self.grid.computeK(k_data, o, to, w, s)
+        self.grid.computeK(k_data, o, to, w, s, add_pts)
 
         K = []
         cdef size_t MM = self.nparams

@@ -311,7 +311,8 @@ namespace ttcr {
 
         virtual void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                               const int order, const int taylorSeriesOrder,
-                              const bool weighting, const bool s0inside) const {
+                              const bool weighting, const bool s0inside,
+                              const int additionnalPoints) const {
             throw std::runtime_error("Method computeK should be implemented in subclass");
         }
 

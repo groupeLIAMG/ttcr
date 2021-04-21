@@ -28,7 +28,7 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
         void setTraveltimeFromRaypath(bool)
         void checkPts(vector[sxyz[T1]]&) except +
         void computeD(vector[sxyz[T1]] &, vector[vector[sijv[T1]]] &)
-        void computeK(vector[vector[vector[siv[T1]]]]&, int, int, bool, bool) except +
+        void computeK(vector[vector[vector[siv[T1]]]]&, int, int, bool, bool, int) except +
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         T1 computeSlowness(sxyz[T1]&) except +

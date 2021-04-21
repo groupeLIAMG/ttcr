@@ -196,7 +196,8 @@ namespace ttcr {
 
         void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                       const int order=2, const int taylorSeriesOrder=2,
-                      const bool weighting=1, const bool s0inside=0) const;
+                      const bool weighting=1, const bool s0inside=0,
+                      const int additionnalPoints=0) const;
 
         const T1 getAverageEdgeLength() const;
 
@@ -11938,7 +11939,8 @@ namespace ttcr {
                                         const int order,
                                         const int taylorSeriesOrder,
                                         const bool weighting,
-                                        const bool s0inside) const {
+                                        const bool s0inside,
+                                        const int additionnalPoints) const {
         if ( order!=1 && order!=2 ) {
             throw std::runtime_error("order in computeK should be 1 or 2");
         }
@@ -11959,7 +11961,7 @@ namespace ttcr {
 
         int minNbrPoints = 4;
         if ( taylorSeriesOrder == 2 ) {
-            minNbrPoints = 10;
+            minNbrPoints = 10 + additionnalPoints;
         }
 
         int neededRank = 9;
