@@ -1045,6 +1045,7 @@ namespace ttcr {
             }
         }
     }
+
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const sxz<T1> &Rx,
@@ -1125,6 +1126,28 @@ namespace ttcr {
             }
         }
 
+        if ( onNode ) {
+            for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                //  check if cell is (one of) TxCell(s)
+                for (size_t nt=0; nt<Tx.size(); ++nt) {
+                    if ( *nc == txCell[nt] ) {
+                        r_data.push_back( Tx[nt] );
+                        reachedTx = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                if ( cellNo == txCell[nt] ) {
+                    r_data.push_back( Tx[nt] );
+                    reachedTx = true;
+                    break;
+                }
+            }
+        }
+
+        sxz<T1> g;
         while ( reachedTx == false ) {
 
             if ( onNode ) {
@@ -1146,7 +1169,7 @@ namespace ttcr {
                     std::set<NODE*> nnodes;
                     getNeighborNodes(*nc, nnodes);
 
-                    sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                    g = grad2d.compute(nnodes, threadNo);
 
                     sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
                         nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
@@ -1195,14 +1218,41 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
-                    // compute average gradient
-                    sxz<T1> g = { 0., 0. };
-                    for ( size_t n=0; n<grads.size(); ++n ) {
-                        g.x += grads[n].x;
-                        g.z += grads[n].z;
+                    g = { 0., 0. };
+                    // check if we are on a node close to Tx
+                    bool closeToTx = false;
+                    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                        if ( txOnNode[nt] ) {
+                            for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                                if (find(this->neighbors[*nc].begin(), this->neighbors[*nc].end(), nodeNo) != this->neighbors[*nc].end()) {
+                                    closeToTx = true;
+                                    g = Tx[nt] - curr_pt;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // check if surrounding triangles include nodeNo
+                            for ( size_t no=0; no<3; ++no ) {
+                                T2 node = triangles[txCell[nt]].i[no];
+                                for ( auto nc=nodes[node].getOwners().begin(); nc!=nodes[node].getOwners().end(); ++nc ) {
+                                    if (find(this->neighbors[*nc].begin(), this->neighbors[*nc].end(), nodeNo) != this->neighbors[*nc].end()) {
+                                        closeToTx = true;
+                                        g = Tx[nt] - curr_pt;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    g.x /= grads.size();
-                    g.z /= grads.size();
+                    if ( !closeToTx ) {
+                        // compute average gradient
+                        for ( size_t n=0; n<grads.size(); ++n ) {
+                            g.x += grads[n].x;
+                            g.z += grads[n].z;
+                        }
+                        g.x /= grads.size();
+                        g.z /= grads.size();
+                    }
 
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
@@ -1259,19 +1309,55 @@ namespace ttcr {
                     }
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+
+                    // we might be on a node on the outer limit of the mesh, with
+                    // a gradient pointing slightly outside the mesh
+
+                    // find node closest to gradient vector
+                    sxz<T1> tentativeNode;
+                    T1 distance = std::numeric_limits<T1>::max();
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                            if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
+                                // compute distance
+                                sxz<T1> tmp_node = sxz<T1>(nodes[*nn]);
+                                T1 tmp = distPointToLine(curr_pt, curr_pt+g, tmp_node );
+                                if ( tmp < distance ) {
+                                    // make sure we point in the same direction
+                                    sxz<T1> tmp_vec = tmp_node - curr_pt;
+                                    tmp_vec.normalize();
+                                    if ( acos( dot(tmp_vec, g) ) < 0.5235 ) {
+                                        // within 30°
+                                        distance = tmp;
+                                        tentativeNode = nodes[*nn];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // check if distance is "small", i.e. less than 1/3 of edge length
+                    if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
+                        curr_pt = tentativeNode;
+                        r_data.push_back( curr_pt );
+                        onNode = true;
+                    } else {
+                        std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                    }
                 }
 
             } else {
+                // on edge
 
                 std::set<NODE*> nnodes;
                 getNeighborNodes(cellNo, nnodes);
 
-                sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                g = grad2d.compute(nnodes, threadNo);
 
                 for (size_t n=0; n<txCells.size(); ++n) {
                     for (auto txn=txCells[n].begin(); txn!=txCells[n].end(); ++txn) {
@@ -1543,6 +1629,30 @@ namespace ttcr {
             }
         }
 
+        if ( onNode ) {
+            for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                //  check if cell is (one of) TxCell(s)
+                for (size_t nt=0; nt<Tx.size(); ++nt) {
+                    if ( *nc == txCell[nt] ) {
+                        tt += t0[nt] + slowness[*nc] * r_data.back().getDistance( Tx[nt] );
+                        r_data.push_back( Tx[nt] );
+                        reachedTx = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                if ( cellNo == txCell[nt] ) {
+                    tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                    r_data.push_back( Tx[nt] );
+                    reachedTx = true;
+                    break;
+                }
+            }
+        }
+
+        sxz<T1> g;
         while ( reachedTx == false ) {
 
             if ( onNode ) {
@@ -1564,7 +1674,7 @@ namespace ttcr {
                     std::set<NODE*> nnodes;
                     getNeighborNodes(*nc, nnodes);
 
-                    sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                    g = grad2d.compute(nnodes, threadNo);
 
                     sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
                         nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
@@ -1627,15 +1737,41 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
-                    // compute average gradient
-                    sxz<T1> g = { 0., 0. };
-                    for ( size_t n=0; n<grads.size(); ++n ) {
-                        g.x += grads[n].x;
-                        g.z += grads[n].z;
+                    g = { 0., 0. };
+                    // check if we are on a node close to Tx
+                    bool closeToTx = false;
+                    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                        if ( txOnNode[nt] ) {
+                            for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                                if (find(this->neighbors[*nc].begin(), this->neighbors[*nc].end(), nodeNo) != this->neighbors[*nc].end()) {
+                                    closeToTx = true;
+                                    g = Tx[nt] - curr_pt;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // check if surrounding triangles include nodeNo
+                            for ( size_t no=0; no<3; ++no ) {
+                                T2 node = triangles[txCell[nt]].i[no];
+                                for ( auto nc=nodes[node].getOwners().begin(); nc!=nodes[node].getOwners().end(); ++nc ) {
+                                    if (find(this->neighbors[*nc].begin(), this->neighbors[*nc].end(), nodeNo) != this->neighbors[*nc].end()) {
+                                        closeToTx = true;
+                                        g = Tx[nt] - curr_pt;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    g.x /= grads.size();
-                    g.z /= grads.size();
-
+                    if ( !closeToTx ) {
+                        // compute average gradient
+                        for ( size_t n=0; n<grads.size(); ++n ) {
+                            g.x += grads[n].x;
+                            g.z += grads[n].z;
+                        }
+                        g.x /= grads.size();
+                        g.z /= grads.size();
+                    }
 
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
@@ -1693,19 +1829,58 @@ namespace ttcr {
                     }
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
-                    reachedTx = true;
+
+                    // we might be on a node on the outer limit of the mesh, with
+                    // a gradient pointing slightly outside the mesh
+
+                    // find node closest to gradient vector
+                    sxz<T1> tentativeNode;
+                    T1 distance = std::numeric_limits<T1>::max();
+                    T2 common_cell;
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                            if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
+                                // compute distance
+                                sxz<T1> tmp_node = sxz<T1>(nodes[*nn]);
+                                T1 tmp = distPointToLine(curr_pt, curr_pt+g, tmp_node );
+                                if ( tmp < distance ) {
+                                    // make sure we point in the same direction
+                                    sxz<T1> tmp_vec = tmp_node - curr_pt;
+                                    tmp_vec.normalize();
+                                    if ( acos( dot(tmp_vec, g) ) < 0.5235 ) {
+                                        // within 30°
+                                        distance = tmp;
+                                        tentativeNode = nodes[*nn];
+                                        common_cell = *nc;  // keep track of cell
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // check if distance is "small", i.e. less than 1/3 of edge length
+                    if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
+                        curr_pt = tentativeNode;
+                        tt += slowness[common_cell] * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        onNode = true;
+                    } else {
+                        std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.z << std::endl;
+                        r_data.resize(1);
+                        r_data[0] = Rx;
+                        reachedTx = true;
+                    }
                 }
 
             } else {
+                // on edge
 
                 std::set<NODE*> nnodes;
                 getNeighborNodes(cellNo, nnodes);
 
-                sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                g = grad2d.compute(nnodes, threadNo);
 
                 for (size_t n=0; n<txCells.size(); ++n) {
                     for (auto txn=txCells[n].begin(); txn!=txCells[n].end(); ++txn) {
@@ -1982,6 +2157,28 @@ namespace ttcr {
             }
         }
 
+        if ( onNode ) {
+            for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                //  check if cell is (one of) TxCell(s)
+                for (size_t nt=0; nt<Tx.size(); ++nt) {
+                    if ( *nc == txCell[nt] ) {
+                        tt += t0[nt] + slowness[*nc] * prev_pt.getDistance( Tx[nt] );
+                        reachedTx = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                if ( cellNo == txCell[nt] ) {
+                    tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                    reachedTx = true;
+                    break;
+                }
+            }
+        }
+
+        sxz<T1> g;
         while ( reachedTx == false ) {
 
             if ( onNode ) {
@@ -2003,7 +2200,7 @@ namespace ttcr {
                     std::set<NODE*> nnodes;
                     getNeighborNodes(*nc, nnodes);
 
-                    sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                    g = grad2d.compute(nnodes, threadNo);
 
                     sxz<T1> v1 = { nodes[ nb[0] ].getX() - nodes[ nodeNo ].getX(),
                         nodes[ nb[0] ].getZ() - nodes[ nodeNo ].getZ() };
@@ -2063,14 +2260,41 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
-                    // compute average gradient
-                    sxz<T1> g = { 0., 0. };
-                    for ( size_t n=0; n<grads.size(); ++n ) {
-                        g.x += grads[n].x;
-                        g.z += grads[n].z;
+                    g = { 0., 0. };
+                    // check if we are on a node close to Tx
+                    bool closeToTx = false;
+                    for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+                        if ( txOnNode[nt] ) {
+                            for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
+                                if (find(this->neighbors[*nc].begin(), this->neighbors[*nc].end(), nodeNo) != this->neighbors[*nc].end()) {
+                                    closeToTx = true;
+                                    g = Tx[nt] - curr_pt;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // check if surrounding triangles include nodeNo
+                            for ( size_t no=0; no<3; ++no ) {
+                                T2 node = triangles[txCell[nt]].i[no];
+                                for ( auto nc=nodes[node].getOwners().begin(); nc!=nodes[node].getOwners().end(); ++nc ) {
+                                    if (find(this->neighbors[*nc].begin(), this->neighbors[*nc].end(), nodeNo) != this->neighbors[*nc].end()) {
+                                        closeToTx = true;
+                                        g = Tx[nt] - curr_pt;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    g.x /= grads.size();
-                    g.z /= grads.size();
+                    if ( !closeToTx ) {
+                        // compute average gradient
+                        for ( size_t n=0; n<grads.size(); ++n ) {
+                            g.x += grads[n].x;
+                            g.z += grads[n].z;
+                        }
+                        g.x /= grads.size();
+                        g.z /= grads.size();
+                    }
 
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
@@ -2126,17 +2350,55 @@ namespace ttcr {
                     }
                 }
                 if ( foundIntersection == false ) {
-                    std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
-                    << Rx.x << ' ' << Rx.z << std::endl;
-                    reachedTx = true;
+                    // we might be on a node on the outer limit of the mesh, with
+                    // a gradient pointing slightly outside the mesh
+
+                    // find node closest to gradient vector
+                    sxz<T1> tentativeNode;
+                    T1 distance = std::numeric_limits<T1>::max();
+                    T2 common_cell;
+                    for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+
+                        for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
+                            if ( *nn != nodeNo && nodes[*nn].isPrimary() ) {
+                                // compute distance
+                                sxz<T1> tmp_node = sxz<T1>(nodes[*nn]);
+                                T1 tmp = distPointToLine(curr_pt, curr_pt+g, tmp_node );
+                                if ( tmp < distance ) {
+                                    // make sure we point in the same direction
+                                    sxz<T1> tmp_vec = tmp_node - curr_pt;
+                                    tmp_vec.normalize();
+                                    if ( acos( dot(tmp_vec, g) ) < 0.5235 ) {
+                                        // within 30°
+                                        distance = tmp;
+                                        tentativeNode = nodes[*nn];
+                                        common_cell = *nc;  // keep track of cell
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // check if distance is "small", i.e. less than 1/3 of edge length
+                    if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
+                        curr_pt = tentativeNode;
+                        tt += slowness[common_cell] * prev_pt.getDistance( curr_pt );
+                        prev_pt = curr_pt;
+                        onNode = true;
+                    } else {
+                        std::cout << "\n\nWarning: finding raypath failed to converge for Rx "
+                        << Rx.x << ' ' << Rx.z << std::endl;
+                        reachedTx = true;
+                    }
                 }
 
             } else {
+                // on edge
 
                 std::set<NODE*> nnodes;
                 getNeighborNodes(cellNo, nnodes);
 
-                sxz<T1> g = grad2d.compute(nnodes, threadNo);
+                g = grad2d.compute(nnodes, threadNo);
 
                 for (size_t n=0; n<txCells.size(); ++n) {
                     for (auto txn=txCells[n].begin(); txn!=txCells[n].end(); ++txn) {

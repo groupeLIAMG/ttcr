@@ -504,6 +504,25 @@ namespace ttcr {
     }
 
     /**
+     * compute closest distance between a point and a line
+     *
+     * @tparam T underlying type of sxyz object
+     * @param pt1 1st point defining line
+     * @param pt2 2nd point defining line
+     * @param pt point to consider
+     * @returns distance
+     */
+    template<typename T>
+    T distPointToLine(const sxz<T>& pt1, const sxz<T>& pt2, const sxz<T>& pt) {
+        // get eq of line
+        T a = pt2.z - pt1.z;
+        T b = pt1.x - pt2.x;
+        T c = pt2.x*pt1.z - pt1.x*pt2.z;
+        // compute distance
+        return abs(a*pt.x + b*pt.z + c) / sqrt(a*a + b*b);
+    }
+
+    /**
      * test if a point is within a triangle
      *
      * @tparam T underlying type of sxyz object
