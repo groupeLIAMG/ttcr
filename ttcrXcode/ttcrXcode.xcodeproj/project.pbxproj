@@ -1,0 +1,467 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		98C5CD9B263B6DAC00B3A0FB /* ttcr_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 98C5CD54263B6DA900B3A0FB /* ttcr_io.cpp */; };
+		98C5CD9D263B6DAC00B3A0FB /* ttcr3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 98C5CD67263B6DAA00B3A0FB /* ttcr3d.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		98C5CD40263B6D9200B3A0FB /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		98C5CD42263B6D9200B3A0FB /* ttcrXcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ttcrXcode; sourceTree = BUILT_PRODUCTS_DIR; };
+		98C5CD4C263B6DA800B3A0FB /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = CMakeLists.txt; path = ../../ttcr/CMakeLists.txt; sourceTree = "<group>"; };
+		98C5CD4D263B6DA800B3A0FB /* Grid3Dunfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Dunfs.h; path = ../../ttcr/Grid3Dunfs.h; sourceTree = "<group>"; };
+		98C5CD4E263B6DA800B3A0FB /* Rcv2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Rcv2D.h; path = ../../ttcr/Rcv2D.h; sourceTree = "<group>"; };
+		98C5CD4F263B6DA800B3A0FB /* Grid2Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drc.h; path = ../../ttcr/Grid2Drc.h; sourceTree = "<group>"; };
+		98C5CD50263B6DA900B3A0FB /* Grid2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2D.h; path = ../../ttcr/Grid2D.h; sourceTree = "<group>"; };
+		98C5CD51263B6DA900B3A0FB /* Grid2Dunfm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Dunfm.h; path = ../../ttcr/Grid2Dunfm.h; sourceTree = "<group>"; };
+		98C5CD52263B6DA900B3A0FB /* Grid3Drc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drc.h; path = ../../ttcr/Grid3Drc.h; sourceTree = "<group>"; };
+		98C5CD53263B6DA900B3A0FB /* Grid3Drndsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drndsp.h; path = ../../ttcr/Grid3Drndsp.h; sourceTree = "<group>"; };
+		98C5CD54263B6DA900B3A0FB /* ttcr_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ttcr_io.cpp; path = ../../ttcr/ttcr_io.cpp; sourceTree = "<group>"; };
+		98C5CD55263B6DA900B3A0FB /* ttcr2d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ttcr2d.cpp; path = ../../ttcr/ttcr2d.cpp; sourceTree = "<group>"; };
+		98C5CD56263B6DA900B3A0FB /* Node3Dcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node3Dcsp.h; path = ../../ttcr/Node3Dcsp.h; sourceTree = "<group>"; };
+		98C5CD57263B6DA900B3A0FB /* Grid2Ducfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Ducfs.h; path = ../../ttcr/Grid2Ducfs.h; sourceTree = "<group>"; };
+		98C5CD58263B6DA900B3A0FB /* Grid2Drnfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drnfs.h; path = ../../ttcr/Grid2Drnfs.h; sourceTree = "<group>"; };
+		98C5CD59263B6DA900B3A0FB /* structs_msh2vtk.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = structs_msh2vtk.h; path = ../../ttcr/structs_msh2vtk.h; sourceTree = "<group>"; };
+		98C5CD5A263B6DA900B3A0FB /* Node2Dc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node2Dc.h; path = ../../ttcr/Node2Dc.h; sourceTree = "<group>"; };
+		98C5CD5B263B6DA900B3A0FB /* Grid2Drnsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drnsp.h; path = ../../ttcr/Grid2Drnsp.h; sourceTree = "<group>"; };
+		98C5CD5C263B6DA900B3A0FB /* Grid2Ducsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Ducsp.h; path = ../../ttcr/Grid2Ducsp.h; sourceTree = "<group>"; };
+		98C5CD5D263B6DA900B3A0FB /* VTUReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VTUReader.h; path = ../../ttcr/VTUReader.h; sourceTree = "<group>"; };
+		98C5CD5E263B6DA900B3A0FB /* Grid2Duc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Duc.h; path = ../../ttcr/Grid2Duc.h; sourceTree = "<group>"; };
+		98C5CD5F263B6DA900B3A0FB /* Grid2Dun.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Dun.h; path = ../../ttcr/Grid2Dun.h; sourceTree = "<group>"; };
+		98C5CD60263B6DA900B3A0FB /* Grid3Drnsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drnsp.h; path = ../../ttcr/Grid3Drnsp.h; sourceTree = "<group>"; };
+		98C5CD61263B6DA900B3A0FB /* Node3Dn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node3Dn.h; path = ../../ttcr/Node3Dn.h; sourceTree = "<group>"; };
+		98C5CD62263B6DA900B3A0FB /* Grid3Ducfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Ducfs.h; path = ../../ttcr/Grid3Ducfs.h; sourceTree = "<group>"; };
+		98C5CD63263B6DA900B3A0FB /* Grid3Dunsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Dunsp.h; path = ../../ttcr/Grid3Dunsp.h; sourceTree = "<group>"; };
+		98C5CD64263B6DAA00B3A0FB /* Grid3Ducdsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Ducdsp.h; path = ../../ttcr/Grid3Ducdsp.h; sourceTree = "<group>"; };
+		98C5CD65263B6DAA00B3A0FB /* grids.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = grids.h; path = ../../ttcr/grids.h; sourceTree = "<group>"; };
+		98C5CD66263B6DAA00B3A0FB /* ttcr_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ttcr_io.h; path = ../../ttcr/ttcr_io.h; sourceTree = "<group>"; };
+		98C5CD67263B6DAA00B3A0FB /* ttcr3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ttcr3d.cpp; path = ../../ttcr/ttcr3d.cpp; sourceTree = "<group>"; };
+		98C5CD68263B6DAA00B3A0FB /* Grid2Dundsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Dundsp.h; path = ../../ttcr/Grid2Dundsp.h; sourceTree = "<group>"; };
+		98C5CD69263B6DAA00B3A0FB /* ctpl_stl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ctpl_stl.h; path = ../../ttcr/ctpl_stl.h; sourceTree = "<group>"; };
+		98C5CD6A263B6DAA00B3A0FB /* Node2Dnsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node2Dnsp.h; path = ../../ttcr/Node2Dnsp.h; sourceTree = "<group>"; };
+		98C5CD6B263B6DAA00B3A0FB /* Grid3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3D.h; path = ../../ttcr/Grid3D.h; sourceTree = "<group>"; };
+		98C5CD6C263B6DAA00B3A0FB /* ttcr2ds.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ttcr2ds.cpp; path = ../../ttcr/ttcr2ds.cpp; sourceTree = "<group>"; };
+		98C5CD6D263B6DAA00B3A0FB /* Rcv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Rcv.h; path = ../../ttcr/Rcv.h; sourceTree = "<group>"; };
+		98C5CD6E263B6DAA00B3A0FB /* Grid3Drcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drcsp.h; path = ../../ttcr/Grid3Drcsp.h; sourceTree = "<group>"; };
+		98C5CD6F263B6DAA00B3A0FB /* Grid3Dundsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Dundsp.h; path = ../../ttcr/Grid3Dundsp.h; sourceTree = "<group>"; };
+		98C5CD70263B6DAA00B3A0FB /* Node3Dnd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node3Dnd.h; path = ../../ttcr/Node3Dnd.h; sourceTree = "<group>"; };
+		98C5CD71263B6DAA00B3A0FB /* Grid2Drndsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drndsp.h; path = ../../ttcr/Grid2Drndsp.h; sourceTree = "<group>"; };
+		98C5CD72263B6DAA00B3A0FB /* Src.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Src.h; path = ../../ttcr/Src.h; sourceTree = "<group>"; };
+		98C5CD73263B6DAA00B3A0FB /* Node2Dn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node2Dn.h; path = ../../ttcr/Node2Dn.h; sourceTree = "<group>"; };
+		98C5CD74263B6DAA00B3A0FB /* Grid3Drnfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drnfs.h; path = ../../ttcr/Grid3Drnfs.h; sourceTree = "<group>"; };
+		98C5CD75263B6DAA00B3A0FB /* Node3Dcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node3Dcd.h; path = ../../ttcr/Node3Dcd.h; sourceTree = "<group>"; };
+		98C5CD76263B6DAA00B3A0FB /* Grid3Duc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Duc.h; path = ../../ttcr/Grid3Duc.h; sourceTree = "<group>"; };
+		98C5CD77263B6DAA00B3A0FB /* ttcr_t.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ttcr_t.h; path = ../../ttcr/ttcr_t.h; sourceTree = "<group>"; };
+		98C5CD78263B6DAB00B3A0FB /* Node3Dnsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node3Dnsp.h; path = ../../ttcr/Node3Dnsp.h; sourceTree = "<group>"; };
+		98C5CD79263B6DAB00B3A0FB /* Grid2Dunsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Dunsp.h; path = ../../ttcr/Grid2Dunsp.h; sourceTree = "<group>"; };
+		98C5CD7A263B6DAB00B3A0FB /* Interface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Interface.h; path = ../../ttcr/Interface.h; sourceTree = "<group>"; };
+		98C5CD7B263B6DAB00B3A0FB /* Grid3Ducsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Ducsp.h; path = ../../ttcr/Grid3Ducsp.h; sourceTree = "<group>"; };
+		98C5CD7C263B6DAB00B3A0FB /* Grid2Drn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drn.h; path = ../../ttcr/Grid2Drn.h; sourceTree = "<group>"; };
+		98C5CD7D263B6DAB00B3A0FB /* msh2vtk_io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msh2vtk_io.h; path = ../../ttcr/msh2vtk_io.h; sourceTree = "<group>"; };
+		98C5CD7E263B6DAB00B3A0FB /* Node.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node.h; path = ../../ttcr/Node.h; sourceTree = "<group>"; };
+		98C5CD7F263B6DAB00B3A0FB /* Node2Dcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node2Dcsp.h; path = ../../ttcr/Node2Dcsp.h; sourceTree = "<group>"; };
+		98C5CD80263B6DAB00B3A0FB /* ttcr_u.1 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.man; name = ttcr_u.1; path = ../../ttcr/ttcr_u.1; sourceTree = "<group>"; };
+		98C5CD81263B6DAB00B3A0FB /* Grid3Ducfm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Ducfm.h; path = ../../ttcr/Grid3Ducfm.h; sourceTree = "<group>"; };
+		98C5CD82263B6DAB00B3A0FB /* Interpolator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Interpolator.h; path = ../../ttcr/Interpolator.h; sourceTree = "<group>"; };
+		98C5CD83263B6DAB00B3A0FB /* Grid3Drcdsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drcdsp.h; path = ../../ttcr/Grid3Drcdsp.h; sourceTree = "<group>"; };
+		98C5CD84263B6DAB00B3A0FB /* Grid3Drn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drn.h; path = ../../ttcr/Grid3Drn.h; sourceTree = "<group>"; };
+		98C5CD85263B6DAB00B3A0FB /* Grid2Ducfm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Ducfm.h; path = ../../ttcr/Grid2Ducfm.h; sourceTree = "<group>"; };
+		98C5CD86263B6DAB00B3A0FB /* Node2Dnd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node2Dnd.h; path = ../../ttcr/Node2Dnd.h; sourceTree = "<group>"; };
+		98C5CD87263B6DAB00B3A0FB /* structs_ttcr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = structs_ttcr.h; path = ../../ttcr/structs_ttcr.h; sourceTree = "<group>"; };
+		98C5CD88263B6DAB00B3A0FB /* msh2vtk.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = msh2vtk.cpp; path = ../../ttcr/msh2vtk.cpp; sourceTree = "<group>"; };
+		98C5CD89263B6DAB00B3A0FB /* Grad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grad.h; path = ../../ttcr/Grad.h; sourceTree = "<group>"; };
+		98C5CD8A263B6DAB00B3A0FB /* Grid2Drcdsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drcdsp.h; path = ../../ttcr/Grid2Drcdsp.h; sourceTree = "<group>"; };
+		98C5CD8B263B6DAB00B3A0FB /* Grid2Drcfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drcfs.h; path = ../../ttcr/Grid2Drcfs.h; sourceTree = "<group>"; };
+		98C5CD8C263B6DAB00B3A0FB /* Grid2Drcsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Drcsp.h; path = ../../ttcr/Grid2Drcsp.h; sourceTree = "<group>"; };
+		98C5CD8D263B6DAC00B3A0FB /* Grid2Dunfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Dunfs.h; path = ../../ttcr/Grid2Dunfs.h; sourceTree = "<group>"; };
+		98C5CD8E263B6DAC00B3A0FB /* Node3Dc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node3Dc.h; path = ../../ttcr/Node3Dc.h; sourceTree = "<group>"; };
+		98C5CD8F263B6DAC00B3A0FB /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = utils.h; path = ../../ttcr/utils.h; sourceTree = "<group>"; };
+		98C5CD90263B6DAC00B3A0FB /* Grid2Ducdsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid2Ducdsp.h; path = ../../ttcr/Grid2Ducdsp.h; sourceTree = "<group>"; };
+		98C5CD91263B6DAC00B3A0FB /* Metric.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Metric.h; path = ../../ttcr/Metric.h; sourceTree = "<group>"; };
+		98C5CD92263B6DAC00B3A0FB /* Src2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Src2D.h; path = ../../ttcr/Src2D.h; sourceTree = "<group>"; };
+		98C5CD93263B6DAC00B3A0FB /* ttcr3d_raypath.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ttcr3d_raypath.cpp; path = ../../ttcr/ttcr3d_raypath.cpp; sourceTree = "<group>"; };
+		98C5CD94263B6DAC00B3A0FB /* Cell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Cell.h; path = ../../ttcr/Cell.h; sourceTree = "<group>"; };
+		98C5CD95263B6DAC00B3A0FB /* Node2Dcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node2Dcd.h; path = ../../ttcr/Node2Dcd.h; sourceTree = "<group>"; };
+		98C5CD96263B6DAC00B3A0FB /* Grid3Dunfm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Dunfm.h; path = ../../ttcr/Grid3Dunfm.h; sourceTree = "<group>"; };
+		98C5CD97263B6DAC00B3A0FB /* MSHReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MSHReader.h; path = ../../ttcr/MSHReader.h; sourceTree = "<group>"; };
+		98C5CD98263B6DAC00B3A0FB /* Grid3Dun.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Dun.h; path = ../../ttcr/Grid3Dun.h; sourceTree = "<group>"; };
+		98C5CD99263B6DAC00B3A0FB /* msh2vtk_io.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = msh2vtk_io.cpp; path = ../../ttcr/msh2vtk_io.cpp; sourceTree = "<group>"; };
+		98C5CD9A263B6DAC00B3A0FB /* Grid3Drcfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Grid3Drcfs.h; path = ../../ttcr/Grid3Drcfs.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		98C5CD3F263B6D9200B3A0FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		98C5CD39263B6D9200B3A0FB = {
+			isa = PBXGroup;
+			children = (
+				98C5CD44263B6D9200B3A0FB /* ttcrXcode */,
+				98C5CD43263B6D9200B3A0FB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		98C5CD43263B6D9200B3A0FB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				98C5CD42263B6D9200B3A0FB /* ttcrXcode */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		98C5CD44263B6D9200B3A0FB /* ttcrXcode */ = {
+			isa = PBXGroup;
+			children = (
+				98C5CD94263B6DAC00B3A0FB /* Cell.h */,
+				98C5CD4C263B6DA800B3A0FB /* CMakeLists.txt */,
+				98C5CD69263B6DAA00B3A0FB /* ctpl_stl.h */,
+				98C5CD89263B6DAB00B3A0FB /* Grad.h */,
+				98C5CD50263B6DA900B3A0FB /* Grid2D.h */,
+				98C5CD4F263B6DA800B3A0FB /* Grid2Drc.h */,
+				98C5CD8A263B6DAB00B3A0FB /* Grid2Drcdsp.h */,
+				98C5CD8B263B6DAB00B3A0FB /* Grid2Drcfs.h */,
+				98C5CD8C263B6DAB00B3A0FB /* Grid2Drcsp.h */,
+				98C5CD7C263B6DAB00B3A0FB /* Grid2Drn.h */,
+				98C5CD71263B6DAA00B3A0FB /* Grid2Drndsp.h */,
+				98C5CD58263B6DA900B3A0FB /* Grid2Drnfs.h */,
+				98C5CD5B263B6DA900B3A0FB /* Grid2Drnsp.h */,
+				98C5CD5E263B6DA900B3A0FB /* Grid2Duc.h */,
+				98C5CD90263B6DAC00B3A0FB /* Grid2Ducdsp.h */,
+				98C5CD85263B6DAB00B3A0FB /* Grid2Ducfm.h */,
+				98C5CD57263B6DA900B3A0FB /* Grid2Ducfs.h */,
+				98C5CD5C263B6DA900B3A0FB /* Grid2Ducsp.h */,
+				98C5CD5F263B6DA900B3A0FB /* Grid2Dun.h */,
+				98C5CD68263B6DAA00B3A0FB /* Grid2Dundsp.h */,
+				98C5CD51263B6DA900B3A0FB /* Grid2Dunfm.h */,
+				98C5CD8D263B6DAC00B3A0FB /* Grid2Dunfs.h */,
+				98C5CD79263B6DAB00B3A0FB /* Grid2Dunsp.h */,
+				98C5CD6B263B6DAA00B3A0FB /* Grid3D.h */,
+				98C5CD52263B6DA900B3A0FB /* Grid3Drc.h */,
+				98C5CD83263B6DAB00B3A0FB /* Grid3Drcdsp.h */,
+				98C5CD9A263B6DAC00B3A0FB /* Grid3Drcfs.h */,
+				98C5CD6E263B6DAA00B3A0FB /* Grid3Drcsp.h */,
+				98C5CD84263B6DAB00B3A0FB /* Grid3Drn.h */,
+				98C5CD53263B6DA900B3A0FB /* Grid3Drndsp.h */,
+				98C5CD74263B6DAA00B3A0FB /* Grid3Drnfs.h */,
+				98C5CD60263B6DA900B3A0FB /* Grid3Drnsp.h */,
+				98C5CD76263B6DAA00B3A0FB /* Grid3Duc.h */,
+				98C5CD64263B6DAA00B3A0FB /* Grid3Ducdsp.h */,
+				98C5CD81263B6DAB00B3A0FB /* Grid3Ducfm.h */,
+				98C5CD62263B6DA900B3A0FB /* Grid3Ducfs.h */,
+				98C5CD7B263B6DAB00B3A0FB /* Grid3Ducsp.h */,
+				98C5CD98263B6DAC00B3A0FB /* Grid3Dun.h */,
+				98C5CD6F263B6DAA00B3A0FB /* Grid3Dundsp.h */,
+				98C5CD96263B6DAC00B3A0FB /* Grid3Dunfm.h */,
+				98C5CD4D263B6DA800B3A0FB /* Grid3Dunfs.h */,
+				98C5CD63263B6DA900B3A0FB /* Grid3Dunsp.h */,
+				98C5CD65263B6DAA00B3A0FB /* grids.h */,
+				98C5CD7A263B6DAB00B3A0FB /* Interface.h */,
+				98C5CD82263B6DAB00B3A0FB /* Interpolator.h */,
+				98C5CD91263B6DAC00B3A0FB /* Metric.h */,
+				98C5CD99263B6DAC00B3A0FB /* msh2vtk_io.cpp */,
+				98C5CD7D263B6DAB00B3A0FB /* msh2vtk_io.h */,
+				98C5CD88263B6DAB00B3A0FB /* msh2vtk.cpp */,
+				98C5CD97263B6DAC00B3A0FB /* MSHReader.h */,
+				98C5CD7E263B6DAB00B3A0FB /* Node.h */,
+				98C5CD5A263B6DA900B3A0FB /* Node2Dc.h */,
+				98C5CD95263B6DAC00B3A0FB /* Node2Dcd.h */,
+				98C5CD7F263B6DAB00B3A0FB /* Node2Dcsp.h */,
+				98C5CD73263B6DAA00B3A0FB /* Node2Dn.h */,
+				98C5CD86263B6DAB00B3A0FB /* Node2Dnd.h */,
+				98C5CD6A263B6DAA00B3A0FB /* Node2Dnsp.h */,
+				98C5CD8E263B6DAC00B3A0FB /* Node3Dc.h */,
+				98C5CD75263B6DAA00B3A0FB /* Node3Dcd.h */,
+				98C5CD56263B6DA900B3A0FB /* Node3Dcsp.h */,
+				98C5CD61263B6DA900B3A0FB /* Node3Dn.h */,
+				98C5CD70263B6DAA00B3A0FB /* Node3Dnd.h */,
+				98C5CD78263B6DAB00B3A0FB /* Node3Dnsp.h */,
+				98C5CD6D263B6DAA00B3A0FB /* Rcv.h */,
+				98C5CD4E263B6DA800B3A0FB /* Rcv2D.h */,
+				98C5CD72263B6DAA00B3A0FB /* Src.h */,
+				98C5CD92263B6DAC00B3A0FB /* Src2D.h */,
+				98C5CD59263B6DA900B3A0FB /* structs_msh2vtk.h */,
+				98C5CD87263B6DAB00B3A0FB /* structs_ttcr.h */,
+				98C5CD54263B6DA900B3A0FB /* ttcr_io.cpp */,
+				98C5CD66263B6DAA00B3A0FB /* ttcr_io.h */,
+				98C5CD77263B6DAA00B3A0FB /* ttcr_t.h */,
+				98C5CD80263B6DAB00B3A0FB /* ttcr_u.1 */,
+				98C5CD55263B6DA900B3A0FB /* ttcr2d.cpp */,
+				98C5CD6C263B6DAA00B3A0FB /* ttcr2ds.cpp */,
+				98C5CD93263B6DAC00B3A0FB /* ttcr3d_raypath.cpp */,
+				98C5CD67263B6DAA00B3A0FB /* ttcr3d.cpp */,
+				98C5CD8F263B6DAC00B3A0FB /* utils.h */,
+				98C5CD5D263B6DA900B3A0FB /* VTUReader.h */,
+			);
+			path = ttcrXcode;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		98C5CD41263B6D9200B3A0FB /* ttcrXcode */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 98C5CD49263B6D9200B3A0FB /* Build configuration list for PBXNativeTarget "ttcrXcode" */;
+			buildPhases = (
+				98C5CD3E263B6D9200B3A0FB /* Sources */,
+				98C5CD3F263B6D9200B3A0FB /* Frameworks */,
+				98C5CD40263B6D9200B3A0FB /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ttcrXcode;
+			productName = ttcrXcode;
+			productReference = 98C5CD42263B6D9200B3A0FB /* ttcrXcode */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98C5CD3A263B6D9200B3A0FB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1250;
+				TargetAttributes = {
+					98C5CD41263B6D9200B3A0FB = {
+						CreatedOnToolsVersion = 12.5;
+					};
+				};
+			};
+			buildConfigurationList = 98C5CD3D263B6D9200B3A0FB /* Build configuration list for PBXProject "ttcrXcode" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 98C5CD39263B6D9200B3A0FB;
+			productRefGroup = 98C5CD43263B6D9200B3A0FB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				98C5CD41263B6D9200B3A0FB /* ttcrXcode */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		98C5CD3E263B6D9200B3A0FB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				98C5CD9B263B6DAC00B3A0FB /* ttcr_io.cpp in Sources */,
+				98C5CD9D263B6DAC00B3A0FB /* ttcr3d.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		98C5CD47263B6D9200B3A0FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		98C5CD48263B6D9200B3A0FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		98C5CD4A263B6D9200B3A0FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = (
+					"DEBUG=1",
+					"$(inherited)",
+					VTK,
+				);
+				HEADER_SEARCH_PATHS = "";
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"/Users/mahernasr/Github/ttcr/eigen-3.3.7",
+					"/Users/mahernasr/\"ttcr-master 2\"/boost_1_72_0",
+					"/opt/local/include/vtk-7.1",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /opt/local/lib;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonCore-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		98C5CD4B263B6D9200B3A0FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = VTK;
+				HEADER_SEARCH_PATHS = "";
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"/Users/mahernasr/\"ttcr-master 2\"/boost_1_72_0",
+					"/Users/mahernasr/Github/ttcr/eigen-3.3.7",
+					"/opt/local/include/vtk-7.1",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /opt/local/lib;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lvtkIOXML-7.1.1",
+					"-lvtkCommonCore-7.1.1",
+					"-lvtkCommonDataModel-7.1.1",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		98C5CD3D263B6D9200B3A0FB /* Build configuration list for PBXProject "ttcrXcode" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				98C5CD47263B6D9200B3A0FB /* Debug */,
+				98C5CD48263B6D9200B3A0FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		98C5CD49263B6D9200B3A0FB /* Build configuration list for PBXNativeTarget "ttcrXcode" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				98C5CD4A263B6D9200B3A0FB /* Debug */,
+				98C5CD4B263B6D9200B3A0FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 98C5CD3A263B6D9200B3A0FB /* Project object */;
+}

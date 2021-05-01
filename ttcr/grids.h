@@ -360,7 +360,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -1340,7 +1340,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -1642,7 +1642,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -2601,7 +2601,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -2689,8 +2689,8 @@ namespace ttcr {
         }
 
         if ( verbose ) {
-            cout << "Reading model file " << par.modelfile << " ... ";
-            cout.flush();
+            std::cout << "Reading model file " << par.modelfile << " ... ";
+            std::cout.flush();
         }
 
         std::vector<sxyz<T>> nodes(reader.getNumberOfNodes());
