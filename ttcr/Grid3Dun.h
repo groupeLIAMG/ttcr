@@ -11389,89 +11389,88 @@ namespace ttcr {
                                              sxyz<T1>&  pt_i,
                                              const size_t & threadNo) const {
 
-
-    // find all primary nodes of common cells
-    std::vector<std::array<T2,4>> primary(cells.size());
-    for (size_t nc=0; nc<cells.size(); ++nc) {
-        size_t np = 0;
-        for ( auto nn=this->neighbors[cells[nc]].begin(); nn!= this->neighbors[cells[nc]].end(); ++nn ) {
-            if (nodes[*nn].isPrimary()) {
-                primary[nc][np++] = *nn;
+        // find all primary nodes of common cells
+        std::vector<std::array<T2,4>> primary(cells.size());
+        for (size_t nc=0; nc<cells.size(); ++nc) {
+            size_t np = 0;
+            for ( auto nn=this->neighbors[cells[nc]].begin(); nn!= this->neighbors[cells[nc]].end(); ++nn ) {
+                if (nodes[*nn].isPrimary()) {
+                    primary[nc][np++] = *nn;
+                }
             }
         }
-    }
-    // at the surface, the edge is common to two triangles
-    // we must have only two other nodes at the surface, which are not common to the cells
-    std::array<T2,2> edgeNodes2;
-    size_t ne = 0;
-    for (size_t nc=0; nc<cells.size(); ++nc) {
-        for (size_t np=0; np<4; ++np) {
-            if (primary[nc][np] == edgeNodes[0] || primary[nc][np] == edgeNodes[1]) {
-                continue;
-            }
-            bool found=false;
-            for (size_t nc2=0; nc2<cells.size(); ++nc2) {
-                if ( nc == nc2 ) {
+        // at the surface, the edge is common to two triangles
+        // we must have only two other nodes at the surface, which are not common to the cells
+        std::array<T2,2> edgeNodes2;
+        size_t ne = 0;
+        for (size_t nc=0; nc<cells.size(); ++nc) {
+            for (size_t np=0; np<4; ++np) {
+                if (primary[nc][np] == edgeNodes[0] || primary[nc][np] == edgeNodes[1]) {
                     continue;
                 }
-                if ( std::find(primary[nc2].begin(), primary[nc2].end(), primary[nc][np])!=primary[nc2].end() ) {
-                    found = true;  // primary node is common to two cells
-                    break;
+                bool found=false;
+                for (size_t nc2=0; nc2<cells.size(); ++nc2) {
+                    if ( nc == nc2 ) {
+                        continue;
+                    }
+                    if ( std::find(primary[nc2].begin(), primary[nc2].end(), primary[nc][np])!=primary[nc2].end() ) {
+                        found = true;  // primary node is common to two cells
+                        break;
+                    }
+                }
+                if ( found == false ) {
+                    edgeNodes2[ne++] = primary[nc][np];
                 }
             }
-            if ( found == false ) {
-                edgeNodes2[ne++] = primary[nc][np];
+        }
+        sxyz<T1> g_proj;
+        T2 thirdnode;//the third node of the face on which g is to be projected
+
+        if (nodes[edgeNodes2[0]].getTT(threadNo) < nodes[edgeNodes2[1]].getTT(threadNo)) {
+            thirdnode = edgeNodes2[0];
+        } else {
+            thirdnode = edgeNodes2[1];
+        }
+
+        sxyz<T1> tmp = projectOnFace(g, {edgeNodes[0], edgeNodes[1], thirdnode});
+        // find the intersection between tmp and the face edges
+        for (size_t i = 0; i < 2; i++) {
+            sxyz<T1> x1 = {nodes[edgeNodes[i]].getX(),
+                nodes[edgeNodes[i]].getY(),
+                nodes[edgeNodes[i]].getZ()};
+            sxyz<T1> x2 = {nodes[thirdnode].getX(),
+                nodes[thirdnode].getY(),
+                nodes[thirdnode].getZ()};
+            sxyz<T1> x4 = curr_pt + static_cast<T1>(10.0)*x1.getDistance(x2) * tmp;
+
+            sxyz<T1> a = x2 - x1;
+            sxyz<T1> b = x4 - curr_pt;
+            sxyz<T1> c = curr_pt - x1;
+
+            sxyz<T1> ab = cross(a, b);
+            T1 p = dot(cross(c, b), ab) / norm2(ab);
+            if(p >= 0. && p <= 1.){// 0 <= p <= 1 is a sufficient condition to check if pt_i0 is between x1 and x2 and that the midpoint of the line segment [curr_p, pt_i0] is inside the face
+                sxyz<T1> pt_i0 = p * x2 + static_cast<T1>(1.0 -p) * x1;
+                pt_i = pt_i0;
+                edgeNodes[0] = edgeNodes[i];
+                edgeNodes[1] = thirdnode;
+                g_proj = pt_i0 - curr_pt;
+                break;
+
             }
         }
-    }
-    sxyz<T1> g_proj;
-    T2 thirdnode;//the third node of the face on which g is to be projected
+        // if tmp points outside the tested edges or g_proj and g have opposite direction, we use the head wave traveltimes to find g_proj
+        if ((g_proj.x == 0. && g_proj.y == 0. && g_proj.z == 0.) ||
+            (dot(g,g_proj) < 0 )){
+            T2 minttNode;
+            minttNode = nodes[edgeNodes[0]].getTT(threadNo) < nodes[edgeNodes[1]].getTT(threadNo)? edgeNodes[0]:edgeNodes[1];
+            minttNode = nodes[minttNode].getTT(threadNo) < nodes[thirdnode].getTT(threadNo)? minttNode:thirdnode;
+            pt_i = nodes[minttNode];
+            edgeNodes[0] = minttNode;
+            g_proj = pt_i - curr_pt;
 
-    if(nodes[edgeNodes2[0]].getTT(threadNo)<nodes[edgeNodes2[1]].getTT(threadNo)){
-        thirdnode = edgeNodes2[0];
-    }else{
-        thirdnode = edgeNodes2[1];
-    }
-
-    sxyz<T1> tmp = projectOnFace(g, {edgeNodes[0], edgeNodes[1], thirdnode});
-    // find the intersection between tmp and the face edges
-    for(size_t i = 0; i < 2; i++){
-        sxyz<T1> x1 = {nodes[edgeNodes[i]].getX(),
-            nodes[edgeNodes[i]].getY(),
-            nodes[edgeNodes[i]].getZ()};
-        sxyz<T1> x2 = {nodes[thirdnode].getX(),
-            nodes[thirdnode].getY(),
-            nodes[thirdnode].getZ()};
-        sxyz<T1> x4 = curr_pt + static_cast<T1>(10.0)*x1.getDistance(x2) * tmp;
-
-        sxyz<T1> a = x2 - x1;
-        sxyz<T1> b = x4 - curr_pt;
-        sxyz<T1> c = curr_pt - x1;
-
-        sxyz<T1> ab = cross(a, b);
-        T1 p =dot(cross(c, b), ab) / norm2(ab);
-        if(p >= 0. && p <= 1.){// 0 <= p <= 1 is a sufficient condition to check if pt_i0 is between x1 and x2 and that the midpoint of the line segment [curr_p, pt_i0] is inside the face
-            sxyz<T1> pt_i0 = p * x2 + static_cast<T1>(1.0 -p) * x1;
-            pt_i = pt_i0;
-            edgeNodes[0] = edgeNodes[i];
-            edgeNodes[1] = thirdnode;
-            g_proj = pt_i0 - curr_pt;
-            break;
-            
         }
-    }
-    // if tmp points outside the tested edges or g_proj and g have opposite direction, we use the head wave traveltimes to find g_proj
-    if ((g_proj.x == 0. && g_proj.y == 0. && g_proj.z == 0.) ||
-        (dot(g,g_proj) < 0 )){
-        T2 minttNode;
-        minttNode = nodes[edgeNodes[0]].getTT(threadNo) < nodes[edgeNodes[1]].getTT(threadNo)? edgeNodes[0]:edgeNodes[1];
-        minttNode = nodes[minttNode].getTT(threadNo) < nodes[thirdnode].getTT(threadNo)? minttNode:thirdnode;
-        pt_i = nodes[minttNode];
-        edgeNodes[0] = minttNode;
-        g_proj = pt_i - curr_pt;
-        
-    }
-    return g_proj;
+        return g_proj;
     }
     template<typename T1, typename T2, typename NODE>
     sxyz<T1> Grid3Dun<T1,T2,NODE>::projectOnFace(const sxyz<T1>& curr_pt,
