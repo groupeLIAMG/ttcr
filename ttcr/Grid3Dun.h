@@ -3905,6 +3905,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         reachedTx = true;
@@ -3921,6 +3922,8 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        r_tmp.resize(1);
+                        r_tmp[0] = Rx;
                         reachedTx = true;
                         break;
                     }
@@ -4078,6 +4081,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         reachedTx = true;
@@ -4097,6 +4101,8 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath (onEdge) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        r_tmp.resize(1);
+                        r_tmp[0] = Rx;
                         reachedTx = true;
                         break;
                     }
@@ -4210,6 +4216,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         reachedTx = true;
@@ -4264,6 +4271,7 @@ namespace ttcr {
                         if ( cellNo == std::numeric_limits<T2>::max() ) {
                             std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                             << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                            tt = 0.0;
                             r_tmp.resize(1);
                             r_tmp[0] = Rx;
                             reachedTx = true;
@@ -4281,6 +4289,8 @@ namespace ttcr {
                         std::cout << "\n\nWarning: finding raypath (onFace) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
                         tt = 0.0;
+                        r_tmp.resize(1);
+                        r_tmp[0] = Rx;
                         reachedTx = true;
                         break;
                     }
@@ -4381,6 +4391,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         reachedTx = true;
@@ -4390,8 +4401,9 @@ namespace ttcr {
                 if ( foundIntersection == false ) {
                     std::cout << "\n\nWarning: finding raypath within cell failed to converge for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
-                    r_data.resize(1);
-                    r_data[0] = Rx;
+                    tt = 0.0;
+                    r_tmp.resize(1);
+                    r_tmp[0] = Rx;
                     reachedTx = true;
                 }
             }
@@ -7818,6 +7830,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -7835,6 +7848,7 @@ namespace ttcr {
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -8061,6 +8075,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -8082,6 +8097,7 @@ namespace ttcr {
                     if ( foundIntersection == false || curr_pt == pt_i ) {
                         std::cout << "\n\nWarning: finding raypath (onEdge) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -8244,6 +8260,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -8327,6 +8344,7 @@ namespace ttcr {
                         if ( cellNo == std::numeric_limits<T2>::max() ) {
                             std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                             << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                            tt = 0.0;
                             r_tmp.resize(1);
                             r_tmp[0] = Rx;
                             m_data.resize(0);
@@ -8348,6 +8366,7 @@ namespace ttcr {
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onFace) failed to converge for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -8490,6 +8509,7 @@ namespace ttcr {
                     if ( cellNo == std::numeric_limits<T2>::max() ) {
                         std::cout << "\n\nWarning: finding raypath failed to converge (cell not found) for Rx "
                         << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                        tt = 0.0;
                         r_tmp.resize(1);
                         r_tmp[0] = Rx;
                         m_data.resize(0);
@@ -8500,6 +8520,7 @@ namespace ttcr {
                 if ( foundIntersection == false ) {
                     std::cout << "\n\nWarning: finding raypath within cell failed to converge for Rx "
                     << Rx.x << ' ' << Rx.y << ' ' << Rx.z << std::endl;
+                    tt = 0.0;
                     r_data.resize(1);
                     r_data[0] = Rx;
                     m_data.resize(0);
