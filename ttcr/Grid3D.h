@@ -287,7 +287,7 @@ namespace ttcr {
 
         virtual void dump_secondary(std::ofstream&) const {}
 
-        virtual T1 computeSlowness(const sxyz<T1>&) const {
+        virtual T1 computeSlowness(const sxyz<T1>& _Rx, const bool& is_trnslated=true) const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 

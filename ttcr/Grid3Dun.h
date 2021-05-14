@@ -409,7 +409,7 @@ namespace ttcr {
 
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
 
-        T1 computeSlowness( const sxyz<T1>& Rx ) const;
+        T1 computeSlowness( const sxyz<T1>& _Rx, const bool& is_trnslated=true) const;
         T1 computeSlowness(const sxyz<T1>& curr_pt,
                            const bool onNode,
                            const T2 nodeNo,
@@ -964,19 +964,19 @@ namespace ttcr {
         bool it1, it2, it3, it4;
         it1 = it2 = it3 = it4 = 0;
 
-        if ( std::abs(D1)<small2 ) {
+        if ( std::abs(D1)<small ) {
             // points are coplanar, check if pt is inside triangle
             it1 = testInTriangle(v2, v3, v4, v);
         }
-        if ( std::abs(D2)<small2 ) {
+        if ( std::abs(D2)<small ) {
             it2 = testInTriangle(v1, v3, v4, v);
         }
 
-        if ( std::abs(D3)<small2 ) {
+        if ( std::abs(D3)<small ) {
             it3 = testInTriangle(v1, v2, v4, v);
         }
 
-        if ( std::abs(D4)<small2 ) {
+        if ( std::abs(D4)<small ) {
             it4 = testInTriangle(v1, v2, v3, v);
         }
 
@@ -3804,6 +3804,8 @@ namespace ttcr {
         }
 
         sxyz<T1> g;
+        size_t max_itertions = tetrahedra.size();
+        size_t itertions = 0;
         while ( reachedTx == false ) {
 
             if ( onNode ) {
@@ -4592,6 +4594,15 @@ namespace ttcr {
                     if ( reachedTx ) break;
                 }
             }
+            itertions ++;
+            if (itertions > max_itertions){
+                std::cout << "\n\nWarning: raypath failed to converge for Rx : "
+                << Rx.x << ' ' << Rx.y << ' ' << Rx.z << " (infinite loop risk)"<<std::endl;
+                tt = 0.0;
+                r_tmp.resize(1);
+                r_tmp[0] = Rx;
+                break; // break while loop
+            }
         }
         // for inversion, the order should be from Tx to Rx, so we reorder...
         size_t npts = r_tmp.size();
@@ -4840,6 +4851,8 @@ namespace ttcr {
         }
         T1 ds;
         sxyz<T1> g;
+        size_t max_itertions = tetrahedra.size();
+        size_t itertions = 0;
         while ( reachedTx == false ) {
             if ( onNode ) {
 
@@ -5947,6 +5960,14 @@ namespace ttcr {
                     }
                     if ( reachedTx ) break;
                 }
+            }
+            itertions ++;
+            if (itertions > max_itertions){
+                std::cout << "\n\nWarning: raypath failed to converge for Rx : "
+                << Rx.x << ' ' << Rx.y << ' ' << Rx.z << " (infinite loop risk)"<<std::endl;
+                tt = 0.0;
+                m_data.resize(0);
+                break; // break while loop
             }
         }
 
@@ -7688,6 +7709,8 @@ namespace ttcr {
 
         T1 ds;
         sxyz<T1> g;
+        size_t max_itertions = tetrahedra.size();
+        size_t itertions = 0;
         while ( reachedTx == false ) {
 
             if ( onNode ) {
@@ -8843,6 +8866,16 @@ namespace ttcr {
                     }
                     if ( reachedTx ) break;
                 }
+            }
+            itertions ++;
+            if (itertions > max_itertions){
+                std::cout << "\n\nWarning: raypath failed to converge for Rx : "
+                << Rx.x << ' ' << Rx.y << ' ' << Rx.z <<" (infinite loop risk)"<<std::endl;
+                tt = 0.0;
+                r_tmp.resize(1);
+                r_tmp[0] = Rx;
+                m_data.resize(0);
+                break; // break while loop
             }
         }
         // for inversion, the order should be from Tx to Rx, so we reorder...
@@ -11346,10 +11379,15 @@ namespace ttcr {
 
 
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dun<T1,T2,NODE>::computeSlowness( const sxyz<T1>& Rx ) const {
+    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _Rx, const bool& is_trnslated ) const {
 
         //Calculate the slowness of any point that is not on a node
 
+        sxyz<T1> Rx = _Rx;
+        if (this->translateOrigin == true && is_trnslated == false){
+            Rx -= this->origin;
+            checkPts(std::vector<sxyz<T1>> {Rx});
+        }
         T2 cellNo = this->getCellNo( Rx );
 
         std::vector<NODE*> interpNodes;

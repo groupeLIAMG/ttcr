@@ -606,7 +606,8 @@ cdef class Mesh3d:
         for n in range(nTx):
             s = 0.0
             for nn in range(vTx[n].size()):
-                s += self.grid.computeSlowness(vTx[n][nn])
+                s += self.grid.computeSlowness(vTx[n][nn], False)# a parameter is added to indicate that the point is not yet translated
+                #if we chose to work in relative coordinates
             s0[iTx[n]] = s/vTx[n].size()
         return s0
 
@@ -705,11 +706,11 @@ cdef class Mesh3d:
         if src.shape[1] != 3 or rcv.shape[1] != 3:
             raise ValueError('src and rcv should be ndata x 3')
 
-        if self.is_outside(src):
-            raise ValueError('Source point outside grid')
+        # if self.is_outside(src):
+        #     raise ValueError('Source point outside grid')
 
-        if self.is_outside(rcv):
-            raise ValueError('Receiver outside grid')
+        # if self.is_outside(rcv):## this test is already made in the c++ code
+        #     raise ValueError('Receiver outside grid')
 
         if slowness is not None:
             self.set_slowness(slowness)
