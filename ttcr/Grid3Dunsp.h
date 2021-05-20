@@ -182,8 +182,8 @@ namespace ttcr {
             }
         }
 
-        this->checkPts(Tx);
-        this->checkPts(Rx);
+        this->checkPts(Tx, true);
+        this->checkPts(Rx, true);
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -230,9 +230,9 @@ namespace ttcr {
             }
         }
 
-        this->checkPts(Tx);
+        this->checkPts(Tx, true);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(Rx[n]);
+            this->checkPts(Rx[n], true);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -283,8 +283,8 @@ namespace ttcr {
             }
         }
 
-        this->checkPts(Tx);
-        this->checkPts(Rx);
+        this->checkPts(Tx, true);
+        this->checkPts(Rx, true);
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -416,9 +416,9 @@ namespace ttcr {
             }
         }
 
-        this->checkPts(Tx);
+        this->checkPts(Tx, true);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(Rx[n]);
+            this->checkPts(Rx[n], true);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
@@ -560,8 +560,8 @@ namespace ttcr {
             }
         }
 
-        this->checkPts(Tx);
-        this->checkPts(Rx);
+        this->checkPts(Tx, true);
+        this->checkPts(Rx, true);
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );

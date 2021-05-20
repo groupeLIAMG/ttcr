@@ -222,7 +222,7 @@ namespace ttcr {
             k = static_cast<long long>( small2 + (pt.z-zmin)/dz );
         }
 
-        void checkPts(const std::vector<sxyz<T1>>&) const;
+        void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const;
 
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2. * source.getDistance( node );
@@ -757,7 +757,14 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Drn<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Drn<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& _pts, const bool translated) const {
+
+        std::vector<sxyz<T1>> pts = _pts;
+        if (this->translateOrigin == true && translated == false) {
+            for ( size_t n=0; n<pts.size(); ++n ) {
+                pts[n] -= this->origin;
+            }
+        }
 
         // Check if the points from a vector are in the grid
         for ( size_t n=0; n<pts.size(); ++n ) {
@@ -765,7 +772,7 @@ namespace ttcr {
                 pts[n].y < ymin || pts[n].y > ymax ||
                 pts[n].z < zmin || pts[n].z > zmax ) {
                 std::ostringstream msg;
-                msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
+                msg << "Error: Point (" << pts[n] << ") outside grid.";
                 throw std::runtime_error(msg.str());
 
             }

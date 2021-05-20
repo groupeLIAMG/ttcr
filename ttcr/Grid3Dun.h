@@ -225,7 +225,7 @@ namespace ttcr {
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
 
-        void checkPts(const std::vector<sxyz<T1>>&) const;
+        void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const;
 
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
         bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
@@ -877,7 +877,14 @@ namespace ttcr {
 
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Dun<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& _pts, const bool translated) const {
+        
+        std::vector<sxyz<T1>> pts = _pts;
+        if (this->translateOrigin == true && translated == false) {
+            for ( size_t n=0; n<pts.size(); ++n ) {
+                pts[n] -= this->origin;
+            }
+        }
 
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -899,7 +906,7 @@ namespace ttcr {
             }
             if ( found == false ) {
                 std::ostringstream msg;
-                msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
+                msg << "Error: Point (" << pts[n] << ") outside grid.";
                 throw std::runtime_error(msg.str());
             }
         }
@@ -11386,7 +11393,7 @@ namespace ttcr {
         sxyz<T1> pt = _pt;
         if (this->translateOrigin == true && isTranslated == false) {
             pt -= this->origin;
-            checkPts(std::vector<sxyz<T1>> {pt});
+            checkPts(std::vector<sxyz<T1>> {pt}, true);
         }
         T2 cellNo = this->getCellNo( pt );
 

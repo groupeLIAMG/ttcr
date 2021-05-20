@@ -290,7 +290,6 @@ namespace ttcr {
         /**
          * compute slowness at given point
          *
-         * @tparam T1 underlying type of sxyz object
          * @param pt point to consider
          * @param isTranslated point to consider has been translated (considered only if grid attribute translateOrigin == true)
          * @returns slowness value
@@ -308,7 +307,14 @@ namespace ttcr {
 
         void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
 
-        virtual void checkPts(const std::vector<sxyz<T1>>&) const {
+        /**
+         * check if points are inside grid
+         *
+         * @param pts points to consider
+         * @param translated point to consider has been translated (considered only if grid attribute translateOrigin == true)
+         * @throws runtime_error if a point is outside grid
+         */
+        virtual void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const {
             throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
 
