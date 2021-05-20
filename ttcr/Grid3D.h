@@ -208,15 +208,15 @@ namespace ttcr {
         virtual void getStraightRays(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<std::vector<siv<T1>>>& l_data) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getStraightRays should be implemented in subclass");
         }
 
         virtual void setSlowness(const std::vector<T1>& s) {}
         virtual void setSlowness(const T1 *s, const size_t ns) {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getSlowness should be implemented in subclass");
         }
         virtual void getSlowness(std::vector<T1>&) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getSlowness should be implemented in subclass");
         }
         virtual void setChi(const std::vector<T1>& x) {}
         virtual void setPsi(const std::vector<T1>& x) {}
@@ -226,7 +226,7 @@ namespace ttcr {
         virtual size_t getNumberOfNodes() const { return 1; }
         virtual size_t getNumberOfCells() const { return 1; }
         virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getTT should be implemented in subclass");
         }
 
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
@@ -235,49 +235,49 @@ namespace ttcr {
                             const int format=1) const {}
 
         virtual const T1 getXmin() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getXmin should be implemented in subclass");
         }
         virtual const T1 getXmax() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getXmax should be implemented in subclass");
         }
         virtual const T1 getYmin() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getYmin should be implemented in subclass");
         }
         virtual const T1 getYmax() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getYmax should be implemented in subclass");
         }
         virtual const T1 getZmin() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getZmin should be implemented in subclass");
         }
         virtual const T1 getZmax() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getZmax should be implemented in subclass");
         }
         virtual const T1 getDx() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getDx should be implemented in subclass");
         }
         virtual const T1 getDy() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getDy should be implemented in subclass");
         }
         virtual const T1 getDz() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getDz should be implemented in subclass");
         }
         virtual const T2 getNcx() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getNcx should be implemented in subclass");
         }
         virtual const T2 getNcy() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getNcy should be implemented in subclass");
         }
         virtual const T2 getNcz() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getNcz should be implemented in subclass");
         }
         virtual const T2 getNsnx() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getNsnx should be implemented in subclass");
         }
         virtual const T2 getNsny() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getNsny should be implemented in subclass");
         }
         virtual const T2 getNsnz() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getNsnz should be implemented in subclass");
         }
 
         virtual const int get_niter() const { return 0; }
@@ -287,7 +287,15 @@ namespace ttcr {
 
         virtual void dump_secondary(std::ofstream&) const {}
 
-        virtual T1 computeSlowness(const sxyz<T1>& _Rx, const bool& is_trnslated=true) const {
+        /**
+         * compute slowness at given point
+         *
+         * @tparam T1 underlying type of sxyz object
+         * @param pt point to consider
+         * @param isTranslated point to consider has been translated (considered only if grid attribute translateOrigin == true)
+         * @returns slowness value
+         */
+        virtual T1 computeSlowness(const sxyz<T1>& pt, const bool isTranslated=false) const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 
@@ -317,7 +325,7 @@ namespace ttcr {
         }
 
         virtual const T1 getAverageEdgeLength() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getAverageEdgeLength should be implemented in subclass");
         }
 
 #ifdef VTK
@@ -349,26 +357,26 @@ namespace ttcr {
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
                               const size_t threadNo=0) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
 
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<std::vector<sxyz<T1>>>& Rx,
                               const size_t threadNo=0) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
 
         virtual T1 getTraveltime(const sxyz<T1>& pt,
                                  const size_t threadNo) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getTraveltime should be implemented in subclass");
         }
 
         virtual T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxyz<T1>& Rx,
                                             const size_t threadNo) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getTraveltimeFromRaypath should be implemented in subclass");
         }
 
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -377,7 +385,7 @@ namespace ttcr {
                                 std::vector<sxyz<T1>>& r_data,
                                 T1 &tt,
                                 const size_t threadNo) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getRaypath should be implemented in subclass");
         }
 
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -387,7 +395,7 @@ namespace ttcr {
                                 const size_t RxNo,
                                 T1 &tt,
                                 const size_t threadNo) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getRaypath should be implemented in subclass");
         }
 
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -407,7 +415,7 @@ namespace ttcr {
                                 std::vector<siv<T1>> &l_data,
                                 T1 &tt,
                                 const size_t threadNo) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getRaypathshould be implemented in subclass");
         }
 
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -417,7 +425,7 @@ namespace ttcr {
                                 std::vector<siv<T1>> &l_data,
                                 T1 &tt,
                                 const size_t threadNo) const {
-            throw std::runtime_error("Method should be implemented in subclass");
+            throw std::runtime_error("Method getRaypath should be implemented in subclass");
         }
 
     private:

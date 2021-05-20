@@ -155,7 +155,7 @@ namespace ttcr {
             }
         }
 
-        T1 computeSlowness(const sxyz<T1>&) const;
+        T1 computeSlowness(const sxyz<T1>&pt, const bool isTranslated=false) const;
 
 #ifdef VTK
         void saveModelVTR(const std::string &,
@@ -350,6 +350,9 @@ namespace ttcr {
 
         if ( this->translateOrigin ) {
             this->origin = {xmin, ymin, zmin};
+            xmax -= xmin;
+            ymax -= ymin;
+            zmax -= zmin;
             xmin = 0.0;
             ymin = 0.0;
             zmin = 0.0;
@@ -749,7 +752,7 @@ namespace ttcr {
         T2 nPrimary = (ncx+1)*(ncy+1)*(ncz+1);
         for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
             nodes[n].setNodeSlowness( computeSlowness({nodes[n].getX(),
-                nodes[n].getY(), nodes[n].getZ()}) );
+                nodes[n].getY(), nodes[n].getZ()}, true) );
         }
     }
 
@@ -924,7 +927,7 @@ namespace ttcr {
             }
         }
         //If Rx is not on a node:
-        T1 slo = computeSlowness( Rx );
+        T1 slo = computeSlowness( Rx, true );
 
         T2 cellNo = getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];
@@ -1097,7 +1100,7 @@ namespace ttcr {
 
         sxyz<T1> prev_pt( Rx );
         sxyz<T1> curr_pt( Rx );
-        s1 = computeSlowness( curr_pt );
+        s1 = computeSlowness( curr_pt, true );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
@@ -1157,7 +1160,7 @@ namespace ttcr {
                 throw std::runtime_error(msg.str());
             }
 
-            s2 = computeSlowness( curr_pt );
+            s2 = computeSlowness( curr_pt, true );
             tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
             s1 = s2;
             prev_pt = curr_pt;
@@ -1203,15 +1206,15 @@ namespace ttcr {
 
                     if ( curr_pt.getDistance(prev_pt) > dist ||  // we do not intersect a plane
                         curr_pt == Tx[ns] ) {  // we have arrived
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[ns] );
                     } else {
                         // to intersection
-                        s2 = computeSlowness( curr_pt );
+                        s2 = computeSlowness( curr_pt, true );
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
                         // to Tx
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
                     }
 
@@ -1336,7 +1339,7 @@ namespace ttcr {
         }
 
         sxyz<T1> curr_pt( Rx );
-        s1 = computeSlowness( curr_pt );
+        s1 = computeSlowness( curr_pt, true );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
@@ -1401,7 +1404,7 @@ namespace ttcr {
 #ifdef DEBUG_RP
             std::cout << curr_pt << '\n';
 #endif
-            s2 = computeSlowness( curr_pt );
+            s2 = computeSlowness( curr_pt, true );
             tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
             s1 = s2;
             r_data.push_back( curr_pt );
@@ -1449,7 +1452,7 @@ namespace ttcr {
                     if ( curr_pt.getDistance(r_data.back()) > dist  ||  // we do not intersect a plane
                         curr_pt == Tx[ns] ) {  // we have arrived
 
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
 #ifdef DEBUG_RP
@@ -1457,7 +1460,7 @@ namespace ttcr {
 #endif
                     } else {
                         // to intersection
-                        s2 = computeSlowness( curr_pt );
+                        s2 = computeSlowness( curr_pt, true );
                         tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
 #ifdef DEBUG_RP
@@ -1465,7 +1468,7 @@ namespace ttcr {
 #endif
                         s1 = s2;
                         // to Tx
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
 #ifdef DEBUG_RP
@@ -1501,7 +1504,7 @@ namespace ttcr {
         }
 
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx ), mid_pt;
-        s1 = computeSlowness( curr_pt );
+        s1 = computeSlowness( curr_pt, true );
         sijv<T1> m;
         m.i = RxNo;
 
@@ -1564,14 +1567,14 @@ namespace ttcr {
                 throw std::runtime_error(msg.str());
             }
 
-            s2 = computeSlowness( curr_pt );
+            s2 = computeSlowness( curr_pt, true );
             tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
             s1 = s2;
             prev_pt = curr_pt;
 
             // compute terms of matrix M
             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-            T1 s = computeSlowness(mid_pt);
+            T1 s = computeSlowness(mid_pt, true);
             s *= s;
             T1 ds = curr_pt.getDistance( prev_pt );
 
@@ -1650,12 +1653,12 @@ namespace ttcr {
                     if ( curr_pt.getDistance(prev_pt) > dist  ||  // we do not intersect a plane
                         curr_pt == Tx[ns] ) {  // we have arrived
 
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[ns] );
 
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
-                        s = computeSlowness(mid_pt);
+                        s = computeSlowness(mid_pt, true);
                         s *= s;
                         ds = Tx[ns].getDistance( prev_pt );
 
@@ -1691,13 +1694,13 @@ namespace ttcr {
                         }
                     } else {
                         // to intersection
-                        s2 = computeSlowness( curr_pt );
+                        s2 = computeSlowness( curr_pt, true );
                         tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
                         s1 = s2;
 
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s = computeSlowness(mid_pt);
+                        s = computeSlowness(mid_pt, true);
                         s *= s;
                         ds = curr_pt.getDistance( prev_pt );
 
@@ -1734,12 +1737,12 @@ namespace ttcr {
                         }
 
                         // to Tx
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
 
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + curr_pt);
-                        s = computeSlowness(mid_pt);
+                        s = computeSlowness(mid_pt, true);
                         s *= s;
                         ds = Tx[ns].getDistance( curr_pt );
 
@@ -1799,7 +1802,7 @@ namespace ttcr {
         }
 
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
-        s1 = computeSlowness( curr_pt );
+        s1 = computeSlowness( curr_pt, true );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
@@ -1869,7 +1872,7 @@ namespace ttcr {
             cell.i = getCellNo(mid_pt);
             cell.v = curr_pt.getDistance(prev_pt);
             l_data.push_back(cell);
-            s2 = computeSlowness( curr_pt );
+            s2 = computeSlowness( curr_pt, true );
             tt += 0.5*(s1 + s2) * cell.v;
             s1 = s2;
             prev_pt = curr_pt;
@@ -1919,7 +1922,7 @@ namespace ttcr {
                         cell.i = getCellNo(Tx[ns]);
                         cell.v = Tx[ns].getDistance(prev_pt);
                         l_data.push_back(cell);
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += 0.5*(s1 + s2) * cell.v;
 
                     } else {
@@ -1928,7 +1931,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = curr_pt.getDistance(prev_pt);
                         l_data.push_back(cell);
-                        s2 = computeSlowness( curr_pt );
+                        s2 = computeSlowness( curr_pt, true );
                         tt += 0.5*(s1 + s2) * cell.v;
 
                         s1 = s2;
@@ -1936,7 +1939,7 @@ namespace ttcr {
                         cell.i = getCellNo(Tx[ns]);
                         cell.v = Tx[ns].getDistance(curr_pt);
                         l_data.push_back(cell);
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += 0.5*(s1 + s2) * cell.v;
                     }
 
@@ -1967,7 +1970,7 @@ namespace ttcr {
         }
 
         sxyz<T1> curr_pt( Rx );
-        s1 = computeSlowness( curr_pt );
+        s1 = computeSlowness( curr_pt, true );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dy*dy + dz*dz );
         sxyz<T1> g;
@@ -2037,7 +2040,7 @@ namespace ttcr {
             cell.i = getCellNo(mid_pt);
             cell.v = curr_pt.getDistance(r_data.back());
             l_data.push_back(cell);
-            s2 = computeSlowness( curr_pt );
+            s2 = computeSlowness( curr_pt, true );
             tt += 0.5*(s1 + s2) * cell.v;
             s1 = s2;
             r_data.push_back( curr_pt );
@@ -2087,7 +2090,7 @@ namespace ttcr {
                         cell.i = getCellNo(Tx[ns]);
                         cell.v = Tx[ns].getDistance(r_data.back());
                         l_data.push_back(cell);
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += 0.5*(s1 + s2) * cell.v;
                         r_data.push_back( Tx[ns] );
                     } else {
@@ -2096,7 +2099,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = curr_pt.getDistance(r_data.back());
                         l_data.push_back(cell);
-                        s2 = computeSlowness( curr_pt );
+                        s2 = computeSlowness( curr_pt, true );
                         tt += 0.5*(s1 + s2) * cell.v;
                         r_data.push_back( curr_pt );
 
@@ -2105,7 +2108,7 @@ namespace ttcr {
                         cell.i = getCellNo(Tx[ns]);
                         cell.v = Tx[ns].getDistance(r_data.back());
                         l_data.push_back(cell);
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += 0.5*(s1 + s2) * cell.v;
                         r_data.push_back( Tx[ns] );
                     }
@@ -2141,7 +2144,7 @@ namespace ttcr {
         }
 
         sxyz<T1> curr_pt( Rx ), prev_pt, mid_pt;
-        s1 = computeSlowness( curr_pt );
+        s1 = computeSlowness( curr_pt, true );
         sijv<T1> m;
         m.i = RxNo;
 
@@ -2205,14 +2208,14 @@ namespace ttcr {
             }
 
             prev_pt = r_data.back();
-            s2 = computeSlowness( curr_pt );
+            s2 = computeSlowness( curr_pt, true );
             tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
             s1 = s2;
             r_data.push_back( curr_pt );
 
             // compute terms of matrix M
             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-            T1 s = computeSlowness(mid_pt);
+            T1 s = computeSlowness(mid_pt, true);
             s *= s;
             T1 ds = curr_pt.getDistance( prev_pt );
 
@@ -2292,13 +2295,13 @@ namespace ttcr {
                         curr_pt == Tx[ns] ) {  // we have arrived
 
                         prev_pt = r_data.back();
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
 
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
-                        s = computeSlowness(mid_pt);
+                        s = computeSlowness(mid_pt, true);
                         s *= s;
                         ds = Tx[ns].getDistance( prev_pt );
 
@@ -2334,7 +2337,7 @@ namespace ttcr {
                         }
                     } else {
                         // to intersection
-                        s2 = computeSlowness( curr_pt );
+                        s2 = computeSlowness( curr_pt, true );
                         tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
                         s1 = s2;
@@ -2342,7 +2345,7 @@ namespace ttcr {
                         prev_pt = r_data.back();
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        s = computeSlowness(mid_pt);
+                        s = computeSlowness(mid_pt, true);
                         s *= s;
                         ds = curr_pt.getDistance( prev_pt );
 
@@ -2380,13 +2383,13 @@ namespace ttcr {
 
                         // to Tx
                         prev_pt = r_data.back();
-                        s2 = computeSlowness( Tx[ns] );
+                        s2 = computeSlowness( Tx[ns], true );
                         tt += t0[ns] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
 
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(Tx[ns] + prev_pt);
-                        s = computeSlowness(mid_pt);
+                        s = computeSlowness(mid_pt, true);
                         s *= s;
                         ds = Tx[ns].getDistance( prev_pt );
 
@@ -2894,8 +2897,12 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& pt) const {
+    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _pt, const bool isTranslated) const {
 
+        sxyz<T1> pt = _pt;
+        if (this->translateOrigin == true && isTranslated == false) {
+            pt -= this->origin;
+        }
         const size_t nnx = ncx+1;
         const size_t nny = ncy+1;
         const size_t nnz = ncz+1;

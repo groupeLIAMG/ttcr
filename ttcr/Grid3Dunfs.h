@@ -350,7 +350,7 @@ namespace ttcr {
             }
             if ( found==false ) {
 
-                T2 sTx = this->computeSlowness( Tx[n] );
+                T2 sTx = this->computeSlowness( Tx[n], true );
 
                 T2 cellNo = this->getCellNo(Tx[n]);
                 if ( Grid3Dun<T1,T2,Node3Dn<T1,T2>>::source_radius == 0.0 ) {
