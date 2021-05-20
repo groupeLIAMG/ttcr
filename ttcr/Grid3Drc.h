@@ -300,6 +300,9 @@ namespace ttcr {
 
         if ( this->translateOrigin ) {
             this->origin = {xmin, ymin, zmin};
+            xmax -= xmin;
+            ymax -= ymin;
+            zmax -= zmin;
             xmin = 0.0;
             ymin = 0.0;
             zmin = 0.0;
