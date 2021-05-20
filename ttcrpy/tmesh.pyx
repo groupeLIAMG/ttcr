@@ -606,8 +606,7 @@ cdef class Mesh3d:
         for n in range(nTx):
             s = 0.0
             for nn in range(vTx[n].size()):
-                s += self.grid.computeSlowness(vTx[n][nn], False)# a parameter is added to indicate that the point is not yet translated
-                #if we chose to work in relative coordinates
+                s += self.grid.computeSlowness(vTx[n][nn])
             s0[iTx[n]] = s/vTx[n].size()
         return s0
 

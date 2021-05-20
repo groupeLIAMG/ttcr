@@ -172,7 +172,11 @@ namespace ttcr {
             }
         }
 
-        T1 computeSlowness(const sxyz<T1>& pt) const {
+        T1 computeSlowness(const sxyz<T1>& _pt, const bool isTranslated=false) const {
+            sxyz<T1> pt = _pt;
+            if (this->translateOrigin == true && isTranslated == false) {
+                pt -= this->origin;
+            }
             return cells.getSlowness(getCellNo(pt));
         }
 

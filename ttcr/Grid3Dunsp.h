@@ -869,7 +869,7 @@ namespace ttcr {
             }
         }
         //If Rx is not on a node:
-        T1 slo = this->computeSlowness( Rx );
+        T1 slo = this->computeSlowness( Rx, true );
 
         T2 cellNo = this->getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];
@@ -900,7 +900,7 @@ namespace ttcr {
             }
         }
         //If Rx is not on a node:
-        T1 slo = this->computeSlowness( Rx );
+        T1 slo = this->computeSlowness( Rx, true );
 
         T2 cellNo = this->getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];

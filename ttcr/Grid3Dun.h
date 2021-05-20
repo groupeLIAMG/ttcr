@@ -409,7 +409,7 @@ namespace ttcr {
 
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
 
-        T1 computeSlowness( const sxyz<T1>& _Rx, const bool& is_trnslated=true) const;
+        T1 computeSlowness(const sxyz<T1>& _pt, const bool isTranslated=false) const;
         T1 computeSlowness(const sxyz<T1>& curr_pt,
                            const bool onNode,
                            const T2 nodeNo,
@@ -826,7 +826,7 @@ namespace ttcr {
         }
         // TODO : proceed by interpolation
         // If Rx is not on a node
-        T1 slo = computeSlowness( Rx );
+        T1 slo = computeSlowness( Rx, true );
 
         T2 cellNo = getCellNo( Rx );
 
@@ -856,7 +856,7 @@ namespace ttcr {
             }
         }
         //If Rx is not on a node:
-        T1 slo = computeSlowness( Rx );
+        T1 slo = computeSlowness( Rx, true );
 
         T2 cellNo = getCellNo( Rx );
 
@@ -4837,7 +4837,7 @@ namespace ttcr {
                 allNodes.insert( itmp[2] );
                 allNodes.insert( itmp[3] );
                 if ( processVel ) {
-                    T1 s_sq = computeSlowness(mid_pt);
+                    T1 s_sq = computeSlowness(mid_pt, true);
                     s_sq *= s_sq;  // slowness squared
                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                 } else {
@@ -4931,7 +4931,7 @@ namespace ttcr {
                             allNodes.insert(itmp[3]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -4976,7 +4976,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[2] );
                     }
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5055,7 +5055,7 @@ namespace ttcr {
                             allNodes.insert( itmp[2] );
                             allNodes.insert( itmp[3] );
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -5102,7 +5102,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[0] );
                     allNodes.insert( edgeNodes[1] );
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5207,7 +5207,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[2] );
                     }
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5278,7 +5278,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5385,7 +5385,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[2] );
                     }
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5464,7 +5464,7 @@ namespace ttcr {
                             allNodes.insert( faceNodes[2] );
                         }
                         if ( processVel ) {
-                            T1 s_sq = computeSlowness(mid_pt);
+                            T1 s_sq = computeSlowness(mid_pt, true);
                             s_sq *= s_sq;  // slowness squared
                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                         } else {
@@ -5543,7 +5543,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5621,7 +5621,7 @@ namespace ttcr {
                     allNodes.insert( tetrahedra[cellNo].i[3] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -5685,7 +5685,7 @@ namespace ttcr {
                             allNodes.insert(nodeNo);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -5726,7 +5726,7 @@ namespace ttcr {
                             allNodes.insert(nodeNo);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -5755,7 +5755,7 @@ namespace ttcr {
                             allNodes.insert(edgeNodes[1]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -5804,7 +5804,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[3]);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -5850,7 +5850,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[3]);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -5890,7 +5890,7 @@ namespace ttcr {
                             allNodes.insert(itmp[3]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -5945,7 +5945,7 @@ namespace ttcr {
                                         allNodes.insert(itmp[3]);
 
                                         if ( processVel ) {
-                                            T1 s_sq = computeSlowness(mid_pt);
+                                            T1 s_sq = computeSlowness(mid_pt, true);
                                             s_sq *= s_sq;  // slowness squared
                                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                         } else {
@@ -6210,7 +6210,7 @@ namespace ttcr {
                             allNodes.insert(itmp[3]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -6233,7 +6233,7 @@ namespace ttcr {
                     if ( r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        //                        s = computeSlowness(mid_pt);
+                        //                        s = computeSlowness(mid_pt, true);
                         //                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
@@ -6255,7 +6255,7 @@ namespace ttcr {
                                 allNodes.insert(nodeNo);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -6289,7 +6289,7 @@ namespace ttcr {
                                 allNodes.insert( edgeNodes[1] );
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -6320,7 +6320,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[2] );
 
                         if ( processVel ) {
-                            T1 s_sq = computeSlowness(mid_pt);
+                            T1 s_sq = computeSlowness(mid_pt, true);
                             s_sq *= s_sq;  // slowness squared
                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                         } else {
@@ -6387,7 +6387,7 @@ namespace ttcr {
                             allNodes.insert( tetrahedra[cellNo].i[3] );
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -6431,7 +6431,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -6513,7 +6513,7 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        //                        s = computeSlowness(mid_pt);
+                        //                        s = computeSlowness(mid_pt, true);
                         //                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
@@ -6536,7 +6536,7 @@ namespace ttcr {
                                 allNodes.insert( edgeNodesPrev[1] );
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -6568,7 +6568,7 @@ namespace ttcr {
                             allNodes.insert( edgeNodes[1] );
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -6596,7 +6596,7 @@ namespace ttcr {
                             allNodes.insert( edgeNodes[1] );
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -6624,7 +6624,7 @@ namespace ttcr {
                             allNodes.insert( edgeNodes[1] );
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -6658,7 +6658,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[2] );
 
                         if ( processVel ) {
-                            T1 s_sq = computeSlowness(mid_pt);
+                            T1 s_sq = computeSlowness(mid_pt, true);
                             s_sq *= s_sq;  // slowness squared
                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                         } else {
@@ -6727,7 +6727,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -6811,7 +6811,7 @@ namespace ttcr {
                     if (r_tmp.size() > 1 ) {
                         // compute terms of matrix M
                         mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                        //                        s = computeSlowness(mid_pt);
+                        //                        s = computeSlowness(mid_pt, true);
                         //                        s *= s;
                         ds = curr_pt.getDistance( prev_pt );
                     }
@@ -6836,7 +6836,7 @@ namespace ttcr {
                                 allNodes.insert( faceNodesPrev[2] );
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -6872,7 +6872,7 @@ namespace ttcr {
                                 allNodes.insert( faceNodesPrev[2] );
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -6904,7 +6904,7 @@ namespace ttcr {
                         allNodes.insert( faceNodes[2] );
 
                         if ( processVel ) {
-                            T1 s_sq = computeSlowness(mid_pt);
+                            T1 s_sq = computeSlowness(mid_pt, true);
                             s_sq *= s_sq;  // slowness squared
                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                         } else {
@@ -6959,7 +6959,7 @@ namespace ttcr {
                         if (r_tmp.size() > 1 ) {
                             // compute terms of matrix M
                             mid_pt = static_cast<T1>(0.5)*(curr_pt + prev_pt);
-                            //                            s = computeSlowness(mid_pt);
+                            //                            s = computeSlowness(mid_pt, true);
                             //                            s *= s;
                             ds = curr_pt.getDistance( prev_pt );
                         }
@@ -6984,7 +6984,7 @@ namespace ttcr {
                                     allNodes.insert( faceNodesPrev[2] );
 
                                     if ( processVel ) {
-                                        T1 s_sq = computeSlowness(mid_pt);
+                                        T1 s_sq = computeSlowness(mid_pt, true);
                                         s_sq *= s_sq;  // slowness squared
                                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                     } else {
@@ -7020,7 +7020,7 @@ namespace ttcr {
                                     allNodes.insert( faceNodesPrev[2] );
 
                                     if ( processVel ) {
-                                        T1 s_sq = computeSlowness(mid_pt);
+                                        T1 s_sq = computeSlowness(mid_pt, true);
                                         s_sq *= s_sq;  // slowness squared
                                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                     } else {
@@ -7052,7 +7052,7 @@ namespace ttcr {
                             allNodes.insert( faceNodes[2] );
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7125,7 +7125,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -7192,7 +7192,7 @@ namespace ttcr {
                     allNodes.insert( tetrahedra[cellNo].i[3] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -7251,7 +7251,7 @@ namespace ttcr {
                             allNodes.insert(nodeNo);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7279,7 +7279,7 @@ namespace ttcr {
                             allNodes.insert(nodeNo);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7306,7 +7306,7 @@ namespace ttcr {
                             allNodes.insert(edgeNodes[1]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7342,7 +7342,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[3]);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -7374,7 +7374,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[3]);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -7400,7 +7400,7 @@ namespace ttcr {
                             allNodes.insert(itmp[3]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7441,7 +7441,7 @@ namespace ttcr {
                                         allNodes.insert(itmp[3]);
 
                                         if ( processVel ) {
-                                            T1 s_sq = computeSlowness(mid_pt);
+                                            T1 s_sq = computeSlowness(mid_pt, true);
                                             s_sq *= s_sq;  // slowness squared
                                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                         } else {
@@ -7693,7 +7693,7 @@ namespace ttcr {
                 allNodes.insert( itmp[3] );
 
                 if ( processVel ) {
-                    T1 s_sq = computeSlowness(mid_pt);
+                    T1 s_sq = computeSlowness(mid_pt, true);
                     s_sq *= s_sq;  // slowness squared
                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                 } else {
@@ -7791,7 +7791,7 @@ namespace ttcr {
                             allNodes.insert(itmp[3]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7839,7 +7839,7 @@ namespace ttcr {
                     }
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -7925,7 +7925,7 @@ namespace ttcr {
                             allNodes.insert( itmp[3] );
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -7976,7 +7976,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -8084,7 +8084,7 @@ namespace ttcr {
                     }
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -8161,7 +8161,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -8269,7 +8269,7 @@ namespace ttcr {
                     }
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -8353,7 +8353,7 @@ namespace ttcr {
                         }
 
                         if ( processVel ) {
-                            T1 s_sq = computeSlowness(mid_pt);
+                            T1 s_sq = computeSlowness(mid_pt, true);
                             s_sq *= s_sq;  // slowness squared
                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                         } else {
@@ -8438,7 +8438,7 @@ namespace ttcr {
                     allNodes.insert( edgeNodes[1] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -8518,7 +8518,7 @@ namespace ttcr {
                     allNodes.insert( tetrahedra[cellNo].i[3] );
 
                     if ( processVel ) {
-                        T1 s_sq = computeSlowness(mid_pt);
+                        T1 s_sq = computeSlowness(mid_pt, true);
                         s_sq *= s_sq;  // slowness squared
                         update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                     } else {
@@ -8587,7 +8587,7 @@ namespace ttcr {
                             allNodes.insert(nodeNo);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -8628,7 +8628,7 @@ namespace ttcr {
                             allNodes.insert(nodeNo);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -8658,7 +8658,7 @@ namespace ttcr {
                             allNodes.insert(edgeNodes[1]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -8708,7 +8708,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[3]);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -8755,7 +8755,7 @@ namespace ttcr {
                                 allNodes.insert(itmp[3]);
 
                                 if ( processVel ) {
-                                    T1 s_sq = computeSlowness(mid_pt);
+                                    T1 s_sq = computeSlowness(mid_pt, true);
                                     s_sq *= s_sq;  // slowness squared
                                     update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                 } else {
@@ -8796,7 +8796,7 @@ namespace ttcr {
                             allNodes.insert(itmp[3]);
 
                             if ( processVel ) {
-                                T1 s_sq = computeSlowness(mid_pt);
+                                T1 s_sq = computeSlowness(mid_pt, true);
                                 s_sq *= s_sq;  // slowness squared
                                 update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                             } else {
@@ -8851,7 +8851,7 @@ namespace ttcr {
                                         allNodes.insert(itmp[3]);
 
                                         if ( processVel ) {
-                                            T1 s_sq = computeSlowness(mid_pt);
+                                            T1 s_sq = computeSlowness(mid_pt, true);
                                             s_sq *= s_sq;  // slowness squared
                                             update_m_data(m_data, m, allNodes, mid_pt, ds, s_sq);
                                         } else {
@@ -9235,7 +9235,7 @@ namespace ttcr {
 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                //tt_s2 = computeSlowness(curr_pt);
+                //tt_s2 = computeSlowness(curr_pt, true);
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onNode){
                     nodeNo=newNode;
@@ -9416,7 +9416,7 @@ namespace ttcr {
                 }
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                //tt_s2 = computeSlowness(curr_pt);
+                //tt_s2 = computeSlowness(curr_pt, true);
                 tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                         faceNodes);
 
@@ -9614,7 +9614,7 @@ namespace ttcr {
 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                //tt_s2 = computeSlowness(curr_pt);
+                //tt_s2 = computeSlowness(curr_pt, true);
                 inlimitD=false;
                 if (std::abs(curr_pt.x-Xmax)<=minDist*minDist ||std::abs(curr_pt.x-Xmin)<=minDist*minDist )
                     inlimitD=true;
@@ -10123,7 +10123,7 @@ namespace ttcr {
 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                //                tt_s2 = computeSlowness(curr_pt);
+                //                tt_s2 = computeSlowness(curr_pt, true);
                 time=t_i-curr_pt.getDistance(prev_pt)*Slow;
                 if (onNode){
                     nodeNo=newNode;
@@ -10308,7 +10308,7 @@ namespace ttcr {
                 }
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                //                tt_s2 = computeSlowness(curr_pt);
+                //                tt_s2 = computeSlowness(curr_pt, true);
                 tt_s2 = computeSlowness(curr_pt, onNode, nodeNo, onEdge, edgeNodes,
                                         faceNodes);
                 tt += 0.5*(tt_s1 + tt_s2) * r_tmp.back().getDistance( curr_pt );
@@ -10509,7 +10509,7 @@ namespace ttcr {
 
                 prev_pt = curr_pt;
                 curr_pt = pt_i;
-                //                tt_s2 = computeSlowness(curr_pt);
+                //                tt_s2 = computeSlowness(curr_pt, true);
                 inlimitD=false;
                 if (std::abs(curr_pt.x-Xmax)<=minDist*minDist ||std::abs(curr_pt.x-Xmin)<=minDist*minDist )
                     inlimitD=true;
@@ -11379,16 +11379,16 @@ namespace ttcr {
 
 
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _Rx, const bool& is_trnslated ) const {
+    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _pt, const bool isTranslated) const {
 
-        //Calculate the slowness of any point that is not on a node
+        // Calculate the slowness of any point that is not on a node
 
-        sxyz<T1> Rx = _Rx;
-        if (this->translateOrigin == true && is_trnslated == false){
-            Rx -= this->origin;
-            checkPts(std::vector<sxyz<T1>> {Rx});
+        sxyz<T1> pt = _pt;
+        if (this->translateOrigin == true && isTranslated == false) {
+            pt -= this->origin;
+            checkPts(std::vector<sxyz<T1>> {pt});
         }
-        T2 cellNo = this->getCellNo( Rx );
+        T2 cellNo = this->getCellNo( pt );
 
         std::vector<NODE*> interpNodes;
 
@@ -11398,9 +11398,9 @@ namespace ttcr {
             }
         }
         if ( processVel )
-            return Interpolator<T1>::trilinearTriangleVel( Rx, interpNodes );
+            return Interpolator<T1>::trilinearTriangleVel( pt, interpNodes );
         else
-            return Interpolator<T1>::trilinearTriangle( Rx, interpNodes );
+            return Interpolator<T1>::trilinearTriangle( pt, interpNodes );
     }
 
 

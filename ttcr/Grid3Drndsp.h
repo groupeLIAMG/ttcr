@@ -788,7 +788,7 @@ namespace ttcr {
                 txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
                 txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+txNodes.size()-1) );
                 frozen.push_back( true );
-                T1 slo = this->computeSlowness( Tx[n] );
+                T1 slo = this->computeSlowness( Tx[n], true );
                 txNodes.back().setNodeSlowness( slo );
 
                 queue.push( &(txNodes.back()) );

@@ -287,7 +287,15 @@ namespace ttcr {
 
         virtual void dump_secondary(std::ofstream&) const {}
 
-        virtual T1 computeSlowness(const sxyz<T1>& _Rx, const bool& is_trnslated=true) const {
+        /**
+         * compute slowness at given point
+         *
+         * @tparam T1 underlying type of sxyz object
+         * @param pt point to consider
+         * @param isTranslated point to consider has been translated (considered only if grid attribute translateOrigin == true)
+         * @returns slowness value
+         */
+        virtual T1 computeSlowness(const sxyz<T1>& pt, const bool isTranslated=false) const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 
