@@ -191,8 +191,9 @@ namespace ttcr {
             }
         }
 
-        void computeD(const std::vector<sxyz<T1>> &pts,
-                      std::vector<std::vector<sijv<T1>>> &d_data) const;
+        void computeD(std::vector<sxyz<T1>> pts,
+                      std::vector<std::vector<sijv<T1>>> &d_data,
+                      const bool translated=false) const;
 
         void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                       const int order=2, const int taylorSeriesOrder=2,
@@ -11816,8 +11817,15 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::computeD(const std::vector<sxyz<T1>> &pts,
-                                        std::vector<std::vector<sijv<T1>>> &d_data) const {
+    void Grid3Dun<T1,T2,NODE>::computeD(std::vector<sxyz<T1>> pts,
+                                        std::vector<std::vector<sijv<T1>>> &d_data,
+                                        const bool translated) const {
+
+        if (this->translateOrigin == true && translated == false) {
+            for ( size_t n=0; n<pts.size(); ++n ) {
+                pts[n] -= this->origin;
+            }
+        }
 
         if ( d_data.size() != pts.size() ) {
             d_data.resize(pts.size());
@@ -11838,7 +11846,9 @@ namespace ttcr {
             if ( !found ) {
                 T2 cellNO = this->getCellNo(pts[np]);
                 if ( cellNO==std::numeric_limits<T2>::max() ) {
-                    return;
+                    std::ostringstream msg;
+                    msg << "Error: Point (" << pts[np] << ") outside grid.";
+                    throw std::runtime_error(msg.str());
                 }
                 std::array<T1,4> weights;
                 T1 sum (0.0);
