@@ -236,7 +236,7 @@ namespace ttcr {
                          T2& cellParentRx,
                          const size_t threadNo) const;
 
-        void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
 
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
         bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
@@ -805,9 +805,8 @@ namespace ttcr {
 
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Duc<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& _pts, const bool translated) const {
+    void Grid3Duc<T1,T2,NODE>::checkPts(std::vector<sxyz<T1>> pts, const bool translated) const {
 
-        std::vector<sxyz<T1>> pts = _pts;
         if (this->translateOrigin == true && translated == false) {
             for ( size_t n=0; n<pts.size(); ++n ) {
                 pts[n] -= this->origin;

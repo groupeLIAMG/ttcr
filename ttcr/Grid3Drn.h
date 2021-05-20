@@ -155,7 +155,7 @@ namespace ttcr {
             }
         }
 
-        T1 computeSlowness(const sxyz<T1>&pt, const bool isTranslated=false) const;
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const;
 
 #ifdef VTK
         void saveModelVTR(const std::string &,
@@ -222,7 +222,7 @@ namespace ttcr {
             k = static_cast<long long>( small2 + (pt.z-zmin)/dz );
         }
 
-        void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
 
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2. * source.getDistance( node );
@@ -757,9 +757,8 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Drn<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& _pts, const bool translated) const {
+    void Grid3Drn<T1,T2,NODE>::checkPts(std::vector<sxyz<T1>> pts, const bool translated) const {
 
-        std::vector<sxyz<T1>> pts = _pts;
         if (this->translateOrigin == true && translated == false) {
             for ( size_t n=0; n<pts.size(); ++n ) {
                 pts[n] -= this->origin;
@@ -2904,9 +2903,8 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _pt, const bool isTranslated) const {
+    T1 Grid3Drn<T1,T2,NODE>::computeSlowness(sxyz<T1> pt, const bool isTranslated) const {
 
-        sxyz<T1> pt = _pt;
         if (this->translateOrigin == true && isTranslated == false) {
             pt -= this->origin;
         }

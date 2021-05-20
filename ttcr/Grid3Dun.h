@@ -225,7 +225,7 @@ namespace ttcr {
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
 
-        void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
 
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
         bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
@@ -409,7 +409,7 @@ namespace ttcr {
 
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
 
-        T1 computeSlowness(const sxyz<T1>& _pt, const bool isTranslated=false) const;
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const;
         T1 computeSlowness(const sxyz<T1>& curr_pt,
                            const bool onNode,
                            const T2 nodeNo,
@@ -875,11 +875,9 @@ namespace ttcr {
     }
 
 
-
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& _pts, const bool translated) const {
+    void Grid3Dun<T1,T2,NODE>::checkPts(std::vector<sxyz<T1>> pts, const bool translated) const {
         
-        std::vector<sxyz<T1>> pts = _pts;
         if (this->translateOrigin == true && translated == false) {
             for ( size_t n=0; n<pts.size(); ++n ) {
                 pts[n] -= this->origin;
@@ -11386,11 +11384,10 @@ namespace ttcr {
 
 
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _pt, const bool isTranslated) const {
+    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(sxyz<T1> pt, const bool isTranslated) const {
 
         // Calculate the slowness of any point that is not on a node
 
-        sxyz<T1> pt = _pt;
         if (this->translateOrigin == true && isTranslated == false) {
             pt -= this->origin;
             checkPts(std::vector<sxyz<T1>> {pt}, true);

@@ -294,7 +294,7 @@ namespace ttcr {
          * @param isTranslated point to consider has been translated (considered only if grid attribute translateOrigin == true)
          * @returns slowness value
          */
-        virtual T1 computeSlowness(const sxyz<T1>& pt, const bool isTranslated=false) const {
+        virtual T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 
@@ -314,7 +314,7 @@ namespace ttcr {
          * @param translated point to consider has been translated (considered only if grid attribute translateOrigin == true)
          * @throws runtime_error if a point is outside grid
          */
-        virtual void checkPts(const std::vector<sxyz<T1>>& pts, const bool translated=false) const {
+        virtual void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const {
             throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
 
