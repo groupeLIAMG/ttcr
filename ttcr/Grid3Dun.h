@@ -191,8 +191,9 @@ namespace ttcr {
             }
         }
 
-        void computeD(const std::vector<sxyz<T1>> &pts,
-                      std::vector<std::vector<sijv<T1>>> &d_data) const;
+        void computeD(std::vector<sxyz<T1>> pts,
+                      std::vector<std::vector<sijv<T1>>> &d_data,
+                      const bool translated=false) const;
 
         void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                       const int order=2, const int taylorSeriesOrder=2,
@@ -225,7 +226,7 @@ namespace ttcr {
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
 
-        void checkPts(const std::vector<sxyz<T1>>&) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
 
         bool insideTetrahedron(const sxyz<T1>&, const T2) const;
         bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
@@ -409,7 +410,7 @@ namespace ttcr {
 
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
 
-        T1 computeSlowness(const sxyz<T1>& _pt, const bool isTranslated=false) const;
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const;
         T1 computeSlowness(const sxyz<T1>& curr_pt,
                            const bool onNode,
                            const T2 nodeNo,
@@ -875,9 +876,14 @@ namespace ttcr {
     }
 
 
-
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    void Grid3Dun<T1,T2,NODE>::checkPts(std::vector<sxyz<T1>> pts, const bool translated) const {
+        
+        if (this->translateOrigin == true && translated == false) {
+            for ( size_t n=0; n<pts.size(); ++n ) {
+                pts[n] -= this->origin;
+            }
+        }
 
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -899,7 +905,7 @@ namespace ttcr {
             }
             if ( found == false ) {
                 std::ostringstream msg;
-                msg << "Error: Point (" << pts[n].x << ", " << pts[n].y << ", " << pts[n] .z << ") outside grid.";
+                msg << "Error: Point (" << pts[n] << ") outside grid.";
                 throw std::runtime_error(msg.str());
             }
         }
@@ -11379,14 +11385,13 @@ namespace ttcr {
 
 
     template<typename T1, typename T2, typename NODE>
-    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(const sxyz<T1>& _pt, const bool isTranslated) const {
+    T1 Grid3Dun<T1,T2,NODE>::computeSlowness(sxyz<T1> pt, const bool isTranslated) const {
 
         // Calculate the slowness of any point that is not on a node
 
-        sxyz<T1> pt = _pt;
         if (this->translateOrigin == true && isTranslated == false) {
             pt -= this->origin;
-            checkPts(std::vector<sxyz<T1>> {pt});
+            checkPts(std::vector<sxyz<T1>> {pt}, true);
         }
         T2 cellNo = this->getCellNo( pt );
 
@@ -11812,8 +11817,15 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
-    void Grid3Dun<T1,T2,NODE>::computeD(const std::vector<sxyz<T1>> &pts,
-                                        std::vector<std::vector<sijv<T1>>> &d_data) const {
+    void Grid3Dun<T1,T2,NODE>::computeD(std::vector<sxyz<T1>> pts,
+                                        std::vector<std::vector<sijv<T1>>> &d_data,
+                                        const bool translated) const {
+
+        if (this->translateOrigin == true && translated == false) {
+            for ( size_t n=0; n<pts.size(); ++n ) {
+                pts[n] -= this->origin;
+            }
+        }
 
         if ( d_data.size() != pts.size() ) {
             d_data.resize(pts.size());
@@ -11834,7 +11846,9 @@ namespace ttcr {
             if ( !found ) {
                 T2 cellNO = this->getCellNo(pts[np]);
                 if ( cellNO==std::numeric_limits<T2>::max() ) {
-                    return;
+                    std::ostringstream msg;
+                    msg << "Error: Point (" << pts[np] << ") outside grid.";
+                    throw std::runtime_error(msg.str());
                 }
                 std::array<T1,4> weights;
                 T1 sum (0.0);

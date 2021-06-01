@@ -31,7 +31,7 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
         void getSlowness(vector[T1]&) except +
-        T1 computeSlowness(sxyz[T1]&) except +    # we use the fact that second argument is False by default
+        T1 computeSlowness(sxyz[T1]) except +    # we use the fact that second argument is False by default
         void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[sxyz[T1]]& Tx,
                       vector[T1]& t0,

@@ -177,8 +177,8 @@ namespace ttcr {
         if ( verbose > 2 ) {
             std::cout << "\nIn Grid3Drcfs::raytrace(Tx, t0, Rx, threadNo)\n" << std::endl;
         }
-        this->checkPts(Tx);
-        this->checkPts(Rx);
+        this->checkPts(Tx, true);
+        this->checkPts(Rx, true);
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
@@ -251,9 +251,9 @@ namespace ttcr {
                                      const std::vector<std::vector<sxyz<T1>>>& Rx,
                                      const size_t threadNo) const {
 
-        this->checkPts(Tx);
+        this->checkPts(Tx, true);
         for ( size_t n=0; n<Rx.size(); ++n ) {
-            this->checkPts(Rx[n]);
+            this->checkPts(Rx[n], true);
         }
 
         for ( size_t n=0; n<this->nodes.size(); ++n ) {

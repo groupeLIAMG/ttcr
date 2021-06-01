@@ -290,12 +290,11 @@ namespace ttcr {
         /**
          * compute slowness at given point
          *
-         * @tparam T1 underlying type of sxyz object
          * @param pt point to consider
          * @param isTranslated point to consider has been translated (considered only if grid attribute translateOrigin == true)
          * @returns slowness value
          */
-        virtual T1 computeSlowness(const sxyz<T1>& pt, const bool isTranslated=false) const {
+        virtual T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 
@@ -308,12 +307,28 @@ namespace ttcr {
 
         void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
 
-        virtual void checkPts(const std::vector<sxyz<T1>>&) const {
+        /**
+         * check if points are inside grid
+         *
+         * @param pts points to consider
+         * @param translated point to consider has been translated (considered only if grid attribute translateOrigin == true)
+         * @throws runtime_error if a point is outside grid
+         */
+        virtual void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const {
             throw std::runtime_error("Method checkPts should be implemented in subclass");
         }
 
-        virtual void computeD(const std::vector<sxyz<T1>> &pts,
-                              std::vector<std::vector<sijv<T1>>> &d_data) const {
+        /**
+         * compute terms of matrix of interpolation weights for velocity data points constraint
+         *
+         * @param pts points to consider
+         * @param d_data values to fill matrix D
+         * @param translated point to consider has been translated (considered only if grid attribute translateOrigin == true)
+         * @throws runtime_error if a point is outside grid
+         */
+        virtual void computeD(std::vector<sxyz<T1>> pts,
+                              std::vector<std::vector<sijv<T1>>> &d_data,
+                              const bool translated=false) const {
             throw std::runtime_error("Method computeD should be implemented in subclass");
         }
 

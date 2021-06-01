@@ -1,4 +1,4 @@
-[![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.svg)](https://github.com/groupeLIAMG/ttcr)
+![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.svg)
 ============================
 
 [![pypi](https://img.shields.io/pypi/v/ttcrpy.svg)](https://pypi.org/project/ttcrpy/)
@@ -90,7 +90,7 @@ mex -v -O COMPFLAGS='$COMPFLAGS /Qstd=c++11' -largeArrayDims -I../ttcr -I../boos
 Unfortunately, I cannot offer extensive support for compiling on other platforms, especially windows variants.
 
 
-Please report bugs to bernard dot giroux at ete.inrs.ca
+Please report bugs to https://github.com/groupeLIAMG/ttcr/issues
 
 
 
