@@ -503,6 +503,12 @@ namespace ttcr {
                            sxyz<T1>& g,
                            std::array<T2,2>& edgeNodes,
                            sxyz<T1>& pt_i) const;
+        bool projectOnFace(const sxyz<T1>& curr_pt,
+                           const T2 nodeNo,
+                           sxyz<T1>& g,
+                           std::array<T2,2>& edgeNodes,
+                           sxyz<T1>& pt_i,
+                           const size_t & threadNo ) const;
         sxyz<T1> projectOnFace(const sxyz<T1>& curr_pt,
                                const sxyz<T1>& g,
                                std::array<T2,2>& edgeNodes,
@@ -974,15 +980,15 @@ namespace ttcr {
             // points are coplanar, check if pt is inside triangle
             it1 = testInTriangle(v2, v3, v4, v);
         }
-        if ( std::abs(D2)<small ) {
+        if ( std::abs(D2)<small2 ) {
             it2 = testInTriangle(v1, v3, v4, v);
         }
 
-        if ( std::abs(D3)<small ) {
+        if ( std::abs(D3)<small2 ) {
             it3 = testInTriangle(v1, v2, v4, v);
         }
 
-        if ( std::abs(D4)<small ) {
+        if ( std::abs(D4)<small2 ) {
             it4 = testInTriangle(v1, v2, v3, v);
         }
 
@@ -2015,7 +2021,7 @@ namespace ttcr {
 #endif
                     // projet gradient on face and find intersection on next edge
                     sxyz<T1> pt_i;
-                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i, threadNo);
 
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
@@ -3025,7 +3031,7 @@ namespace ttcr {
                 if ( foundIntersection == false ) {
                     // projet gradient on face and find intersection on next edge
                     sxyz<T1> pt_i;
-                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i, threadNo);
 
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
@@ -3924,7 +3930,7 @@ namespace ttcr {
                 if ( foundIntersection == false ) {
                     // projet gradient on face and find intersection on next edge
                     sxyz<T1> pt_i;
-                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i, threadNo);
 
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
@@ -5007,7 +5013,7 @@ namespace ttcr {
                     nodeNoPrev = nodeNo;
                     // projet gradient on face and find intersection on next edge
                     sxyz<T1> pt_i;
-                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i, threadNo);
 
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
@@ -6351,7 +6357,7 @@ namespace ttcr {
                     nodeNoPrev = nodeNo;
                     // projet gradient on face and find intersection on next edge
                     sxyz<T1> pt_i;
-                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i, threadNo);
 
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
@@ -7872,7 +7878,7 @@ namespace ttcr {
                     nodeNoPrev = nodeNo;
                     // projet gradient on face and find intersection on next edge
                     sxyz<T1> pt_i;
-                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i);
+                    foundIntersection = projectOnFace(curr_pt, nodeNo, g, edgeNodes, pt_i, threadNo);
 
                     if ( foundIntersection == false ) {
                         std::cout << "\n\nWarning: finding raypath (onNode) failed to converge for Rx "
@@ -11495,7 +11501,7 @@ namespace ttcr {
         } else {
             thirdnode = edgeNodes2[1];
         }
-
+        std::array<T2,2> oldEdgeNodes = edgeNodes;
         sxyz<T1> tmp = projectOnFace(g, {edgeNodes[0], edgeNodes[1], thirdnode});
         // find the intersection between tmp and the face edges
         for (size_t i = 0; i < 2; i++) {
@@ -11527,7 +11533,7 @@ namespace ttcr {
         if ((g_proj.x == 0. && g_proj.y == 0. && g_proj.z == 0.) ||
             (dot(g,g_proj) < 0 )){
             T2 minttNode;
-            minttNode = nodes[edgeNodes[0]].getTT(threadNo) < nodes[edgeNodes[1]].getTT(threadNo)? edgeNodes[0]:edgeNodes[1];
+            minttNode = nodes[oldEdgeNodes[0]].getTT(threadNo) < nodes[oldEdgeNodes[1]].getTT(threadNo)? oldEdgeNodes[0]:oldEdgeNodes[1];
             minttNode = nodes[minttNode].getTT(threadNo) < nodes[thirdnode].getTT(threadNo)? minttNode:thirdnode;
             pt_i = nodes[minttNode];
             edgeNodes[0] = minttNode;
@@ -11535,6 +11541,97 @@ namespace ttcr {
 
         }
         return g_proj;
+    }
+    template<typename T1, typename T2, typename NODE>
+    bool Grid3Dun<T1,T2,NODE>::projectOnFace(const sxyz<T1>& curr_pt,
+                                             const T2 nodeNo,
+                                             sxyz<T1>& g,
+                                             std::array<T2,2>& edgeNodes,
+                                             sxyz<T1>& pt_i,
+                                             const size_t & threadNo) const {
+        std::set<std::array<T2,3>> faces;  // for some reason, unordered_set does not compile
+
+        // loop over cells to find faces connected to current point
+        for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+            // find nodes other that nodeNo
+            std::array<T2,3> tmpnodes;
+            size_t n = 0;
+            for ( size_t nn=0; nn<4; ++nn ) {
+                if ( nodeNo != tetrahedra[*nc].i[nn] ) {
+                    tmpnodes[n++] = tetrahedra[*nc].i[nn];
+                }
+            }
+
+            std::sort(tmpnodes.begin(), tmpnodes.end());
+            faces.insert({nodeNo, tmpnodes[0], tmpnodes[1]});
+            faces.insert({nodeNo, tmpnodes[0], tmpnodes[2]});
+            faces.insert({nodeNo, tmpnodes[1], tmpnodes[2]});
+        }
+
+        bool found = false;
+        sxyz<T1> g_old = g;
+        T1 minAngle = std::numeric_limits<T1>::max();
+        T1 ng = norm(g);
+        // find projection that is closest to current gradient
+        for ( auto fn=faces.begin(); fn!=faces.end(); ++fn ) {
+            sxyz<T1> gtmp = projectOnFace(g_old, *fn);
+
+            // find pt of intersection with opposing edge
+
+            sxyz<T1> x1 = {nodes[(*fn)[1]].getX(),
+                nodes[(*fn)[1]].getY(),
+                nodes[(*fn)[1]].getZ()};
+            sxyz<T1> x2 = {nodes[(*fn)[2]].getX(),
+                nodes[(*fn)[2]].getY(),
+                nodes[(*fn)[2]].getZ()};
+            sxyz<T1> x4 = curr_pt + static_cast<T1>(100.0)*x1.getDistance(x2) * gtmp;
+
+            sxyz<T1> a = x2 - x1;
+            sxyz<T1> b = x4 - curr_pt;
+            sxyz<T1> c = curr_pt - x1;
+
+            sxyz<T1> ab = cross(a, b);
+            T1 p = dot(cross(c, b), ab) / norm2(ab);
+
+            if(p >= 0. && p <= 1.){// 0 <= p <= 1 is a sufficient condition to check if pt_i0 is between x1 and x2 and that the midpoint of the line segment [curr_p, pt_i0] is inside the face
+
+                sxyz<T1> pt_i2 = p * x2 + static_cast<T1>(1.0 -p) * x1;
+
+                c = pt_i2 - curr_pt;
+                T1 dcg = dot(c, g_old);
+                T1 angle = std::acos(dcg/(norm(c)*ng));
+
+                if (  angle < minAngle ) {
+                    g = pt_i2 - curr_pt;
+                    pt_i = pt_i2;
+                    edgeNodes[0] = (*fn)[1];
+                    edgeNodes[1] = (*fn)[2];
+                    minAngle = angle;
+                    found = true;
+                }
+
+            }
+
+        }
+        if (!found || dot(g,g_old) < 0 ){
+            T1 tmin = std::numeric_limits<T1>::max();
+            T2 nodeTmin;
+            for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
+                for ( size_t nn=0; nn<4; ++nn ) {
+                    T2 node_i = tetrahedra[*nc].i[nn];
+                    if ( nodeNo != node_i && nodes[node_i].getTT(threadNo) < tmin ) {
+                        nodeTmin = node_i;
+                        tmin = nodes[node_i].getTT(threadNo);
+                    }
+                }
+            }
+            pt_i = nodes[nodeTmin];
+            g = pt_i - curr_pt;
+            edgeNodes[0] = nodeTmin;
+            found = true;
+
+        }
+        return found;
     }
     template<typename T1, typename T2, typename NODE>
     sxyz<T1> Grid3Dun<T1,T2,NODE>::projectOnFace(const sxyz<T1>& curr_pt,
