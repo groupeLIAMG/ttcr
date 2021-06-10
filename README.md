@@ -4,7 +4,7 @@
 [![pypi](https://img.shields.io/pypi/v/ttcrpy.svg)](https://pypi.org/project/ttcrpy/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](./01_LICENSE.txt)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1162725.svg)](https://doi.org/10.5281/zenodo.1162725)
-[![Build Status](https://travis-ci.com/groupeLIAMG/ttcr.svg?branch=master)](https://travis-ci.com/groupeLIAMG/ttcr)
+[![Build status](https://ci.appveyor.com/api/projects/status/t2kgoici4ydm9erv?svg=true)](https://ci.appveyor.com/project/bernard-giroux/ttcr)
 [![Documentation Status](https://readthedocs.org/projects/ttcrpy/badge/?version=latest)](https://ttcrpy.readthedocs.io/en/latest/?badge=latest)
 
 
