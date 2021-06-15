@@ -75,7 +75,7 @@ setup(
     author='Bernard Giroux',
     author_email='bernard.giroux@ete.inrs.ca',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Education',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
