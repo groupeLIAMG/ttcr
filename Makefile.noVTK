@@ -5,11 +5,11 @@
 
 CXX = g++
 CXXOPTIONS = -O3 -std=c++11 -pthread
-CXXFLAGS = $(CXXOPTIONS) -I./eigen-3.3.7 -I./ttcr
+CXXFLAGS = $(CXXOPTIONS) -I./eigen-3.3.7 -I./ttcr -I./boost_1_72_0
 
 LFLAGS =
 
-LIBS = -lboost_system
+LIBS =
 
 HEADERS = ttcr/Cell.h ttcr/Grad.h ttcr/Grid2D.h ttcr/Grid2Drcfs.h ttcr/Grid2Drc.h ttcr/Grid2Drcsp.h ttcr/Grid2Drnfs.h \
 ttcr/Grid2Drn.h ttcr/Grid2Drnsp.h ttcr/Grid2Ducfm.h ttcr/Grid2Ducfs.h ttcr/Grid2Duc.h ttcr/Grid2Ducsp.h \
