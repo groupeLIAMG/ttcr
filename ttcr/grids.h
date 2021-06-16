@@ -795,6 +795,7 @@ namespace ttcr {
                                                     const size_t nt)
     {
 
+#ifdef VTK
         VTUReader reader( par.modelfile.c_str() );
 
         if ( !reader.isValid() ) {
@@ -1033,6 +1034,11 @@ namespace ttcr {
         }
 
         return g;
+#else
+            std::cerr << "Error: program not compiled with VTK support" << std::endl;
+            return nullptr;
+#endif
+
     }
 #endif
 
@@ -2681,6 +2687,7 @@ namespace ttcr {
     Grid2D<T, uint32_t, sxyz<T>> *buildUnstructured2DsfromVtu(const input_parameters &par,
                                                               const size_t nt)
     {
+#ifdef VTK
         VTUReader reader( par.modelfile.c_str() );
 
         if ( !reader.isValid() ) {
@@ -2759,6 +2766,10 @@ namespace ttcr {
             return nullptr;
         }
         return g;
+#else
+            std::cerr << "Error: program not compiled with VTK support" << std::endl;
+            return nullptr;
+#endif
 
     }
 
@@ -2904,7 +2915,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }

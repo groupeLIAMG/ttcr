@@ -147,7 +147,7 @@ int body(const input_parameters &par) {
         }
 #else
         std::cerr << "Error: Program not compiled with VTK support" << std::endl;
-        return nullptr;
+        return 1;
 #endif
     }
 
