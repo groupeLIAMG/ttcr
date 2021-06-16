@@ -66,10 +66,10 @@ jobs:
     #    uses a compiled language
 
     - name: build c++
+      run: |
+        make -f Makefile.noVTK
       with:
         language: cpp
-      run: |
-       make -f Makefile.noVTK
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
