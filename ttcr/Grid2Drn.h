@@ -60,7 +60,7 @@ namespace ttcr {
         dx(ddx), dz(ddz), xmin(minx), zmin(minz),
         xmax(minx+nx*ddx), zmax(minz+nz*ddz),
         ncx(nx), ncz(nz),
-        nodes(std::vector<NODE>( (ncx+1) * (ncz+1), NODE(nt) ))
+        nodes(std::vector<NODE>( static_cast<size_t>(ncx+1) * (ncz+1), NODE(nt) ))
         {
         }
 
@@ -77,8 +77,8 @@ namespace ttcr {
         }
 
         void getSlowness(std::vector<T1>& slowness) const {
-            if (slowness.size() != (ncx+1) * (ncz+1)) {
-                slowness.resize((ncx+1) * (ncz+1));
+            if (slowness.size() != static_cast<size_t>(ncx+1) * (ncz+1)) {
+                slowness.resize(static_cast<size_t>(ncx+1) * (ncz+1));
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = nodes[n].getNodeSlowness();
@@ -87,16 +87,16 @@ namespace ttcr {
 
         size_t getNumberOfNodes(const bool primary=false) const {
             if ( primary ) {
-                return (ncx+1) * (ncz+1);
+                return static_cast<size_t>(ncx+1) * (ncz+1);
             } else {
                 return nodes.size();
             }
         }
 
-        size_t getNumberOfCells() const { return ncx*ncz; }
+        size_t getNumberOfCells() const { return static_cast<size_t>(ncx)*ncz; }
 
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
-            size_t nPrimary = (ncx+1) * (ncz+1);
+            size_t nPrimary = static_cast<size_t>(ncx+1) * (ncz+1);
             tt.resize(nPrimary);
             size_t n = 0;
             for ( size_t nn=0; nn<nodes.size(); ++nn ) {
@@ -217,7 +217,7 @@ namespace ttcr {
         T1 getSlowness(const S& Rx) const;
 
         void dump_secondary(std::ofstream& os) const {
-            size_t nPrimary = (ncx+1) * (ncz+1);
+            size_t nPrimary = static_cast<size_t>(ncx+1) * (ncz+1);
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
             }

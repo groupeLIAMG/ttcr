@@ -85,7 +85,7 @@ namespace ttcr {
     template<typename T1, typename T2, typename S>
     void Grid2Drcfs<T1,T2,S>::setSlowness(const std::vector<T1>& s) {
 
-        if ( this->ncx*this->ncz != s.size() ) {
+        if ( static_cast<size_t>(this->ncx)*this->ncz != s.size() ) {
             throw std::length_error("Error: slowness vectors of incompatible size.");
         }
 
