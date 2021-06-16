@@ -41,6 +41,11 @@ jobs:
           python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
           build-requirements: 'setuptools cython numpy scipy vtk'
 
+      - name: Print variables
+        run: |
+          echo "github.event_name = ${{ github.event_name }}"
+          echo "github.ref = ${{ github.ref }}"
+
       - name: Publish package
         if: github.event_name == 'push' && startsWith( github.ref, 'v')
         uses: pypa/gh-action-pypi-publish@release/v1
