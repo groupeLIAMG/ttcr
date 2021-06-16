@@ -12,13 +12,14 @@
 name: "CodeQL"
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
   schedule:
     - cron: '17 19 * * 3'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   analyze:
@@ -61,6 +62,7 @@ jobs:
       name: buils c++
       run: |
         make -f Makefile.noVTK
+        make -f Makefile.noVTK ttcr2d
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
