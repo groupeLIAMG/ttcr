@@ -1,4 +1,4 @@
-![Logo](https://github.com/groupeLIAMG/ttcr/blob/master/images/ttcrpy_logo.png)
+![Logo](https://github.com/groupeLIAMG/ttcr/raw/master/images/ttcrpy_logo.png)
 ============================
 
 [![pypi](https://img.shields.io/pypi/v/ttcrpy.svg)](https://pypi.org/project/ttcrpy/)
