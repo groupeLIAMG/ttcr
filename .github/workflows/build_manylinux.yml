@@ -4,12 +4,10 @@ name: ttcrpy package build and publish for linux
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push, pull request, of tag creation events but only for the master branch
+  # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches: [ master ]
   pull_request:
-    branches: [ master ]
-  create:
     branches: [ master ]
 
   # Allows you to run this workflow manually from the Actions tab
@@ -44,7 +42,7 @@ jobs:
           build-requirements: 'setuptools cython numpy scipy vtk'
 
       - name: Publish package
-        if: github.event_name == 'tag' && startsWith( github.ref, 'v')
+        if: github.event_name == 'push' && startsWith( github.ref, 'v')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
