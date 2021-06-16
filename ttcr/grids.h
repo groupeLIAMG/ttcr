@@ -174,8 +174,8 @@ namespace ttcr {
         max[1] = min[1] + ncells[1]*d[1];
         max[2] = min[2] + ncells[2]*d[2];
 
-        size_t nNodes = nnodes[0] * nnodes[1] * nnodes[2];
-        std::vector<T> slowness( ncells[0]*ncells[1]*ncells[2] );
+        size_t nNodes = static_cast<size_t>(nnodes[0]) * nnodes[1] * nnodes[2];
+        std::vector<T> slowness( static_cast<size_t>(ncells[0]) * ncells[1] * ncells[2] );
 
         bool constCells = true;
         if ( !par.slofile.empty() ) {

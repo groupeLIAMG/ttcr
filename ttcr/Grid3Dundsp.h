@@ -187,7 +187,7 @@ namespace ttcr {
         // edge nodes
         T2 nTmpNodes = 0;
         Node3Dnd<T1,T2> tmpNode;
-        size_t nDynTot = (nSecondary+1) * nTertiary;  // total number of dynamic nodes on edges
+        size_t nDynTot = static_cast<size_t>(nTertiary) * (nSecondary+1);  // total number of dynamic nodes on edges
 
         T1 slope, islown;
 

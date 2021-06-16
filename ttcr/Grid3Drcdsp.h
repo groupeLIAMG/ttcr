@@ -57,7 +57,7 @@ namespace ttcr {
             this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
             nPermanent = static_cast<T2>(this->nodes.size());
             for ( size_t n=0; n<nt; ++n ) {
-                tempNeighbors[n].resize(this->ncx * this->ncy * this->ncz);
+                tempNeighbors[n].resize(static_cast<size_t>(this->ncx) * this->ncy * this->ncz);
             }
             if (useEdgeLength) {
                 T1 dx = 0.3333333 * (ddx+ddy+ddz);

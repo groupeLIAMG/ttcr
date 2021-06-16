@@ -80,8 +80,8 @@ namespace ttcr {
         virtual ~Grid3Drc() {}
 
         void getSlowness(std::vector<T1>& slowness) const {
-            if (slowness.size() != ncx*ncy*ncz) {
-                slowness.resize(ncx*ncy*ncz);
+            if (slowness.size() != static_cast<size_t>(ncx)*ncy*ncz) {
+                slowness.resize(static_cast<size_t>(ncx)*ncy*ncz);
             }
             for (size_t n=0; n<slowness.size(); ++n) {
                 slowness[n] = cells.getSlowness(n);
@@ -102,10 +102,10 @@ namespace ttcr {
         }
 
         size_t getNumberOfNodes() const { return nodes.size(); }
-        size_t getNumberOfCells() const { return ncx*ncy*ncz; }
+        size_t getNumberOfCells() const { return static_cast<size_t>(ncx)*ncy*ncz; }
 
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
-            size_t nPrimary = (ncx+1) * (ncy+1) * (ncz+1);
+            size_t nPrimary = static_cast<size_t>(ncx+1) * (ncy+1) * (ncz+1);
             tt.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {
                 tt[n] = nodes[n].getTT(threadNo);
@@ -166,7 +166,7 @@ namespace ttcr {
         const T2 getNcz() const { return ncz; }
 
         void dump_secondary(std::ofstream& os) const {
-            size_t nPrimary = (ncx+1) * (ncy+1) * (ncz+1);
+            size_t nPrimary = static_cast<size_t>(ncx+1) * (ncy+1) * (ncz+1);
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
