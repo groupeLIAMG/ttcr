@@ -20,7 +20,7 @@ Matlab wrappers are provided as well.
 
 ## Python package
 
-ttcrpy is a package for computing traveltimes and raytracing that was
+`ttcrpy` is a package for computing traveltimes and raytracing that was
 developed with geophysical applications in mind, e.g. ray-based seismic/GPR
 tomography and microseismic event location (joint hypocenter-velocity
 inversion).  The package contains code to perform computation on 2D and 3D
@@ -33,13 +33,18 @@ The core computing code is written in C++, and has been wrapped with cython.
 
 Documentation can be found on [Read The Docs](https://ttcrpy.readthedocs.io/)
 
+If you use `ttcrpy`, please cite
+
+[Giroux B. 2021. ttcrpy: A Python package for traveltime computation and raytracing.  
+SoftwareX, vol. 16, 100834. doi: 10.1016/j.softx.2021.100834](https://www.sciencedirect.com/science/article/pii/S2352711021001217)
+
 ## Stand-alone command-line programs
 
 There are three programs that can be called from the command line:
 
-- ttcr2d : raytracing on planar 2D meshes
-- ttcr2ds : raytracing on undulated surfaces
-- ttcr3d : raytracing in 3D
+- `ttcr2d` : raytracing on planar 2D meshes
+- `ttcr2ds` : raytracing on undulated surfaces
+- `ttcr3d` : raytracing in 3D
 
 See [documentation](https://github.com/groupeLIAMG/ttcr/blob/master/docs/command_line.md) for
 command-line programs options and file formats.

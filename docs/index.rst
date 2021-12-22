@@ -17,6 +17,13 @@ the Dynamic Shortest-Path Method. Calculations can be run in parallel on a
 multi-core machine.  The core computing code is written in C++, and has been
 wrapped with cython.
 
+If you use `ttcrpy`, please cite
+
+Giroux B. 2021. ttcrpy: A Python package for traveltime computation and raytracing.
+SoftwareX, vol. 16, 100834. doi: 10.1016/j.softx.2021.100834
+https://www.sciencedirect.com/science/article/pii/S2352711021001217
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
