@@ -6,7 +6,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1162725.svg)](https://doi.org/10.5281/zenodo.1162725)
 [![Build status](https://ci.appveyor.com/api/projects/status/t2kgoici4ydm9erv?svg=true)](https://ci.appveyor.com/project/bernard-giroux/ttcr)
 [![Documentation Status](https://readthedocs.org/projects/ttcrpy/badge/?version=latest)](https://ttcrpy.readthedocs.io/en/latest/?badge=latest)
-
+[![Downloads](https://pepy.tech/badge/ttcrpy)](https://pepy.tech/project/ttcrpy)
 
 This repo contains C++ and python codes for raytracing on regular and unstructured meshes.
 Matlab wrappers are provided as well.
