@@ -313,7 +313,7 @@ int body(const input_parameters &par) {
                 size_t blk_end = blk_start + blk_size;
 
                 threads[i]=thread( [&g,&src,&rcv,&r_data,&reflectors,&all_rcv,
-                                    &rfl_r_data,&rfl2_r_data,
+                                    &rfl_r_data,&rfl2_r_data,&par,
                                     blk_start,blk_end,i]{
 
                     for ( size_t n=blk_start; n<blk_end; ++n ) {
@@ -332,6 +332,19 @@ int body(const input_parameters &par) {
                         } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             abort();
+                        }
+
+                        if ( par.saveGridTT>0 ) {
+
+                            string srcname = par.srcfiles[n];
+                            size_t pos = srcname.rfind("/");
+                            srcname.erase(0, pos+1);
+                            pos = srcname.rfind(".");
+                            size_t len = srcname.length()-pos;
+                            srcname.erase(pos, len);
+
+                            string filename = par.basename+"_"+srcname+"_all_tt";
+                            g->saveTT(filename, 0, n, par.saveGridTT);
                         }
 
                         for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
@@ -365,6 +378,19 @@ int body(const input_parameters &par) {
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
+                }
+
+                if ( par.saveGridTT>0 ) {
+
+                    string srcname = par.srcfiles[n];
+                    size_t pos = srcname.rfind("/");
+                    srcname.erase(0, pos+1);
+                    pos = srcname.rfind(".");
+                    size_t len = srcname.length()-pos;
+                    srcname.erase(pos, len);
+
+                    string filename = par.basename+"_"+srcname+"_all_tt";
+                    g->saveTT(filename, 0, n, par.saveGridTT);
                 }
 
                 for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
@@ -452,6 +478,19 @@ int body(const input_parameters &par) {
                             abort();
                         }
 
+                        if ( par.saveGridTT>0 ) {
+
+                            string srcname = par.srcfiles[n];
+                            size_t pos = srcname.rfind("/");
+                            srcname.erase(0, pos+1);
+                            pos = srcname.rfind(".");
+                            size_t len = srcname.length()-pos;
+                            srcname.erase(pos, len);
+
+                            string filename = par.basename+"_"+srcname+"_all_tt";
+                            g->saveTT(filename, 0, n, par.saveGridTT);
+                        }
+
                         for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
                             try {
                                 g->raytrace(reflectors[nr].get_coord(),
@@ -481,6 +520,19 @@ int body(const input_parameters &par) {
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     abort();
+                }
+
+                if ( par.saveGridTT>0 ) {
+
+                    string srcname = par.srcfiles[n];
+                    size_t pos = srcname.rfind("/");
+                    srcname.erase(0, pos+1);
+                    pos = srcname.rfind(".");
+                    size_t len = srcname.length()-pos;
+                    srcname.erase(pos, len);
+
+                    string filename = par.basename+"_"+srcname+"_all_tt";
+                    g->saveTT(filename, 0, n, par.saveGridTT);
                 }
 
                 for ( size_t nr=0; nr<reflectors.size(); ++nr ) {
