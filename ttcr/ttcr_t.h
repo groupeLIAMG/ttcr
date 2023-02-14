@@ -377,6 +377,12 @@ namespace ttcr {
     };
 
     template<typename T>
+    std::ostream& operator<< (std::ostream& os, const struct siv<T> &s) {
+        os << s.i << ' ' << s.v;
+        return os;
+    }
+
+    template<typename T>
     struct sijv {
         size_t i;  // index in 1st dim
         size_t j;  // index in 2nd dim
