@@ -812,6 +812,8 @@ namespace ttcr {
         polydata->SetPoints(pts);
 
         for ( size_t n=0, npts=0; n<r_data.size(); ++n ) {
+            if ( r_data[n].size() == 1 )
+                continue;
             vtkSmartPointer<vtkPolyLine> line = vtkSmartPointer<vtkPolyLine>::New();
             line->GetPointIds()->SetNumberOfIds( r_data[n].size() );
             for ( size_t np=0; np<r_data[n].size(); ++np, ++npts ) {
