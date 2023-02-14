@@ -149,6 +149,11 @@ namespace ttcr {
             return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        virtual const bool hasCellSlowness() const { return false; }
+        virtual const T1 getCellSlowness(const size_t cell_no) const {
+            throw std::runtime_error("Method getCellSlowness should be implemented in subclass");
+        }
+
         void checkPts(const std::vector<S>&) const;
 
         bool inPolygon(const S& p, const S poly[], const size_t N) const;
@@ -2316,7 +2321,7 @@ namespace ttcr {
                                                         const size_t threadNo) const {
 
         T1 tt = 0.0;
-        T1 s1, s2;
+        T1 s1, s2, slown;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -2327,7 +2332,8 @@ namespace ttcr {
 
         S prev_pt( Rx );
         S curr_pt( Rx );
-        s1 = getSlowness( curr_pt );
+        if ( !this->hasCellSlowness() )
+            s1 = getSlowness( curr_pt );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
@@ -2416,9 +2422,15 @@ namespace ttcr {
                 }
             }
 
-            s2 = getSlowness( curr_pt );
-            tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
-            s1 = s2;
+            if ( this->hasCellSlowness() ) {
+                sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                slown = this->getCellSlowness(getCellNo(mid_pt));
+            } else {
+                s2 = getSlowness( curr_pt );
+                slown = 0.5*(s1 + s2);
+                s1 = s2;
+            }
+            tt += slown * prev_pt.getDistance( curr_pt );
             prev_pt = curr_pt;
 
             // are we close enough to one the Tx nodes ?
@@ -2452,16 +2464,31 @@ namespace ttcr {
 
                     if ( curr_pt.getDistance(prev_pt) > dist ||  // we do not intersect
                         curr_pt == Tx[ns] ) {  // we have arrived
-                        s2 = getSlowness( Tx[ns] );
-                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( Tx[ns] );
+                        if ( this->hasCellSlowness() ) {
+                            sxz<T1> mid_pt = 0.5 * (prev_pt + Tx[ns]);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                        } else {
+                            s2 = getSlowness( Tx[ns] );
+                            slown = 0.5*(s1 + s2);
+                        }
+                        tt += slown * prev_pt.getDistance( Tx[ns] );
                     } else {
-                        // to intersection
-                        s2 = getSlowness( curr_pt );
-                        tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
-                        s1 = s2;
-                        // to Tx
-                        s2 = getSlowness( Tx[ns] );
-                        tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                        if ( this->hasCellSlowness() ) {
+                            sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                            tt += slown * prev_pt.getDistance( curr_pt );
+                            mid_pt = 0.5 * (Tx[ns] + curr_pt);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                            tt += slown * curr_pt.getDistance( Tx[ns] );
+                        } else {
+                            // to intersection
+                            s2 = getSlowness( curr_pt );
+                            tt += 0.5*(s1 + s2) * prev_pt.getDistance( curr_pt );
+                            s1 = s2;
+                            // to Tx
+                            s2 = getSlowness( Tx[ns] );
+                            tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                        }
                     }
 
                     tt += t0[ns];
@@ -2481,7 +2508,7 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         tt = 0.0;
-        T1 s1, s2;
+        T1 s1, s2, slown;
 
         r_data.push_back( Rx );
 
@@ -2493,7 +2520,8 @@ namespace ttcr {
         }
 
         S curr_pt( Rx );
-        s1 = getSlowness( curr_pt );
+        if ( !this->hasCellSlowness() )
+            s1 = getSlowness( curr_pt );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
@@ -2581,10 +2609,15 @@ namespace ttcr {
                     throw std::runtime_error(msg.str());
                 }
             }
-
-            s2 = getSlowness( curr_pt );
-            tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
-            s1 = s2;
+            if ( this->hasCellSlowness() ) {
+                sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                slown = this->getCellSlowness(getCellNo(mid_pt));
+            } else {
+                s2 = getSlowness( curr_pt );
+                slown = 0.5*(s1 + s2);
+                s1 = s2;
+            }
+            tt += slown * r_data.back().getDistance( curr_pt );
             r_data.push_back( curr_pt );
 
             // are we close enough to one the Tx nodes ?
@@ -2618,19 +2651,34 @@ namespace ttcr {
 
                     if ( curr_pt.getDistance(r_data.back()) > dist ||  // we do not intersect
                         curr_pt == Tx[ns] ) {  // we have arrived
-                        s2 = getSlowness( Tx[ns] );
-                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
+                        if ( this->hasCellSlowness() ) {
+                            sxz<T1> mid_pt = 0.5 * (r_data.back() + Tx[ns]);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                        } else {
+                            s2 = getSlowness( Tx[ns] );
+                            slown = 0.5*(s1 + s2);
+                        }
+                        tt += slown * r_data.back().getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
                     } else {
-                        // to intersection
-                        s2 = getSlowness( curr_pt );
-                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
-                        r_data.push_back( curr_pt );
-                        s1 = s2;
-                        // to Tx
-                        s2 = getSlowness( Tx[ns] );
-                        tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
-                        r_data.push_back( Tx[ns] );
+                        if ( this->hasCellSlowness() ) {
+                            sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                            tt += slown * r_data.back().getDistance( curr_pt );
+                            mid_pt = 0.5 * (curr_pt + Tx[ns]);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                            tt += slown * curr_pt.getDistance( Tx[ns] );
+                        } else {
+                            // to intersection
+                            s2 = getSlowness( curr_pt );
+                            tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+                            r_data.push_back( curr_pt );
+                            s1 = s2;
+                            // to Tx
+                            s2 = getSlowness( Tx[ns] );
+                            tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                            r_data.push_back( Tx[ns] );
+                        }
                     }
 
                     tt += t0[ns];
@@ -2650,7 +2698,7 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         tt = 0.0;
-        T1 s1, s2;
+        T1 s1, s2, slown;
 
         r_data.push_back( Rx );
 
@@ -2662,7 +2710,8 @@ namespace ttcr {
         }
 
         S curr_pt( Rx );
-        s1 = getSlowness( curr_pt );
+        if ( !this->hasCellSlowness() )
+            s1 = getSlowness( curr_pt );
         // distance between opposite nodes of a voxel
         const T1 maxDist = sqrt( dx*dx + dz*dz );
         S g;
@@ -2717,9 +2766,14 @@ namespace ttcr {
             cell.i = getCellNo(mid_pt);
             cell.v = curr_pt.getDistance(r_data.back());
             l_data.push_back(cell);
-            s2 = getSlowness( curr_pt );
-            tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
-            s1 = s2;
+            if ( this->hasCellSlowness() ) {
+                slown = this->getCellSlowness(cell.i);
+            } else {
+                s2 = getSlowness( curr_pt );
+                slown = 0.5*(s1 + s2);
+                s1 = s2;
+            }
+            tt += slown * r_data.back().getDistance( curr_pt );
             r_data.push_back( curr_pt );
 
             // are we close enough to one the Tx nodes ?
@@ -2755,23 +2809,46 @@ namespace ttcr {
                         curr_pt == Tx[ns] ) {  // we have arrived
                         cell.i = getCellNo(Tx[ns]);
                         cell.v = Tx[ns].getDistance(r_data.back());
-                        l_data.push_back(cell);s2 = getSlowness( Tx[ns] );
-                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( Tx[ns] );
+                        l_data.push_back(cell);
+                        if ( this->hasCellSlowness() ) {
+                            slown = this->getCellSlowness(cell.i);
+                        } else {
+                            s2 = getSlowness( Tx[ns] );
+                            slown = 0.5*(s1 + s2);
+                        }
+                        tt += slown * r_data.back().getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
                     } else {
                         // to intersection
                         mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = curr_pt.getDistance(r_data.back());
-                        l_data.push_back(cell);s2 = getSlowness( curr_pt );
-                        tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
+                        l_data.push_back(cell);
+                        if ( this->hasCellSlowness() ) {
+                            slown = this->getCellSlowness(cell.i);
+                        } else {
+                            s2 = getSlowness( curr_pt );
+                            slown = 0.5*(s1 + s2);
+                            s1 = s2;
+                        }
+                        tt += slown * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
-                        s1 = s2;
                         // to Tx
-                        cell.i = getCellNo(Tx[ns]);
-                        cell.v = Tx[ns].getDistance(r_data.back());
-                        l_data.push_back(cell);s2 = getSlowness( Tx[ns] );
-                        tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
+                        size_t itmp = getCellNo(Tx[ns]);
+                        if ( cell.i == itmp ) {
+                            cell.v += Tx[ns].getDistance(r_data.back());
+                        } else {
+                            cell.i = itmp;
+                            cell.v = Tx[ns].getDistance(r_data.back());
+                        }
+                        l_data.push_back(cell);
+                        if ( this->hasCellSlowness() ) {
+                            slown = this->getCellSlowness(cell.i);
+                        } else {
+                            s2 = getSlowness( Tx[ns] );
+                            slown = 0.5*(s1 + s2);
+                        }
+                        tt += slown * curr_pt.getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
                     }
 

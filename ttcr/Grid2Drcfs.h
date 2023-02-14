@@ -42,7 +42,7 @@ namespace ttcr {
                    const size_t nt=1) :
         Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,ttrp,nt),
         epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0),
-        weno3(w), rotated_template(rt)
+        weno3(w), rotated_template(rt), hasCellSlown(false)
         {
             buildGridNodes();
             this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
@@ -52,10 +52,20 @@ namespace ttcr {
         }
 
         void setSlowness(const std::vector<T1>& s);
+        void getSlowness(std::vector<T1>& s) const {
+            s = slowness;
+        }
 
         const int get_niter() const { return niter_final; }
         const int get_niterw() const { return niterw_final; }
-
+        const bool hasCellSlowness() const { return hasCellSlown; }
+        const T1 getCellSlowness(const size_t cell_no) const {
+            if ( hasCellSlown ) {
+                return slowness[cell_no];
+            } else {
+                throw std::runtime_error("slowness data not assigned");
+            }
+        }
     private:
         T1 epsilon;
         int nitermax;
@@ -63,6 +73,8 @@ namespace ttcr {
         mutable int niterw_final;
         bool weno3;
         bool rotated_template;
+        bool hasCellSlown;
+        std::vector<T1> slowness;
 
         Grid2Drcfs() {}
         Grid2Drcfs(const Grid2Drcfs<T1,T2,S>& g) {}
@@ -88,6 +100,10 @@ namespace ttcr {
         if ( static_cast<size_t>(this->ncx)*this->ncz != s.size() ) {
             throw std::length_error("Error: slowness vectors of incompatible size.");
         }
+
+        // keep a copy of slowness values for cells
+        slowness = s;
+        hasCellSlown = true;
 
         // interpolate slowness at grid nodes
 
