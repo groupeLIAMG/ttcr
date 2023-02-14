@@ -924,8 +924,13 @@ namespace ttcr {
                         tt += cells.computeDt(r_data.back(), curr_pt, cell.i);
                         r_data.push_back( curr_pt );
                         // to Tx
-                        cell.i = getCellNo(Tx[ns]);
-                        cell.v = Tx[ns].getDistance(r_data.back());
+                        size_t itmp = getCellNo(Tx[ns]);
+                        if ( cell.i == itmp ) {
+                            cell.v += Tx[ns].getDistance(r_data.back());
+                        } else {
+                            cell.i = itmp;
+                            cell.v = Tx[ns].getDistance(r_data.back());
+                        }
                         l_data.push_back(cell);
                         tt += cells.computeDt(Tx[ns], curr_pt, cell.i);
                         r_data.push_back( Tx[ns] );
