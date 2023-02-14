@@ -46,7 +46,7 @@ elif platform.system() == 'Linux':
         extra_compile_args = ['-std=c++11', '-O3']
     extra_link_args = []
 
-include_dirs = ['ttcr', 'boost_1_72_0', 'eigen-3.3.7', np.get_include()]
+include_dirs = ['ttcr', 'boost_1_72_0', 'eigen-3.4.0', np.get_include()]
 
 extensions = [
     Extension('ttcrpy.rgrid',
