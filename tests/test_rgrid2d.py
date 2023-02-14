@@ -42,8 +42,12 @@ class TestGrid2dc(unittest.TestCase):
         self.slowness = self.slowness.reshape(dim, order='F').flatten()
 
         self.src = np.loadtxt('./files/src2d.dat', skiprows=1)
-        self.src = self.src.reshape((1, 3))
+        # we roll because file has x z t0 and we want t0 x z
+        self.src = np.roll(self.src, 1).reshape((1, 3))
         self.rcv = np.loadtxt('./files/rcv2d.dat', skiprows=1)
+        self.src_in = np.loadtxt('./files/src2d_in.dat',skiprows=1)
+        self.src_in = np.roll(self.src_in, 1).reshape((1, 3))
+        self.rcv_in = np.loadtxt('./files/rcv2d_in.dat',skiprows=1)
 
     def test_Grid2Dfs(self):
         g = rg.Grid2d(self.x, self.z, method='FSM')
@@ -71,7 +75,29 @@ class TestGrid2dc(unittest.TestCase):
         tt = tt.flatten()
         tt_ref = get_tt('./files/Grid2Drcdsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
-                        'SPM accuracy failed (slowness in cells)')
+                        'DSPM accuracy failed (slowness in cells)')
+
+    def test_Grid2Dfs_L(self):
+        g = rg.Grid2d(self.x, self.z, method='FSM')
+        tt, L = g.raytrace(self.src_in, self.rcv_in, slowness=self.slowness, compute_L=True)
+        tt2 = L @ self.slowness
+        self.assertLess(np.sum(np.abs(tt-tt2))/tt.size, 0.01,
+                        'FSM_L accuracy failed (slowness in cells)')
+
+    def test_Grid2Dsp_L(self):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10)
+        tt, L = g.raytrace(self.src_in, self.rcv_in, slowness=self.slowness, compute_L=True)
+        tt2 = L @ self.slowness
+        self.assertLess(np.sum(np.abs(tt-tt2))/tt.size, 0.01,
+                        'SPM_L accuracy failed (slowness in cells)')
+
+    def test_Grid2Ddsp(self):
+        g = rg.Grid2d(self.x, self.z, method='DSPM', n_secondary=3,
+                      n_tertiary=3, radius_factor_tertiary=3.0)
+        tt, L = g.raytrace(self.src_in, self.rcv_in, slowness=self.slowness, compute_L=True)
+        tt2 = L @ self.slowness
+        self.assertLess(np.sum(np.abs(tt-tt2))/tt.size, 0.01,
+                        'DSPM_L accuracy failed (slowness in cells)')
 
 
 class TestGrid2dn(unittest.TestCase):
@@ -90,7 +116,7 @@ class TestGrid2dn(unittest.TestCase):
         self.slowness = self.slowness.reshape(dim, order='F').flatten()
 
         self.src = np.loadtxt('./files/src2d.dat', skiprows=1)
-        self.src = self.src.reshape((1, 3))
+        self.src = np.roll(self.src, 1).reshape((1, 3))
         self.rcv = np.loadtxt('./files/rcv2d.dat', skiprows=1)
 
     def test_Grid2Dfs(self):
@@ -120,7 +146,7 @@ class TestGrid2dn(unittest.TestCase):
         tt = tt.flatten()
         tt_ref = get_tt('./files/Grid2Drndsp_tt_grid.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
-                        'SPM accuracy failed (slowness at nodes)')
+                        'DSPM accuracy failed (slowness at nodes)')
 
 
 class Data_kernel(unittest.TestCase):
