@@ -2717,7 +2717,8 @@ cdef class Grid2d:
         cdef vector[vector[double]] vtt
 
         cdef vector[vector[vector[sxz[double]]]] r_data
-        cdef vector[vector[vector[siv2[double]]]] l_data
+        cdef vector[vector[vector[siv[double]]]] l_data
+        cdef vector[vector[vector[siv2[double]]]] l_data2
         cdef size_t thread_nb
 
         cdef int i, j, k, n, nn, MM, NN
@@ -2727,7 +2728,10 @@ cdef class Grid2d:
         vt0.resize(nTx)
         vtt.resize(nTx)
         if compute_L:
-            l_data.resize(nTx)
+            if self.iso == b'i':
+                l_data.resize(nTx)
+            else:
+                l_data2.resize(nTx)
         if return_rays:
             r_data.resize(nTx)
 
@@ -2768,11 +2772,19 @@ cdef class Grid2d:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_L and return_rays:
-                for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                if self.iso == b'i':
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                else:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
             elif compute_L:
-                for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                if self.iso == b'i':
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                else:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
             else:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
@@ -2807,9 +2819,15 @@ cdef class Grid2d:
             if compute_L==False and return_rays==False:
                 self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_L and return_rays:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                if self.iso == b'i':
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
             elif compute_L:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                if self.iso == b'i':
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
             else:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
@@ -2869,14 +2887,14 @@ cdef class Grid2d:
                     for i in range(MM):
                         indptr[i] = k
                         for j in range(NN):
-                            for nn in range(l_data[n][i].size()):
-                                if l_data[n][i][nn].i == j:
+                            for nn in range(l_data2[n][i].size()):
+                                if l_data2[n][i][nn].i == j:
                                     indices[k] = j
-                                    val[k] = l_data[n][i][nn].v
+                                    val[k] = l_data2[n][i][nn].v
                                     k += 1
-                                elif l_data[n][i][nn].i+ncells == j:
+                                elif l_data2[n][i][nn].i+ncells == j:
                                     indices[k] = j
-                                    val[k] = l_data[n][i][nn].v2
+                                    val[k] = l_data2[n][i][nn].v2
                                     k += 1
 
                     indptr[MM] = k
