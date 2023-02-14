@@ -29,6 +29,8 @@
 #include <vtkXMLRectilinearGridReader.h>
 #pragma clang diagnostic pop
 
+#include <Eigen/Sparse>
+
 #include "Grid2D.h"
 #include "Rcv2D.h"
 #include "Src2D.h"
@@ -83,6 +85,52 @@ double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
     return error;
 }
 
+vector<double> get_rel_error(const string& filename, const Rcv2D<double>& rcv,
+                     const vector<vector<siv<double>>> &l_data,
+                     const vector<double> &slowness) {
+    // compute relative error
+
+    vector<double> ref_tt(rcv.get_coord().size());
+    vtkSmartPointer<vtkXMLRectilinearGridReader> reader =
+    vtkSmartPointer<vtkXMLRectilinearGridReader>::New();
+    reader->SetFileName(filename.c_str());
+    reader->Update();
+    reader->GetOutput()->Register(reader);
+    vtkRectilinearGrid *dataSet = reader->GetOutput();
+
+    vtkPointData *pd = dataSet->GetPointData();
+    for ( size_t n=0; n<rcv.get_coord().size(); ++n ) {
+        vtkIdType ii = dataSet->FindPoint(rcv.get_coord()[n].x, 0.0, rcv.get_coord()[n].z);
+        ref_tt[n] = static_cast<double>(pd->GetArray(0)->GetTuple1(ii));
+    }
+
+    Eigen::SparseMatrix<double> A(l_data.size(), slowness.size());
+    vector<Eigen::Triplet<double>> coefficients;
+    for ( size_t i=0; i<l_data.size(); ++i ) {
+        for ( size_t j=0; j<l_data[i].size(); ++j ) {
+            coefficients.push_back(Eigen::Triplet<double>(i, l_data[i][j].i, l_data[i][j].v));
+        }
+    }
+    A.setFromTriplets(coefficients.begin(), coefficients.end());
+    A.makeCompressed();
+    Eigen::VectorXd s(slowness.size());
+    for ( size_t n=0; n<slowness.size(); ++n ) {
+        s[n] = slowness[n];
+    }
+    Eigen::VectorXd tt = A * s;
+
+    // compute relative error
+    vector<double> error(2, 0.0);
+    for ( size_t n=1; n<ref_tt.size(); ++n ) {
+        // start at 1 to avoid node at source location where tt = 0
+        error[0] += abs( (ref_tt[n] - tt[n])/ref_tt[n] );
+        error[1] += abs( (rcv.get_tt(0)[n] - tt[n])/rcv.get_tt(0)[n] );
+    }
+    error[0] /= (ref_tt.size() - 1);
+    error[1] /= (ref_tt.size() - 1);
+    return error;
+}
+
 
 const char* models[] = {
     "./files/layers_fine2d.vtr",
@@ -96,11 +144,19 @@ const char* models_coarse[] = {
     "./files/layers_coarse2d.vtu",
     "./files/gradient_gmsh2d.vtu"
 };
+const char* models_L[] = {
+    "./files/layers_coarse2d.vtr",
+    "./files/layers_coarse2d.vtu"
+};
 const char* references[] = {
     "./files/sol_analytique_couches2d_tt.vtr",
     "./files/sol_analytique_gradient2d_tt.vtr",
     "./files/sol_analytique_couches2d_tt.vtr",
     "./files/sol_analytique_gradient2d_tt.vtr"
+};
+const char* references_L[] = {
+    "./files/sol_analytique_couches2d_tt.vtr",
+    "./files/sol_analytique_couches2d_tt.vtr"
 };
 raytracing_method methods[] = { DYNAMIC_SHORTEST_PATH, FAST_SWEEPING, SHORTEST_PATH };
 
@@ -203,10 +259,65 @@ BOOST_DATA_TEST_CASE(
     }
     string filename = "./files/" + get_class_name(g) + "_rp.vtp";
     saveRayPaths(filename, r_data);
-    
+
     double error = get_rel_error(ref, rcv);
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " ttrp - error = " << error );
-    
+
     BOOST_TEST(error < 0.15);
+}
+
+BOOST_DATA_TEST_CASE(
+                     testGrid2D_L,
+                     (bdata::make(models_L) ^ bdata::make(references_L)) * bdata::make(methods),
+                     model, ref, method) {
+    Src2D<double> src("./files/src2d_in.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2d_in.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = method;
+    par.tt_from_rp = true;
+    switch(method) {
+        case FAST_SWEEPING:
+            par.weno3 = 1;
+            break;
+        case SHORTEST_PATH:
+            par.nn[0] = 10;
+            par.nn[1] = 10;
+            par.nn[2] = 10;
+            break;
+        case DYNAMIC_SHORTEST_PATH:
+            par.radius_tertiary_nodes = 3.0;
+            par.nn[0] = 3;
+            par.nn[1] = 3;
+            par.nn[2] = 3;
+            break;
+        default:
+            // do nothing
+            break;
+    }
+    par.modelfile = model;
+    Grid2D<double,uint32_t,sxz<double>> *g;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear2DfromVtr<double>(par, 1);
+    } else {
+        g = buildUnstructured2DfromVtu<double>(par, 1);
+    }
+    vector<vector<siv<double>>> l_data;
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0), l_data);
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+
+    vector<double> slowness;
+    g->getSlowness(slowness);
+    vector<double> error = get_rel_error(ref, rcv, l_data, slowness);
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " ttrp - error = " << error[0] << ", " << error[1] );
+
+    BOOST_TEST(error[0] < 0.15);
+    BOOST_TEST(error[1] < 0.001);
 }
 
