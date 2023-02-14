@@ -573,6 +573,12 @@ namespace ttcr {
         for ( size_t ni=0; ni<r_data.size(); ++ni ) {
             r_data[ni].resize( 0 );
         }
+        if ( l_data.size() != Rx.size() ) {
+            l_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
+            l_data[ni].resize( 0 );
+        }
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
