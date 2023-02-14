@@ -199,9 +199,7 @@ namespace ttcr {
                               const std::vector<S>& Rx,
                               std::vector<T1>& traveltimes,
                               std::vector<std::vector<siv<T1>>>& l_data,
-                              const size_t threadNo=0) const {
-            throw std::runtime_error("Method raytrace should be implemented in subclass");
-        }
+                              const size_t threadNo=0) const;
 
         virtual void raytrace(const std::vector<S>& Tx,
                               const std::vector<T1>& t0,
@@ -434,6 +432,15 @@ namespace ttcr {
             throw std::runtime_error("Method getRaypath should be implemented in subclass");
         }
 
+        virtual void getRaypath(const std::vector<S>& Tx,
+                                const std::vector<T1>& t0,
+                                const S& Rx,
+                                std::vector<siv<T1>> &l_data,
+                                T1 &tt,
+                                const size_t threadNo) const {
+            throw std::runtime_error("Method getRaypath should be implemented in subclass");
+        }
+
     private:
         bool usePool;
         mutable ctpl::thread_pool pool;
@@ -584,6 +591,31 @@ namespace ttcr {
         }
         for (size_t n=0; n<Rx.size(); ++n) {
             this->getRaypath(Tx, t0, Rx[n], r_data[n], l_data[n], traveltimes[n], threadNo);
+            //  must be sorted to build matrix L
+            sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
+        }
+    }
+
+    template<typename T1, typename T2, typename S>
+    void Grid2D<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                   const std::vector<T1>& t0,
+                                   const std::vector<S>& Rx,
+                                   std::vector<T1>& traveltimes,
+                                   std::vector<std::vector<siv<T1>>>& l_data,
+                                   const size_t threadNo) const {
+        this->raytrace(Tx, t0, Rx, threadNo);
+
+        if ( l_data.size() != Rx.size() ) {
+            l_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
+            l_data[ni].resize( 0 );
+        }
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        for (size_t n=0; n<Rx.size(); ++n) {
+            this->getRaypath(Tx, t0, Rx[n], l_data[n], traveltimes[n], threadNo);
             //  must be sorted to build matrix L
             sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
         }
