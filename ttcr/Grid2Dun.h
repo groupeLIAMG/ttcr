@@ -174,7 +174,6 @@ namespace ttcr {
         void buildGridNodes(const std::vector<S>&, const size_t);
         void buildGridNodes(const std::vector<S>&, const T2, const size_t);
 
-
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
         }

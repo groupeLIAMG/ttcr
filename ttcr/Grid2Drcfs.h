@@ -42,7 +42,7 @@ namespace ttcr {
                    const size_t nt=1) :
         Grid2Drn<T1,T2,S,Node2Dn<T1,T2>>(nx,nz,ddx,ddz,minx,minz,ttrp,nt),
         epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0),
-        weno3(w), rotated_template(rt), hasCellSlown(false)
+        weno3(w), rotated_template(rt), hasCellSlown(false), slowness()
         {
             buildGridNodes();
             this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);

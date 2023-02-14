@@ -169,6 +169,19 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
                       vector[T1]& t0,
                       vector[S]& Rx,
                       vector[T1]& traveltimes,
+                      vector[vector[sxz[T1]]]& r_data,
+                      vector[vector[siv[T1]]]& l_data,
+                      size_t threadNo) except +
+        void raytrace(vector[S]& Tx,
+                      vector[T1]& t0,
+                      vector[S]& Rx,
+                      vector[T1]& traveltimes,
+                      vector[vector[siv[T1]]]& l_data,
+                      size_t threadNo) except +
+        void raytrace(vector[S]& Tx,
+                      vector[T1]& t0,
+                      vector[S]& Rx,
+                      vector[T1]& traveltimes,
                       vector[vector[siv2[T1]]]& l_data,
                       size_t threadNo) except +
         void raytrace(vector[S]& Tx,
@@ -187,6 +200,17 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
                       vector[vector[S]]& Rx,
                       vector[vector[T1]]& traveltimes,
                       vector[vector[vector[S]]]& r_data) except +
+        void raytrace(vector[vector[S]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[S]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[siv[T1]]]]& l_data) except +
+        void raytrace(vector[vector[S]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[S]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[S]]]& r_data,
+                      vector[vector[vector[siv[T1]]]]& l_data) except +
         void raytrace(vector[vector[S]]& Tx,
                       vector[vector[T1]]& t0,
                       vector[vector[S]]& Rx,

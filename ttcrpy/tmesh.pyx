@@ -1475,9 +1475,9 @@ cdef class Mesh2d:
         self.grid.setSlowness(slown)
 
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
-                 aggregate_src=False, return_rays=False):
+                 aggregate_src=False, compute_L=False, return_rays=False):
         """
-        raytrace(source, rcv, slowness=None, thread_no=None, aggregate_src=False, return_rays=False) -> tt, rays
+        raytrace(source, rcv, slowness=None, thread_no=None, aggregate_src=False, compute_L=False, return_rays=False) -> tt, rays
 
         Perform raytracing
 
@@ -1496,6 +1496,9 @@ cdef class Mesh2d:
             sources and value of n_threads in constructor
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
+        compute_L : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to
+            slowness
         return_rays : bool (False by default)
             Return raypaths
 
@@ -1553,6 +1556,7 @@ cdef class Mesh2d:
         cdef vector[vector[double]] vtt
 
         cdef vector[vector[vector[sxz[double]]]] r_data
+        cdef vector[vector[vector[siv[double]]]] l_data
         cdef size_t thread_nb
 
         cdef int i, n, n2, nt
@@ -1561,6 +1565,11 @@ cdef class Mesh2d:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        if compute_L and not self.cell_slowness:
+            raise NotImplementedError('compute_L not implemented for mesh with slowness defined at nodes')
+        if compute_L:
+            l_data.resize(nTx)
+
         if return_rays:
             r_data.resize(nTx)
 
@@ -1597,16 +1606,24 @@ cdef class Mesh2d:
 
         tt = np.zeros((rcv.shape[0],))
         if self._n_threads == 1:
-            if return_rays==False:
+            if compute_L==False and return_rays==False:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
-            else:
+            elif compute_L==False and return_rays==True:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+            elif compute_L==True and return_rays==False:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+            else:
+                for n in range(nTx):
+                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
 
         elif thread_no is not None:
             # we should be here for just one event
             assert nTx == 1
+            # normally we should not need to compute L
+            assert compute_L is False
             thread_nb = thread_no
 
             if return_rays:
@@ -1629,10 +1646,14 @@ cdef class Mesh2d:
                 return tt
 
         else:
-            if return_rays==False:
+            if compute_L==False and return_rays==False:
                 self.grid.raytrace(vTx, vt0, vRx, vtt)
-            else:
+            elif compute_L==False and return_rays==True:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+            elif compute_L==True and return_rays==False:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+            else:
+                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
 
         for n in range(nTx):
             for nt in range(vtt[n].size()):
@@ -1650,8 +1671,47 @@ cdef class Mesh2d:
                 for nt in range(vtt[n].size()):
                     rays[iRx[n][nt]] = r[nt]
 
-        if return_rays==False:
+        if compute_L:
+            # first build an array of matrices, for each event
+            L = []
+            ncells = self.get_number_of_cells()
+            for n in range(nTx):
+                nnz = 0
+                for ni in range(l_data[n].size()):
+                    nnz += l_data[n][ni].size()
+
+                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                indices = np.empty((nnz,), dtype=np.int64)
+                val = np.empty((nnz,))
+
+                k = 0
+                MM = vRx[n].size()
+                NN = ncells
+                for i in range(MM):
+                    indptr[i] = k
+                    for j in range(NN):
+                        for nn in range(l_data[n][i].size()):
+                            if l_data[n][i][nn].i == j:
+                                indices[k] = j
+                                val[k] = l_data[n][i][nn].v
+                                k += 1
+
+                indptr[MM] = k
+                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+            # we want a single matrix
+            tmp = sp.vstack(L)
+            itmp = []
+            for n in range(nTx):
+                for nt in range(vtt[n].size()):
+                    itmp.append(iRx[n][nt])
+            L = tmp[itmp,:]
+
+        if compute_L==False and return_rays==False:
             return tt
+        elif compute_L and return_rays:
+            return tt, rays, L
+        elif compute_L:
+            return tt, L
         else:
             return tt, rays
 
