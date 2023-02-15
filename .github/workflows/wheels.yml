@@ -75,7 +75,7 @@ jobs:
           #   python-version: "3.11"
           #   platform_id: macosx_x86_64
 
-          # MacOS apple silicon
+					# MacOS apple silicon
           - os: macos-latest
             python-version: "3.9"
             platform_id: macosx_arm64
