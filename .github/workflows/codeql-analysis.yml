@@ -52,7 +52,7 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-   - if: matrix.language == 'cpp'
+    - if: matrix.language == 'cpp'
       name: builds c++
       run: |
         make -f Makefile.noVTK
