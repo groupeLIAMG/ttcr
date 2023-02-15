@@ -33,58 +33,61 @@ jobs:
           # Window 64 bit
           # Note: windows-2019 is needed for older Python versions:
           # https://github.com/scikit-learn/scikit-learn/issues/22530
-          # - os: windows-2019
-          #   python-version: "3.8"
-          #   platform_id: win_amd64
-          - os: windows-latest
-            python-version: "3.9"
+          - os: windows-2019
+            python: 38
             platform_id: win_amd64
           - os: windows-latest
-            python-version: "3.10"
+            python: 39
             platform_id: win_amd64
-          # - os: windows-latest
-          #   python-version: "3.11"
-          #   platform_id: win_amd64
+          - os: windows-latest
+            python: 310
+            platform_id: win_amd64
+          - os: windows-latest
+            python: 311
+            platform_id: win_amd64
 
           # Linux 64 bit manylinux2014
-          # - os: ubuntu-latest
-          #   python-version: "3.8"
-          #   platform_id: manylinux_x86_64
-          #   manylinux_image: manylinux2014
           - os: ubuntu-latest
-            python-version: "3.9"
+            python: 38
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
           - os: ubuntu-latest
-            python-version: "3.10"
+            python: 39
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-          # - os: ubuntu-latest
-          #   python-version: "3.11"
-          #   platform_id: manylinux_x86_64
-          #   manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python: 310
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python: 311
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
 
           # MacOS x86_64
           - os: macos-latest
-            python-version: "3.9"
+            python: 38
             platform_id: macosx_x86_64
           - os: macos-latest
-            python-version: "3.10"
+            python: 39
             platform_id: macosx_x86_64
-          # - os: macos-latest
-          #   python-version: "3.11"
-          #   platform_id: macosx_x86_64
+          - os: macos-latest
+            python: 310
+            platform_id: macosx_x86_64
+          - os: macos-latest
+            python: 311
+            platform_id: macosx_x86_64
 
 					# MacOS apple silicon
           - os: macos-latest
-            python-version: "3.9"
+            python: 39
             platform_id: macosx_arm64
           - os: macos-latest
-            python-version: "3.10"
+            python: 310
             platform_id: macosx_arm64
-          # - os: macos-latest
-          #   python-version: "3.11"
-          #   platform_id: macosx_arm64
+          - os: macos-latest
+            python: 311
+            platform_id: macosx_arm64
 
     steps:
       - name: Checkout ttcrpy
@@ -93,7 +96,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.9'  # update once build dependencies are available
 
       - name: Install dependencies
         run: |
