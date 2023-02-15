@@ -14,7 +14,7 @@ include ttcr/structs_ttcr.h
 include ttcr/ttcr_t.h
 include ttcr/utils.h
 include ttcr/ctpl_stl.h
-include boost_1_72_0/LICENSE_1_0.txt
-include boost_1_72_0/README.md
-recursive-include boost_1_72_0/boost/math *
-recursive-include eigen-3.3.7 *
+include boost_1_81_0/LICENSE_1_0.txt
+include boost_1_81_0/README.md
+recursive-include boost_1_81_0/boost/math *
+recursive-include eigen-3.4.0 *

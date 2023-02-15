@@ -5,7 +5,7 @@
 
 CXX = g++
 CXXOPTIONS = -O3 -std=c++11 -pthread
-CXXFLAGS = $(CXXOPTIONS) -I./eigen-3.4.0 -I./ttcr -I./boost_1_72_0
+CXXFLAGS = $(CXXOPTIONS) -I./eigen-3.4.0 -I./ttcr -I./boost_1_81_0
 
 LFLAGS =
 
