@@ -16,6 +16,7 @@ ttcrpy.egg-info/
 ttcrpy-1*
 
 ttcrpy/__pycache__/
+ttcrpy/_version.py
 
 dynamicNodes.svg
 
