@@ -15,8 +15,13 @@ ttcrpy.egg-info/
 
 ttcrpy-1*
 
-ttcrpy/__pycache__/
-ttcrpy/_version.py
+src/ttcrpy/__pycache__/
+src/ttcrpy/_version.py
+src/ttcrpy/rgrid.cpp
+src/ttcrpy/cmesh2d.cpp
+src/ttcrpy/*.pyd
+src/ttcrpy/tmesh.cpp
+src/ttcrpy.egg-info/
 
 dynamicNodes.svg
 
@@ -28,12 +33,6 @@ tests/__pycache__/
 
 dist/
 
-ttcrpy/rgrid.cpp
-
-ttcrpy/cmesh2d.cpp
-
-ttcrpy/*.pyd
-
 examples/example_cmesh2d.vtu
 
 docs/_build/
@@ -41,8 +40,6 @@ docs/_build/
 old_stuff/
 
 .eggs/
-
-ttcrpy/tmesh.cpp
 
 ttcr.xcodeproj/
 

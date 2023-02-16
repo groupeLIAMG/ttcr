@@ -1,8 +1,8 @@
-include ttcrpy/*.pyx
-include ttcrpy/*.pxd
-include ttcrpy/*.h
-include ttcrpy/verbose.cpp
-include ttcrpy/__init__.py
+include src/ttcrpy/*.pyx
+include src/ttcrpy/*.pxd
+include src/ttcrpy/*.h
+include src/ttcrpy/verbose.cpp
+include src/ttcrpy/__init__.py
 include ttcr/Cell.h
 include ttcr/Grad.h
 include ttcr/Grid*.h
@@ -18,3 +18,8 @@ include ttcr/utils.h
 include ttcr/ctpl_stl.h
 graft boost_1_81_0
 graft eigen-3.4.0
+prune ttcr_matlab
+prune ttcrXcode
+exclude .gitattributes
+exclude .gitignore
+exclude Makefile*

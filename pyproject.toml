@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm", "cython", "numpy", "scipy", "vtk"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ttcrpy"
+authors = [
+    {name = "Bernard Giroux", email = "bernard.giroux@inrs.ca"},
+]
+description = "Code to perform raytracing for geophysical applications"
+readme = {file = "README.md", content-type = "text/markdown"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: C++",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering"
+]
+dynamic = ["version"]
+
+[project.urls]
+homepage = "https://github.com/groupeLIAMG/ttcr"
+documentation = "https://ttcrpy.readthedocs.io/en/latest/"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+write_to = "src/ttcrpy/_version.py"
