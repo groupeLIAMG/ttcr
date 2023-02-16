@@ -15,7 +15,7 @@ import sys
 import sphinx_rtd_theme
 from pkg_resources import get_distribution
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../src'))
 
 
 # -- Project information -----------------------------------------------------
