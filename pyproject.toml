@@ -39,11 +39,8 @@ where = ["src"]
 write_to = "src/ttcrpy/_version.py"
 
 [tool.cibuildwheel]
-# Skip 32-bit builds
-skip = ["*-win32", "*-manylinux_i686"]
-
-# Disable building PyPy wheels on all platforms
-skip = "pp*"
+# Skip 32-bit builds & building PyPy wheels on all platforms
+skip = ["*-win32", "*-manylinux_i686", "pp*"]
 
 # Build `universal2` and `arm64` wheels on an Intel runner.
 # Note that the `arm64` wheel and the `arm64` part of the `universal2`
