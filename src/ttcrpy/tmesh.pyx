@@ -7,16 +7,16 @@ raytracing on unstructured meshes:
     - `Mesh2d` for 2D media
     - `Mesh3d` for 3D media
 
-    Three algorithms are implemented
-        - the Shortest-Path Method
-        - the Fast-Sweeping Method
-        - the Dynamic Shortest-Path Method
+Three algorithms are implemented
+    - the Shortest-Path Method
+    - the Fast-Sweeping Method
+    - the Dynamic Shortest-Path Method
 
-    Slowness model can be defined in two ways:
-        1) slowness constant within the voxels of the mesh (the default)
-        2) slowness defined at nodes of the mesh
+Slowness model can be defined in two ways:
+    1) slowness constant within the voxels of the mesh (the default)
+    2) slowness defined at nodes of the mesh
 
-    This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
+This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 """
 
 # distutils: language = c++
