@@ -9,6 +9,7 @@ authors = [
 ]
 description = "Code to perform raytracing for geophysical applications"
 readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -36,3 +37,13 @@ where = ["src"]
 
 [tool.setuptools_scm]
 write_to = "src/ttcrpy/_version.py"
+
+[tool.cibuildwheel]
+# Skip 32-bit builds
+skip = ["*-win32", "*-manylinux_i686"]
+
+# Build `universal2` and `arm64` wheels on an Intel runner.
+# Note that the `arm64` wheel and the `arm64` part of the `universal2`
+# wheel cannot be tested in this configuration.
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "universal2", "arm64"]

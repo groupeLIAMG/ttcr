@@ -22,81 +22,21 @@ concurrency:
 jobs:
   # Build the wheels for Linux, Windows and macOS for Python 3.8 and newer
   build_wheels:
-    name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}-${{ matrix.manylinux_image }}
+    name: Build wheel on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       # Ensure that a wheel builder finishes even if another fails
       fail-fast: false
       matrix:
-        include:
-          # Window 64 bit
-          # Note: windows-2019 is needed for older Python versions:
-          # https://github.com/scikit-learn/scikit-learn/issues/22530
-          # - os: windows-2019
-          #   python-version: "3.8"
-          #   platform_id: win_amd64
-          - os: windows-latest
-            python-version: "3.9"
-            platform_id: win_amd64
-          - os: windows-latest
-            python-version: "3.10"
-            platform_id: win_amd64
-          # - os: windows-latest
-          #   python-version: "3.11"
-          #   platform_id: win_amd64
-
-          # Linux 64 bit manylinux2014
-          # - os: ubuntu-latest
-          #   python-version: "3.8"
-          #   platform_id: manylinux_x86_64
-          #   manylinux_image: manylinux2014
-          - os: ubuntu-latest
-            python-version: "3.9"
-            platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
-          - os: ubuntu-latest
-            python-version: "3.10"
-            platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
-          # - os: ubuntu-latest
-          #   python-version: "3.11"
-          #   platform_id: manylinux_x86_64
-          #   manylinux_image: manylinux2014
-
-          # MacOS x86_64
-          # - os: macos-latest
-          #   python-version: "3.8"
-          #   platform_id: macosx_x86_64
-          - os: macos-latest
-            python-version: "3.9"
-            platform_id: macosx_x86_64
-          - os: macos-latest
-            python-version: "3.10"
-            platform_id: macosx_x86_64
-          # - os: macos-latest
-          #   python-version: "3.11"
-          #   platform_id: macosx_x86_64
-
-          # MacOS apple silicon
-          - os: macos-latest
-            python-version: "3.9"
-            platform_id: macosx_arm64
-          - os: macos-latest
-            python-version: "3.10"
-            platform_id: macosx_arm64
-          # - os: macos-latest
-          #   python-version: "3.11"
-          #   platform_id: macosx_arm64
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout ttcrpy
         uses: actions/checkout@v3
 
-      - name: Setup Python ${{ matrix.python-version }}
+      - name: Setup Python
         uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -105,8 +45,6 @@ jobs:
 
       - name: Build Python wheels
         uses: pypa/cibuildwheel@v2.12.0
-        with:
-          python-version: ${{ matrix.python-version }}
  
       - uses: actions/upload-artifact@v3
         with:
