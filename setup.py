@@ -10,11 +10,13 @@ from setuptools.command.build_ext import build_ext
 from Cython.Build import cythonize
 
 if platform.system() == 'Darwin':
-    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3',
+    extra_compile_args = ['-std=c++11', '-stdlib=libc++', '-O3', '-arch', 'x86_64',
+                          '-arch', 'arm64',
                           '-Wno-unused-result', '-Wunreachable-code',
                           '-fno-common', '-dynamic', '-DNDEBUG', '-fwrapv',
                           '-pipe', '-isysroot/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk']
-    extra_link_args = ['-bundle', '-undefined', 'dynamic_lookup',
+    extra_link_args = ['-bundle', '-undefined', 'dynamic_lookup','-arch', 'x86_64',
+                       '-arch', 'arm64',
                        '-L/opt/local/lib', '-Wl,-headerpad_max_install_names',
                        '-Wl,-syslibroot,/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk']
 elif platform.system() == 'Windows':
