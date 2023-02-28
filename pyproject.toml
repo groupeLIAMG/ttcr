@@ -8,6 +8,7 @@ authors = [
     {name = "Bernard Giroux", email = "bernard.giroux@inrs.ca"},
 ]
 description = "Code to perform raytracing for geophysical applications"
+license = {file = "01_LICENSE.txt"}
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.8"
 classifiers = [
@@ -21,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering"
 ]
 dynamic = ["version"]
