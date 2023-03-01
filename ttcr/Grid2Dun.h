@@ -2304,7 +2304,7 @@ namespace ttcr {
 
                         s2 = computeSlowness(curr_pt, edgeNodes);
                     }
-                    sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                    sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                     cell.i = getCellNo(mid_pt);
                     cell.v = r_data.back().getDistance( curr_pt );
                     l_data.push_back(cell);
@@ -2415,7 +2415,7 @@ namespace ttcr {
 
                             s2 = computeSlowness(curr_pt, edgeNodes);
                         }
-                        sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -2474,7 +2474,7 @@ namespace ttcr {
                     if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
                         curr_pt = tentativeNode;
                         s2 = nodes[node_no].getNodeSlowness();
-                        sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -2556,7 +2556,7 @@ namespace ttcr {
                                 curr_pt.x = nodes[ ind[ns][1] ].getX();
                                 curr_pt.z = nodes[ ind[ns][1] ].getZ();
                                 s2 = nodes[ ind[ns][1] ].getNodeSlowness();
-                                sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                                sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = r_data.back().getDistance( curr_pt );
                                 l_data.push_back(cell);
@@ -2569,7 +2569,7 @@ namespace ttcr {
                                 curr_pt.x = nodes[ ind[ns][0] ].getX();
                                 curr_pt.z = nodes[ ind[ns][0] ].getZ();
                                 s2 = nodes[ ind[ns][0] ].getNodeSlowness();
-                                sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                                sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = r_data.back().getDistance( curr_pt );
                                 l_data.push_back(cell);
@@ -2616,7 +2616,7 @@ namespace ttcr {
                         edgeNodes[0] = ind[ns][0];
                         edgeNodes[1] = ind[ns][1];
 
-                        sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -2650,7 +2650,7 @@ namespace ttcr {
                         curr_pt.x = nodes[ edgeNodes[1] ].getX();
                         curr_pt.z = nodes[ edgeNodes[1] ].getZ();
                         s2 = nodes[ edgeNodes[1] ].getNodeSlowness();
-                        sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -2662,7 +2662,7 @@ namespace ttcr {
                         curr_pt.x = nodes[ edgeNodes[0] ].getX();
                         curr_pt.z = nodes[ edgeNodes[0] ].getZ();
                         s2 = nodes[ edgeNodes[0] ].getNodeSlowness();
-                        sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -2696,7 +2696,7 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                sxz<T1> mid_pt = 0.5 * (r_data.back() + Tx[nt]);
+                                sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + Tx[nt]);
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = r_data.back().getDistance( Tx[nt] );
                                 l_data.push_back(cell);
@@ -2709,7 +2709,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            sxz<T1> mid_pt = 0.5 * (r_data.back() + Tx[nt]);
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + Tx[nt]);
                             cell.i = getCellNo(mid_pt);
                             cell.v = r_data.back().getDistance( Tx[nt] );
                             l_data.push_back(cell);
@@ -2932,7 +2932,7 @@ namespace ttcr {
 
                         s2 = computeSlowness(curr_pt, edgeNodes);
                     }
-                    sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                    sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                     cell.i = getCellNo(mid_pt);
                     cell.v = prev_pt.getDistance( curr_pt );
                     l_data.push_back(cell);
@@ -3041,7 +3041,7 @@ namespace ttcr {
 
                             s2 = computeSlowness(curr_pt, edgeNodes);
                         }
-                        sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -3098,7 +3098,7 @@ namespace ttcr {
                     if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
                         curr_pt = tentativeNode;
                         s2 = nodes[node_no].getNodeSlowness();
-                        sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -3178,7 +3178,7 @@ namespace ttcr {
                                 curr_pt.x = nodes[ ind[ns][1] ].getX();
                                 curr_pt.z = nodes[ ind[ns][1] ].getZ();
                                 s2 = nodes[ ind[ns][1] ].getNodeSlowness();
-                                sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                                sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = prev_pt.getDistance( curr_pt );
                                 l_data.push_back(cell);
@@ -3191,7 +3191,7 @@ namespace ttcr {
                                 curr_pt.x = nodes[ ind[ns][0] ].getX();
                                 curr_pt.z = nodes[ ind[ns][0] ].getZ();
                                 s2 = nodes[ ind[ns][0] ].getNodeSlowness();
-                                sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                                sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = prev_pt.getDistance( curr_pt );
                                 l_data.push_back(cell);
@@ -3238,7 +3238,7 @@ namespace ttcr {
                         edgeNodes[0] = ind[ns][0];
                         edgeNodes[1] = ind[ns][1];
 
-                        sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -3270,7 +3270,7 @@ namespace ttcr {
                         curr_pt.x = nodes[ edgeNodes[1] ].getX();
                         curr_pt.z = nodes[ edgeNodes[1] ].getZ();
                         s2 = nodes[ edgeNodes[1] ].getNodeSlowness();
-                        sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -3282,7 +3282,7 @@ namespace ttcr {
                         curr_pt.x = nodes[ edgeNodes[0] ].getX();
                         curr_pt.z = nodes[ edgeNodes[0] ].getZ();
                         s2 = nodes[ edgeNodes[0] ].getNodeSlowness();
-                        sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                        sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
@@ -3316,7 +3316,7 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                sxz<T1> mid_pt = 0.5 * (prev_pt + Tx[nt]);
+                                sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + Tx[nt]);
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = prev_pt.getDistance( Tx[nt] );
                                 l_data.push_back(cell);
@@ -3328,7 +3328,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            sxz<T1> mid_pt = 0.5 * (prev_pt + Tx[nt]);
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + Tx[nt]);
                             cell.i = getCellNo(mid_pt);
                             cell.v = prev_pt.getDistance( Tx[nt] );
                             l_data.push_back(cell);

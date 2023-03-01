@@ -2430,7 +2430,7 @@ namespace ttcr {
             }
 
             if ( this->hasCellSlowness() ) {
-                sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                 slown = this->getCellSlowness(getCellNo(mid_pt));
             } else {
                 s2 = getSlowness( curr_pt );
@@ -2472,7 +2472,7 @@ namespace ttcr {
                     if ( curr_pt.getDistance(prev_pt) > dist ||  // we do not intersect
                         curr_pt == Tx[ns] ) {  // we have arrived
                         if ( this->hasCellSlowness() ) {
-                            sxz<T1> mid_pt = 0.5 * (prev_pt + Tx[ns]);
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + Tx[ns]);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
                         } else {
                             s2 = getSlowness( Tx[ns] );
@@ -2481,10 +2481,10 @@ namespace ttcr {
                         tt += slown * prev_pt.getDistance( Tx[ns] );
                     } else {
                         if ( this->hasCellSlowness() ) {
-                            sxz<T1> mid_pt = 0.5 * (prev_pt + curr_pt);
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (prev_pt + curr_pt);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
                             tt += slown * prev_pt.getDistance( curr_pt );
-                            mid_pt = 0.5 * (Tx[ns] + curr_pt);
+                            mid_pt = static_cast<T1>(0.5) * (Tx[ns] + curr_pt);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
                             tt += slown * curr_pt.getDistance( Tx[ns] );
                         } else {
@@ -2617,7 +2617,7 @@ namespace ttcr {
                 }
             }
             if ( this->hasCellSlowness() ) {
-                sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                 slown = this->getCellSlowness(getCellNo(mid_pt));
             } else {
                 s2 = getSlowness( curr_pt );
@@ -2659,7 +2659,7 @@ namespace ttcr {
                     if ( curr_pt.getDistance(r_data.back()) > dist ||  // we do not intersect
                         curr_pt == Tx[ns] ) {  // we have arrived
                         if ( this->hasCellSlowness() ) {
-                            sxz<T1> mid_pt = 0.5 * (r_data.back() + Tx[ns]);
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + Tx[ns]);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
                         } else {
                             s2 = getSlowness( Tx[ns] );
@@ -2669,10 +2669,10 @@ namespace ttcr {
                         r_data.push_back( Tx[ns] );
                     } else {
                         if ( this->hasCellSlowness() ) {
-                            sxz<T1> mid_pt = 0.5 * (r_data.back() + curr_pt);
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
                             tt += slown * r_data.back().getDistance( curr_pt );
-                            mid_pt = 0.5 * (curr_pt + Tx[ns]);
+                            mid_pt = static_cast<T1>(0.5) * (curr_pt + Tx[ns]);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
                             tt += slown * curr_pt.getDistance( Tx[ns] );
                         } else {
