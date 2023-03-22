@@ -46,6 +46,7 @@ def set_verbose(v):
     """
     setVerbose(v)
 
+
 cdef class Grid3d:
     """
     class to perform raytracing with 3D rectilinear grids
@@ -539,7 +540,7 @@ cdef class Grid3d:
 
     def set_velocity(self, velocity):
         """
-        set_velocity(slowness)
+        set_velocity(velocity)
 
         Assign velocity to grid
 
