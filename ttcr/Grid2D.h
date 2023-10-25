@@ -43,8 +43,8 @@ namespace ttcr {
     class Grid2D {
     public:
         Grid2D(const size_t ncells, const bool ttrp, const size_t nt=1, const bool up=1) :
-        nThreads(nt), usePool(up), tt_from_rp(ttrp),
-        neighbors(std::vector<std::vector<T2>>(ncells))
+        nThreads(nt), tt_from_rp(ttrp), neighbors(std::vector<std::vector<T2>>(ncells)),
+        usePool(up)
         {
             if ( nThreads > 1 && usePool ) {
                 pool.resize(static_cast<int>(nThreads));
