@@ -41,7 +41,7 @@ namespace ttcr {
     void print_usage (std::ostream& stream, char *progname, int exit_code)
     {
         stream << "\n *** " << progname << " - Ray tracing by grid methods ***\n\n";
-        stream << "Usage: " << progname << " [options] -p paramters.in\n";
+        stream << "Usage: " << progname << " [options] -p parameters.in\n";
         stream << "  -h  print this message\n"
         << "  -p  Specify parameter file (mandatory)\n"
         << "  -k  Save model in VTK format\n"
