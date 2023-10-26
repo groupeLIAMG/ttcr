@@ -49,10 +49,11 @@ namespace ttcr {
                const size_t nt=1,
                const bool _translateOrigin=false,
                const bool _usePool=1) :
-        usePool(_usePool), nThreads(nt), tt_from_rp(ttrp),
+        nThreads(nt), tt_from_rp(ttrp),
         translateOrigin(_translateOrigin),
         origin({0.0, 0.0, 0.0}),
-        neighbors(std::vector<std::vector<T2>>(ncells))
+        neighbors(std::vector<std::vector<T2>>(ncells)),
+        usePool(_usePool)
         {
             if ( nThreads > 1 && usePool ) {
                 pool.resize(static_cast<int>(nThreads));
