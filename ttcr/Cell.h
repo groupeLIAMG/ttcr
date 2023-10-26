@@ -102,6 +102,11 @@ namespace ttcr {
                     const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
         }
+        
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            cell.v = source.getDistance( node );
+        }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v = source.getDistance( node );
@@ -187,6 +192,13 @@ namespace ttcr {
             T lx = node.getX() - source.getX();
             T lz = node.getZ() - source.getZ();
             return slowness[cellNo] * std::sqrt( lx*lx + xi[cellNo]*lz*lz );
+        }
+
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            assert(false);  // we should not end up here
+            cell.v  = std::sqrt((node.x - source.getX())*(node.x - source.getX()) +
+                                (node.z - source.getZ())*(node.z - source.getZ()));
         }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
@@ -296,6 +308,12 @@ namespace ttcr {
             return slowness[cellNo] * std::sqrt( t1*t1 + xi[cellNo]*t2*t2 );
         }
 
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            assert(false);  // we should not end up here
+            cell.v  = std::sqrt((node.x - source.getX())*(node.x - source.getX()) +
+                                (node.z - source.getZ())*(node.z - source.getZ()));
+        }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
@@ -432,6 +450,12 @@ namespace ttcr {
         }
 
         void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            assert(false);  // we should not end up here
+            cell.v  = std::sqrt((node.x - source.getX())*(node.x - source.getX()) +
+                                (node.z - source.getZ())*(node.z - source.getZ()));
+        }
+        void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
             cell.v2 = std::abs(node.z - source.getZ());
@@ -526,6 +550,12 @@ namespace ttcr {
             return source.getDistance( node ) / v;
         }
 
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            assert(false);  // we should not end up here
+            cell.v  = std::sqrt((node.x - source.getX())*(node.x - source.getX()) +
+                                (node.z - source.getZ())*(node.z - source.getZ()));
+        }
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());

@@ -91,7 +91,15 @@ namespace ttcr {
                       std::vector<std::vector<T1>*>& traveltimes,
                       std::vector<std::vector<std::vector<S>>*>& r_data,
                       const size_t threadNo=0) const;
-
+        
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<S>>& r_data,
+                      std::vector<std::vector<siv<T1>>>& l_data,
+                      const size_t threadNo) const;
+        
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -344,7 +352,6 @@ namespace ttcr {
             }
         }
     }
-
 
 
     template<typename T1, typename T2, typename S, typename CELL>
@@ -777,7 +784,139 @@ namespace ttcr {
                     (*r_data[nr])[n][nn].x = r_tmp[ iParent-1-nn ].x;
                     (*r_data[nr])[n][nn].z = r_tmp[ iParent-1-nn ].z;
                 }
+            }
+        }
+    }
 
+    template<typename T1, typename T2, typename S, typename CELL>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
+                                            const std::vector<T1>& t0,
+                                            const std::vector<S>& Rx,
+                                            std::vector<T1>& traveltimes,
+                                            std::vector<std::vector<S>>& r_data,
+                                            std::vector<std::vector<siv<T1>>>& l_data,
+                                            const size_t threadNo) const {
+
+        this->checkPts(Tx);
+        this->checkPts(Rx);
+        
+        for ( size_t n=0; n<this->nodes.size(); ++n ) {
+            this->nodes[n].reinit( threadNo );
+        }
+
+        CompareNodePtr<T1> cmp(threadNo);
+        std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
+        CompareNodePtr<T1>> queue( cmp );
+        std::vector<Node2Dcsp<T1,T2>> txNodes;
+        std::vector<bool> inQueue( this->nodes.size(), false );
+        std::vector<bool> frozen( this->nodes.size(), false );
+
+        initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
+        
+        propagate(queue, inQueue, frozen, threadNo);
+        
+        if ( traveltimes.size() != Rx.size() ) {
+            traveltimes.resize( Rx.size() );
+        }
+        if ( l_data.size() != Rx.size() ) {
+            l_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
+            l_data[ni].resize( 0 );
+        }
+        if ( r_data.size() != Rx.size() ) {
+            r_data.resize( Rx.size() );
+        }
+        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
+            r_data[ni].resize( 0 );
+        }
+        T2 nodeParentRx;
+        T2 cellParentRx;
+        
+        for (size_t n=0; n<Rx.size(); ++n) {
+            
+            traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
+                                           threadNo);
+            
+            // Rx are in nodes (not txNodes)
+            std::vector<Node2Dcsp<T1,T2>> *node_p;
+            node_p = &(this->nodes);
+            
+            std::vector<sxz<T1>> r_tmp;
+            T2 iChild, iParent = nodeParentRx;
+            sxz<T1> child;
+            siv<T1> cell;
+            
+            // store the son's coord
+            child.x = Rx[n].x;
+            child.z = Rx[n].z;
+            cell.i = cellParentRx;
+            while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
+                
+                r_tmp.push_back( child );
+                
+                //cell.v = (*node_p)[iParent].getDistance( child );
+                this->cells.computeDistance( (*node_p)[iParent], child, cell);
+                bool found=false;
+                for (size_t nc=0; nc<l_data[n].size(); ++nc) {
+                    if ( l_data[n][nc].i == cell.i ) {
+                        l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
+                        found = true;
+                        break;
+                    }
+                }
+                if ( found == false ) {
+                    l_data[n].push_back( cell );
+                }
+                
+                // we now go up in time - parent becomes the child of grand'pa
+                iChild = iParent;
+                child.x = (*node_p)[iChild].getX();
+                child.z = (*node_p)[iChild].getZ();
+                cell.i = (*node_p)[iChild].getCellParent(threadNo);
+                
+                // grand'pa is now papa
+                iParent = (*node_p)[iChild].getNodeParent(threadNo);
+                if ( iParent >= this->nodes.size() ) {
+                    node_p = &txNodes;
+                    iParent -= this->nodes.size();
+                }
+                else {
+                    node_p = &(this->nodes);
+                }
+            }
+            
+            // parent is now at Tx
+            r_tmp.push_back( child );
+            
+            //cell.v = (*node_p)[iParent].getDistance( child );
+            this->cells.computeDistance( (*node_p)[iParent], child, cell);
+            bool found=false;
+            for (size_t nc=0; nc<l_data[n].size(); ++nc) {
+                if ( l_data[n][nc].i == cell.i ) {
+                    l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
+                    found = true;
+                    break;
+                }
+            }
+            if ( found == false ) {
+                l_data[n].push_back( cell );
+            }
+            
+            // finally, store Tx position
+            child.x = (*node_p)[iParent].getX();
+            child.z = (*node_p)[iParent].getZ();
+            r_tmp.push_back( child );
+            
+            //  must be sorted to build matrix L
+            sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
+            
+            // the order should be from Tx to Rx, so we reorder...
+            iParent = static_cast<T2>(r_tmp.size());
+            r_data[n].resize( r_tmp.size() );
+            for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
+                r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
+                r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
             }
         }
     }
