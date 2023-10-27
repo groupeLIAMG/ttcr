@@ -1848,7 +1848,7 @@ namespace ttcr {
                     // find node closest to gradient vector
                     sxz<T1> tentativeNode;
                     T1 distance = std::numeric_limits<T1>::max();
-                    T2 node_no;
+                    T2 node_no = 0;
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
                         for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
@@ -2447,7 +2447,7 @@ namespace ttcr {
                     // find node closest to gradient vector
                     sxz<T1> tentativeNode;
                     T1 distance = std::numeric_limits<T1>::max();
-                    T2 node_no;
+                    T2 node_no = 0;
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
                         for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
@@ -3071,7 +3071,7 @@ namespace ttcr {
                     // find node closest to gradient vector
                     sxz<T1> tentativeNode;
                     T1 distance = std::numeric_limits<T1>::max();
-                    T2 node_no;
+                    T2 node_no = 0;
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
                         for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {
@@ -3663,7 +3663,7 @@ namespace ttcr {
                     // find node closest to gradient vector
                     sxz<T1> tentativeNode;
                     T1 distance = std::numeric_limits<T1>::max();
-                    T2 node_no;
+                    T2 node_no = 0 ;
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
 
                         for (auto nn=this->neighbors[*nc].begin(); nn!=this->neighbors[*nc].end(); ++nn ) {

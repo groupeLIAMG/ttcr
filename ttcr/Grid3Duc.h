@@ -1908,7 +1908,7 @@ namespace ttcr {
 #endif
         }
 
-        T2 cellNo, nodeNo;
+        T2 cellNo=0, nodeNo=0;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         bool atRx = true;
 
@@ -3633,7 +3633,7 @@ namespace ttcr {
             }
         }
 
-        T2 cellNo, nodeNo;
+        T2 cellNo=0, nodeNo=0;
         sxyz<T1> curr_pt( Rx );
 
         bool onNode = false;
@@ -4428,8 +4428,8 @@ namespace ttcr {
             bool txOnNode = false;
             bool txOnEdge = false;
             bool txOnFace = false;
-            T2 txNode;
-            T2 txCell;
+            T2 txNode=0;
+            T2 txCell=0;
             std::array<T2,2> txEdges;
             std::array<T2,3> txFaces;
             std::vector<T2> txNeighborCells;
@@ -4489,7 +4489,7 @@ namespace ttcr {
                     }
                 }
             }
-            T2 cellNo, nodeNo;
+            T2 cellNo=0, nodeNo=0;
             sxyz<T1> curr_pt( Rx[nt] ), prev_pt( Rx[nt] );
 
             bool onNode = false;

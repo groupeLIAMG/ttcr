@@ -529,7 +529,7 @@ namespace ttcr {
             }
         }
         T1 minVolumeDiff = std::numeric_limits<T1>::max();
-        T2 cell;
+        T2 cell=0;
 
         for (auto tet=nodes[closestNode].getOwners().begin(); tet!=nodes[closestNode].getOwners().end(); ++tet) {
             T2 celli = *tet;
@@ -1679,7 +1679,7 @@ namespace ttcr {
         T1 tt = 0.0;
 
         T1 minDist = small;
-        T1 s1, s2;
+        T1 s1=0.0, s2=0.0;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -1788,7 +1788,7 @@ namespace ttcr {
 #endif
         }
 
-        T2 cellNo, nodeNo;
+        T2 cellNo=0, nodeNo=0;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
         bool atRx = true;
 
@@ -3577,7 +3577,7 @@ namespace ttcr {
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
         tt = 0.0;
-        T1 s1, s2;
+        T1 s1=0.0, s2=0.0;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -3685,7 +3685,7 @@ namespace ttcr {
 #endif
         }
 
-        T2 cellNo, nodeNo;
+        T2 cellNo=0, nodeNo=0;
         sxyz<T1> curr_pt( Rx );
 
         bool onNode = false;
@@ -4637,7 +4637,7 @@ namespace ttcr {
         // Important note: m_data holds terms of traveltime derivative w/r to slowness (not velocity)
         T1 minDist = small;
         tt = 0.0;
-        T1 s1, s2;
+        T1 s1=0.0, s2=0.0;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -4714,7 +4714,7 @@ namespace ttcr {
             }
         }
 
-        T2 cellNo, nodeNo, nodeNoPrev;
+        T2 cellNo=0, nodeNo=0, nodeNoPrev=0;
         sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
         bool atRx = true;
         sijv<T1> m;
@@ -7494,7 +7494,7 @@ namespace ttcr {
         std::vector<sxyz<T1>> r_tmp;
         r_tmp.emplace_back( Rx );
         tt = 0.0;
-        T1 s1, s2;
+        T1 s1=0.0, s2=0.0;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -7571,7 +7571,7 @@ namespace ttcr {
             }
         }
 
-        T2 cellNo, nodeNo, nodeNoPrev;
+        T2 cellNo=0, nodeNo=0, nodeNoPrev=0;
         sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
         sijv<T1> m;
         m.i = RxNo;
@@ -11615,7 +11615,7 @@ namespace ttcr {
         }
         if (!found || dot(g,g_old) < 0 ){
             T1 tmin = std::numeric_limits<T1>::max();
-            T2 nodeTmin;
+            T2 nodeTmin=0;
             for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                 for ( size_t nn=0; nn<4; ++nn ) {
                     T2 node_i = tetrahedra[*nc].i[nn];

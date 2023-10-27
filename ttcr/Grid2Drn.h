@@ -2328,7 +2328,7 @@ namespace ttcr {
                                                         const size_t threadNo) const {
 
         T1 tt = 0.0;
-        T1 s1, s2, slown;
+        T1 s1=0.0, s2=0.0, slown=0.0;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
@@ -2515,7 +2515,7 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         tt = 0.0;
-        T1 s1, s2, slown;
+        T1 s1=0.0, s2=0.0, slown=0.0;
 
         r_data.push_back( Rx );
 
@@ -2705,7 +2705,7 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         tt = 0.0;
-        T1 s1, s2, slown;
+        T1 s1=0.0, s2=0.0, slown=0.0;
 
         r_data.push_back( Rx );
 
@@ -2875,7 +2875,7 @@ namespace ttcr {
                                             const size_t threadNo) const {
 
         tt = 0.0;
-        T1 s1, s2, slown;
+        T1 s1=0.0, s2=0.0, slown=0.0;
 
         for ( size_t ns=0; ns<Tx.size(); ++ns ) {
             if ( Rx == Tx[ns] ) {
