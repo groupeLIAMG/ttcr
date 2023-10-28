@@ -436,10 +436,6 @@ namespace ttcr {
         // Calculate the slowness of any point that is not on a node
 
         T2 cellNo = this->getCellNo( pt );
-        if ( cellNo == -1 ) {
-            std::cerr << "Error: cannot compute slowness, cell not found for point " << pt << std::endl;
-            return -1;
-        }
 
         // We calculate the Slowness at the point
         std::vector<NODE*> interpNodes;
@@ -1069,7 +1065,7 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     r_data.push_back( Tx[nt] );
                     reachedTx = true;
@@ -1581,7 +1577,7 @@ namespace ttcr {
             if (!onEdge)
                 s1 = computeSlowness(curr_pt, cellNo);
 
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     s2 = computeSlowness(Tx[nt], txCell[nt]);
                     tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
@@ -2159,7 +2155,7 @@ namespace ttcr {
             if (!onEdge)
                 s1 = computeSlowness(curr_pt, cellNo);
 
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     cell.i = cellNo;
                     cell.v = curr_pt.getDistance( Tx[nt] );
@@ -2791,7 +2787,7 @@ namespace ttcr {
             if (!onEdge)
                 s1 = computeSlowness(curr_pt, cellNo);
 
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     cell.i = cellNo;
                     cell.v = curr_pt.getDistance( Tx[nt] );
@@ -3404,7 +3400,7 @@ namespace ttcr {
             if (!onEdge)
                 s1 = computeSlowness(curr_pt, cellNo);
 
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     s2 = computeSlowness(Tx[nt], txCell[nt]);
                     tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );

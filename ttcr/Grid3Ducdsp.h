@@ -204,11 +204,11 @@ namespace ttcr {
         // on faces
         size_t ncut = nDynTot + nSecondary - 1;
         size_t nSecNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) {
+        for ( size_t n=1; n<=(nSecondary-1); ++n ) {
             nSecNodes += n;
         }
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=ncut; ++n ) {
+        for ( size_t n=1; n<=ncut; ++n ) {
             nFaceNodes += n;
         }
         nFaceNodes -= nSecNodes;
@@ -240,7 +240,7 @@ namespace ttcr {
 
                 size_t ifn = 0;
                 size_t n = 0;
-                for ( int n2=nSecondary; n2>-1; --n2 ) {
+                for ( ptrdiff_t n2=nSecondary; n2>-1; --n2 ) {
                     for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                         sxyz<T1> pt1 = this->nodes[faceKey[0]]+static_cast<T1>(1+n)*d1;
                         sxyz<T1> pt2 = this->nodes[faceKey[2]]+static_cast<T1>(1+n)*d2;
@@ -267,7 +267,7 @@ namespace ttcr {
 
                     sxyz<T1> d = (pt2-pt1)/static_cast<T1>(nseg);
                     size_t n5 = 0;
-                    for ( size_t n4=0; n4<n2; ++n4 ) {
+                    for ( ptrdiff_t n4=0; n4<n2; ++n4 ) {
                         for ( size_t n3=0; n3<nTertiary; ++n3 ) {
                             tmpNode.setXYZindex(pt1.x+(1+n5)*d.x,
                                                 pt1.y+(1+n5)*d.y,

@@ -375,7 +375,7 @@ namespace ttcr {
         // find cells surrounding Tx
         std::set<T2> txCells;
         for (size_t n=0; n<Tx.size(); ++n) {
-            long long i, k;
+            ptrdiff_t i, k;
             this->getIJ(Tx[n], i, k);
 
             T2 nsx = dynRadius / this->dx;

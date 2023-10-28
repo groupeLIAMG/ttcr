@@ -235,7 +235,7 @@ namespace ttcr {
 
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const int, const size_t);
+                            const T2, const size_t);
 
         void localUpdate3D(NODE *vertexC, const size_t threadNo) const;
 
@@ -381,7 +381,7 @@ namespace ttcr {
                                 std::vector<std::vector<std::array<NODE*,3>>>&) const;
 
         void getSurroundingNodes(const T2 nodeNumber,
-                                 const int minNbrPoints,
+                                 const T2 minNbrPoints,
                                  std::set<T2>& surroundingNodes) const;
 
         void buildA(const T2 nodeNumber,
@@ -621,7 +621,7 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
-                                              const int nsecondary,
+                                              const T2 nsecondary,
                                               const size_t nt) {
 
         if ( this->translateOrigin ) {
@@ -639,14 +639,14 @@ namespace ttcr {
         }
 
         // primary nodes
-        for ( T2 n=0; n<no.size(); ++n ) {
-            nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, n );
+        for ( size_t n=0; n<no.size(); ++n ) {
+            nodes[n].setXYZindex( no[n].x, no[n].y, no[n].z, static_cast<T2>(n) );
             nodes[n].setPrimary(true);
         }
         T2 nNodes = static_cast<T2>(nodes.size());
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nsecondary-1); ++n ) {
+        for ( size_t n=1; n<=(nsecondary-1); ++n ) {
             nFaceNodes += n;
         }
 
@@ -657,7 +657,6 @@ namespace ttcr {
         size_t estLineNo = (tetrahedra.size()+tetrahedra.size()/10) * 6/2;
         size_t estFaceNo = (tetrahedra.size()+tetrahedra.size()/10) * 4/2;
         nodes.reserve( nNodes + estLineNo*nsecondary + estFaceNo*nFaceNodes );
-
 
         T2 iNodes[4][3] = {
             {0,1,2},  // (relative) indices of nodes of 1st triangle
@@ -754,7 +753,7 @@ namespace ttcr {
             std::array<T2,3> faceKey;
             typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
 
-            int ncut = nsecondary - 1;
+            ptrdiff_t ncut = nsecondary - 1;
 
             for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 
@@ -787,7 +786,7 @@ namespace ttcr {
                     sxyz<T1> d2 = (no[faceKey[1]]-no[faceKey[2]])/static_cast<T1>(nsecondary+1);
 
                     size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
+                    for ( ptrdiff_t n=0; n<ncut; ++n ) {
 
                         sxyz<T1> pt1 = no[faceKey[0]]+static_cast<T1>(1+n)*d1;
                         sxyz<T1> pt2 = no[faceKey[2]]+static_cast<T1>(1+n)*d2;
@@ -1894,7 +1893,7 @@ namespace ttcr {
             }
         }
 
-        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+        for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( processVel )
@@ -3792,7 +3791,7 @@ namespace ttcr {
             }
         }
 
-        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+        for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( processVel )
@@ -4824,7 +4823,7 @@ namespace ttcr {
             }
         }
 
-        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+        for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( processVel )
@@ -7679,7 +7678,7 @@ namespace ttcr {
             }
         }
 
-        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+        for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( processVel )
@@ -11963,7 +11962,7 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE>
     void Grid3Dun<T1,T2,NODE>::getSurroundingNodes(const T2 nodeNumber,
-                                                   const int minNbrPoints,
+                                                   const T2 minNbrPoints,
                                                    std::set<T2>& surroundingNodes) const {
         std::set<T2> layer;
         layer.insert(nodeNumber);
@@ -12225,7 +12224,7 @@ namespace ttcr {
         k_data[1].resize(nPrimary);
         k_data[2].resize(nPrimary);
 
-        int minNbrPoints = 4;
+        T2 minNbrPoints = 4;
         if ( taylorSeriesOrder == 2 ) {
             minNbrPoints = 10 + additionnalPoints;
         }
@@ -12301,7 +12300,7 @@ namespace ttcr {
         typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) {
+        for ( size_t n=1; n<=(nSecondary-1); ++n ) {
             nFaceNodes += n;
         }
 
@@ -12344,7 +12343,7 @@ namespace ttcr {
             std::array<T2,3> faceKey;
             typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
 
-            int ncut = nSecondary - 1;
+            ptrdiff_t ncut = nSecondary - 1;
 
             for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 
@@ -12371,7 +12370,7 @@ namespace ttcr {
                     inodes.push_back( &(nodes[faceKey[2]]) );
 
                     size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
+                    for ( ptrdiff_t n=0; n<ncut; ++n ) {
                         size_t nseg = ncut+1-n;
                         for ( size_t n2=0; n2<nseg-1; ++n2 ) {
 
@@ -12398,7 +12397,7 @@ namespace ttcr {
         typename std::map<std::array<T2,2>,std::vector<T2>>::iterator lineIt;
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nSecondary-1); ++n ) {
+        for ( size_t n=1; n<=(nSecondary-1); ++n ) {
             nFaceNodes += n;
         }
 
@@ -12441,7 +12440,7 @@ namespace ttcr {
             std::array<T2,3> faceKey;
             typename std::map<std::array<T2,3>,std::vector<T2>>::iterator faceIt;
 
-            int ncut = nSecondary - 1;
+            ptrdiff_t ncut = nSecondary - 1;
 
             for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
 
@@ -12468,7 +12467,7 @@ namespace ttcr {
                     inodes.push_back( &(nodes[faceKey[2]]) );
 
                     size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
+                    for ( ptrdiff_t n=0; n<ncut; ++n ) {
                         size_t nseg = ncut+1-n;
                         for ( size_t n2=0; n2<nseg-1; ++n2 ) {
 

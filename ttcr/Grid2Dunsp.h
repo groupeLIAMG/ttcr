@@ -902,9 +902,6 @@ namespace ttcr {
             T1 ds = r_tmp.back().getDistance( r_tmp[ r_tmp.size()-2 ] );
 
             T2 cell = this->getCellNo( mid_pt);
-            if ( cell == -1 ) {
-                throw std::runtime_error("Error while building M");
-            }
 
             T1 w[3];
 
@@ -1038,7 +1035,6 @@ namespace ttcr {
             }
             if ( found == false ) {
                 T2 cellNo = this->getCellNo( pts[n] );
-                if ( cellNo == -1 ) return 1;
 
                 T1 w[3];
                 T1 sum_w = 0.0;

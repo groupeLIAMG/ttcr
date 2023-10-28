@@ -137,12 +137,12 @@ cdef extern from "Grid3Dunfs.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid3Dunsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dunsp[T1, T2](Grid3Dun[T1,T2,Node3Dnsp[T1,T2]]):
-        Grid3Dunsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], int, bool,
+        Grid3Dunsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T2, bool,
                    bool, T1, size_t, bool) except +
 
 cdef extern from "Grid3Dundsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Dundsp[T1, T2](Grid3Dun[T1,T2,Node3Dn[T1,T2]]):
-        Grid3Dundsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], int, int, T1,
+        Grid3Dundsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T2, T2, T1,
                     bool, int, bool, T1, T1, bool, size_t, bool) except +
 
 

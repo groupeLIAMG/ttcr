@@ -606,7 +606,7 @@ namespace ttcr {
         S.resize(svd.nonzeroSingularValues(), svd.nonzeroSingularValues());
         S.setZero();
 
-        for ( size_t n=0; n<svd.nonzeroSingularValues(); ++n ) {
+        for ( ptrdiff_t n=0; n<svd.nonzeroSingularValues(); ++n ) {
             S(n, n) = 1.0 / svd.singularValues()(n);
         }
         Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> U = svd.matrixU().block(0, 0, svd.matrixU().rows(), svd.nonzeroSingularValues());
@@ -629,11 +629,11 @@ namespace ttcr {
     void buildReflectors(const MSHReader &reader,
                          const std::vector<sxyz<T>> &nodes,
                          const size_t nsrc,
-                         const int nsecondary,
+                         const size_t nsecondary,
                          std::vector<Rcv<T>> &reflectors) {
 
         std::vector<std::string> reflector_names = reader.getPhysicalNames(2);
-        std::vector<int> indices = reader.getPhysicalIndices(2);
+        std::vector<size_t> indices = reader.getPhysicalIndices(2);
 
         if ( reflector_names.size() != indices.size() ) {
             std::cerr << "Error - definition of reflectors\n";
@@ -644,7 +644,7 @@ namespace ttcr {
         reader.readTriangleElements(triangles);
 
         sxyz<T> pt1, pt2, pt3, pt4, pt5, pt6, d1, d2;
-        int ncut = nsecondary - 1;
+        size_t ncut = nsecondary - 1;
 
         for ( size_t ni=0; ni<indices.size(); ++ni ) {
 

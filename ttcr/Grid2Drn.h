@@ -193,9 +193,9 @@ namespace ttcr {
             j = static_cast<T2>( small + (pt.z-zmin)/dz );
         }
 
-        void getIJ(const S& pt, long long& i, long long& j) const {
-            i = static_cast<long long>( small + (pt.x-xmin)/dx );
-            j = static_cast<long long>( small + (pt.z-zmin)/dz );
+        void getIJ(const S& pt, ptrdiff_t& i, ptrdiff_t& j) const {
+            i = static_cast<ptrdiff_t>( small + (pt.x-xmin)/dx );
+            j = static_cast<ptrdiff_t>( small + (pt.z-zmin)/dz );
         }
 
         void sweep(const std::vector<bool>& frozen,
@@ -790,7 +790,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -858,7 +858,7 @@ namespace ttcr {
         }
 
 
-        long long int iIn, kIn, iOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
+        ptrdiff_t iIn, kIn, iOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
         S curr_pt( Rx );
         S gOut = {0.0, 0.0};
 
@@ -1035,7 +1035,7 @@ namespace ttcr {
             }
         }
 
-        long long int iIn, jIn, iOut, jOut; // iOut, jOut for cell we are exiting; iIn, jIn for cell we are entering
+        ptrdiff_t iIn, jIn, iOut, jOut; // iOut, jOut for cell we are exiting; iIn, jIn for cell we are entering
         S curr_pt( Rx );
         S gOut;
 
@@ -2212,18 +2212,18 @@ namespace ttcr {
 
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
-            for ( long long nn=0; nn<nodes.size(); ++nn ) {
+            for ( size_t nn=0; nn<nodes.size(); ++nn ) {
                 if ( nodes[nn] == Tx[n] ) {
                     found = true;
                     nodes[nn].setTT( t0[n], threadNo );
                     frozen[nn] = true;
 
-                    long long i = nn/(ncz+1);
-                    long long j = nn - i*(ncz+1);
+                    ptrdiff_t i = nn/(ncz+1);
+                    ptrdiff_t j = nn - i*(ncz+1);
 
-                    for ( long long ii=i-npts; ii<=i+npts; ++ii ) {
+                    for ( ptrdiff_t ii=i-npts; ii<=i+npts; ++ii ) {
                         if ( ii>=0 && ii<=ncx ) {
-                            for ( long long jj=j-npts; jj<=j+npts; ++jj ) {
+                            for ( ptrdiff_t jj=j-npts; jj<=j+npts; ++jj ) {
                                 if ( jj>=0 && jj<=ncz && !(ii==i && jj==j) ) {
 
                                     size_t nnn = ii*(ncz+1) + jj;
@@ -2242,14 +2242,14 @@ namespace ttcr {
             if ( found==false ) {
 
                 // find cell where Tx resides
-                long long cellNo = getCellNo(Tx[n]);
+                ptrdiff_t cellNo = getCellNo(Tx[n]);
 
-                long long i = cellNo/ncz;
-                long long j = cellNo - i*ncz;
+                ptrdiff_t i = cellNo/ncz;
+                ptrdiff_t j = cellNo - i*ncz;
 
-                for ( long long ii=i-(npts-1); ii<=i+npts; ++ii ) {
+                for ( ptrdiff_t ii=i-(npts-1); ii<=i+npts; ++ii ) {
                     if ( ii>=0 && ii<=ncx ) {
-                        for ( long long jj=j-(npts-1); jj<=j+npts; ++jj ) {
+                        for ( ptrdiff_t jj=j-(npts-1); jj<=j+npts; ++jj ) {
                             if ( jj>=0 && jj<=ncz ) {
                                 size_t nnn = ii*(ncz+1) + jj;
 
@@ -2351,7 +2351,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -2539,7 +2539,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -2730,7 +2730,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -2899,7 +2899,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect

@@ -216,10 +216,10 @@ namespace ttcr {
             k = static_cast<T2>( small2 + (pt.z-zmin)/dz );
         }
 
-        void getIJK(const sxyz<T1>& pt, long long& i, long long& j, long long& k) const {
-            i = static_cast<long long>( small2 + (pt.x-xmin)/dx );
-            j = static_cast<long long>( small2 + (pt.y-ymin)/dy );
-            k = static_cast<long long>( small2 + (pt.z-zmin)/dz );
+        void getIJK(const sxyz<T1>& pt, ptrdiff_t& i, ptrdiff_t& j, ptrdiff_t& k) const {
+            i = static_cast<ptrdiff_t>( small2 + (pt.x-xmin)/dx );
+            j = static_cast<ptrdiff_t>( small2 + (pt.y-ymin)/dy );
+            k = static_cast<ptrdiff_t>( small2 + (pt.z-zmin)/dz );
         }
 
         void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
@@ -1117,7 +1117,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1262,7 +1262,7 @@ namespace ttcr {
 #ifdef DEBUG_RP
             std::cout << "  g = " << g << '\n';
 #endif
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1359,7 +1359,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1524,7 +1524,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1823,7 +1823,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1991,7 +1991,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -2164,7 +2164,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -2452,7 +2452,7 @@ namespace ttcr {
             }
         }
 
-        long long int iIn, jIn, kIn, iOut=-1, jOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
+        ptrdiff_t iIn, jIn, kIn, iOut=-1, jOut=-1, kOut=-1; // Out for cell we are exiting; In for cell we are entering
         sxyz<T1> curr_pt( Rx );
         sxyz<T1> gOut = {0.0, 0.0, 0.0};
 
@@ -2916,19 +2916,19 @@ namespace ttcr {
         ptrdiff_t onX = -1;
         ptrdiff_t onY = -1;
         ptrdiff_t onZ = -1;
-        for ( ptrdiff_t n=0; n<nnx; ++n ) {
+        for ( size_t n=0; n<nnx; ++n ) {
             if ( std::abs(pt.x - (xmin+n*dx)) < small2 ) {
                 onX = n;
                 break;
             }
         }
-        for ( ptrdiff_t n=0; n<nny; ++n ) {
+        for ( size_t n=0; n<nny; ++n ) {
             if ( std::abs(pt.y - (ymin+n*dy)) < small2 ) {
                 onY = n;
                 break;
             }
         }
-        for ( ptrdiff_t n=0; n<nnz; ++n ) {
+        for ( size_t n=0; n<nnz; ++n ) {
             if ( std::abs(pt.z - (zmin+n*dz)) < small2 ) {
                 onZ = n;
                 break;
@@ -3801,21 +3801,21 @@ namespace ttcr {
 
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
-            for ( long long nn=0; nn<nodes.size(); ++nn ) {
+            for ( size_t nn=0; nn<nodes.size(); ++nn ) {
                 if ( nodes[nn] == Tx[n] ) {
                     found = true;
                     nodes[nn].setTT( t0[n], threadNo );
                     frozen[nn] = true;
 
-                    long long k = nn/((ncy+1)*(ncx+1));
-                    long long j = (nn-k*(ncy+1)*(ncx+1))/(ncx+1);
-                    long long i = nn - (k*(ncy+1)+j)*(ncx+1);
+                    ptrdiff_t k = nn/((ncy+1)*(ncx+1));
+                    ptrdiff_t j = (nn-k*(ncy+1)*(ncx+1))/(ncx+1);
+                    ptrdiff_t i = nn - (k*(ncy+1)+j)*(ncx+1);
 
-                    for ( long long kk=k-npts; kk<=k+npts; ++kk ) {
+                    for ( ptrdiff_t kk=k-npts; kk<=k+npts; ++kk ) {
                         if ( kk>=0 && kk<=ncz ) {
-                            for ( long long jj=j-npts; jj<=j+npts; ++jj ) {
+                            for ( ptrdiff_t jj=j-npts; jj<=j+npts; ++jj ) {
                                 if ( jj>=0 && jj<=ncy ) {
-                                    for ( long long ii=i-npts; ii<=i+npts; ++ii ) {
+                                    for ( ptrdiff_t ii=i-npts; ii<=i+npts; ++ii ) {
                                         if ( ii>=0 && ii<=ncx && !(ii==i && jj==j && kk==k) ) {
 
                                             size_t nnn = (kk*(ncy+1)+jj)*(ncx+1)+ii;
@@ -3836,17 +3836,17 @@ namespace ttcr {
             if ( found==false ) {
 
                 // find cell where Tx resides
-                long long cellNo = getCellNo(Tx[n]);
+                ptrdiff_t cellNo = getCellNo(Tx[n]);
 
-                long long k = cellNo/(ncy*ncx);
-                long long j = (cellNo-k*ncy*ncx)/ncx;
-                long long i = cellNo - (k*ncy+j)*ncx;
+                ptrdiff_t k = cellNo/(ncy*ncx);
+                ptrdiff_t j = (cellNo-k*ncy*ncx)/ncx;
+                ptrdiff_t i = cellNo - (k*ncy+j)*ncx;
 
-                for ( long long kk=k-(npts-1); kk<=k+npts; ++kk ) {
+                for ( ptrdiff_t kk=k-(npts-1); kk<=k+npts; ++kk ) {
                     if ( kk>=0 && kk<=ncz ) {
-                        for ( long long jj=j-(npts-1); jj<=j+npts; ++jj ) {
+                        for ( ptrdiff_t jj=j-(npts-1); jj<=j+npts; ++jj ) {
                             if ( jj>=0 && jj<=ncy ) {
-                                for ( long long ii=i-(npts-1); ii<=i+npts; ++ii ) {
+                                for ( ptrdiff_t ii=i-(npts-1); ii<=i+npts; ++ii ) {
                                     if ( ii>=0 && ii<=ncx && !(ii==i && jj==j && kk==k) ) {
 
                                         size_t nnn = (kk*(ncy+1)+jj)*(ncx+1)+ii;

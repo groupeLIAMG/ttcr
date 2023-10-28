@@ -43,9 +43,7 @@ namespace ttcr {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s[n];
-            }
+            slowness = s;
         }
 
         const T getSlowness(const size_t i) const {
@@ -131,9 +129,7 @@ namespace ttcr {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s[n];
-            }
+            slowness = s;
         }
 
         const T getSlowness(const size_t i) const {
@@ -229,9 +225,7 @@ namespace ttcr {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s[n];
-            }
+            slowness = s;
         }
 
         const T getSlowness(const size_t i) const {
@@ -347,36 +341,28 @@ namespace ttcr {
             if ( Vp0.size() != s.size() ) {
                 throw std::length_error("Error: Vp0 vectors of incompatible size.");
             }
-            for ( size_t n=0; n<Vp0.size(); ++n ) {
-                Vp0[n] = s[n];
-            }
+            Vp0 = s;
         }
 
         void setVs0(const std::vector<T>& s) {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
             }
-            for ( size_t n=0; n<Vs0.size(); ++n ) {
-                Vs0[n] = s[n];
-            }
+            Vs0 = s;
         }
 
         void setEpsilon(const std::vector<T>& s) {
             if ( epsilon.size() != s.size() ) {
                 throw std::length_error("Error: epsilon vectors of incompatible size.");
             }
-            for ( size_t n=0; n<epsilon.size(); ++n ) {
-                epsilon[n] = s[n];
-            }
+            epsilon = s;
         }
 
         void setDelta(const std::vector<T>& s) {
             if ( delta.size() != s.size() ) {
                 throw std::length_error("Error: delta vectors of incompatible size.");
             }
-            for ( size_t n=0; n<delta.size(); ++n ) {
-                delta[n] = s[n];
-            }
+            delta = s;
         }
 
         void setPhase(const int p) {
@@ -484,18 +470,14 @@ namespace ttcr {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
             }
-            for ( size_t n=0; n<Vs0.size(); ++n ) {
-                Vs0[n] = s[n];
-            }
+            Vs0 = s;
         }
 
         void setGamma(const std::vector<T>& s) {
             if ( gamma.size() != s.size() ) {
                 throw std::length_error("Error: gamma vectors of incompatible size.");
             }
-            for ( size_t n=0; n<gamma.size(); ++n ) {
-                gamma[n] = s[n];
-            }
+            gamma = s;
         }
 
         void setSlowness(const std::vector<T>& s) {
@@ -584,9 +566,7 @@ namespace ttcr {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s[n];
-            }
+            slowness = s;
         }
 
         const T getSlowness(const size_t i) const {
@@ -683,36 +663,28 @@ namespace ttcr {
             if ( Vp0.size() != s.size() ) {
                 throw std::length_error("Error: Vp0 vectors of incompatible size.");
             }
-            for ( size_t n=0; n<Vp0.size(); ++n ) {
-                Vp0[n] = s[n];
-            }
+            Vp0 = s;
         }
 
         void setVs0(const std::vector<T>& s) {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
             }
-            for ( size_t n=0; n<Vs0.size(); ++n ) {
-                Vs0[n] = s[n];
-            }
+            Vs0 = s;
         }
 
         void setEpsilon(const std::vector<T>& s) {
             if ( epsilon.size() != s.size() ) {
                 throw std::length_error("Error: epsilon vectors of incompatible size.");
             }
-            for ( size_t n=0; n<epsilon.size(); ++n ) {
-                epsilon[n] = s[n];
-            }
+            epsilon = s;
         }
 
         void setDelta(const std::vector<T>& s) {
             if ( delta.size() != s.size() ) {
                 throw std::length_error("Error: delta vectors of incompatible size.");
             }
-            for ( size_t n=0; n<delta.size(); ++n ) {
-                delta[n] = s[n];
-            }
+            delta = s;
         }
 
         void setPhase(const int p) {
@@ -791,18 +763,14 @@ namespace ttcr {
             if ( Vs0.size() != s.size() ) {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
             }
-            for ( size_t n=0; n<Vs0.size(); ++n ) {
-                Vs0[n] = s[n];
-            }
+            Vs0 = s;
         }
 
         void setGamma(const std::vector<T>& s) {
             if ( gamma.size() != s.size() ) {
                 throw std::length_error("Error: gamma vectors of incompatible size.");
             }
-            for ( size_t n=0; n<gamma.size(); ++n ) {
-                gamma[n] = s[n];
-            }
+            gamma = s;
         }
 
         void setXi(const std::vector<T>& s) {

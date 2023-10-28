@@ -223,9 +223,9 @@ namespace ttcr {
             j = static_cast<T2>( small + (pt.z-zmin)/dz );
         }
 
-        void getIJ(const S& pt, long long& i, long long& j) const {
-            i = static_cast<long long>( small + (pt.x-xmin)/dx );
-            j = static_cast<long long>( small + (pt.z-zmin)/dz );
+        void getIJ(const S& pt, ptrdiff_t& i, ptrdiff_t& j) const {
+            i = static_cast<ptrdiff_t>( small + (pt.x-xmin)/dx );
+            j = static_cast<ptrdiff_t>( small + (pt.z-zmin)/dz );
         }
 
         T1 getTraveltime(const S& Rx, const size_t threadNo) const;
@@ -504,7 +504,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -666,7 +666,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -832,7 +832,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
 
             // planes we will intersect
@@ -972,7 +972,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
             
-            long long i, k;
+            ptrdiff_t i, k;
             getIJ(curr_pt, i, k);
             
             // planes we will intersect

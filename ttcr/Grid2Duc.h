@@ -215,7 +215,7 @@ namespace ttcr {
                             const size_t);
 
         void buildGridNodes(const std::vector<S>&,
-                            const int,
+                            const T2,
                             const size_t);
 
         T1 computeDt(const NODE& source, const S& node,
@@ -354,7 +354,7 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE, typename S>
     void Grid2Duc<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
-                                                const int nsecondary,
+                                                const T2 nsecondary,
                                                 const size_t nt) {
 
         // primary nodes
@@ -1618,7 +1618,7 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                     r_data.push_back( Tx[nt] );
@@ -2150,7 +2150,7 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     cell.i = cellNo;
                     cell.v = Tx[nt].getDistance(r_data.back());
@@ -2721,7 +2721,7 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     cell.i = cellNo;
                     cell.v = Tx[nt].getDistance(prev_pt);
@@ -3276,7 +3276,7 @@ namespace ttcr {
         }
         if ( !onNode ) {
             cellNo = getCellNo( curr_pt );
-            for ( auto nt=0; nt<txCell.size(); ++nt ) {
+            for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
                     tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
                     reachedTx = true;

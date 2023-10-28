@@ -232,10 +232,10 @@ namespace ttcr {
             k = static_cast<T2>( small2 + (pt.z-zmin)/dz );
         }
 
-        void getIJK(const sxyz<T1>& pt, long long& i, long long& j, long long& k) const {
-            i = static_cast<long long>( small2 + (pt.x-xmin)/dx );
-            j = static_cast<long long>( small2 + (pt.y-ymin)/dy );
-            k = static_cast<long long>( small2 + (pt.z-zmin)/dz );
+        void getIJK(const sxyz<T1>& pt, ptrdiff_t& i, ptrdiff_t& j, ptrdiff_t& k) const {
+            i = static_cast<ptrdiff_t>( small2 + (pt.x-xmin)/dx );
+            j = static_cast<ptrdiff_t>( small2 + (pt.y-ymin)/dy );
+            k = static_cast<ptrdiff_t>( small2 + (pt.z-zmin)/dz );
         }
 
         void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
@@ -948,7 +948,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1094,7 +1094,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1246,7 +1246,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect
@@ -1406,7 +1406,7 @@ namespace ttcr {
             grad(g, curr_pt, threadNo);
             g *= -1.0;
 
-            long long i, j, k;
+            ptrdiff_t i, j, k;
             getIJK(curr_pt, i, j, k);
 
             // planes we will intersect

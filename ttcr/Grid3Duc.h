@@ -245,7 +245,7 @@ namespace ttcr {
 
         void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
         void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const int, const size_t);
+                            const T2, const size_t);
 
         void localUpdate3D(NODE *vertexC, const size_t threadNo) const;
 
@@ -513,7 +513,7 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE>
     void Grid3Duc<T1,T2,NODE>::buildGridNodes(const std::vector<sxyz<T1>>& no,
-                                              const int nsecondary,
+                                              const T2 nsecondary,
                                               const size_t nt) {
 
         if ( this->translateOrigin ) {
@@ -538,7 +538,7 @@ namespace ttcr {
         T2 nNodes = static_cast<T2>(nodes.size());
 
         size_t nFaceNodes = 0;
-        for ( int n=1; n<=(nsecondary-1); ++n ) {
+        for ( size_t n=1; n<=(nsecondary-1); ++n ) {
             nFaceNodes += n;
         }
 
@@ -681,7 +681,7 @@ namespace ttcr {
                     sxyz<T1> d2 = (no[faceKey[1]]-no[faceKey[2]])/static_cast<T1>(nsecondary+1);
 
                     size_t ifn = 0;
-                    for ( size_t n=0; n<ncut; ++n ) {
+                    for ( ptrdiff_t n=0; n<ncut; ++n ) {
 
                         sxyz<T1> pt1 = no[faceKey[0]]+static_cast<T1>(1+n)*d1;
                         sxyz<T1> pt2 = no[faceKey[2]]+static_cast<T1>(1+n)*d2;
@@ -1977,7 +1977,7 @@ namespace ttcr {
             }
         }
 
-        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+        for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
                 tt += t0[nt] + slowness[cellNo] * curr_pt.getDistance( Tx[nt] );
                 reachedTx = true;
@@ -3701,7 +3701,7 @@ namespace ttcr {
             }
         }
 
-        for ( auto nt=0; nt<txCell.size(); ++nt ) {
+        for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
                 tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                 r_data.push_back( Tx[nt] );

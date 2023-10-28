@@ -2370,7 +2370,7 @@ namespace ttcr {
         std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfTriangles());
         std::vector<T> slowness(reader.getNumberOfTriangles());
 
-        int d = reader.get2Ddim();
+        size_t d = reader.get2Ddim();
         if ( d == 0 ) {
             std::cout << "Error: mesh is 3D" << std::endl;
             exit ( -1);
@@ -2614,7 +2614,7 @@ namespace ttcr {
 
         if ( par.processReflectors ) {
             std::vector<std::string> reflector_names = reader.getPhysicalNames(1);
-            std::vector<int> indices = reader.getPhysicalIndices(1);
+            std::vector<size_t> indices = reader.getPhysicalIndices(1);
 
             if ( reflector_names.size() != indices.size() ) {
                 std::cerr << "Error - definition of reflectors\n";

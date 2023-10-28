@@ -662,7 +662,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -710,7 +709,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -758,7 +756,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -806,7 +803,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -854,7 +850,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -904,7 +899,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -954,7 +948,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }
@@ -1004,7 +997,6 @@ namespace ttcr {
 
                 blk_start = blk_end;
             }
-
             std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
         }
     }

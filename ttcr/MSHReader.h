@@ -41,7 +41,7 @@ namespace ttcr {
     public:
         MSHReader(const char *fname) : filename(fname), valid(false),
         physicalNames(std::vector<std::vector<std::string>>(4)),
-        physicalIndices(std::vector<std::vector<int>>(4)){
+        physicalIndices(std::vector<std::vector<size_t>>(4)){
             valid = checkFormat();
         }
 
@@ -81,7 +81,7 @@ namespace ttcr {
             return ymin == ymax || zmin == zmax;
         }
 
-        int get2Ddim() const {
+        size_t get2Ddim() const {
             std::vector<sxyz<double>> nodes;
             readNodes3D(nodes);
             double xmin=0.0;
@@ -158,7 +158,7 @@ namespace ttcr {
             return physicalNames[i];
         }
 
-        const std::vector<int>& getPhysicalIndices(size_t i=3) const {
+        const std::vector<size_t>& getPhysicalIndices(size_t i=3) const {
             if ( physicalIndices[i].empty() ) {
                 readPhysicalNames(i);
             }
@@ -178,7 +178,7 @@ namespace ttcr {
 
 
         template<typename T>
-        void readNodes2D(std::vector<sxz<T>>& nodes, const int d) const {
+        void readNodes2D(std::vector<sxz<T>>& nodes, const size_t d) const {
             std::ifstream fin(filename.c_str());
             std::string line;
             size_t nNodes;
@@ -236,7 +236,7 @@ namespace ttcr {
                         lineElem.resize( nElements );
                     }
                     size_t index;
-                    int elm_type, nTags;
+                    size_t elm_type, nTags;
                     std::vector<T> tags(10);
                     size_t nLines=0;
                     T ind;
@@ -276,7 +276,7 @@ namespace ttcr {
                         tri.resize( nElements );
                     }
                     size_t index;
-                    int elm_type, nTags;
+                    size_t elm_type, nTags;
                     std::vector<T> tags(10);
                     size_t nTriangles=0;
                     T ind;
@@ -318,7 +318,7 @@ namespace ttcr {
                         tet.resize( nElements );
                     }
                     size_t index;
-                    int elm_type, nTags;
+                    size_t elm_type, nTags;
                     std::vector<T> tags(10);
                     size_t nTetrahedron=0;
                     T ind;
@@ -353,7 +353,7 @@ namespace ttcr {
             std::ifstream fin(filename.c_str());
             std::string line;
             double version = 0.0;
-            int file_type;
+            size_t file_type;
             while ( fin ) {
                 getline( fin, line );
                 if ( line.find("$MeshFormat") != std::string::npos ) {
@@ -368,7 +368,7 @@ namespace ttcr {
         std::string filename;
         bool valid;
         mutable std::vector<std::vector<std::string>> physicalNames;
-        mutable std::vector<std::vector<int>> physicalIndices;
+        mutable std::vector<std::vector<size_t>> physicalIndices;
 
         bool checkFormat() const {
             bool format_ok = false;
@@ -381,7 +381,7 @@ namespace ttcr {
                     getline( fin, line );
                     if ( line.find("$MeshFormat") != std::string::npos ) {
                         double version;
-                        int file_type;
+                        size_t file_type;
                         fin >> version >> file_type;
                         if ( version == 2.2 && file_type == 0 ) {
                             format_ok = true;
@@ -407,7 +407,7 @@ namespace ttcr {
                 if ( line.find("$PhysicalNames") != std::string::npos ) {
                     std::string name;
                     size_t np, dimension;
-                    int index;
+                    size_t index;
                     fin >> np;
                     for ( size_t n=0; n<np; ++n ) {
                         fin >> dimension >> index;
@@ -425,7 +425,7 @@ namespace ttcr {
             fin.close();
         }
 
-        size_t getNumberOfElements(const int type) const {
+        size_t getNumberOfElements(const size_t type) const {
 
             std::ifstream fin(filename.c_str());
             std::string line;
@@ -436,7 +436,7 @@ namespace ttcr {
                 if ( line.find("$Elements") != std::string::npos ) {
                     fin >> tmp;
                     size_t index;
-                    int elm_type;
+                    size_t elm_type;
                     for ( size_t n=0; n<tmp; ++n ) {
                         fin >> index >> elm_type;
                         if ( elm_type == type ) {
