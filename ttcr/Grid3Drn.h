@@ -276,8 +276,8 @@ namespace ttcr {
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
                         std::vector<sijv<T1>>& m_data,
-                        T1 &tt,
                         const size_t RxNo,
+                        T1 &tt,
                         const size_t threadNo) const;
 
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -285,8 +285,8 @@ namespace ttcr {
                         const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,
                         std::vector<sijv<T1>>& m_data,
-                        T1 &tt,
                         const size_t RxNo,
+                        T1 &tt,
                         const size_t threadNo) const;
 
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
@@ -1494,8 +1494,8 @@ namespace ttcr {
                                           const std::vector<T1>& t0,
                                           const sxyz<T1> &Rx,
                                           std::vector<sijv<T1>>& m_data,
-                                          T1 &tt,
                                           const size_t RxNo,
+                                          T1 &tt,
                                           const size_t threadNo) const {
         tt = 0.0;
         T1 s1, s2;
@@ -2132,8 +2132,8 @@ namespace ttcr {
                                           const sxyz<T1> &Rx,
                                           std::vector<sxyz<T1>>& r_data,
                                           std::vector<sijv<T1>>& m_data,
-                                          T1 &tt,
                                           const size_t RxNo,
+                                          T1 &tt,
                                           const size_t threadNo) const {
         tt = 0.0;
         T1 s1, s2;
