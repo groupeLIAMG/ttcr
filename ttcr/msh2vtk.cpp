@@ -157,9 +157,9 @@ int main(int argc, char * argv[])
         }
         Grid2D<double,uint32_t,sxz<double>> *g=nullptr;
         if ( constCells )
-            g = new Grid2Ducfm<double,uint32_t, Node2Dc<double,uint32_t>,sxz<double>>(nodes, triangles);
+            g = new Grid2Ducfm<double,uint32_t, Node2Dc<double,uint32_t>,sxz<double>>(nodes, triangles, true);
         else
-            g = new Grid2Dunfm<double,uint32_t, Node2Dn<double,uint32_t>,sxz<double>>(nodes, triangles);
+            g = new Grid2Dunfm<double,uint32_t, Node2Dn<double,uint32_t>,sxz<double>>(nodes, triangles, true);
 
         if ( ttcr::verbose ) {
             cout << "done.\n";
