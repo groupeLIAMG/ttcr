@@ -190,6 +190,8 @@ namespace ttcr {
                       const std::vector<const std::vector<S>*>& Rx,
                       const size_t threadNo=0) const;
 
+        using Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL>::getTraveltime;
+        
         T1 getTraveltime(const S& Rx, const std::vector<Node2Dcsp<T1,T2>>& nodes,
                          T2& nodeParentRx, T2& cellParentRx,
                          const size_t threadNo) const;
