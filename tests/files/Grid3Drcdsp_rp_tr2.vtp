@@ -36,18 +36,18 @@
         </DataArray>
       </Lines>
       <Strips>
-        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="0" RangeMax="13687">
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
           AAAAAACAAAAAAAAA
         </DataArray>
-        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1" RangeMax="13688">
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
           AAAAAACAAAAAAAAA
         </DataArray>
       </Strips>
       <Polys>
-        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="0" RangeMax="13687">
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
           AAAAAACAAAAAAAAA
         </DataArray>
-        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1" RangeMax="13688">
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
           AAAAAACAAAAAAAAA
         </DataArray>
       </Polys>
