@@ -2190,7 +2190,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(slowness[i])
         else:
-            raise ValueError('Slowness must be 1D or 3D ndarray')
+            raise ValueError('Slowness must be 1D or 2D ndarray')
         self.grid.setSlowness(data)
 
     def set_velocity(self, velocity):
@@ -2225,7 +2225,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(1./velocity[i])
         else:
-            raise ValueError('velocity must be 1D or 3D ndarray')
+            raise ValueError('velocity must be 1D or 2D ndarray')
         self.grid.setSlowness(data)
 
     def set_xi(self, xi):
@@ -2261,7 +2261,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('xi must be 1D or 3D ndarray')
+            raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
 
     def set_tilt_angle(self, theta):
@@ -2297,7 +2297,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('theta must be 1D or 3D ndarray')
+            raise ValueError('theta must be 1D or 2D ndarray')
         self.grid.setTiltAngle(data)
 
     def set_Vp0(self, v):
@@ -2333,7 +2333,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('v must be 1D or 3D ndarray')
+            raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setVp0(data)
 
     def set_Vs0(self, v):
@@ -2369,7 +2369,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('v must be 1D or 3D ndarray')
+            raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setVs0(data)
 
     def set_delta(self, v):
@@ -2405,7 +2405,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('v must be 1D or 3D ndarray')
+            raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setDelta(data)
 
     def set_epsilon(self, v):
@@ -2441,7 +2441,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('v must be 1D or 3D ndarray')
+            raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setEpsilon(data)
 
     def set_gamma(self, v):
@@ -2477,7 +2477,7 @@ cdef class Grid2d:
             for i in range(nx*nz):
                 data.push_back(tmp[i])
         else:
-            raise ValueError('v must be 1D or 3D ndarray')
+            raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setGamma(data)
 
     def set_r2(self, v):
