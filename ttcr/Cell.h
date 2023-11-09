@@ -347,8 +347,6 @@ namespace ttcr {
     };
 
 
-
-
     //  VTI anisotropy, P or SV phase, in 2D (Y Dimension ignored)
     template <typename T, typename NODE, typename S>
     class CellVTI_PSV {
@@ -882,8 +880,8 @@ namespace ttcr {
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
-            T lx = node.x - source.getX();
-            T ly = node.y - source.getY();
+            T lx = node.getX() - source.getX();
+            T ly = node.getY() - source.getY();
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T theta = atan2(lx, node.getZ() - source.getZ());
             T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
@@ -964,8 +962,8 @@ namespace ttcr {
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
             // theta: angle w/r to vertical axis
-            T lx = node.x - source.getX();
-            T ly = node.y - source.getY();
+            T lx = node.getX() - source.getX();
+            T ly = node.getY() - source.getY();
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T theta = atan2(lx, node.getZ() - source.getZ());
             T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
