@@ -86,8 +86,8 @@ double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
 }
 
 vector<double> get_rel_error(const string& filename, const Rcv2D<double>& rcv,
-                     const vector<vector<siv<double>>> &l_data,
-                     const vector<double> &slowness) {
+                             const vector<vector<siv<double>>> &l_data,
+                             const vector<double> &slowness) {
     // compute relative error
 
     vector<double> ref_tt(rcv.get_coord().size());
@@ -108,7 +108,9 @@ vector<double> get_rel_error(const string& filename, const Rcv2D<double>& rcv,
     vector<Eigen::Triplet<double>> coefficients;
     for ( size_t i=0; i<l_data.size(); ++i ) {
         for ( size_t j=0; j<l_data[i].size(); ++j ) {
-            coefficients.push_back(Eigen::Triplet<double>(i, l_data[i][j].i, l_data[i][j].v));
+            coefficients.push_back(Eigen::Triplet<double>(static_cast<int>(i),
+                                                          static_cast<int>(l_data[i][j].i),
+                                                          l_data[i][j].v));
         }
     }
     A.setFromTriplets(coefficients.begin(), coefficients.end());
@@ -148,6 +150,10 @@ const char* models_L[] = {
     "./files/layers_coarse2d.vtr",
     "./files/layers_coarse2d.vtu"
 };
+const char* models_aniso[] = {
+    "./files/elliptical_fine2d.vtr" //,
+//    "./files/weakly_an_fine2d.vtu"
+};
 const char* references[] = {
     "./files/sol_analytique_couches2d_tt.vtr",
     "./files/sol_analytique_gradient2d_tt.vtr",
@@ -158,7 +164,12 @@ const char* references_L[] = {
     "./files/sol_analytique_couches2d_tt.vtr",
     "./files/sol_analytique_couches2d_tt.vtr"
 };
+const char* references_aniso[] = {
+    "./files/sol_analytique_elliptical_2d_tt.vtr"//,
+//    "./files/sol_analytique_weakly_an_2d_tt.vtr"
+};
 raytracing_method methods[] = { DYNAMIC_SHORTEST_PATH, FAST_SWEEPING, SHORTEST_PATH };
+raytracing_method methods_sp[] = { SHORTEST_PATH };
 
 
 BOOST_DATA_TEST_CASE(
@@ -319,5 +330,56 @@ BOOST_DATA_TEST_CASE(
 
     BOOST_TEST(error[0] < 0.15);
     BOOST_TEST(error[1] < 0.001);
+}
+
+BOOST_DATA_TEST_CASE(
+                     testGrid_aniso2D,
+                     (bdata::make(models_aniso) ^ bdata::make(references_aniso)) * bdata::make(methods_sp),
+                     model, ref, method) {
+    Src2D<double> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<double> rcv("./files/rcv2daniso.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = method;
+    switch(method) {
+        case FAST_SWEEPING:
+            par.weno3 = 1;
+            break;
+        case SHORTEST_PATH:
+            par.nn[0] = 10;
+            par.nn[1] = 10;
+            par.nn[2] = 10;
+            break;
+        case DYNAMIC_SHORTEST_PATH:
+            par.radius_tertiary_nodes = 200.0;
+            par.nn[0] = 5;
+            par.nn[1] = 5;
+            par.nn[2] = 5;
+            break;
+        default:
+            // do nothing
+            break;
+    }
+    par.modelfile = model;
+    Grid2D<double,uint32_t,sxz<double>> *g;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear2DfromVtr<double>(par, 1);
+    } else {
+        g = buildUnstructured2DfromVtu<double>(par, 1);
+    }
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    string filename = "./files/" + get_class_name(g) + "_tt_grid_aniso";
+    g->saveTT(filename, 0, 0, 2);
+    double error = get_rel_error(ref, rcv);
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
+
+    BOOST_TEST(error < 0.01);
 }
 
