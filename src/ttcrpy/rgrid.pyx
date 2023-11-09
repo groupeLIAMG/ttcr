@@ -1820,6 +1820,7 @@ cdef class Grid2d:
             - 'tilted_elliptical' : tilted elliptical anisotropy
             - 'vti_psv' : vertical transverse isotropy, P and SV waves
             - 'vti_sh' : vertical transverse isotropy, SH waves
+            - 'weakly_anelliptical' : Weakly-Anelliptical
     eps : double
         convergence criterion (FSM) (default is 1e-15)
     maxit : int
@@ -1930,6 +1931,11 @@ cdef class Grid2d:
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'weakly_anelliptical':
+                    self.iso = b'w'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_wa](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 else:
                     raise ValueError('Anisotropy model not implemented')
             elif method == 'FSM':
@@ -1988,6 +1994,8 @@ cdef class Grid2d:
             aniso = 'vti_psv'
         elif self.iso == b'h':
             aniso = 'vti_sh'
+        elif self.iso == b'w':
+            aniso = 'weakly_anelliptical'
 
         constructor_params = (self.n_threads, self.cell_slowness, method,
                               aniso, self.eps, self.maxit, self.weno,
@@ -2471,6 +2479,78 @@ cdef class Grid2d:
         else:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setGamma(data)
+
+    def set_r2(self, v):
+        """
+        set_r2(g)
+
+        Assign weakly anelliptical parameter r2
+
+        Parameters
+        ----------
+        g : np ndarray, shape (nx, nz)
+            g may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 2D ndarray')
+        self.grid.setR2(data)
+
+    def set_r4(self, v):
+        """
+        set_r4(g)
+
+        Assign weakly anelliptical parameter r4
+
+        Parameters
+        ----------
+        g : np ndarray, shape (nx, nz)
+            g may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            nz = self._z.size()
+        if v.size != nx*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 2:
+            if v.shape != (nx, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            tmp = v.reshape((nx, nz)).flatten()
+            for i in range(nx*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 2D ndarray')
+        self.grid.setR4(data)
 
     def compute_K(self, order=1):
         """

@@ -1718,8 +1718,6 @@ namespace ttcr {
             if ( par.method == FAST_SWEEPING && par.weno3 == true)
                 std::cout << "\n  Fast Sweeping Method: will use 3rd order WENO stencil"
                 << std::endl;
-
-
         }
         vtkPointData *pd = dataSet->GetPointData();
         vtkCellData *cd = dataSet->GetCellData();
@@ -1730,6 +1728,9 @@ namespace ttcr {
         std::vector<T> slowness;
         std::vector<T> xi;
         std::vector<T> theta;
+        std::vector<T> v0;
+        std::vector<T> r2;
+        std::vector<T> r4;
         if ( pd->HasArray("P-wave velocity") ||
             pd->HasArray("Velocity") ||
             pd->HasArray("Slowness") ) {  // properties defined at nodes
@@ -1892,6 +1893,8 @@ namespace ttcr {
 
             bool foundXi = false;
             bool foundTheta = false;
+            bool foundR2 = false;
+            bool foundR4 = false;
 
             for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
@@ -1905,6 +1908,50 @@ namespace ttcr {
                         }
                     }
                     foundSlowness = true;
+                    
+                    if ( cd->HasArray("r2") ) {
+
+                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
+                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("r2") );
+
+                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
+                            std::cout << "Problem with r2 data (wrong size)" << std::endl;
+                            return nullptr;
+                        }
+
+                        r2.resize( x->GetSize() );
+                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                                // VTK: x is fast axis, we want z as fast axis
+                                vtkIdType ii = k * ncells[0] + i;
+                                r2[n] = x->GetComponent(ii, 0);
+                            }
+                        }
+                        foundR2 = true;
+                        if ( verbose ) { cout << "Model contains phase-velocity parameter r2\n"; }
+                    }
+                    
+                    if ( cd->HasArray("r4") ) {
+
+                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
+                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("r4") );
+
+                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
+                            std::cout << "Problem with r4 data (wrong size)" << std::endl;
+                            return nullptr;
+                        }
+
+                        r4.resize( x->GetSize() );
+                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                                // VTK: x is fast axis, we want z as fast axis
+                                vtkIdType ii = k * ncells[0] + i;
+                                r4[n] = x->GetComponent(ii, 0);
+                            }
+                        }
+                        foundR4 = true;
+                        if ( verbose ) { cout << "Model contains phase-velocity parameter r4\n"; }
+                    }
                     break;
                 } else if ( strcmp(cd->GetArrayName(na), "Slowness")==0 ) {
 
@@ -1991,6 +2038,22 @@ namespace ttcr {
                                                                                                                        par.nn[0], par.nn[2],
                                                                                                                        par.tt_from_rp,
                                                                                                                        nt);
+                            
+                        } else if ( foundR2 || foundR4) {
+                            if ( !foundR2 ) {
+                                std::cout << "Error: phase-velocity parameter r2 not found" << std::endl;
+                                return nullptr;
+                            }
+                            if ( !foundR4 ) {
+                                std::cout << "Error: phase-velocity parameter r4 not found" << std::endl;
+                                return nullptr;
+                            }
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellWeaklyAnelliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                       xrange[0], zrange[0],
+                                                                                                                       par.nn[0], par.nn[2],
+                                                                                                                       par.tt_from_rp,
+                                                                                                                       nt);
+                            
                         } else {
                             g = new Grid2Drcsp<T, uint32_t, sxz<T>, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                                                                              xrange[0], zrange[0],
@@ -2028,6 +2091,17 @@ namespace ttcr {
                                 std::abort();
                             }
                         }
+                        if ( foundR2 ) {
+                            try {
+                                g->setR2( r2 );
+                                g->setR4( r4 );
+                            } catch (std::exception& e) {
+                                cerr << e.what() << endl;
+                                std::cerr << "aborting";
+                                std::abort();
+                            }
+                        }
+                            
                         if ( verbose ) cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);

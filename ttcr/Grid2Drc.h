@@ -132,6 +132,20 @@ namespace ttcr {
                 throw;
             }
         }
+        void setR2(const std::vector<T1>& s) {
+            try {
+                cells.setR2(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setR4(const std::vector<T1>& s) {
+            try {
+                cells.setR4(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
 
         size_t getNumberOfNodes(const bool primary=false) const {
             if ( primary ) {

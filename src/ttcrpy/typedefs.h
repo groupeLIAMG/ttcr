@@ -14,6 +14,7 @@ typedef CellElliptical<double,node2d,sxz<double>> cell2d_e;
 typedef CellTiltedElliptical<double,node2d,sxz<double>> cell2d_te;
 typedef CellVTI_PSV<double,node2d,sxz<double>> cell2d_p;
 typedef CellVTI_SH<double,node2d,sxz<double>> cell2d_h;
+typedef CellWeaklyAnelliptical<double,node2d,sxz<double>> cell2d_wa;
 }
 
 #endif
