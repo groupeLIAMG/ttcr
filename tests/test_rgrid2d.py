@@ -148,6 +148,39 @@ class TestGrid2dn(unittest.TestCase):
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'DSPM accuracy failed (slowness at nodes)')
 
+class TestAniso(unittest.TestCase):
+
+    def setUp(self):
+        reader = vtk.vtkXMLRectilinearGridReader()
+        reader.SetFileName('./files/elliptical_fine2d.vtr')
+        reader.Update()
+
+        data = reader.GetOutput()
+        self.x = vtk_to_numpy(data.GetXCoordinates())
+        self.z = vtk_to_numpy(data.GetZCoordinates())
+
+        self.slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+        dim = (self.x.size-1, self.z.size-1)
+        self.slowness = self.slowness.reshape(dim, order='F').flatten()
+
+        self.xi = vtk_to_numpy(data.GetCellData().GetArray('xi'))
+        self.xi = self.xi.reshape(dim, order='F').flatten()
+
+        self.src = np.loadtxt('./files/src2d.dat', skiprows=1)
+        self.src = np.roll(self.src, 1).reshape((1, 3))
+        self.rcv = np.loadtxt('./files/rcv2daniso.dat', skiprows=1)
+
+    def test_Grid2Dsp(self):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10, aniso='elliptical')
+        g.set_slowness(self.slowness)
+        g.set_xi(self.xi)
+        tt = g.raytrace(self.src, self.rcv)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Drcsp_tt_grid_aniso.vtr')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (elliptical anisotropy)')
+
 
 class Data_kernel(unittest.TestCase):
 

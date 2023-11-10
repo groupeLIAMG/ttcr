@@ -151,7 +151,8 @@ const char* models_L[] = {
     "./files/layers_coarse2d.vtu"
 };
 const char* models_aniso[] = {
-    "./files/elliptical_fine2d.vtr" //,
+    "./files/elliptical_fine2d.vtr",
+    "./files/elliptical_fine2d.vtu" //,
 //    "./files/weakly_an_fine2d.vtu"
 };
 const char* references[] = {
@@ -165,6 +166,7 @@ const char* references_L[] = {
     "./files/sol_analytique_couches2d_tt.vtr"
 };
 const char* references_aniso[] = {
+    "./files/sol_analytique_elliptical_2d_tt.vtr",
     "./files/sol_analytique_elliptical_2d_tt.vtr"//,
 //    "./files/sol_analytique_weakly_an_2d_tt.vtr"
 };
@@ -380,6 +382,6 @@ BOOST_DATA_TEST_CASE(
     double error = get_rel_error(ref, rcv);
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
 
-    BOOST_TEST(error < 0.01);
+    BOOST_TEST(error < 0.005);
 }
 

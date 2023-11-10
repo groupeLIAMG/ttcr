@@ -166,6 +166,48 @@ class TestMesh2dn(unittest.TestCase):
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'DSPM accuracy failed (slowness at nodes)')
 
+class TestAniso(unittest.TestCase):
+
+    def setUp(self):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName('./files/elliptical_fine2d.vtu')
+        reader.Update()
+
+        self.nodes = np.empty((reader.GetOutput().GetNumberOfPoints(), 2 ))
+        for n in range(reader.GetOutput().GetNumberOfPoints()):
+            x = reader.GetOutput().GetPoint(n)
+            self.nodes[n, 0] = x[0]
+            self.nodes[n, 1] = x[2]
+
+        self.tri = np.empty((reader.GetOutput().GetNumberOfCells(), 3 ),
+                            dtype=int)
+        ind = vtk.vtkIdList()
+        for n in range(reader.GetOutput().GetNumberOfCells()):
+            reader.GetOutput().GetCellPoints(n, ind)
+            self.tri[n, 0] = ind.GetId(0)
+            self.tri[n, 1] = ind.GetId(1)
+            self.tri[n, 2] = ind.GetId(2)
+
+        data = reader.GetOutput()
+        self.slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+        self.xi = vtk_to_numpy(data.GetCellData().GetArray('xi'))
+
+        self.src = np.loadtxt('./files/src2d.dat',skiprows=1)
+        # we roll because file has x z t0 and we want t0 x z
+        self.src = np.roll(self.src, 1).reshape((1, 3))
+        self.rcv = np.loadtxt('./files/rcv2daniso.dat',skiprows=1)
+
+    def test_Mesh2Dsp(self):
+        g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=10, aniso='elliptical')
+        g.set_slowness(self.slowness)
+        g.set_xi(self.xi)
+        tt = g.raytrace(self.src, self.rcv)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Ducsp_tt_grid_aniso.vtu')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (elliptical anisotropy)')
+
 #
 # class Data_kernel(unittest.TestCase):
 #
