@@ -1945,7 +1945,7 @@ cdef class Grid2d:
                                 maxit, weno, rotated_template, tt_from_rp, n_threads)
             elif method == 'DSPM':
                 self.method = b'd'
-                self.grid = new Grid2Drcdsp[double,uint32_t,sxz[double],cell2d](
+                self.grid = new Grid2Drcdsp[double,uint32_t,sxz[double]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, n_secondary, n_tertiary,
                                     radius_factor_tertiary, tt_from_rp,

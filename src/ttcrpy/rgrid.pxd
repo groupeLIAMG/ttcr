@@ -243,7 +243,7 @@ cdef extern from "Grid2Drcsp.h" namespace "ttcr" nogil:
         Grid2Drcsp(T2, T2, T1, T1, T1, T1, T2, T2, bool, size_t) except +
 
 cdef extern from "Grid2Drcdsp.h" namespace "ttcr" nogil:
-    cdef cppclass Grid2Drcdsp[T1,T2,S,CELL](Grid2Drc[T1,T2,S,Node2Dc[T1,T2],CELL]):
+    cdef cppclass Grid2Drcdsp[T1,T2,S](Grid2Drc[T1,T2,S,Node2Dc[T1,T2],cell2d]):
         Grid2Drcdsp(T2, T2, T1, T1, T1, T1, T2, T2, T1, bool, bool, size_t) except +
 
 cdef extern from "Grid2Drcfs.h" namespace "ttcr" nogil:

@@ -50,19 +50,19 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Ducfs : public Grid2Duc<T1,T2,NODE,S> {
+    template<typename T1, typename T2, typename S>
+    class Grid2Ducfs : public Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1,Node2Dc<T1,T2>,sxz<T1>>> {
     public:
         Grid2Ducfs(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T1 eps, const int maxit, const bool ttrp,
                    const size_t nt=1,
                    const bool procObtuse=true) :
-        Grid2Duc<T1,T2,NODE,S>(no, tri, ttrp, nt),
+        Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1,Node2Dc<T1,T2>,sxz<T1>>>(no, tri, ttrp, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
             this->buildGridNodes(no, nt);
-            this->template buildGridNeighbors<NODE>(this->nodes);
+            this->template buildGridNeighbors<Node2Dc<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
         }
 
@@ -72,11 +72,11 @@ namespace ttcr {
                    const std::vector<S>& refPts, const int order,
                    const bool ttrp, const size_t nt=1,
                    const bool procObtuse=true) :
-        Grid2Duc<T1,T2,NODE,S>(no, tri, ttrp, nt),
+        Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1,Node2Dc<T1,T2>,sxz<T1>>>(no, tri, ttrp, nt),
         epsilon(eps), nitermax(maxit), niter_final(0), sorted()
         {
             this->buildGridNodes(no, nt);
-            this->template buildGridNeighbors<NODE>(this->nodes);
+            this->template buildGridNeighbors<Node2Dc<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
             initOrdering(refPts, order);
         }
@@ -92,7 +92,7 @@ namespace ttcr {
         T1 epsilon;
         int nitermax;
         mutable int niter_final;
-        std::vector<std::vector<NODE*>> sorted;
+        std::vector<std::vector<Node2Dc<T1,T2>*>> sorted;
 
         void initTx(const std::vector<S>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
@@ -109,9 +109,9 @@ namespace ttcr {
 
     };
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::initOrdering(const std::vector<S>& refPts,
-                                                const int order) {
+    template<typename T1, typename T2, typename S>
+    void Grid2Ducfs<T1,T2,S>::initOrdering(const std::vector<S>& refPts,
+                                           const int order) {
         sorted.resize( refPts.size() );
 
         Metric<T1> *m;
@@ -139,11 +139,11 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Ducfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       const size_t threadNo) const {
 
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -208,11 +208,11 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<const std::vector<S>*>& Rx,
-                                            const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Ducfs<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       const size_t threadNo) const {
 
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
@@ -279,11 +279,11 @@ namespace ttcr {
         niter_final = niter;
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Ducfs<T1,T2,NODE,S>::initTx(const std::vector<S>& Tx,
-                                          const std::vector<T1>& t0,
-                                          std::vector<bool>& frozen,
-                                          const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Ducfs<T1,T2,S>::initTx(const std::vector<S>& Tx,
+                                     const std::vector<T1>& t0,
+                                     std::vector<bool>& frozen,
+                                     const size_t threadNo) const {
 
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
@@ -300,7 +300,7 @@ namespace ttcr {
                         for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
                             T2 neibNo = this->neighbors[cellNo][k];
                             if ( neibNo == nn ) continue;
-                            T1 dt = this->computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
+                            T1 dt = this->cells.computeDt(this->nodes[nn], this->nodes[neibNo], cellNo);
 
                             if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                                 this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
@@ -321,7 +321,7 @@ namespace ttcr {
                     T2 neibNo = this->neighbors[cellNo][k];
 
                     // compute dt
-                    T1 dt = this->computeDt(this->nodes[neibNo], Tx[n], cellNo);
+                    T1 dt = this->cells.computeDt(this->nodes[neibNo], Tx[n], cellNo);
 
                     this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
                     frozen[neibNo] = true;

@@ -31,14 +31,14 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    class Grid2Drcdsp : public Grid2Drc<T1,T2,S,Node2Dc<T1,T2>,CELL> {
+    template<typename T1, typename T2, typename S>
+    class Grid2Drcdsp : public Grid2Drc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1, Node2Dc<T1, T2>, sxz<T1>>> {
     public:
         Grid2Drcdsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                     const T1 minx, const T1 minz, const T2 ns, const T2 nd,
                     const T1 drad, const bool ttrp, const bool useEdgeLength=true,
                     const size_t nt=1) :
-        Grid2Drc<T1,T2,S,Node2Dc<T1,T2>,CELL>(nx,nz,ddx,ddz,minx,minz,ttrp,nt),
+        Grid2Drc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1, Node2Dc<T1, T2>, sxz<T1>>>(nx,nz,ddx,ddz,minx,minz,ttrp,nt),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dynRadius(drad),
         tempNodes(std::vector<std::vector<Node2Dcd<T1,T2>>>(nt)),
@@ -104,8 +104,8 @@ namespace ttcr {
 
     };
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcdsp<T1,T2,S,CELL>::buildGridNodes() {
+    template<typename T1, typename T2, typename S>
+    void Grid2Drcdsp<T1,T2,S>::buildGridNodes() {
 
         this->nodes.resize( // noeuds secondaires
                            this->ncx*nSecondary*(this->ncz+1) +
@@ -267,9 +267,9 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcdsp<T1,T2,S,CELL>::addTemporaryNodes(const std::vector<S>& Tx,
-                                                      const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Drcdsp<T1,T2,S>::addTemporaryNodes(const std::vector<S>& Tx,
+                                                 const size_t threadNo) const {
 
         // clear previously assigned nodes
         tempNodes[threadNo].clear();
@@ -484,16 +484,16 @@ namespace ttcr {
 
     }
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcdsp<T1,T2,S,CELL>::initQueue(const std::vector<S>& Tx,
-                                              const std::vector<T1>& t0,
-                                              std::priority_queue<Node2Dc<T1,T2>*,
-                                              std::vector<Node2Dc<T1,T2>*>,
-                                              CompareNodePtr<T1>>& queue,
-                                              std::vector<Node2Dcd<T1,T2>>& txNodes,
-                                              std::vector<bool>& inQueue,
-                                              std::vector<bool>& frozen,
-                                              const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Drcdsp<T1,T2,S>::initQueue(const std::vector<S>& Tx,
+                                         const std::vector<T1>& t0,
+                                         std::priority_queue<Node2Dc<T1,T2>*,
+                                         std::vector<Node2Dc<T1,T2>*>,
+                                         CompareNodePtr<T1>>& queue,
+                                         std::vector<Node2Dcd<T1,T2>>& txNodes,
+                                         std::vector<bool>& inQueue,
+                                         std::vector<bool>& frozen,
+                                         const size_t threadNo) const {
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
             for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
@@ -534,13 +534,13 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcdsp<T1,T2,S,CELL>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
-                                              std::vector<Node2Dc<T1,T2>*>,
-                                              CompareNodePtr<T1>>& queue,
-                                              std::vector<bool>& inQueue,
-                                              std::vector<bool>& frozen,
-                                              const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Drcdsp<T1,T2,S>::propagate(std::priority_queue<Node2Dc<T1,T2>*,
+                                         std::vector<Node2Dc<T1,T2>*>,
+                                         CompareNodePtr<T1>>& queue,
+                                         std::vector<bool>& inQueue,
+                                         std::vector<bool>& frozen,
+                                         const size_t threadNo) const {
         while ( !queue.empty() ) {
             const Node2Dc<T1,T2>* src = queue.top();
             queue.pop();
@@ -597,11 +597,11 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcdsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
-                                             const std::vector<T1>& t0,
-                                             const std::vector<S>& Rx,
-                                             const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Drcdsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                        const std::vector<T1>& t0,
+                                        const std::vector<S>& Rx,
+                                        const size_t threadNo) const {
         this->checkPts(Tx);
         this->checkPts(Rx);
 
@@ -624,11 +624,11 @@ namespace ttcr {
         propagate(queue, inQueue, frozen, threadNo);
     }
 
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcdsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
-                                             const std::vector<T1>& t0,
-                                             const std::vector<const std::vector<S>*>& Rx,
-                                             const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Drcdsp<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                        const std::vector<T1>& t0,
+                                        const std::vector<const std::vector<S>*>& Rx,
+                                        const size_t threadNo) const {
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
             this->checkPts(*Rx[n]);

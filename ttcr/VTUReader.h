@@ -181,6 +181,19 @@ namespace ttcr {
                 tet[n].i[3] = static_cast<T>( list->GetId( 3 ) );
             }
         }
+        
+        template<typename T>
+        bool hasVariable(const std::string& name, const bool constCells=true) const {
+            vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+            vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+            reader->SetFileName(filename.c_str());
+            reader->Update();
+            if ( constCells ) {
+                return reader->GetOutput()->GetCellData()->HasArray(name.c_str()) == 1;
+            } else {
+                return reader->GetOutput()->GetPointData()->HasArray(name.c_str()) == 1;
+            }
+        }
 
         template<typename T>
         int readSlowness(std::vector<T>& slowness, const bool constCells=true) {
@@ -255,7 +268,54 @@ namespace ttcr {
                     for ( size_t n=0; n<vel->GetSize(); ++n ) {
                         slowness[n] = 1./vel->GetComponent(n, 0);
                     }
+                }
+            }
 
+            return 1;
+        }
+
+        template<typename T>
+        int readVariable(const std::string& name, std::vector<T>& var, const bool constCells=true) {
+            vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+            vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+            reader->SetFileName(filename.c_str());
+            reader->Update();
+
+            if ( constCells ) {
+                if ( reader->GetOutput()->GetCellData()->HasArray(name.c_str()) == 0 ) {
+                    std::cerr << "No " << name << " data in file " << filename << std::endl;
+                    return 0;
+                }
+
+                vtkSmartPointer<vtkCellData> cd = vtkSmartPointer<vtkCellData>::New();
+                cd = reader->GetOutput()->GetCellData();
+                vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
+                slo = vtkDoubleArray::SafeDownCast( cd->GetArray(name.c_str()) );
+                
+                if ( slo->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                    std::cerr << "Problem with data (wrong size)" << std::endl;
+                    return 0;
+                }
+                
+                var.resize( slo->GetSize() );
+                for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    var[n] = slo->GetComponent(n, 0);
+                }
+
+            } else {
+                if ( reader->GetOutput()->GetPointData()->HasArray(name.c_str()) == 0 ) {
+                    std::cerr << "No " << name << " data in file " << filename << std::endl;
+                    return 0;
+                }
+
+                vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
+                pd = reader->GetOutput()->GetPointData();
+                vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
+                slo = vtkDoubleArray::SafeDownCast( pd->GetArray(name.c_str()) );
+                
+                var.resize( slo->GetSize() );
+                for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    var[n] = slo->GetComponent(n, 0);
                 }
             }
 

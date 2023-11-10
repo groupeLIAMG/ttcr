@@ -68,8 +68,8 @@ namespace ttcr {
         }
 
         void getSlowness(std::vector<T1>& slowness) const {
-            if (slowness.size() != static_cast<size_t>(ncx)*ncz) {
-                slowness.resize(static_cast<size_t>(ncx)*ncz);
+            if (slowness.size() != static_cast<size_t>(ncx*ncz)) {
+                slowness.resize(static_cast<size_t>(ncx*ncz));
             }
             for (size_t n=0; n<slowness.size(); ++n) {
                 slowness[n] = cells.getSlowness(n);

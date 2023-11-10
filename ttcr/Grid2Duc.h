@@ -60,7 +60,7 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename NODE, typename S>
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
     class Grid2Duc : public Grid2D<T1,T2,S> {
     public:
         Grid2Duc(const std::vector<S>& no,
@@ -69,8 +69,7 @@ namespace ttcr {
         Grid2D<T1,T2,S>(tri.size(), ttrp, nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
-        slowness(std::vector<T1>(tri.size())),
-        triangles(), virtualNodes()
+        triangles(), virtualNodes(), cells(tri.size())
         {
             for (auto it=tri.begin(); it!=tri.end(); ++it) {
                 triangles.push_back( *it );
@@ -79,36 +78,97 @@ namespace ttcr {
 
         virtual ~Grid2Duc() {}
 
-        void setSlowness(const T1 s) {
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s;
-            }
-        }
-
-        void setSlowness(const T1 *s, const size_t ns) {
-            if ( slowness.size() != ns ) {
-                throw std::length_error("Error: slowness vectors of incompatible size.");
-            }
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s[n];
-            }
-        }
-
+//        void setSlowness(const T1 s) {
+//            for ( size_t n=0; n<slowness.size(); ++n ) {
+//                slowness[n] = s;
+//            }
+//        }
+//
+//        void setSlowness(const T1 *s, const size_t ns) {
+//            if ( slowness.size() != ns ) {
+//                throw std::length_error("Error: slowness vectors of incompatible size.");
+//            }
+//            for ( size_t n=0; n<slowness.size(); ++n ) {
+//                slowness[n] = s[n];
+//            }
+//        }
+//
         void setSlowness(const std::vector<T1>& s) {
-            if ( slowness.size() != s.size() ) {
-                throw std::length_error("Error: slowness vectors of incompatible size.");
-            }
-            for ( size_t n=0; n<slowness.size(); ++n ) {
-                slowness[n] = s[n];
+            try {
+                cells.setSlowness( s );
+            } catch (std::exception& e) {
+                throw;
             }
         }
-
+        void setXi(const std::vector<T1>& x) {
+            try {
+                cells.setXi( x );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setTiltAngle(const std::vector<T1>& t) {
+            try {
+                cells.setTiltAngle( t );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setVp0(const std::vector<T1>& s) {
+            try {
+                cells.setVp0(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setVs0(const std::vector<T1>& s) {
+            try {
+                cells.setVs0(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setDelta(const std::vector<T1>& s) {
+            try {
+                cells.setDelta(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setEpsilon(const std::vector<T1>& s) {
+            try {
+                cells.setEpsilon(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setGamma(const std::vector<T1>& s) {
+            try {
+                cells.setGamma(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setR2(const std::vector<T1>& s) {
+            try {
+                cells.setR2(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+        void setR4(const std::vector<T1>& s) {
+            try {
+                cells.setR4(s);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
         void getSlowness(std::vector<T1>& s) const {
-            if (s.size() != slowness.size()) {
-                s.resize(slowness.size());
+            if (s.size() != triangles.size()) {
+                s.resize(triangles.size());
             }
             for (size_t n=0; n<s.size(); ++n) {
-                s[n] = slowness[n];
+                s[n] = cells.getSlowness(n);
             }
         }
 
@@ -207,9 +267,10 @@ namespace ttcr {
     protected:
         T2 nPrimary;
         mutable std::vector<NODE> nodes;
-        std::vector<T1> slowness;
         std::vector<triangleElemAngle<T1,T2>> triangles;
         std::map<T2, virtualNode<T1,NODE>> virtualNodes;
+        
+        CELL cells;
 
         void buildGridNodes(const std::vector<S>&,
                             const size_t);
@@ -218,16 +279,16 @@ namespace ttcr {
                             const T2,
                             const size_t);
 
-        T1 computeDt(const NODE& source, const S& node,
-                     const size_t cellNo) const {
-            return slowness[cellNo] * source.getDistance( node );
-        }
-
-        T1 computeDt(const NODE& source, const NODE& node,
-                     const size_t cellNo) const {
-            return slowness[cellNo] * source.getDistance( node );
-        }
-
+//        T1 computeDt(const NODE& source, const S& node,
+//                     const size_t cellNo) const {
+//            return slowness[cellNo] * source.getDistance( node );
+//        }
+//
+//        T1 computeDt(const NODE& source, const NODE& node,
+//                     const size_t cellNo) const {
+//            return slowness[cellNo] * source.getDistance( node );
+//        }
+//
         T2 getCellNo(const S& pt) const {
             for ( T2 n=0; n<triangles.size(); ++n ) {
                 if ( insideTriangle(pt, n) ) {
@@ -312,8 +373,8 @@ namespace ttcr {
 
     };
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::buildGridNodes(const std::vector<S>& no,
                                                 const size_t nt) {
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
@@ -352,8 +413,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::buildGridNodes(const std::vector<S>& no,
                                                 const T2 nsecondary,
                                                 const size_t nt) {
 
@@ -414,8 +475,8 @@ namespace ttcr {
         nodes.shrink_to_fit();
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    T1 Grid2Duc<T1,T2,S,NODE,CELL>::getTraveltime(const S& Rx,
                                              const size_t threadNo) const {
 
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {
@@ -426,12 +487,12 @@ namespace ttcr {
 
         size_t cellNo = getCellNo( Rx );
         size_t neibNo = this->neighbors[cellNo][0];
-        T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
+        T1 dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
 
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
             neibNo = this->neighbors[cellNo][k];
-            dt = computeDt(nodes[neibNo], Rx, cellNo);
+            dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
             }
@@ -440,8 +501,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Duc<T1,T2,NODE,S>::getTraveltime(const S& Rx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    T1 Grid2Duc<T1,T2,S,NODE,CELL>::getTraveltime(const S& Rx,
                                              T2& nodeParentRx,
                                              T2& cellParentRx,
                                              const size_t threadNo) const {
@@ -456,14 +517,14 @@ namespace ttcr {
 
         T2 cellNo = getCellNo( Rx );
         T2 neibNo = this->neighbors[cellNo][0];
-        T1 dt = computeDt(nodes[neibNo], Rx, cellNo);
+        T1 dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
 
         T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
         nodeParentRx = neibNo;
         cellParentRx = cellNo;
         for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
             neibNo = this->neighbors[cellNo][k];
-            dt = computeDt(nodes[neibNo], Rx, cellNo);
+            dt = cells.computeDt(nodes[neibNo], Rx, cellNo);
             if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
                 traveltime =  nodes[neibNo].getTT(threadNo)+dt;
                 nodeParentRx = neibNo;
@@ -474,8 +535,8 @@ namespace ttcr {
 
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::checkPts(const std::vector<sxz<T1>>& pts) const {
 
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -501,8 +562,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::checkPts(const std::vector<sxyz<T1>>& pts) const {
 
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -529,8 +590,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Duc<T1,T2,NODE,S>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    bool Grid2Duc<T1,T2,S,NODE,CELL>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
 
         if ( !testInTriangleBoundingBox(&(nodes[ triangles[nt].i[0] ]),
                                         &(nodes[ triangles[nt].i[1] ]),
@@ -553,8 +614,8 @@ namespace ttcr {
         return (a >= -small3) && (b >= -small3) && (a + b <= 1.+small3);
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Duc<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    bool Grid2Duc<T1,T2,S,NODE,CELL>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
 
         if ( !testInTriangleBoundingBox(&(nodes[ triangles[nt].i[0] ]),
                                         &(nodes[ triangles[nt].i[1] ]),
@@ -588,8 +649,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::saveTT(const std::string &fname, const int all,
                                         const size_t nt, const int format) const {
 
         if ( format == 1 ) {
@@ -672,8 +733,8 @@ namespace ttcr {
 
 #ifdef VTK
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::saveModelVTU(const std::string &fname,
                                               const bool saveSlowness,
                                               const bool savePhysicalEntity) const {
 
@@ -706,7 +767,7 @@ namespace ttcr {
                 tri->GetPointIds()->SetId(2, triangles[n].i[2] );
 
                 ugrid->InsertNextCell( tri->GetCellType(), tri->GetPointIds() );
-                data->InsertNextValue( slowness[n] );
+                data->InsertNextValue( cells.getSlowness(n) );
             }
         } else {
             data->SetName("Velocity");
@@ -717,7 +778,7 @@ namespace ttcr {
                 tri->GetPointIds()->SetId(2, triangles[n].i[2] );
 
                 ugrid->InsertNextCell( tri->GetCellType(), tri->GetPointIds() );
-                data->InsertNextValue( 1./slowness[n] );
+                data->InsertNextValue( 1./cells.getSlowness(n) );
             }
         }
 
@@ -742,8 +803,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::saveModelVTR(const std::string &fname,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::saveModelVTR(const std::string &fname,
                                               const double *d,
                                               const bool saveSlowness) const {
 
@@ -796,7 +857,7 @@ namespace ttcr {
 
                 for ( T2 nt=0; nt<triangles.size(); ++nt ) {
                     if ( insideTriangle(pt, nt) ) {
-                        data->InsertNextValue( slowness[nt] );
+                        data->InsertNextValue( cells.getSlowness(n) );
                         break;
                     }
                 }
@@ -811,7 +872,7 @@ namespace ttcr {
 
                 for ( T2 nt=0; nt<triangles.size(); ++nt ) {
                     if ( insideTriangle(pt, nt) ) {
-                        data->InsertNextValue( 1./slowness[nt] );
+                        data->InsertNextValue( 1./cells.getSlowness(n) );
                         break;
                     }
                 }
@@ -832,8 +893,8 @@ namespace ttcr {
 #endif
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::processObtuse() {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::processObtuse() {
 
         const double pi2 = pi / 2.;
 
@@ -932,8 +993,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::localSolver(NODE *vertexC,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::localSolver(NODE *vertexC,
                                              const size_t threadNo) const {
 
         static const double pi2 = pi / 2.;
@@ -978,32 +1039,32 @@ namespace ttcr {
                 beta = triangles[triangleNo].a[i1];
             }
 
-            if ( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo)) <= c*slowness[triangleNo]) {
+            if ( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo)) <= c*cells.getSlowness(triangleNo)) {
 
                 T1 theta = asin( std::abs(vertexB->getTT(threadNo)-vertexA->getTT(threadNo))/
-                                (c*slowness[triangleNo]) );
+                                (c*cells.getSlowness(triangleNo)) );
 
                 if ( ((0.>alpha-pi2?0.:alpha-pi2)<=theta && theta<=(pi2-beta) ) ||
                     ((alpha-pi2)<=theta && theta<=(0.<pi2-beta?0.:pi2-beta)) ) {
                     T1 h = a*sin(alpha-theta);
                     T1 H = b*sin(beta+theta);
 
-                    T1 t = 0.5*(h*slowness[triangleNo]+vertexB->getTT(threadNo)) +
-                    0.5*(H*slowness[triangleNo]+vertexA->getTT(threadNo));
+                    T1 t = 0.5*(h*cells.getSlowness(triangleNo)+vertexB->getTT(threadNo)) +
+                    0.5*(H*cells.getSlowness(triangleNo)+vertexA->getTT(threadNo));
 
                     if ( t<vertexC->getTT(threadNo) )
                         vertexC->setTT(t, threadNo);
                 } else {
-                    T1 t = vertexA->getTT(threadNo) + b*slowness[triangleNo];
-                    t = t<vertexB->getTT(threadNo) + a*slowness[triangleNo] ? t :
-                    vertexB->getTT(threadNo) + a*slowness[triangleNo];
+                    T1 t = vertexA->getTT(threadNo) + b*cells.getSlowness(triangleNo);
+                    t = t<vertexB->getTT(threadNo) + a*cells.getSlowness(triangleNo) ? t :
+                    vertexB->getTT(threadNo) + a*cells.getSlowness(triangleNo);
                     if ( t<vertexC->getTT(threadNo) )
                         vertexC->setTT(t, threadNo);
                 }
             } else {
-                T1 t = vertexA->getTT(threadNo) + b*slowness[triangleNo];
-                t = t<vertexB->getTT(threadNo) + a*slowness[triangleNo] ? t :
-                vertexB->getTT(threadNo) + a*slowness[triangleNo];
+                T1 t = vertexA->getTT(threadNo) + b*cells.getSlowness(triangleNo);
+                t = t<vertexB->getTT(threadNo) + a*cells.getSlowness(triangleNo) ? t :
+                vertexB->getTT(threadNo) + a*cells.getSlowness(triangleNo);
                 if ( t<vertexC->getTT(threadNo) )
                     vertexC->setTT(t, threadNo);
             }
@@ -1011,12 +1072,12 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::initTxVars(const std::vector<sxz<T1>>& Tx,
-                                            std::vector<bool>& txOnNode,
-                                            std::vector<T2>& txNode,
-                                            std::vector<T2>& txCell,
-                                            std::vector<std::vector<T2>>& txCells) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::initTxVars(const std::vector<sxz<T1>>& Tx,
+                                                 std::vector<bool>& txOnNode,
+                                                 std::vector<T2>& txNode,
+                                                 std::vector<T2>& txCell,
+                                                 std::vector<std::vector<T2>>& txCells) const {
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
                 if ( nodes[nn] == Tx[nt] ) {
@@ -1061,8 +1122,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const sxz<T1> &Rx,
                                             std::vector<sxz<T1>> &r_data,
                                             const size_t threadNo) const {
@@ -1560,8 +1621,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxz<T1> &Rx,
                                             std::vector<sxz<T1>> &r_data,
@@ -1620,7 +1681,7 @@ namespace ttcr {
             cellNo = getCellNo( curr_pt );
             for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
-                    tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                    tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); // slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                     r_data.push_back( Tx[nt] );
                     reachedTx = true;
                     break;
@@ -1649,7 +1710,7 @@ namespace ttcr {
                 //  check if cell is (one of) TxCell(s)
                 for (size_t nt=0; nt<Tx.size(); ++nt) {
                     if ( *nc == txCell[nt] ) {
-                        tt += t0[nt] + slowness[*nc] * r_data.back().getDistance( Tx[nt] );
+                        tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), *nc); //slowness[*nc] * r_data.back().getDistance( Tx[nt] );
                         r_data.push_back( Tx[nt] );
                         reachedTx = true;
                         break;
@@ -1659,7 +1720,7 @@ namespace ttcr {
         } else {
             for (size_t nt=0; nt<Tx.size(); ++nt) {
                 if ( cellNo == txCell[nt] ) {
-                    tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                    tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                     r_data.push_back( Tx[nt] );
                     reachedTx = true;
                     break;
@@ -1718,7 +1779,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            tt += t0[nt] + slowness[*nc] * r_data.back().getDistance( Tx[nt] );
+                            tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), *nc); //slowness[*nc] * r_data.back().getDistance( Tx[nt] );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                             break;
@@ -1730,7 +1791,7 @@ namespace ttcr {
 
                     bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
 
-                    tt += slowness[*nc] * r_data.back().getDistance( curr_pt );
+                    tt += cells.computeDt(curr_pt, r_data.back(), *nc); //slowness[*nc] * r_data.back().getDistance( curr_pt );
                     r_data.push_back( curr_pt );
                     if ( break_flag ) break;
 
@@ -1823,7 +1884,7 @@ namespace ttcr {
 
                         bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
 
-                        tt += slowness[*nc] * r_data.back().getDistance( curr_pt );
+                        tt += cells.computeDt(curr_pt, r_data.back(), *nc); //slowness[*nc] * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
                         if ( break_flag ) break;
 
@@ -1877,7 +1938,7 @@ namespace ttcr {
                     // check if distance is "small", i.e. less than 1/3 of edge length
                     if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
                         curr_pt = tentativeNode;
-                        tt += slowness[common_cell] * r_data.back().getDistance( curr_pt );
+                        tt += cells.computeDt(curr_pt, r_data.back(), common_cell); //slowness[common_cell] * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
                         onNode = true;
                     } else {
@@ -1953,7 +2014,7 @@ namespace ttcr {
                                 curr_pt.z = nodes[ ind[ns][1] ].getZ();
                                 sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
                                 cellNo = getCellNo(mid_pt);
-                                tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                                tt += cells.computeDt(curr_pt, r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( curr_pt );
                                 r_data.push_back( curr_pt );
                                 foundIntersection = true;
                                 break;
@@ -1962,7 +2023,7 @@ namespace ttcr {
                                 curr_pt.z = nodes[ ind[ns][0] ].getZ();
                                 sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
                                 cellNo = getCellNo(mid_pt);
-                                tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                                tt += cells.computeDt(curr_pt, r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( curr_pt );
                                 r_data.push_back( curr_pt );
                                 foundIntersection = true;
                                 break;
@@ -2001,7 +2062,7 @@ namespace ttcr {
                         foundIntersection = true;
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + pt_i);
                         cellNo = getCellNo(mid_pt);
-                        tt += slowness[cellNo] * r_data.back().getDistance( pt_i );
+                        tt += cells.computeDt(pt_i, r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( pt_i );
                         r_data.push_back( pt_i );
                         curr_pt = pt_i;
 
@@ -2033,7 +2094,7 @@ namespace ttcr {
                         curr_pt.z = nodes[ edgeNodes[1] ].getZ();
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
                         cellNo = getCellNo(mid_pt);
-                        tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                        tt += cells.computeDt(curr_pt, r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
                         foundIntersection = true;
                     } else {
@@ -2041,7 +2102,7 @@ namespace ttcr {
                         curr_pt.z = nodes[ edgeNodes[0] ].getZ();
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(r_data.back() + curr_pt);
                         cellNo = getCellNo(mid_pt);
-                        tt += slowness[cellNo] * r_data.back().getDistance( curr_pt );
+                        tt += cells.computeDt(curr_pt, r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( curr_pt );
                         r_data.push_back( curr_pt );
                         foundIntersection = true;
                     }
@@ -2071,7 +2132,7 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                                tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                                 r_data.push_back( Tx[nt] );
                                 reachedTx = true;
                                 break;
@@ -2079,7 +2140,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            tt += t0[nt] + slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
+                            tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * r_data.back().getDistance( Tx[nt] );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                         }
@@ -2090,8 +2151,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxz<T1> &Rx,
                                             std::vector<sxz<T1>> &r_data,
@@ -2155,7 +2216,7 @@ namespace ttcr {
                     cell.i = cellNo;
                     cell.v = Tx[nt].getDistance(r_data.back());
                     l_data.push_back(cell);
-                    tt += t0[nt] + slowness[cellNo] * cell.v;
+                    tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * cell.v;
                     r_data.push_back( Tx[nt] );
                     reachedTx = true;
                     break;
@@ -2187,7 +2248,7 @@ namespace ttcr {
                         cell.i = *nc;
                         cell.v = Tx[nt].getDistance(r_data.back());
                         l_data.push_back(cell);
-                        tt += t0[nt] + slowness[*nc] * cell.v;
+                        tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), *nc); //slowness[*nc] * cell.v;
                         r_data.push_back( Tx[nt] );
                         reachedTx = true;
                         break;
@@ -2200,7 +2261,7 @@ namespace ttcr {
                     cell.i = cellNo;
                     cell.v = Tx[nt].getDistance(r_data.back());
                     l_data.push_back(cell);
-                    tt += t0[nt] + slowness[cellNo] * cell.v;
+                    tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * cell.v;
                     r_data.push_back( Tx[nt] );
                     reachedTx = true;
                     break;
@@ -2262,7 +2323,7 @@ namespace ttcr {
                             cell.i = *nc;
                             cell.v = Tx[nt].getDistance(r_data.back());
                             l_data.push_back(cell);
-                            tt += t0[nt] + slowness[*nc] * cell.v;
+                            tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), *nc); //slowness[*nc] * cell.v;
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                             break;
@@ -2277,7 +2338,7 @@ namespace ttcr {
                     cell.i = *nc;
                     cell.v = r_data.back().getDistance( curr_pt );
                     l_data.push_back(cell);
-                    tt += slowness[*nc] * cell.v;
+                    tt += cells.computeDt(curr_pt, r_data.back(), *nc); //slowness[*nc] * cell.v;
                     r_data.push_back( curr_pt );
                     if ( break_flag ) break;
 
@@ -2374,7 +2435,7 @@ namespace ttcr {
                         cell.i = *nc;
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[*nc] * cell.v;
+                        tt += cells.computeDt(curr_pt, r_data.back(), *nc); //slowness[*nc] * cell.v;
                         r_data.push_back( curr_pt );
                         if ( break_flag ) break;
 
@@ -2432,7 +2493,7 @@ namespace ttcr {
                         cell.i = common_cell;
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[common_cell] * cell.v;
+                        tt += cells.computeDt(curr_pt, r_data.back(), common_cell); //slowness[common_cell] * cell.v;
                         r_data.push_back( curr_pt );
                         onNode = true;
                     } else {
@@ -2511,7 +2572,7 @@ namespace ttcr {
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = r_data.back().getDistance( curr_pt );
                                 l_data.push_back(cell);
-                                tt += slowness[cell.i] * cell.v;
+                                tt += cells.computeDt(curr_pt, r_data.back(), cell.i); //slowness[cell.i] * cell.v;
                                 r_data.push_back( curr_pt );
                                 foundIntersection = true;
                                 break;
@@ -2522,7 +2583,7 @@ namespace ttcr {
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = r_data.back().getDistance( curr_pt );
                                 l_data.push_back(cell);
-                                tt += slowness[cell.i] * cell.v;
+                                tt += cells.computeDt(curr_pt, r_data.back(), cell.i); //slowness[cell.i] * cell.v;
                                 r_data.push_back( curr_pt );
                                 foundIntersection = true;
                                 break;
@@ -2563,7 +2624,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( pt_i );
                         l_data.push_back(cell);
-                        tt += slowness[cell.i] * cell.v;
+                        tt += cells.computeDt(pt_i, r_data.back(), cell.i); //slowness[cell.i] * cell.v;
                         r_data.push_back( pt_i );
                         curr_pt = pt_i;
 
@@ -2598,7 +2659,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[cell.i] * cell.v;
+                        tt += cells.computeDt(curr_pt, r_data.back(), cell.i); //slowness[cell.i] * cell.v;
                         r_data.push_back( curr_pt );
                         foundIntersection = true;
                     } else {
@@ -2608,7 +2669,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = r_data.back().getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[cell.i] * cell.v;
+                        tt += cells.computeDt(curr_pt, r_data.back(), cell.i); //slowness[cell.i] * cell.v;
                         r_data.push_back( curr_pt );
                         foundIntersection = true;
                     }
@@ -2640,7 +2701,7 @@ namespace ttcr {
                                 cell.i = cellNo;
                                 cell.v = Tx[nt].getDistance(r_data.back());
                                 l_data.push_back(cell);
-                                tt += t0[nt] + slowness[cellNo] * cell.v;
+                                tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * cell.v;
                                 r_data.push_back( Tx[nt] );
                                 reachedTx = true;
                                 break;
@@ -2651,7 +2712,7 @@ namespace ttcr {
                             cell.i = cellNo;
                             cell.v = Tx[nt].getDistance(r_data.back());
                             l_data.push_back(cell);
-                            tt += t0[nt] + slowness[cellNo] * cell.v;
+                            tt += t0[nt] + cells.computeDt(Tx[nt], r_data.back(), cellNo); //slowness[cellNo] * cell.v;
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                         }
@@ -2662,8 +2723,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxz<T1> &Rx,
                                             std::vector<siv<T1>> &l_data,
@@ -2726,7 +2787,7 @@ namespace ttcr {
                     cell.i = cellNo;
                     cell.v = Tx[nt].getDistance(prev_pt);
                     l_data.push_back(cell);
-                    tt += t0[nt] + slowness[cellNo] * cell.v;
+                    tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * cell.v;
                     reachedTx = true;
                     break;
                 }
@@ -2757,7 +2818,7 @@ namespace ttcr {
                         cell.i = *nc;
                         cell.v = Tx[nt].getDistance(prev_pt);
                         l_data.push_back(cell);
-                        tt += t0[nt] + slowness[*nc] * cell.v;
+                        tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, *nc); //slowness[*nc] * cell.v;
                         reachedTx = true;
                         break;
                     }
@@ -2769,7 +2830,7 @@ namespace ttcr {
                     cell.i = cellNo;
                     cell.v = Tx[nt].getDistance(prev_pt);
                     l_data.push_back(cell);
-                    tt += t0[nt] + slowness[cellNo] * cell.v;
+                    tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * cell.v;
                     reachedTx = true;
                     break;
                 }
@@ -2830,7 +2891,7 @@ namespace ttcr {
                             cell.i = *nc;
                             cell.v = Tx[nt].getDistance(prev_pt);
                             l_data.push_back(cell);
-                            tt += t0[nt] + slowness[*nc] * cell.v;
+                            tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, *nc); //slowness[*nc] * cell.v;
                             reachedTx = true;
                             break;
                         }
@@ -2844,7 +2905,7 @@ namespace ttcr {
                     cell.i = *nc;
                     cell.v = prev_pt.getDistance( curr_pt );
                     l_data.push_back(cell);
-                    tt += slowness[*nc] * cell.v;
+                    tt += cells.computeDt(curr_pt, prev_pt, *nc); //slowness[*nc] * cell.v;
                     prev_pt = curr_pt;
                     if ( break_flag ) break;
 
@@ -2939,7 +3000,7 @@ namespace ttcr {
                         cell.i = *nc;
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[*nc] * cell.v;
+                        tt += cells.computeDt(prev_pt, curr_pt, *nc); //slowness[*nc] * cell.v;
                         prev_pt = curr_pt;
                         if ( break_flag ) break;
 
@@ -2995,7 +3056,7 @@ namespace ttcr {
                         cell.i = common_cell;
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[common_cell] * cell.v;
+                        tt += cells.computeDt(prev_pt, curr_pt, common_cell); //slowness[common_cell] * cell.v;
                         prev_pt = curr_pt;
                         onNode = true;
                     } else {
@@ -3072,7 +3133,7 @@ namespace ttcr {
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = prev_pt.getDistance( curr_pt );
                                 l_data.push_back(cell);
-                                tt += slowness[cell.i] * cell.v;
+                                tt += cells.computeDt(prev_pt, curr_pt, cell.i); //slowness[cell.i] * cell.v;
                                 prev_pt = curr_pt;
                                 foundIntersection = true;
                                 break;
@@ -3083,7 +3144,7 @@ namespace ttcr {
                                 cell.i = getCellNo(mid_pt);
                                 cell.v = prev_pt.getDistance( curr_pt );
                                 l_data.push_back(cell);
-                                tt += slowness[cell.i] * cell.v;
+                                tt += cells.computeDt(prev_pt, curr_pt, cell.i); //slowness[cell.i] * cell.v;
                                 prev_pt = curr_pt;
                                 foundIntersection = true;
                                 break;
@@ -3124,7 +3185,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( pt_i );
                         l_data.push_back(cell);
-                        tt += slowness[cell.i] * cell.v;
+                        tt += cells.computeDt(prev_pt, pt_i, cell.i); //slowness[cell.i] * cell.v;
                         prev_pt = pt_i;
                         curr_pt = pt_i;
 
@@ -3157,7 +3218,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[cell.i] * cell.v;
+                        tt += cells.computeDt(prev_pt, curr_pt, cell.i); //slowness[cell.i] * cell.v;
                         prev_pt = curr_pt;
                         foundIntersection = true;
                     } else {
@@ -3167,7 +3228,7 @@ namespace ttcr {
                         cell.i = getCellNo(mid_pt);
                         cell.v = prev_pt.getDistance( curr_pt );
                         l_data.push_back(cell);
-                        tt += slowness[cell.i] * cell.v;
+                        tt += cells.computeDt(prev_pt, curr_pt, cell.i); //slowness[cell.i] * cell.v;
                         prev_pt = curr_pt;
                         foundIntersection = true;
                     }
@@ -3199,7 +3260,7 @@ namespace ttcr {
                                 cell.i = cellNo;
                                 cell.v = Tx[nt].getDistance(prev_pt);
                                 l_data.push_back(cell);
-                                tt += t0[nt] + slowness[cellNo] * cell.v;
+                                tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * cell.v;
                                 reachedTx = true;
                                 break;
                             }
@@ -3209,7 +3270,7 @@ namespace ttcr {
                             cell.i = cellNo;
                             cell.v = Tx[nt].getDistance(prev_pt);
                             l_data.push_back(cell);
-                            tt += t0[nt] + slowness[cellNo] * cell.v;
+                            tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * cell.v;
                             reachedTx = true;
                         }
                     }
@@ -3219,8 +3280,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Duc<T1,T2,NODE,S>::getTraveltimeFromRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    T1 Grid2Duc<T1,T2,S,NODE,CELL>::getTraveltimeFromRaypath(const std::vector<sxz<T1>>& Tx,
                                                         const std::vector<T1>& t0,
                                                         const sxz<T1> &Rx,
                                                         const size_t threadNo) const {
@@ -3278,7 +3339,7 @@ namespace ttcr {
             cellNo = getCellNo( curr_pt );
             for ( size_t nt=0; nt<txCell.size(); ++nt ) {
                 if ( cellNo == txCell[nt] ) {
-                    tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                    tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
                     reachedTx = true;
                     break;
                 }
@@ -3306,7 +3367,7 @@ namespace ttcr {
                 //  check if cell is (one of) TxCell(s)
                 for (size_t nt=0; nt<Tx.size(); ++nt) {
                     if ( *nc == txCell[nt] ) {
-                        tt += t0[nt] + slowness[*nc] * prev_pt.getDistance( Tx[nt] );
+                        tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, *nc); //slowness[*nc] * prev_pt.getDistance( Tx[nt] );
                         reachedTx = true;
                         break;
                     }
@@ -3315,7 +3376,7 @@ namespace ttcr {
         } else {
             for (size_t nt=0; nt<Tx.size(); ++nt) {
                 if ( cellNo == txCell[nt] ) {
-                    tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                    tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
                     reachedTx = true;
                     break;
                 }
@@ -3373,7 +3434,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            tt += t0[nt] + slowness[*nc] * prev_pt.getDistance( Tx[nt] );
+                            tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, *nc); //slowness[*nc] * prev_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                             break;
                         }
@@ -3384,7 +3445,7 @@ namespace ttcr {
 
                     bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
 
-                    tt += slowness[*nc] * prev_pt.getDistance( curr_pt );
+                    tt += cells.computeDt(prev_pt, curr_pt, *nc); //slowness[*nc] * prev_pt.getDistance( curr_pt );
                     prev_pt = curr_pt;
                     if ( break_flag ) break;
 
@@ -3475,7 +3536,7 @@ namespace ttcr {
 
                         bool break_flag = findIntersection(nb[0], nb[1], g, curr_pt);
 
-                        tt += slowness[*nc] * prev_pt.getDistance( curr_pt );
+                        tt += cells.computeDt(prev_pt, curr_pt, *nc); //slowness[*nc] * prev_pt.getDistance( curr_pt );
                         prev_pt = curr_pt;
                         if ( break_flag ) break;
 
@@ -3526,7 +3587,7 @@ namespace ttcr {
                     // check if distance is "small", i.e. less than 1/3 of edge length
                     if ( distance < 0.33 * curr_pt.getDistance(tentativeNode) ) {
                         curr_pt = tentativeNode;
-                        tt += slowness[common_cell] * prev_pt.getDistance( curr_pt );
+                        tt += cells.computeDt(prev_pt, curr_pt, common_cell); //slowness[common_cell] * prev_pt.getDistance( curr_pt );
                         prev_pt = curr_pt;
                         onNode = true;
                     } else {
@@ -3600,7 +3661,7 @@ namespace ttcr {
                                 curr_pt.z = nodes[ ind[ns][1] ].getZ();
                                 sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
                                 cellNo = getCellNo(mid_pt);
-                                tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                                tt += cells.computeDt(prev_pt, curr_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( curr_pt );
                                 prev_pt = curr_pt;
                                 foundIntersection = true;
                                 break;
@@ -3609,7 +3670,7 @@ namespace ttcr {
                                 curr_pt.z = nodes[ ind[ns][0] ].getZ();
                                 sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
                                 cellNo = getCellNo(mid_pt);
-                                tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                                tt += cells.computeDt(prev_pt, curr_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( curr_pt );
                                 prev_pt = curr_pt;
                                 foundIntersection = true;
                                 break;
@@ -3648,7 +3709,7 @@ namespace ttcr {
                         foundIntersection = true;
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + pt_i);
                         cellNo = getCellNo(mid_pt);
-                        tt += slowness[cellNo] * prev_pt.getDistance( pt_i );
+                        tt += cells.computeDt(prev_pt, pt_i, cellNo); //slowness[cellNo] * prev_pt.getDistance( pt_i );
                         prev_pt = pt_i;
                         curr_pt = pt_i;
 
@@ -3678,7 +3739,7 @@ namespace ttcr {
                         curr_pt.z = nodes[ edgeNodes[1] ].getZ();
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
                         cellNo = getCellNo(mid_pt);
-                        tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                        tt += cells.computeDt(prev_pt, curr_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( curr_pt );
                         prev_pt = curr_pt;
                         foundIntersection = true;
                     } else {
@@ -3686,7 +3747,7 @@ namespace ttcr {
                         curr_pt.z = nodes[ edgeNodes[0] ].getZ();
                         sxz<T1> mid_pt = static_cast<T1>(0.5)*(prev_pt + curr_pt);
                         cellNo = getCellNo(mid_pt);
-                        tt += slowness[cellNo] * prev_pt.getDistance( curr_pt );
+                        tt += cells.computeDt(prev_pt, curr_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( curr_pt );
                         prev_pt = curr_pt;
                         foundIntersection = true;
                     }
@@ -3716,14 +3777,14 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                                tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
                                 reachedTx = true;
                                 break;
                             }
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            tt += t0[nt] + slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
+                            tt += t0[nt] + cells.computeDt(Tx[nt], prev_pt, cellNo); //slowness[cellNo] * prev_pt.getDistance( Tx[nt] );
                             reachedTx = true;
                         }
                     }
@@ -3734,10 +3795,10 @@ namespace ttcr {
         return tt;
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Duc<T1,T2,NODE,S>::findIntersection(const T2 i0, const T2 i1,
-                                                  const sxz<T1> &g,
-                                                  sxz<T1> &curr_pt) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    bool Grid2Duc<T1,T2,S,NODE,CELL>::findIntersection(const T2 i0, const T2 i1,
+                                                       const sxz<T1> &g,
+                                                       sxz<T1> &curr_pt) const {
 
         // equation of the vector starting at curr_pt & pointing along gradient
         T1 m2, b2;
@@ -3804,8 +3865,8 @@ namespace ttcr {
         return false;
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T2 Grid2Duc<T1,T2,NODE,S>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    T2 Grid2Duc<T1,T2,S,NODE,CELL>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
         std::vector<T2> cells;
         for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
             if ( std::find(nodes[i1].getOwners().begin(),
@@ -3828,8 +3889,8 @@ namespace ttcr {
         return std::numeric_limits<T2>::max();
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T2 Grid2Duc<T1,T2,NODE,S>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    T2 Grid2Duc<T1,T2,S,NODE,CELL>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
         std::vector<T2> cells;
         for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
             if ( std::find(nodes[i1].getOwners().begin(),
@@ -3850,9 +3911,9 @@ namespace ttcr {
         return std::numeric_limits<T2>::max();
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::getNeighborNodes(const T2 cellNo,
-                                                  std::set<NODE*> &nnodes) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::getNeighborNodes(const T2 cellNo,
+                                                       std::set<NODE*> &nnodes) const {
 
         for ( size_t n=0; n<3; ++n ) {
             T2 nodeNo = this->neighbors[cellNo][n];
@@ -3866,10 +3927,10 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::calculateArea(std::vector<T1> &area) const {
-        if ( area.size() != slowness.size() ) {
-            area.resize( slowness.size() );
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::calculateArea(std::vector<T1> &area) const {
+        if ( area.size() != triangles.size() ) {
+            area.resize( triangles.size() );
         }
         for ( size_t n=0; n<area.size(); ++n ) {
             area[n] =  abs( 0.5 * (nodes[triangles[n].i[0]].getX()*(nodes[triangles[n].i[1]].getY()-nodes[triangles[n].i[2]].getY()) +
@@ -3878,8 +3939,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::interpolateAtNodes(std::vector<T1> &interpolated) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::interpolateAtNodes(std::vector<T1> &interpolated) const {
         // interpolated: values interpolated at nodes
 
         if ( interpolated.size() != nodes.size() ) {
@@ -3894,22 +3955,22 @@ namespace ttcr {
 
         for ( size_t n=0; n<nodes.size(); ++n ) {
             T1 totalArea = area[nodes[n].getOwners()[0]];
-            interpolated[n] = slowness[nodes[n].getOwners()[0]] * totalArea;
+            interpolated[n] = cells.getSlowness(nodes[n].getOwners()[0]) * totalArea;
             for ( size_t nn=1; nn<nodes[n].getOwners().size(); ++nn ) {
-                interpolated[n] += slowness[nodes[n].getOwners()[nn]] * area[nodes[n].getOwners()[nn]];
+                interpolated[n] += cells.getSlowness(nodes[n].getOwners()[nn]) * area[nodes[n].getOwners()[nn]];
                 totalArea += area[nodes[n].getOwners()[nn]];
             }
             interpolated[n] /= totalArea;
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Duc<T1,T2,NODE,S>::interpolateAtNodes(const std::vector<T1> &field,
-                                                    std::vector<T1> &interpolated) const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    void Grid2Duc<T1,T2,S,NODE,CELL>::interpolateAtNodes(const std::vector<T1> &field,
+                                                         std::vector<T1> &interpolated) const {
         // field: values defined at cells
         // interpolated: values interpolated at nodes
 
-        if ( field.size() != slowness.size() ) {
+        if ( field.size() != triangles.size() ) {
             throw std::length_error("Error: field vector of incompatible size.");
         }
         if ( interpolated.size() != nodes.size() ) {
@@ -3933,8 +3994,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    const T1 Grid2Duc<T1,T2,NODE,S>::getAverageEdgeLength() const {
+    template<typename T1, typename T2, typename S, typename NODE, typename CELL>
+    const T1 Grid2Duc<T1,T2,S,NODE,CELL>::getAverageEdgeLength() const {
         std::set<std::array<T2,2>> edges;
         typename std::set<std::array<T2,2>>::iterator edgIt;
         T2 iNodes[3][2] = {

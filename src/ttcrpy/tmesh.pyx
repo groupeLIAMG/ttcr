@@ -1162,40 +1162,45 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit, process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp) -> Mesh2d
+    Mesh2d(nodes, triangles, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', eps=1e-15, maxit=20, process_obtuse=1, n_secondary=5, n_tertiary=2, radius_factor_tertiary=2, tt_from_rp=0) -> Mesh2d
 
-        Parameters
-        ----------
-        nodes : np.ndarray, shape (nnodes, 2)
-            node coordinates
-        triangles : np.ndarray of int, shape (ntriangles, 3)
-            indices of nodes forming the triangles
-        n_threads : int
-            number of threads for raytracing (default is 1)
-        cell_slowness : bool
-            slowness defined for cells (True) or nodes (False) (default is 1)
-        method : string
-            raytracing method (default is FSM)
-                - 'FSM' : fast marching method
-                - 'SPM' : shortest path method
-                - 'DSPM' : dynamic shortest path
-        eps : double
-            convergence criterion (FSM) (default is 1e-15)
-        maxit : int
-            max number of sweeping iterations (FSM) (default is 20)
-        process_obtuse : bool
-            use method of Qian et al (2007) to improve accuracy for triangles
-            with obtuse angle (default is True)
-        n_secondary : int
-            number of secondary nodes (SPM) (default is 5)
-        n_tertiary : int
-            number of tertiary nodes (DSPM) (default is 2)
-        radius_factor_tertiary : double
-            multiplication factor used to compute radius of sphere around source
-            that includes tertiary nodes (DSPM).  The radius is the average edge
-            length multiplied by this factor (default is 2)
-        tt_from_rp : bool
-            compute traveltimes using raypaths (default is False)
+    Parameters
+    ----------
+    nodes : np.ndarray, shape (nnodes, 2)
+        node coordinates
+    triangles : np.ndarray of int, shape (ntriangles, 3)
+        indices of nodes forming the triangles
+    n_threads : int
+        number of threads for raytracing (default is 1)
+    cell_slowness : bool
+        slowness defined for cells (True) or nodes (False) (default is 1)
+    method : string
+        raytracing method (default is FSM)
+            - 'FSM' : fast marching method
+            - 'SPM' : shortest path method
+            - 'DSPM' : dynamic shortest path
+    aniso : string
+        type of anisotropy (implemented only for the SPM method)
+            - 'iso' : isotropic medium
+            - 'elliptical' : elliptical anisotropy
+            - 'tilted_elliptical' : tilted elliptical anisotropy
+    eps : double
+        convergence criterion (FSM) (default is 1e-15)
+    maxit : int
+        max number of sweeping iterations (FSM) (default is 20)
+    process_obtuse : bool
+        use method of Qian et al (2007) to improve accuracy for triangles
+        with obtuse angle (default is True)
+    n_secondary : int
+        number of secondary nodes (SPM) (default is 5)
+    n_tertiary : int
+        number of tertiary nodes (DSPM) (default is 2)
+    radius_factor_tertiary : double
+        multiplication factor used to compute radius of sphere around source
+        that includes tertiary nodes (DSPM).  The radius is the average edge
+        length multiplied by this factor (default is 2)
+    tt_from_rp : bool
+        compute traveltimes using raypaths (default is False)
     """
     cdef bool cell_slowness
     cdef bool process_obtuse
@@ -1204,6 +1209,7 @@ cdef class Mesh2d:
     cdef double eps
     cdef int maxit
     cdef char method
+    cdef char iso
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
     cdef double radius_factor_tertiary
@@ -1214,7 +1220,7 @@ cdef class Mesh2d:
     def __cinit__(self, np.ndarray[np.double_t, ndim=2] nodes,
                   np.ndarray[np.int64_t, ndim=2] triangles,
                   size_t n_threads=1, bool cell_slowness=1,
-                  str method='FSM', double eps=1.e-15, int maxit=20,
+                  str method='FSM', str aniso='iso', double eps=1.e-15, int maxit=20,
                   bool process_obtuse=1, uint32_t n_secondary=5,
                   uint32_t n_tertiary=2, double radius_factor_tertiary=2.0,
                   bool tt_from_rp=0):
@@ -1224,6 +1230,7 @@ cdef class Mesh2d:
         self.eps = eps
         self.maxit = maxit
         self.process_obtuse = process_obtuse
+        self.iso = b'i'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -1259,21 +1266,37 @@ cdef class Mesh2d:
         if cell_slowness:
             if method == 'FSM':
                 self.method = b'f'
-                self.grid = new Grid2Ducfs[double,uint32_t,Node2Dc[double,uint32_t],sxz[double]](self.no,
-                                                                                                 self.tri,
-                                                                                                 eps,
-                                                                                                 maxit,
-                                                                                                 pts_ref, 2,
-                                                                                                 tt_from_rp,
-                                                                                                 n_threads,
-                                                                                                 process_obtuse)
+                self.grid = new Grid2Ducfs[double,uint32_t,sxz[double]](self.no,
+                                                                        self.tri,
+                                                                        eps,
+                                                                        maxit,
+                                                                        pts_ref, 2,
+                                                                        tt_from_rp,
+                                                                        n_threads,
+                                                                        process_obtuse)
             elif method == 'SPM':
                 self.method = b's'
-                self.grid = new Grid2Ducsp[double,uint32_t,Node2Dcsp[double,uint32_t],sxz[double]](self.no,
-                                                                                                   self.tri,
-                                                                                                   n_secondary,
-                                                                                                   tt_from_rp,
-                                                                                                   n_threads)
+                if aniso == 'iso':
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d](self.no,
+                                                                                                              self.tri,
+                                                                                                              n_secondary,
+                                                                                                              tt_from_rp,
+                                                                                                              n_threads)
+                elif aniso == 'elliptical':
+                    self.iso = b'e'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_e](self.no,
+                                                                                                                self.tri,
+                                                                                                                n_secondary,
+                                                                                                                tt_from_rp,
+                                                                                                                n_threads)
+                elif aniso == 'tilted_elliptical':
+                    self.iso = b't'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_te](self.no,
+                                                                                                                 self.tri,
+                                                                                                                 n_secondary,
+                                                                                                                 tt_from_rp,
+                                                                                                                 n_threads)
+                    
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid2Ducdsp[double,uint32_t,sxz[double]](self.no,
@@ -1289,17 +1312,17 @@ cdef class Mesh2d:
         else:
             if method == 'FSM':
                 self.method = b'f'
-                self.grid = new Grid2Dunfs[double,uint32_t,Node2Dn[double,uint32_t],sxz[double]](self.no,
-                                                                                                 self.tri,
-                                                                                                 eps,
-                                                                                                 maxit,
-                                                                                                 pts_ref, 2,
-                                                                                                 tt_from_rp,
-                                                                                                 n_threads,
-                                                                                                 process_obtuse)
+                self.grid = new Grid2Dunfs[double,uint32_t,sxz[double]](self.no,
+                                                                        self.tri,
+                                                                        eps,
+                                                                        maxit,
+                                                                        pts_ref, 2,
+                                                                        tt_from_rp,
+                                                                        n_threads,
+                                                                        process_obtuse)
             elif method == 'SPM':
                 self.method = b's'
-                self.grid = new Grid2Dunsp[double,uint32_t,Node2Dnsp[double,uint32_t],sxz[double]](self.no,
+                self.grid = new Grid2Dunsp[double,uint32_t,sxz[double],Node2Dnsp[double,uint32_t]](self.no,
                                                                                                    self.tri,
                                                                                                    n_secondary,
                                                                                                    tt_from_rp,
@@ -1328,6 +1351,13 @@ cdef class Mesh2d:
         elif self.method == b'd':
             method = 'DSPM'
 
+        if self.iso == b'i':
+            aniso = 'iso'
+        elif self.iso == b'e':
+            aniso = 'elliptical'
+        elif self.iso == b't':
+            aniso = 'tilted_elliptical'
+
         nodes = np.ndarray((self.no.size(), 2))
         triangles = np.ndarray((self.tri.size(), 3), dtype=int)
         cdef int n
@@ -1340,7 +1370,7 @@ cdef class Mesh2d:
                 triangles[n, nn] = self.tri[n].i[nn]
 
         constructor_params = (nodes, triangles,
-                              method, self.cell_slowness,
+                              method, aniso, self.cell_slowness,
                               self._n_threads,
                               self.eps, self.maxit, self.process_obtuse,
                               self.n_secondary, self.n_tertiary,
@@ -1473,6 +1503,50 @@ cdef class Mesh2d:
         for i in range(velocity.size):
             slown.push_back(1./velocity[i])
         self.grid.setSlowness(slown)
+
+    def set_xi(self, xi):
+        """
+        set_xi(xi)
+
+        Assign elliptical anisotropy ratio to grid
+
+        Parameters
+        ----------
+        xi : np ndarray, shape (nparams, )
+        """
+        if xi.size != self.nparams:
+            raise ValueError('xi vector has wrong size')
+
+        if not xi.flags['C_CONTIGUOUS']:
+                xi = np.ascontiguousarray(xi)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(xi.size):
+            var.push_back(xi[i])
+        self.grid.setXi(var)
+
+    def set_tilt_angle(self, theta):
+        """
+        set_tilt_angle(theta)
+
+        Assign tilted elliptical anisotropy angle to grid
+
+        Parameters
+        ----------
+        theta : np ndarray, shape (nparams, )
+        """
+        if theta.size != self.nparams:
+            raise ValueError('theta vector has wrong size')
+
+        if not theta.flags['C_CONTIGUOUS']:
+            theta = np.ascontiguousarray(theta)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(theta.size):
+            var.push_back(theta[i])
+        self.grid.setTiltAngle(var)
 
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, return_rays=False):

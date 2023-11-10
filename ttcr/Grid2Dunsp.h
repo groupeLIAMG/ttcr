@@ -35,13 +35,13 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Dunsp : public Grid2Dun<T1,T2,NODE,S> {
+    template<typename T1, typename T2, typename S, typename NODE>
+    class Grid2Dunsp : public Grid2Dun<T1,T2,S,NODE> {
     public:
         Grid2Dunsp(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T2 ns, const bool ttrp, const size_t nt=1) :
-        Grid2Dun<T1,T2,NODE,S>(no, tri, ttrp, nt),
+        Grid2Dun<T1,T2,S,NODE>(no, tri, ttrp, nt),
         nSecondary(ns)
         {
             this->buildGridNodes(no, ns, nt);
@@ -149,8 +149,8 @@ namespace ttcr {
 
     };
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -184,8 +184,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -224,8 +224,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -337,8 +337,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<const std::vector<S>*>& Rx,
                                             std::vector<std::vector<T1>*>& traveltimes,
@@ -460,8 +460,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -618,8 +618,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -729,8 +729,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::raytrace(const std::vector<S>& Tx,
                                             const std::vector<T1>& t0,
                                             const std::vector<S>& Rx,
                                             std::vector<T1>& traveltimes,
@@ -937,8 +937,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::initQueue(const std::vector<S>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::initQueue(const std::vector<S>& Tx,
                                              const std::vector<T1>& t0,
                                              std::priority_queue<NODE*,
                                              std::vector<NODE*>,
@@ -977,8 +977,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunsp<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dunsp<T1,T2,S,NODE>::propagate(std::priority_queue<NODE*,
                                              std::vector<NODE*>,
                                              CompareNodePtr<T1>>& queue,
                                              std::vector<bool>& inQueue,
@@ -1020,8 +1020,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    int Grid2Dunsp<T1,T2,NODE,S>::computeD(const std::vector<sxyz<T1>>& pts,
+    template<typename T1, typename T2, typename S, typename NODE>
+    int Grid2Dunsp<T1,T2,S,NODE>::computeD(const std::vector<sxyz<T1>>& pts,
                                            std::vector<std::vector<siv<T1>>>& d_data) const{
 
         for ( size_t n=0; n<pts.size(); ++n ) {

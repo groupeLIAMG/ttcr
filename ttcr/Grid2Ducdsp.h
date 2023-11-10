@@ -32,13 +32,13 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S>
-    class Grid2Ducdsp : public Grid2Duc<T1,T2,Node2Dc<T1,T2>,S> {
+    class Grid2Ducdsp : public Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1,Node2Dc<T1,T2>,sxz<T1>>> {
     public:
         Grid2Ducdsp(const std::vector<S>& no,
                     const std::vector<triangleElem<T2>>& tri,
                     const T2 ns, const int nd, const T1 drad, const bool ttrp,
                     const bool useEdgeLength=true, const size_t nt=1) :
-        Grid2Duc<T1,T2,Node2Dc<T1,T2>,S>(no, tri, ttrp, nt),
+        Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1, Node2Dc<T1, T2>, sxz<T1>>>(no, tri, ttrp, nt),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node2Dcd<T1,T2>>>(nt)),
@@ -297,7 +297,7 @@ namespace ttcr {
                     }
 
                     // compute dt
-                    T1 dt = this->computeDt(*src, this->nodes[neibNo], cellNo);
+                    T1 dt = this->cells.computeDt(*src, this->nodes[neibNo], cellNo);
 
                     if (srcTT+dt < this->nodes[neibNo].getTT(threadNo)) {
                         this->nodes[neibNo].setTT( srcTT+dt, threadNo );
@@ -316,7 +316,7 @@ namespace ttcr {
                     }
 
                     // compute dt
-                    T1 dt = this->computeDt(*src, tempNodes[threadNo][neibNo], cellNo);
+                    T1 dt = this->cells.computeDt(*src, tempNodes[threadNo][neibNo], cellNo);
                     if (srcTT+dt < tempNodes[threadNo][neibNo].getTT(0)) {
                         tempNodes[threadNo][neibNo].setTT(srcTT+dt,0);
 

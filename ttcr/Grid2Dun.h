@@ -40,7 +40,7 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename NODE, typename S>
+    template<typename T1, typename T2, typename S, typename NODE>
     class Grid2Dun : public Grid2D<T1,T2,S> {
     public:
         Grid2Dun(const std::vector<S>& no,
@@ -267,8 +267,8 @@ namespace ttcr {
         void interpVelocitySecondary(const T2 nSecondary);
     };
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::buildGridNodes(const std::vector<S>& no,
                                                 const size_t nt) {
 
         // primary nodes
@@ -308,8 +308,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::buildGridNodes(const std::vector<S>& no,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::buildGridNodes(const std::vector<S>& no,
                                                 const T2 nSecondary,
                                                 const size_t nt) {
         // primary nodes
@@ -369,8 +369,8 @@ namespace ttcr {
         nodes.shrink_to_fit();
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dun<T1,T2,NODE,S>::getTraveltime(const S& Rx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Dun<T1,T2,S,NODE>::getTraveltime(const S& Rx,
                                              const size_t threadNo) const {
 
         for ( size_t nn=0; nn<nodes.size(); ++nn ) {
@@ -397,8 +397,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dun<T1,T2,NODE,S>::getTraveltime(const S& Rx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Dun<T1,T2,S,NODE>::getTraveltime(const S& Rx,
                                              T2& nodeParentRx, T2& cellParentRx,
                                              const size_t threadNo) const {
 
@@ -430,8 +430,8 @@ namespace ttcr {
         return traveltime;
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dun<T1,T2,NODE,S>::computeSlowness( const S& pt ) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Dun<T1,T2,S,NODE>::computeSlowness( const S& pt ) const {
 
         // Calculate the slowness of any point that is not on a node
 
@@ -450,8 +450,8 @@ namespace ttcr {
 
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dun<T1,T2,NODE,S>::computeSlowness( const S& pt, const T2 cellNo ) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Dun<T1,T2,S,NODE>::computeSlowness( const S& pt, const T2 cellNo ) const {
 
         // Calculate the slowness of any point that is not on a node
 
@@ -466,16 +466,16 @@ namespace ttcr {
         return Interpolator<T1>::barycentricTriangle( pt, interpNodes );
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dun<T1,T2,NODE,S>::computeSlowness(const S& pt,
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Dun<T1,T2,S,NODE>::computeSlowness(const S& pt,
                                                std::array<T2,2>& edgeNodes) const {
         T1 w1 = pt.getDistance(nodes[edgeNodes[0]]);
         T1 w2 = pt.getDistance(nodes[edgeNodes[1]]);
         return (w2*nodes[edgeNodes[0]].getNodeSlowness() + w1*nodes[edgeNodes[1]].getNodeSlowness())/(w1+w2);
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::checkPts(const std::vector<sxz<T1>>& pts) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::checkPts(const std::vector<sxz<T1>>& pts) const {
 
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -501,8 +501,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::checkPts(const std::vector<sxyz<T1>>& pts) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::checkPts(const std::vector<sxyz<T1>>& pts) const {
 
         for (size_t n=0; n<pts.size(); ++n) {
             bool found = false;
@@ -529,8 +529,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Dun<T1,T2,NODE,S>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    bool Grid2Dun<T1,T2,S,NODE>::insideTriangle(const sxz<T1>& v, const T2 nt) const {
 
         if ( !testInTriangleBoundingBox(&(nodes[ triangles[nt].i[0] ]),
                                         &(nodes[ triangles[nt].i[1] ]),
@@ -553,8 +553,8 @@ namespace ttcr {
         return (a >= -small3) && (b >= -small3) && (a + b < 1.+small3);
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Dun<T1,T2,NODE,S>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    bool Grid2Dun<T1,T2,S,NODE>::insideTriangle(const sxyz<T1>& p, const T2 nt) const {
 
         if ( !testInTriangleBoundingBox(&(nodes[ triangles[nt].i[0] ]),
                                         &(nodes[ triangles[nt].i[1] ]),
@@ -588,8 +588,8 @@ namespace ttcr {
     }
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::saveTT(const std::string &fname, const int all,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::saveTT(const std::string &fname, const int all,
                                         const size_t nt, const int format) const {
         if ( format == 1 ) {
             std::string filename = fname+".dat";
@@ -669,8 +669,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    int Grid2Dun<T1,T2,NODE,S>::projectPts(std::vector<S>& pts) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    int Grid2Dun<T1,T2,S,NODE>::projectPts(std::vector<S>& pts) const {
 
         std::vector<S> centroid( triangles.size() );
 
@@ -710,8 +710,8 @@ namespace ttcr {
     }
 
 #ifdef VTK
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::saveModelVTU(const std::string &fname,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::saveModelVTU(const std::string &fname,
                                               const bool saveSlowness,
                                               const bool savePhysicalEntity) const {
 
@@ -778,8 +778,8 @@ namespace ttcr {
     }
 #endif
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::processObtuse() {
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::processObtuse() {
         //
         //  WARNING processing obtuse angles this way is not going to work for undulated surfaces
         //
@@ -882,8 +882,8 @@ namespace ttcr {
 
 
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::localSolver(NODE *vertexC,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::localSolver(NODE *vertexC,
                                              const size_t threadNo) const {
 
         static const double pi2 = pi / 2.;
@@ -960,8 +960,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::initTxVars(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::initTxVars(const std::vector<sxz<T1>>& Tx,
                                             std::vector<bool>& txOnNode,
                                             std::vector<T2>& txNode,
                                             std::vector<T2>& txCell,
@@ -1010,8 +1010,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const sxz<T1> &Rx,
                                             std::vector<sxz<T1>> &r_data,
                                             const size_t threadNo) const {
@@ -1512,8 +1512,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxz<T1> &Rx,
                                             std::vector<sxz<T1>> &r_data,
@@ -2088,8 +2088,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxz<T1> &Rx,
                                             std::vector<sxz<T1>> &r_data,
@@ -2721,8 +2721,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::getRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::getRaypath(const std::vector<sxz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxz<T1> &Rx,
                                             std::vector<siv<T1>> &l_data,
@@ -3339,8 +3339,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T1 Grid2Dun<T1,T2,NODE,S>::getTraveltimeFromRaypath(const std::vector<sxz<T1>>& Tx,
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Dun<T1,T2,S,NODE>::getTraveltimeFromRaypath(const std::vector<sxz<T1>>& Tx,
                                                         const std::vector<T1>& t0,
                                                         const sxz<T1> &Rx,
                                                         const size_t threadNo) const {
@@ -3898,8 +3898,8 @@ namespace ttcr {
         return tt;
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    bool Grid2Dun<T1,T2,NODE,S>::findIntersection(const T2 i0, const T2 i1,
+    template<typename T1, typename T2, typename S, typename NODE>
+    bool Grid2Dun<T1,T2,S,NODE>::findIntersection(const T2 i0, const T2 i1,
                                                   const sxz<T1> &g,
                                                   sxz<T1> &curr_pt) const {
 
@@ -3968,8 +3968,8 @@ namespace ttcr {
         return false;
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T2 Grid2Dun<T1,T2,NODE,S>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    T2 Grid2Dun<T1,T2,S,NODE>::findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const {
         std::vector<T2> cells;
         for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
             if ( std::find(nodes[i1].getOwners().begin(),
@@ -3992,8 +3992,8 @@ namespace ttcr {
         return std::numeric_limits<T2>::max();
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    T2 Grid2Dun<T1,T2,NODE,S>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    T2 Grid2Dun<T1,T2,S,NODE>::findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const {
         std::vector<T2> cells;
         for ( auto nc0=nodes[i0].getOwners().begin(); nc0!=nodes[i0].getOwners().end(); ++nc0 ) {
             if ( std::find(nodes[i1].getOwners().begin(),
@@ -4014,8 +4014,8 @@ namespace ttcr {
         return std::numeric_limits<T2>::max();
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::getNeighborNodes(const T2 cellNo,
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::getNeighborNodes(const T2 cellNo,
                                                   std::set<NODE*> &nnodes) const {
 
         for ( size_t n=0; n<3; ++n ) {
@@ -4030,8 +4030,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::interpVelocitySecondary(const T2 nSecondary) {
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::interpVelocitySecondary(const T2 nSecondary) {
 
         T2 nNodes = nPrimary;
 
@@ -4067,8 +4067,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dun<T1,T2,NODE,S>::interpSlownessSecondary(const T2 nSecondary) {
+    template<typename T1, typename T2, typename S, typename NODE>
+    void Grid2Dun<T1,T2,S,NODE>::interpSlownessSecondary(const T2 nSecondary) {
 
         T2 nNodes = nPrimary;
 
@@ -4104,8 +4104,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    const T1 Grid2Dun<T1,T2,NODE,S>::getAverageEdgeLength() const {
+    template<typename T1, typename T2, typename S, typename NODE>
+    const T1 Grid2Dun<T1,T2,S,NODE>::getAverageEdgeLength() const {
         std::set<std::array<T2,2>> edges;
         typename std::set<std::array<T2,2>>::iterator edgIt;
         T2 iNodes[3][2] = {

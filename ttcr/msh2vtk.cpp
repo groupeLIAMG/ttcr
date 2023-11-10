@@ -157,9 +157,9 @@ int main(int argc, char * argv[])
         }
         Grid2D<double,uint32_t,sxz<double>> *g=nullptr;
         if ( constCells )
-            g = new Grid2Ducfm<double,uint32_t, Node2Dc<double,uint32_t>,sxz<double>>(nodes, triangles, true);
+            g = new Grid2Ducfm<double,uint32_t, sxz<double>>(nodes, triangles, true);
         else
-            g = new Grid2Dunfm<double,uint32_t, Node2Dn<double,uint32_t>,sxz<double>>(nodes, triangles, true);
+            g = new Grid2Dunfm<double,uint32_t, sxz<double>>(nodes, triangles, true);
 
         if ( ttcr::verbose ) {
             cout << "done.\n";
@@ -194,7 +194,7 @@ int main(int argc, char * argv[])
 
         if ( par.saveReflectors && reader.getPhysicalNames(1).size()>0 ) {
             vector<string> reflector_names = reader.getPhysicalNames(1);
-            vector<int> indices = reader.getPhysicalIndices(1);
+            vector<size_t> indices = reader.getPhysicalIndices(1);
 
             if ( reflector_names.size() != indices.size() ) {
                 cerr << "Error - definition of reflectors\n";
@@ -360,7 +360,7 @@ int main(int argc, char * argv[])
 
         if ( par.saveReflectors && reader.getPhysicalNames(2).size()>0 ) {
             vector<string> reflector_names = reader.getPhysicalNames(2);
-            vector<int> indices = reader.getPhysicalIndices(2);
+            vector<size_t> indices = reader.getPhysicalIndices(2);
 
             if ( reflector_names.size() != indices.size() ) {
                 cerr << "Error - definition of reflectors\n";

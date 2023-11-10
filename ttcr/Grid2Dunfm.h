@@ -32,17 +32,17 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    class Grid2Dunfm : public Grid2Dun<T1,T2,NODE,S> {
+    template<typename T1, typename T2, typename S>
+    class Grid2Dunfm : public Grid2Dun<T1,T2,S,Node2Dn<T1,T2>> {
     public:
         Grid2Dunfm(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const bool ttrp, const size_t nt=1,
                    const bool procObtuse=true) :
-        Grid2Dun<T1, T2,NODE,S>(no, tri, ttrp, nt)
+        Grid2Dun<T1, T2, S, Node2Dn<T1,T2>>(no, tri, ttrp, nt)
         {
             this->buildGridNodes(no, nt);
-            this->template buildGridNeighbors<NODE>(this->nodes);
+            this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
         }
 
@@ -53,16 +53,16 @@ namespace ttcr {
 
         void initBand(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
-                      std::priority_queue<NODE*,
-                      std::vector<NODE*>,
+                      std::priority_queue<Node2Dn<T1,T2>*,
+                      std::vector<Node2Dn<T1,T2>*>,
                       CompareNodePtr<T1>>&,
-                      std::vector<NODE>&,
+                      std::vector<Node2Dn<T1,T2>>&,
                       std::vector<bool>&,
                       std::vector<bool>&,
                       const size_t) const;
 
-        void propagate(std::priority_queue<NODE*,
-                       std::vector<NODE*>,
+        void propagate(std::priority_queue<Node2Dn<T1,T2>*,
+                       std::vector<Node2Dn<T1,T2>*>,
                        CompareNodePtr<T1>>&,
                        std::vector<bool>&,
                        std::vector<bool>&,
@@ -79,11 +79,11 @@ namespace ttcr {
                       const size_t threadNo) const;
     };
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Dunfm<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       const std::vector<S>& Rx,
+                                       const size_t threadNo) const {
 
         this->checkPts(Tx);
         this->checkPts(Rx);
@@ -93,10 +93,10 @@ namespace ttcr {
         }
 
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< NODE*, std::vector<NODE*>,
+        std::priority_queue< Node2Dn<T1,T2>*, std::vector<Node2Dn<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
 
-        std::vector<NODE> txNodes;
+        std::vector<Node2Dn<T1,T2>> txNodes;
         std::vector<bool> inQueue( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
 
@@ -105,11 +105,11 @@ namespace ttcr {
         propagate(narrow_band, inQueue, frozen, threadNo);
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfm<T1,T2,NODE,S>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<const std::vector<S>*>& Rx,
-                                            const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Dunfm<T1,T2,S>::raytrace(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       const std::vector<const std::vector<S>*>& Rx,
+                                       const size_t threadNo) const {
 
         this->checkPts(Tx);
         for ( size_t n=0; n<Rx.size(); ++n ) {
@@ -121,10 +121,10 @@ namespace ttcr {
         }
 
         CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< NODE*, std::vector<NODE*>,
+        std::priority_queue< Node2Dn<T1,T2>*, std::vector<Node2Dn<T1,T2>*>,
         CompareNodePtr<T1>> narrow_band( cmp );
 
-        std::vector<NODE> txNodes;
+        std::vector<Node2Dn<T1,T2>> txNodes;
         std::vector<bool> inBand( this->nodes.size(), false );
         std::vector<bool> frozen( this->nodes.size(), false );
 
@@ -133,16 +133,16 @@ namespace ttcr {
         propagate(narrow_band, inBand, frozen, threadNo);
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfm<T1,T2,NODE,S>::initBand(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            std::priority_queue<NODE*,
-                                            std::vector<NODE*>,
-                                            CompareNodePtr<T1>>& narrow_band,
-                                            std::vector<NODE>& txNodes,
-                                            std::vector<bool>& inBand,
-                                            std::vector<bool>& frozen,
-                                            const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Dunfm<T1,T2,S>::initBand(const std::vector<S>& Tx,
+                                       const std::vector<T1>& t0,
+                                       std::priority_queue<Node2Dn<T1,T2>*,
+                                       std::vector<Node2Dn<T1,T2>*>,
+                                       CompareNodePtr<T1>>& narrow_band,
+                                       std::vector<Node2Dn<T1,T2>>& txNodes,
+                                       std::vector<bool>& inBand,
+                                       std::vector<bool>& frozen,
+                                       const size_t threadNo) const {
 
         for (size_t n=0; n<Tx.size(); ++n) {
             bool found = false;
@@ -199,18 +199,18 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename NODE, typename S>
-    void Grid2Dunfm<T1,T2,NODE,S>::propagate(std::priority_queue<NODE*,
-                                             std::vector<NODE*>,
-                                             CompareNodePtr<T1>>& narrow_band,
-                                             std::vector<bool>& inNarrowBand,
-                                             std::vector<bool>& frozen,
-                                             const size_t threadNo) const {
+    template<typename T1, typename T2, typename S>
+    void Grid2Dunfm<T1,T2,S>::propagate(std::priority_queue<Node2Dn<T1,T2>*,
+                                        std::vector<Node2Dn<T1,T2>*>,
+                                        CompareNodePtr<T1>>& narrow_band,
+                                        std::vector<bool>& inNarrowBand,
+                                        std::vector<bool>& frozen,
+                                        const size_t threadNo) const {
 
         //    size_t n=1;
         while ( !narrow_band.empty() ) {
 
-            const NODE* source = narrow_band.top();
+            const Node2Dn<T1,T2>* source = narrow_band.top();
             narrow_band.pop();
             inNarrowBand[ source->getGridIndex() ] = false;
             frozen[ source->getGridIndex() ] = true;   // marked as known
