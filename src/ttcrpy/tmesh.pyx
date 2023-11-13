@@ -1184,6 +1184,7 @@ cdef class Mesh2d:
             - 'iso' : isotropic medium
             - 'elliptical' : elliptical anisotropy
             - 'tilted_elliptical' : tilted elliptical anisotropy
+            - 'weakly_anelliptical' : Weakly-Anelliptical
     eps : double
         convergence criterion (FSM) (default is 1e-15)
     maxit : int
@@ -1296,6 +1297,13 @@ cdef class Mesh2d:
                                                                                                                  n_secondary,
                                                                                                                  tt_from_rp,
                                                                                                                  n_threads)
+                elif aniso == 'weakly_anelliptical':
+                    self.iso = b'w'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_wa](self.no,
+                                                                                                                 self.tri,
+                                                                                                                 n_secondary,
+                                                                                                                 tt_from_rp,
+                                                                                                                 n_threads)
                     
             elif method == 'DSPM':
                 self.method = b'd'
@@ -1357,6 +1365,8 @@ cdef class Mesh2d:
             aniso = 'elliptical'
         elif self.iso == b't':
             aniso = 'tilted_elliptical'
+        elif self.iso == b'w':
+            aniso = 'weakly_anelliptical'
 
         nodes = np.ndarray((self.no.size(), 2))
         triangles = np.ndarray((self.tri.size(), 3), dtype=int)
@@ -1547,6 +1557,50 @@ cdef class Mesh2d:
         for i in range(theta.size):
             var.push_back(theta[i])
         self.grid.setTiltAngle(var)
+
+    def set_r2(self, r2):
+        """
+        set_r2(r2)
+
+        Assign phase-velocity parameter r2 to grid
+
+        Parameters
+        ----------
+        r2 : np ndarray, shape (nparams, )
+        """
+        if r2.size != self.nparams:
+            raise ValueError('r2 vector has wrong size')
+
+        if not r2.flags['C_CONTIGUOUS']:
+                r2 = np.ascontiguousarray(r2)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(r2.size):
+            var.push_back(r2[i])
+        self.grid.setR2(var)
+
+    def set_r4(self, r4):
+        """
+        set_r4(r4)
+
+        Assign phase-velocity parameter r4 to grid
+
+        Parameters
+        ----------
+        r4 : np ndarray, shape (nparams, )
+        """
+        if r4.size != self.nparams:
+            raise ValueError('r4 vector has wrong size')
+
+        if not r4.flags['C_CONTIGUOUS']:
+                r4 = np.ascontiguousarray(r4)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(r4.size):
+            var.push_back(r4[i])
+        self.grid.setR4(var)
 
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, return_rays=False):

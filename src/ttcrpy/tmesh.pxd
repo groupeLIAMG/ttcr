@@ -16,6 +16,8 @@ cdef extern from "typedefs.h" namespace "ttcr":
         pass
     cdef cppclass cell2d_te:
         pass
+    cdef cppclass cell2d_wa:
+        pass
 
 cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
     cdef cppclass triangleElem[T]:
@@ -163,6 +165,8 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
         void getSlowness(vector[T1]&) except +
         void setXi(vector[T1]&) except +
         void setTiltAngle(vector[T1]&) except +
+        void setR2(vector[T1]&) except +
+        void setR4(vector[T1]&) except +
         void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[S]& Tx,
                       vector[T1]& t0,

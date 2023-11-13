@@ -2229,7 +2229,9 @@ namespace ttcr {
         bool constCells = reader.isConstCell();
         bool foundXi = reader.hasVariable<T>("xi", constCells);
         bool foundTheta = reader.hasVariable<T>("theta", constCells);
-        
+        bool foundR2 = reader.hasVariable<T>("r2", constCells);
+        bool foundR4 = reader.hasVariable<T>("r4", constCells);
+
         std::vector<T> slowness;
         if ( constCells )
             slowness.resize(reader.getNumberOfElements());
@@ -2281,6 +2283,15 @@ namespace ttcr {
                                                                                                                                               nt);
                     } else if ( foundXi ) {
                         g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellElliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                                        triangles,
+                                                                                                                                        par.nn[0],
+                                                                                                                                        par.tt_from_rp,
+                                                                                                                                        nt);
+                    } else if ( foundR2 || foundR4 ) {
+                        if ( ! (foundR2 && foundR4 ) ) {
+                            std::cerr << "Error: Model should contain both r2 and r4 parameters" << std::endl; abort();
+                        }
+                        g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellWeaklyAnelliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
                                                                                                                                         triangles,
                                                                                                                                         par.nn[0],
                                                                                                                                         par.tt_from_rp,
@@ -2433,6 +2444,16 @@ namespace ttcr {
                 std::vector<T> theta;
                 reader.readVariable("theta", theta, constCells);
                 g->setTiltAngle(theta);
+            }
+            if ( foundR2 ) {
+                std::vector<T> r2;
+                reader.readVariable("r2", r2, constCells);
+                g->setR2(r2);
+            }
+            if ( foundR4 ) {
+                std::vector<T> r4;
+                reader.readVariable("r4", r4, constCells);
+                g->setR4(r4);
             }
         } catch (std::exception& e) {
             cerr << e.what() << endl;
