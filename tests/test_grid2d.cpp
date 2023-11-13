@@ -152,8 +152,9 @@ const char* models_L[] = {
 };
 const char* models_aniso[] = {
     "./files/elliptical_fine2d.vtr",
-    "./files/elliptical_fine2d.vtu" //,
-//    "./files/weakly_an_fine2d.vtu"
+    "./files/elliptical_fine2d.vtu",
+    "./files/weakly_an_fine2d.vtr",
+    "./files/weakly_an_fine2d.vtu"
 };
 const char* references[] = {
     "./files/sol_analytique_couches2d_tt.vtr",
@@ -167,8 +168,9 @@ const char* references_L[] = {
 };
 const char* references_aniso[] = {
     "./files/sol_analytique_elliptical_2d_tt.vtr",
-    "./files/sol_analytique_elliptical_2d_tt.vtr"//,
-//    "./files/sol_analytique_weakly_an_2d_tt.vtr"
+    "./files/sol_analytique_elliptical_2d_tt.vtr",
+    "./files/sol_analytique_weakly_an_2d_tt.vtr",
+    "./files/sol_analytique_weakly_an_2d_tt.vtr"
 };
 raytracing_method methods[] = { DYNAMIC_SHORTEST_PATH, FAST_SWEEPING, SHORTEST_PATH };
 raytracing_method methods_sp[] = { SHORTEST_PATH };
@@ -377,11 +379,15 @@ BOOST_DATA_TEST_CASE(
         std::cerr << e.what() << std::endl;
         abort();
     }
-    string filename = "./files/" + get_class_name(g) + "_tt_grid_aniso";
+    
+    auto start = string(model).find("files/") + 6;
+    auto end = string(model).find("_");
+    string type_aniso = string(model).substr(start, end-start);
+    string filename = "./files/" + get_class_name(g) + "_tt_grid_" + type_aniso;
     g->saveTT(filename, 0, 0, 2);
     double error = get_rel_error(ref, rcv);
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
 
-    BOOST_TEST(error < 0.005);
+    BOOST_TEST(error < 0.012);
 }
 

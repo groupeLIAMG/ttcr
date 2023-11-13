@@ -52,3 +52,5 @@ ttcr_io.o
 tests/files/*_rp.vtp
 
 tests/files/*_tt_grid.vt*
+
+ambiguity-as_used_for_manuscript.py

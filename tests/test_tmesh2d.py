@@ -204,9 +204,53 @@ class TestAniso(unittest.TestCase):
         tt = g.raytrace(self.src, self.rcv)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
-        tt_ref = get_tt('./files/Grid2Ducsp_tt_grid_aniso.vtu')
+        tt_ref = get_tt('./files/Grid2Ducsp_tt_grid_elliptical.vtu')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (elliptical anisotropy)')
+
+class TestWeakly(unittest.TestCase):
+
+    def setUp(self):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName('./files/weakly_an_fine2d.vtu')
+        reader.Update()
+
+        self.nodes = np.empty((reader.GetOutput().GetNumberOfPoints(), 2 ))
+        for n in range(reader.GetOutput().GetNumberOfPoints()):
+            x = reader.GetOutput().GetPoint(n)
+            self.nodes[n, 0] = x[0]
+            self.nodes[n, 1] = x[2]
+
+        self.tri = np.empty((reader.GetOutput().GetNumberOfCells(), 3 ),
+                            dtype=int)
+        ind = vtk.vtkIdList()
+        for n in range(reader.GetOutput().GetNumberOfCells()):
+            reader.GetOutput().GetCellPoints(n, ind)
+            self.tri[n, 0] = ind.GetId(0)
+            self.tri[n, 1] = ind.GetId(1)
+            self.tri[n, 2] = ind.GetId(2)
+
+        data = reader.GetOutput()
+        self.slowness = 1/vtk_to_numpy(data.GetCellData().GetArray('Velocity'))
+        self.r2 = vtk_to_numpy(data.GetCellData().GetArray('r2'))
+        self.r4 = vtk_to_numpy(data.GetCellData().GetArray('r4'))
+
+        self.src = np.loadtxt('./files/src2d.dat',skiprows=1)
+        # we roll because file has x z t0 and we want t0 x z
+        self.src = np.roll(self.src, 1).reshape((1, 3))
+        self.rcv = np.loadtxt('./files/rcv2daniso.dat',skiprows=1)
+
+    def test_Mesh2Dsp(self):
+        g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=10, aniso='weakly_anelliptical')
+        g.set_slowness(self.slowness)
+        g.set_r2(self.r2)
+        g.set_r4(self.r4)
+        tt = g.raytrace(self.src, self.rcv)
+        tt = g.get_grid_traveltimes()
+        tt = tt.flatten()
+        tt_ref = get_tt('./files/Grid2Ducsp_tt_grid_weakly.vtu')
+        self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
+                        'SPM accuracy failed (weakly anelliptical)')
 
 #
 # class Data_kernel(unittest.TestCase):

@@ -72,7 +72,6 @@ int body(const input_parameters &par) {
         extension = par.modelfile.substr(idx);
     }
 
-    //    Grid2Duc<T,uint32_t, Node3Dcsp<T,uint32_t>, sxyz<T>> *g=nullptr;
     Grid2D<T,uint32_t,sxyz<T>> *g=nullptr;
     if (extension == ".vtu") {
 #ifdef VTK
