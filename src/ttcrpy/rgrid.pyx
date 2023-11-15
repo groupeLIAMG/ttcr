@@ -1845,6 +1845,13 @@ cdef class Grid2d:
     tt_from_rp : bool
         compute traveltime using raypaths (available for FSM and DSPM only)
         (default is False)
+    
+    Notes
+    -----
+    For raytracing in anisotropic media, the convention for inputting slowness depends
+    on the model.  For elliptical anisotropy, the method `set_slowness` is used to input
+    horizontal slowness, while for weakly anelliptical anisotropy, the method is used
+    to input vertical slowness.
     """
     cdef vector[double] _x
     cdef vector[double] _z

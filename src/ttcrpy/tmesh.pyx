@@ -1202,6 +1202,13 @@ cdef class Mesh2d:
         length multiplied by this factor (default is 2)
     tt_from_rp : bool
         compute traveltimes using raypaths (default is False)
+
+    Notes
+    -----
+    For raytracing in anisotropic media, the convention for inputting slowness depends
+    on the model.  For elliptical anisotropy, the method `set_slowness` is used to input
+    horizontal slowness, while for weakly anelliptical anisotropy, the method is used
+    to input vertical slowness.
     """
     cdef bool cell_slowness
     cdef bool process_obtuse
