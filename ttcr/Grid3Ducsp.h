@@ -562,7 +562,7 @@ namespace ttcr {
                                                  threadNo);
 
             bool flag=false;
-            for ( size_t ns=0; ns<Tx.size(); ++n ) {
+            for ( size_t ns=0; ns<Tx.size(); ++ns ) {
                 if ( Rx[n] == Tx[ns] ) {
 
                     r_data[n].resize( 1 );
