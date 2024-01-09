@@ -29,6 +29,9 @@
 #include <vtkXMLRectilinearGridReader.h>
 #pragma clang diagnostic pop
 
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/SparseExtra>
+
 #include "Grid3D.h"
 #include "Rcv.h"
 #include "Src.h"
@@ -90,6 +93,10 @@ const char* models[] = {
     "./files/gradient_medium.vtr",
     "./files/layers_medium.vtu",
     "./files/gradient_medium.vtu"
+};
+const char* models_L[] = {
+    "./files/layers_medium.vtr",
+    "./files/layers_medium.vtu",
 };
 const char* references[] = {
     "./files/sol_analytique_couches_tt.vtr",
@@ -218,6 +225,85 @@ BOOST_DATA_TEST_CASE(
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << ", r_data - error = " << error );
 
     BOOST_TEST(error < 0.15);
+}
+
+BOOST_DATA_TEST_CASE(
+                     testGrid3D_L,
+                     bdata::make(models_L) * bdata::make(methods),
+                     model, method) {
+    Src<double> src("./files/src3d_in.dat");
+    src.init();
+    Rcv<double> rcv("./files/rcv3d_in.dat");
+    rcv.init(1);
+    
+    input_parameters par;
+    par.method = method;
+    switch(method) {
+        case FAST_SWEEPING:
+            par.weno3 = 1;
+            break;
+        case SHORTEST_PATH:
+            par.nn[0] = 5;
+            par.nn[1] = 5;
+            par.nn[2] = 5;
+            break;
+        case DYNAMIC_SHORTEST_PATH:
+            par.radius_tertiary_nodes = 3.0;
+            par.nn[0] = 2;
+            par.nn[1] = 2;
+            par.nn[2] = 2;
+            break;
+        default:
+            // do nothing
+            break;
+    }
+    par.modelfile = model;
+    Grid3D<double,uint32_t> *g;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear3DfromVtr<double>(par, 1);
+    } else {
+        g = buildUnstructured3DfromVtu<double>(par, 1);
+    }
+    vector<vector<siv<double>>> l_data;
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0), l_data);
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    
+    vector<double> slo;
+    g->getSlowness(slo);
+    Eigen::SparseMatrix<double> L(l_data.size(), slo.size());
+    vector<Eigen::Triplet<double>> coeff;
+    for ( auto n=0; n<l_data.size(); ++n ) {
+        for ( auto nn=0; nn<l_data[n].size(); ++nn ) {
+            coeff.push_back(Eigen::Triplet<double>(n, l_data[n][nn].i, l_data[n][nn].v));
+        }
+    }
+    L.setFromTriplets(coeff.begin(), coeff.end());
+    
+    saveMarket(L, "./"+get_class_name(g)+"_L");
+    
+    Eigen::VectorXd s(slo.size());
+    for ( auto n=0; n<slo.size(); ++n )
+        s[n] = slo[n];
+    Eigen::VectorXd tt1 = L * s;
+    auto tt2 = rcv.get_tt(0);
+    
+    double error = 0.0;
+    size_t nn = 0;
+    for ( auto n=0; n<tt2.size(); ++n ) {
+        if ( tt2[n] == 0.0 )
+            continue;
+        error += std::abs(tt1[n] - tt2[n]) / tt2[n];
+        nn++;
+    }
+    error /= nn;
+
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << ", l_data - error = " << error );
+
+    BOOST_TEST(error < 0.05);
 }
 
 BOOST_DATA_TEST_CASE(

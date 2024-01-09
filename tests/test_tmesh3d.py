@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
+from scipy.io import mmread
 
 import ttcrpy.tmesh as tm
 
@@ -50,7 +51,7 @@ class TestMesh3Dc(unittest.TestCase):
         self.slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
 
         self.src = np.loadtxt('./files/src.dat',skiprows=1)
-        self.src = self.src.reshape((1, 4))
+        self.src = np.roll(self.src, 1).reshape((1, 4))
         self.rcv = np.loadtxt('./files/rcv.dat',skiprows=1)
 
     def test_Mesh3Dfs(self):
@@ -83,6 +84,62 @@ class TestMesh3Dc(unittest.TestCase):
                         'DSPM accuracy failed (slowness in cells)')
 
 
+class TestMesh3Dc_L(unittest.TestCase):
+
+    def setUp(self):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName('./files/layers_medium.vtu')
+        reader.Update()
+
+        self.nodes = np.empty((reader.GetOutput().GetNumberOfPoints(), 3 ))
+        for n in range(reader.GetOutput().GetNumberOfPoints()):
+            x = reader.GetOutput().GetPoint(n)
+            self.nodes[n, 0] = x[0]
+            self.nodes[n, 1] = x[1]
+            self.nodes[n, 2] = x[2]
+
+        self.tet = np.empty((reader.GetOutput().GetNumberOfCells(), 4 ), dtype=int)
+        ind = vtk.vtkIdList()
+        for n in range(reader.GetOutput().GetNumberOfCells()):
+            reader.GetOutput().GetCellPoints(n, ind)
+            self.tet[n, 0] = ind.GetId(0)
+            self.tet[n, 1] = ind.GetId(1)
+            self.tet[n, 2] = ind.GetId(2)
+            self.tet[n, 3] = ind.GetId(3)
+
+        data = reader.GetOutput()
+        self.slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+
+        self.src = np.loadtxt('./files/src3d_in.dat', skiprows=1)
+        self.src = np.roll(self.src, 1).reshape((1, 4))
+        self.rcv = np.loadtxt('./files/rcv3d_in.dat', skiprows=1)
+
+    def test_Mesh3Dfs(self):
+        g = tm.Mesh3d(self.nodes, self.tet, method='FSM', tt_from_rp=0)
+        tt, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
+        tt2 = L @ self.slowness
+        ind = tt2 != 0.0
+        err = np.sum(np.abs(tt[ind]-tt2[ind]) / tt2[ind]) / tt2[ind].size
+        self.assertLess(err, 0.01, 'FSM (L) accuracy failed (slowness in cells)')
+
+    def test_Mesh3Dsp(self):
+        g = tm.Mesh3d(self.nodes, self.tet, method='SPM', n_secondary=5, tt_from_rp=0)
+        tt, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
+        tt2 = L @ self.slowness
+        ind = tt2 != 0.0
+        err = np.sum(np.abs(tt[ind]-tt2[ind]) / tt2[ind]) / tt2[ind].size
+        self.assertLess(err, 0.01, 'SPM (L) accuracy failed (slowness in cells)')
+
+    def test_Mesh3Ddsp(self):
+        g = tm.Mesh3d(self.nodes, self.tet, method='DSPM', n_secondary=2,
+                      n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0)
+        tt, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
+        tt2 = L @ self.slowness
+        ind = tt2 != 0.0
+        err = np.sum(np.abs(tt[ind]-tt2[ind]) / tt2[ind]) / tt2[ind].size
+        self.assertLess(err, 0.01, 'DSPM (L) accuracy failed (slowness in cells)')
+
+
 class TestMesh3Dn(unittest.TestCase):
 
     def setUp(self):
@@ -110,7 +167,7 @@ class TestMesh3Dn(unittest.TestCase):
         self.slowness = vtk_to_numpy(data.GetPointData().GetArray('Slowness'))
 
         self.src = np.loadtxt('./files/src.dat',skiprows=1)
-        self.src = self.src.reshape((1, 4))
+        self.src = np.roll(self.src, 1).reshape((1, 4))
         self.rcv = np.loadtxt('./files/rcv.dat',skiprows=1)
 
     def test_Mesh3Dfs(self):
