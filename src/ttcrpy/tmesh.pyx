@@ -731,7 +731,7 @@ cdef class Mesh3d:
         vt0.resize(nTx)
         vtt.resize(nTx)
         if compute_L and self.cell_slowness:
-            raise NotImplementedError('compute_L not implemented for mesh with slowness defined in cells')
+            l_data.resize(nTx)
         elif compute_L and not self.cell_slowness:
             m_data.resize(nTx)
 
@@ -905,7 +905,39 @@ cdef class Mesh3d:
                 indptr[index] = k
                 L.append(sp.csr_matrix((val, indices, indptr),
                          shape=(indptr.size - 1, NN)))
+        
+        if compute_L and self.cell_slowness:
+            L = []
+            NN = self.get_number_of_cells()
+            for n in range(nTx):
+                nnz = 0
+                for ni in range(l_data[n].size()):
+                    nnz += l_data[n][ni].size()
+                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                indices = np.empty((nnz,), dtype=np.int64)
+                val = np.empty((nnz,))
 
+                k = 0
+                MM = vRx[n].size()
+                for i in range(MM):
+                    indptr[i] = k
+                    for nn in range(l_data[n][i].size()):
+                        indices[k] = l_data[n][i][nn].i
+                        val[k] = l_data[n][i][nn].v
+                        k += 1
+
+                indptr[MM] = k
+                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+
+            if evID is None:
+                # we want a single matrix
+                tmp = sp.vstack(L)
+                itmp = []
+                for n in range(nTx):
+                    for nt in range(vtt[n].size()):
+                        itmp.append(iRx[n][nt])
+                L = tmp[itmp,:]
+            
         if compute_L==False and return_rays==False:
             return tt
         elif compute_L and return_rays:
