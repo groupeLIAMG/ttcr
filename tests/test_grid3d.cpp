@@ -283,11 +283,15 @@ BOOST_DATA_TEST_CASE(
     }
     L.setFromTriplets(coeff.begin(), coeff.end());
     
-    saveMarket(L, "./"+get_class_name(g)+"_L");
+    saveMarket(L, "./files/"+get_class_name(g)+"_L");
+    ofstream fout("./files/"+get_class_name(g)+"_slo");
     
     Eigen::VectorXd s(slo.size());
-    for ( auto n=0; n<slo.size(); ++n )
+    for ( auto n=0; n<slo.size(); ++n ) {
         s[n] = slo[n];
+        fout << slo[n] << '\n';
+    }
+    fout.close();
     Eigen::VectorXd tt1 = L * s;
     auto tt2 = rcv.get_tt(0);
     

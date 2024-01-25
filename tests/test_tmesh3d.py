@@ -116,28 +116,28 @@ class TestMesh3Dc_L(unittest.TestCase):
 
     def test_Mesh3Dfs(self):
         g = tm.Mesh3d(self.nodes, self.tet, method='FSM', tt_from_rp=0)
-        tt, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
-        tt2 = L @ self.slowness
-        ind = tt2 != 0.0
-        err = np.sum(np.abs(tt[ind]-tt2[ind]) / tt2[ind]) / tt2[ind].size
-        self.assertLess(err, 0.01, 'FSM (L) accuracy failed (slowness in cells)')
+        _, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
+        L2 = mmread('./files/Grid3Ducfs_L')
+        dL = L - L2
+        err = np.sum(np.abs(dL))
+        self.assertLess(err, 0.0001, 'FSM (L) accuracy failed (slowness in cells)')
 
     def test_Mesh3Dsp(self):
         g = tm.Mesh3d(self.nodes, self.tet, method='SPM', n_secondary=5, tt_from_rp=0)
-        tt, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
-        tt2 = L @ self.slowness
-        ind = tt2 != 0.0
-        err = np.sum(np.abs(tt[ind]-tt2[ind]) / tt2[ind]) / tt2[ind].size
-        self.assertLess(err, 0.01, 'SPM (L) accuracy failed (slowness in cells)')
+        _, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
+        L2 = mmread('./files/Grid3Ducsp_L')
+        dL = L - L2
+        err = np.sum(np.abs(dL))
+        self.assertLess(err, 0.0001, 'SPM (L) accuracy failed (slowness in cells)')
 
     def test_Mesh3Ddsp(self):
         g = tm.Mesh3d(self.nodes, self.tet, method='DSPM', n_secondary=2,
                       n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0)
-        tt, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
-        tt2 = L @ self.slowness
-        ind = tt2 != 0.0
-        err = np.sum(np.abs(tt[ind]-tt2[ind]) / tt2[ind]) / tt2[ind].size
-        self.assertLess(err, 0.01, 'DSPM (L) accuracy failed (slowness in cells)')
+        _, L = g.raytrace(self.src, self.rcv, slowness=self.slowness, compute_L=True)
+        L2 = mmread('./files/Grid3Ducdsp_L')
+        dL = L - L2
+        err = np.sum(np.abs(dL))
+        self.assertLess(err, 0.0001, 'DSPM (L) accuracy failed (slowness in cells)')
 
 
 class TestMesh3Dn(unittest.TestCase):

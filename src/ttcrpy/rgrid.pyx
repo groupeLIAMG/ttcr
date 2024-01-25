@@ -876,6 +876,9 @@ cdef class Grid3d:
 
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
+            
+        if compute_L and self.method == b'f':
+            raise NotImplementedError('compute_L defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:
@@ -1085,6 +1088,7 @@ cdef class Grid3d:
 
             # we build an array of matrices, for each event
             L = []
+            NN = self.get_number_of_cells()
             for n in range(nTx):
                 nnz = 0
                 for ni in range(l_data[n].size()):
@@ -1095,15 +1099,17 @@ cdef class Grid3d:
 
                 k = 0
                 MM = vRx[n].size()
-                NN = self.get_number_of_cells()
                 for i in range(MM):
                     indptr[i] = k
-                    for j in range(NN):
-                        for nn in range(l_data[n][i].size()):
-                            if self._f2c_ind(l_data[n][i][nn].i) == j:
-                                indices[k] = j
-                                val[k] = l_data[n][i][nn].v
-                                k += 1
+#                    for j in range(NN):
+                    for nn in range(l_data[n][i].size()):
+                        indices[k] = self._f2c_ind(l_data[n][i][nn].i)
+                        val[k] = l_data[n][i][nn].v
+                        k += 1
+#                            if self._f2c_ind(l_data[n][i][nn].i) == j:
+#                                indices[k] = j
+#                                val[k] = l_data[n][i][nn].v
+#                                k += 1
 
                 indptr[MM] = k
                 L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
