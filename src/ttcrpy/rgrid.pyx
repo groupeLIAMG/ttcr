@@ -577,7 +577,7 @@ cdef class Grid3d:
             raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
 
-    def compute_D(self, coord):
+    def compute_D(self, np.ndarray[np.double_t, ndim=2] coord):
         """
         compute_D(coord)
 
@@ -593,6 +593,11 @@ cdef class Grid3d:
         -------
         D : scipy csr_matrix, shape (npts, nparams)
             Matrix of interpolation weights
+
+        Note
+        ----
+        In the current implementation, no check is made to see if the coordinates
+        are on a node, edge, face, or corner.
         """
         if self.is_outside(coord):
             raise ValueError('Velocity data point outside grid')
@@ -608,8 +613,8 @@ cdef class Grid3d:
             vec = np.ones(ivec.shape)
             for n in np.arange(coord.shape[0]):
                 i = int((coord[n,0]-self.x[0])/self._dx )
-                j = int((coord[n,1]-self.y[0])/self._dx )
-                k = int((coord[n,2]-self.z[0])/self._dx )
+                j = int((coord[n,1]-self.y[0])/self._dy )
+                k = int((coord[n,2]-self.z[0])/self._dz )
 
                 jvec[n] = self.indc(i,j,k)
 
@@ -2565,6 +2570,71 @@ cdef class Grid2d:
         else:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setR4(data)
+        
+    def compute_D(self, np.ndarray[np.double_t, ndim=2] coord):
+        """
+        compute_D(coord)
+
+        Return matrix of interpolation weights for velocity data points
+        constraint
+
+        Parameters
+        ----------
+        coord : np.ndarray, shape (npts, 2)
+            coordinates of data points
+
+        Returns
+        -------
+        D : scipy csr_matrix, shape (npts, nparams)
+            Matrix of interpolation weights
+            
+        Note
+        ----
+        In the current implementation, no check is made to see if the coordinates
+        are on a node, edge, or corner.
+        """
+        if self.is_outside(coord):
+            raise ValueError('Velocity data point outside grid')
+            
+        # D is npts x nparams
+
+        cdef Py_ssize_t n, i, k, i1, i2, k1, k2, ii
+        
+        if self.cell_slowness:
+            # for each point in coord, we have 1 values in D
+            ivec = np.arange(coord.shape[0], dtype=np.int64)
+            jvec = np.zeros(ivec.shape, dtype=np.int64)
+            vec = np.ones(ivec.shape)
+            for n in np.arange(coord.shape[0]):
+                i = int((coord[n,0]-self.x[0])/self._dx )
+                k = int((coord[n,1]-self.z[0])/self._dz )
+
+                jvec[n] = i * (self._z.size()-1) + k
+
+            return sp.csr_matrix((vec, (ivec,jvec)),
+                                 shape=(coord.shape[0], self.get_number_of_cells()))
+        else:
+            # for each point in coord, we have 4 values in D
+            ivec = np.kron(np.arange(coord.shape[0], dtype=np.int64),np.ones(4, dtype=np.int64))
+            jvec = np.zeros(ivec.shape, dtype=np.int64)
+            vec = np.zeros(ivec.shape)
+            for n in np.arange(coord.shape[0]):
+                i1 = int(1.e-6 + (coord[n,0]-self._x[0])/self._dx )
+                i2 = i1 + 1
+                k1 = int(1.e-6 + (coord[n,1]-self._z[0])/self._dz )
+                k2 = k1 + 1
+
+                ii = 0
+                for i in (i1, i2):
+                    for k in (k1, k2):
+                        jvec[n*4+ii] = i * self._z.size() + k
+                        vec[n*4+ii] = ((1. - np.abs(coord[n,0]-self._x[i])/self._dx) *
+                                       (1. - np.abs(coord[n,1]-self._z[k])/self._dz))
+                        ii += 1
+
+            return sp.csr_matrix((vec, (ivec,jvec)),
+                                 shape=(coord.shape[0], self.get_number_of_nodes()))
+            
 
     def compute_K(self, order=1):
         """

@@ -216,7 +216,83 @@ class TestWeakly(unittest.TestCase):
         tt_ref = get_tt('./files/Grid2Drcsp_tt_grid_weakly.vtr')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (weakly anelliptical)')
+#
 
+class TestComputeD(unittest.TestCase):
+
+    def test_cell_slowness(self):
+        reader = vtk.vtkXMLRectilinearGridReader()
+
+        reader.SetFileName('./files/layers_fine2d.vtr')
+        reader.Update()
+
+        data = reader.GetOutput()
+        x = vtk_to_numpy(data.GetXCoordinates())
+        z = vtk_to_numpy(data.GetZCoordinates())
+
+        slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+        dim = (x.size - 1, z.size - 1)
+        slowness = slowness.reshape(dim, order='F').flatten()
+
+        g = rg.Grid2d(x, z, method='FSM')
+
+        rng = np.random.default_rng()
+        coord = np.c_[rng.uniform(0.001, 20.0, 100), rng.uniform(0.001, 20.0, 100)]
+        D = g.compute_D(coord)
+        s1 = D @ slowness
+
+        pts = vtk.vtkPoints()
+        for n in range(coord.shape[0]):
+            pts.InsertNextPoint(coord[n, 0], 0.0, coord[n, 1])
+
+        ppts = vtk.vtkPolyData()
+        ppts.SetPoints(pts)
+
+        pf = vtk.vtkProbeFilter()
+        pf.SetInputData(ppts)
+        pf.SetSourceData(data)
+        pf.Update()
+
+        s2 = vtk_to_numpy(pf.GetOutput().GetPointData().GetArray('Slowness'))
+
+        self.assertAlmostEqual(np.sum(np.abs(s1 - s2)), 0.0)
+
+    def test_node_slowness(self):
+        reader = vtk.vtkXMLRectilinearGridReader()
+
+        reader.SetFileName('./files/gradient_fine2d.vtr')
+        reader.Update()
+
+        data = reader.GetOutput()
+        x = vtk_to_numpy(data.GetXCoordinates())
+        z = vtk_to_numpy(data.GetZCoordinates())
+
+        slowness = vtk_to_numpy(data.GetPointData().GetArray('Slowness'))
+        dim = (x.size, z.size)
+        slowness = slowness.reshape(dim, order='F').flatten()
+
+        g = rg.Grid2d(x, z, method='FSM', cell_slowness=0)
+
+        rng = np.random.default_rng()
+        coord = np.c_[rng.uniform(0.001, 20.0, 100), rng.uniform(0.001, 20.0, 100)]
+        D = g.compute_D(coord)
+        s1 = D @ slowness
+
+        pts = vtk.vtkPoints()
+        for n in range(coord.shape[0]):
+            pts.InsertNextPoint(coord[n, 0], 0.0, coord[n, 1])
+
+        ppts = vtk.vtkPolyData()
+        ppts.SetPoints(pts)
+
+        interpolator = vtk.vtkPointInterpolator()
+        interpolator.SetInputData(ppts)
+        interpolator.SetSourceData(data)
+        interpolator.Update()
+
+        s2 = vtk_to_numpy(interpolator.GetOutput().GetPointData().GetArray('Slowness'))
+
+        self.assertLess(np.sum(np.abs(s1-s2))/coord.shape[0], 0.01, "compute_D accuracy failed slowness at nodes")
 
 class Data_kernel(unittest.TestCase):
 
