@@ -56,3 +56,5 @@ tests/files/*_tt_grid.vt*
 ambiguity-as_used_for_manuscript.py
 
 tests/.idea/
+
+tests/files/__pycache__/
