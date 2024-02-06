@@ -208,6 +208,10 @@ namespace ttcr {
                 os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
             }
         }
+        
+        T1 computeSlowness(const S& pt) const {
+            return cells.getSlowness(getCellNo(pt));
+        }
 
     protected:
         T1 dx;           // cell size in x

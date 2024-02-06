@@ -356,6 +356,16 @@ namespace ttcr {
         virtual void getTriangles(std::vector<std::vector<T2>>&) const {
             throw std::runtime_error("Method getTriangles should be implemented in subclass");
         }
+        
+        /**
+         * compute slowness at given point
+         *
+         * @param pt point to consider
+         * @returns slowness value
+         */
+        virtual T1 computeSlowness(const S& pt) const {
+            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+        }
 
         void setUsePool(const bool up) {
             usePool = up;
@@ -370,7 +380,7 @@ namespace ttcr {
         }
 
         virtual const T1 getAverageEdgeLength() const {
-            throw std::runtime_error("Method computeSlowness should be implemented in subclass");
+            throw std::runtime_error("Method getAverageEdgeLength should be implemented in subclass");
         }
 
 #ifdef VTK

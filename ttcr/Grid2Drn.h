@@ -47,6 +47,7 @@
 #include <boost/math/special_functions/sign.hpp>
 
 #include "Grid2D.h"
+#include "Interpolator.h"
 
 namespace ttcr {
 
@@ -128,6 +129,8 @@ namespace ttcr {
         const T1 getDz() const { return dz; }
         const T2 getNcx() const { return ncx; }
         const T2 getNcz() const { return ncz; }
+        
+        T1 computeSlowness(const S& pt) const;
 
     protected:
         T1 dx;           // cell size in x
@@ -262,6 +265,77 @@ namespace ttcr {
                         T1 &tt,
                         const size_t threadNo) const final;
     };
+
+    template<typename T1, typename T2, typename S, typename NODE>
+    T1 Grid2Drn<T1,T2,S,NODE>::computeSlowness(const S& pt) const {
+        const size_t nnx = ncx+1;
+        const size_t nnz = ncz+1;
+
+        // are we on an node or an edge?
+        ptrdiff_t onX = -1;
+        ptrdiff_t onZ = -1;
+        for ( size_t n=0; n<nnx; ++n ) {
+            if ( std::abs(pt.x - (xmin+n*dx)) < small2 ) {
+                onX = n;
+                break;
+            }
+        }
+        for ( size_t n=0; n<nnz; ++n ) {
+            if ( std::abs(pt.z - (zmin+n*dz)) < small2 ) {
+                onZ = n;
+                break;
+            }
+        }
+
+        if ( onX!=-1 && onZ!=-1 ) {
+            return nodes[onX*nnz + onZ].getNodeSlowness();
+
+        } else if ( onX!=-1 ) {
+            T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            T1 s[2];
+            T1 x[3];
+            s[0] = nodes[onX*nnz + k  ].getNodeSlowness();
+            s[1] = nodes[onX*nnz + k+1].getNodeSlowness();
+            x[0] = pt.z;
+            x[1] = zmin + k*dz;
+            x[2] = zmin + (k+1)*dz;
+
+            return Interpolator<T1>::linear(x, s);
+
+        } else if ( onZ!=-1 ) {
+            T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            T1 s[2];
+            T1 x[3];
+            s[0] = nodes[i*nnz     + onZ].getNodeSlowness();
+            s[1] = nodes[(i+1)*nnz + onZ].getNodeSlowness();
+            x[0] = pt.x;
+            x[1] = xmin + i*dx;
+            x[2] = xmin + (i+1)*dx;
+
+            return Interpolator<T1>::linear(x, s);
+
+        } else {
+            T2 i = static_cast<T2>( small + (pt.x-xmin)/dx );
+            T2 k = static_cast<T2>( small + (pt.z-zmin)/dz );
+            T1 s[4];
+            T1 x[3];
+            T1 z[3];
+
+            s[0] = nodes[i*nnz     + k  ].getNodeSlowness();
+            s[1] = nodes[i*nnz     + k+1].getNodeSlowness();
+            s[2] = nodes[(i+1)*nnz + k  ].getNodeSlowness();
+            s[3] = nodes[(i+1)*nnz + k+1].getNodeSlowness();
+            x[0] = pt.x;
+            z[0] = pt.z;
+            x[1] = xmin + i*dx;
+            z[1] = zmin + k*dz;
+            x[2] = xmin + (i+1)*dx;
+            z[2] = zmin + (k+1)*dz;
+
+            return Interpolator<T1>::bilinear(x, z, s);
+
+        }
+    }
 
     template<typename T1, typename T2, typename S, typename NODE>
     void Grid2Drn<T1,T2,S,NODE>::checkPts(const std::vector<S>& pts) const {

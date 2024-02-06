@@ -2739,6 +2739,76 @@ cdef class Grid2d:
             raise ValueError('order value not valid (1 or 2 accepted)')
 
         return Kx, Kz
+        
+    def get_s0(self, hypo, slowness=None):
+        """
+        get_s0(hypo, slowness=None)
+
+        Return slowness at source points
+
+        Parameters
+        ----------
+        hypo : np.ndarray with 5 columns
+            hypo holds source information, i.e.
+                - 1st column is event ID number
+                - 2nd column is origin time
+                - 3rd column is source easting (X)
+                - 4th column is source elevation (Z)
+
+        slowness : np ndarray, shape (nx, nz) (optional)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+
+        Returns
+        -------
+        s0 : np.ndarray
+            slowness at source points
+        """
+
+        cdef Py_ssize_t n, nn
+
+        if hypo.shape[1] != 4:
+            raise ValueError('hypo should be npts x 4')
+        src = hypo[:,2:4]
+        evID = hypo[:,0]
+        eid = np.sort(np.unique(evID))
+        nTx = len(eid)
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+
+        i0 = np.empty((nTx,), dtype=np.int64)
+        for n in range(nTx):
+            for nn in range(evID.size):
+                if eid[n] == evID[nn]:
+                    i0[n] = nn
+                    break
+
+        cdef vector[vector[sxz[double]]] vTx
+        vTx.resize(nTx)
+
+        iTx = []
+        i0 = 0
+        for n in range(nTx):
+            for nn in range(evID.size):
+                if eid[n] == evID[nn]:
+                    i0 = nn
+                    break
+            vTx[n].push_back(sxz[double](src[i0,0], src[i0,1]))
+
+        for i in eid:
+            ii = evID == i
+            iTx.append(np.nonzero(ii)[0])
+
+        s0 = np.zeros((src.shape[0],))
+
+        for n in range(nTx):
+            s = 0.0
+            for nn in range(vTx[n].size()):
+                s += self.grid.computeSlowness(vTx[n][nn])
+            s0[iTx[n]] = s/vTx[n].size()
+        return s0
+
 
     def raytrace(self, source, rcv, slowness=None, xi=None, theta=None,
                  Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
