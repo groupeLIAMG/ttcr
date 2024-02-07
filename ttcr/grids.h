@@ -1729,8 +1729,8 @@ namespace ttcr {
         std::vector<T> xi;
         std::vector<T> theta;
         std::vector<T> v0;
-        std::vector<T> r2;
-        std::vector<T> r4;
+        std::vector<T> s2;
+        std::vector<T> s4;
         if ( pd->HasArray("P-wave velocity") ||
             pd->HasArray("Velocity") ||
             pd->HasArray("Slowness") ) {  // properties defined at nodes
@@ -1893,8 +1893,8 @@ namespace ttcr {
 
             bool foundXi = false;
             bool foundTheta = false;
-            bool foundR2 = false;
-            bool foundR4 = false;
+            bool foundS2 = false;
+            bool foundS4 = false;
 
             for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
@@ -1909,48 +1909,48 @@ namespace ttcr {
                     }
                     foundSlowness = true;
                     
-                    if ( cd->HasArray("r2") ) {
+                    if ( cd->HasArray("s2") ) {
 
                         vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("r2") );
+                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("s2") );
 
                         if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with r2 data (wrong size)" << std::endl;
+                            std::cout << "Problem with s2 data (wrong size)" << std::endl;
                             return nullptr;
                         }
 
-                        r2.resize( x->GetSize() );
+                        s2.resize( x->GetSize() );
                         for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                             for ( size_t k=0; k<ncells[2]; ++k,++n ) {
                                 // VTK: x is fast axis, we want z as fast axis
                                 vtkIdType ii = k * ncells[0] + i;
-                                r2[n] = x->GetComponent(ii, 0);
+                                s2[n] = x->GetComponent(ii, 0);
                             }
                         }
-                        foundR2 = true;
-                        if ( verbose ) { cout << "Model contains phase-velocity parameter r2\n"; }
+                        foundS2 = true;
+                        if ( verbose ) { cout << "Model contains energy-velocity parameter s2\n"; }
                     }
                     
-                    if ( cd->HasArray("r4") ) {
+                    if ( cd->HasArray("s4") ) {
 
                         vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("r4") );
+                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("s4") );
 
                         if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with r4 data (wrong size)" << std::endl;
+                            std::cout << "Problem with s4 data (wrong size)" << std::endl;
                             return nullptr;
                         }
 
-                        r4.resize( x->GetSize() );
+                        s4.resize( x->GetSize() );
                         for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                             for ( size_t k=0; k<ncells[2]; ++k,++n ) {
                                 // VTK: x is fast axis, we want z as fast axis
                                 vtkIdType ii = k * ncells[0] + i;
-                                r4[n] = x->GetComponent(ii, 0);
+                                s4[n] = x->GetComponent(ii, 0);
                             }
                         }
-                        foundR4 = true;
-                        if ( verbose ) { cout << "Model contains phase-velocity parameter r4\n"; }
+                        foundS4 = true;
+                        if ( verbose ) { cout << "Model contains energy-velocity parameter s4\n"; }
                     }
                     break;
                 } else if ( strcmp(cd->GetArrayName(na), "Slowness")==0 ) {
@@ -2039,13 +2039,13 @@ namespace ttcr {
                                                                                                                        par.tt_from_rp,
                                                                                                                        nt);
                             
-                        } else if ( foundR2 || foundR4) {
-                            if ( !foundR2 ) {
-                                std::cout << "Error: phase-velocity parameter r2 not found" << std::endl;
+                        } else if ( foundS2 || foundS4) {
+                            if ( !foundS2 ) {
+                                std::cout << "Error: energy-velocity parameter s2 not found" << std::endl;
                                 return nullptr;
                             }
-                            if ( !foundR4 ) {
-                                std::cout << "Error: phase-velocity parameter r4 not found" << std::endl;
+                            if ( !foundS4 ) {
+                                std::cout << "Error: energy-velocity parameter s4 not found" << std::endl;
                                 return nullptr;
                             }
                             g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellWeaklyAnelliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
@@ -2091,10 +2091,10 @@ namespace ttcr {
                                 std::abort();
                             }
                         }
-                        if ( foundR2 ) {
+                        if ( foundS2 ) {
                             try {
-                                g->setR2( r2 );
-                                g->setR4( r4 );
+                                g->setS2( s2 );
+                                g->setS4( s4 );
                             } catch (std::exception& e) {
                                 cerr << e.what() << endl;
                                 std::cerr << "aborting";
@@ -2229,8 +2229,8 @@ namespace ttcr {
         bool constCells = reader.isConstCell();
         bool foundXi = reader.hasVariable<T>("xi", constCells);
         bool foundTheta = reader.hasVariable<T>("theta", constCells);
-        bool foundR2 = reader.hasVariable<T>("r2", constCells);
-        bool foundR4 = reader.hasVariable<T>("r4", constCells);
+        bool foundS2 = reader.hasVariable<T>("s2", constCells);
+        bool foundS4 = reader.hasVariable<T>("s4", constCells);
 
         std::vector<T> slowness;
         if ( constCells )
@@ -2287,9 +2287,9 @@ namespace ttcr {
                                                                                                                                         par.nn[0],
                                                                                                                                         par.tt_from_rp,
                                                                                                                                         nt);
-                    } else if ( foundR2 || foundR4 ) {
-                        if ( ! (foundR2 && foundR4 ) ) {
-                            std::cerr << "Error: Model should contain both r2 and r4 parameters" << std::endl; abort();
+                    } else if ( foundS2 || foundS4 ) {
+                        if ( ! (foundS2 && foundS4 ) ) {
+                            std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl; abort();
                         }
                         g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellWeaklyAnelliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
                                                                                                                                         triangles,
@@ -2445,15 +2445,15 @@ namespace ttcr {
                 reader.readVariable("theta", theta, constCells);
                 g->setTiltAngle(theta);
             }
-            if ( foundR2 ) {
-                std::vector<T> r2;
-                reader.readVariable("r2", r2, constCells);
-                g->setR2(r2);
+            if ( foundS2 ) {
+                std::vector<T> s2;
+                reader.readVariable("s2", s2, constCells);
+                g->setS2(s2);
             }
-            if ( foundR4 ) {
-                std::vector<T> r4;
-                reader.readVariable("r4", r4, constCells);
-                g->setR4(r4);
+            if ( foundS4 ) {
+                std::vector<T> s4;
+                reader.readVariable("s4", s4, constCells);
+                g->setS4(s4);
             }
         } catch (std::exception& e) {
             cerr << e.what() << endl;

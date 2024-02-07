@@ -5,8 +5,8 @@ Computing traveltimes in a homogeneous medium for a 3-term phase velocity.
 
 @author: Björn Rommel
 @email: rommel@seisrock.com
-@version: 1.0.0
-@date: 12.11.2023
+@version: 1.1.0
+@date: 22.11.2023
 """
 
 
@@ -30,16 +30,21 @@ EPSILON = 0.225             # Thomsen's epsilon
 
 
 # Switch plots on/off
-VELPLOT = True    # plot energy velocity
-TIMEPLOT = True   # plot offset-time if more than 1 sample
+VELPLOT = True         # plot energy velocity
+TIMEPLOT = True        # plot offset-time if more than 1 sample
+SEG = True             # follow SEG guideline
+FIGWIDTH = 3.537       # width of figure: 1 column of a Geophysics paper
+FIGHEIGHT = FIGWIDTH   # width of figure
+
 
 # Define the geometry source-to-receiver in a homogenous medium
 # ... to create traveltime-offset plot
-XXX1 = [0. + iii * 10 for iii in range(201)]   # equally spaced receivers
-ZZZ1 = [1875.] * 201                           # at constant vertical distance
+XXX1 = [0. + iii * 5 for iii in range(401)]   # equally spaced receivers
+ZZZ1 = [1875.] * 401                          # at constant vertical distance
 # ... for a single event
 XXX2 = 1875.
 ZZZ2 = 1875.
+
 
 # Usage
 # There is no easy way to compute the phase velocity for a given propagation
@@ -73,7 +78,16 @@ ZZZ2 = 1875.
 # ###       xxx=XXX, zzz=ZZZ, scs=scs)
 
 # You can replace wavetype='P' with wavetype='SV' for an SV-wave, but, here,
-# Dog Creek Shale shows a triplication that cannot yet be handled.
+# Dog Creek Shale shows a false triplication that cannot yet be handled.
+
+
+# Definition of Generic Anisotropy Parameters
+# This program was written for use with ttcpry, and in ray-tracing we use the
+# linearized phase velocity v = v0 (1 + r2 * sin(theta)^2 + r4 * sin(theta)*4).
+# Note, this version differs from the one used in the paper; that one is based
+# on the squared phase velocity. Hence. (r2, r4), here, are
+# 1/2 * (r2, r4) of the paper!
+# (https://github.com/groupeLIAMG/ttcr)
 
 
 # --- do not change unless you know --- do not change unless you know --- do
@@ -86,6 +100,63 @@ END = +180.     # last incidence angle (float)
 
 
 # --- functions --- functions --- functions --- functions --- functions ---
+
+
+def precompute(
+        vp0=VP0, vs0=VS0, delta=DELTA, epsilon=EPSILON, wavetype='P',
+        v00=VP0, rrr=None):
+    """
+    Compute an interpolation polynomial for the energy velocity.
+
+    Inputs
+    ------
+        vp0, vs0, delta, epsilon, wavetype   # Thomsen's anisotropy parameters
+        v00, rrr                             # generic anisotropy parameters
+
+    Parameters
+    ----------
+    vp0 : float
+        P-reference phase velocity. The default is VP0.
+    vs0 : float
+        S-reference phase velocity. The default is VS0.
+    delta : float
+        Thomsen's anisotropy parameter delta. The default is DELTA.
+    epsilon : float
+        Thomsen's anisotropy parameter epsilon. The default is EPSILON.
+    v00 : float
+        Generic reference velocity
+    rrr : np.array ([5])
+        Generic anisotropy parameters
+    wavetype : char ('P' or 'SV')
+        P- or SV wavetype requested. The default is a P-wave
+
+    Returns
+    -------
+    scs : PPoly
+        Cubic spline interpolation.
+        See https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.CubicSpline.html
+
+    """
+    # pylint:disable=too-many-arguments
+    # compute the series of incidence angles
+    rad = angleseries(start=START, end=END, nos=NOS)
+    # compute generic anisotropy parameters for a P-wave
+    if rrr is None:
+        v00, rrr = (
+            thomsen2generic(
+                vp0=vp0, vs0=vs0, delta=delta, epsilon=epsilon,
+                wavetype=wavetype))
+    # compute phase velocity
+    phase = phasevelocity(v00=v00, rrr=rrr, rad=rad)
+    # compute energy velocity
+    energy = energyvelocity(phase=phase)
+    # compute the interpolation polynom
+    scs = si.CubicSpline(energy['rad'], energy['mag'], bc_type='periodic')
+    # plot energy velocity
+    if VELPLOT:
+        polarplot(vel=energy)   # comment out if not desired
+    # return interpolation polynom
+    return scs
 
 
 def angleseries(start=START, end=END, nos=NOS):
@@ -155,20 +226,18 @@ def thomsen2generic(
     # init
     rrr = np.full(5, fill_value=np.NAN, dtype=float)
     rrr[0] = 1
+    # shortcut
+    secterm = 1 + 2 * vp0 ** 2 / (vp0 ** 2 - vs0 ** 2) * delta
     # for a P-wave
     if wavetype == 'P':
         v00 = vp0
         rrr[2] = delta
-        rrr[4] = (
-            (epsilon - delta) *
-            (1 + 2 * vp0 ** 2 / (vp0 ** 2 - vs0 ** 2) * delta))
+        rrr[4] = (epsilon - delta) * secterm
     # for an SV-wave
     if wavetype == 'SV':
         v00 = vs0
         rrr[2] = vp0 ** 2 / vs0 ** 2 * (epsilon - delta)
-        rrr[4] = (
-            -1 * rrr[2] *
-            (1 + 2 * vp0 ** 2 / (vp0 ** 2 - vs0 ** 2) * delta))
+        rrr[4] = -1 * rrr[2] * secterm
     # return
     return v00, rrr
 
@@ -200,21 +269,21 @@ def phasevelocity(v00=VP0, rrr=None, rad=None):
         'zzz' : vertical component of the phase velocity
 
     """
+    # shortcuts
+    sin = np.sin(rad)
+    cos = np.cos(rad)
     # compute phase velocity
     phase = {
         # magnitude
-        'mag': (
-            v00 *
-            (1. + rrr[2] * np.sin(rad) ** 2 + rrr[4] * np.sin(rad) ** 4)),
+        'mag': v00 * (1. + rrr[2] * sin ** 2 + rrr[4] * sin ** 4),
         # first derivative of the magnitude with respect to the incidence angle
-        'dmag' : (
-            2 * v00 * np.sin(rad) * np.cos(rad) * (rrr[2] + 2 * rrr[4])),
+        'dmag' : 2 * v00 * sin * cos * (rrr[2] + 2 * rrr[4] * sin ** 2),
         # direction of propagation
         'rad': rad}
     # compute components
     phase.update({
-        'xxx': phase['mag'] * np.sin(phase['rad']),
-        'zzz': phase['mag'] * np.cos(phase['rad'])})
+        'xxx': phase['mag'] * sin,
+        'zzz': phase['mag'] * cos})
     # return
     return phase
 
@@ -243,15 +312,13 @@ def energyvelocity(phase=None):
 
     """
     # compute magnitude and incidence angle of theenergy velocity
+    tan = np.tan(phase['rad'])
+    term = phase['dmag'] / phase['mag']
     energy = {
         # magnitude
         'mag': np.sqrt(phase['mag'] ** 2 + phase['dmag'] ** 2),
         # direction of propagation
-        'rad': (
-            np.arctan(
-                (np.tan(phase['rad']) + phase['dmag'] / phase['mag'])
-                /
-                (1. - np.tan(phase['rad']) * phase['dmag'] / phase['mag'])))
+        'rad': np.arctan((tan + term) / (1. - tan * term))
         }
     # correct energy angle
     energy['rad'] -= [
@@ -268,36 +335,6 @@ def energyvelocity(phase=None):
         'zzz': energy['mag'] * np.cos(energy['rad'])})
     # return
     return energy
-
-
-def travelpath(xxx=None, zzz=None):
-    """
-    Compute the travel distance and direction of propagation.
-
-    Parameters
-    ----------
-    xxx : np.array
-        Horizontal distance from source to receiver. The default is None.
-    zzz : np.array
-        Vertical distance from source to receiver. The default is None.
-
-    Returns
-    -------
-    length : np.array of float
-        Length of travel path
-    angle : np.array of float
-        Direction of propagation (for which an energy velocity is requested)
-
-    """
-    # convert to array
-    xxx = np.array(xxx)
-    zzz = np.array(zzz)
-    # compute the length
-    length = np.sqrt(xxx ** 2 + zzz ** 2)
-    # compute the direction of propagation
-    angle = np.arctan(xxx/zzz)
-    # return
-    return length, angle
 
 
 def polarplot(vel=None, title=TITLE):
@@ -318,7 +355,7 @@ def polarplot(vel=None, title=TITLE):
 
     """
     # set up the figure
-    fig = plt.figure(0)
+    fig = plt.figure(0, figsize=(FIGWIDTH, FIGWIDTH),layout='tight')
     axx = fig.add_subplot(111)
     # plot the velocity
     plt.plot(vel['xxx'], vel['zzz'])
@@ -330,106 +367,20 @@ def polarplot(vel=None, title=TITLE):
     plt.ylim(bottom=-1.*maxi, top=+1*maxi)
     # set aspect ratio
     axx.set_aspect('equal', 'box')
+    # set xlabel
+    plt.xlabel("Horizontal Velocity")
+    # set ylabel
+    plt.ylabel("Vertical Velocity")
     # plot title
-    plt.title(title)
+    plt.title(title + ": Polar Velocity")
+    # save
+    plt.savefig(
+        'velocity.eps',
+        format='eps', bbox_inches='tight', pad_inches=0., dpi=1200.)
     # show
     plt.show()
 
-
-def precompute(
-        vp0=VP0, vs0=VS0, delta=DELTA, epsilon=EPSILON, wavetype='P',
-        v00=VP0, rrr=None):
-    """
-    Compute an interpolation polynomial for the energy velocity.
-
-    Inputs
-    ------
-        vp0, vs0, delta, epsilon, wavetype   # Thomsen's anisotropy parameters
-        v00, rrr                             # generic anisotropy parameters
-
-    Parameters
-    ----------
-    vp0 : float
-        P-reference phase velocity. The default is VP0.
-    vs0 : float
-        S-reference phase velocity. The default is VS0.
-    delta : float
-        Thomsen's anisotropy parameter delta. The default is DELTA.
-    epsilon : float
-        Thomsen's anisotropy parameter epsilon. The default is EPSILON.
-    v00 : float
-        Generic reference velocity
-    rrr : np.array ([5])
-        Generic anisotropy parameters
-    wavetype : char ('P' or 'SV')
-        P- or SV wavetype requested. The default is a P-wave
-
-    Returns
-    -------
-    scs : PPoly
-        Cubic spline interpolation.
-        See https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.CubicSpline.html
-
-    """
-    # pylint:disable=too-many-arguments
-    # compute the series of incidence angles
-    rad = angleseries(start=START, end=END, nos=NOS)
-    # compute generic anisotropy parameters for a P-wave
-    if rrr is None:
-        v00, rrr = (
-            thomsen2generic(
-                vp0=vp0, vs0=vs0, delta=delta, epsilon=epsilon,
-                wavetype=wavetype))
-    # compute phase velocity
-    phase = phasevelocity(v00=v00, rrr=rrr, rad=rad)
-    # compute energy velocity
-    energy = energyvelocity(phase=phase)
-    # compute the interpolation polynom
-    scs = si.CubicSpline(energy['rad'], energy['mag'], bc_type='periodic')
-    # plot energy velocity
-    if VELPLOT:
-        polarplot(vel=energy)   # comment if not desired
-    # return interpolation polynom
-    return scs
-
-
-def travelplot(xxx=None, time=None, title=TITLE):
-    """
-    Plot traveltime over offset.
-
-    Parameters
-    ----------
-    xxx : np.array of float
-        Horizontal distance from source to receiver. The default is None.
-    time : np.array of float
-        Traveltime. The default is None.
-    title : char
-        Title. The default is TITLE.
-
-    Returns
-    -------
-    None.
-
-    """
-    # pylint:disable=unused-variable
-    # set up the figure
-    fig = plt.figure(1)
-    axx = fig.add_subplot(111)
-    # plot the velocity
-    plt.plot(xxx, time)
-    # set offset limits
-    maxi = np.ceil(xxx[-1] / 100) * 100
-    plt.xlim(left=0., right=maxi)
-    # set time limits
-    maxi = np.ceil(time[-1] / 0.1) * 0.1
-    plt.ylim(bottom=0., top=maxi)
-    # plot title
-    plt.title(title)
-    # show
-    plt.show()
-
-
-def traveltime(xxx=None, zzz=None, scs=None):
+def traveltime(xxx=None, zzz=None, scs=None, seg=False):
     """
     Compute the traveltime for given horizontal / vertical distances.
 
@@ -441,6 +392,8 @@ def traveltime(xxx=None, zzz=None, scs=None):
         Vertical distance from source to receiver(s). The default is None.
     scs : PPoly
         Scipy cubic spline interpolation. The default is None.
+    seg : boolean
+        True / False for conforming with SEG guidelines.
 
     Returns
     -------
@@ -448,6 +401,9 @@ def traveltime(xxx=None, zzz=None, scs=None):
         Traveltimes.
 
     """
+    # convert to array
+    xxx = np.array(xxx)
+    zzz = np.array(zzz)
     # compute length and direction of the travel path
     length, angle = travelpath(xxx=xxx, zzz=zzz)
     # interpolate an energy velocity
@@ -455,11 +411,109 @@ def traveltime(xxx=None, zzz=None, scs=None):
     # compute traveltime
     time = length / velocity
     # plot
-    if TIMEPLOT:
-        if not isinstance(xxx, float):       # prevent if only 1 sample
-            travelplot(xxx=xxx, time=time)
+    if TIMEPLOT:                               # check plotting switch
+        if xxx.size > 1:                       # check sample number (> 1)
+            travelplot(
+                xxx=xxx, time=time, seg=seg)
     # return
     return time
+
+
+def travelpath(xxx=None, zzz=None):
+    """
+    Compute the travel distance and direction of propagation.
+
+    Parameters
+    ----------
+    xxx : np.array or list
+        Horizontal distance from source to receiver. The default is None.
+    zzz : np.array or list
+        Vertical distance from source to receiver. The default is None.
+
+    Returns
+    -------
+    length : np.array of float
+        Length of travel path
+    angle : np.array of float
+        Direction of propagation (for which an energy velocity is requested)
+
+    """
+    # compute the length
+    length = np.sqrt(xxx ** 2 + zzz ** 2)
+    # compute the direction of propagation
+    angle = np.arctan(xxx/zzz)
+    # return
+    return length, angle
+
+
+def travelplot(xxx=None, time=None, title=TITLE, seg=False):
+    """
+    Plot traveltime over offset.
+
+    Parameters
+    ----------
+    xxx : np.array of float
+        Horizontal distance from source to receiver. The default is None.
+    time : np.array of float
+        Traveltime. The default is None.
+    title : char
+        Title. The default is TITLE.
+    seg : boolean
+        True / False for conforming with SEG guidelines.
+
+    Returns
+    -------
+    None.
+
+    """
+    # pylint:disable=unused-variable
+    # set up the figure
+    fig = plt.figure(1, figsize=(FIGWIDTH, FIGHEIGHT), layout='tight')
+    axx = fig.add_subplot(111)   # noqa   # let's have it defined
+    # plot traveltime-offset curve
+    plt.plot(xxx, time)
+    # set offset limits
+    maxi = np.ceil(xxx[-1] / 100) * 100
+    plt.xlim(left=0., right=maxi)
+    # set time limits
+    maxi = np.ceil(time[-1] / 0.1) * 0.1
+    plt.ylim(bottom=0., top=maxi)
+    # place time axis
+    plt.tick_params(
+        axis='y', which='both', labelleft=True, labelright=True, right=True)
+    # set offset label
+    plt.xlabel("Offset")
+    # set time label
+    plt.ylabel("Traveltime")
+    # plot title
+    plt.title(title + ": Traveltime versus Offset")
+    # SEG style
+    if seg:
+        setfont()
+    # show
+    plt.show()
+
+
+def setfont():
+    """
+    Define the font styles, sizes to conform with SEG's guidelines.
+
+    Returns
+    -------
+    None.
+
+    """
+    # set fonts https://stackoverflow.com/a/39566040
+    plt.rc('text', usetex=True)          # Latex for versatility
+    plt.rc('font', family='Helvetica')   # fontstyle
+    plt.rc('ps', usedistiller='xpdf')    # avoiding bitmap
+    plt.rc('font', size=8)               # controls default text sizes
+    plt.rc('axes', titlesize=8)          # fontsize of the axes title
+    plt.rc('axes', labelsize=8)          # fontsize of the axes labels
+    plt.rc('xtick', labelsize=8)         # fontsize of the tick labels
+    plt.rc('ytick', labelsize=8)         # fontsize of the tick labels
+    plt.rc('legend', fontsize=8)         # legend fontsize
+    plt.rc('figure', titlesize=8)        # fontsize of the figure title
 
 
 # --- main --- main --- main --- main --- main --- main --- main --- main ---
@@ -480,7 +534,7 @@ def example1():
     # compute traveltime(s)
     time = (
         traveltime(
-            xxx=XXX1, zzz=ZZZ1, scs=scs))
+            xxx=XXX1, zzz=ZZZ1, scs=scs, seg=SEG))
     # return
     return time
 
@@ -488,7 +542,7 @@ def example1():
 def example2():
     """
     Demo the use of this module for use while splitting the precomputation.
-    
+
     Use this example to extract generic anisotropy parameters.
 
     """
@@ -508,7 +562,7 @@ def example2():
     # compute traveltime(s)
     time = (
         traveltime(
-            xxx=XXX2, zzz=ZZZ2, scs=scs))
+            xxx=XXX2, zzz=ZZZ2, scs=scs, seg=SEG))
     # return
     return time
 
@@ -517,7 +571,7 @@ def example3():
     """
     Demo the use of this module for use with generic anisotropy parameters.
 
-    Below, omit the call to thomsen2generic if the generic anisotropy 
+    Below, omit the call to thomsen2generic if the generic anisotropy
     parameters are known. Recall, all information about the wavetype is lost
     after that.
 
@@ -533,7 +587,7 @@ def example3():
     # compute traveltime(s)
     time = (
         traveltime(
-            xxx=XXX1, zzz=ZZZ1, scs=scs))
+            xxx=XXX1, zzz=ZZZ1, scs=scs, seg=SEG))
     # return
     return time
 
@@ -541,11 +595,14 @@ def example3():
 if __name__ == "__main__":
     # run example 1
     print("\nrunning example 1:")
-    _ = example1()
+    time1 = example1()
+    print(f"traveltime at {XXX1[375]}m offset: {time1[375]}")
     # run example 2
     print("\nrunning example 2:")
     time2 = example2()
-    print(f"traveltime = {time2}")
-    # run example 3
+    print(f"traveltime at {XXX2}m offset: {time2}")
+    # run example 3 (most simila to ttcrpy)
     print("\nrunning example 3:")
-    _ = example3()
+    time3 = example3()
+    print(f"traveltime at {XXX1[375]}m offset: {time3[375]}")
+    print(f"traveltime at {XXX1[400]}m offset: {time3[400]}")

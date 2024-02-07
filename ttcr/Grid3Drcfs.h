@@ -31,6 +31,7 @@
 #include "Grid3Drn.h"
 #include "Node3Dn.h"
 
+// TODO: change base class for Grid3Drc (?) and use tt_from_rp to improve accuracy
 namespace ttcr {
 
     template<typename T1, typename T2>

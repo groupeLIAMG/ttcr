@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import vtk
 
-import traveltime as wa_tt
+import ttwean
 
 # %%
 
@@ -241,15 +241,20 @@ ugrid.GetPointData().AddArray(d_t)
 # writer.SetDataModeToBinary()
 # writer.Write()
 
-# %%
+# %% Weakly 
+
+# Define "Dog Creek Shale" (Thomsen, 1986)
+vp0 = 1875.       # reference P-velocity
+vs0 = 826.        # reference S-Velocity
+delta = 0.100     # Thomsen's delta
+epsilon = 0.225   # Thomsen's epsilon
+
+vp00, vs00, sss = ttwean.TTWean.ttinit(vp0=vp0, vs0=vs0, delta=delta, epsilon=epsilon, wavetype='P')
 
 VP0 = 1875.
-r2 = 0.1
-r4 = 0.15602005
+s2 = sss[2]
+s4 = sss[4]
 
-rrr = np.array([1., np.NAN, r2, np.NAN, r4])   # generic anisotropy parameters (here, for Dog Creek Shale)
-
-scs = wa_tt.precompute(v00=VP0, rrr=rrr)                                 # precompute energy velocity and construct an interpolation polynomial
 
 x = np.arange(0.0, 6000.01, 60.0)
 z = np.arange(0.0, 3000.01, 60.0)
@@ -262,9 +267,14 @@ xx, zz = np.meshgrid(x, z)
 xx = xx.flatten()
 zz = zz.flatten()
 
-t = wa_tt.traveltime(xxx=xx, zzz=zz, scs=scs)
+theta = np.arctan2(xx, zz)
 
-t[0] = 0.0
+v = ttwean.TTWean.ttvel(vp0=vp0, vs0=vs0, sss=sss, wavetype='P', angle=theta)
+
+d = np.sqrt(xx*xx + zz*zz)
+t = d/v
+
+#t[0] = 0.0
 
 
 # %%
@@ -287,19 +297,19 @@ rgrid.SetYCoordinates(yCoords)
 rgrid.SetZCoordinates(zCoords)
 
 v = vtk.vtkDoubleArray()
-r2_v = vtk.vtkDoubleArray()
-r4_v = vtk.vtkDoubleArray()
+s2_v = vtk.vtkDoubleArray()
+s4_v = vtk.vtkDoubleArray()
 
 for i in range(ncx*ncz):
     v.InsertNextValue(VP0)
-    r2_v.InsertNextValue(r2)
-    r4_v.InsertNextValue(r4)
+    s2_v.InsertNextValue(s2)
+    s4_v.InsertNextValue(s4)
 v.SetName("Velocity")
-r2_v.SetName("r2")
-r4_v.SetName("r4")
+s2_v.SetName("s2")
+s4_v.SetName("s4")
 rgrid.GetCellData().AddArray(v)
-rgrid.GetCellData().AddArray(r2_v)
-rgrid.GetCellData().AddArray(r4_v)
+rgrid.GetCellData().AddArray(s2_v)
+rgrid.GetCellData().AddArray(s4_v)
 
 writer = vtk.vtkXMLRectilinearGridWriter()
 writer.SetInputData(rgrid)
@@ -348,11 +358,11 @@ ugrid.SetPoints(pts)
 
 triangle = vtk.vtkTriangle()
 v = vtk.vtkDoubleArray()
-r2_v = vtk.vtkDoubleArray()
-r4_v = vtk.vtkDoubleArray()
+s2_v = vtk.vtkDoubleArray()
+s4_v = vtk.vtkDoubleArray()
 v.SetName("Velocity")
-r2_v.SetName("r2")
-r4_v.SetName("r4")
+s2_v.SetName("s2")
+s4_v.SetName("s4")
 
 for n in range(len(tri)):
     triangle.GetPointIds().SetId(0, tri[n][0])
@@ -360,12 +370,12 @@ for n in range(len(tri)):
     triangle.GetPointIds().SetId(2, tri[n][2])
     ugrid.InsertNextCell( triangle.GetCellType(), triangle.GetPointIds() )
     v.InsertNextValue(VP0)
-    r2_v.InsertNextValue(r2)
-    r4_v.InsertNextValue(r4)
+    s2_v.InsertNextValue(s2)
+    s4_v.InsertNextValue(s4)
 
 ugrid.GetCellData().AddArray(v)
-ugrid.GetCellData().AddArray(r2_v)
-ugrid.GetCellData().AddArray(r4_v)
+ugrid.GetCellData().AddArray(s2_v)
+ugrid.GetCellData().AddArray(s4_v)
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
 writer.SetInputData(ugrid)

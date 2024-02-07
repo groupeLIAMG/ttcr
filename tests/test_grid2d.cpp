@@ -388,6 +388,6 @@ BOOST_DATA_TEST_CASE(
     double error = get_rel_error(ref, rcv);
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
 
-    BOOST_TEST(error < 0.012);
+    BOOST_TEST(error < 0.01);
 }
 

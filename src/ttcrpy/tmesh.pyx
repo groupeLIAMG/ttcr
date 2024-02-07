@@ -1216,7 +1216,7 @@ cdef class Mesh2d:
             - 'iso' : isotropic medium
             - 'elliptical' : elliptical anisotropy
             - 'tilted_elliptical' : tilted elliptical anisotropy
-            - 'weakly_anelliptical' : Weakly-Anelliptical
+            - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
         convergence criterion (FSM) (default is 1e-15)
     maxit : int
@@ -1597,49 +1597,49 @@ cdef class Mesh2d:
             var.push_back(theta[i])
         self.grid.setTiltAngle(var)
 
-    def set_r2(self, r2):
+    def set_s2(self, s2):
         """
-        set_r2(r2)
+        set_s2(s2)
 
-        Assign phase-velocity parameter r2 to grid
+        Assign energy-velocity parameter s2 to grid
 
         Parameters
         ----------
-        r2 : np ndarray, shape (nparams, )
+        s2 : np ndarray, shape (nparams, )
         """
-        if r2.size != self.nparams:
-            raise ValueError('r2 vector has wrong size')
+        if s2.size != self.nparams:
+            raise ValueError('s2 vector has wrong size')
 
-        if not r2.flags['C_CONTIGUOUS']:
-                r2 = np.ascontiguousarray(r2)
+        if not s2.flags['C_CONTIGUOUS']:
+                s2 = np.ascontiguousarray(s2)
 
         cdef vector[double] var
         cdef int i
-        for i in range(r2.size):
-            var.push_back(r2[i])
-        self.grid.setR2(var)
+        for i in range(s2.size):
+            var.push_back(s2[i])
+        self.grid.setS2(var)
 
-    def set_r4(self, r4):
+    def set_s4(self, s4):
         """
-        set_r4(r4)
+        set_s4(s4)
 
-        Assign phase-velocity parameter r4 to grid
+        Assign energy-velocity parameter s4 to grid
 
         Parameters
         ----------
-        r4 : np ndarray, shape (nparams, )
+        s4 : np ndarray, shape (nparams, )
         """
-        if r4.size != self.nparams:
-            raise ValueError('r4 vector has wrong size')
+        if s4.size != self.nparams:
+            raise ValueError('s4 vector has wrong size')
 
-        if not r4.flags['C_CONTIGUOUS']:
-                r4 = np.ascontiguousarray(r4)
+        if not s4.flags['C_CONTIGUOUS']:
+                s4 = np.ascontiguousarray(s4)
 
         cdef vector[double] var
         cdef int i
-        for i in range(r4.size):
-            var.push_back(r4[i])
-        self.grid.setR4(var)
+        for i in range(s4.size):
+            var.push_back(s4[i])
+        self.grid.setS4(var)
 
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, return_rays=False):

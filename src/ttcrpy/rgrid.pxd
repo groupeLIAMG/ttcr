@@ -158,8 +158,8 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
         void setDelta(vector[T1]&) except +
         void setEpsilon(vector[T1]&) except +
         void setGamma(vector[T1]&) except +
-        void setR2(vector[T1]&) except +
-        void setR4(vector[T1]&) except +
+        void setS2(vector[T1]&) except +
+        void setS4(vector[T1]&) except +
         T1 computeSlowness(S&) except +
         void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[S]& Tx,

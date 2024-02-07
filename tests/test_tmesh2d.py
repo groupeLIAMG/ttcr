@@ -232,8 +232,8 @@ class TestWeakly(unittest.TestCase):
 
         data = reader.GetOutput()
         self.slowness = 1/vtk_to_numpy(data.GetCellData().GetArray('Velocity'))
-        self.r2 = vtk_to_numpy(data.GetCellData().GetArray('r2'))
-        self.r4 = vtk_to_numpy(data.GetCellData().GetArray('r4'))
+        self.s2 = vtk_to_numpy(data.GetCellData().GetArray('s2'))
+        self.s4 = vtk_to_numpy(data.GetCellData().GetArray('s4'))
 
         self.src = np.loadtxt('./files/src2d.dat',skiprows=1)
         # we roll because file has x z t0 and we want t0 x z
@@ -243,8 +243,8 @@ class TestWeakly(unittest.TestCase):
     def test_Mesh2Dsp(self):
         g = tm.Mesh2d(self.nodes, self.tri, method='SPM', n_secondary=10, aniso='weakly_anelliptical')
         g.set_slowness(self.slowness)
-        g.set_r2(self.r2)
-        g.set_r4(self.r4)
+        g.set_s2(self.s2)
+        g.set_s4(self.s4)
         tt = g.raytrace(self.src, self.rcv)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()

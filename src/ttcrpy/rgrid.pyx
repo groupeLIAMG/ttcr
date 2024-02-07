@@ -1832,7 +1832,7 @@ cdef class Grid2d:
             - 'tilted_elliptical' : tilted elliptical anisotropy
             - 'vti_psv' : vertical transverse isotropy, P and SV waves
             - 'vti_sh' : vertical transverse isotropy, SH waves
-            - 'weakly_anelliptical' : Weakly-Anelliptical
+            - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
         convergence criterion (FSM) (default is 1e-15)
     maxit : int
@@ -2499,11 +2499,11 @@ cdef class Grid2d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setGamma(data)
 
-    def set_r2(self, v):
+    def set_s2(self, v):
         """
-        set_r2(g)
+        set_s2(g)
 
-        Assign weakly anelliptical parameter r2
+        Assign weakly anelliptical parameter s2
 
         Parameters
         ----------
@@ -2533,13 +2533,13 @@ cdef class Grid2d:
                 data.push_back(tmp[i])
         else:
             raise ValueError('v must be 1D or 2D ndarray')
-        self.grid.setR2(data)
+        self.grid.setS2(data)
 
-    def set_r4(self, v):
+    def set_s4(self, v):
         """
-        set_r4(g)
+        set_s4(g)
 
-        Assign weakly anelliptical parameter r4
+        Assign weakly anelliptical parameter s4
 
         Parameters
         ----------
@@ -2569,7 +2569,7 @@ cdef class Grid2d:
                 data.push_back(tmp[i])
         else:
             raise ValueError('v must be 1D or 2D ndarray')
-        self.grid.setR4(data)
+        self.grid.setS4(data)
         
     def compute_D(self, np.ndarray[np.double_t, ndim=2] coord):
         """

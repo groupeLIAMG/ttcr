@@ -298,11 +298,11 @@ namespace ttcr {
         virtual void setGamma(const std::vector<T1>& s) {
             throw std::runtime_error("Method setGamma should be implemented in subclass");
         }
-        virtual void setR2(const std::vector<T1>& s) {
-            throw std::runtime_error("Method setR2 should be implemented in subclass");
+        virtual void setS2(const std::vector<T1>& s) {
+            throw std::runtime_error("Method setS2 should be implemented in subclass");
         }
-        virtual void setR4(const std::vector<T1>& s) {
-            throw std::runtime_error("Method setR4 should be implemented in subclass");
+        virtual void setS4(const std::vector<T1>& s) {
+            throw std::runtime_error("Method setS4 should be implemented in subclass");
         }
 
         void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }

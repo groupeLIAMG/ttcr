@@ -149,16 +149,16 @@ namespace ttcr {
                 throw;
             }
         }
-        void setR2(const std::vector<T1>& s) {
+        void setS2(const std::vector<T1>& s) {
             try {
-                cells.setR2(s);
+                cells.setS2(s);
             } catch (std::exception& e) {
                 throw;
             }
         }
-        void setR4(const std::vector<T1>& s) {
+        void setS4(const std::vector<T1>& s) {
             try {
-                cells.setR4(s);
+                cells.setS4(s);
             } catch (std::exception& e) {
                 throw;
             }

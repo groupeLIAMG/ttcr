@@ -86,12 +86,12 @@ namespace ttcr {
             throw std::logic_error("Error: gamma not defined for Cell.");
         }
         
-        void setR2(const std::vector<T>& r) {
-            throw std::logic_error("Error: r2 not defined for Cell.");
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for Cell.");
         }
     
-        void setR4(const std::vector<T>& r) {
-            throw std::logic_error("Error: r4 not defined for Cell.");
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for Cell.");
         }
 
         T computeDt(const S& source, const S& node,
@@ -177,12 +177,12 @@ namespace ttcr {
             throw std::logic_error("Error: gamma not defined for CellElliptical.");
         }
 
-        void setR2(const std::vector<T>& r) {
-            throw std::logic_error("Error: r2 not defined for CellElliptical.");
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for CellElliptical.");
         }
     
-        void setR4(const std::vector<T>& r) {
-            throw std::logic_error("Error: r4 not defined for CellElliptical.");
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for CellElliptical.");
         }
 
         T computeDt(const S& source, const S& node,
@@ -288,12 +288,12 @@ namespace ttcr {
             throw std::logic_error("Error: gamma not defined for CellTiltedElliptical.");
         }
 
-        void setR2(const std::vector<T>& r) {
-            throw std::logic_error("Error: r2 not defined for CellTiltedElliptical.");
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for CellTiltedElliptical.");
         }
     
-        void setR4(const std::vector<T>& r) {
-            throw std::logic_error("Error: r4 not defined for CellTiltedElliptical.");
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for CellTiltedElliptical.");
         }
 
         T computeDt(const S& source, const S& node,
@@ -412,12 +412,12 @@ namespace ttcr {
             throw std::logic_error("Error: gamma not defined for CellVTI_PSV.");
         }
 
-        void setR2(const std::vector<T>& r) {
-            throw std::logic_error("Error: r2 not defined for CellVTI_PSV.");
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for CellVTI_PSV.");
         }
     
-        void setR4(const std::vector<T>& r) {
-            throw std::logic_error("Error: r4 not defined for CellVTI_PSV.");
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for CellVTI_PSV.");
         }
 
         T computeDt(const S& source, const S& node,
@@ -538,12 +538,12 @@ namespace ttcr {
             throw std::logic_error("Error: epsilon not defined for CellVTI_SH.");
         }
 
-        void setR2(const std::vector<T>& r) {
-            throw std::logic_error("Error: r2 not defined for CellVTI_SH.");
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for CellVTI_SH.");
         }
     
-        void setR4(const std::vector<T>& r) {
-            throw std::logic_error("Error: r4 not defined for CellVTI_SH.");
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for CellVTI_SH.");
         }
 
         T computeDt(const S& source, const S& node,
@@ -593,8 +593,8 @@ namespace ttcr {
     public:
         CellWeaklyAnelliptical(const size_t n) :
         v0(std::vector<T>(n)),
-        r2(std::vector<T>(n)),
-        r4(std::vector<T>(n)) {
+        s2(std::vector<T>(n)),
+        s4(std::vector<T>(n)) {
         }
     
         const T getSlowness(const size_t i) const {
@@ -610,18 +610,18 @@ namespace ttcr {
             }
         }
     
-        void setR2(const std::vector<T>& r) {
-            if ( r2.size() != r.size() ) {
-                throw std::length_error("Error: r2 vectors of incompatible size.");
+        void setS2(const std::vector<T>& r) {
+            if ( s2.size() != r.size() ) {
+                throw std::length_error("Error: s2 vectors of incompatible size.");
             }
-            r2 = r;
+            s2 = r;
         }
     
-        void setR4(const std::vector<T>& r) {
-            if ( r4.size() != r.size() ) {
-                throw std::length_error("Error: r4 vectors of incompatible size.");
+        void setS4(const std::vector<T>& r) {
+            if ( s4.size() != r.size() ) {
+                throw std::length_error("Error: s4 vectors of incompatible size.");
             }
-            r4 = r;
+            s4 = r;
         }
 
         void setXi(const std::vector<T>& s) {
@@ -662,28 +662,19 @@ namespace ttcr {
 
         T computeDt(const S& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T sin_theta = sin( atan2(node.x - source.x, node.z - source.z) );
-            sin_theta *= sin_theta;  // square
-            T v = v0[cellNo] * (1. + r2[cellNo] * sin_theta + r4[cellNo] * sin_theta * sin_theta);
+            T v = get_energy_vel(node.x - source.x, node.z - source.z, cellNo);
             return source.getDistance( node ) / v;
         }
     
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T sin_theta = sin( atan2(node.x - source.getX(), node.z - source.getZ()) );
-            sin_theta *= sin_theta;  // square
-            T v = v0[cellNo] * (1. + r2[cellNo] * sin_theta + r4[cellNo] * sin_theta * sin_theta);
+            T v = get_energy_vel(node.x - source.getX(), node.z - source.getZ(), cellNo);
             return source.getDistance( node ) / v;
         }
 
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T sin_theta = sin( atan2(node.getX() - source.getX(), node.getZ() - source.getZ()) );
-            sin_theta *= sin_theta;  // square
-            T v = v0[cellNo] * (1. + r2[cellNo] * sin_theta + r4[cellNo] * sin_theta * sin_theta);
+            T v = get_energy_vel(node.getX() - source.getX(), node.getZ() - source.getZ(), cellNo);
             return source.getDistance( node ) / v;
         }
     
@@ -701,8 +692,15 @@ namespace ttcr {
         
     private:
         std::vector<T> v0;
-        std::vector<T> r2;
-        std::vector<T> r4;
+        std::vector<T> s2;
+        std::vector<T> s4;
+        
+        T get_energy_vel(const T dx, const T dz, const size_t cellNo) const {
+            // theta: angle w/r to vertical axis
+            T sin_theta = sin( atan2(dx, dz) );
+            sin_theta *= sin_theta;  // square
+            return v0[cellNo] * (1. + (s2[cellNo] + s4[cellNo] * sin_theta) * sin_theta);
+        }
     };
 
 
@@ -980,8 +978,8 @@ namespace ttcr {
     public:
         CellWeaklyAnelliptical3D(const size_t n) :
         v0(std::vector<T>(n)),
-        r2(std::vector<T>(n)),
-        r4(std::vector<T>(n)) {
+        s2(std::vector<T>(n)),
+        s4(std::vector<T>(n)) {
         }
 
         void setV0(const std::vector<T>& v) {
@@ -991,18 +989,18 @@ namespace ttcr {
             v0 = v;
         }
         
-        void setR2(const std::vector<T>& r) {
-            if ( r2.size != r.size() ) {
-                throw std::length_error("Error: r2 vectors of incompatible size.");
+        void setS2(const std::vector<T>& r) {
+            if ( s2.size != r.size() ) {
+                throw std::length_error("Error: s2 vectors of incompatible size.");
             }
-            r2 = r;
+            s2 = r;
         }
         
-        void setR4(const std::vector<T>& r) {
-            if ( r4.size != r.size() ) {
-                throw std::length_error("Error: r4 vectors of incompatible size.");
+        void setS4(const std::vector<T>& r) {
+            if ( s4.size != r.size() ) {
+                throw std::length_error("Error: s4 vectors of incompatible size.");
             }
-            r4 = r;
+            s4 = r;
         }
         
         T computeDt(const NODE& source, const S& node,
@@ -1011,9 +1009,7 @@ namespace ttcr {
             T lx = node.x - source.getX();
             T ly = node.y - source.getY();
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
-            T sin_theta = sin( atan2(lx, node.z - source.getZ()) );
-            sin_theta *= sin_theta;  // square
-            T v = v0[cellNo] * (1. + r2[cellNo] * sin_theta + r4[cellNo] * sin_theta * sin_theta);
+            T v = get_energy_vel(lx, node.z - source.getZ(), cellNo);
             return source.getDistance( node ) / v;
         }
         
@@ -1023,16 +1019,22 @@ namespace ttcr {
             T lx = node.getX() - source.getX();
             T ly = node.getY() - source.getY();
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
-            T sin_theta = sin( atan2(lx, node.getZ() - source.getZ()) );
-            sin_theta *= sin_theta;  // square
-            T v = v0[cellNo] * (1. + r2[cellNo] * sin_theta + r4[cellNo] * sin_theta * sin_theta);
+            T v = get_energy_vel(lx, node.getZ() - source.getZ(), cellNo);
             return source.getDistance( node ) / v;
         }
         
     private:
         std::vector<T> v0;
-        std::vector<T> r2;
-        std::vector<T> r4;
+        std::vector<T> s2;
+        std::vector<T> s4;
+        
+        T get_energy_vel(const T dx, const T dz, const size_t cellNo) const {
+            // theta: angle w/r to vertical axis
+            T sin_theta = sin( atan2(dx, dz) );
+            sin_theta *= sin_theta;  // square
+            return v0[cellNo] * (1. + (s2[cellNo] + s4[cellNo] * sin_theta) * sin_theta);
+        }
+
     };
 
 }

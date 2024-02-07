@@ -196,10 +196,10 @@ class TestWeakly(unittest.TestCase):
         dim = (self.x.size-1, self.z.size-1)
         self.slowness = 1/v.reshape(dim, order='F').flatten()
 
-        self.r2 = vtk_to_numpy(data.GetCellData().GetArray('r2'))
-        self.r2 = self.r2.reshape(dim, order='F').flatten()
-        self.r4 = vtk_to_numpy(data.GetCellData().GetArray('r4'))
-        self.r4 = self.r4.reshape(dim, order='F').flatten()
+        self.s2 = vtk_to_numpy(data.GetCellData().GetArray('s2'))
+        self.s2 = self.s2.reshape(dim, order='F').flatten()
+        self.s4 = vtk_to_numpy(data.GetCellData().GetArray('s4'))
+        self.s4 = self.s4.reshape(dim, order='F').flatten()
 
         self.src = np.loadtxt('./files/src2d.dat', skiprows=1)
         self.src = np.roll(self.src, 1).reshape((1, 3))
@@ -208,8 +208,8 @@ class TestWeakly(unittest.TestCase):
     def test_Grid2Dsp(self):
         g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10, aniso='weakly_anelliptical')
         g.set_slowness(self.slowness)
-        g.set_r2(self.r2)
-        g.set_r4(self.r4)
+        g.set_s2(self.s2)
+        g.set_s4(self.s4)
         tt = g.raytrace(self.src, self.rcv)
         tt = g.get_grid_traveltimes()
         tt = tt.flatten()
