@@ -1,5 +1,5 @@
 setuptools
 cython
-numpy>=1.20.1
+numpy>=2.0.0
 scipy
 vtk
