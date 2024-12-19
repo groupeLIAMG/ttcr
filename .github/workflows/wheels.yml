@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Build the wheels for Linux, Windows and macOS for Python 3.8 and newer
+  # Build the wheels for Linux, Windows and macOS for Python 3.9 and newer
   build_wheels:
     name: Build wheel on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -81,7 +81,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.5.0
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}

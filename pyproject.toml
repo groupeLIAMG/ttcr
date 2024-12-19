@@ -10,7 +10,7 @@ authors = [
 description = "Code to perform raytracing for geophysical applications"
 license = {file = "01_LICENSE.txt"}
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -19,10 +19,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: C++",
     "Programming Language :: Cython",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering"
 ]
 dynamic = ["version"]
