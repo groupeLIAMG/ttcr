@@ -407,11 +407,11 @@ cdef class Grid3d:
         cdef vector[double] tmp
         cdef int n
         self.grid.getTT(tmp, thread_no)
-        tt = np.empty((tmp.size(),), order='F')
+        tt = np.empty((tmp.size(),))
         for n in range(tmp.size()):
             tt[n] = tmp[n]
         shape = (self._x.size(), self._y.size(), self._z.size())
-        return tt.reshape(shape)
+        return tt.reshape(shape, order='F')
 
     def ind(self, int i, int j, int k):
         """
