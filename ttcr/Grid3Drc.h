@@ -1589,7 +1589,8 @@ namespace ttcr {
 
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() ) {
-                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    double x[3] = {nodes[n].getX(), nodes[n].getY(), nodes[n].getZ()};
+                    vtkIdType id = rgrid->FindPoint(x);
                     newScalars->SetTuple1(id, nodes[n].getTT(nt) );
                 }
             }

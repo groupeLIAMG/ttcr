@@ -3182,7 +3182,8 @@ namespace ttcr {
 
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() ) {
-                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    double x[3] = {nodes[n].getX(), nodes[n].getY(), nodes[n].getZ()};
+                    vtkIdType id = rgrid->FindPoint(x);
                     newScalars->SetTuple1(id, nodes[n].getTT(nt) );
                 }
             }
@@ -3241,7 +3242,8 @@ namespace ttcr {
 
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() ) {
-                    vtkIdType id = reader->GetOutput()->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    double x[3] = {nodes[n].getX(), nodes[n].getY(), nodes[n].getZ()};
+                    vtkIdType id = reader->GetOutput()->FindPoint(x);
                     nodes[n].setTT(reader->GetOutput()->GetPointData()->GetArray("Travel time")->GetTuple1(id), nt);
                 }
             }
@@ -3900,7 +3902,8 @@ namespace ttcr {
             newScalars->SetName("Slowness");
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() ) {
-                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    double x[3] = {nodes[n].getX(), nodes[n].getY(), nodes[n].getZ()};
+                    vtkIdType id = rgrid->FindPoint(x);
                     newScalars->SetTuple1(id, nodes[n].getNodeSlowness() );
                 }
             }
@@ -3908,7 +3911,8 @@ namespace ttcr {
             newScalars->SetName("Velocity");
             for ( size_t n=0; n<nodes.size(); ++n ) {
                 if ( nodes[n].isPrimary() ) {
-                    vtkIdType id = rgrid->FindPoint(nodes[n].getX(), nodes[n].getY(), nodes[n].getZ());
+                    double x[3] = {nodes[n].getX(), nodes[n].getY(), nodes[n].getZ()};
+                    vtkIdType id = rgrid->FindPoint(x);
                     newScalars->SetTuple1(id, 1./nodes[n].getNodeSlowness() );
                 }
             }

@@ -71,7 +71,8 @@ double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
     
     vtkPointData *pd = dataSet->GetPointData();
     for ( size_t n=0; n<rcv.get_coord().size(); ++n ) {
-        vtkIdType ii = dataSet->FindPoint(rcv.get_coord()[n].x, 0.0, rcv.get_coord()[n].z);
+        double x[3] = {rcv.get_coord()[n].x, 0.0, rcv.get_coord()[n].z};
+        vtkIdType ii = dataSet->FindPoint(x);
         ref_tt[n] = static_cast<double>(pd->GetArray(0)->GetTuple1(ii));
     }
     // compute relative error
@@ -100,7 +101,8 @@ vector<double> get_rel_error(const string& filename, const Rcv2D<double>& rcv,
 
     vtkPointData *pd = dataSet->GetPointData();
     for ( size_t n=0; n<rcv.get_coord().size(); ++n ) {
-        vtkIdType ii = dataSet->FindPoint(rcv.get_coord()[n].x, 0.0, rcv.get_coord()[n].z);
+        double x[3] = {rcv.get_coord()[n].x, 0.0, rcv.get_coord()[n].z};
+        vtkIdType ii = dataSet->FindPoint(x);
         ref_tt[n] = static_cast<double>(pd->GetArray(0)->GetTuple1(ii));
     }
 
