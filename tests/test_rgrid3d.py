@@ -21,8 +21,9 @@ def get_tt(filename):
     for name in names:
         if data.GetPointData().HasArray(name):
             break
-    tt = vtk_to_numpy(data.GetPointData().GetArray(name))
-    return tt
+    dim = data.GetDimensions()
+    tt = vtk_to_numpy(data.GetPointData().GetArray(name)).reshape(dim, order='F')
+    return tt.flatten()
 
 
 class TestGrid3dc(unittest.TestCase):
