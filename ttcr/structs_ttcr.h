@@ -25,6 +25,7 @@
 #ifndef ttcr_structs_ttcr_h
 #define ttcr_structs_ttcr_h
 
+#include <cstdint>
 #include <map>
 #include <string>
 
