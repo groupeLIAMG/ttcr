@@ -495,7 +495,11 @@ cdef class Grid3d:
         self.grid.getSlowness(slown)
         nx, ny, nz = self.shape
         slowness = np.ndarray((nx*ny*nz,), order='F')
-        for i in range(slown.size()):
+        if self.cell_slowness:
+            slown_size = (nx - 1) * (ny - 1) * (nz - 1)
+        else:
+            slown_size = nx * ny * nz
+        for i in range(slown_size):
             slowness[i] = slown[i]
         return slowness.reshape((nx, ny, nz))
 
@@ -2173,7 +2177,11 @@ cdef class Grid2d:
         self.grid.getSlowness(slown)
         nx, nz = self.shape
         slowness = np.ndarray((nx*nz,))
-        for i in range(slown.size()):
+        if self.cell_slowness:
+            slown_size = (nx - 1) * (nz - 1)
+        else:
+            slown_size = nx * nz
+        for i in range(slown_size):
             slowness[i] = slown[i]
         return slowness.reshape((nx, nz))
 
