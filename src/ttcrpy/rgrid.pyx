@@ -489,16 +489,21 @@ cdef class Grid3d:
         Returns
         -------
         slowness : np ndarray, shape (nx, ny, nz)
+
+        Notes
+        -----
+        Shape size will vary depending on slowness attribution to cells or nodes
         """
         cdef int i
         cdef vector[double] slown
         self.grid.getSlowness(slown)
         nx, ny, nz = self.shape
-        slowness = np.ndarray((nx*ny*nz,), order='F')
         if self.cell_slowness:
-            slown_size = (nx - 1) * (ny - 1) * (nz - 1)
-        else:
-            slown_size = nx * ny * nz
+            nx = nx - 1
+            ny = ny - 1
+            nz = nz - 1
+        slown_size = nx * ny * nz
+        slowness = np.ndarray((slown_size,), order='F')
         for i in range(slown_size):
             slowness[i] = slown[i]
         return slowness.reshape((nx, ny, nz))
@@ -2171,16 +2176,20 @@ cdef class Grid2d:
         Returns
         -------
         slowness : np ndarray, shape (nx, nz)
+        
+        Notes
+        -----
+        Shape size will vary depending on slowness attribution to cells or nodes
         """
         cdef int i
         cdef vector[double] slown
         self.grid.getSlowness(slown)
         nx, nz = self.shape
-        slowness = np.ndarray((nx*nz,))
         if self.cell_slowness:
-            slown_size = (nx - 1) * (nz - 1)
-        else:
-            slown_size = nx * nz
+            nx = nx - 1
+            nz = nz - 1
+        slown_size = nx * nz
+        slowness = np.ndarray((slown_size,))
         for i in range(slown_size):
             slowness[i] = slown[i]
         return slowness.reshape((nx, nz))
