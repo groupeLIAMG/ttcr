@@ -236,27 +236,54 @@ class TestComputeD(unittest.TestCase):
 
         g = rg.Grid2d(x, z, method='FSM')
 
+        dx = x[1] - x[0]
+        xc = x[:-1] + 0.5*(dx)
+        zc = z[:-1] + 0.5*(z[1] - z[0])
+
         rng = np.random.default_rng()
-        coord = np.c_[rng.uniform(0.001, 20.0, 100), rng.uniform(0.001, 20.0, 100)]
-        D = g.compute_D(coord)
-        s1 = D @ slowness
+        tmp = np.meshgrid(xc, zc, indexing='ij')
+        coord = np.c_[tmp[0].ravel(), tmp[1].ravel()]
+        coord += rng.uniform(low=-dx/3, high=dx/3, size=coord.shape)
 
         pts = vtk.vtkPoints()
         for n in range(coord.shape[0]):
-            pts.InsertNextPoint(coord[n, 0], 0.0, coord[n, 1])
+            pts.InsertNextPoint(coord[n, 0], coord[n, 1], 0.0)
 
         ppts = vtk.vtkPolyData()
         ppts.SetPoints(pts)
+
+        delaunay = vtk.vtkDelaunay2D()
+        delaunay.SetInputData(ppts)
+        delaunay.Update()
+
+        rotation = vtk.vtkTransform()
+        rotation.RotateX(90)
+        rotation.Scale(1.0, 0.0, 1.0)
+
+        transformFilter = vtk.vtkTransformPolyDataFilter()
+        transformFilter.SetInputConnection(delaunay.GetOutputPort())
+        transformFilter.SetTransform(rotation)
+        transformFilter.Update()
+
+        ppts = transformFilter.GetOutput()
+
+        pts = vtk_to_numpy(ppts.GetPoints().GetData())
+        # we must recreate coord, order of pts was changed by triangulation
+        coord = np.array(np.c_[pts[:, 0], pts[:, 2]], dtype=np.float64)
+
+        D = g.compute_D(coord)
+        s1 = D @ slowness
 
         pf = vtk.vtkProbeFilter()
         pf.SetInputData(ppts)
         pf.SetSourceData(data)
         pf.Update()
 
-        s2 = vtk_to_numpy(pf.GetOutput().GetPointData().GetArray('Slowness'))
+        temp = pf.GetOutput().GetPointData().GetArray('Slowness')
 
-        if not np.all(s2 == 0.0):   # temp hack: from some reason probe filter returns 0s after some update in vtk
-            self.assertAlmostEqual(np.sum(np.abs(s1 - s2)), 0.0)
+        s2 = vtk_to_numpy(temp)
+
+        self.assertAlmostEqual(np.sum(np.abs(s1 - s2)), 0.0)
 
     def test_node_slowness(self):
         reader = vtk.vtkXMLRectilinearGridReader()
