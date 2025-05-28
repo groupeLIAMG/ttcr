@@ -1,6 +1,6 @@
 //
 //  Interpolator.h
-//  ttcr.v2
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-11-23.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.

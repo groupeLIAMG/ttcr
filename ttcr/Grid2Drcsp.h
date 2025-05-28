@@ -1,6 +1,6 @@
 /*
  *  Grid2Drcsp.h
- *  ttRaisCourbes
+ *  ttcr
  *
  *  Created by Bernard Giroux on 08-04-24.
  *  Copyright 2008 Bernard Giroux.

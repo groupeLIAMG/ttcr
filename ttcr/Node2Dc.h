@@ -1,6 +1,6 @@
 //
-//  Node2Dc.h
-// ttRaisCourbes
+// Node2Dc.h
+// ttcr
 //
 // Created by Bernard Giroux on 08-04-24.
 // Copyright 2008 Bernard Giroux.

@@ -1,6 +1,6 @@
 //
 //  main.cpp
-//  ttcr2d
+//  ttcr
 //
 //  Created by Bernard Giroux on 2014-04-03.
 //  Copyright (c) 2014 Bernard Giroux. All rights reserved.

@@ -1,6 +1,6 @@
 //
 //  Grid3Drn.h
-//  ttcr.v2
+//  ttcr
 //
 //  Created by Giroux Bernard on 12-08-15.
 //  Copyright (c) 2012 INRS-ETE. All rights reserved.

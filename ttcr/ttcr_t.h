@@ -1,6 +1,6 @@
 //
 //  ttcr_t.h
-//  ttcr_t
+//  ttcr
 //
 //  Created by Bernard Giroux on 08-07-01.
 //

@@ -1,5 +1,5 @@
 //
-//  SrcRcv.h
+//  Interface.h
 //  ttcr
 //
 //  Created by Bernard Giroux on 2013-01-19.

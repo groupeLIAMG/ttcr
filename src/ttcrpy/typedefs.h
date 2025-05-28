@@ -1,7 +1,7 @@
 
 
-#ifndef ttcrtypedefs_h
-#define ttcrtypedefs_h
+#ifndef ttcr_typedefs_h
+#define ttcr_typedefs_h
 
 #include "ttcr_t.h"
 #include "Cell.h"

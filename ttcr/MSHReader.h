@@ -1,6 +1,6 @@
 //
 //  MSHReader.h
-//  ttcr3du
+//  ttcr
 //
 //  Created by Bernard Giroux on 2012-09-19.
 //  Copyright (c) 2012 Bernard Giroux. All rights reserved.
