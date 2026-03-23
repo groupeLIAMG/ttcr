@@ -906,7 +906,7 @@ cdef class Grid3d:
             src = source
             _, ind = np.unique(source, axis=0, return_index=True)
             Tx = source[np.sort(ind), :]     # this to keep the original order
-            t0 = np.zeros((Tx.shape[0], 1))
+            t0 = np.zeros((Tx.shape[0],))
             nTx = Tx.shape[0]
         elif source.shape[1] == 4:
             src = source[:,1:4]
@@ -2925,7 +2925,7 @@ cdef class Grid2d:
             src = source
             _, ind = np.unique(source, axis=0, return_index=True)
             Tx = source[np.sort(ind), :]     # this to keep the original order
-            t0 = np.zeros((Tx.shape[0], 1))
+            t0 = np.zeros((Tx.shape[0],))
             nTx = Tx.shape[0]
         elif source.shape[1] == 3:
             src = source[:,1:3]
