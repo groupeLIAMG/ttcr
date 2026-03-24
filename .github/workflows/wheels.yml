@@ -43,8 +43,76 @@ jobs:
       #   with:
       #     platforms: all
 
+      - name: Check vtk wheel availability for CPython 3.14
+        id: vtk314
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python - <<'PY'
+          import os
+          import shutil
+          import subprocess
+          import sys
+          import tempfile
+
+          runner_os = os.environ["RUNNER_OS"]
+          if runner_os == "Linux":
+            targets = [("manylinux2014_x86_64", "Linux x86_64")]
+          elif runner_os == "Windows":
+            targets = [("win_amd64", "Windows amd64")]
+          elif runner_os == "macOS":
+            targets = [
+              ("macosx_10_13_x86_64", "macOS x86_64"),
+              ("macosx_11_0_arm64", "macOS arm64"),
+            ]
+          else:
+            raise RuntimeError(f"Unsupported runner OS: {runner_os}")
+
+          probe_dir = tempfile.mkdtemp(prefix="vtk-probe-")
+          should_skip = False
+          for platform_tag, label in targets:
+            cmd = [
+              sys.executable,
+              "-m",
+              "pip",
+              "download",
+              "--disable-pip-version-check",
+              "--only-binary=:all:",
+              "--no-deps",
+              "--python-version",
+              "3.14",
+              "--implementation",
+              "cp",
+              "--abi",
+              "cp314",
+              "--platform",
+              platform_tag,
+              "-d",
+              probe_dir,
+              "vtk",
+            ]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            if result.returncode != 0:
+              should_skip = True
+              print(f"vtk wheel probe failed for {label}; cp314 wheels will be skipped on this runner.")
+              print(result.stdout)
+              break
+            print(f"vtk wheel probe succeeded for {label}.")
+
+          shutil.rmtree(probe_dir, ignore_errors=True)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            fh.write(f"skip_cp314={'true' if should_skip else 'false'}\n")
+          PY
+
       - name: Build wheels
+        if: steps.vtk314.outputs.skip_cp314 != 'true'
         uses: pypa/cibuildwheel@v3.4.0
+
+      - name: Build wheels (skip cp314)
+        if: steps.vtk314.outputs.skip_cp314 == 'true'
+        uses: pypa/cibuildwheel@v3.4.0
+        env:
+          CIBW_SKIP: "*-win32 *-manylinux_i686 pp* *-musllinux* cp314-*"
 
       - uses: actions/upload-artifact@v6
         with:
