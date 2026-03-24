@@ -43,8 +43,8 @@ jobs:
       #   with:
       #     platforms: all
 
-      - name: Check vtk wheel availability for CPython 3.14
-        id: vtk314
+      - name: Check vtk wheel availability for CPython 3.14t
+        id: vtk314t
         shell: bash
         run: |
           python -m pip install --upgrade pip
@@ -84,7 +84,7 @@ jobs:
               "--implementation",
               "cp",
               "--abi",
-              "cp314",
+                  "cp314t",
               "--platform",
               platform_tag,
               "-d",
@@ -94,25 +94,25 @@ jobs:
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if result.returncode != 0:
               should_skip = True
-              print(f"vtk wheel probe failed for {label}; cp314 wheels will be skipped on this runner.")
+              print(f"vtk wheel probe failed for {label}; cp314t wheels will be skipped on this runner.")
               print(result.stdout)
               break
             print(f"vtk wheel probe succeeded for {label}.")
 
           shutil.rmtree(probe_dir, ignore_errors=True)
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-            fh.write(f"skip_cp314={'true' if should_skip else 'false'}\n")
+            fh.write(f"skip_cp314t={'true' if should_skip else 'false'}\n")
           PY
 
       - name: Build wheels
-        if: steps.vtk314.outputs.skip_cp314 != 'true'
+        if: steps.vtk314t.outputs.skip_cp314t != 'true'
         uses: pypa/cibuildwheel@v3.4.0
 
-      - name: Build wheels (skip cp314)
-        if: steps.vtk314.outputs.skip_cp314 == 'true'
+      - name: Build wheels (skip cp314t)
+        if: steps.vtk314t.outputs.skip_cp314t == 'true'
         uses: pypa/cibuildwheel@v3.4.0
         env:
-          CIBW_SKIP: "*-win32 *-manylinux_i686 pp* *-musllinux* cp314-*"
+          CIBW_SKIP: "*-win32 *-manylinux_i686 pp* *-musllinux* cp314t-*"
 
       - uses: actions/upload-artifact@v6
         with:
@@ -137,7 +137,7 @@ jobs:
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
-    environment: pypi
+    # environment: pypi
     permissions:
       id-token: write
     runs-on: ubuntu-latest
