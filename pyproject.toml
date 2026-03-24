@@ -42,6 +42,7 @@ where = ["src"]
 write_to = "src/ttcrpy/_version.py"
 
 [tool.cibuildwheel]
+before-all = "uname -a"
 # Skip 32-bit builds & building PyPy wheels on all platforms
 skip = ["*-win32", "*-manylinux_i686", "pp*", "*-musllinux*", ]
 
