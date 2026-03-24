@@ -483,28 +483,30 @@ namespace ttcr {
                                  no[n].z - this->origin.z, n );
         }
 
-        //
-        //              1
-        //            ,/|`\
-        //          ,/  |  `\
-        //        ,0    '.   `4
-        //      ,/       1     `\
-        //    ,/         |       `\
-        //   0-----5-----'.--------3
-        //    `\.         |      ,/
-        //       `\.      |     3
-        //          `2.   '. ,/
-        //             `\. |/
-        //                `2
-        //
-        //
-        //  triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
-        //               ---  ---  ---
-        //  triangle 1:  1-2  2-3  3-1
-        //                    ---  ---
-        //  triangle 2:  0-2  2-3  3-0
-        //                         ---
-        //  triangle 3:  0-1  1-3  3-0
+        
+        /*        
+                     1
+                   ,/|`\
+                 ,/  |  `\
+               ,0    '.   `4
+             ,/       1     `\
+           ,/         |       `\
+          0-----5-----'.--------3
+           `\.         |      ,/
+              `\.      |     3
+                 `2.   '. ,/
+                    `\. |/
+                       `2
+        
+        
+         triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
+                      ---  ---  ---
+         triangle 1:  1-2  2-3  3-1
+                           ---  ---
+         triangle 2:  0-2  2-3  3-0
+                                ---
+         triangle 3:  0-1  1-3  3-0
+        */
 
 
         for ( T2 ntet=0; ntet<tetrahedra.size(); ++ntet ) {
@@ -565,28 +567,30 @@ namespace ttcr {
             {0,1,3}   // (relative) indices of nodes of 4th triangle
         };
 
-        //
-        //              1
-        //            ,/|`\
-        //          ,/  |  `\
-        //        ,0    '.   `4
-        //      ,/       1     `\
-        //    ,/         |       `\
-        //   0-----5-----'.--------3
-        //    `\.         |      ,/
-        //       `\.      |     3
-        //          `2.   '. ,/
-        //             `\. |/
-        //                `2
-        //
-        //
-        //  triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
-        //               ---  ---  ---
-        //  triangle 1:  1-2  2-3  3-1
-        //                    ---  ---
-        //  triangle 2:  0-2  2-3  3-0
-        //                         ---
-        //  triangle 3:  0-1  1-3  3-0
+
+        /*        
+                     1
+                   ,/|`\
+                 ,/  |  `\
+               ,0    '.   `4
+             ,/       1     `\
+           ,/         |       `\
+          0-----5-----'.--------3
+           `\.         |      ,/
+              `\.      |     3
+                 `2.   '. ,/
+                    `\. |/
+                       `2
+        
+        
+         triangle 0:  0-1  1-2  2-0     (first occurence of segment underlined)
+                      ---  ---  ---
+         triangle 1:  1-2  2-3  3-1
+                           ---  ---
+         triangle 2:  0-2  2-3  3-0
+                                ---
+         triangle 3:  0-1  1-3  3-0
+        */
 
         if ( verbose>1 && nsecondary > 0 ) {
             std::cout << '\n';
