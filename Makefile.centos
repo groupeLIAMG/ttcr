@@ -4,8 +4,8 @@
 
 
 CXX = g++
-CXXOPTIONS = -O3 -DVTK -std=c++11 -pthread
-#CXXOPTIONS = -g -DVTK -std=c++11
+CXXOPTIONS = -O3 -DVTK -std=c++14 -pthread
+#CXXOPTIONS = -g -DVTK -std=c++14
 CXXFLAGS = $(CXXOPTIONS) -I/usr/local/VTK-8.2.0/include/vtk-8.2 \
 -I/usr/include/eigen3 -I./ttcr
 
