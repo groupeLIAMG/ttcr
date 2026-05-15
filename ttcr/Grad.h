@@ -110,7 +110,8 @@ namespace ttcr {
         b(2,0) = t - n2.getTT(nt);
 
         // solve Ax = b with least squares
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        // Use JacobiSVD for small fixed-size matrix (3x2)
+        x = A.template jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
 
         g.x = x[0];
         g.z = x[1];
@@ -195,7 +196,12 @@ namespace ttcr {
 
         // solve Ax = b with least squares
         //        x = (A.transpose() * A).ldlt().solve(A.transpose() * b);
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        // Use JacobiSVD for small matrices (typically < 16x16), BDCSVD for larger
+        if (nodes.size() < 16) {
+            x = A.template jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
+        } else {
+            x = A.template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
+        }
 
         //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
@@ -280,7 +286,12 @@ namespace ttcr {
         }
 
         // solve Ax = b with least squares
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        // Use JacobiSVD for small matrices (typically < 16x16), BDCSVD for larger
+        if (nodes.size() < 16) {
+            x = A.template jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
+        } else {
+            x = A.template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
+        }
 
         //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
@@ -353,7 +364,12 @@ namespace ttcr {
         }
 
         // solve Ax = b with least squares
-        x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+        // Use JacobiSVD for small matrices (typically < 16x16), BDCSVD for larger
+        if (nodes.size() < 16) {
+            x = A.template jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
+        } else {
+            x = A.template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
+        }
 
         //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
