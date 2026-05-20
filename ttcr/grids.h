@@ -502,7 +502,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -530,7 +530,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -573,7 +573,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -640,7 +640,7 @@ namespace ttcr {
                             chi[n] = x->GetComponent(n, 0);
                         }
                         foundChi = true;
-                        if ( verbose ) { cout << "Model contains anisotropy ratio chi\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy ratio chi\n"; }
                     }
                     if ( cd->HasArray("psi") ) {
 
@@ -657,7 +657,7 @@ namespace ttcr {
                             psi[n] = x->GetComponent(n, 0);
                         }
                         foundPsi = true;
-                        if ( verbose ) { cout << "Model contains anisotropy ratio xi\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy ratio xi\n"; }
                     }
                     break;
                 }
@@ -689,7 +689,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -722,7 +722,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -761,7 +761,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1020,7 +1020,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -1790,7 +1790,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1826,7 +1826,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1869,7 +1869,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1928,7 +1928,7 @@ namespace ttcr {
                             }
                         }
                         foundS2 = true;
-                        if ( verbose ) { cout << "Model contains energy-velocity parameter s2\n"; }
+                        if ( verbose ) { std::cout << "Model contains energy-velocity parameter s2\n"; }
                     }
                     
                     if ( cd->HasArray("s4") ) {
@@ -1950,7 +1950,7 @@ namespace ttcr {
                             }
                         }
                         foundS4 = true;
-                        if ( verbose ) { cout << "Model contains energy-velocity parameter s4\n"; }
+                        if ( verbose ) { std::cout << "Model contains energy-velocity parameter s4\n"; }
                     }
                     break;
                 } else if ( strcmp(cd->GetArrayName(na), "Slowness")==0 ) {
@@ -1992,7 +1992,7 @@ namespace ttcr {
                             }
                         }
                         foundXi = true;
-                        if ( verbose ) { cout << "Model contains anisotropy ratio\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy ratio\n"; }
                     }
                     if ( cd->HasArray("theta") ) {
 
@@ -2013,7 +2013,7 @@ namespace ttcr {
                             }
                         }
                         foundTheta = true;
-                        if ( verbose ) { cout << "Model contains anisotropy tilt angle\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy tilt angle\n"; }
                     }
                     break;
                 }
@@ -2022,7 +2022,7 @@ namespace ttcr {
                 switch ( par.method ) {
                     case SHORTEST_PATH:
                     {
-                        if ( verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         if ( foundTheta ) {
                             if ( foundXi==false ) { std::cerr << "Error: Model should contain anisotropy ratio" << std::endl; abort(); }
@@ -2063,13 +2063,13 @@ namespace ttcr {
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
-                            cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -2077,7 +2077,7 @@ namespace ttcr {
                             try {
                                 g->setTiltAngle( theta );
                             } catch (std::exception& e) {
-                                cerr << e.what() << endl;
+                                std::cerr << e.what() << std::endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
@@ -2086,7 +2086,7 @@ namespace ttcr {
                             try {
                                 g->setXi( xi );
                             } catch (std::exception& e) {
-                                cerr << e.what() << endl;
+                                std::cerr << e.what() << std::endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
@@ -2096,13 +2096,13 @@ namespace ttcr {
                                 g->setS2( s2 );
                                 g->setS4( s4 );
                             } catch (std::exception& e) {
-                                cerr << e.what() << endl;
+                                std::cerr << e.what() << std::endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
                         }
                             
-                        if ( verbose ) cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
@@ -2135,7 +2135,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -2178,7 +2178,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -2267,8 +2267,8 @@ namespace ttcr {
             case SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
-                    cout.flush();
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
@@ -2311,9 +2311,9 @@ namespace ttcr {
                                                                                    nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
-                    cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
-                    cout.flush();
+                    std::cout.flush();
                 }
 
                 break;
@@ -2429,10 +2429,10 @@ namespace ttcr {
 
         }
         if ( par.time ) {
-            cout.precision(12);
-            cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+            std::cout.precision(12);
+            std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
-        cout.flush();
+        std::cout.flush();
         try {
             g->setSlowness(slowness);
             if ( foundXi ) {
@@ -2456,7 +2456,7 @@ namespace ttcr {
                 g->setS4(s4);
             }
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -2885,7 +2885,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
