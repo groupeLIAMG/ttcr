@@ -10,7 +10,7 @@ from setuptools.command.build_ext import build_ext
 from Cython.Build import cythonize
 
 if platform.system() == 'Darwin':
-    extra_compile_args = ['-std=c++14', '-stdlib=libc++', '-O3', '-arch', 'x86_64',
+    extra_compile_args = ['-std=c++17', '-stdlib=libc++', '-O3', '-arch', 'x86_64',
                           '-arch', 'arm64',
                           '-Wno-unused-result', '-Wunreachable-code',
                           '-fno-common', '-dynamic', '-DNDEBUG', '-fwrapv',
@@ -25,9 +25,9 @@ elif platform.system() == 'Windows':
 elif platform.system() == 'Linux':
     if 'readthedocs.org/user_builds/ttcrpy' in os.path.dirname(__file__):
         # do not optimize when building on readthedocs server
-        extra_compile_args = ['-std=c++14', '-O0']
+        extra_compile_args = ['-std=c++17', '-O0']
     else:
-        extra_compile_args = ['-std=c++14', '-O3']
+        extra_compile_args = ['-std=c++17', '-O3']
     extra_link_args = []
 
 include_dirs = ['ttcr', 'boost_1_91_0', 'eigen-5.0.0', np.get_include()]
