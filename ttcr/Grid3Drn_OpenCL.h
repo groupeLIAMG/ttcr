@@ -27,6 +27,7 @@
 #include <string>
 #include <stdexcept>
 #include <type_traits>
+#include <chrono>
 
 namespace ttcr {
 
@@ -92,7 +93,21 @@ private:
     };
     
     std::vector<SweepDirection> sweep_directions;
-    
+
+    // --- Profiling (opt-in, see setProfiling) -------------------------------
+    // When enabled, kernel launches and host<->device transfers are timed using
+    // OpenCL events (the queue is created with CL_QUEUE_PROFILING_ENABLE), and
+    // the sweep cycles are wall-clock timed.  The breakdown is dumped at
+    // cleanup() so a profiling run prints one summary at the end.  Disabled by
+    // default, with zero added cost on the hot path (no events are attached).
+    bool profiling;
+    cl_ulong prof_kernel_ns;    // summed device execution time of sweep kernels
+    cl_ulong prof_upload_ns;    // summed device time of host->device writes
+    cl_ulong prof_download_ns;  // summed device time of device->host reads
+    size_t   prof_launches;     // number of kernel launches (plane dispatches)
+    double   prof_wall_ms;      // summed wall-clock time of performSweepCycle()
+    std::vector<cl_event> prof_events;  // pending kernel events for the cycle
+
 public:
     OpenCLSweepSolver() : 
         platform(nullptr), device(nullptr), context(nullptr), 
@@ -101,7 +116,9 @@ public:
         d_tt_in(nullptr), d_tt_out(nullptr), d_slowness(nullptr), d_frozen(nullptr),
         d_plane_nodes(nullptr), maxlevel(0),
         ncx(0), ncy(0), ncz(0), num_nodes(0), initialized(false),
-        current_sweep_type(SweepType::BASIC)
+        current_sweep_type(SweepType::BASIC),
+        profiling(false), prof_kernel_ns(0), prof_upload_ns(0),
+        prof_download_ns(0), prof_launches(0), prof_wall_ms(0.0)
     {
     }
     
@@ -152,7 +169,47 @@ public:
     void setSweepType(SweepType type) {
         current_sweep_type = type;
     }
-    
+
+    // =========================================================================
+    // Profiling (opt-in)
+    // =========================================================================
+
+    /// Enable/disable GPU profiling.  Safe to toggle at any time; the queue is
+    /// always created profiling-capable, so this just controls whether events
+    /// are attached and timed.
+    void setProfiling(bool on) { profiling = on; }
+    bool isProfiling() const { return profiling; }
+
+    /// Zero the accumulated profiling counters.
+    void resetProfile() {
+        prof_kernel_ns = prof_upload_ns = prof_download_ns = 0;
+        prof_launches = 0;
+        prof_wall_ms = 0.0;
+    }
+
+    /// Print the accumulated profiling breakdown.  "kernel busy" is the
+    /// fraction of sweep wall-clock time the device actually spent executing
+    /// sweep kernels -- a low value means the run is launch/host-bound rather
+    /// than compute-bound.
+    void reportProfile(std::ostream& os = std::cout) const {
+        if (prof_launches == 0) {
+            os << "  [OpenCL profile] no kernel launches recorded\n";
+            return;
+        }
+        const double kernel_ms   = prof_kernel_ns   * 1e-6;
+        const double upload_ms   = prof_upload_ns   * 1e-6;
+        const double download_ms = prof_download_ns * 1e-6;
+        const double busy = (prof_wall_ms > 0.0)
+                          ? 100.0 * kernel_ms / prof_wall_ms : 0.0;
+        os << "  [OpenCL profile]\n"
+           << "      sweep wall   : " << prof_wall_ms  << " ms\n"
+           << "      kernel exec  : " << kernel_ms     << " ms  ("
+                                      << busy << "% of sweep wall)\n"
+           << "      upload       : " << upload_ms     << " ms\n"
+           << "      download     : " << download_ms   << " ms\n"
+           << "      launches     : " << prof_launches << "\n";
+    }
+
     // =========================================================================
     // Main Execution Method
     // =========================================================================
@@ -236,15 +293,19 @@ public:
         // d_tt_out at its start, so d_tt_out must also hold the uploaded data;
         // otherwise the sync would clobber the freshly uploaded travel times
         // with whatever stale contents d_tt_out happened to hold.
+        cl_event evt = nullptr;
+        cl_event* ep = profiling ? &evt : nullptr;
         cl_int err = clEnqueueWriteBuffer(queue, d_tt_in, CL_TRUE, 0,
                                          num_nodes * sizeof(T1), tt.data(),
-                                         0, nullptr, nullptr);
+                                         0, nullptr, ep);
         checkError(err, "Uploading travel time data to d_tt_in");
+        addEventTime(evt, prof_upload_ns);
 
         err = clEnqueueWriteBuffer(queue, d_tt_out, CL_TRUE, 0,
                                    num_nodes * sizeof(T1), tt.data(),
-                                   0, nullptr, nullptr);
+                                   0, nullptr, ep);
         checkError(err, "Uploading travel time data to d_tt_out");
+        addEventTime(evt, prof_upload_ns);
     }
     
     /**
@@ -313,11 +374,15 @@ private:
         context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
         checkError(err, "Creating context");
         
-        // Create command queue
+        // Create command queue.  Profiling is enabled so OpenCL event
+        // timestamps are available when setProfiling(true) is used; this has
+        // negligible cost when profiling is off (no events are attached).
 #ifdef CL_VERSION_2_0
-        queue = clCreateCommandQueueWithProperties(context, device, nullptr, &err);
+        const cl_queue_properties qprops[] =
+            { CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0 };
+        queue = clCreateCommandQueueWithProperties(context, device, qprops, &err);
 #else
-        queue = clCreateCommandQueue(context, device, 0, &err);
+        queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
 #endif
         checkError(err, "Creating command queue");
     }
@@ -575,30 +640,39 @@ private:
                    const std::vector<T1>& slowness,
                    const std::vector<unsigned char>& frozen) {
         cl_int err;
-        
+        cl_event evt = nullptr;
+        cl_event* ep = profiling ? &evt : nullptr;
+
         // Upload travel times to BOTH buffers (in case we swap)
-        err = clEnqueueWriteBuffer(queue, d_tt_in, CL_TRUE, 0, 
-                                  num_nodes * sizeof(T1), tt.data(), 0, nullptr, nullptr);
+        err = clEnqueueWriteBuffer(queue, d_tt_in, CL_TRUE, 0,
+                                  num_nodes * sizeof(T1), tt.data(), 0, nullptr, ep);
         checkError(err, "Uploading tt data to d_tt_in");
-        
+        addEventTime(evt, prof_upload_ns);
+
         // Also initialize d_tt_out with the same data to avoid garbage values
-        err = clEnqueueWriteBuffer(queue, d_tt_out, CL_TRUE, 0, 
-                                  num_nodes * sizeof(T1), tt.data(), 0, nullptr, nullptr);
+        err = clEnqueueWriteBuffer(queue, d_tt_out, CL_TRUE, 0,
+                                  num_nodes * sizeof(T1), tt.data(), 0, nullptr, ep);
         checkError(err, "Uploading tt data to d_tt_out");
-        
+        addEventTime(evt, prof_upload_ns);
+
         err = clEnqueueWriteBuffer(queue, d_slowness, CL_TRUE, 0,
-                                  num_nodes * sizeof(T1), slowness.data(), 0, nullptr, nullptr);
+                                  num_nodes * sizeof(T1), slowness.data(), 0, nullptr, ep);
         checkError(err, "Uploading slowness data");
-        
+        addEventTime(evt, prof_upload_ns);
+
         err = clEnqueueWriteBuffer(queue, d_frozen, CL_TRUE, 0,
-                                  num_nodes * sizeof(unsigned char), frozen.data(), 0, nullptr, nullptr);
+                                  num_nodes * sizeof(unsigned char), frozen.data(), 0, nullptr, ep);
         checkError(err, "Uploading frozen data");
+        addEventTime(evt, prof_upload_ns);
     }
-    
+
     void downloadData(std::vector<T1>& tt) {
+        cl_event evt = nullptr;
+        cl_event* ep = profiling ? &evt : nullptr;
         cl_int err = clEnqueueReadBuffer(queue, d_tt_out, CL_TRUE, 0,
-                                        num_nodes * sizeof(T1), tt.data(), 0, nullptr, nullptr);
+                                        num_nodes * sizeof(T1), tt.data(), 0, nullptr, ep);
         checkError(err, "Downloading results");
+        addEventTime(evt, prof_download_ns);
     }
     
     // =========================================================================
@@ -744,6 +818,9 @@ private:
         // buildPlaneNodeLists().  (Previously every plane launch dispatched the
         // full grid box and off-plane work-items returned at a gate -- O(n)
         // launches each spawning O(n^3) threads for O(n^2) useful updates.)
+        std::chrono::high_resolution_clock::time_point t_begin;
+        if (profiling) t_begin = std::chrono::high_resolution_clock::now();
+
         for (size_t dir = 0; dir < 8; ++dir) {
             for (int level = 0; level <= maxlevel; ++level) {
                 executeSweep(current_kernel, dir, level);
@@ -758,6 +835,19 @@ private:
                                          0, nullptr, nullptr);
         checkError(err, "Mirroring Gauss-Seidel result to d_tt_out");
         clFinish(queue);
+
+        if (profiling) {
+            auto t_end = std::chrono::high_resolution_clock::now();
+            prof_wall_ms +=
+                std::chrono::duration<double, std::milli>(t_end - t_begin).count();
+            // All kernels of this cycle are complete (clFinish above), so their
+            // event timestamps can be read without further synchronization.
+            for (cl_event e : prof_events) {
+                prof_kernel_ns += eventNs(e);
+                clReleaseEvent(e);
+            }
+            prof_events.clear();
+        }
     }
 
     void executeSweep(cl_kernel kernel, size_t direction_idx, int level) {
@@ -829,11 +919,19 @@ private:
         //                             global_work_size, local_work_size,
         //                             0, nullptr, nullptr);
 
-        // Launch kernel
+        // Launch kernel.  When profiling, attach an event and stash it; the
+        // events are queried in performSweepCycle() after the cycle's clFinish
+        // (so reading their timestamps adds no extra synchronization).
+        cl_event evt = nullptr;
+        cl_event* ep = profiling ? &evt : nullptr;
         err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr,
                                     &global_1d, &local_1d,
-                                    0, nullptr, nullptr);
+                                    0, nullptr, ep);
         checkError(err, "Launching kernel");
+        if (profiling) {
+            prof_events.push_back(evt);
+            ++prof_launches;
+        }
 
         // OLD CODE: drain the queue after every single plane launch.
         //
@@ -873,8 +971,32 @@ private:
             throw std::runtime_error(oss.str());
         }
     }
+
+    // Device execution time of a completed event, in nanoseconds.
+    static cl_ulong eventNs(cl_event evt) {
+        cl_ulong s = 0, e = 0;
+        clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_START, sizeof(s), &s, nullptr);
+        clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_END,   sizeof(e), &e, nullptr);
+        return (e > s) ? (e - s) : 0;
+    }
+
+    // Add a just-completed event's device time to an accumulator and release
+    // it.  No-op when profiling is off (evt is then null).  Only valid for
+    // events whose command has finished (e.g. blocking transfers).
+    void addEventTime(cl_event evt, cl_ulong& accumulator) {
+        if (!profiling || !evt) return;
+        accumulator += eventNs(evt);
+        clReleaseEvent(evt);
+    }
     
     void cleanup() {
+        // Emit the profiling summary (once, at teardown) for a profiling run.
+        if (profiling && prof_launches > 0) {
+            reportProfile(std::cout);
+        }
+        for (cl_event e : prof_events) clReleaseEvent(e);
+        prof_events.clear();
+
         if (d_tt_in) clReleaseMemObject(d_tt_in);
         if (d_tt_out) clReleaseMemObject(d_tt_out);
         if (d_plane_nodes) clReleaseMemObject(d_plane_nodes);

@@ -37,6 +37,7 @@ using namespace std;
 namespace ttcr {
 
     int verbose = 0;
+    int gpu_profile = 0;
 
     void print_usage (std::ostream& stream, char *progname, int exit_code)
     {
@@ -223,6 +224,10 @@ namespace ttcr {
             else if (kw.find("single precision") < 200 ) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.singlePrecision;
+            }
+            else if (kw.find("profile") < 200 ) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.profile;
             }
             else if (kw.find("saveRayPaths") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();

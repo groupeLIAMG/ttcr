@@ -75,6 +75,10 @@ int body(const input_parameters &par) {
         num_threads = par.nt < nTx ? par.nt : nTx;
     }
 
+    // Publish the profiling flag for the OpenCL grids (read at grid
+    // construction time, like `verbose`).
+    gpu_profile = par.profile ? 1 : 0;
+
     // The OpenCL fast-sweeping grids share a single GPU solver (one set of
     // device buffers, one command queue, one set of kernel objects) across the
     // whole grid object.  The threaded shot loop below calls g->raytrace()

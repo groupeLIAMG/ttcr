@@ -167,11 +167,16 @@ namespace ttcr {
             if (gpu_initialized) return;
             
             try {
-                gpu_solver.initialize(this->ncx, this->ncy, this->ncz, 
+                gpu_solver.initialize(this->ncx, this->ncy, this->ncz,
                                      this->dx, this->dy, this->dz);
                 gpu_available = true;
                 gpu_initialized = true;
-                
+
+                // Enable GPU profiling when requested via the "profile"
+                // parameter-file keyword (independent of verbose); the breakdown
+                // is printed when the solver is torn down at end of run.
+                gpu_solver.setProfiling(gpu_profile != 0);
+
                 if ( verbose ) {
                     std::cout << "  GPU acceleration enabled for Grid3Drcfs\n";
                     std::cout << gpu_solver.getDeviceInfo();

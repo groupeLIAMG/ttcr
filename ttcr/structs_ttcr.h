@@ -58,6 +58,7 @@ namespace ttcr {
         bool tt_from_rp;
         bool useEdgeLength;
         bool translateOrigin;
+        bool profile;                 // emit GPU profiling breakdown (OpenCL)
         double epsilon;
         double source_radius;
         double min_distance_rp;
@@ -76,7 +77,7 @@ namespace ttcr {
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), processVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
-        useEdgeLength(true), translateOrigin(false),
+        useEdgeLength(true), translateOrigin(false), profile(false),
         epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
         radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}

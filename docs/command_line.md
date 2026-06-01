@@ -50,6 +50,7 @@ The keywords are :
 -  **raypath minimum distance** : minimum distance tolerance used during raypath reconstruction (e.g. to decide when a node or the source has been reached). Default is 1.e-5.
 -  **translate grid origin** : internally translate the grid so its origin is at (0,0,0) before raytracing, improving numerical conditioning for meshes defined far from the origin. Enable with 1. Default is 0. (unstructured meshes)
 -  **min nb Tx per thread** : when the number of threads is chosen automatically (i.e. *number of threads* is 0), assign at least this many sources (Tx) to each thread, which caps the thread count when there are few sources. Default is 5.
+-  **profile** : when using the OpenCL fast sweeping implementation, print a GPU profiling breakdown (sweep wall-clock time, kernel execution time and its fraction of the wall time, host/device transfer times, and number of kernel launches) at the end of the run. Independent of verbose mode. Enable with 1. Default is 0.
 
 The following keywords are accepted aliases for keywords listed above:
 
