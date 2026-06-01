@@ -42,6 +42,20 @@ The keywords are :
 -  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
 -  **fsm high order** : use 3rd order weighted essentially non-oscillatory (WENO) operator with fast sweeping in rectilinear grid if value == 1 (default is 0)
 - **traveltime from raypath** : use backward raytracing step to compute traveltimes (currently implemented on 3D unstructured meshes only)
+-  **save M** : compute and save the matrix **M** of partial derivatives of traveltime with respect to model slowness along the raypaths (the sensitivity / ray matrix used in tomography). Enable with 1. Default is 0. Implies raypath computation.
+-  **project Tx Rx** : project the source and receiver coordinates onto the mesh before raytracing, useful when Tx/Rx points lie slightly off the mesh. Enable with 1. Default is 0. (unstructured meshes)
+-  **interpolate velocity** : when computing slowness at secondary/tertiary nodes, interpolate velocity (then convert to slowness) rather than interpolating slowness directly; can improve accuracy where strong slowness gradients are present. Enable with 1. Default is 0.
+-  **rotated template** : for the fast sweeping method on rectilinear grids, also use the rotated (diagonal) finite-difference stencils in addition to the standard axis-aligned template (see Qian et al. 2007), improving accuracy for wavefronts travelling obliquely to the grid. Enable with 1. Default is 0.
+-  **source radius** : radius around each source within which node traveltimes are initialized analytically (assuming a locally homogeneous medium) instead of by the solver; improves near-source accuracy. A value of 0 disables it. Default is 0.
+-  **raypath minimum distance** : minimum distance tolerance used during raypath reconstruction (e.g. to decide when a node or the source has been reached). Default is 1.e-5.
+-  **translate grid origin** : internally translate the grid so its origin is at (0,0,0) before raytracing, improving numerical conditioning for meshes defined far from the origin. Enable with 1. Default is 0. (unstructured meshes)
+-  **min nb Tx per thread** : when the number of threads is chosen automatically (i.e. *number of threads* is 0), assign at least this many sources (Tx) to each thread, which caps the thread count when there are few sources. Default is 5.
+
+The following keywords are accepted aliases for keywords listed above:
+
+-  **number of dynamic nodes** : alias for *tertiary nodes*.
+-  **gradient method** : alias for *raypath high order*.
+-  **radius dynamic nodes** : alias for *src radius tertiary*.
 
 An example is shown below (note that keywords *must* be comprised between a hashtag and a comma):
 ```
