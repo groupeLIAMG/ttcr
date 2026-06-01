@@ -22,6 +22,82 @@ b = (V20-a)/20.0
 
 ################################################################################
 #
+# Fine rectilinear grids
+#
+################################################################################
+
+frac = 8
+N *= frac
+dx /= frac
+
+x = np.arange(0.0, 20.0+0.01, dx)
+z = np.arange(0.0, 20.0+0.01, dx)
+
+# %% gradient - Rectilinear
+
+xCoords = vtk.vtkDoubleArray()
+yCoords = vtk.vtkDoubleArray()
+zCoords = vtk.vtkDoubleArray()
+for n in range(0, N+1):
+    xCoords.InsertNextValue( n*dx )
+yCoords = vtk.vtkDoubleArray()
+yCoords.DeepCopy(xCoords)
+zCoords.DeepCopy(xCoords)
+
+rgrid = vtk.vtkRectilinearGrid()
+rgrid.SetDimensions( N+1, N+1, N+1 )
+rgrid.SetXCoordinates(xCoords)
+rgrid.SetYCoordinates(yCoords)
+rgrid.SetZCoordinates(zCoords)
+
+slowness = vtk.vtkDoubleArray()
+slowness.SetName("Slowness")
+slowness.SetNumberOfComponents(1)
+slowness.SetNumberOfTuples( rgrid.GetNumberOfPoints() )
+
+for n in range(0, rgrid.GetNumberOfPoints()):
+    x = rgrid.GetPoint(n)
+    s = 1.0 / (a+b*x[2])
+    slowness.SetTuple1(n, s)
+
+rgrid.GetPointData().SetScalars( slowness );
+
+writer = vtk.vtkXMLRectilinearGridWriter()
+writer.SetFileName( "gradient_fine.vtr" )
+writer.SetInputData( rgrid )
+writer.SetDataModeToBinary()
+writer.Update()
+
+# %% layers - rectilinear
+
+rgrid = vtk.vtkRectilinearGrid()
+rgrid.SetDimensions( N+1, N+1, N+1 )
+rgrid.SetXCoordinates(xCoords)
+rgrid.SetYCoordinates(yCoords)
+rgrid.SetZCoordinates(zCoords)
+
+slowness = vtk.vtkDoubleArray()
+slowness.SetName("Slowness")
+slowness.SetNumberOfComponents(1)
+slowness.SetNumberOfTuples( rgrid.GetNumberOfCells() )
+
+for n in range(0, rgrid.GetNumberOfCells()):
+    bo = rgrid.GetCell(n).GetBounds()
+    z = floor(bo[4]) + 0.5
+    s = 1.0 / (a+b*z)
+    slowness.SetTuple1(n, s)
+
+rgrid.GetCellData().SetScalars( slowness );
+
+writer = vtk.vtkXMLRectilinearGridWriter()
+writer.SetFileName( "layers_fine.vtr" )
+writer.SetInputData( rgrid )
+writer.SetDataModeToBinary()
+writer.Update()
+
+
+################################################################################
+#
 # Medium grid
 #
 ################################################################################
