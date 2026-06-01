@@ -39,7 +39,7 @@ The keywords are :
 -  **src radius tertiary**: radius around source for including tertiary nodes
 -  **process reflectors** : use reflectors as sources to compute reflected arrival times (experimental)
 -  **saveRayPaths** : Save raypaths in VTK format
--  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
+-  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 1)
 -  **fsm high order** : use 3rd order weighted essentially non-oscillatory (WENO) operator with fast sweeping in rectilinear grid if value == 1 (default is 0)
 - **traveltime from raypath** : use backward raytracing step to compute traveltimes (currently implemented on 3D unstructured meshes only)
 -  **save M** : compute and save the matrix **M** of partial derivatives of traveltime with respect to model slowness along the raypaths (the sensitivity / ray matrix used in tomography). Enable with 1. Default is 0. Implies raypath computation.
