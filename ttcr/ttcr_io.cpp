@@ -252,6 +252,7 @@ namespace ttcr {
                 int test;
                 sin >> test;
                 if ( test == 1 ) ip.method = FAST_SWEEPING;
+                else if ( test == 2 ) ip.method = FAST_SWEEPING_OPENCL;
             }
             else if (par.find("dynamic shortest path") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();

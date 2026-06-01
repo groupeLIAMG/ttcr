@@ -135,7 +135,6 @@ namespace ttcr {
             }
             niter_final = niter;
             niterw_final = niterw;
-            //std::cout << Tx[0] << "    times " << times[0] << '\t' << this->nodes[0].getNodeSlowness() << '\n';
         } else {
             int niter = 0;
             while ( change >= epsilon && niter<nitermax ) {
@@ -152,9 +151,6 @@ namespace ttcr {
             }
             niter_final = niter;
         }
-        //        for ( size_t n=0; n<this->nodes.size(); ++n ) {
-        //            std::cout << this->nodes[n].getTT(threadNo) << '\n';
-        //        }
     }
 
     template<typename T1, typename T2>

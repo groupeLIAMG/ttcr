@@ -31,7 +31,7 @@
 
 namespace ttcr {
 
-    enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING, DYNAMIC_SHORTEST_PATH };
+    enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING, DYNAMIC_SHORTEST_PATH, FAST_SWEEPING_OPENCL };
     enum gradient_method : int { LS_FO=0, LS_SO=1, AB=2 };
 
     struct input_parameters {
