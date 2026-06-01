@@ -33,10 +33,10 @@ The keywords are :
 -  **saveGridTT** : save traveltime over whole grid, in ASCII file if 1, in VTK format if 2, or in binary format if 3.
 -  **single precision** : work with float rather than double
 -  **fast marching** : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)
--  **fast sweeping** : use fast sweeping method if value == 1
-- **dynamic shortest path** : use dynamic shortest path method if value == 1
-- **tertiary nodes** : number of tertiary nodes to use with DSPM
-- **src radius tertiary**: radius around source for including tertiary nodes
+-  **fast sweeping** : use fast sweeping method if value == 1 or 2 (2 will attempt to run the OpenCL implementation)
+-  **dynamic shortest path** : use dynamic shortest path method if value == 1
+-  **tertiary nodes** : number of tertiary nodes to use with DSPM
+-  **src radius tertiary**: radius around source for including tertiary nodes
 -  **process reflectors** : use reflectors as sources to compute reflected arrival times (experimental)
 -  **saveRayPaths** : Save raypaths in VTK format
 -  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
@@ -118,6 +118,8 @@ etc
 ###### Note regarding the fast sweeping method on rectilinear grids
 
 The 3D implementations require that the cells must be cubic.  Only the first value for the size of cell is used when building the grids.
+
+OpenCL accelerated implementations of the sweeping method are provided for 3D rectilinear grids.  Depending on hardware, the OpenCL implementation might not run if double precision is requested, in which case the code falls back to the CPU version.  In the current version, multi-threading is disabled when using OpenCL implementations to avoid saturating the GPU.
 
 #### Unstructured meshes
 

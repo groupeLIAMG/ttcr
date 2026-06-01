@@ -52,7 +52,6 @@ template<typename T>
 // body() is the principal function for raytracing called by main()
 int body(const input_parameters &par) {
 
-
     // Create the src class containing the position of the sources
     std::vector< Src<T> > src;
     for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
@@ -63,7 +62,6 @@ int body(const input_parameters &par) {
         src[n].init();
     }
     if ( verbose ) cout << "done.\n";
-
 
     // Calculate the number of threads to be used
     size_t const nTx = src.size();
@@ -77,9 +75,23 @@ int body(const input_parameters &par) {
         num_threads = par.nt < nTx ? par.nt : nTx;
     }
 
+    // The OpenCL fast-sweeping grids share a single GPU solver (one set of
+    // device buffers, one command queue, one set of kernel objects) across the
+    // whole grid object.  The threaded shot loop below calls g->raytrace()
+    // concurrently on that single shared object, which is NOT thread-safe for
+    // the GPU path (concurrent buffer uploads, clSetKernelArg on shared kernels,
+    // interleaved queue submissions).  The device already parallelizes each
+    // sweep internally, so host-side threading over shots buys little here:
+    // pin the GPU path to a single host thread.
+    if ( par.method == FAST_SWEEPING_OPENCL && num_threads > 1 ) {
+        if ( verbose )
+            cout << "OpenCL fast sweeping uses a single shared GPU solver; "
+                 << "forcing num_threads = 1 (was " << num_threads << ").\n";
+        num_threads = 1;
+    }
+
     size_t blk_size = nTx/num_threads;
     if ( blk_size == 0 ) blk_size++;
-
 
     // Find the generic file name of the input model
     string::size_type idx;  // can hold a string of any length
@@ -88,8 +100,6 @@ int body(const input_parameters &par) {
     if (idx != string::npos) {
         extension = par.modelfile.substr(idx);
     }
-
-
 
     // Intialize a Grid3D object containing the 3D grid and the functions to perform raytracing
     Grid3D<T,uint32_t> *g=nullptr;
@@ -554,7 +564,7 @@ int body(const input_parameters &par) {
     if ( par.time ) { end = chrono::high_resolution_clock::now(); }
     if ( verbose ) {
         cout << "done.\n";
-        if ( par.method == FAST_SWEEPING ) {
+        if ( par.method == FAST_SWEEPING || par.method == FAST_SWEEPING_OPENCL ) {
             std::cout << g->get_niter() << " 1st order iterations ";
             if ( par.weno3==true ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
             std::cout << "were needed with epsilon = " << par.epsilon << '\n';

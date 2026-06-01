@@ -66,9 +66,11 @@
 #include "Grid3Drcsp.h"
 #include "Grid3Drcdsp.h"
 #include "Grid3Drcfs.h"
+#include "Grid3Drcfs_OpenCL.h"
 #include "Grid3Drnsp.h"
 #include "Grid3Drndsp.h"
 #include "Grid3Drnfs.h"
+#include "Grid3Drnfs_OpenCL.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
@@ -297,6 +299,37 @@ namespace ttcr {
                                                     par.weno3, par.tt_from_rp,
                                                     par.processVel, nt,
                                                     par.translateOrigin);
+
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( verbose ) {
+                    std::cout << "done.\n";
+                    std::cout.flush();
+                }
+
+                break;
+            }
+            case FAST_SWEEPING_OPENCL:
+            {
+                if ( verbose ) {
+                    std::cout << "Creating grid ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells ) {
+                    g = new Grid3Drcfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                           d[0], min[0], min[1],  min[2],
+                                                           par.epsilon, par.nitermax,
+                                                           par.weno3, par.tt_from_rp,
+                                                           par.processVel, nt,
+                                                           par.translateOrigin);
+                }
+                else
+                    g = new Grid3Drnfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                           d[0], min[0], min[1],  min[2],
+                                                           par.epsilon, par.nitermax,
+                                                           par.weno3, par.tt_from_rp,
+                                                           par.processVel, nt,
+                                                           par.translateOrigin);
 
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
@@ -537,6 +570,32 @@ namespace ttcr {
                         if ( verbose ) std::cout << "done.\n";
                         break;
 
+                    case FAST_SWEEPING_OPENCL:
+
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drnfs_OpenCL) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid3Drnfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                               d[0], xrange[0], yrange[0], zrange[0],
+                                                               par.epsilon, par.nitermax,
+                                                               par.weno3, par.tt_from_rp,
+                                                               par.processVel, nt,
+                                                               par.translateOrigin);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            std::cerr << e.what() << std::endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        break;
+
                     case FAST_MARCHING:
                         std::cerr << "Error: fast marching method not yet implemented for 3D rectilinear grids\n";
                         std::cerr.flush();
@@ -704,6 +763,7 @@ namespace ttcr {
                         }
                         if ( verbose ) std::cout << "done.\n";
                         break;
+                        
                     case FAST_SWEEPING:
                         if ( verbose ) { std::cout << "Building grid (Grid3Drcfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
@@ -713,6 +773,31 @@ namespace ttcr {
                                                         par.weno3, par.tt_from_rp,
                                                         par.processVel, nt,
                                                         par.translateOrigin);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            std::cerr << e.what() << std::endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        break;
+
+                    case FAST_SWEEPING_OPENCL:
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drcfs_OpenCL) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid3Drcfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                               d[0], xrange[0], yrange[0], zrange[0],
+                                                               par.epsilon, par.nitermax,
+                                                               par.weno3, par.tt_from_rp,
+                                                               par.processVel, nt,
+                                                               par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
@@ -956,6 +1041,13 @@ namespace ttcr {
                     std::cout.flush();
                 }
 
+                break;
+            }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 3D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
                 break;
             }
             case DYNAMIC_SHORTEST_PATH:
@@ -1283,6 +1375,13 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 3D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -1599,6 +1698,13 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
+                std::cerr.flush();
+                return nullptr;
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -1835,6 +1941,13 @@ namespace ttcr {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
                         }
+                        break;
+                    }
+                    case FAST_SWEEPING_OPENCL:
+                    {
+                        std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
+                        std::cerr.flush();
+                        return nullptr;
                         break;
                     }
                     case FAST_MARCHING:
@@ -2146,6 +2259,12 @@ namespace ttcr {
                         }
                         break;
                     }
+                    case FAST_SWEEPING_OPENCL:
+                    {
+                        std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
+                        std::cerr.flush();
+                        return nullptr;
+                    }
                     case FAST_MARCHING:
                     {
                         std::cerr << "Error: fast marching method not yet implemented for 2D rectilinear grids\n";
@@ -2386,6 +2505,13 @@ namespace ttcr {
                     std::cout.flush();
                 }
 
+                break;
+            }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
                 break;
             }
             case DYNAMIC_SHORTEST_PATH:
@@ -2682,6 +2808,13 @@ namespace ttcr {
                     std::cout.flush();
                 }
 
+                break;
+            }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
                 break;
             }
             case DYNAMIC_SHORTEST_PATH:
