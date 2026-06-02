@@ -12,13 +12,66 @@ import vtk
 import numpy as np
 from math import floor
 
-N = 20
-dx = 1.0
-
 
 a = 1.0
 V20 = 3.0
 b = (V20-a)/20.0
+
+N = 20
+dx = 1.0
+
+################################################################################
+#
+# Very fine rectilinear grids
+#
+################################################################################
+
+frac = 12
+N *= frac
+dx /= frac
+
+x = np.arange(0.0, 20.0+0.01, dx)
+z = np.arange(0.0, 20.0+0.01, dx)
+
+# %% gradient - Rectilinear
+
+xCoords = vtk.vtkDoubleArray()
+yCoords = vtk.vtkDoubleArray()
+zCoords = vtk.vtkDoubleArray()
+for n in range(0, N+1):
+    xCoords.InsertNextValue( n*dx )
+yCoords = vtk.vtkDoubleArray()
+yCoords.DeepCopy(xCoords)
+zCoords.DeepCopy(xCoords)
+
+rgrid = vtk.vtkRectilinearGrid()
+rgrid.SetDimensions( N+1, N+1, N+1 )
+rgrid.SetXCoordinates(xCoords)
+rgrid.SetYCoordinates(yCoords)
+rgrid.SetZCoordinates(zCoords)
+
+slowness = vtk.vtkDoubleArray()
+slowness.SetName("Slowness")
+slowness.SetNumberOfComponents(1)
+slowness.SetNumberOfTuples( rgrid.GetNumberOfPoints() )
+
+for n in range(0, rgrid.GetNumberOfPoints()):
+    x = rgrid.GetPoint(n)
+    s = 1.0 / (a+b*x[2])
+    slowness.SetTuple1(n, s)
+
+rgrid.GetPointData().SetScalars( slowness );
+
+writer = vtk.vtkXMLRectilinearGridWriter()
+writer.SetFileName( "gradient_vfine.vtr" )
+writer.SetInputData( rgrid )
+writer.SetDataModeToBinary()
+writer.Update()
+
+
+N = 20
+dx = 1.0
+
 
 ################################################################################
 #
@@ -101,6 +154,9 @@ writer.Update()
 # Medium grid
 #
 ################################################################################
+
+N = 20
+dx = 1.0
 
 frac = 2
 N *= frac

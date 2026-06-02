@@ -16,8 +16,8 @@ include ttcr/structs_ttcr.h
 include ttcr/ttcr_t.h
 include ttcr/utils.h
 include ttcr/ctpl_stl.h
-graft boost_1_81_0
-graft eigen-3.4.0
+graft boost_1_91_0
+graft eigen-5.0.0
 prune ttcr_matlab
 prune ttcrXcode
 exclude .gitattributes

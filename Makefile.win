@@ -1,0 +1,165 @@
+# Windows Makefile for ttcr using MSVC (Visual Studio Build Tools)
+# This mirrors Makefile.osx targets and flags, adapted for Windows.
+# Use from a "Developer Command Prompt for VS" so cl/link are on PATH.
+# You can also set TOOLCHAIN=mingw to use g++ instead.
+
+# Toolchain selection: msvc (default) or mingw
+TOOLCHAIN ?= msvc
+
+# Configuration (Release by default)
+CONFIG ?= Release
+
+# Directories
+SRC_DIR := ttcr
+INC_DIR := ttcr
+BUILD_DIR := build/$(CONFIG)
+BIN_DIR := bin
+
+# Output targets
+TTCR3D := $(BIN_DIR)/ttcr3d.exe
+TTCR2D := $(BIN_DIR)/ttcr2d.exe
+
+# Source files
+SRC_TTCR3D := $(SRC_DIR)/ttcr3d.cpp
+SRC_TTCR2D := $(SRC_DIR)/ttcr2d.cpp
+SRC_TTCR_IO := $(SRC_DIR)/ttcr_io.cpp
+
+OBJ_TTCR3D := $(BUILD_DIR)/ttcr3d.obj
+OBJ_TTCR2D := $(BUILD_DIR)/ttcr2d.obj
+OBJ_TTCR_IO := $(BUILD_DIR)/ttcr_io.obj
+
+# Header list (for dependency grouping, not auto-checked)
+HEADERS = ttcr/Cell.h ttcr/Grad.h ttcr/Grid2D.h ttcr/Grid2Drcfs.h ttcr/Grid2Drc.h ttcr/Grid2Drcsp.h ttcr/Grid2Drnfs.h \
+          ttcr/Grid2Drn.h ttcr/Grid2Drnsp.h ttcr/Grid2Ducfm.h ttcr/Grid2Ducfs.h ttcr/Grid2Duc.h ttcr/Grid2Ducsp.h \
+          ttcr/Grid2Dunfm.h ttcr/Grid2Dunfs.h ttcr/Grid2Dun.h ttcr/Grid2Dunsp.h ttcr/Grid3D.h ttcr/Grid3Drc.h \
+          ttcr/Grid3Drcsp.h ttcr/Grid3Drnfs.h ttcr/Grid3Drn.h ttcr/Grid3Drnsp.h ttcr/Grid3Ducfm.h \
+          ttcr/Grid3Ducfs.h ttcr/Grid3Duc.h ttcr/Grid3Ducsp.h ttcr/Grid3Dunfm.h ttcr/Grid3Dunfs.h ttcr/Grid3Dun.h \
+          ttcr/Grid3Dunsp.h ttcr/Interface.h ttcr/Interpolator.h ttcr/Metric.h ttcr/msh2vtk_io.h ttcr/MSHReader.h \
+          ttcr/Node2Dc.h ttcr/Node2Dcsp.h ttcr/Node2Dn.h ttcr/Node2Dnsp.h ttcr/Node3Dc.h ttcr/Node3Dcsp.h ttcr/Node3Dn.h \
+          ttcr/Node3Dnsp.h ttcr/Node.h ttcr/Rcv2D.h ttcr/Rcv.h ttcr/Src2D.h ttcr/Src.h ttcr/structs_msh2vtk.h \
+          ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h ttcr/Grid3Drcfs_OpenCL.h \
+          ttcr/Grid3Drnfs_OpenCL.h ttcr/Grid3Drn_OpenCL.h
+
+# Third-party paths (edit these to match your Windows installation)
+# Example VTK install on Windows with prebuilt binaries or vcpkg.
+VTK_INC ?= C:/VTK/include/vtk-9.2
+VTK_LIB ?= C:/VTK/lib
+EIGEN_INC ?= ./eigen-5.0.0
+BOOST_INC ?= ./boost_1_91_0
+
+# Common defines
+DEFINES = -DVTK -DWIN32 -D_WINDOWS
+
+# MSVC toolchain
+ifeq ($(TOOLCHAIN),msvc)
+  # Compiler and linker
+  CXX := cl
+  LD  := link
+  # Flags
+  # /std:c++17 for C++17, /O2 Release, /Zi Debug, /MD runtime
+  ifeq ($(CONFIG),Release)
+    CXXFLAGS := /std:c++17 /O2 /MD $(DEFINES) /I$(INC_DIR) /I$(VTK_INC) /I$(EIGEN_INC) /I$(BOOST_INC)
+    LDFLAGS  := /LIBPATH:$(VTK_LIB)
+  else ifeq ($(CONFIG),Debug)
+    CXXFLAGS := /std:c++17 /Od /Zi /MDd $(DEFINES) /I$(INC_DIR) /I$(VTK_INC) /I$(EIGEN_INC) /I$(BOOST_INC)
+    LDFLAGS  := /DEBUG /LIBPATH:$(VTK_LIB)
+  else
+    $(error Unknown CONFIG '$(CONFIG)'. Use Debug or Release)
+  endif
+  # Libraries (adapt versions to your VTK build)
+  LIBS := vtksys.lib vtkIOXML.lib vtkCommonDataModel.lib vtkCommonCore.lib
+  # If you need more VTK libs, append here. For OpenCL, add OpenCL.lib if installed.
+  EXEFLAGS := /OUT:
+  OBJEXT := .obj
+  # Compile rule
+  define compile_rule
+	@echo Compiling $(1)
+	$(CXX) $(CXXFLAGS) /c $(1) /Fo$(2)
+  endef
+  # Link rule
+  define link_rule
+	@echo Linking $(1)
+	$(LD) $(LDFLAGS) $(2) $(LIBS) $(EXEFLAGS)$(1)
+  endef
+else ifeq ($(TOOLCHAIN),mingw)
+  # MinGW toolchain as an alternative
+  CXX := g++
+  ifeq ($(CONFIG),Release)
+    CXXFLAGS := -std=c++17 -O3 -DNDEBUG -DVTK -I$(INC_DIR) -I$(VTK_INC) -I$(EIGEN_INC) -I$(BOOST_INC)
+    LDFLAGS  := -L$(VTK_LIB)
+  else ifeq ($(CONFIG),Debug)
+    CXXFLAGS := -std=c++17 -O0 -g3 -DDEBUG -DVTK -I$(INC_DIR) -I$(VTK_INC) -I$(EIGEN_INC) -I$(BOOST_INC)
+    LDFLAGS  := -L$(VTK_LIB)
+  else
+    $(error Unknown CONFIG '$(CONFIG)'. Use Debug or Release)
+  endif
+  LIBS := -lvtksys -lvtkIOXML -lvtkCommonDataModel -lvtkCommonCore
+  EXEFLAGS := -o
+  OBJEXT := .o
+  define compile_rule
+	@echo Compiling $(1)
+	$(CXX) $(CXXFLAGS) -c $(1) -o $(2)
+  endef
+  define link_rule
+	@echo Linking $(1)
+	$(CXX) $(2) $(LDFLAGS) $(LIBS) $(EXEFLAGS) $(1)
+  endef
+else
+  $(error Unknown TOOLCHAIN '$(TOOLCHAIN)'. Use msvc or mingw)
+endif
+
+# Phony targets
+.PHONY: all release debug clean dirs print ttcr3d ttcr2d
+
+all: release
+
+release:
+	$(MAKE) CONFIG=Release $(TTCR3D) $(TTCR2D)
+
+debug:
+	$(MAKE) CONFIG=Debug $(TTCR3D) $(TTCR2D)
+
+print:
+	@echo TOOLCHAIN: $(TOOLCHAIN)
+	@echo CONFIG:    $(CONFIG)
+	@echo VTK_INC:   $(VTK_INC)
+	@echo VTK_LIB:   $(VTK_LIB)
+	@echo EIGEN_INC: $(EIGEN_INC)
+	@echo BOOST_INC: $(BOOST_INC)
+	@echo TTCR3D:    $(TTCR3D)
+	@echo TTCR2D:    $(TTCR2D)
+
+# Directories
+DIRS := $(BUILD_DIR) $(BIN_DIR)
+
+dirs:
+	@for %%%%d in ($(DIRS)) do @if not exist %%%%d ( mkdir %%%%d )
+
+# Build rules
+$(OBJ_TTCR_IO): $(SRC_TTCR_IO) $(HEADERS) | dirs
+	$(call compile_rule,$<,$@)
+
+$(OBJ_TTCR3D): $(SRC_TTCR3D) $(HEADERS) | dirs
+	$(call compile_rule,$<,$@)
+
+$(OBJ_TTCR2D): $(SRC_TTCR2D) $(HEADERS) | dirs
+	$(call compile_rule,$<,$@)
+
+# Link executables
+$(TTCR3D): $(OBJ_TTCR_IO) $(OBJ_TTCR3D) | dirs
+	$(call link_rule,$@,$^)
+
+$(TTCR2D): $(OBJ_TTCR_IO) $(OBJ_TTCR2D) | dirs
+	$(call link_rule,$@,$^)
+
+# Clean
+clean:
+	@echo Cleaning
+ifeq ($(TOOLCHAIN),msvc)
+	@if exist $(BUILD_DIR) rmdir /S /Q $(BUILD_DIR)
+	@if exist $(TTCR3D) del /Q $(TTCR3D)
+	@if exist $(TTCR2D) del /Q $(TTCR2D)
+else
+	-@rm -rf $(BUILD_DIR)/*.o
+	-@rm -f $(TTCR3D) $(TTCR2D)
+endif
