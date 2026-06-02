@@ -43,6 +43,7 @@ namespace ttcr {
         int raypath_method;
         int saveGridTT;
         int min_per_thread;
+        int gpu_max_threads;          // cap on concurrent GPU solver streams (OpenCL FSM); 0 = no cap
         bool inverseDistance;
         bool singlePrecision;
         bool saveRaypaths;
@@ -73,6 +74,7 @@ namespace ttcr {
 
         input_parameters() : nn(), nt(0), order(2), nitermax(20),
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
+        gpu_max_threads(4),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), processVel(false), rotated_template(false),

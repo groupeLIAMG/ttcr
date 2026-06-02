@@ -79,19 +79,20 @@ int body(const input_parameters &par) {
     // construction time, like `verbose`).
     gpu_profile = par.profile ? 1 : 0;
 
-    // The OpenCL fast-sweeping grids share a single GPU solver (one set of
-    // device buffers, one command queue, one set of kernel objects) across the
-    // whole grid object.  The threaded shot loop below calls g->raytrace()
-    // concurrently on that single shared object, which is NOT thread-safe for
-    // the GPU path (concurrent buffer uploads, clSetKernelArg on shared kernels,
-    // interleaved queue submissions).  The device already parallelizes each
-    // sweep internally, so host-side threading over shots buys little here:
-    // pin the GPU path to a single host thread.
-    if ( par.method == FAST_SWEEPING_OPENCL && num_threads > 1 ) {
+    // The OpenCL fast-sweeping grids build one independent GPU solver per host
+    // thread (each its own context/queue/kernels/buffers), so the
+    // threaded shot loop can run concurrent source solves on separate command
+    // streams (which overlap on this hardware).  Each solver holds a full set
+    // of device buffers, and the dispatch path saturates after a handful of
+    // concurrent streams, so cap the host-thread count at par.gpu_max_threads
+    // (0 = no cap).  Raise it on GPUs with ample memory / submission bandwidth.
+    if ( par.method == FAST_SWEEPING_OPENCL && par.gpu_max_threads > 0 &&
+         num_threads > static_cast<size_t>(par.gpu_max_threads) ) {
         if ( verbose )
-            cout << "OpenCL fast sweeping uses a single shared GPU solver; "
-                 << "forcing num_threads = 1 (was " << num_threads << ").\n";
-        num_threads = 1;
+            cout << "OpenCL fast sweeping: capping num_threads to gpu_max_threads = "
+                 << par.gpu_max_threads << " (was " << num_threads
+                 << "); each thread holds its own GPU solver.\n";
+        num_threads = static_cast<size_t>(par.gpu_max_threads);
     }
 
     size_t blk_size = nTx/num_threads;

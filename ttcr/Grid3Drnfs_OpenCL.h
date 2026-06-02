@@ -30,6 +30,7 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+#include <memory>
 #include <iostream>
 #include <type_traits>
 
@@ -135,8 +136,8 @@ namespace ttcr {
         }
         
         std::string getGPUInfo() const {
-            if (gpu_available) {
-                return gpu_solver.getDeviceInfo();
+            if (gpu_available && !gpu_solvers.empty()) {
+                return gpu_solvers[0]->getDeviceInfo();
             }
             return "GPU not available";
         }
@@ -156,7 +157,9 @@ namespace ttcr {
         mutable bool use_gpu;
         mutable bool gpu_initialized;
         mutable bool gpu_available;
-        mutable OpenCLSweepSolver<T1> gpu_solver;
+        // one independent solver per thread slot (own context/queue/
+        // kernels/buffers).  Indexed by threadNo, sized to getNthreads().
+        mutable std::vector<std::unique_ptr<OpenCLSweepSolver<T1>>> gpu_solvers;
 
     private:
         Grid3Drnfs_OpenCL() {}
@@ -168,26 +171,40 @@ namespace ttcr {
          */
         void initializeGPU() const {
             if (gpu_initialized) return;
-            
+
             try {
-                gpu_solver.initialize(this->ncx, this->ncy, this->ncz,
-                                     this->dx, this->dy, this->dz);
+                // Build one independent solver per thread slot so that
+                // concurrent source solves run on separate GPU command streams
+                // (validated to overlap on this hardware).  performSweepIterations
+                // selects its slot by threadNo, matching the [0, nThreads) ids the
+                // shot loop hands out; the pool is capped upstream by num_threads.
+                const size_t nslots = this->getNthreads() > 0 ? this->getNthreads() : 1;
+                gpu_solvers.clear();
+                gpu_solvers.reserve(nslots);
+                for (size_t s = 0; s < nslots; ++s) {
+                    auto solver = std::make_unique<OpenCLSweepSolver<T1>>();
+                    solver->initialize(this->ncx, this->ncy, this->ncz,
+                                       this->dx, this->dy, this->dz);
+                    // Profile only slot 0: with several streams running at once
+                    // the per-iteration diagnostics and end-of-run breakdown
+                    // from multiple solvers would interleave unreadably.
+                    solver->setProfiling(s == 0 && gpu_profile != 0);
+                    gpu_solvers.push_back(std::move(solver));
+                }
                 gpu_available = true;
                 gpu_initialized = true;
 
-                // Enable GPU profiling when requested via the "profile"
-                // parameter-file keyword (independent of verbose); the breakdown
-                // is printed when the solver is torn down at end of run.
-                gpu_solver.setProfiling(gpu_profile != 0);
-
                 if ( verbose ) {
-                    std::cout << "  GPU acceleration enabled for Grid3Drnfs\n";
-                    std::cout << gpu_solver.getDeviceInfo();
+                    std::cout << "  GPU acceleration enabled for Grid3Drnfs ("
+                              << nslots << " solver slot" << (nslots > 1 ? "s" : "")
+                              << ")\n";
+                    std::cout << gpu_solvers[0]->getDeviceInfo();
                 }
-                
+
             } catch (const std::exception& e) {
                 std::cerr << "GPU initialization failed: " << e.what() << "\n";
                 std::cerr << "Falling back to CPU implementation\n";
+                gpu_solvers.clear();
                 gpu_available = false;
                 gpu_initialized = true;
                 use_gpu = false;
@@ -256,7 +273,7 @@ namespace ttcr {
                 
                 // Set sweep type
                 SweepType sweep_type = use_weno ? SweepType::WENO3 : SweepType::BASIC;
-                gpu_solver.setSweepType(sweep_type);
+                gpu_solvers[threadNo]->setSweepType(sweep_type);
 
                 // ---- Error-vs-analytic diagnostic (profiling only) --------
                 // For a HOMOGENEOUS medium the exact traveltime is
@@ -271,7 +288,7 @@ namespace ttcr {
                 // the closed form is only valid then.  O(N*Nfrozen), profiling
                 // only.
                 std::vector<T1> texact;
-                if (gpu_solver.isProfiling()) {
+                if (gpu_solvers[threadNo]->isProfiling()) {
                     const size_t N = this->nodes.size();
                     T1 s0 = this->nodes[0].getNodeSlowness();
                     T1 smin = s0, smax = s0;
@@ -321,9 +338,7 @@ namespace ttcr {
                     frozen_uchar[i] = frozen[i] ? 1 : 0;
                 }
                 
-//                saveModelVTR("avant.vtr", tt, "tt0");
-                gpu_solver.runSweeps(tt, slowness, frozen, 1);
-//                saveModelVTR("apres1.vtr", tt, "tt1");
+                gpu_solvers[threadNo]->runSweeps(tt, slowness, frozen, 1);
 
                 niter++;
                 
@@ -340,7 +355,7 @@ namespace ttcr {
                 // independent quantity, so reading where it flattens tells you
                 // the epsilon below which further iterations buy no meaningful
                 // accuracy.  See [[gpu-fsm-convergence]] notes.
-                if (gpu_solver.isProfiling()) {
+                if (gpu_solvers[threadNo]->isProfiling()) {
                     double err = meanError(tt);
                     std::cout << "  [OpenCL converge] "
                               << (use_weno ? "WENO3 " : "1st-ord")
@@ -354,14 +369,11 @@ namespace ttcr {
                 // Iterative refinement on GPU
                 while (change >= epsilon && niter < nitermax) {
                     // Always run sweeps - runSweeps modifies tt in place
-                    gpu_solver.runSweepsNoTransfer(1);
+                    gpu_solvers[threadNo]->runSweepsNoTransfer(1);
                     
-                    gpu_solver.downloadTravelTimes(tt);
+                    gpu_solvers[threadNo]->downloadTravelTimes(tt);
 
                     niter++;
-//                    std::string fname = "apres" + std::to_string(niter) + ".vtr";
-//                    saveModelVTR(fname, tt, "tt" + std::to_string(niter));
-
                     // Check convergence
                     change = 0.0;
                     for (size_t n=0; n<this->nodes.size(); ++n) {
@@ -369,7 +381,7 @@ namespace ttcr {
                         change += dt;
                         times[n] = tt[n];
                     }
-                    if (gpu_solver.isProfiling()) {
+                    if (gpu_solvers[threadNo]->isProfiling()) {
                         double err = meanError(tt);
                         std::cout << "  [OpenCL converge] "
                                   << (use_weno ? "WENO3 " : "1st-ord")

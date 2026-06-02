@@ -189,6 +189,10 @@ namespace ttcr {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.min_per_thread;
             }
+            else if (kw.find("gpu max threads") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.gpu_max_threads;
+            }
             else if (kw.find("number of dynamic nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nTertiary;
