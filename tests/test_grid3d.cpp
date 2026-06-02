@@ -42,6 +42,7 @@
 
 namespace ttcr {
     int verbose = 0;
+    int gpu_profile = 0;
 }
 
 namespace bdata = boost::unit_test::data;
