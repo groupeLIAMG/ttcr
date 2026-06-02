@@ -110,7 +110,8 @@ namespace ttcr {
         {
             this->buildGridNodes();
             this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
-            
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
+
             if (use_gpu) {
                 initializeGPU();
             }
@@ -145,7 +146,7 @@ namespace ttcr {
 #endif
 
     protected:
-        T1 epsilon;              // Convergence criterion
+        T1 epsilon;              // Convergence criterion: L1-sum threshold (input per-node tol scaled by nNodes in ctor)
         int nitermax;            // Maximum iterations
         mutable int niter_final; // Final iteration count (basic sweep)
         mutable int niterw_final;// Final iteration count (WENO3 sweep)
@@ -256,7 +257,64 @@ namespace ttcr {
                 // Set sweep type
                 SweepType sweep_type = use_weno ? SweepType::WENO3 : SweepType::BASIC;
                 gpu_solver.setSweepType(sweep_type);
-                
+
+                // ---- Error-vs-analytic diagnostic (profiling only) --------
+                // For a HOMOGENEOUS medium the exact traveltime is
+                //   texact[n] = min over frozen f ( tt_f + s*dist(n,f) ),
+                // since each frozen (source) node already holds the exact BC.
+                // Comparing the iterate against this each cycle reveals the
+                // discretization-error floor: the L1 error decays then flattens
+                // once the iterative error drops below the scheme error, and
+                // that flat level is the epsilon below which iterating is
+                // pointless.  Built once; empty (and skipped) if the model is
+                // not uniformly homogeneous or there are no frozen nodes, since
+                // the closed form is only valid then.  O(N*Nfrozen), profiling
+                // only.
+                std::vector<T1> texact;
+                if (gpu_solver.isProfiling()) {
+                    const size_t N = this->nodes.size();
+                    T1 s0 = this->nodes[0].getNodeSlowness();
+                    T1 smin = s0, smax = s0;
+                    for (size_t n=1; n<N; ++n) {
+                        T1 s = this->nodes[n].getNodeSlowness();
+                        if (s < smin) smin = s;
+                        if (s > smax) smax = s;
+                    }
+                    std::vector<size_t> src;
+                    for (size_t n=0; n<N; ++n) if (frozen[n]) src.push_back(n);
+                    if (smax - smin <= 1.e-6 * smax && !src.empty()) {
+                        texact.resize(N);
+                        for (size_t n=0; n<N; ++n) {
+                            T1 xn = this->nodes[n].getX();
+                            T1 yn = this->nodes[n].getY();
+                            T1 zn = this->nodes[n].getZ();
+                            T1 best = std::numeric_limits<T1>::max();
+                            for (size_t f : src) {
+                                T1 ddx = xn - this->nodes[f].getX();
+                                T1 ddy = yn - this->nodes[f].getY();
+                                T1 ddz = zn - this->nodes[f].getZ();
+                                T1 d = std::sqrt(ddx*ddx + ddy*ddy + ddz*ddz);
+                                T1 t = this->nodes[f].getTT(threadNo) + s0 * d;
+                                if (t < best) best = t;
+                            }
+                            texact[n] = best;
+                        }
+                    } else if (use_weno) {
+                        std::cout << "  [OpenCL converge] (model not homogeneous "
+                                     "or no frozen nodes: error-vs-analytic "
+                                     "diagnostic disabled)\n";
+                    }
+                }
+                // Mean L1 error vs the analytic field (-1 when unavailable).
+                auto meanError = [&](const std::vector<T1>& cur) -> double {
+                    if (texact.empty()) return -1.0;
+                    double e = 0.0;
+                    for (size_t n=0; n<cur.size(); ++n)
+                        e += std::abs(static_cast<double>(cur[n]) -
+                                      static_cast<double>(texact[n]));
+                    return e / static_cast<double>(cur.size());
+                };
+
                 // Upload initial data (only once!)
                 std::vector<unsigned char> frozen_uchar(this->nodes.size());
                 for (size_t i = 0; i < this->nodes.size(); ++i) {
@@ -276,7 +334,23 @@ namespace ttcr {
                     change += dt;
                     times[n] = tt[n];
                 }
-                
+                // Convergence-curve diagnostic (only when GPU profiling is on).
+                // Reports both the raw L1 sum that drives the stop test and the
+                // per-node mean (= sum / num_nodes): the mean is the grid-size-
+                // independent quantity, so reading where it flattens tells you
+                // the epsilon below which further iterations buy no meaningful
+                // accuracy.  See [[gpu-fsm-convergence]] notes.
+                if (gpu_solver.isProfiling()) {
+                    double err = meanError(tt);
+                    std::cout << "  [OpenCL converge] "
+                              << (use_weno ? "WENO3 " : "1st-ord")
+                              << " iter " << niter
+                              << "  change(sum) = " << change
+                              << "  mean = " << change / this->nodes.size();
+                    if (err >= 0.0) std::cout << "  L1err = " << err;
+                    std::cout << '\n';
+                }
+
                 // Iterative refinement on GPU
                 while (change >= epsilon && niter < nitermax) {
                     // Always run sweeps - runSweeps modifies tt in place
@@ -295,7 +369,16 @@ namespace ttcr {
                         change += dt;
                         times[n] = tt[n];
                     }
-//                    std::cout << "[DIAG - GPU] Iteration = " << niter << " change = " << change << '\n';
+                    if (gpu_solver.isProfiling()) {
+                        double err = meanError(tt);
+                        std::cout << "  [OpenCL converge] "
+                                  << (use_weno ? "WENO3 " : "1st-ord")
+                                  << " iter " << niter
+                                  << "  change(sum) = " << change
+                                  << "  mean = " << change / this->nodes.size();
+                        if (err >= 0.0) std::cout << "  L1err = " << err;
+                        std::cout << '\n';
+                    }
                 }
                 
                 // Update node travel times from GPU results

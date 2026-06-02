@@ -48,6 +48,7 @@ namespace ttcr {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         Grid2Dunfs(const std::vector<S>& no,
@@ -63,6 +64,7 @@ namespace ttcr {
             this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
             initOrdering(refPts, order);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         ~Grid2Dunfs() {

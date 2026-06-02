@@ -102,6 +102,7 @@ private:
     // default, with zero added cost on the hot path (no events are attached).
     bool profiling;
     cl_ulong prof_kernel_ns;    // summed device execution time of sweep kernels
+    cl_ulong prof_mirror_ns;    // summed device time of the per-cycle d_tt_in->d_tt_out copy
     cl_ulong prof_upload_ns;    // summed device time of host->device writes
     cl_ulong prof_download_ns;  // summed device time of device->host reads
     size_t   prof_launches;     // number of kernel launches (plane dispatches)
@@ -117,7 +118,7 @@ public:
         d_plane_nodes(nullptr), maxlevel(0),
         ncx(0), ncy(0), ncz(0), num_nodes(0), initialized(false),
         current_sweep_type(SweepType::BASIC),
-        profiling(false), prof_kernel_ns(0), prof_upload_ns(0),
+        profiling(false), prof_kernel_ns(0), prof_mirror_ns(0), prof_upload_ns(0),
         prof_download_ns(0), prof_launches(0), prof_wall_ms(0.0)
     {
     }
@@ -163,6 +164,10 @@ public:
         // Gauss-Seidel sweep dispatch.
         buildPlaneNodeLists();
 
+        // Bind the arguments that never change (buffers + grid scalars) once,
+        // so the per-plane executeSweep() only sets plane_offset/plane_count.
+        setStaticKernelArgs();
+
         initialized = true;
     }
     
@@ -182,7 +187,7 @@ public:
 
     /// Zero the accumulated profiling counters.
     void resetProfile() {
-        prof_kernel_ns = prof_upload_ns = prof_download_ns = 0;
+        prof_kernel_ns = prof_mirror_ns = prof_upload_ns = prof_download_ns = 0;
         prof_launches = 0;
         prof_wall_ms = 0.0;
     }
@@ -197,14 +202,22 @@ public:
             return;
         }
         const double kernel_ms   = prof_kernel_ns   * 1e-6;
+        const double mirror_ms   = prof_mirror_ns   * 1e-6;
         const double upload_ms   = prof_upload_ns   * 1e-6;
         const double download_ms = prof_download_ns * 1e-6;
-        const double busy = (prof_wall_ms > 0.0)
-                          ? 100.0 * kernel_ms / prof_wall_ms : 0.0;
+        // Everything in the sweep wall that is neither kernel execution nor the
+        // per-cycle mirror copy: host/driver enqueue cost + inter-launch idle +
+        // the per-cycle clFinish stalls.
+        const double overhead_ms = prof_wall_ms - kernel_ms - mirror_ms;
+        auto frac = [&](double ms){ return (prof_wall_ms > 0.0) ? 100.0*ms/prof_wall_ms : 0.0; };
         os << "  [OpenCL profile]\n"
            << "      sweep wall   : " << prof_wall_ms  << " ms\n"
            << "      kernel exec  : " << kernel_ms     << " ms  ("
-                                      << busy << "% of sweep wall)\n"
+                                      << frac(kernel_ms)   << "% of sweep wall)\n"
+           << "      mirror copy  : " << mirror_ms     << " ms  ("
+                                      << frac(mirror_ms)   << "% of sweep wall)\n"
+           << "      other/overhd : " << overhead_ms   << " ms  ("
+                                      << frac(overhead_ms) << "% of sweep wall)\n"
            << "      upload       : " << upload_ms     << " ms\n"
            << "      download     : " << download_ms   << " ms\n"
            << "      launches     : " << prof_launches << "\n";
@@ -761,6 +774,38 @@ private:
         checkError(err, "Uploading plane-node lists");
     }
 
+    // Set the kernel arguments that never change after initialize() once, for
+    // both kernels.  Only plane_offset/plane_count (args 11 and 12) vary per
+    // plane launch and are set in executeSweep().  On Apple's OpenCL->Metal
+    // layer the per-enqueue host cost dominates the run (each tiny plane launch
+    // costs ~27us regardless of its node count), so hoisting these 11 args out
+    // of the inner loop removes 11*launches clSetKernelArg calls per cycle.
+    //
+    // The buffer handles (d_tt_in, d_slowness, d_frozen, d_plane_nodes) and the
+    // grid scalars (dx/dy/dz, ncx/ncy/ncz) are fixed for the solver's lifetime;
+    // uploadTravelTimes() only rewrites the *contents* of d_tt_in/d_tt_out, not
+    // their handles, so these bindings stay valid across sweep cycles.
+    void setStaticKernelArgs() {
+        for (cl_kernel kernel : { kernel_basic, kernel_weno3 }) {
+            cl_int err = 0;
+            cl_uint a = 0;
+            // In-place Gauss-Seidel: bind d_tt_in to BOTH the input and output
+            // buffer arguments so a node sees its already-updated neighbours.
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_mem), &d_tt_in);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_mem), &d_tt_in);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_mem), &d_slowness);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_mem), &d_frozen);
+            err |= clSetKernelArg(kernel, a++, sizeof(T1), &dx);
+            err |= clSetKernelArg(kernel, a++, sizeof(T1), &dy);
+            err |= clSetKernelArg(kernel, a++, sizeof(T1), &dz);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_uint), &ncx);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_uint), &ncy);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_uint), &ncz);
+            err |= clSetKernelArg(kernel, a++, sizeof(cl_mem), &d_plane_nodes);
+            checkError(err, "Setting static kernel arguments");
+        }
+    }
+
     void performSweepCycle() {
         // Select kernel based on sweep type
         cl_kernel current_kernel;
@@ -830,9 +875,11 @@ private:
         // Mirror the in-place result into d_tt_out so downloadData() (which
         // reads d_tt_out) and the "d_tt_out holds the latest result" invariant
         // continue to hold for the surrounding upload/download code.
+        cl_event mirror_evt = nullptr;
+        cl_event* mirror_ep = profiling ? &mirror_evt : nullptr;
         cl_int err = clEnqueueCopyBuffer(queue, d_tt_in, d_tt_out,
                                          0, 0, num_nodes * sizeof(T1),
-                                         0, nullptr, nullptr);
+                                         0, nullptr, mirror_ep);
         checkError(err, "Mirroring Gauss-Seidel result to d_tt_out");
         clFinish(queue);
 
@@ -840,13 +887,17 @@ private:
             auto t_end = std::chrono::high_resolution_clock::now();
             prof_wall_ms +=
                 std::chrono::duration<double, std::milli>(t_end - t_begin).count();
-            // All kernels of this cycle are complete (clFinish above), so their
-            // event timestamps can be read without further synchronization.
+            // All work of this cycle is complete (clFinish above), so the event
+            // timestamps can be read without further synchronization.
             for (cl_event e : prof_events) {
                 prof_kernel_ns += eventNs(e);
                 clReleaseEvent(e);
             }
             prof_events.clear();
+            if (mirror_evt) {
+                prof_mirror_ns += eventNs(mirror_evt);
+                clReleaseEvent(mirror_evt);
+            }
         }
     }
 
@@ -860,44 +911,30 @@ private:
         const cl_uint plane_offset =
             static_cast<cl_uint>(direction_idx * num_nodes) + level_start;
 
-        // Set kernel arguments
+        // Only the two per-plane arguments are set here; the other 11 (buffers,
+        // grid scalars, d_plane_nodes) are bound once in setStaticKernelArgs()
+        // because they never change.  Their argument indices are 11 (offset)
+        // and 12 (count) to match the kernel signature.
+        //
+        // OLD CODE (set all 13 args on every plane launch):
+        // cl_uint arg_idx = 0;
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);   // in
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);   // out (in-place GS)
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_slowness);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_frozen);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dx);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dy);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dz);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncx);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncy);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncz);
+        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_plane_nodes);
+        const cl_uint OFFSET_ARG = 11;
+        const cl_uint COUNT_ARG  = 12;
         cl_int err = 0;
-        cl_uint arg_idx = 0;
-
-        // In-place Gauss-Seidel update: bind d_tt_in to BOTH the input and
-        // output buffer arguments so the kernel reads and writes the same
-        // array (a node sees its already-updated lower-level neighbours).
-        // OLD CODE (Jacobi double-buffering):
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_out);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_slowness);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_frozen);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dx);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dy);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dz);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncx);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncy);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncz);
-
-        // OLD CODE (sweep-direction args + diagonal level that drove the
-        // in-kernel plane gate; now superseded by the precomputed node list):
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &dir.i_start);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &dir.j_start);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &dir.k_start);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &dir.i_dir);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &dir.j_dir);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &dir.k_dir);
-        // cl_int cl_level = static_cast<cl_int>(level);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_int), &cl_level);
-
-        // Precomputed plane-node list: buffer + slice [plane_offset, +plane_count).
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_plane_nodes);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &plane_offset);
-        err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &plane_count);
-
-        checkError(err, "Setting kernel arguments");
+        err |= clSetKernelArg(kernel, OFFSET_ARG, sizeof(cl_uint), &plane_offset);
+        err |= clSetKernelArg(kernel, COUNT_ARG,  sizeof(cl_uint), &plane_count);
+        checkError(err, "Setting per-plane kernel arguments");
 
         // 1-D launch over exactly the plane's nodes.  Collapse the 3-D optimal
         // work-group size to a single dimension and round the global size up to

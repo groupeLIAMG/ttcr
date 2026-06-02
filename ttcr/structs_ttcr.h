@@ -59,7 +59,7 @@ namespace ttcr {
         bool useEdgeLength;
         bool translateOrigin;
         bool profile;                 // emit GPU profiling breakdown (OpenCL)
-        double epsilon;
+        double epsilon;               // FSM convergence tol: MEAN per-node |Δtt| change (see raytrace loops)
         double source_radius;
         double min_distance_rp;
         double radius_tertiary_nodes;
@@ -78,7 +78,7 @@ namespace ttcr {
         projectTxRx(false), processVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
         useEdgeLength(true), translateOrigin(false), profile(false),
-        epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
+        epsilon(1.e-5), source_radius(0.0), min_distance_rp(1.e-5),
         radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
 

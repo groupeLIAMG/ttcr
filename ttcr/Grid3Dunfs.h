@@ -54,6 +54,7 @@ namespace ttcr {
         {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
         Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
@@ -73,6 +74,7 @@ namespace ttcr {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors(this->nodes);
             initOrdering(refPts, order);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         ~Grid3Dunfs() {

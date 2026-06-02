@@ -28,7 +28,7 @@ The keywords are :
 -  **number of threads** : perform raytracing for multiple sources simultaneously using this number of threads
 -  **inverse distance** : use inverse distance instead of linear interpolation for computing slowness at secondary nodes (SPM in 3D)
 -  **metric order** : metric used to built sweeping ordering (FSM, see Qian et al. 2007) default is 2
--  **epsilon** : convergence criterion (FSM, see Qian et al. 2007) default is 1.e-15
+-  **epsilon** : convergence criterion for the fast sweeping method (FSM, see Qian et al. 2007). The sweeps stop once the **mean per-node change** in traveltime between two successive iterations falls below this value (i.e. the L1 sum of \|Δt\| divided by the number of nodes), so the same value behaves consistently regardless of grid size. Default is 1.e-5. Iterating much below the medium's discretization error buys no accuracy; values around 1.e-5 typically reach the floor while avoiding tens of redundant WENO3 iterations. Note: because the WENO3 update is non-monotone early on, do not set epsilon larger than the per-node change of the first iteration, or the loop may stop prematurely.
 -  **max number of iteration** : max number of sweeping iterations (FSM) default is 20
 -  **saveGridTT** : save traveltime over whole grid, in ASCII file if 1, in VTK format if 2, or in binary format if 3.
 -  **single precision** : work with float rather than double
