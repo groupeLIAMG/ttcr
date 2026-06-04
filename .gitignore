@@ -10,6 +10,7 @@ build_deploy_macos.sh
 ttcr_matlab/*.mex*
 xcuserdata/
 someTests/
+.claude/
 
 ttcrpy.egg-info/
 
@@ -48,6 +49,7 @@ test_pool/
 main.o
 
 ttcr_io.o
+ttcr3d.o
 
 tests/files/*_rp.vtp
 
