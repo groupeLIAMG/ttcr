@@ -625,6 +625,17 @@ private:
         optimal_local_size[1] = std::min(optimal_local_size[1], max_work_item_sizes[1]);
         optimal_local_size[2] = std::min(optimal_local_size[2], max_work_item_sizes[2]);
         
+        // Also clamp to the kernel-specific work group size limit, which can be
+        // smaller than the device maximum when register pressure is high.
+        for (cl_kernel k : { kernel_basic, kernel_weno3 }) {
+            size_t kernel_wgs = 0;
+            if (clGetKernelWorkGroupInfo(k, device, CL_KERNEL_WORK_GROUP_SIZE,
+                                         sizeof(kernel_wgs), &kernel_wgs, nullptr) == CL_SUCCESS
+                    && kernel_wgs > 0) {
+                max_work_group_size = std::min(max_work_group_size, kernel_wgs);
+            }
+        }
+
         // Verify total size
         size_t total_size = optimal_local_size[0] * optimal_local_size[1] * optimal_local_size[2];
         if (total_size > max_work_group_size) {
