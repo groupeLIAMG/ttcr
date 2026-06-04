@@ -6,7 +6,8 @@ from libc.math cimport sqrt
 from libcpp cimport bool
 
 from ttcrpy.common cimport sxz, sxyz, siv, siv2, sijv, Node3Dc, Node3Dcsp, \
-Node3Dn, Node3Dnsp, Cell, Node2Dcsp, Node2Dn, Node2Dnsp, Node2Dc
+Node3Dn, Node3Dnsp, Cell, CellElliptical, CellTiltedElliptical, CellVTI_PSV, \
+CellVTI_SH, CellWeaklyAnelliptical, Node2Dcsp, Node2Dn, Node2Dnsp, Node2Dc
 
 
 cdef extern from "typedefs.h" namespace "ttcr":

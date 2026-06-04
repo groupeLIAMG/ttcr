@@ -4501,32 +4501,32 @@ cdef class Grid2d_f:
             if method == 'SPM':
                 self.method = b's'
                 if aniso == 'iso':
-                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],cell2d](
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],Cell[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'elliptical':
                     self.iso = b'e'
-                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],cell2d_e](
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellElliptical[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'tilted_elliptical':
                     self.iso = b't'
-                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],cell2d_te](
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellTiltedElliptical[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'vti_psv':
                     self.iso = b'p'
-                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],cell2d_p](
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellVTI_PSV[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'vti_sh':
                     self.iso = b'h'
-                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],cell2d_h](
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellVTI_SH[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'weakly_anelliptical':
                     self.iso = b'w'
-                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],cell2d_wa](
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellWeaklyAnelliptical[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 else:
