@@ -31,7 +31,7 @@ fsm_hybrid.pdf
 examples/.ipynb_checkpoints/
 
 tests/__pycache__/
-
+__pycache__/
 dist/
 
 examples/example_cmesh2d.vtu
