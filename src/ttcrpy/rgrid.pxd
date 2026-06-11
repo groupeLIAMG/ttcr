@@ -119,6 +119,11 @@ cdef extern from "Grid3Drnfs.h" namespace "ttcr" nogil:
         Grid3Drnfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
                    size_t, bool) except +
 
+cdef extern from "Grid3Drnfs_OpenCL.h" namespace "ttcr" nogil:
+    cdef cppclass Grid3Drnfs_OpenCL[T1,T2](Grid3Drn[T1,T2,Node3Dn[T1,T2]]):
+        Grid3Drnfs_OpenCL(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
+                          size_t, bool) except +
+
 cdef extern from "Grid3Drnsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Drnsp[T1,T2](Grid3Drn[T1,T2,Node3Dnsp[T1,T2]]):
         Grid3Drnsp(T2, T2, T2, T1, T1, T1, T1, T1, T1, T2, T2, T2, bool, bool,
@@ -133,6 +138,11 @@ cdef extern from "Grid3Drcfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Drcfs[T1,T2](Grid3Drn[T1,T2,Node3Dn[T1,T2]]):
         Grid3Drcfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
                    size_t, bool) except +
+
+cdef extern from "Grid3Drcfs_OpenCL.h" namespace "ttcr" nogil:
+    cdef cppclass Grid3Drcfs_OpenCL[T1,T2](Grid3Drn[T1,T2,Node3Dn[T1,T2]]):
+        Grid3Drcfs_OpenCL(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
+                          size_t, bool) except +
 
 cdef extern from "Grid3Drcsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Drcsp[T1,T2,CELL](Grid3Drc[T1,T2,Node3Dcsp[T1,T2]]):

@@ -20,6 +20,11 @@
 #include <CL/cl.h>
 #endif
 
+// Embedded OpenCL kernel source (auto-generated from Grid3Drn_kernels.cl by
+// setup.py).  Provides ttcr::Grid3Drn_kernels_src so an installed wheel can
+// build the kernels without locating the .cl file on disk.
+#include "Grid3Drn_kernels_src.h"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -401,15 +406,17 @@ private:
     }
     
     void buildKernels() {
-        // Load kernel source from file
-        // Try multiple paths to find the kernel file
+        // Use the kernel source embedded at build time.  As a development
+        // convenience, an on-disk Grid3Drn_kernels.cl in a few standard
+        // locations takes precedence so the kernels can be tweaked without
+        // recompiling the extension.
         std::string kernel_paths[] = {
             "Grid3Drn_kernels.cl",           // Current directory
             "../Grid3Drn_kernels.cl",        // Parent directory
             "../../Grid3Drn_kernels.cl",     // Two levels up
             "./kernels/Grid3Drn_kernels.cl", // Kernels subdirectory
         };
-        
+
         std::string kernel_source;
         bool found = false;
         for (const auto& path : kernel_paths) {
@@ -421,12 +428,12 @@ private:
                 // Try next path
             }
         }
-        
+
         if (!found) {
-            throw std::runtime_error("Could not find Grid3Drn_kernels.cl in any standard location. "
-                                   "Please ensure the kernel file is in your working directory or build directory.");
+            // Fall back to the source compiled into the library.
+            kernel_source = Grid3Drn_kernels_src;
         }
-        
+
         const char* source_cstr = kernel_source.c_str();
         size_t source_size = kernel_source.length();
         

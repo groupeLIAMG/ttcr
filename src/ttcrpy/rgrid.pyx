@@ -125,6 +125,8 @@ cdef class Grid3d_d:
             UTM coordinates, are used.  When raytracing, src and rcv should be
             given in the original system, and output raypath coordinates are
             also given in the original system (default if False)
+        fsm_gpu : bool
+            Use OpenCL implementation to run the Fast Sweeping Method on GPU (default is False)
     """
     cdef vector[double] _x
     cdef vector[double] _y
@@ -138,6 +140,7 @@ cdef class Grid3d_d:
     cdef bool tt_from_rp
     cdef bool interp_vel
     cdef bool translate_grid
+    cdef bool fsm_gpu
     cdef double eps
     cdef int maxit
     cdef bool weno
@@ -159,7 +162,7 @@ cdef class Grid3d_d:
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
                   double radius_factor_tertiary=3.0,
-                  bool translate_grid=0):
+                  bool translate_grid=0, bool fsm_gpu=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t ny = y.size-1
@@ -184,6 +187,7 @@ cdef class Grid3d_d:
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
         self.translate_grid = translate_grid
+        self.fsm_gpu = fsm_gpu
 
         cdef use_edge_length = True
 
@@ -202,7 +206,15 @@ cdef class Grid3d_d:
         self._z.shrink_to_fit()
 
         if cell_slowness:
-            if method == 'FSM':
+            if method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid3Drcfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx,
+                                                                   xmin, ymin, zmin,
+                                                                   eps, maxit, weno,
+                                                                   tt_from_rp, interp_vel,
+                                                                   n_threads,
+                                                                   translate_grid)
+            elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drcfs[double,uint32_t](nx, ny, nz, self._dx,
                                                             xmin, ymin, zmin,
@@ -231,7 +243,15 @@ cdef class Grid3d_d:
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
-            if method == 'FSM':
+            if method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid3Drnfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx,
+                                                                   xmin, ymin, zmin,
+                                                                   eps, maxit, weno,
+                                                                   tt_from_rp, interp_vel,
+                                                                   n_threads,
+                                                                   translate_grid)
+            elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drnfs[double,uint32_t](nx, ny, nz, self._dx,
                                                             xmin, ymin, zmin,
@@ -276,7 +296,8 @@ cdef class Grid3d_d:
                               self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
-                              self.radius_factor_tertiary, self.translate_grid)
+                              self.radius_factor_tertiary, self.translate_grid,
+                              self.fsm_gpu)
         return (_rebuild3d_d, (self.x, self.y, self.z, constructor_params))
 
     @property
@@ -1803,7 +1824,7 @@ cdef class Grid3d_f:
 
     Constructor:
 
-    Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False) -> Grid3d_f
+    Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_f
 
         Parameters
         ----------
@@ -1828,6 +1849,7 @@ cdef class Grid3d_f:
     cdef bool tt_from_rp
     cdef bool interp_vel
     cdef bool translate_grid
+    cdef bool fsm_gpu
     cdef float eps
     cdef int maxit
     cdef bool weno
@@ -1849,7 +1871,7 @@ cdef class Grid3d_f:
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
                   float radius_factor_tertiary=3.0,
-                  bool translate_grid=0):
+                  bool translate_grid=0, bool fsm_gpu=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t ny = y.size-1
@@ -1874,6 +1896,7 @@ cdef class Grid3d_f:
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
         self.translate_grid = translate_grid
+        self.fsm_gpu = fsm_gpu
 
         cdef use_edge_length = True
 
@@ -1966,7 +1989,8 @@ cdef class Grid3d_f:
                               self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
-                              self.radius_factor_tertiary, self.translate_grid)
+                              self.radius_factor_tertiary, self.translate_grid,
+                              self.fsm_gpu)
         return (_rebuild3d_f, (self.x, self.y, self.z, constructor_params))
 
     @property
@@ -2070,7 +2094,9 @@ cdef class Grid3d_f:
         i = <uint32_t>(ind - ((k * (self._y.size()-1) + j) * (self._x.size()-1)))
         return (i * (self._y.size()-1) + j) * (self._z.size()-1) + k
 
-    def is_outside(self, np.ndarray[np.float32_t, ndim=2] pts):
+    def is_outside(self, pts):
+        # accept double (or any) input; coordinates are cast to the grid dtype
+        pts = np.asarray(pts, dtype=np.float32)
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._y.front() or np.max(pts[:,1]) > self._y.back() or
                 np.min(pts[:,2]) < self._z.front() or np.max(pts[:,2]) > self._z.back() )
@@ -2146,7 +2172,9 @@ cdef class Grid3d_f:
             raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
 
-    def compute_D(self, np.ndarray[np.float32_t, ndim=2] coord):
+    def compute_D(self, pts):
+        # accept double (or any) input; coordinates are cast to the grid dtype
+        cdef np.ndarray[np.float32_t, ndim=2] coord = np.ascontiguousarray(pts, dtype=np.float32)
         if self.is_outside(coord):
             raise ValueError('Velocity data point outside grid')
 
@@ -2299,6 +2327,10 @@ cdef class Grid3d_f:
                  return_rays=False):
         if source.ndim != 2 or rcv.ndim != 2:
             raise ValueError('source and rcv should be 2D arrays')
+
+        # accept double (or any) input; cast to the grid dtype
+        source = np.ascontiguousarray(source, dtype=np.float32)
+        rcv = np.ascontiguousarray(rcv, dtype=np.float32)
 
         if self.method == b'd' and aggregate_src:
             raise ValueError('Cannot aggregate source with DSPM raytracing')
@@ -4670,7 +4702,9 @@ cdef class Grid2d_f:
         shape = (self._x.size(), self._z.size())
         return tt.reshape(shape)
 
-    def is_outside(self, np.ndarray[np.float32_t, ndim=2] pts):
+    def is_outside(self, pts):
+        # accept double (or any) input; coordinates are cast to the grid dtype
+        pts = np.asarray(pts, dtype=np.float32)
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
 
@@ -4972,7 +5006,9 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setS4(data)
 
-    def compute_D(self, np.ndarray[np.float32_t, ndim=2] coord):
+    def compute_D(self, pts):
+        # accept double (or any) input; coordinates are cast to the grid dtype
+        cdef np.ndarray[np.float32_t, ndim=2] coord = np.ascontiguousarray(pts, dtype=np.float32)
         if self.is_outside(coord):
             raise ValueError('Velocity data point outside grid')
 
@@ -5144,6 +5180,10 @@ cdef class Grid2d_f:
                  return_rays=False):
         if source.ndim != 2 or rcv.ndim != 2:
             raise ValueError('source and rcv should be 2D arrays')
+
+        # accept double (or any) input; cast to the grid dtype
+        source = np.ascontiguousarray(source, dtype=np.float32)
+        rcv = np.ascontiguousarray(rcv, dtype=np.float32)
 
         if self.iso != b'i' and self.method != b's' and not self.cell_slowness:
             raise NotImplementedError('Anisotropic raytracing implemented only for SPM')
@@ -5489,27 +5529,28 @@ cdef class Grid2d_f:
 def _rebuild3d_d(x, y, z, constructor_params):
     (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
      weno, nsnx, nsny, nsnz, n_secondary,
-     n_tertiary, radius_factor_tertiary, translate_grid) = constructor_params
+     n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu) = constructor_params
     g = Grid3d_d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                  interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
-                 n_tertiary, radius_factor_tertiary, translate_grid)
+                 n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
     return g
 
 
 def _rebuild3d_f(x, y, z, constructor_params):
     (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
      weno, nsnx, nsny, nsnz, n_secondary,
-     n_tertiary, radius_factor_tertiary, translate_grid) = constructor_params
+     n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu) = constructor_params
     g = Grid3d_f(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
                  interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
-                 n_tertiary, radius_factor_tertiary, translate_grid)
+                 n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
     return g
 
 
 def Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM',
            tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1,
            nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2,
-           radius_factor_tertiary=3.0, translate_grid=False, dtype=np.float64):
+           radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False,
+           dtype=np.float64):
     """
     Grid3d(x, y, z, ..., dtype=np.float64) -> Grid3d_d or Grid3d_f
 
@@ -5536,14 +5577,14 @@ def Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM',
                         np.asarray(z, dtype=np.float64),
                         n_threads, cell_slowness, method, tt_from_rp, interp_vel,
                         eps, maxit, weno, nsnx, nsny, nsnz, n_secondary, n_tertiary,
-                        radius_factor_tertiary, translate_grid)
+                        radius_factor_tertiary, translate_grid, fsm_gpu)
     elif np.dtype(dtype) == np.dtype(np.float32):
         return Grid3d_f(np.asarray(x, dtype=np.float32),
                         np.asarray(y, dtype=np.float32),
                         np.asarray(z, dtype=np.float32),
                         n_threads, cell_slowness, method, tt_from_rp, interp_vel,
                         eps, maxit, weno, nsnx, nsny, nsnz, n_secondary, n_tertiary,
-                        radius_factor_tertiary, translate_grid)
+                        radius_factor_tertiary, translate_grid, fsm_gpu)
     else:
         raise ValueError('dtype must be np.float32 or np.float64, got {}'.format(dtype))
 

@@ -42,12 +42,31 @@ where = ["src"]
 write_to = "src/ttcrpy/_version.py"
 
 [tool.cibuildwheel]
-before-all = "uname -a"
 # Skip 32-bit builds & building PyPy wheels on all platforms
 skip = ["*-win32", "*-manylinux_i686", "*-musllinux*", ]
+
+# The OpenCL grids are compiled on every platform, so each wheel links against
+# the OpenCL ICD loader.  The loader itself is treated as a system dependency
+# (excluded from the wheel below); end users need an OpenCL runtime/driver for
+# the GPU FSM, exactly as they need a GPU.
+
+[tool.cibuildwheel.linux]
+# manylinux images are RPM-based: install the OpenCL headers and ICD loader.
+before-all = "yum install -y opencl-headers ocl-icd ocl-icd-devel"
+# Do not vendor the ICD loader; use the one on the target system.
+repair-wheel-command = "auditwheel repair --exclude libOpenCL.so.1 -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.windows]
+# Install the OpenCL loader + headers via the vcpkg preinstalled on the runner.
+before-all = "vcpkg install opencl:x64-windows"
+# Pin the triplet so setup.py resolves the matching vcpkg include/lib dirs.
+environment = { VCPKG_DEFAULT_TRIPLET = "x64-windows" }
+# Do not vendor OpenCL.dll; rely on the loader shipped with the GPU driver.
+repair-wheel-command = "delvewheel repair --exclude OpenCL.dll -w {dest_dir} {wheel}"
 
 # Build `universal2` and `arm64` wheels on an Intel runner.
 # Note that the `arm64` wheel and the `arm64` part of the `universal2`
 # wheel cannot be tested in this configuration.
 [tool.cibuildwheel.macos]
+# OpenCL is a system framework on macOS; nothing to install.
 archs = ["x86_64", "arm64"]
