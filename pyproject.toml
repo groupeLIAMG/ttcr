@@ -62,7 +62,9 @@ before-all = "vcpkg install opencl:x64-windows"
 # Pin the triplet so setup.py resolves the matching vcpkg include/lib dirs.
 environment = { VCPKG_DEFAULT_TRIPLET = "x64-windows" }
 # Do not vendor OpenCL.dll; rely on the loader shipped with the GPU driver.
-repair-wheel-command = "delvewheel repair --exclude OpenCL.dll -w {dest_dir} {wheel}"
+# Invoke delvewheel as a module: the `delvewheel` script shim is not on PATH
+# when a custom repair command runs, but the package is installed.
+repair-wheel-command = "python -m delvewheel repair --exclude OpenCL.dll -w {dest_dir} {wheel}"
 
 # Build `universal2` and `arm64` wheels on an Intel runner.
 # Note that the `arm64` wheel and the `arm64` part of the `universal2`
