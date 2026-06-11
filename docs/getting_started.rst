@@ -38,3 +38,9 @@ https://github.com/groupeLIAMG/ttcr/blob/master/examples/example4.ipynb
 
 Raytracing in anisotorpic media is shown in
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example5.ipynb
+
+Examples with a layered model, showing GPU and float/double usage
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1.ipynb
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_float32.ipynb
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_opencl.ipynb
+
