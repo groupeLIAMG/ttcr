@@ -75,7 +75,7 @@ cdef class Mesh3d:
             slowness defined for cells (True) or nodes (False) (default is 1)
         method : string
             raytracing method (default is FSM)
-                - 'FSM' : fast marching method
+                - 'FSM' : fast sweeping method
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
         gradient_method : int
@@ -1208,7 +1208,7 @@ cdef class Mesh2d:
         slowness defined for cells (True) or nodes (False) (default is 1)
     method : string
         raytracing method (default is FSM)
-            - 'FSM' : fast marching method
+            - 'FSM' : fast sweeping method
             - 'SPM' : shortest path method
             - 'DSPM' : dynamic shortest path
     aniso : string

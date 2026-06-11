@@ -90,7 +90,7 @@ cdef class Grid3d_d:
             slowness defined for cells (True) or nodes (False) (default is 1)
         method : string
             raytracing method (default is FSM)
-                - 'FSM' : fast marching method
+                - 'FSM' : fast sweeping method
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
         tt_from_rp : bool
@@ -2756,7 +2756,7 @@ cdef class Grid2d_d:
         slowness defined for cells (True) or nodes (False) (default is 1)
     method : string
         raytracing method (default is SPM)
-            - 'FSM' : fast marching method
+            - 'FSM' : fast sweeping method
             - 'SPM' : shortest path method
             - 'DSPM' : dynamic shortest path method
     aniso : string
