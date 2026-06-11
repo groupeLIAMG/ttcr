@@ -59,6 +59,9 @@ repair-wheel-command = "auditwheel repair --exclude libOpenCL.so.1 -w {dest_dir}
 [tool.cibuildwheel.windows]
 # Install the OpenCL loader + headers via the vcpkg preinstalled on the runner.
 before-all = "vcpkg install opencl:x64-windows"
+# The custom repair command below means cibuildwheel does not auto-install
+# delvewheel, so install it into the build environment ourselves.
+before-build = "pip install delvewheel"
 # Pin the triplet so setup.py resolves the matching vcpkg include/lib dirs.
 environment = { VCPKG_DEFAULT_TRIPLET = "x64-windows" }
 # Do not vendor OpenCL.dll; rely on the loader shipped with the GPU driver.
