@@ -8,38 +8,49 @@ from setuptools import Extension, setup
 from Cython.Build import cythonize
 
 
-def generate_embedded_kernels():
-    """Embed the OpenCL kernel source into a C++ header.
-
-    The OpenCL grids build their kernels from ttcr::Grid3Drn_kernels_src, which
-    is generated here from ttcr/Grid3Drn_kernels.cl.  Embedding the source means
-    an installed wheel does not need to locate the .cl file on disk at runtime.
-    """
+def _embed_kernel(cl_name, hdr_name, sym_name, delim):
+    """Embed a single OpenCL .cl file as a C++ raw-string header."""
     here = os.path.dirname(os.path.abspath(__file__))
-    cl_path = os.path.join(here, 'ttcr', 'Grid3Drn_kernels.cl')
-    hdr_path = os.path.join(here, 'ttcr', 'Grid3Drn_kernels_src.h')
+    cl_path  = os.path.join(here, 'ttcr', cl_name)
+    hdr_path = os.path.join(here, 'ttcr', hdr_name)
 
     with open(cl_path, 'r') as f:
         src = f.read()
 
-    delim = 'TTCR_CL_KERNEL'
     assert (')' + delim + '"') not in src, \
-        'kernel source contains the raw-string delimiter; choose another'
+        f'{cl_name}: kernel source contains the raw-string delimiter; choose another'
 
+    guard = hdr_name.replace('.', '_').replace('/', '_')
     content = (
-        '// Auto-generated from Grid3Drn_kernels.cl by setup.py.  Do not edit.\n'
-        '#ifndef ttcr_Grid3Drn_kernels_src_h\n'
-        '#define ttcr_Grid3Drn_kernels_src_h\n'
+        f'// Auto-generated from {cl_name} by setup.py.  Do not edit.\n'
+        f'#ifndef ttcr_{guard}\n'
+        f'#define ttcr_{guard}\n'
         'namespace ttcr {\n'
-        'static const char* const Grid3Drn_kernels_src = R"%s(\n%s)%s";\n'
+        f'static const char* const {sym_name} = R"{delim}(\n{src}){delim}";\n'
         '}\n'
         '#endif\n'
-    ) % (delim, src, delim)
+    )
 
-    # Only rewrite when the content changes, to avoid forcing a rebuild.
-    if not os.path.exists(hdr_path) or open(hdr_path).read() != content:
+    existing = None
+    if os.path.exists(hdr_path):
+        with open(hdr_path, 'r') as f:
+            existing = f.read()
+
+    if existing != content:
         with open(hdr_path, 'w') as f:
             f.write(content)
+
+
+def generate_embedded_kernels():
+    """Embed all OpenCL kernel sources into C++ headers.
+
+    An installed wheel does not need the .cl files on disk at runtime;
+    the source is compiled into the extension as a string constant.
+    """
+    _embed_kernel('Grid3Drn_kernels.cl', 'Grid3Drn_kernels_src.h',
+                  'Grid3Drn_kernels_src', 'TTCR_CL_KERNEL')
+    _embed_kernel('Grid2Drn_kernels.cl', 'Grid2Drn_kernels_src.h',
+                  'Grid2Drn_kernels_src', 'TTCR_CL_2D')
 
 
 generate_embedded_kernels()

@@ -27,10 +27,13 @@ inversion).  The package contains code to perform computation on 2D and 3D
 rectilinear grids, as well as 2D triangular and 3D tetrahedral meshes. Three
 different algorithms have been implemented: the Fast-Sweeping Method, the
 Shortest-Path Method, and the Dynamic Shortest-Path Method.  Calculations can
-be run in parallel on a multi-core machine.
+be run in parallel on a multi-core machine.  The FSM on 2D and 3D rectilinear grids
+was also implemented to run on GPUs using OpenCL.  The package can be installed
+using pip:
 
-The core computing code is written in C++, and has been wrapped with cython.
+`pip install ttcrpy`
 
+The core computing code is written in C++, and has been wrapped with cython.  
 Documentation can be found on [Read The Docs](https://ttcrpy.readthedocs.io/)
 
 If you use `ttcrpy`, please cite
@@ -55,15 +58,16 @@ Look at the files in the examples directory for some samples.
 
 ### Compiling
 
-The programs are coded in C++ and follow the C++11 standard.  You must have VTK
+The programs are coded in C++ and follow the C++17 standard.  You must have VTK
 (http://vtk.org) installed on your system, to benefit from full functionalities.
 Files from the eigen3 (http://eigen.tuxfamily.org) and boost
 (http://www.boost.org) libraries are distributed with the source to facilitate
 compilation.  These codes were compiled and tested on macs with the default
-compiler (clang).  They were also tested to some extent under linux with g++
-version 4.8.
+compiler (clang).  They were also tested to some extent under linux with g++.
 
 ## Matlab wrappers
+
+**Caveat**: Matlab wrappers were last compiled in 2021 and are no longer supported.
 
 To compile the mexfiles, you will need:
 - a C++ compiler that conforms to the C++11 standard

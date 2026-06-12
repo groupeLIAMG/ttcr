@@ -1,0 +1,40 @@
+#
+# Makefile to build the accuracy assessment program for the 3D
+# rectilinear grid methods (non OpenCL).
+#
+# Build:   make -f Makefile.accuracy
+# Run:     ./accuracy_grid3d      (run from the tests/ folder)
+# Clean:   make -f Makefile.accuracy clean
+#
+# Adjust VTK_DIR / VTK_VER below to match your VTK installation.
+#
+
+CXX        = c++
+CXXOPTIONS = -O3 -DVTK -std=c++17
+
+VTK_DIR = /usr/local/VTK-9.6.2
+VTK_VER = 9.6
+
+# ttcr headers and third-party headers live one level up (in the repo root)
+TTCR  = ..
+
+CXXFLAGS = $(CXXOPTIONS) -I$(VTK_DIR)/include/vtk-$(VTK_VER) \
+           -I$(TTCR)/eigen-5.0.0 -I$(TTCR)/boost_1_91_0 -I$(TTCR)/ttcr
+
+# -framework OpenCL is required because grids.h includes the OpenCL solver
+# headers even though we only exercise the non-OpenCL methods here.
+LFLAGS = -L$(VTK_DIR)/lib -Wl,-rpath,$(VTK_DIR)/lib -framework OpenCL
+
+LIBS = -lvtksys-$(VTK_VER) -lvtkIOXML-$(VTK_VER) \
+       -lvtkCommonDataModel-$(VTK_VER) -lvtkCommonCore-$(VTK_VER)
+
+accuracy_grid3d : accuracy_grid3d.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) accuracy_grid3d.o $(LIBS) -o accuracy_grid3d
+
+accuracy_grid3d.o : accuracy_grid3d.cpp
+	$(CXX) $(CXXFLAGS) -c accuracy_grid3d.cpp
+
+clean :
+	rm -f accuracy_grid3d accuracy_grid3d.o
+
+.PHONY : clean

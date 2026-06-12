@@ -2774,7 +2774,7 @@ cdef class Grid2d_d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d
 
     Parameters
     ----------
@@ -2807,7 +2807,7 @@ cdef class Grid2d_d:
         use 3rd order weighted essentially non-oscillatory operator (FSM)
         (default is True)
     rotated_template : bool
-        use rotated templates (FSM)
+        use rotated templates (FSM, ignored when fsm_gpu is True)
     nsnx : int
         number of secondary nodes in x (SPM) (default is 10)
     nsnz : int
@@ -2823,7 +2823,10 @@ cdef class Grid2d_d:
     tt_from_rp : bool
         compute traveltime using raypaths (available for FSM and DSPM only)
         (default is False)
-    
+    fsm_gpu : bool
+        use OpenCL implementation to run the Fast Sweeping Method on GPU
+        (FSM only, default is False)
+
     Notes
     -----
     For raytracing in anisotropic media, the convention for inputting slowness depends
@@ -2844,6 +2847,7 @@ cdef class Grid2d_d:
     cdef bool weno
     cdef bool rotated_template
     cdef bool tt_from_rp
+    cdef bool fsm_gpu
     cdef uint32_t nsnx
     cdef uint32_t nsnz
     cdef uint32_t n_secondary
@@ -2858,7 +2862,8 @@ cdef class Grid2d_d:
                   double eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
                   uint32_t n_secondary=3, uint32_t n_tertiary=3,
-                  double radius_factor_tertiary=3.0, bool tt_from_rp=0):
+                  double radius_factor_tertiary=3.0, bool tt_from_rp=0,
+                  bool fsm_gpu=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
@@ -2879,6 +2884,7 @@ cdef class Grid2d_d:
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
         self.tt_from_rp = tt_from_rp
+        self.fsm_gpu = fsm_gpu
 
         cdef use_edge_length = True
 
@@ -2923,6 +2929,11 @@ cdef class Grid2d_d:
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 else:
                     raise ValueError('Anisotropy model not implemented')
+            elif method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid2Drcfs_OpenCL[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, tt_from_rp, n_threads)
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drcfs[double,uint32_t,sxz[double]](nx, nz,
@@ -2943,6 +2954,11 @@ cdef class Grid2d_d:
                 self.grid = new Grid2Drnsp[double,uint32_t,sxz[double]](nx, nz,
                                 self._dx, self._dz, xmin, zmin,
                                 nsnx, nsnz, tt_from_rp, n_threads)
+            elif method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid2Drnfs_OpenCL[double,uint32_t,sxz[double]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, tt_from_rp, n_threads)
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drnfs[double,uint32_t,sxz[double]](nx, nz,
@@ -2986,7 +3002,8 @@ cdef class Grid2d_d:
                               aniso, self.eps, self.maxit, self.weno,
                               self.rotated_template, self.nsnx, self.nsnz,
                               self.n_secondary, self.n_tertiary,
-                              self.radius_factor_tertiary, self.tt_from_rp)
+                              self.radius_factor_tertiary, self.tt_from_rp,
+                              self.fsm_gpu)
         return (_rebuild2d_d, (self.x, self.z, constructor_params))
 
     @property
@@ -4460,7 +4477,7 @@ cdef class Grid2d_f:
 
     Constructor:
 
-    Grid2d_f(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0) -> Grid2d_f
+    Grid2d_f(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d_f
 
         Parameters
         ----------
@@ -4484,6 +4501,7 @@ cdef class Grid2d_f:
     cdef bool weno
     cdef bool rotated_template
     cdef bool tt_from_rp
+    cdef bool fsm_gpu
     cdef uint32_t nsnx
     cdef uint32_t nsnz
     cdef uint32_t n_secondary
@@ -4498,7 +4516,8 @@ cdef class Grid2d_f:
                   float eps=1.e-15, int maxit=20, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
                   uint32_t n_secondary=3, uint32_t n_tertiary=3,
-                  float radius_factor_tertiary=3.0, bool tt_from_rp=0):
+                  float radius_factor_tertiary=3.0, bool tt_from_rp=0,
+                  bool fsm_gpu=0):
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
@@ -4519,6 +4538,7 @@ cdef class Grid2d_f:
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
         self.tt_from_rp = tt_from_rp
+        self.fsm_gpu = fsm_gpu
 
         cdef use_edge_length = True
 
@@ -4563,6 +4583,11 @@ cdef class Grid2d_f:
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 else:
                     raise ValueError('Anisotropy model not implemented')
+            elif method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid2Drcfs_OpenCL[float,uint32_t,sxz[float]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, tt_from_rp, n_threads)
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drcfs[float,uint32_t,sxz[float]](nx, nz,
@@ -4583,6 +4608,11 @@ cdef class Grid2d_f:
                 self.grid = new Grid2Drnsp[float,uint32_t,sxz[float]](nx, nz,
                                 self._dx, self._dz, xmin, zmin,
                                 nsnx, nsnz, tt_from_rp, n_threads)
+            elif method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid2Drnfs_OpenCL[float,uint32_t,sxz[float]](nx, nz,
+                                self._dx, self._dz, xmin, zmin, eps,
+                                maxit, weno, tt_from_rp, n_threads)
             elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid2Drnfs[float,uint32_t,sxz[float]](nx, nz,
@@ -4626,7 +4656,8 @@ cdef class Grid2d_f:
                               aniso, self.eps, self.maxit, self.weno,
                               self.rotated_template, self.nsnx, self.nsnz,
                               self.n_secondary, self.n_tertiary,
-                              self.radius_factor_tertiary, self.tt_from_rp)
+                              self.radius_factor_tertiary, self.tt_from_rp,
+                              self.fsm_gpu)
         return (_rebuild2d_f, (self.x, self.z, constructor_params))
 
     @property
@@ -5595,27 +5626,28 @@ Grid3d.data_kernel_straight_rays = Grid3d_d.data_kernel_straight_rays
 def _rebuild2d_d(x, z, constructor_params):
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
-     radius_factor_tertiary, tt_from_rp) = constructor_params
+     radius_factor_tertiary, tt_from_rp, fsm_gpu) = constructor_params
     g = Grid2d_d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                  rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
-                 radius_factor_tertiary, tt_from_rp)
+                 radius_factor_tertiary, tt_from_rp, fsm_gpu)
     return g
 
 
 def _rebuild2d_f(x, z, constructor_params):
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
-     radius_factor_tertiary, tt_from_rp) = constructor_params
+     radius_factor_tertiary, tt_from_rp, fsm_gpu) = constructor_params
     g = Grid2d_f(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                  rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
-                 radius_factor_tertiary, tt_from_rp)
+                 radius_factor_tertiary, tt_from_rp, fsm_gpu)
     return g
 
 
 def Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso',
            eps=1.e-15, maxit=20, weno=1, rotated_template=0,
            nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3,
-           radius_factor_tertiary=3.0, tt_from_rp=0, dtype=np.float64):
+           radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False,
+           dtype=np.float64):
     """
     Grid2d(x, z, ..., dtype=np.float64) -> Grid2d_d or Grid2d_f
 
@@ -5629,6 +5661,9 @@ def Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso',
     dtype : numpy dtype
         np.float64 (default) for double precision (Grid2d_d),
         np.float32 for single precision (Grid2d_f).
+    fsm_gpu : bool
+        use OpenCL implementation to run the Fast Sweeping Method on GPU
+        (FSM only, default is False)
 
     All other parameters are forwarded unchanged to the underlying class.
 
@@ -5641,13 +5676,13 @@ def Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso',
                         np.asarray(z, dtype=np.float64),
                         n_threads, cell_slowness, method, aniso, eps, maxit,
                         weno, rotated_template, nsnx, nsnz, n_secondary,
-                        n_tertiary, radius_factor_tertiary, tt_from_rp)
+                        n_tertiary, radius_factor_tertiary, tt_from_rp, fsm_gpu)
     elif np.dtype(dtype) == np.dtype(np.float32):
         return Grid2d_f(np.asarray(x, dtype=np.float32),
                         np.asarray(z, dtype=np.float32),
                         n_threads, cell_slowness, method, aniso, eps, maxit,
                         weno, rotated_template, nsnx, nsnz, n_secondary,
-                        n_tertiary, radius_factor_tertiary, tt_from_rp)
+                        n_tertiary, radius_factor_tertiary, tt_from_rp, fsm_gpu)
     else:
         raise ValueError('dtype must be np.float32 or np.float64, got {}'.format(dtype))
 
