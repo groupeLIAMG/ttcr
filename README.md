@@ -27,7 +27,7 @@ inversion).  The package contains code to perform computation on 2D and 3D
 rectilinear grids, as well as 2D triangular and 3D tetrahedral meshes. Three
 different algorithms have been implemented: the Fast-Sweeping Method, the
 Shortest-Path Method, and the Dynamic Shortest-Path Method.  Calculations can
-be run in parallel on a multi-core machine.  The FSM on 3D rectilinear grids
+be run in parallel on a multi-core machine.  The FSM on 2D and 3D rectilinear grids
 was also implemented to run on GPUs using OpenCL.  The package can be installed
 using pip:
 
