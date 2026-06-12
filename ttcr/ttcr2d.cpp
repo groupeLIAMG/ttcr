@@ -437,7 +437,7 @@ int body(const input_parameters &par) {
     if ( par.time ) { end = chrono::high_resolution_clock::now(); }
     if ( verbose ) {
         cout << "done.\n";
-        if ( par.method == FAST_SWEEPING ) {
+        if ( par.method == FAST_SWEEPING || par.method == FAST_SWEEPING_OPENCL ) {
             std::cout << g->get_niter() << " 1st order iterations ";
             if ( par.weno3==true ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
             std::cout << "were needed with epsilon = " << par.epsilon << '\n';
@@ -645,6 +645,9 @@ int main(int argc, char * argv[]) {
                 break;
             case FAST_SWEEPING:
                 cout << "Fast sweeping method selected.\n";
+                break;
+            case FAST_SWEEPING_OPENCL:
+                cout << "Fast sweeping with OpenCL selected.\n";
                 break;
             case FAST_MARCHING:
                 cout << "Fast marching method selected.\n";

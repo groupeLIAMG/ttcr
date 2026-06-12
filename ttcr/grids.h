@@ -52,7 +52,9 @@
 #include "Grid2Drcfs.h"
 #include "Grid2Drcsp.h"
 #include "Grid2Drcdsp.h"
+#include "Grid2Drcfs_OpenCL.h"
 #include "Grid2Drnfs.h"
+#include "Grid2Drnfs_OpenCL.h"
 #include "Grid2Drnsp.h"
 #include "Grid2Drndsp.h"
 #include "Grid2Ducfm.h"
@@ -1700,9 +1702,29 @@ namespace ttcr {
             }
             case FAST_SWEEPING_OPENCL:
             {
-                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
-                std::cerr.flush();
-                return nullptr;
+                if ( verbose ) {
+                    std::cout << "Creating grid ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells )
+                    g = new Grid2Drcfs_OpenCL<T, uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
+                                                                    min[0], min[2], par.epsilon,
+                                                                    par.nitermax, par.weno3,
+                                                                    par.tt_from_rp,
+                                                                    nt);
+                else
+                    g = new Grid2Drnfs_OpenCL<T, uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
+                                                                    min[0], min[2], par.epsilon,
+                                                                    par.nitermax, par.weno3,
+                                                                    par.tt_from_rp,
+                                                                    nt);
+
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( verbose ) {
+                    std::cout << "done.\n";
+                }
+
                 break;
             }
             case DYNAMIC_SHORTEST_PATH:
@@ -1945,9 +1967,31 @@ namespace ttcr {
                     }
                     case FAST_SWEEPING_OPENCL:
                     {
-                        std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
-                        std::cerr.flush();
-                        return nullptr;
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drnfs_OpenCL) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid2Drnfs_OpenCL<T,uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
+                                                                       xrange[0], zrange[0], par.epsilon,
+                                                                       par.nitermax, par.weno3,
+                                                                       par.tt_from_rp,
+                                                                       nt);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            std::cerr << e.what() << std::endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        if ( par.time ) {
+                            std::cout.precision(12);
+                            std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                        }
                         break;
                     }
                     case FAST_MARCHING:
@@ -2261,9 +2305,32 @@ namespace ttcr {
                     }
                     case FAST_SWEEPING_OPENCL:
                     {
-                        std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
-                        std::cerr.flush();
-                        return nullptr;
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drcfs_OpenCL) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid2Drcfs_OpenCL<T,uint32_t, sxz<T>>(ncells[0], ncells[2], d[0], d[2],
+                                                                       xrange[0], zrange[0], par.epsilon,
+                                                                       par.nitermax, par.weno3,
+                                                                       par.tt_from_rp,
+                                                                       nt);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid cells ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            std::cerr << e.what() << std::endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        if ( par.time ) {
+                            std::cout.precision(12);
+                            std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+                        }
+                        break;
                     }
                     case FAST_MARCHING:
                     {

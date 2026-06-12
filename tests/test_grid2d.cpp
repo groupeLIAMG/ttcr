@@ -40,6 +40,7 @@
 
 namespace ttcr {
     int verbose = 0;
+    int gpu_profile = 0;
 }
 
 namespace bdata = boost::unit_test::data;
@@ -47,9 +48,13 @@ namespace bdata = boost::unit_test::data;
 using namespace std;
 using namespace ttcr;
 
-string get_class_name(const Grid2D<double,uint32_t,sxz<double>> *g) {
+template<typename T>
+string get_class_name(const Grid2D<T,uint32_t,sxz<T>> *g) {
     string name = typeid(*g).name();
     size_t start = name.find("Grid2D");
+    if (name.find("OpenCL") != string::npos) {
+        return name.substr(start, 17);
+    }
     name = name.substr(start, 11);
     if ((name[8] == 'f' && name[9] == 's') ||
         (name[8] == 's' && name[9] == 'p') ) {
@@ -58,7 +63,8 @@ string get_class_name(const Grid2D<double,uint32_t,sxz<double>> *g) {
     return name;
 }
 
-double get_rel_error(const string& filename, const Rcv2D<double>& rcv) {
+template<typename T>
+double get_rel_error(const string& filename, const Rcv2D<T>& rcv) {
     // compute relative error
     
     vector<double> ref_tt(rcv.get_coord().size());
@@ -176,6 +182,19 @@ const char* references_aniso[] = {
 };
 raytracing_method methods[] = { DYNAMIC_SHORTEST_PATH, FAST_SWEEPING, SHORTEST_PATH };
 raytracing_method methods_sp[] = { SHORTEST_PATH };
+
+const char* models_cl[] = {
+    "./files/layers_fine2d.vtr",
+    "./files/gradient_fine2d.vtr"
+};
+const char* references_cl[] = {
+    "./files/sol_analytique_couches2d_tt.vtr",
+    "./files/sol_analytique_gradient2d_tt.vtr"
+};
+raytracing_method methods_cl[] = {
+    FAST_SWEEPING,
+    FAST_SWEEPING_OPENCL
+};
 
 
 BOOST_DATA_TEST_CASE(
@@ -381,7 +400,7 @@ BOOST_DATA_TEST_CASE(
         std::cerr << e.what() << std::endl;
         abort();
     }
-    
+
     auto start = string(model).find("files/") + 6;
     auto end = string(model).find("_");
     string type_aniso = string(model).substr(start, end-start);
@@ -391,5 +410,39 @@ BOOST_DATA_TEST_CASE(
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
 
     BOOST_TEST(error < 0.01);
+}
+
+BOOST_DATA_TEST_CASE(
+                     testGrid2D_cl,
+                     (bdata::make(models_cl) ^ bdata::make(references_cl)) * bdata::make(methods_cl),
+                     model, ref, method) {
+    Src2D<float> src("./files/src2d.dat");
+    src.init();
+    Rcv2D<float> rcv("./files/rcv2d.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = method;
+    par.modelfile = model;
+    par.weno3 = 1;
+    par.nitermax = 100;
+    Grid2D<float,uint32_t,sxz<float>> *g = buildRectilinear2DfromVtr<float>(par, 1);
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    std::cout << g->get_niter() << " 1st order iterations ";
+    if ( par.weno3 ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
+    std::cout << "were needed with epsilon = " << par.epsilon << '\n';
+
+    string filename = "./files/" + get_class_name(g) + "_tt_grid";
+    g->saveTT(filename, 0, 0, 2);
+    double error = get_rel_error(ref, rcv);
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
+
+    BOOST_TEST(error < 0.02);
+    delete g;
 }
 
