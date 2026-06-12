@@ -91,6 +91,7 @@ namespace ttcr {
         {
             buildGridNodes();
             this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         virtual ~Grid2Drnfs() {

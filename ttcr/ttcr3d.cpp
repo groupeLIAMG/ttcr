@@ -52,7 +52,6 @@ template<typename T>
 // body() is the principal function for raytracing called by main()
 int body(const input_parameters &par) {
 
-
     // Create the src class containing the position of the sources
     std::vector< Src<T> > src;
     for ( size_t n=0; n<par.srcfiles.size(); ++ n ) {
@@ -63,7 +62,6 @@ int body(const input_parameters &par) {
         src[n].init();
     }
     if ( verbose ) cout << "done.\n";
-
 
     // Calculate the number of threads to be used
     size_t const nTx = src.size();
@@ -77,9 +75,28 @@ int body(const input_parameters &par) {
         num_threads = par.nt < nTx ? par.nt : nTx;
     }
 
+    // Publish the profiling flag for the OpenCL grids (read at grid
+    // construction time, like `verbose`).
+    gpu_profile = par.profile ? 1 : 0;
+
+    // The OpenCL fast-sweeping grids build one independent GPU solver per host
+    // thread (each its own context/queue/kernels/buffers), so the
+    // threaded shot loop can run concurrent source solves on separate command
+    // streams (which overlap on this hardware).  Each solver holds a full set
+    // of device buffers, and the dispatch path saturates after a handful of
+    // concurrent streams, so cap the host-thread count at par.gpu_max_threads
+    // (0 = no cap).  Raise it on GPUs with ample memory / submission bandwidth.
+    if ( par.method == FAST_SWEEPING_OPENCL && par.gpu_max_threads > 0 &&
+         num_threads > static_cast<size_t>(par.gpu_max_threads) ) {
+        if ( verbose )
+            cout << "OpenCL fast sweeping: capping num_threads to gpu_max_threads = "
+                 << par.gpu_max_threads << " (was " << num_threads
+                 << "); each thread holds its own GPU solver.\n";
+        num_threads = static_cast<size_t>(par.gpu_max_threads);
+    }
+
     size_t blk_size = nTx/num_threads;
     if ( blk_size == 0 ) blk_size++;
-
 
     // Find the generic file name of the input model
     string::size_type idx;  // can hold a string of any length
@@ -88,8 +105,6 @@ int body(const input_parameters &par) {
     if (idx != string::npos) {
         extension = par.modelfile.substr(idx);
     }
-
-
 
     // Intialize a Grid3D object containing the 3D grid and the functions to perform raytracing
     Grid3D<T,uint32_t> *g=nullptr;
@@ -554,7 +569,7 @@ int body(const input_parameters &par) {
     if ( par.time ) { end = chrono::high_resolution_clock::now(); }
     if ( verbose ) {
         cout << "done.\n";
-        if ( par.method == FAST_SWEEPING ) {
+        if ( par.method == FAST_SWEEPING || par.method == FAST_SWEEPING_OPENCL ) {
             std::cout << g->get_niter() << " 1st order iterations ";
             if ( par.weno3==true ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
             std::cout << "were needed with epsilon = " << par.epsilon << '\n';

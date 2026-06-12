@@ -48,6 +48,7 @@ namespace ttcr {
         {
             this->buildGridNodes();
             this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         virtual ~Grid3Drcfs() {
@@ -187,8 +188,7 @@ namespace ttcr {
 
         // Set Tx pts
         std::vector<bool> frozen( this->nodes.size(), false );
-        int npts = 1;
-        if ( weno3 == true) npts = 2;
+        int npts = weno3 ? 2 : 1;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
 
         std::vector<T1> times( this->nodes.size() );

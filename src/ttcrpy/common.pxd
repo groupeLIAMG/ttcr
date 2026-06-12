@@ -48,6 +48,16 @@ cdef extern from "Node3Dcsp.h" namespace "ttcr" nogil:
 cdef extern from "Cell.h" namespace "ttcr" nogil:
     cdef cppclass Cell[T,NODE,S]:
         pass
+    cdef cppclass CellElliptical[T,NODE,S]:
+        pass
+    cdef cppclass CellTiltedElliptical[T,NODE,S]:
+        pass
+    cdef cppclass CellVTI_PSV[T,NODE,S]:
+        pass
+    cdef cppclass CellVTI_SH[T,NODE,S]:
+        pass
+    cdef cppclass CellWeaklyAnelliptical[T,NODE,S]:
+        pass
 
 cdef extern from "Node2Dn.h" namespace "ttcr" nogil:
     cdef cppclass Node2Dn[T1,T2]:

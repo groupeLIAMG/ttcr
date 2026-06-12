@@ -6,7 +6,8 @@ from libc.math cimport sqrt
 from libcpp cimport bool
 
 from ttcrpy.common cimport sxz, sxyz, siv, siv2, sijv, Node3Dc, Node3Dcsp, \
-Node3Dn, Node3Dnsp, Cell, Node2Dcsp, Node2Dn, Node2Dnsp, Node2Dc
+Node3Dn, Node3Dnsp, Cell, CellElliptical, CellTiltedElliptical, CellVTI_PSV, \
+CellVTI_SH, CellWeaklyAnelliptical, Node2Dcsp, Node2Dn, Node2Dnsp, Node2Dc
 
 
 cdef extern from "typedefs.h" namespace "ttcr":
@@ -118,6 +119,11 @@ cdef extern from "Grid3Drnfs.h" namespace "ttcr" nogil:
         Grid3Drnfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
                    size_t, bool) except +
 
+cdef extern from "Grid3Drnfs_OpenCL.h" namespace "ttcr" nogil:
+    cdef cppclass Grid3Drnfs_OpenCL[T1,T2](Grid3Drn[T1,T2,Node3Dn[T1,T2]]):
+        Grid3Drnfs_OpenCL(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
+                          size_t, bool) except +
+
 cdef extern from "Grid3Drnsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Drnsp[T1,T2](Grid3Drn[T1,T2,Node3Dnsp[T1,T2]]):
         Grid3Drnsp(T2, T2, T2, T1, T1, T1, T1, T1, T1, T2, T2, T2, bool, bool,
@@ -132,6 +138,11 @@ cdef extern from "Grid3Drcfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Drcfs[T1,T2](Grid3Drn[T1,T2,Node3Dn[T1,T2]]):
         Grid3Drcfs(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
                    size_t, bool) except +
+
+cdef extern from "Grid3Drcfs_OpenCL.h" namespace "ttcr" nogil:
+    cdef cppclass Grid3Drcfs_OpenCL[T1,T2](Grid3Drn[T1,T2,Node3Dn[T1,T2]]):
+        Grid3Drcfs_OpenCL(T2, T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool,
+                          size_t, bool) except +
 
 cdef extern from "Grid3Drcsp.h" namespace "ttcr" nogil:
     cdef cppclass Grid3Drcsp[T1,T2,CELL](Grid3Drc[T1,T2,Node3Dcsp[T1,T2]]):

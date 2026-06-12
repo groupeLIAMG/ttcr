@@ -327,6 +327,8 @@ namespace ttcr {
         Grid3Drn() {}
         Grid3Drn(const Grid3Drn<T1,T2,NODE>& g) {}
         Grid3Drn<T1,T2,NODE>& operator=(const Grid3Drn<T1,T2,NODE>& g) { return *this; }
+        
+        T1 weno3_upwind(const T1 v0, const T1 v1, const T1 v2, const T1 v3, const T1 v4, const T1 dx, bool forward) const;
 
     };
 
@@ -3499,22 +3501,62 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
+    T1 Grid3Drn<T1,T2,NODE>::weno3_upwind(const T1 v0, const T1 v1, const T1 v2, const T1 v3,
+                                          const T1 v4, const T1 dx, bool forward) const {
+    
+        const T1 eps = std::numeric_limits<T1>::epsilon();
+        
+        if (forward) {
+            // Forward differencing: ap = d/dx approximation
+            const T1 num = (v4 - 2.0 * v3 + v2);
+            const T1 den = (v3 - 2.0 * v2 + v1);
+            const T1 r = (eps + num * num) / (eps + den * den);
+            const T1 w = 1.0 / (1.0 + 2.0 * r * r);
+            
+            const T1 ap = (1.0 - w) * (v3 - v1) / (2.0 * dx) +
+                             w * (-v4 + 4.0 * v3 - 3.0 * v2) / (2.0 * dx);
+            
+            return v2 + dx * ap;
+        } else {
+            // Backward differencing: am = -d/dx approximation
+            const T1 num = (v2 - 2.0 * v1 + v0);
+            const T1 den = (v3 - 2.0 * v2 + v1);
+            const T1 r = (eps + num * num) / (eps + den * den);
+            const T1 w = 1.0 / (1.0 + 2.0 * r * r);
+            
+            const T1 am = (1.0 - w) * (v3 - v1) / (2.0 * dx) +
+                             w * (3.0 * v2 - 4.0 * v1 + v0) / (2.0 * dx);
+            
+            return v2 - dx * am;
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::update_node_weno3(const size_t i,
                                                  const size_t j,
                                                  const size_t k,
                                                  const size_t threadNo) const {
         T1 a1, a2, a3, t;
 
+        // ========== K direction ==========
         if (k==0) {
             a1 = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);  // first order
         } else if (k==1) {
+            a1 = weno3_upwind(0.0,  // v0 not used forward
+                              nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              dx, true);
+            
+            /* OLD CODE:
             T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+                  2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
+                     nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
             num *= num;
             T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+                  2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
+                     nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
             den *= den;
             T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
             T1 w = 1./(1.+2.*r*r);
@@ -3526,13 +3568,22 @@ namespace ttcr {
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
+             */
+            
             t = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a1 = a1<t ? a1 : t;
 
         } else if (k==ncz) {
             a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
         } else if (k==ncz-1) {
+            a1 = weno3_upwind(nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              0.0, // v4 not used backward
+                              dx, false);
+            
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
             nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
@@ -3551,14 +3602,32 @@ namespace ttcr {
                nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
+             */
 
             t = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a1 = a1<t ? a1 : t;
 
         } else {
+            // Forward direction
+            a1 = weno3_upwind(nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              dx, true);
+            
+            // Backward direction
+            t = weno3_upwind(nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             dx, false);
+            
+            /* OLD CODE:
             T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+                  2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
+                     nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
             num *= num;
             T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
@@ -3589,13 +3658,24 @@ namespace ttcr {
                nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
+             */
+
             a1 = a1<t ? a1 : t;
 
         }
 
+        // ========== J direction ==========
         if (j==0) {
             a2 = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
         } else if (j==1) {
+            a2 = weno3_upwind(0.0, // v0 not used forward
+                              nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
+                              dx, true);
+            
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
@@ -3614,6 +3694,7 @@ namespace ttcr {
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
+             */
 
             t = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a2 = a2<t ? a2 : t;
@@ -3621,6 +3702,14 @@ namespace ttcr {
         } else if (j==ncy) {
             a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
         } else if (j==ncy-1) {
+            a2 = weno3_upwind(nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                              0.0, // v4 not used backward
+                              dx, false);
+                        
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo);
@@ -3639,11 +3728,29 @@ namespace ttcr {
                nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
+             */
 
             t = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a2 = a2<t ? a2 : t;
 
         } else {
+            // Forward direction
+            a2 = weno3_upwind(nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
+                              dx, true);
+            
+            // Backward direction
+            t = weno3_upwind(nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
+                             dx, false);
+            
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
@@ -3677,13 +3784,24 @@ namespace ttcr {
                nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
+             */
+
             a2 = a2<t ? a2 : t;
 
         }
 
+        // ========== I direction ==========
         if (i==0) {
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
         } else if (i==1) {
+            a3 = weno3_upwind(0.0, // v0 not used forward
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i   ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
+                              dx, true);
+                        
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
@@ -3702,6 +3820,7 @@ namespace ttcr {
                3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
 
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
+             */
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo); // first order for left
             a3 = a3<t ? a3 : t;
@@ -3709,6 +3828,14 @@ namespace ttcr {
         } else if (i==ncx) {
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
         } else if (i==ncx-1) {
+            a3 = weno3_upwind(nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i   ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                              0.0, // v4 not used backward
+                              dx, false);
+                        
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo);
@@ -3727,11 +3854,29 @@ namespace ttcr {
                nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
 
             a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
+             */
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo); // first order for right
             a3 = a3<t ? a3 : t;
 
         } else {
+            // Forward direction
+            a3 = weno3_upwind(nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i ]  .getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
+                              dx, true);
+            
+            // Backward direction
+            t = weno3_upwind(nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i   ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
+                             dx, false);
+
+            /* OLD CODE:
             T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
             2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
             nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
@@ -3765,6 +3910,7 @@ namespace ttcr {
                nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
+             */
 
             a3 = a3<t ? a3 : t;
         }

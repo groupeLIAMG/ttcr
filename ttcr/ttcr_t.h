@@ -34,6 +34,11 @@ namespace ttcr {
 
     extern int verbose;
 
+    // Non-zero enables the OpenCL GPU profiling breakdown (set from the
+    // "profile" parameter-file keyword; read directly by the OpenCL grids,
+    // mirroring how `verbose` is consumed).
+    extern int gpu_profile;
+
     const double small = 1.e-4;
     const double small2 = small*small;
     const double small3 = small*small*small;

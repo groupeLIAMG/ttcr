@@ -37,6 +37,7 @@ using namespace std;
 namespace ttcr {
 
     int verbose = 0;
+    int gpu_profile = 0;
 
     void print_usage (std::ostream& stream, char *progname, int exit_code)
     {
@@ -131,47 +132,47 @@ namespace ttcr {
             std::cout << "\nReading file " << filename << std::endl;
 
         char value[100];
-        char parameter[200];
-        std::string par;
+        char keyword[200];
+        std::string kw;
         std::istringstream sin( value );
 
         while (!fin.eof()) {
             fin.get(value, 100, '#');
             if (strlen(value) == 0) {
                 fin.clear();
-                fin.getline(parameter, 200);
+                fin.getline(keyword, 200);
                 continue;
             }
-            fin.get(parameter, 200, ',');
-            par = parameter;
+            fin.get(keyword, 200, ',');
+            kw = keyword;
 
-            if (par.find("basename") < 200) {
+            if (kw.find("basename") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.basename;
             }
-            else if (par.find("modelfile") < 200) {
+            else if (kw.find("modelfile") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.modelfile;
             }
-            else if (par.find("velfile") < 200) {
+            else if (kw.find("velfile") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.velfile;
             }
-            else if (par.find("slofile") < 200) {
+            else if (kw.find("slofile") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.slofile;
             }
-            else if (par.find("srcfile") < 200) {
+            else if (kw.find("srcfile") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 string stmp;
                 sin >> stmp;
                 ip.srcfiles.push_back( stmp );
             }
-            else if (par.find("rcvfile") < 200) {
+            else if (kw.find("rcvfile") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.rcvfile;
             }
-            else if (par.find("secondary nodes") < 200) {
+            else if (kw.find("secondary nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 uint32_t val;
                 size_t n=0;
@@ -180,132 +181,139 @@ namespace ttcr {
                 }
                 if ( n == 1 ) ip.nn[1] = ip.nn[2] = ip.nn[0];
             }
-            else if (par.find("number of threads") < 200) {
+            else if (kw.find("number of threads") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nt;
             }
-            else if (par.find("min nb Tx per thread") < 200) {
+            else if (kw.find("min nb Tx per thread") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.min_per_thread;
             }
-            else if (par.find("number of dynamic nodes") < 200) {
+            else if (kw.find("gpu max threads") < 200) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.gpu_max_threads;
+            }
+            else if (kw.find("number of dynamic nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nTertiary;
             }
-            else if (par.find("tertiary nodes") < 200) {
+            else if (kw.find("tertiary nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nTertiary;
             }
-            else if (par.find("inverse distance") < 200) {
+            else if (kw.find("inverse distance") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.inverseDistance;
             }
-            else if (par.find("metric order") < 200) {
+            else if (kw.find("metric order") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.order;
             }
-            else if (par.find("epsilon") < 200) {
+            else if (kw.find("epsilon") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.epsilon;
             }
-            else if (par.find("max number of iteration") < 200) {
+            else if (kw.find("max number of iteration") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.nitermax;
             }
-            else if (par.find("saveGridTT") < 200) {
+            else if (kw.find("saveGridTT") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.saveGridTT;
             }
-            else if (par.find("process reflectors") < 200) {
+            else if (kw.find("process reflectors") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.processReflectors;
             }
-            else if (par.find("single precision") < 200 ) {
+            else if (kw.find("single precision") < 200 ) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.singlePrecision;
             }
-            else if (par.find("saveRayPaths") < 200) {
+            else if (kw.find("profile") < 200 ) {
+                sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
+                sin >> ip.profile;
+            }
+            else if (kw.find("saveRayPaths") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.saveRaypaths;
             }
-            else if (par.find("save M") < 200) {
+            else if (kw.find("save M") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.saveM;
             }
-            else if (par.find("project Tx Rx") < 200) {
+            else if (kw.find("project Tx Rx") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.projectTxRx;
             }
-            else if (par.find("raypath high order") < 200 ||
-                     par.find("gradient method") < 200) {
+            else if (kw.find("raypath high order") < 200 ||
+                     kw.find("gradient method") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.raypath_method;
             }
-            else if (par.find("fast marching") < 200) {
+            else if (kw.find("fast marching") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 if ( test == 1 ) ip.method = FAST_MARCHING;
             }
-            else if (par.find("fast sweeping") < 200) {
+            else if (kw.find("fast sweeping") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 if ( test == 1 ) ip.method = FAST_SWEEPING;
+                else if ( test == 2 ) ip.method = FAST_SWEEPING_OPENCL;
             }
-            else if (par.find("dynamic shortest path") < 200) {
+            else if (kw.find("dynamic shortest path") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 if ( test == 1 ) ip.method = DYNAMIC_SHORTEST_PATH;
             }
-            else if (par.find("source radius") < 200) {
+            else if (kw.find("source radius") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.source_radius;
             }
-            else if (par.find("src radius tertiary") < 200 ||
-                     par.find("radius dynamic nodes") < 200) {
+            else if (kw.find("src radius tertiary") < 200 ||
+                     kw.find("radius dynamic nodes") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.radius_tertiary_nodes;
             }
-            else if (par.find("rotated template") < 200) {
+            else if (kw.find("rotated template") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 ip.rotated_template = (test == 1);
             }
-            else if (par.find("fsm high order") < 200) {
+            else if (kw.find("fsm high order") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 ip.weno3 = (test == 1);
             }
-            else if (par.find("interpolate velocity") < 200) {
+            else if (kw.find("interpolate velocity") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 ip.processVel = (test == 1);
             }
-            else if (par.find("traveltime from raypath") < 200) {
+            else if (kw.find("traveltime from raypath") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 ip.tt_from_rp = (test == 1);
             }
-            else if (par.find("raypath minimum distance") < 200) {
+            else if (kw.find("raypath minimum distance") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 sin >> ip.min_distance_rp;
             }
-            else if (par.find("translate grid origin") < 200) {
+            else if (kw.find("translate grid origin") < 200) {
                 sin.str( value ); sin.seekg(0, std::ios_base::beg); sin.clear();
                 int test;
                 sin >> test;
                 ip.translateOrigin = (test == 1);
             }
-            fin.getline(parameter, 200);
+            fin.getline(keyword, 200);
         }
         fin.close();
-
     }
-
 }

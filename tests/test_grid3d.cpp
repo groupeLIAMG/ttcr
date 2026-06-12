@@ -12,7 +12,7 @@
 #include <typeinfo>
 #include <vector>
 
-#define BOOST_TEST_MODULE Test Grid2D
+#define BOOST_TEST_MODULE Test Grid3D
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
@@ -42,6 +42,7 @@
 
 namespace ttcr {
     int verbose = 0;
+    int gpu_profile = 0;
 }
 
 namespace bdata = boost::unit_test::data;
@@ -49,9 +50,13 @@ namespace bdata = boost::unit_test::data;
 using namespace std;
 using namespace ttcr;
 
-string get_class_name(const Grid3D<double,uint32_t> *g) {
+template<typename T>
+string get_class_name(const Grid3D<T,uint32_t> *g) {
     string name = typeid(*g).name();
     size_t start = name.find("Grid3D");
+    if (name.find("OpenCL") != string::npos) {
+        return name.substr(start, 17);
+    }
     name = name.substr(start, 11);
     if ((name[8] == 'f' && name[9] == 's') ||
         (name[8] == 's' && name[9] == 'p') ) {
@@ -60,7 +65,8 @@ string get_class_name(const Grid3D<double,uint32_t> *g) {
     return name;
 }
 
-double get_rel_error(const string& filename, const Rcv<double>& rcv) {
+template<typename T>
+double get_rel_error(const string& filename, const Rcv<T>& rcv) {
     // compute relative error
     
     vector<double> ref_tt(rcv.get_coord().size());
@@ -121,6 +127,24 @@ raytracing_method methods_tr[] = {
     DYNAMIC_SHORTEST_PATH,
     SHORTEST_PATH
 };
+
+const char* models_cl[] = {
+    "./files/layers_medium.vtr",
+    "./files/gradient_medium.vtr",
+    "./files/layers_fine.vtr",
+    "./files/gradient_fine.vtr"
+};
+const char* references_cl[] = {
+    "./files/sol_analytique_couches_tt.vtr",
+    "./files/sol_analytique_gradient_tt.vtr",
+    "./files/sol_analytique_couches_tt.vtr",
+    "./files/sol_analytique_gradient_tt.vtr"
+};
+raytracing_method methods_cl[] = {
+    FAST_SWEEPING,
+    FAST_SWEEPING_OPENCL
+};
+
 
 BOOST_DATA_TEST_CASE(
                      testGrid3D,
@@ -422,4 +446,45 @@ BOOST_DATA_TEST_CASE(
         BOOST_TEST(diff < 0.01);
     }
     BOOST_TEST(diff2 < 0.01);
+}
+
+
+BOOST_DATA_TEST_CASE(
+                     testGrid3D_cl,
+                     (bdata::make(models_cl) ^ bdata::make(references_cl)) * bdata::make(methods_cl),
+                     model, ref, method) {
+    Src<float> src("./files/src.dat");
+    src.init();
+    Rcv<float> rcv("./files/rcv.dat");
+    rcv.init(1);
+
+    input_parameters par;
+    par.method = method;
+    par.modelfile = model;
+    par.weno3 = 1;
+    par.nitermax = 100;
+    Grid3D<float,uint32_t> *g;
+    float error_threshold = .01;
+    if (string(model).find("vtr") != string::npos) {
+        g = buildRectilinear3DfromVtr<float>(par, 1);
+    } else {
+        error_threshold = .07;
+        g = buildUnstructured3DfromVtu<float>(par, 1);
+    }
+    try {
+        g->raytrace(src.get_coord(), src.get_t0(), rcv.get_coord(), rcv.get_tt(0));
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        abort();
+    }
+    std::cout << g->get_niter() << " 1st order iterations ";
+    if ( par.weno3==true ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
+    std::cout << "were needed with epsilon = " << par.epsilon << '\n';
+    
+    string filename = "./files/" + get_class_name(g) + "_tt_grid";
+    g->saveTT(filename, 0, 0, 2);
+    double error = get_rel_error(ref, rcv);
+    BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
+
+    BOOST_TEST(error < error_threshold);
 }

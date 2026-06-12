@@ -4,12 +4,12 @@
 
 
 CXX = g++
-CXXOPTIONS = -O3 -std=c++14 -pthread
+CXXOPTIONS = -O3 -std=c++17 -pthread
 CXXFLAGS = $(CXXOPTIONS) -I./eigen-5.0.0 -I./ttcr -I./boost_1_91_0
 
 LFLAGS =
 
-LIBS =
+LIBS = -lOpenCL
 
 HEADERS = ttcr/Cell.h ttcr/Grad.h ttcr/Grid2D.h ttcr/Grid2Drcfs.h ttcr/Grid2Drc.h ttcr/Grid2Drcsp.h ttcr/Grid2Drnfs.h \
 ttcr/Grid2Drn.h ttcr/Grid2Drnsp.h ttcr/Grid2Ducfm.h ttcr/Grid2Ducfs.h ttcr/Grid2Duc.h ttcr/Grid2Ducsp.h \
@@ -19,7 +19,15 @@ ttcr/Grid3Ducfs.h ttcr/Grid3Duc.h ttcr/Grid3Ducsp.h ttcr/Grid3Dunfm.h ttcr/Grid3
 ttcr/Grid3Dunsp.h ttcr/Interface.h ttcr/Interpolator.h ttcr/Metric.h ttcr/msh2vtk_io.h ttcr/MSHReader.h \
 ttcr/Node2Dc.h ttcr/Node2Dcsp.h ttcr/Node2Dn.h ttcr/Node2Dnsp.h ttcr/Node3Dc.h ttcr/Node3Dcsp.h ttcr/Node3Dn.h \
 ttcr/Node3Dnsp.h ttcr/Node.h ttcr/Rcv2D.h ttcr/Rcv.h ttcr/Src2D.h ttcr/Src.h ttcr/structs_msh2vtk.h \
-ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h ttcr/ctpl_stl.h
+ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h ttcr/Grid3Drcfs_OpenCL.h	\
+ttcr/Grid3Drnfs_OpenCL.h ttcr/Grid3Drn_OpenCL.h ttcr/Grid3Drn_kernels_src.h
+
+# Embed the OpenCL kernel source into a header so Grid3Drn_OpenCL.h can build
+# the kernels without locating the .cl file at runtime (matches setup.py).
+ttcr/Grid3Drn_kernels_src.h : ttcr/Grid3Drn_kernels.cl
+	printf '// Auto-generated from Grid3Drn_kernels.cl. Do not edit.\n#ifndef ttcr_Grid3Drn_kernels_src_h\n#define ttcr_Grid3Drn_kernels_src_h\nnamespace ttcr {\nstatic const char* const Grid3Drn_kernels_src = R"TTCR_CL_KERNEL(\n' > $@
+	cat $< >> $@
+	printf ')TTCR_CL_KERNEL";\n}\n#endif\n' >> $@
 
 ttcr3d : ttcr3d.o ttcr_io.o
 	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr3d.o -o ttcr3d

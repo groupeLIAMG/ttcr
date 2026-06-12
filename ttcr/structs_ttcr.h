@@ -31,7 +31,7 @@
 
 namespace ttcr {
 
-    enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING, DYNAMIC_SHORTEST_PATH };
+    enum raytracing_method { SHORTEST_PATH, FAST_MARCHING, FAST_SWEEPING, DYNAMIC_SHORTEST_PATH, FAST_SWEEPING_OPENCL };
     enum gradient_method : int { LS_FO=0, LS_SO=1, AB=2 };
 
     struct input_parameters {
@@ -43,6 +43,7 @@ namespace ttcr {
         int raypath_method;
         int saveGridTT;
         int min_per_thread;
+        int gpu_max_threads;          // cap on concurrent GPU solver streams (OpenCL FSM); 0 = no cap
         bool inverseDistance;
         bool singlePrecision;
         bool saveRaypaths;
@@ -58,7 +59,8 @@ namespace ttcr {
         bool tt_from_rp;
         bool useEdgeLength;
         bool translateOrigin;
-        double epsilon;
+        bool profile;                 // emit GPU profiling breakdown (OpenCL)
+        double epsilon;               // FSM convergence tol: MEAN per-node |Δtt| change (see raytrace loops)
         double source_radius;
         double min_distance_rp;
         double radius_tertiary_nodes;
@@ -72,12 +74,13 @@ namespace ttcr {
 
         input_parameters() : nn(), nt(0), order(2), nitermax(20),
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
+        gpu_max_threads(4),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
         saveModelVTK(false), saveM(false), time(false), processReflectors(false),
         projectTxRx(false), processVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
-        useEdgeLength(true), translateOrigin(false),
-        epsilon(1.e-15), source_radius(0.0), min_distance_rp(1.e-5),
+        useEdgeLength(true), translateOrigin(false), profile(false),
+        epsilon(1.e-5), source_radius(0.0), min_distance_rp(1.e-5),
         radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
 

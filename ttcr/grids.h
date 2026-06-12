@@ -66,9 +66,11 @@
 #include "Grid3Drcsp.h"
 #include "Grid3Drcdsp.h"
 #include "Grid3Drcfs.h"
+#include "Grid3Drcfs_OpenCL.h"
 #include "Grid3Drnsp.h"
 #include "Grid3Drndsp.h"
 #include "Grid3Drnfs.h"
+#include "Grid3Drnfs_OpenCL.h"
 #include "Grid3Ducfm.h"
 #include "Grid3Ducfs.h"
 #include "Grid3Ducsp.h"
@@ -306,6 +308,37 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                if ( verbose ) {
+                    std::cout << "Creating grid ... ";
+                    std::cout.flush();
+                }
+                if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                if ( constCells ) {
+                    g = new Grid3Drcfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                           d[0], min[0], min[1],  min[2],
+                                                           par.epsilon, par.nitermax,
+                                                           par.weno3, par.tt_from_rp,
+                                                           par.processVel, nt,
+                                                           par.translateOrigin);
+                }
+                else
+                    g = new Grid3Drnfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                           d[0], min[0], min[1],  min[2],
+                                                           par.epsilon, par.nitermax,
+                                                           par.weno3, par.tt_from_rp,
+                                                           par.processVel, nt,
+                                                           par.translateOrigin);
+
+                if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                if ( verbose ) {
+                    std::cout << "done.\n";
+                    std::cout.flush();
+                }
+
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -502,7 +535,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -530,7 +563,33 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        break;
+
+                    case FAST_SWEEPING_OPENCL:
+
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drnfs_OpenCL) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid3Drnfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                               d[0], xrange[0], yrange[0], zrange[0],
+                                                               par.epsilon, par.nitermax,
+                                                               par.weno3, par.tt_from_rp,
+                                                               par.processVel, nt,
+                                                               par.translateOrigin);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -573,7 +632,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -640,7 +699,7 @@ namespace ttcr {
                             chi[n] = x->GetComponent(n, 0);
                         }
                         foundChi = true;
-                        if ( verbose ) { cout << "Model contains anisotropy ratio chi\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy ratio chi\n"; }
                     }
                     if ( cd->HasArray("psi") ) {
 
@@ -657,7 +716,7 @@ namespace ttcr {
                             psi[n] = x->GetComponent(n, 0);
                         }
                         foundPsi = true;
-                        if ( verbose ) { cout << "Model contains anisotropy ratio xi\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy ratio xi\n"; }
                     }
                     break;
                 }
@@ -689,7 +748,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -704,6 +763,7 @@ namespace ttcr {
                         }
                         if ( verbose ) std::cout << "done.\n";
                         break;
+                        
                     case FAST_SWEEPING:
                         if ( verbose ) { std::cout << "Building grid (Grid3Drcfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
@@ -722,7 +782,32 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
+                            delete g;
+                            return nullptr;
+                        }
+                        if ( verbose ) std::cout << "done.\n";
+                        break;
+
+                    case FAST_SWEEPING_OPENCL:
+                        if ( verbose ) { std::cout << "Building grid (Grid3Drcfs_OpenCL) ... "; std::cout.flush(); }
+                        if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
+                        g = new Grid3Drcfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
+                                                               d[0], xrange[0], yrange[0], zrange[0],
+                                                               par.epsilon, par.nitermax,
+                                                               par.weno3, par.tt_from_rp,
+                                                               par.processVel, nt,
+                                                               par.translateOrigin);
+                        if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
+                        if ( verbose ) {
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            << "\nAssigning slowness at grid nodes ... ";
+                            std::cout.flush();
+                        }
+                        try {
+                            g->setSlowness(slowness);
+                        } catch (std::exception& e) {
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -761,7 +846,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -958,6 +1043,13 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 3D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -1020,7 +1112,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -1281,6 +1373,13 @@ namespace ttcr {
                     std::cout.flush();
                 }
 
+                break;
+            }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 3D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
                 break;
             }
             case DYNAMIC_SHORTEST_PATH:
@@ -1599,6 +1698,13 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
+                std::cerr.flush();
+                return nullptr;
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -1790,7 +1896,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1826,7 +1932,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1835,6 +1941,13 @@ namespace ttcr {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
                         }
+                        break;
+                    }
+                    case FAST_SWEEPING_OPENCL:
+                    {
+                        std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
+                        std::cerr.flush();
+                        return nullptr;
                         break;
                     }
                     case FAST_MARCHING:
@@ -1869,7 +1982,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -1928,7 +2041,7 @@ namespace ttcr {
                             }
                         }
                         foundS2 = true;
-                        if ( verbose ) { cout << "Model contains energy-velocity parameter s2\n"; }
+                        if ( verbose ) { std::cout << "Model contains energy-velocity parameter s2\n"; }
                     }
                     
                     if ( cd->HasArray("s4") ) {
@@ -1950,7 +2063,7 @@ namespace ttcr {
                             }
                         }
                         foundS4 = true;
-                        if ( verbose ) { cout << "Model contains energy-velocity parameter s4\n"; }
+                        if ( verbose ) { std::cout << "Model contains energy-velocity parameter s4\n"; }
                     }
                     break;
                 } else if ( strcmp(cd->GetArrayName(na), "Slowness")==0 ) {
@@ -1992,7 +2105,7 @@ namespace ttcr {
                             }
                         }
                         foundXi = true;
-                        if ( verbose ) { cout << "Model contains anisotropy ratio\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy ratio\n"; }
                     }
                     if ( cd->HasArray("theta") ) {
 
@@ -2013,7 +2126,7 @@ namespace ttcr {
                             }
                         }
                         foundTheta = true;
-                        if ( verbose ) { cout << "Model contains anisotropy tilt angle\n"; }
+                        if ( verbose ) { std::cout << "Model contains anisotropy tilt angle\n"; }
                     }
                     break;
                 }
@@ -2022,7 +2135,7 @@ namespace ttcr {
                 switch ( par.method ) {
                     case SHORTEST_PATH:
                     {
-                        if ( verbose ) { cout << "Building grid (Grid2Drcsp) ... "; cout.flush(); }
+                        if ( verbose ) { std::cout << "Building grid (Grid2Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         if ( foundTheta ) {
                             if ( foundXi==false ) { std::cerr << "Error: Model should contain anisotropy ratio" << std::endl; abort(); }
@@ -2063,13 +2176,13 @@ namespace ttcr {
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
-                            cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                            std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -2077,7 +2190,7 @@ namespace ttcr {
                             try {
                                 g->setTiltAngle( theta );
                             } catch (std::exception& e) {
-                                cerr << e.what() << endl;
+                                std::cerr << e.what() << std::endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
@@ -2086,7 +2199,7 @@ namespace ttcr {
                             try {
                                 g->setXi( xi );
                             } catch (std::exception& e) {
-                                cerr << e.what() << endl;
+                                std::cerr << e.what() << std::endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
@@ -2096,13 +2209,13 @@ namespace ttcr {
                                 g->setS2( s2 );
                                 g->setS4( s4 );
                             } catch (std::exception& e) {
-                                cerr << e.what() << endl;
+                                std::cerr << e.what() << std::endl;
                                 std::cerr << "aborting";
                                 std::abort();
                             }
                         }
                             
-                        if ( verbose ) cout << "done.\n";
+                        if ( verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
@@ -2135,7 +2248,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -2145,6 +2258,12 @@ namespace ttcr {
                             std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
                         }
                         break;
+                    }
+                    case FAST_SWEEPING_OPENCL:
+                    {
+                        std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D rectilinear grids\n";
+                        std::cerr.flush();
+                        return nullptr;
                     }
                     case FAST_MARCHING:
                     {
@@ -2178,7 +2297,7 @@ namespace ttcr {
                         try {
                             g->setSlowness(slowness);
                         } catch (std::exception& e) {
-                            cerr << e.what() << endl;
+                            std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
@@ -2267,8 +2386,8 @@ namespace ttcr {
             case SHORTEST_PATH:
             {
                 if ( verbose ) {
-                    cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
-                    cout.flush();
+                    std::cout << "Creating grid using " << par.nn[0] << " secondary nodes ... ";
+                    std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
@@ -2311,9 +2430,9 @@ namespace ttcr {
                                                                                    nt);
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                 if ( verbose ) {
-                    cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
+                    std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                     << "\n";
-                    cout.flush();
+                    std::cout.flush();
                 }
 
                 break;
@@ -2388,6 +2507,13 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -2429,10 +2555,10 @@ namespace ttcr {
 
         }
         if ( par.time ) {
-            cout.precision(12);
-            cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
+            std::cout.precision(12);
+            std::cout << "Time to build grid: " << std::chrono::duration<double>(end-begin).count() << '\n';
         }
-        cout.flush();
+        std::cout.flush();
         try {
             g->setSlowness(slowness);
             if ( foundXi ) {
@@ -2456,7 +2582,7 @@ namespace ttcr {
                 g->setS4(s4);
             }
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }
@@ -2684,6 +2810,13 @@ namespace ttcr {
 
                 break;
             }
+            case FAST_SWEEPING_OPENCL:
+            {
+                std::cerr << "Error: OpenCL fast sweeping not yet implemented for 2D unstructured meshes\n";
+                std::cerr.flush();
+                return nullptr;
+                break;
+            }
             case DYNAMIC_SHORTEST_PATH:
             {
                 if ( verbose ) {
@@ -2885,7 +3018,7 @@ namespace ttcr {
         try {
             g->setSlowness(slowness);
         } catch (std::exception& e) {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
             delete g;
             return nullptr;
         }

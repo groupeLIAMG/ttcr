@@ -28,20 +28,35 @@ The keywords are :
 -  **number of threads** : perform raytracing for multiple sources simultaneously using this number of threads
 -  **inverse distance** : use inverse distance instead of linear interpolation for computing slowness at secondary nodes (SPM in 3D)
 -  **metric order** : metric used to built sweeping ordering (FSM, see Qian et al. 2007) default is 2
--  **epsilon** : convergence criterion (FSM, see Qian et al. 2007) default is 1.e-15
+-  **epsilon** : convergence criterion for the fast sweeping method (FSM, see Qian et al. 2007). The sweeps stop once the **mean per-node change** in traveltime between two successive iterations falls below this value (i.e. the L1 sum of \|Δt\| divided by the number of nodes), so the same value behaves consistently regardless of grid size. Default is 1.e-5. Iterating much below the medium's discretization error buys no accuracy; values around 1.e-5 typically reach the floor while avoiding tens of redundant WENO3 iterations. Note: because the WENO3 update is non-monotone early on, do not set epsilon larger than the per-node change of the first iteration, or the loop may stop prematurely.
 -  **max number of iteration** : max number of sweeping iterations (FSM) default is 20
 -  **saveGridTT** : save traveltime over whole grid, in ASCII file if 1, in VTK format if 2, or in binary format if 3.
 -  **single precision** : work with float rather than double
 -  **fast marching** : use fast marching method if value == 1 (implemented on 2D & 3D unstructured meshes only)
--  **fast sweeping** : use fast sweeping method if value == 1
-- **dynamic shortest path** : use dynamic shortest path method if value == 1
-- **tertiary nodes** : number of tertiary nodes to use with DSPM
-- **src radius tertiary**: radius around source for including tertiary nodes
+-  **fast sweeping** : use fast sweeping method if value == 1 or 2 (2 will attempt to run the OpenCL implementation)
+-  **dynamic shortest path** : use dynamic shortest path method if value == 1
+-  **tertiary nodes** : number of tertiary nodes to use with DSPM
+-  **src radius tertiary**: radius around source for including tertiary nodes
 -  **process reflectors** : use reflectors as sources to compute reflected arrival times (experimental)
 -  **saveRayPaths** : Save raypaths in VTK format
--  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 0)
+-  **raypath high order** : compute traveltime gradient on unstructured meshes with high order least-squares (default is 1)
 -  **fsm high order** : use 3rd order weighted essentially non-oscillatory (WENO) operator with fast sweeping in rectilinear grid if value == 1 (default is 0)
 - **traveltime from raypath** : use backward raytracing step to compute traveltimes (currently implemented on 3D unstructured meshes only)
+-  **save M** : compute and save the matrix **M** of partial derivatives of traveltime with respect to model slowness along the raypaths (the sensitivity / ray matrix used in tomography). Enable with 1. Default is 0. Implies raypath computation.
+-  **project Tx Rx** : project the source and receiver coordinates onto the mesh before raytracing, useful when Tx/Rx points lie slightly off the mesh. Enable with 1. Default is 0. (unstructured meshes)
+-  **interpolate velocity** : when computing slowness at secondary/tertiary nodes, interpolate velocity (then convert to slowness) rather than interpolating slowness directly; can improve accuracy where strong slowness gradients are present. Enable with 1. Default is 0.
+-  **rotated template** : for the fast sweeping method on rectilinear grids, also use the rotated (diagonal) finite-difference stencils in addition to the standard axis-aligned template (see Qian et al. 2007), improving accuracy for wavefronts travelling obliquely to the grid. Enable with 1. Default is 0.
+-  **source radius** : radius around each source within which node traveltimes are initialized analytically (assuming a locally homogeneous medium) instead of by the solver; improves near-source accuracy. A value of 0 disables it. Default is 0.
+-  **raypath minimum distance** : minimum distance tolerance used during raypath reconstruction (e.g. to decide when a node or the source has been reached). Default is 1.e-5.
+-  **translate grid origin** : internally translate the grid so its origin is at (0,0,0) before raytracing, improving numerical conditioning for meshes defined far from the origin. Enable with 1. Default is 0. (unstructured meshes)
+-  **min nb Tx per thread** : when the number of threads is chosen automatically (i.e. *number of threads* is 0), assign at least this many sources (Tx) to each thread, which caps the thread count when there are few sources. Default is 5.
+-  **profile** : when using the OpenCL fast sweeping implementation, print a GPU profiling breakdown (sweep wall-clock time, kernel execution time and its fraction of the wall time, host/device transfer times, and number of kernel launches) at the end of the run. Independent of verbose mode. Enable with 1. Default is 0.
+
+The following keywords are accepted aliases for keywords listed above:
+
+-  **number of dynamic nodes** : alias for *tertiary nodes*.
+-  **gradient method** : alias for *raypath high order*.
+-  **radius dynamic nodes** : alias for *src radius tertiary*.
 
 An example is shown below (note that keywords *must* be comprised between a hashtag and a comma):
 ```
@@ -118,6 +133,8 @@ etc
 ###### Note regarding the fast sweeping method on rectilinear grids
 
 The 3D implementations require that the cells must be cubic.  Only the first value for the size of cell is used when building the grids.
+
+OpenCL accelerated implementations of the sweeping method are provided for 3D rectilinear grids.  Depending on hardware, the OpenCL implementation might not run if double precision is requested, in which case the code falls back to the CPU version.  In the current version, multi-threading is disabled when using OpenCL implementations to avoid saturating the GPU.
 
 #### Unstructured meshes
 

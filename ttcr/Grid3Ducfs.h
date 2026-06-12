@@ -49,6 +49,7 @@ namespace ttcr {
         {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         Grid3Ducfs(const std::vector<sxyz<T1>>& no,
@@ -64,6 +65,7 @@ namespace ttcr {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
             initOrdering(refPts, order);
+            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         ~Grid3Ducfs() {
