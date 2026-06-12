@@ -353,23 +353,47 @@ private:
     }
 
     void determineOptimalWorkGroupSize() {
-        size_t mwg;
-        clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
-                        sizeof(mwg), &mwg, nullptr);
+        cl_int err = CL_SUCCESS;
+
+        size_t device_max = 0;
+        err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                              sizeof(device_max), &device_max, nullptr);
+        checkError(err, "Querying max work group size");
+
+        // Respect kernel-specific work-group limits (can be lower than the device maximum).
+        size_t max_wg = device_max;
+        for (cl_kernel k : { kernel_basic, kernel_xz, kernel_weno3, kernel_weno3_xz }) {
+            size_t km = 0;
+            if (clGetKernelWorkGroupInfo(k, device, CL_KERNEL_WORK_GROUP_SIZE,
+                                         sizeof(km), &km, nullptr) == CL_SUCCESS && km > 0) {
+                max_wg = std::min(max_wg, km);
+            }
+        }
 
         // Query preferred multiple from one of our kernels.
         size_t pref = 32;
 #ifdef CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE
-        clGetKernelWorkGroupInfo(kernel_basic, device,
-                                 CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
-                                 sizeof(pref), &pref, nullptr);
+        size_t kp = 0;
+        if (clGetKernelWorkGroupInfo(kernel_basic, device,
+                                    CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
+                                    sizeof(kp), &kp, nullptr) == CL_SUCCESS && kp > 0) {
+            pref = kp;
+        }
 #endif
+
         // For 1D launches: 256 is a good default across vendors.
-        optimal_local_size = std::min(size_t(256), mwg);
-        // Round up to preferred multiple.
-        if (pref > 1)
+        optimal_local_size = std::min(size_t(256), max_wg);
+
+        // Round down to preferred multiple (and keep within max_wg).
+        if (pref > 1) {
             optimal_local_size = (optimal_local_size / pref) * pref;
-        if (optimal_local_size == 0) optimal_local_size = pref;
+        }
+        if (optimal_local_size == 0) {
+            optimal_local_size = std::min(pref, max_wg);
+        }
+        if (optimal_local_size == 0) {
+            optimal_local_size = 1;
+        }
 
         if ( verbose )
             std::cout << "  2D GPU work group size: " << optimal_local_size << "\n";
