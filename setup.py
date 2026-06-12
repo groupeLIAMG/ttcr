@@ -31,7 +31,12 @@ def _embed_kernel(cl_name, hdr_name, sym_name, delim):
         '#endif\n'
     )
 
-    if not os.path.exists(hdr_path) or open(hdr_path).read() != content:
+    existing = None
+    if os.path.exists(hdr_path):
+        with open(hdr_path, 'r') as f:
+            existing = f.read()
+
+    if existing != content:
         with open(hdr_path, 'w') as f:
             f.write(content)
 
