@@ -30,7 +30,7 @@ ttcr/Grid3Drn_kernels_src.h : ttcr/Grid3Drn_kernels.cl
 	printf ')TTCR_CL_KERNEL";\n}\n#endif\n' >> $@
 
 ttcr3d : ttcr3d.o ttcr_io.o
-	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr3d.o -o ttcr3d
+	$(CXX) $(CXXFLAGS) $(LFLAGS) ttcr_io.o ttcr3d.o -o ttcr3d $(LIBS)
 
 ttcr3d.o : ttcr/ttcr3d.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr3d.cpp
@@ -39,13 +39,13 @@ ttcr_io.o : ttcr/ttcr_io.h ttcr/ttcr_io.cpp ttcr/structs_ttcr.h
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr_io.cpp
 
 ttcr2d : ttcr2d.o ttcr_io.o
-	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr2d.o -o ttcr2d
+	$(CXX) $(CXXFLAGS) $(LFLAGS) ttcr_io.o ttcr2d.o -o ttcr2d $(LIBS)
 
 ttcr2d.o : ttcr/ttcr2d.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr2d.cpp
 
 ttcr3d_raypath : ttcr3d_raypath.o ttcr_io.o
-	$(CXX) $(CXXFLAGS) $(LFLAGS) $(LIBS) ttcr_io.o ttcr3d_raypath.o -o ttcr3d_raypath
+	$(CXX) $(CXXFLAGS) $(LFLAGS) ttcr_io.o ttcr3d_raypath.o -o ttcr3d_raypath $(LIBS)
 
 ttcr3d_raypath.o : ttcr/ttcr3d_raypath.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr3d_raypath.cpp
