@@ -273,3 +273,11 @@ cdef extern from "Grid2Drndsp.h" namespace "ttcr" nogil:
 cdef extern from "Grid2Drnfs.h" namespace "ttcr" nogil:
     cdef cppclass Grid2Drnfs[T1,T2,S](Grid2Drn[T1,T2,S,Node2Dn[T1,T2]]):
         Grid2Drnfs(T2, T2, T1, T1, T1, T1, T1, int, bool, bool, bool, size_t) except +
+
+cdef extern from "Grid2Drcfs_OpenCL.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Drcfs_OpenCL[T1,T2,S](Grid2Drn[T1,T2,S,Node2Dn[T1,T2]]):
+        Grid2Drcfs_OpenCL(T2, T2, T1, T1, T1, T1, T1, int, bool, bool, size_t) except +
+
+cdef extern from "Grid2Drnfs_OpenCL.h" namespace "ttcr" nogil:
+    cdef cppclass Grid2Drnfs_OpenCL[T1,T2,S](Grid2Drn[T1,T2,S,Node2Dn[T1,T2]]):
+        Grid2Drnfs_OpenCL(T2, T2, T1, T1, T1, T1, T1, int, bool, bool, size_t) except +
