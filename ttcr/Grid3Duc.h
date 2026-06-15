@@ -33,6 +33,8 @@
 #include <array>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -62,6 +64,7 @@
 
 #include "Grad.h"
 #include "Grid3D.h"
+#include "NodeKDTree.h"
 #include "utils.h"
 
 namespace ttcr {
@@ -220,6 +223,19 @@ namespace ttcr {
         mutable std::vector<NODE> nodes;
         std::vector<T1> slowness;
         std::vector<tetrahedronElem<T2>> tetrahedra;
+
+        // kd-tree over the primary nodes, for fast point location in getCellNo.
+        // Built lazily on first use (std::call_once) since node coordinates are
+        // fixed after construction; queries are read-only and thread-safe.
+        mutable std::unique_ptr<NodeKDTree<T1,T2>> kdtree;
+        mutable std::once_flag kdtreeFlag;
+
+        T2 getNearestNode(const sxyz<T1>& pt) const {
+            std::call_once(kdtreeFlag, [this]() {
+                kdtree.reset(new NodeKDTree<T1,T2>(nodes, nPrimary));
+            });
+            return kdtree->findNearest(pt.x, pt.y, pt.z);
+        }
 
         // Cached classification of the Tx points (on node / edge / face, owning
         // cell, neighbour cells).  For a given source the Tx are constant while
@@ -442,15 +458,7 @@ namespace ttcr {
 
     template<typename T1, typename T2, typename NODE>
     T2 Grid3Duc<T1,T2,NODE>::getCellNo(const sxyz<T1>& pt) const {
-        T2 closestNode = 0;
-        T1 distance = std::numeric_limits<T1>::max();
-        for (auto node=nodes.begin(); node!=nodes.begin()+nPrimary; ++node){
-            T1 dist = pt.getDistance(*node);
-            if (dist < distance) {
-                distance = dist;
-                closestNode = node->getGridIndex();
-            }
-        }
+        T2 closestNode = getNearestNode(pt);
         T1 minVolumeDiff = std::numeric_limits<T1>::max();
         T2 cell = std::numeric_limits<T2>::max();
 
