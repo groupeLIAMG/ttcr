@@ -28,6 +28,8 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -37,6 +39,7 @@
 #include "Grad.h"
 #include "Grid2D.h"
 #include "Interpolator.h"
+#include "NodeKDTree2D.h"
 
 namespace ttcr {
 
@@ -186,7 +189,33 @@ namespace ttcr {
         T1 computeSlowness(const S& Rx, const T2 cellNo) const;
         T1 computeSlowness(const S& pt, std::array<T2,2>& edgeNodes) const;
 
+        // kd-tree over all nodes, for fast point location and on-node lookup.
+        // Built lazily; node coordinates are fixed after construction and
+        // queries are read-only, hence thread-safe.
+        mutable std::unique_ptr<NodeKDTree2D<T1,T2>> kdtree;
+        mutable std::once_flag kdtreeFlag;
+
+        T2 getNearestNode(const S& pt) const {
+            std::call_once(kdtreeFlag, [this]() {
+                kdtree.reset(new NodeKDTree2D<T1,T2>(nodes, nodes.size()));
+            });
+            return kdtree->findNearest(pt.x, pt.z);
+        }
+
         T2 getCellNo(const S& pt) const {
+            // The containing triangle is, in the common case, incident to the
+            // nearest node, so check that node's triangles first.
+            T2 nn = getNearestNode(pt);
+            T2 cell = std::numeric_limits<T2>::max();
+            for ( T2 t : nodes[nn].getOwners() ) {
+                if ( insideTriangle(pt, t) && t < cell ) {
+                    cell = t;
+                }
+            }
+            if ( cell != std::numeric_limits<T2>::max() ) {
+                return cell;
+            }
+            // fall back to the exhaustive search
             for ( T2 n=0; n<triangles.size(); ++n ) {
                 if ( insideTriangle(pt, n) ) {
                     return n;
@@ -195,6 +224,39 @@ namespace ttcr {
             std::ostringstream msg;
             msg << "Point " << pt << " cannot be found in mesh.";
             throw std::runtime_error(msg.str());
+        }
+
+        // Cached classification of the Tx points (initTxVars), so the per-Tx
+        // node scan + getCellNo runs once per source rather than once per
+        // (source, receiver) pair.  Indexed by threadNo; recomputed only when
+        // its Tx changes.
+        struct txInfo_t {
+            std::vector<sxz<T1>> tx;
+            std::vector<bool> txOnNode;
+            std::vector<T2> txNode;
+            std::vector<T2> txCell;
+            std::vector<std::vector<T2>> txCells;
+            bool valid = false;
+        };
+        mutable std::vector<txInfo_t> txInfoCache;
+
+        const txInfo_t& getTxInfo(const std::vector<sxz<T1>>& Tx,
+                                  const size_t threadNo) const {
+            if ( txInfoCache.size() <= threadNo ) {
+                txInfoCache.resize( threadNo + 1 );
+            }
+            txInfo_t& ti = txInfoCache[threadNo];
+            if ( ti.valid && ti.tx == Tx ) {
+                return ti;
+            }
+            ti.tx = Tx;
+            ti.txOnNode.assign( Tx.size(), false );
+            ti.txNode.assign( Tx.size(), 0 );
+            ti.txCell.assign( Tx.size(), 0 );
+            ti.txCells.assign( Tx.size(), std::vector<T2>() );
+            initTxVars(Tx, ti.txOnNode, ti.txNode, ti.txCell, ti.txCells);
+            ti.valid = true;
+            return ti;
         }
 
         T1 getTraveltime(const S& Rx,
@@ -373,10 +435,9 @@ namespace ttcr {
     T1 Grid2Dun<T1,T2,S,NODE>::getTraveltime(const S& Rx,
                                              const size_t threadNo) const {
 
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Rx ) {
-                return nodes[nn].getTT(threadNo);
-            }
+        T2 nn = getNearestNode( Rx );
+        if ( nodes[nn] == Rx ) {
+            return nodes[nn].getTT(threadNo);
         }
         //If Rx is not on a node:
         T1 slo = computeSlowness( Rx );
@@ -402,12 +463,11 @@ namespace ttcr {
                                              T2& nodeParentRx, T2& cellParentRx,
                                              const size_t threadNo) const {
 
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Rx ) {
-                nodeParentRx = nodes[nn].getNodeParent(threadNo);
-                cellParentRx = nodes[nn].getCellParent(threadNo);
-                return nodes[nn].getTT(threadNo);
-            }
+        T2 nn = getNearestNode( Rx );
+        if ( nodes[nn] == Rx ) {
+            nodeParentRx = nodes[nn].getNodeParent(threadNo);
+            cellParentRx = nodes[nn].getCellParent(threadNo);
+            return nodes[nn].getTT(threadNo);
         }
         //If Rx is not on a node:
         T1 slo = computeSlowness( Rx );
@@ -967,12 +1027,10 @@ namespace ttcr {
                                             std::vector<T2>& txCell,
                                             std::vector<std::vector<T2>>& txCells) const {
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
+            T2 nn = getNearestNode( Tx[nt] );
+            if ( nodes[nn] == Tx[nt] ) {
+                txOnNode[nt] = true;
+                txNode[nt] = nn;
             }
         }
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
@@ -1025,11 +1083,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txCells( Tx.size() );
-        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txCells = txi.txCells;
 
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -1041,7 +1099,8 @@ namespace ttcr {
         std::array<T2,2> edgeNodes;
         Grad2D_ls_so<T1,NODE> grad2d;
 
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+        {
+            T2 nn = getNearestNode( curr_pt );
             if ( nodes[nn] == curr_pt ) {
                 if ( nodes[nn].isPrimary() ) {
                     nodeNo = nn;
@@ -1060,7 +1119,6 @@ namespace ttcr {
                         edgeNodes[1] = triangles[cellNo].i[2];
                     }
                 }
-                break;
             }
         }
         if ( !onNode ) {
@@ -1473,13 +1531,12 @@ namespace ttcr {
             }
 
             onNode = false;
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            {
+                T2 nn = getNearestNode( curr_pt );
                 if ( nodes[nn] == curr_pt && nodes[nn].isPrimary() ) {
-                    //                std::cout << nodes[nn].getX() << ' ' << nodes[nn].getZ() << '\n';
                     nodeNo = nn;
                     onNode = true;
                     onEdge = false;
-                    break;
                 }
             }
 
@@ -1532,11 +1589,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txCells( Tx.size() );
-        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txCells = txi.txCells;
 
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -1549,7 +1606,8 @@ namespace ttcr {
         std::array<T2,2> edgeNodes;
         Grad2D_ls_so<T1,NODE> grad2d;
 
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+        {
+            T2 nn = getNearestNode( curr_pt );
             if ( nodes[nn] == curr_pt ) {
                 if ( nodes[nn].isPrimary() ) {
                     nodeNo = nn;
@@ -1569,7 +1627,6 @@ namespace ttcr {
                     }
                 }
                 s1 = nodes[nodeNo].getNodeSlowness();
-                break;
             }
         }
         if ( !onNode ) {
@@ -2046,12 +2103,12 @@ namespace ttcr {
             }
 
             onNode = false;
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            {
+                T2 nn = getNearestNode( curr_pt );
                 if ( nodes[nn] == curr_pt && nodes[nn].isPrimary() ) {
                     nodeNo = nn;
                     onNode = true;
                     onEdge = false;
-                    break;
                 }
             }
 
@@ -2109,11 +2166,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txCells( Tx.size() );
-        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txCells = txi.txCells;
 
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -2127,7 +2184,8 @@ namespace ttcr {
         Grad2D_ls_so<T1,NODE> grad2d;
         siv<T1> cell;
 
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+        {
+            T2 nn = getNearestNode( curr_pt );
             if ( nodes[nn] == curr_pt ) {
                 if ( nodes[nn].isPrimary() ) {
                     nodeNo = nn;
@@ -2147,7 +2205,6 @@ namespace ttcr {
                     }
                 }
                 s1 = nodes[nodeNo].getNodeSlowness();
-                break;
             }
         }
         if ( !onNode ) {
@@ -2671,12 +2728,12 @@ namespace ttcr {
             }
 
             onNode = false;
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            {
+                T2 nn = getNearestNode( curr_pt );
                 if ( nodes[nn] == curr_pt && nodes[nn].isPrimary() ) {
                     nodeNo = nn;
                     onNode = true;
                     onEdge = false;
-                    break;
                 }
             }
 
@@ -2740,11 +2797,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txCells( Tx.size() );
-        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txCells = txi.txCells;
 
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -2759,7 +2816,8 @@ namespace ttcr {
         Grad2D_ls_so<T1,NODE> grad2d;
         siv<T1> cell;
 
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+        {
+            T2 nn = getNearestNode( curr_pt );
             if ( nodes[nn] == curr_pt ) {
                 if ( nodes[nn].isPrimary() ) {
                     nodeNo = nn;
@@ -2779,7 +2837,6 @@ namespace ttcr {
                     }
                 }
                 s1 = nodes[nodeNo].getNodeSlowness();
-                break;
             }
         }
         if ( !onNode ) {
@@ -3291,12 +3348,12 @@ namespace ttcr {
             }
 
             onNode = false;
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            {
+                T2 nn = getNearestNode( curr_pt );
                 if ( nodes[nn] == curr_pt && nodes[nn].isPrimary() ) {
                     nodeNo = nn;
                     onNode = true;
                     onEdge = false;
-                    break;
                 }
             }
 
@@ -3355,11 +3412,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txCells( Tx.size() );
-        initTxVars(Tx, txOnNode, txNode, txCell, txCells);
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txCells = txi.txCells;
 
         T2 cellNo = 0;
         T2 nodeNo = 0;
@@ -3372,7 +3429,8 @@ namespace ttcr {
         std::array<T2,2> edgeNodes;
         Grad2D_ls_so<T1,NODE> grad2d;
 
-        for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+        {
+            T2 nn = getNearestNode( curr_pt );
             if ( nodes[nn] == curr_pt ) {
                 if ( nodes[nn].isPrimary() ) {
                     nodeNo = nn;
@@ -3392,7 +3450,6 @@ namespace ttcr {
                     }
                 }
                 s1 = nodes[nodeNo].getNodeSlowness();
-                break;
             }
         }
         if ( !onNode ) {
@@ -3857,12 +3914,12 @@ namespace ttcr {
             }
 
             onNode = false;
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+            {
+                T2 nn = getNearestNode( curr_pt );
                 if ( nodes[nn] == curr_pt && nodes[nn].isPrimary() ) {
                     nodeNo = nn;
                     onNode = true;
                     onEdge = false;
-                    break;
                 }
             }
 
