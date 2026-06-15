@@ -30,6 +30,8 @@
 #include <exception>
 #include <iostream>
 #include <fstream>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <sstream>
 #include <stdexcept>
@@ -46,6 +48,7 @@
 #include <boost/math/special_functions/sign.hpp>
 
 #include "Grid2D.h"
+#include "NodeKDTree2D.h"
 
 namespace ttcr {
 
@@ -224,6 +227,21 @@ namespace ttcr {
         T2 ncz;          // number of cells in z
 
         mutable std::vector<NODE> nodes;
+
+        // kd-tree over all nodes (primary + secondary), to replace the
+        // brute-force scan checking whether a point coincides with a node.
+        // Built lazily; node coordinates are fixed after construction and
+        // queries are read-only, hence thread-safe.
+        mutable std::unique_ptr<NodeKDTree2D<T1,T2>> kdtree;
+        mutable std::once_flag kdtreeFlag;
+
+        T2 getNodeNo(const S& pt) const {
+            std::call_once(kdtreeFlag, [this]() {
+                kdtree.reset(new NodeKDTree2D<T1,T2>(nodes, nodes.size()));
+            });
+            T2 nn = kdtree->findNearest(pt.x, pt.z);
+            return nodes[nn] == pt ? nn : std::numeric_limits<T2>::max();
+        }
 
         CELL cells;   // column-wise (z axis) slowness vector of the cells
 
@@ -474,10 +492,9 @@ namespace ttcr {
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
     T1 Grid2Drc<T1,T2,S,NODE,CELL>::getTraveltime(const S& Rx, const size_t threadNo) const {
 
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Rx ) {
-                return nodes[nn].getTT(threadNo);
-            }
+        T2 nn = getNodeNo( Rx );
+        if ( nn != std::numeric_limits<T2>::max() ) {
+            return nodes[nn].getTT(threadNo);
         }
 
         T2 cellNo = getCellNo( Rx );
