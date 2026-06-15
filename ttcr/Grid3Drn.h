@@ -30,6 +30,8 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <sstream>
 #include <stdexcept>
@@ -48,6 +50,7 @@
 
 #include "Grid3D.h"
 #include "Interpolator.h"
+#include "NodeKDTree.h"
 
 namespace ttcr {
 
@@ -179,6 +182,23 @@ namespace ttcr {
         bool processVel;
 
         mutable std::vector<NODE> nodes;
+
+        // kd-tree over all nodes (primary + secondary), to replace the
+        // brute-force scan that checks whether a point coincides with a node.
+        // Built lazily on first use; node coordinates are fixed after
+        // construction and queries are read-only, hence thread-safe.
+        mutable std::unique_ptr<NodeKDTree<T1,T2>> kdtree;
+        mutable std::once_flag kdtreeFlag;
+
+        // Index of the node at pt, or npos if no node lies within "small" of pt
+        // (same condition as Node::operator==).
+        T2 getNodeNo(const sxyz<T1>& pt) const {
+            std::call_once(kdtreeFlag, [this]() {
+                kdtree.reset(new NodeKDTree<T1,T2>(nodes, nodes.size()));
+            });
+            T2 nn = kdtree->findNearest(pt.x, pt.y, pt.z);
+            return nodes[nn] == pt ? nn : std::numeric_limits<T2>::max();
+        }
 
         void buildGridNodes(const T2 nsnx=0, const T2 nsny=0, const T2 nsnz=0);
 
@@ -927,12 +947,11 @@ namespace ttcr {
                                            const size_t threadNo) const {
 
         // Calculate and return the traveltime for a Rx point.
-        for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == Rx ) {
-                nodeParentRx = nodes[nn].getNodeParent(threadNo);
-                cellParentRx = nodes[nn].getCellParent(threadNo);
-                return nodes[nn].getTT(threadNo);
-            }
+        T2 nn = getNodeNo( Rx );
+        if ( nn != std::numeric_limits<T2>::max() ) {
+            nodeParentRx = nodes[nn].getNodeParent(threadNo);
+            cellParentRx = nodes[nn].getCellParent(threadNo);
+            return nodes[nn].getTT(threadNo);
         }
         //If Rx is not on a node:
         T1 slo = computeSlowness( Rx, true );
