@@ -80,7 +80,9 @@ namespace ttcr {
         nPrimary(static_cast<T2>(no.size())),
         source_radius(0.0), min_dist(md),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
-        tetrahedra(tet)
+        tetrahedra(tet),
+        txInfoCache(nt),
+        txInfoCacheBlti(nt)
         {}
 
         virtual ~Grid3Dun() {}
@@ -210,6 +212,37 @@ namespace ttcr {
         T1 min_dist;
         mutable std::vector<NODE> nodes;
         std::vector<tetrahedronElem<T2>> tetrahedra;
+
+        // Cached classification of the Tx points (on node / edge / face, owning
+        // cell, neighbour cells).  For a given source the Tx are constant while
+        // looping over all receivers, so this setup -- which scans every node
+        // and calls getCellNo per Tx -- need only be done once per source rather
+        // than once per (source, receiver) pair.  The cache is indexed by
+        // threadNo: in parallel runs each thread owns a distinct slot, so no
+        // locking is needed.  A slot is recomputed only when its Tx changes.
+        struct txInfo_t {
+            std::vector<sxyz<T1>> tx;
+            std::vector<bool> txOnNode;
+            std::vector<bool> txOnEdge;
+            std::vector<bool> txOnFace;
+            std::vector<T2> txNode;
+            std::vector<T2> txCell;
+            std::vector<std::array<T2,2>> txEdges;
+            std::vector<std::array<T2,3>> txFaces;
+            std::vector<std::vector<T2>> txNeighborCells;
+            bool valid = false;
+        };
+        mutable std::vector<txInfo_t> txInfoCache;
+        // separate cache for the "blti" raypath methods, whose Tx setup differs:
+        // it matches any (primary or secondary) node and computes only the owning
+        // cell and neighbour cells, with no edge/face classification.
+        mutable std::vector<txInfo_t> txInfoCacheBlti;
+
+        const txInfo_t& getTxInfo(const std::vector<sxyz<T1>>& Tx,
+                                  const size_t threadNo) const;
+
+        const txInfo_t& getTxInfoBlti(const std::vector<sxyz<T1>>& Tx,
+                                      const size_t threadNo) const;
 
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
@@ -556,6 +589,146 @@ namespace ttcr {
             }
         }
         return cell;
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    const typename Grid3Dun<T1,T2,NODE>::txInfo_t&
+    Grid3Dun<T1,T2,NODE>::getTxInfo(const std::vector<sxyz<T1>>& Tx,
+                                    const size_t threadNo) const {
+
+        if ( txInfoCache.size() <= threadNo ) {
+            txInfoCache.resize( threadNo + 1 );
+        }
+        txInfo_t& ti = txInfoCache[threadNo];
+        if ( ti.valid && ti.tx == Tx ) {
+            return ti;
+        }
+
+        ti.tx = Tx;
+        ti.txOnNode.assign( Tx.size(), false );
+        ti.txOnEdge.assign( Tx.size(), false );
+        ti.txOnFace.assign( Tx.size(), false );
+        ti.txNode.assign( Tx.size(), 0 );
+        ti.txCell.assign( Tx.size(), 0 );
+        ti.txEdges.assign( Tx.size(), std::array<T2,2>{{0, 0}} );
+        ti.txFaces.assign( Tx.size(), std::array<T2,3>{{0, 0, 0}} );
+        ti.txNeighborCells.assign( Tx.size(), std::vector<T2>() );
+
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn].isPrimary() ) {
+                    if ( nodes[nn] == Tx[nt] ) {
+                        ti.txOnNode[nt] = true;
+                        ti.txNode[nt] = nn;
+                        break;
+                    }
+                }
+            }
+        }
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            if ( !ti.txOnNode[nt] ) {
+                ti.txCell[nt] = getCellNo( Tx[nt] );
+
+                std::array<T2,4> itmp = getPrimary(ti.txCell[nt]);
+                // find adjacent cells
+                const T2 ind[6][2] = {
+                    {itmp[0], itmp[1]},
+                    {itmp[0], itmp[2]},
+                    {itmp[0], itmp[3]},
+                    {itmp[1], itmp[2]},
+                    {itmp[1], itmp[3]},
+                    {itmp[2], itmp[3]} };
+
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
+                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
+                            ti.txNeighborCells[nt].push_back( *nc0 );
+                    }
+                }
+                // check if on edge
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
+                        ti.txOnEdge[nt] = true;
+                        ti.txEdges[nt][0] = ind[nedge][0];
+                        ti.txEdges[nt][1] = ind[nedge][1];
+                        break;
+                    }
+                }
+                if ( !ti.txOnEdge[nt] ) {
+                    // check if on face
+                    const T2 indf[4][3] = {
+                        {itmp[0], itmp[1], itmp[2]},
+                        {itmp[0], itmp[1], itmp[3]},
+                        {itmp[0], itmp[2], itmp[3]},
+                        {itmp[1], itmp[2], itmp[3]} };
+                    for ( size_t nface=0; nface<4; ++nface ) {
+                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
+                            ti.txOnFace[nt] = true;
+                            ti.txFaces[nt][0] = indf[nface][0];
+                            ti.txFaces[nt][1] = indf[nface][1];
+                            ti.txFaces[nt][2] = indf[nface][2];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        ti.valid = true;
+        return ti;
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    const typename Grid3Dun<T1,T2,NODE>::txInfo_t&
+    Grid3Dun<T1,T2,NODE>::getTxInfoBlti(const std::vector<sxyz<T1>>& Tx,
+                                        const size_t threadNo) const {
+
+        if ( txInfoCacheBlti.size() <= threadNo ) {
+            txInfoCacheBlti.resize( threadNo + 1 );
+        }
+        txInfo_t& ti = txInfoCacheBlti[threadNo];
+        if ( ti.valid && ti.tx == Tx ) {
+            return ti;
+        }
+
+        ti.tx = Tx;
+        ti.txOnNode.assign( Tx.size(), false );
+        ti.txNode.assign( Tx.size(), 0 );
+        ti.txCell.assign( Tx.size(), 0 );
+        ti.txNeighborCells.assign( Tx.size(), std::vector<T2>() );
+
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
+                if ( nodes[nn] == Tx[nt] ) {
+                    ti.txOnNode[nt] = true;
+                    ti.txNode[nt] = nn;
+                    break;
+                }
+            }
+        }
+        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
+            if ( !ti.txOnNode[nt] ) {
+                ti.txCell[nt] = getCellNo( Tx[nt] );
+
+                std::array<T2,4> itmp = getPrimary(ti.txCell[nt]);
+                // find adjacent cells
+                const T2 ind[6][2] = {
+                    {itmp[0], itmp[1]},
+                    {itmp[0], itmp[2]},
+                    {itmp[0], itmp[3]},
+                    {itmp[1], itmp[2]},
+                    {itmp[1], itmp[3]},
+                    {itmp[2], itmp[3]} };
+
+                for ( size_t nedge=0; nedge<6; ++nedge ) {
+                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
+                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
+                            ti.txNeighborCells[nt].push_back( *nc0 );
+                    }
+                }
+            }
+        }
+        ti.valid = true;
+        return ti;
     }
 
     template<typename T1, typename T2, typename NODE>
@@ -1686,78 +1859,20 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<bool> txOnEdge( Tx.size(), false );
-        std::vector<bool> txOnFace( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::array<T2,2>> txEdges( Tx.size() );
-        std::vector<std::array<T2,3>> txFaces( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn].isPrimary() ) {
-                    if ( nodes[nn] == Tx[nt] ) {
-                        txOnNode[nt] = true;
-                        txNode[nt] = nn;
-                        break;
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<bool>& txOnEdge = txi.txOnEdge;
+        const std::vector<bool>& txOnFace = txi.txOnFace;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::array<T2,2>>& txEdges = txi.txEdges;
+        const std::vector<std::array<T2,3>>& txFaces = txi.txFaces;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 #ifdef DEBUG_RP
         std::cout << "\n\n\n*** RP debug data - Source\n";
         std::vector<std::vector<sxyz<T1>>> r_data(1);
         r_data[0].push_back(Rx);
-#endif
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                const T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-                // check if on edge
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
-                        txOnEdge[nt] = true;
-                        txEdges[nt][0] = ind[nedge][0];
-                        txEdges[nt][1] = ind[nedge][1];
-                        break;
-                    }
-                }
-                if ( !txOnEdge[nt] ) {
-                    // check if on face
-                    const T2 indf[4][3] = {
-                        {itmp[0], itmp[1], itmp[2]},
-                        {itmp[0], itmp[1], itmp[3]},
-                        {itmp[0], itmp[2], itmp[3]},
-                        {itmp[1], itmp[2], itmp[3]} };
-                    for ( size_t nface=0; nface<4; ++nface ) {
-                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
-                            txOnFace[nt] = true;
-                            txFaces[nt][0] = indf[nface][0];
-                            txFaces[nt][1] = indf[nface][1];
-                            txFaces[nt][2] = indf[nface][2];
-                            break;
-                        }
-                    }
-                }
-            }
-#ifdef DEBUG_RP
             std::cout << "   src no: " << nt << '\n';
             if ( txOnNode[nt] ) {
                 std::cout << "     onNode\n"
@@ -1784,8 +1899,8 @@ namespace ttcr {
                 << "\t          : " << nodes[itmp[3]] << '\n';
             }
             std::cout << '\n';
-#endif
         }
+#endif
 
         T2 cellNo=0, nodeNo=0;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
@@ -2811,73 +2926,15 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<bool> txOnEdge( Tx.size(), false );
-        std::vector<bool> txOnFace( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::array<T2,2>> txEdges( Tx.size() );
-        std::vector<std::array<T2,3>> txFaces( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn].isPrimary() ) {
-                    if ( nodes[nn] == Tx[nt] ) {
-                        txOnNode[nt] = true;
-                        txNode[nt] = nn;
-                        break;
-                    }
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                const T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-                // check if on edge
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
-                        txOnEdge[nt] = true;
-                        txEdges[nt][0] = ind[nedge][0];
-                        txEdges[nt][1] = ind[nedge][1];
-                        break;
-                    }
-                }
-                if ( !txOnEdge[nt] ) {
-                    // check if on face
-                    const T2 indf[4][3] = {
-                        {itmp[0], itmp[1], itmp[2]},
-                        {itmp[0], itmp[1], itmp[3]},
-                        {itmp[0], itmp[2], itmp[3]},
-                        {itmp[1], itmp[2], itmp[3]} };
-                    for ( size_t nface=0; nface<4; ++nface ) {
-                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
-                            txOnFace[nt] = true;
-                            txFaces[nt][0] = indf[nface][0];
-                            txFaces[nt][1] = indf[nface][1];
-                            txFaces[nt][2] = indf[nface][2];
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<bool>& txOnEdge = txi.txOnEdge;
+        const std::vector<bool>& txOnFace = txi.txOnFace;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::array<T2,2>>& txEdges = txi.txEdges;
+        const std::vector<std::array<T2,3>>& txFaces = txi.txFaces;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 
         T2 cellNo, nodeNo;
         sxyz<T1> curr_pt( Rx );
@@ -3585,76 +3642,18 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<bool> txOnEdge( Tx.size(), false );
-        std::vector<bool> txOnFace( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::array<T2,2>> txEdges( Tx.size() );
-        std::vector<std::array<T2,3>> txFaces( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn].isPrimary() ) {
-                    if ( nodes[nn] == Tx[nt] ) {
-                        txOnNode[nt] = true;
-                        txNode[nt] = nn;
-                        break;
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<bool>& txOnEdge = txi.txOnEdge;
+        const std::vector<bool>& txOnFace = txi.txOnFace;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::array<T2,2>>& txEdges = txi.txEdges;
+        const std::vector<std::array<T2,3>>& txFaces = txi.txFaces;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 #ifdef DEBUG_RP
         std::cout << "\n*** RP debug data - Source\n";
-#endif
         for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-                // check if on edge
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
-                        txOnEdge[nt] = true;
-                        txEdges[nt][0] = ind[nedge][0];
-                        txEdges[nt][1] = ind[nedge][1];
-                        break;
-                    }
-                }
-                if ( !txOnEdge[nt] ) {
-                    // check if on face
-                    const T2 indf[4][3] = {
-                        {itmp[0], itmp[1], itmp[2]},
-                        {itmp[0], itmp[1], itmp[3]},
-                        {itmp[0], itmp[2], itmp[3]},
-                        {itmp[1], itmp[2], itmp[3]} };
-                    for ( size_t nface=0; nface<4; ++nface ) {
-                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
-                            txOnFace[nt] = true;
-                            txFaces[nt][0] = indf[nface][0];
-                            txFaces[nt][1] = indf[nface][1];
-                            txFaces[nt][2] = indf[nface][2];
-                            break;
-                        }
-                    }
-                }
-            }
-#ifdef DEBUG_RP
             std::cout << "   src no: " << nt << '\n';
             if ( txOnNode[nt] ) {
                 std::cout << "     onNode\n"
@@ -3681,8 +3680,8 @@ namespace ttcr {
                 << "\t          : " << nodes[itmp[3]] << '\n';
             }
             std::cout << '\n';
-#endif
         }
+#endif
 
         T2 cellNo=0, nodeNo=0;
         sxyz<T1> curr_pt( Rx );
@@ -4645,73 +4644,15 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<bool> txOnEdge( Tx.size(), false );
-        std::vector<bool> txOnFace( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::array<T2,2>> txEdges( Tx.size() );
-        std::vector<std::array<T2,3>> txFaces( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn].isPrimary() ) {
-                    if ( nodes[nn] == Tx[nt] ) {
-                        txOnNode[nt] = true;
-                        txNode[nt] = nn;
-                        break;
-                    }
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-                // check if on edge
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
-                        txOnEdge[nt] = true;
-                        txEdges[nt][0] = ind[nedge][0];
-                        txEdges[nt][1] = ind[nedge][1];
-                        break;
-                    }
-                }
-                if ( !txOnEdge[nt] ) {
-                    // check if on face
-                    const T2 indf[4][3] = {
-                        {itmp[0], itmp[1], itmp[2]},
-                        {itmp[0], itmp[1], itmp[3]},
-                        {itmp[0], itmp[2], itmp[3]},
-                        {itmp[1], itmp[2], itmp[3]} };
-                    for ( size_t nface=0; nface<4; ++nface ) {
-                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
-                            txOnFace[nt] = true;
-                            txFaces[nt][0] = indf[nface][0];
-                            txFaces[nt][1] = indf[nface][1];
-                            txFaces[nt][2] = indf[nface][2];
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<bool>& txOnEdge = txi.txOnEdge;
+        const std::vector<bool>& txOnFace = txi.txOnFace;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::array<T2,2>>& txEdges = txi.txEdges;
+        const std::vector<std::array<T2,3>>& txFaces = txi.txFaces;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 
         T2 cellNo=0, nodeNo=0, nodeNoPrev=0;
         sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
@@ -6004,73 +5945,15 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<bool> txOnEdge( Tx.size(), false );
-        std::vector<bool> txOnFace( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::array<T2,2>> txEdges( Tx.size() );
-        std::vector<std::array<T2,3>> txFaces( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn].isPrimary() ) {
-                    if ( nodes[nn] == Tx[nt] ) {
-                        txOnNode[nt] = true;
-                        txNode[nt] = nn;
-                        break;
-                    }
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-                // check if on edge
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
-                        txOnEdge[nt] = true;
-                        txEdges[nt][0] = ind[nedge][0];
-                        txEdges[nt][1] = ind[nedge][1];
-                        break;
-                    }
-                }
-                if ( !txOnEdge[nt] ) {
-                    // check if on face
-                    const T2 indf[4][3] = {
-                        {itmp[0], itmp[1], itmp[2]},
-                        {itmp[0], itmp[1], itmp[3]},
-                        {itmp[0], itmp[2], itmp[3]},
-                        {itmp[1], itmp[2], itmp[3]} };
-                    for ( size_t nface=0; nface<4; ++nface ) {
-                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
-                            txOnFace[nt] = true;
-                            txFaces[nt][0] = indf[nface][0];
-                            txFaces[nt][1] = indf[nface][1];
-                            txFaces[nt][2] = indf[nface][2];
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<bool>& txOnEdge = txi.txOnEdge;
+        const std::vector<bool>& txOnFace = txi.txOnFace;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::array<T2,2>>& txEdges = txi.txEdges;
+        const std::vector<std::array<T2,3>>& txFaces = txi.txFaces;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 
         T2 cellNo, nodeNo, nodeNoPrev;
         sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
@@ -7502,73 +7385,15 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<bool> txOnEdge( Tx.size(), false );
-        std::vector<bool> txOnFace( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::array<T2,2>> txEdges( Tx.size() );
-        std::vector<std::array<T2,3>> txFaces( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn].isPrimary() ) {
-                    if ( nodes[nn] == Tx[nt] ) {
-                        txOnNode[nt] = true;
-                        txNode[nt] = nn;
-                        break;
-                    }
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-                // check if on edge
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    if ( distSqPointToSegment( &nodes[ind[nedge][0]], &nodes[ind[nedge][1]], Tx[nt]) < small2 ) {
-                        txOnEdge[nt] = true;
-                        txEdges[nt][0] = ind[nedge][0];
-                        txEdges[nt][1] = ind[nedge][1];
-                        break;
-                    }
-                }
-                if ( !txOnEdge[nt] ) {
-                    // check if on face
-                    const T2 indf[4][3] = {
-                        {itmp[0], itmp[1], itmp[2]},
-                        {itmp[0], itmp[1], itmp[3]},
-                        {itmp[0], itmp[2], itmp[3]},
-                        {itmp[1], itmp[2], itmp[3]} };
-                    for ( size_t nface=0; nface<4; ++nface ) {
-                        if ( testInTriangle(&nodes[indf[nface][0]], &nodes[indf[nface][1]], &nodes[indf[nface][2]], Tx[nt]) ) {
-                            txOnFace[nt] = true;
-                            txFaces[nt][0] = indf[nface][0];
-                            txFaces[nt][1] = indf[nface][1];
-                            txFaces[nt][2] = indf[nface][2];
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfo(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<bool>& txOnEdge = txi.txOnEdge;
+        const std::vector<bool>& txOnFace = txi.txOnFace;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::array<T2,2>>& txEdges = txi.txEdges;
+        const std::vector<std::array<T2,3>>& txFaces = txi.txFaces;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 
         T2 cellNo=0, nodeNo=0, nodeNoPrev=0;
         sxyz<T1> curr_pt( Rx ), mid_pt, prev_pt( Rx );
@@ -8916,41 +8741,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfoBlti(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 
         T2 cellNo, nodeNo;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
@@ -9803,41 +9598,11 @@ namespace ttcr {
             }
         }
 
-        std::vector<bool> txOnNode( Tx.size(), false );
-        std::vector<T2> txNode( Tx.size() );
-        std::vector<T2> txCell( Tx.size() );
-        std::vector<std::vector<T2>> txNeighborCells( Tx.size() );
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == Tx[nt] ) {
-                    txOnNode[nt] = true;
-                    txNode[nt] = nn;
-                    break;
-                }
-            }
-        }
-        for ( size_t nt=0; nt<Tx.size(); ++nt ) {
-            if ( !txOnNode[nt] ) {
-                txCell[nt] = getCellNo( Tx[nt] );
-
-                std::array<T2,4> itmp = getPrimary(txCell[nt]);
-                // find adjacent cells
-                T2 ind[6][2] = {
-                    {itmp[0], itmp[1]},
-                    {itmp[0], itmp[2]},
-                    {itmp[0], itmp[3]},
-                    {itmp[1], itmp[2]},
-                    {itmp[1], itmp[3]},
-                    {itmp[2], itmp[3]} };
-
-                for ( size_t nedge=0; nedge<6; ++nedge ) {
-                    for ( auto nc0=nodes[ind[nedge][0]].getOwners().begin(); nc0!=nodes[ind[nedge][0]].getOwners().end(); ++nc0 ) {
-                        if ( std::find(nodes[ind[nedge][1]].getOwners().begin(), nodes[ind[nedge][1]].getOwners().end(), *nc0)!=nodes[ind[nedge][1]].getOwners().end() )
-                            txNeighborCells[nt].push_back( *nc0 );
-                    }
-                }
-            }
-        }
+        const txInfo_t& txi = getTxInfoBlti(Tx, threadNo);
+        const std::vector<bool>& txOnNode = txi.txOnNode;
+        const std::vector<T2>& txNode = txi.txNode;
+        const std::vector<T2>& txCell = txi.txCell;
+        const std::vector<std::vector<T2>>& txNeighborCells = txi.txNeighborCells;
 
         T2 cellNo, nodeNo;
         sxyz<T1> curr_pt( Rx ), prev_pt( Rx );
