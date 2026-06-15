@@ -117,7 +117,7 @@ namespace ttcr {
             return 0;
         }
 
-        size_t getNumberOfElements() {
+        size_t getNumberOfElements() const {
             std::ifstream fin(filename.c_str());
             std::string line;
             size_t nElements=0;

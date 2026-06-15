@@ -90,7 +90,7 @@ namespace ttcr {
         }
 
 
-        size_t getNumberOfElements() {
+        size_t getNumberOfElements() const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -98,7 +98,7 @@ namespace ttcr {
             return reader->GetOutput()->GetNumberOfCells();
         }
 
-        size_t getNumberOfNodes() {
+        size_t getNumberOfNodes() const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -107,7 +107,7 @@ namespace ttcr {
         }
 
         template<typename T>
-        void readNodes2D(std::vector<sxz<T>>& nodes, const int d) {
+        void readNodes2D(std::vector<sxz<T>>& nodes, const int d) const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -123,7 +123,7 @@ namespace ttcr {
         }
 
         template<typename T>
-        void readNodes3D(std::vector<sxyz<T>>& nodes) {
+        void readNodes3D(std::vector<sxyz<T>>& nodes) const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -140,7 +140,7 @@ namespace ttcr {
         }
 
         template<typename T>
-        void readTriangleElements(std::vector<triangleElem<T>>& tri) {
+        void readTriangleElements(std::vector<triangleElem<T>>& tri) const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -161,7 +161,7 @@ namespace ttcr {
         }
 
         template<typename T>
-        void readTetrahedronElements(std::vector<tetrahedronElem<T>>& tet) {
+        void readTetrahedronElements(std::vector<tetrahedronElem<T>>& tet) const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -196,7 +196,7 @@ namespace ttcr {
         }
 
         template<typename T>
-        int readSlowness(std::vector<T>& slowness, const bool constCells=true) {
+        int readSlowness(std::vector<T>& slowness, const bool constCells=true) const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
@@ -275,7 +275,7 @@ namespace ttcr {
         }
 
         template<typename T>
-        int readVariable(const std::string& name, std::vector<T>& var, const bool constCells=true) {
+        int readVariable(const std::string& name, std::vector<T>& var, const bool constCells=true) const {
             vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
             vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
             reader->SetFileName(filename.c_str());
