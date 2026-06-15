@@ -335,7 +335,7 @@ namespace ttcr {
 
         // primary nodes
         for ( T2 n=0; n<no.size(); ++n ) {
-            nodes[n].setXZindex( no[n].x, no[n].z, n );
+            nodes[n].setXYZindex( no[n], n );
             nodes[n].setPrimary(true);
         }
 

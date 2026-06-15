@@ -222,6 +222,10 @@ namespace ttcr {
         template<typename NODE>
         sxyz(const NODE& n) : x(n.getX()), y(n.getY()), z(n.getZ()) {}
 
+        T getX() const { return x; }
+        T getY() const { return y; }
+        T getZ() const { return z; }
+
         bool operator==(const sxyz<T>& s) const {
             //        return (std::abs(x-a.x)<small && std::abs(z-a.z)<small);
             return x==s.x && y==s.y && z==s.z;
