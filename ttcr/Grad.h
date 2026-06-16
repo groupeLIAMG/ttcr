@@ -30,6 +30,7 @@
 #include <array>
 #include <cmath>
 #include <set>
+#include <memory_resource>
 #include <vector>
 
 #pragma clang diagnostic push
@@ -234,6 +235,14 @@ namespace ttcr {
                                 const T t,
                                 const std::set<NODE*> &nodes,
                                 const size_t nt) = 0;
+
+        /// Overload taking a pmr::set, so hot raypath loops can supply a
+        /// stack-backed monotonic_buffer_resource and avoid per-step heap
+        /// allocations when building the surrounding-node set.
+        virtual sxyz<T> compute(const sxyz<T> &pt,
+                                const T t,
+                                const std::pmr::set<NODE*> &nodes,
+                                const size_t nt) = 0;
     };
 
     /**
@@ -248,12 +257,20 @@ namespace ttcr {
         Grad3D_ls_fo() = default;
         ~Grad3D_ls_fo() = default;
 
-        sxyz<T> compute(const sxyz<T> &pt,
-                        const T t,
-                        const std::set<NODE*> &nodes,
-                        const size_t nt) override;
+        sxyz<T> compute(const sxyz<T> &pt, const T t,
+                        const std::set<NODE*> &nodes, const size_t nt) override {
+            return computeImpl(pt, t, nodes, nt);
+        }
+        sxyz<T> compute(const sxyz<T> &pt, const T t,
+                        const std::pmr::set<NODE*> &nodes, const size_t nt) override {
+            return computeImpl(pt, t, nodes, nt);
+        }
 
     private:
+        template<typename SetT>
+        sxyz<T> computeImpl(const sxyz<T> &pt, const T t,
+                            const SetT &nodes, const size_t nt);
+
         sxyz<T> g;
 
         Eigen::Matrix<T, Eigen::Dynamic, 3> A;
@@ -263,10 +280,11 @@ namespace ttcr {
 
 
     template <typename T, typename NODE>
-    sxyz<T> Grad3D_ls_fo<T,NODE>::compute(const sxyz<T> &pt,
-                                          const T t,
-                                          const std::set<NODE*> &nodes,
-                                          const size_t nt) {
+    template <typename SetT>
+    sxyz<T> Grad3D_ls_fo<T,NODE>::computeImpl(const sxyz<T> &pt,
+                                              const T t,
+                                              const SetT &nodes,
+                                              const size_t nt) {
 
         assert(nodes.size()>=4);
 
@@ -313,12 +331,20 @@ namespace ttcr {
         Grad3D_ls_so() = default;
         ~Grad3D_ls_so() = default;
 
-        sxyz<T> compute(const sxyz<T> &pt,
-                        const T t,
-                        const std::set<NODE*> &nodes,
-                        const size_t nt) override;
+        sxyz<T> compute(const sxyz<T> &pt, const T t,
+                        const std::set<NODE*> &nodes, const size_t nt) override {
+            return computeImpl(pt, t, nodes, nt);
+        }
+        sxyz<T> compute(const sxyz<T> &pt, const T t,
+                        const std::pmr::set<NODE*> &nodes, const size_t nt) override {
+            return computeImpl(pt, t, nodes, nt);
+        }
 
     private:
+        template<typename SetT>
+        sxyz<T> computeImpl(const sxyz<T> &pt, const T t,
+                            const SetT &nodes, const size_t nt);
+
         sxyz<T> g;
         Eigen::Matrix<T, Eigen::Dynamic, 9> A;
         Eigen::Matrix<T, 9, 1> x;
@@ -327,10 +353,11 @@ namespace ttcr {
 
 
     template <typename T, typename NODE>
-    sxyz<T> Grad3D_ls_so<T,NODE>::compute(const sxyz<T> &pt,
-                                          const T t,
-                                          const std::set<NODE*> &nodes,
-                                          const size_t nt) {
+    template <typename SetT>
+    sxyz<T> Grad3D_ls_so<T,NODE>::computeImpl(const sxyz<T> &pt,
+                                              const T t,
+                                              const SetT &nodes,
+                                              const size_t nt) {
         // evaluate gradient are center of gravity
         assert(nodes.size()>=9);
 
@@ -403,6 +430,13 @@ namespace ttcr {
         sxyz<T> compute(const sxyz<T> &pt,
                         const T t,
                         const std::set<NODE*> &nodes,
+                        const size_t nt) override {
+            return {0.0, 0.0, 0.0};   // should never be called
+        }
+
+        sxyz<T> compute(const sxyz<T> &pt,
+                        const T t,
+                        const std::pmr::set<NODE*> &nodes,
                         const size_t nt) override {
             return {0.0, 0.0, 0.0};   // should never be called
         }

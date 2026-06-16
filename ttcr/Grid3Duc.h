@@ -28,12 +28,14 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 
 #include <algorithm>
 #include <array>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <memory_resource>
 #include <mutex>
 #include <set>
 #include <sstream>
@@ -366,7 +368,7 @@ namespace ttcr {
         T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
 
-        void getNeighborNodes(const T2, std::set<NODE*>&) const;
+        template<typename SetT> void getNeighborNodes(const T2, SetT&) const;
         void getNeighborNodesAB(const std::vector<NODE*>&,
                                 std::vector<std::vector<std::array<NODE*,3>>>&) const;
 
@@ -2003,7 +2005,9 @@ namespace ttcr {
 #endif
                 if ( rp_method < 2 ) {
                     // find cells common to edge
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                         getNeighborNodes(*nc, nnodes);
                     }
@@ -2174,7 +2178,9 @@ namespace ttcr {
                     }
                 }
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for (size_t n=0; n<cells.size(); ++n ) {
                         getNeighborNodes(cells[n], nnodes);
                     }
@@ -2337,7 +2343,9 @@ namespace ttcr {
 #endif
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t;
                     if ( atRx ) {
@@ -2542,7 +2550,9 @@ namespace ttcr {
 #endif
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t = Interpolator<T1>::trilinearTime(curr_pt,
                                                                 nodes[itmp[0]],
@@ -2894,7 +2904,9 @@ namespace ttcr {
 
                 if ( rp_method < 2 ) {
                     // find cells common to edge
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                         getNeighborNodes(*nc, nnodes);
                     }
@@ -3032,7 +3044,9 @@ namespace ttcr {
                     }
                 }
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for (size_t n=0; n<cells.size(); ++n ) {
                         getNeighborNodes(cells[n], nnodes);
                     }
@@ -3145,7 +3159,9 @@ namespace ttcr {
 
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t;
                     if ( r_data.size() <= 1 ) {
@@ -3320,7 +3336,9 @@ namespace ttcr {
 
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t = Interpolator<T1>::trilinearTime(curr_pt,
                                                                 nodes[itmp[0]],
@@ -3610,7 +3628,9 @@ namespace ttcr {
 
                 if ( rp_method < 2 ) {
                     // find cells common to edge
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                         getNeighborNodes(*nc, nnodes);
                     }
@@ -3768,7 +3788,9 @@ namespace ttcr {
                     }
                 }
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for (size_t n=0; n<cells.size(); ++n ) {
                         getNeighborNodes(cells[n], nnodes);
                     }
@@ -3922,7 +3944,9 @@ namespace ttcr {
 
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t;
                     if ( r_data.size() <= 1 ) {
@@ -4115,7 +4139,9 @@ namespace ttcr {
 
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t = Interpolator<T1>::trilinearTime(curr_pt,
                                                                 nodes[itmp[0]],
@@ -4417,7 +4443,9 @@ namespace ttcr {
                 
                 if ( rp_method < 2 ) {
                     // find cells common to edge
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for ( auto nc=nodes[nodeNo].getOwners().begin(); nc!=nodes[nodeNo].getOwners().end(); ++nc ) {
                         getNeighborNodes(*nc, nnodes);
                     }
@@ -4599,7 +4627,9 @@ namespace ttcr {
                     }
                 }
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     for (size_t n=0; n<cells.size(); ++n ) {
                         getNeighborNodes(cells[n], nnodes);
                     }
@@ -4760,7 +4790,9 @@ namespace ttcr {
                 
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t;
                     if ( l_data.size() == 0 ) {
@@ -4959,7 +4991,9 @@ namespace ttcr {
                 
                 std::array<T2,4> itmp = getPrimary(cellNo);
                 if ( rp_method < 2 ) {
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(cellNo, nnodes);
                     T1 curr_t = Interpolator<T1>::trilinearTime(curr_pt,
                                                                 nodes[itmp[0]],
@@ -6904,8 +6938,9 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
+    template<typename SetT>
     void Grid3Duc<T1,T2,NODE>::getNeighborNodes(const T2 cellNo,
-                                                std::set<NODE*> &nnodes) const {
+                                                SetT &nnodes) const {
 
         for ( size_t n=0; n<this->neighbors[cellNo].size(); ++n ) {
             if ( nodes[this->neighbors[cellNo][n]].isPrimary() ) {
