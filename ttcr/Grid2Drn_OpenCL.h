@@ -66,7 +66,7 @@ public:
         d_tt_in(nullptr), d_tt_out(nullptr),
         d_slowness(nullptr), d_frozen(nullptr), d_plane_nodes(nullptr),
         maxlevel(0),
-        ncx(0), ncz(0), dx(T1(0)), dz(T1(0)), num_nodes(0),
+        ncx(0), ncz(0), num_nodes(0), dx(T1(0)), dz(T1(0)),
         initialized(false),
         current_mode(SweepMode2D::BASIC),
         optimal_local_size(64),

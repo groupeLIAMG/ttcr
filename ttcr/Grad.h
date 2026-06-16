@@ -195,7 +195,6 @@ namespace ttcr {
         }
 
         // solve Ax = b with least squares
-        //        x = (A.transpose() * A).ldlt().solve(A.transpose() * b);
         // Use JacobiSVD for small matrices (typically < 16x16), BDCSVD for larger
         if (nodes.size() < 16) {
             x = A.template jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
@@ -203,7 +202,6 @@ namespace ttcr {
             x = A.template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
         }
 
-        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
         g.x = x[0];
         g.z = x[1];
@@ -293,11 +291,7 @@ namespace ttcr {
             x = A.template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
         }
 
-        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
-        //	if ( isnan(x[0]) || isnan(x[1]) || isnan(x[2]) ) {
-        //		g.x = g.y = g.z = 0;
-        //	}
 
         g.x = x[0];
         g.y = x[1];
@@ -371,7 +365,6 @@ namespace ttcr {
             x = A.template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(b);
         }
 
-        //	Eigen::Matrix<T, Eigen::Dynamic, 1> e = b-A*x;
 
         g.x = x[0];
         g.y = x[1];

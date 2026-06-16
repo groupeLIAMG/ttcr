@@ -278,8 +278,6 @@ int body(const input_parameters &par) {
         string filename = par.basename+"_all_tt";
         g->saveTT(filename, 0, 0, par.saveGridTT);
 
-        //		string filename = par.basename+"_all_tt.dat";
-        //		g->saveTT(filename, 0);
     }
 
 

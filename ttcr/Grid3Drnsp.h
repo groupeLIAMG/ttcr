@@ -904,7 +904,6 @@ namespace ttcr {
             vtkSmartPointer<vtkXMLRectilinearGridWriter> writer = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
 
             writer->SetFileName( filename );
-            //			writer->SetInputConnection( rgrid->GetProducerPort() );
             writer->SetInputData( rgrid );
             writer->SetDataModeToBinary();
             writer->Update();

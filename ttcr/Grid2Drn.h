@@ -415,39 +415,6 @@ namespace ttcr {
     }
 
 
-    //template<typename T1, typename T2, typename S, typename NODE>
-    //T1 Grid2Drn<T1,T2,S,NODE>::getTraveltime(const S& Rx,
-    //                                       const std::vector<NODE>& nodes,
-    //                                       T2& nodeParentRx, T2& cellParentRx,
-    //                                       const size_t threadNo) const {
-    //
-    //    for ( size_t nn=0; nn<nodes.size(); ++nn ) {
-    //        if ( nodes[nn] == Rx ) {
-    //            nodeParentRx = nodes[nn].getNodeParent(threadNo);
-    //            cellParentRx = nodes[nn].getCellParent(threadNo);
-    //            return nodes[nn].getTT(threadNo);
-    //        }
-    //    }
-    //
-    //    T1 slownessRx = getSlowness( Rx );
-    //
-    //    T2 cellNo = getCellNo( Rx );
-    //    T2 neibNo = this->neighbors[cellNo][0];
-    //    T1 dt = computeDt(nodes[neibNo], Rx, slownessRx);
-    //
-    //    T1 traveltime = nodes[neibNo].getTT(threadNo)+dt;
-    //    nodeParentRx = neibNo;
-    //    cellParentRx = cellNo;
-    //    for ( size_t k=1; k< this->neighbors[cellNo].size(); ++k ) {
-    //        neibNo = this->neighbors[cellNo][k];
-    //        dt = computeDt(nodes[neibNo], Rx, slownessRx);
-    //        if ( traveltime > nodes[neibNo].getTT(threadNo)+dt ) {
-    //            traveltime =  nodes[neibNo].getTT(threadNo)+dt;
-    //            nodeParentRx = neibNo;
-    //        }
-    //    }
-    //    return traveltime;
-    //}
 
     template<typename T1, typename T2, typename S, typename NODE>
     void Grid2Drn<T1,T2,S,NODE>::saveTT(const std::string& fname, const int all,
@@ -619,145 +586,6 @@ namespace ttcr {
     }
 
 
-    //template<typename T1, typename T2, typename S, typename NODE>
-    //void Grid2Drn<T1,T2,S,NODE>::saveTTgrad2(const std::string& fname,
-    //                                      const size_t nt,
-    //                                      const bool vtkFormat) const {
-    //
-    //    if (vtkFormat) {
-    //#ifdef VTK
-    //
-    //        std::string filename = fname+".vtp";
-    //
-    //
-    //
-    //        vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
-    //        vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
-    //        vtkSmartPointer<vtkDoubleArray> grad_tt =
-    //        vtkSmartPointer<vtkDoubleArray>::New();
-    //
-    //        grad_tt->SetName("grad tt");
-    //        grad_tt->SetNumberOfComponents(3);
-    //        grad_tt->SetComponentName(0, "x");
-    //        grad_tt->SetComponentName(1, "y");
-    //        grad_tt->SetComponentName(2, "z");
-    //
-    //        size_t npts=12;
-    //        pts->SetNumberOfPoints(npts);
-    //        grad_tt->SetNumberOfTuples( npts );
-    //
-    //        S g, pt;
-    //
-    //        pt.x = 50.23;
-    //        pt.z = 100.1;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 49.23;
-    //        pt.z = 100.1;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.23;
-    //        pt.z = 99.9;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.23;
-    //        pt.z = 100.9;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 49.23;
-    //        pt.z = 99.9;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.7;
-    //        pt.z = 99.8;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.0;
-    //        pt.z = 100.0;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.0;
-    //        pt.z = 100.2;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.3;
-    //        pt.z = 100.0;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.7;
-    //        pt.z = 100.7;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 50.7;
-    //        pt.z = 100.7;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 49.7;
-    //        pt.z = 98.0;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //        pt.x = 49.2;
-    //        pt.z = 98.0;
-    //        grad(g, pt, nt);
-    //        pts->InsertNextPoint(pt.x, 0.0, pt.z);
-    //        grad_tt->InsertNextTuple3(g.x, 0.0, g.z);
-    //
-    //
-    //
-    //        polydata->SetPoints(pts);
-    //        polydata->GetPointData()->SetVectors(grad_tt);
-    //
-    //        vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-    //        writer->SetFileName( filename.c_str() );
-    //        writer->SetInputData( polydata );
-    //        writer->SetDataModeToBinary();
-    //        writer->Update();
-    //
-    //
-    //        #else
-    //        std::cerr << "VTK not included during compilation.\nNothing saved.\n";
-    //#endif
-    //    } else {
-    //        std::ofstream fout(fname.c_str());
-    //        fout.precision(12);
-    //        for ( size_t i=0; i<ncx; ++i ) {
-    //            for ( size_t j=0; j<ncz; ++j ) {
-    //                S g;
-    //                grad(g, i, j, nt);
-    //
-    //                T1 x = xmin + (i+0.5)*dx;
-    //                T1 z = zmin + (j+0.5)*dz;
-    //
-    //                fout << x << ' ' << z << ' ' << g.x << ' ' << g.z << '\n';
-    //            }
-    //        }
-    //        fout.close();
-    //    }
-    //}
 
 
     template<typename T1, typename T2, typename S, typename NODE>
@@ -789,22 +617,7 @@ namespace ttcr {
             p2 = xmax;
             p1 = xmax - dx;
         }
-        //        if (p1 == xmin) {
-        //            // use 3-pt operator
-        //            T1 p3 = p2 + dx;
-        //            g.x = (-1.5*getTraveltime({p1, pt.z}, nt) +
-        //                   2.0*getTraveltime({p2, pt.z}, nt) -
-        //                   0.5*getTraveltime({p3, pt.z}, nt)) / dx;
-        //        } else if (p2 == xmax) {
-        //            T1 p3 = xmax;
-        //            p2 = p1;
-        //            p1 = p2 - dx;
-        //            g.x = (1.5*getTraveltime({p3, pt.z}, nt) -
-        //                   2.0*getTraveltime({p2, pt.z}, nt) +
-        //                   0.5*getTraveltime({p1, pt.z}, nt)) / dx;
-        //        } else {
         g.x = (getTraveltime({p2, pt.z}, nt) - getTraveltime({p1, pt.z}, nt)) / dx;
-        //        }
 
         p1 = pt.z - dz/2.0;
         if (p1 < zmin) {
@@ -815,21 +628,7 @@ namespace ttcr {
             p2 = zmax;
             p1 = zmax - dz;
         }
-        //        if (p1 == zmin) {
-        //            T1 p3 = p2 + dz;
-        //            g.z = (-1.5*getTraveltime({pt.x, p1}, nt) +
-        //                   2.0*getTraveltime({pt.x, p2}, nt) -
-        //                   0.5*getTraveltime({pt.x, p3}, nt)) / dz;
-        //        } else if (p2 == zmax) {
-        //            T1 p3 = zmax;
-        //            p2 = p1;
-        //            p1 = p2 - dx;
-        //            g.z = (1.5*getTraveltime({pt.x, p3}, nt) -
-        //                   2.0*getTraveltime({pt.x, p2}, nt) +
-        //                   0.5*getTraveltime({pt.x, p1}, nt)) / dz;
-        //        } else {
         g.z = (getTraveltime({pt.x, p2}, nt) - getTraveltime({pt.x, p1}, nt)) / dz;
-        //        }
     }
 
     template<typename T1, typename T2, typename S, typename NODE>
@@ -914,13 +713,6 @@ namespace ttcr {
     void Grid2Drn<T1,T2,S,NODE>::sweep(const std::vector<bool>& frozen,
                                        const size_t threadNo) const {
 
-        //    std::cout << '\n';
-        //    for ( int j=ncz; j>=0; --j ) {
-        //        for ( size_t i=0; i<=ncx; ++i ) {
-        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-        //        }
-        //        std::cout << '\n';
-        //    }
 
         // sweep first direction
         for ( size_t i=0; i<=ncx; ++i ) {
@@ -930,13 +722,6 @@ namespace ttcr {
                 }
             }
         }
-        //    std::cout << '\n';
-        //    for ( int j=ncz; j>=0; --j ) {
-        //        for ( size_t i=0; i<=ncx; ++i ) {
-        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-        //        }
-        //        std::cout << '\n';
-        //    }
 
         // sweep second direction
         for ( long int i=ncx; i>=0; --i ) {
@@ -946,13 +731,6 @@ namespace ttcr {
                 }
             }
         }
-        //    std::cout << '\n';
-        //    for ( int j=ncz; j>=0; --j ) {
-        //        for ( size_t i=0; i<=ncx; ++i ) {
-        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-        //        }
-        //        std::cout << '\n';
-        //    }
 
         // sweep third direction
         for ( long int i=ncx; i>=0; --i ) {
@@ -962,13 +740,6 @@ namespace ttcr {
                 }
             }
         }
-        //    std::cout << '\n';
-        //    for ( int j=ncz; j>=0; --j ) {
-        //        for ( size_t i=0; i<=ncx; ++i ) {
-        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-        //        }
-        //        std::cout << '\n';
-        //    }
 
         // sweep fourth direction
         for ( size_t i=0; i<=ncx; ++i ) {
@@ -978,13 +749,6 @@ namespace ttcr {
                 }
             }
         }
-        //    std::cout << '\n';
-        //    for ( int j=ncz; j>=0; --j ) {
-        //        for ( size_t i=0; i<=ncx; ++i ) {
-        //            std::cout << nodes[i*(ncz+1)+j].getTT(threadNo) << ' ';
-        //        }
-        //        std::cout << '\n';
-        //    }
     }
 
 
@@ -2339,7 +2103,6 @@ namespace ttcr {
                 s1 = s2;
             }
             tt += slown * cell.v;
-//            std::cout << '[' << cell.i << ", " << cell.v << ", " << slown << "],\n";
             prev_pt = curr_pt;
 
             // are we close enough to one the Tx nodes ?
@@ -2383,7 +2146,6 @@ namespace ttcr {
                             slown = 0.5*(s1 + s2);
                         }
                         tt += slown * cell.v;
-//                        std::cout << '[' << cell.i << ", " << cell.v << ", " << slown << "],\n";
 
                     } else {
                         // to intersection
@@ -2399,7 +2161,6 @@ namespace ttcr {
                             s1 = s2;
                         }
                         tt += slown * cell.v;
-//                        std::cout << '[' << cell.i << ", " << cell.v << ", " << slown << "],\n";
 
                         prev_pt = curr_pt;
                         // to Tx
@@ -2419,7 +2180,6 @@ namespace ttcr {
                             slown = 0.5*(s1 + s2);
                         }
                         tt += slown * cell.v;
-//                        std::cout << '[' << cell.i << ", " << cell.v << ", " << slown << "],\n";
                     }
 
                     tt += t0[ns];

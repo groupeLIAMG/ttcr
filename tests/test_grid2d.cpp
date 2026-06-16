@@ -437,8 +437,6 @@ BOOST_DATA_TEST_CASE(
     if ( par.weno3 ) std::cout << "and " << g->get_niterw() << " 3rd order iterations ";
     std::cout << "were needed with epsilon = " << par.epsilon << '\n';
 
-    string filename = "./files/" + get_class_name(g) + "_tt_grid";
-    g->saveTT(filename, 0, 0, 2);
     double error = get_rel_error(ref, rcv);
     BOOST_TEST_MESSAGE( "\t\t" << get_class_name(g) << " - error = " << error );
 

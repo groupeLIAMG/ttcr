@@ -391,20 +391,6 @@ namespace ttcr {
             }
         }
 
-        //        size_t noTot = 0;
-        //        for ( size_t n=0; n<tempNodes[threadNo].size(); ++n ) {
-        //            std::cout << tempNodes[threadNo][n].getX() << '\t'
-        //            << tempNodes[threadNo][n].getY() << '\t'
-        //            << tempNodes[threadNo][n].getZ() << '\t'
-        //            << tempNodes[threadNo][n].getNodeSlowness() << '\t'
-        //            << tempNodes[threadNo][n].getOwners().size();
-        //            for ( size_t no=0; no<tempNodes[threadNo][n].getOwners().size(); ++no ) {
-        //                std::cout << '\t' << tempNodes[threadNo][n].getOwners()[no];
-        //                noTot++;
-        //            }
-        //            std::cout << '\n';
-        //        }
-        //        std::cout << "noTot = " << noTot << '\n';
 
         for ( T2 n=0; n<tempNodes[threadNo].size(); ++n ) {
             for ( size_t n2=0; n2<tempNodes[threadNo][n].getOwners().size(); ++n2) {

@@ -445,9 +445,6 @@ private:
         // device interprets the buffers and scalar args exactly as the host
         // packs them.  (Previously the kernel was always built as float, which
         // silently corrupted the double instantiation.)
-        // OLD CODE:
-        //     err = clBuildProgram(program, 1, &device, "-cl-fast-relaxed-math",
-        //                          nullptr, nullptr);
         std::string build_opts = "-cl-fast-relaxed-math";
         if (std::is_same<T1, double>::value) {
             // Double build: make real_t = double (the kernel enables cl_khr_fp64
@@ -838,34 +835,8 @@ private:
                 current_kernel = kernel_basic;
         }
 
-        // =====================================================================
-        // OLD CODE (pure-Jacobi, full-grid passes with buffer swaps):
-        //
-        // Each of the 8 "sweeps" was an identical full-grid update reading
-        // d_tt_in and writing d_tt_out, with the buffers swapped between
-        // sweeps.  The sweep-direction arguments were ignored, so there was
-        // no sweep ordering at all.  That breaks the causal upwind ordering
-        // WENO3 needs (it converges only as a Gauss-Seidel sweep), which is
-        // why the Jacobi version needed the monotone clamp band-aid and still
-        // lost accuracy.  See the start-of-cycle sync that was needed to work
-        // around the odd-swap stale-buffer issue.
-        //
-        // {
-        //     cl_int err = clEnqueueCopyBuffer(queue, d_tt_out, d_tt_in,
-        //                                      0, 0, num_nodes * sizeof(T1),
-        //                                      0, nullptr, nullptr);
-        //     checkError(err, "Syncing d_tt_in from d_tt_out at start of sweep cycle");
-        //     clFinish(queue);
-        // }
-        // for (size_t dir = 0; dir < 8; ++dir) {
-        //     executeSweep(current_kernel, dir);
-        //     if (dir < 7) {
-        //         std::swap(d_tt_in, d_tt_out);
-        //     }
-        // }
-        // =====================================================================
 
-        // NEW CODE: Gauss-Seidel plane-sweep ordering.
+        // Gauss-Seidel plane-sweep ordering.
         //
         // Each of the 8 sweep directions is processed plane by plane in order
         // of increasing diagonal level = ip+jp+kp (ip/jp/kp oriented along the
@@ -933,20 +904,6 @@ private:
         // grid scalars, d_plane_nodes) are bound once in setStaticKernelArgs()
         // because they never change.  Their argument indices are 11 (offset)
         // and 12 (count) to match the kernel signature.
-        //
-        // OLD CODE (set all 13 args on every plane launch):
-        // cl_uint arg_idx = 0;
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);   // in
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_tt_in);   // out (in-place GS)
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_slowness);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_frozen);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dx);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dy);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(T1), &dz);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncx);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncy);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_uint), &ncz);
-        // err |= clSetKernelArg(kernel, arg_idx++, sizeof(cl_mem), &d_plane_nodes);
         const cl_uint OFFSET_ARG = 11;
         const cl_uint COUNT_ARG  = 12;
         cl_int err = 0;
@@ -962,17 +919,6 @@ private:
         if (local_1d < 1) local_1d = 1;
         size_t global_1d = ((plane_count + local_1d - 1) / local_1d) * local_1d;
 
-        // OLD CODE (3-D launch over the full grid box):
-        // size_t local_work_size[3] = {
-        //     optimal_local_size[0], optimal_local_size[1], optimal_local_size[2]
-        // };
-        // size_t global_work_size[3];
-        // global_work_size[0] = ((ncx + 1 + local_work_size[0] - 1) / local_work_size[0]) * local_work_size[0];
-        // global_work_size[1] = ((ncy + 1 + local_work_size[1] - 1) / local_work_size[1]) * local_work_size[1];
-        // global_work_size[2] = ((ncz + 1 + local_work_size[2] - 1) / local_work_size[2]) * local_work_size[2];
-        // err = clEnqueueNDRangeKernel(queue, kernel, 3, nullptr,
-        //                             global_work_size, local_work_size,
-        //                             0, nullptr, nullptr);
 
         // Launch kernel.  When profiling, attach an event and stash it; the
         // events are queried in performSweepCycle() after the cycle's clFinish
@@ -988,20 +934,6 @@ private:
             ++prof_launches;
         }
 
-        // OLD CODE: drain the queue after every single plane launch.
-        //
-        //     clFinish(queue);
-        //
-        // This was a full host<->device round-trip per launch (8 dirs x
-        // (ncx+ncy+ncz+1) levels per sweep cycle), and it dominated the run
-        // time while the plane kernels themselves touch only a handful of
-        // nodes.  It is NOT needed for correctness: the command queue is
-        // in-order, so launch N+1 is guaranteed not to start until launch N
-        // has completed, which is exactly the causal Gauss-Seidel ordering the
-        // plane-sweep relies on.  A single clFinish() at the end of
-        // performSweepCycle() (and the blocking read in downloadData()) is
-        // enough to ensure all work is done before the host reads results.
-        // clFinish(queue);
     }
     
     // =========================================================================

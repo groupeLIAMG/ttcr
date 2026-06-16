@@ -180,11 +180,6 @@ namespace ttcr {
             }
 
         }
-        //    // on faces
-        //    size_t ncut = nDynTot + nSecondary - 1;
-        //    size_t nSecNodes = 0;
-        //    for ( int n=1; n<=(nSecondary-1); ++n ) { nSecNodes += n; }
-        //
 
         for ( auto cell=txCells.begin(); cell!=txCells.end(); ++cell ) {
             adjacentCells.erase(*cell);

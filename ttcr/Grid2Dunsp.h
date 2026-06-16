@@ -712,7 +712,6 @@ namespace ttcr {
                     node_p = &(this->nodes);
                 }
             }
-            //std::cout << "Outside loop" << std::endl;
             // parent is now at Tx
             r_tmp.push_back( child );
 
@@ -784,9 +783,7 @@ namespace ttcr {
         }
         v0 = Tx.size() / v0;
 
-        //std::cout << "\nTx: " << Tx[0].x << ' ' << Tx[0].y << ' ' << Tx[0].z << std::endl;
         for (size_t n=0; n<Rx.size(); ++n) {
-            //std::cout << "  Rx: " << Rx[n].x << ' ' << Rx[n].y << ' ' << Rx[n].z << std::endl;
             m.i = n;
 
             traveltimes[n] = this->getTraveltime(Rx[n], nodeParentRx, cellParentRx,
@@ -825,7 +822,6 @@ namespace ttcr {
                 if (r_tmp.size() > 1 ) {
                     // compute terms of matrix M
                     mid_pt = static_cast<T1>(0.5)*((*node_p)[iParent] + child );
-                    //std::cout << "    mid_pt = " << mid_pt.x << ' ' << mid_pt.y << ' ' << mid_pt.z << "    - " << iParent << ' ' << iChild << std::endl;
                     T1 v = 2./((*node_p)[iParent].getNodeSlowness() + (*node_p)[iChild].getNodeSlowness());
                     v *= v;  // square
                     T1 ds = (*node_p)[iParent].getDistance( child );
@@ -855,7 +851,6 @@ namespace ttcr {
                     }
                     size_t nn=0;
                     for (typename std::set<T2>::iterator it=neib.begin(); it!=neib.end(); ++it) {
-                        //std::cout << "       *it = " << *it << std::endl;
                         m.j = *it;
                         m.v = -1.0 / v * ds * w[nn++]/sum_w;
                         bool found = false;
@@ -886,7 +881,6 @@ namespace ttcr {
                     node_p = &(this->nodes);
                 }
             }
-            //std::cout << "Outside loop" << std::endl;
             // parent is now at Tx
             r_tmp.push_back( child );
 
@@ -984,7 +978,6 @@ namespace ttcr {
                                              std::vector<bool>& inQueue,
                                              std::vector<bool>& frozen,
                                              const size_t threadNo) const {
-        //    size_t n=1;
         while ( !queue.empty() ) {
 
             const NODE* source = queue.top();

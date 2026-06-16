@@ -317,48 +317,6 @@ namespace ttcr {
             }
         }
 
-        //#ifdef VTK
-        //    vtkSmartPointer<vtkPolyData> polydata1 = vtkSmartPointer<vtkPolyData>::New();
-        //    vtkSmartPointer<vtkPoints> pts1 = vtkSmartPointer<vtkPoints>::New();
-        //    vtkSmartPointer<vtkDoubleArray> slow1 =
-        //    vtkSmartPointer<vtkDoubleArray>::New();
-        //    slow1->SetName("Slowness");
-        //    T2 nPrimary = (this->ncx+1) * nnz;
-        //    for ( size_t n=0; n<nPrimary; ++n ) {
-        //        pts1->InsertNextPoint(this->nodes[n].getX(),
-        //                             0.0,
-        //                             this->nodes[n].getZ());
-        //        slow1->InsertValue(n, this->nodes[n].getNodeSlowness() );
-        //    }
-        //    polydata1->SetPoints(pts1);
-        //    polydata1->GetPointData()->SetScalars(slow1);
-        //
-        //    vtkSmartPointer<vtkXMLPolyDataWriter> writer1 = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-        //    writer1->SetFileName( "tempNodesPrimary.vtp" );
-        //    writer1->SetInputData( polydata1 );
-        //    writer1->SetDataModeToBinary();
-        //    writer1->Update();
-        //
-        //    vtkSmartPointer<vtkPolyData> polydata2 = vtkSmartPointer<vtkPolyData>::New();
-        //    vtkSmartPointer<vtkPoints> pts2 = vtkSmartPointer<vtkPoints>::New();
-        //    vtkSmartPointer<vtkDoubleArray> slow2 =
-        //    vtkSmartPointer<vtkDoubleArray>::New();
-        //    slow2->SetName("Slowness");
-        //    for ( size_t n=nPrimary; n<this->nodes.size(); ++n ) {
-        //        pts2->InsertNextPoint(this->nodes[n].getX(),
-        //                              0.0,
-        //                              this->nodes[n].getZ());
-        //        slow2->InsertValue(n-nPrimary, this->nodes[n].getNodeSlowness() );
-        //    }
-        //    polydata2->SetPoints(pts2);
-        //    polydata2->GetPointData()->SetScalars(slow2);
-        //
-        //    vtkSmartPointer<vtkXMLPolyDataWriter> writer2 = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-        //    writer2->SetFileName( "tempNodesSecondary.vtp" );
-        //    writer2->SetInputData( polydata2 );
-        //    writer2->SetDataModeToBinary();
-        //    writer2->Update();
-        //#endif
 
     }
 

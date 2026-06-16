@@ -601,7 +601,6 @@ namespace ttcr {
                                Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pi) {
 
         Eigen::JacobiSVD<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
-        //svd.setThreshold(1e-5);
         Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> S;
         S.resize(svd.nonzeroSingularValues(), svd.nonzeroSingularValues());
         S.setZero();

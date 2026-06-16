@@ -81,21 +81,6 @@ namespace ttcr {
 
         virtual ~Grid2Duc() {}
 
-//        void setSlowness(const T1 s) {
-//            for ( size_t n=0; n<slowness.size(); ++n ) {
-//                slowness[n] = s;
-//            }
-//        }
-//
-//        void setSlowness(const T1 *s, const size_t ns) {
-//            if ( slowness.size() != ns ) {
-//                throw std::length_error("Error: slowness vectors of incompatible size.");
-//            }
-//            for ( size_t n=0; n<slowness.size(); ++n ) {
-//                slowness[n] = s[n];
-//            }
-//        }
-//
         void setSlowness(const std::vector<T1>& s) {
             try {
                 cells.setSlowness( s );
@@ -282,16 +267,6 @@ namespace ttcr {
                             const T2,
                             const size_t);
 
-//        T1 computeDt(const NODE& source, const S& node,
-//                     const size_t cellNo) const {
-//            return slowness[cellNo] * source.getDistance( node );
-//        }
-//
-//        T1 computeDt(const NODE& source, const NODE& node,
-//                     const size_t cellNo) const {
-//            return slowness[cellNo] * source.getDistance( node );
-//        }
-//
         // kd-tree over all nodes, for fast point location and on-node lookup.
         // Built lazily; node coordinates are fixed after construction and
         // queries are read-only, hence thread-safe.
@@ -381,10 +356,6 @@ namespace ttcr {
 
         void localSolver(NODE *vertexC, const size_t threadNo) const;
 
-        //        void getRaypath_fo(const std::vector<sxz<T1>>& Tx,
-        //                           const sxz<T1> &Rx,
-        //                           std::vector<sxz<T1>> &r_data,
-        //                           const size_t threadNo) const;
 
         void initTxVars(const std::vector<sxz<T1>>& Tx,
                         std::vector<bool>& txOnNode,
@@ -767,7 +738,6 @@ namespace ttcr {
             vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 
             writer->SetFileName( filename.c_str() );
-            //		writer->SetInputConnection( ugrid->GetProducerPort() );
             writer->SetInputData( ugrid );
             writer->SetDataModeToBinary();
             writer->Update();
@@ -1011,10 +981,6 @@ namespace ttcr {
                     // angle at node 0
                     T1 a0 = acos((b*b + c*c - a*a)/(2.*b*c));
 
-                    //				std::cout << nodes[i0].getX() << '\t' << nodes[i0].getZ() << "\t-\t"
-                    //				<< nodes[i1].getX() << '\t' << nodes[i1].getZ() << "\t-\t"
-                    //				<< nodes[i2].getX() << '\t' << nodes[i2].getZ() << "\t-\t"
-                    //				<< nodes[i3].getX() << '\t' << nodes[i3].getZ();
 
 
                     if ( a0 > pi2 ) { // still obtuse -> replace i1 instead of i2 with i3
@@ -1034,9 +1000,7 @@ namespace ttcr {
                         a0 = acos((b*b + c*c - a*a)/(2.*b*c));
 
 
-                        //					std::cout << "\t\tswapped";
                     }
-                    //				std::cout << "\n\n";
 
                     vn.a[0] = a0;
                     vn.a[1] = acos((c*c + a*a - b*b)/(2.*a*c));
@@ -1166,15 +1130,6 @@ namespace ttcr {
                         indices.find(triangles[ntr].i[2])!=indices.end()) {
                         txCells[nt].push_back(ntr);
                     }
-                    //                    if ( indices.find(triangles[ntr].i[0])!=indices.end() &&
-                    //                        (indices.find(triangles[ntr].i[1])!=indices.end() ||
-                    //                         indices.find(triangles[ntr].i[2])!=indices.end()) ) {
-                    //                        txCells[nt].push_back(ntr);
-                    //                    }
-                    //                    else if ( indices.find(triangles[ntr].i[1])!=indices.end() &&
-                    //                               indices.find(triangles[ntr].i[2])!=indices.end() ) {
-                    //                        txCells[nt].push_back(ntr);
-                    //                    }
                 }
             }
         }
@@ -1503,7 +1458,6 @@ namespace ttcr {
                 }
 
                 g.normalize();
-                //			std::cout << g.x << ' ' << g.z << '\n';
 
                 // we have 3 segments that we might intersect
                 T2 ind[3][2] = { {this->neighbors[cellNo][0], this->neighbors[cellNo][1]},
@@ -1515,9 +1469,6 @@ namespace ttcr {
                         std::swap( ind[ns][0], ind[ns][1] );
                 }
 
-                //			std::cout << "\n\nplot(" << curr_pt.x << "," << curr_pt.z << ", 'o')\nhold on\naxis equal\n";
-                //			std::cout << "plot([" << curr_pt.x << " " << curr_pt.x+10*g.x << "],["
-                //			<< curr_pt.z << " " << curr_pt.z+10*g.z << "], 'r-')\n";
 
 
                 sxz<T1> pt_i;
@@ -1525,8 +1476,6 @@ namespace ttcr {
                 bool foundIntersection = false;
                 for ( size_t ns=0; ns<3; ++ns ) {
 
-                    //				std::cout << "\nplot([" << nodes[ ind[ns][0] ].getX() << ' ' << nodes[ ind[ns][1] ].getX() << "], ["
-                    //				<< nodes[ ind[ns][0] ].getZ() << ' ' << nodes[ ind[ns][1] ].getZ() << "], '-')\n";
 
                     // equation of the edge segment
                     T1 den = nodes[ ind[ns][1] ].getX() - nodes[ ind[ns][0] ].getX();
@@ -1550,7 +1499,6 @@ namespace ttcr {
 
                     if ( onEdge && ind[ns][0]==edgeNodes[0] && ind[ns][1]==edgeNodes[1] ) {
 
-                        //					std::cout << "m: " << m1 << ' ' << m2 << '\n';
                         if ( std::abs(m1-m2)<small ) {
                             // curr_pt is on an edge and gradient is along the edge
                             // den is the direction of vector P0->P1 along x

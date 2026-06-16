@@ -94,7 +94,6 @@ namespace ttcr {
         sxz(const NODE& n) : x(n.getX()), z(n.getZ()) {}
 
         bool operator==(const sxz<T>& s) const {
-            //        return (std::abs(x-a.x)<small && std::abs(z-a.z)<small);
             return x==s.x && z==s.z;
         }
 
@@ -227,7 +226,6 @@ namespace ttcr {
         T getZ() const { return z; }
 
         bool operator==(const sxyz<T>& s) const {
-            //        return (std::abs(x-a.x)<small && std::abs(z-a.z)<small);
             return x==s.x && y==s.y && z==s.z;
         }
 
@@ -560,11 +558,6 @@ namespace ttcr {
         return v1.x*v2.x + v1.z*v2.z;
     }
 
-    //    template<typename T>
-    //    T dot(const T v1, const sxz<T>& v2) {
-    //        // v1 considered to be a vector along y
-    //        return 0.0;
-    //    }
 
     template<typename T>
     T dot(const T v1, const T v2) {

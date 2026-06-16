@@ -465,22 +465,6 @@ namespace ttcr {
         if ( verbose )
             std::cout << "  *** thread no " << threadNo << ": " << tempNodes[threadNo].size() << " dynamic nodes were added ***" << std::endl;
 
-        //#ifdef VTK
-        //    vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
-        //    vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
-        //    for ( size_t n=0; n<tempNodes[threadNo].size(); ++n ) {
-        //        pts->InsertNextPoint(tempNodes[threadNo][n].getX(),
-        //                             0.0,
-        //                             tempNodes[threadNo][n].getZ());
-        //    }
-        //    polydata->SetPoints(pts);
-        //
-        //    vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-        //    writer->SetFileName( "tempNodes.vtp" );
-        //    writer->SetInputData( polydata );
-        //    writer->SetDataModeToBinary();
-        //    writer->Update();
-        //#endif
 
     }
 

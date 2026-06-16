@@ -302,7 +302,6 @@ namespace ttcr {
                     }
 
                     T1 ttsource= source->getTT( threadNo );
-                    //                    if (ttsource < this->nodes[neibNo].getTT(threadNo)){
                     // Compute dt
                     T1 dt = this->cells.computeDt(*source, this->nodes[neibNo], cellNo);
 
@@ -531,11 +530,6 @@ namespace ttcr {
             traveltimes.resize( Rx.size() );
         }
 
-        //        if ( this->tt_from_rp ) {
-        //            for (size_t n=0; n<Rx.size(); ++n) {
-        //                traveltimes[n] = this->getTraveltimeFromRaypath(Tx, t0, Rx[n], threadNo);
-        //            }
-        //        } else {
         for (size_t n=0; n<Rx.size(); ++n) {
             bool onTx = false;
             for (size_t nt=0; nt<Tx.size(); ++nt) {
@@ -548,7 +542,6 @@ namespace ttcr {
             if (onTx) { continue; }
             traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         }
-        //        }
     }
 
     template<typename T1, typename T2, typename CELL>

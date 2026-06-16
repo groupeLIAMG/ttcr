@@ -289,9 +289,6 @@ namespace ttcr {
 
                             if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                                 this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                                // this->nodes[neibNo].setnodeParent(this->nodes[nn].getGridIndex(),threadNo);
-                                // this->nodes[neibNo].setCellParent(cellNo, threadNo );
-                                // frozen[neibNo] = true;
                             }
                         }
                     }

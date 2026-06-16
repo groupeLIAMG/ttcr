@@ -857,7 +857,6 @@ namespace ttcr {
                 
                 r_tmp.push_back( child );
                 
-                //cell.v = (*node_p)[iParent].getDistance( child );
                 this->cells.computeDistance( (*node_p)[iParent], child, cell);
                 bool found=false;
                 for (size_t nc=0; nc<l_data[n].size(); ++nc) {
@@ -891,7 +890,6 @@ namespace ttcr {
             // parent is now at Tx
             r_tmp.push_back( child );
             
-            //cell.v = (*node_p)[iParent].getDistance( child );
             this->cells.computeDistance( (*node_p)[iParent], child, cell);
             bool found=false;
             for (size_t nc=0; nc<l_data[n].size(); ++nc) {
@@ -990,7 +988,6 @@ namespace ttcr {
 
                 r_tmp.push_back( child );
 
-                //cell.v = (*node_p)[iParent].getDistance( child );
                 this->cells.computeDistance( (*node_p)[iParent], child, cell);
                 bool found=false;
                 for (size_t nc=0; nc<l_data[n].size(); ++nc) {
@@ -1024,7 +1021,6 @@ namespace ttcr {
             // parent is now at Tx
             r_tmp.push_back( child );
 
-            //cell.v = (*node_p)[iParent].getDistance( child );
             this->cells.computeDistance( (*node_p)[iParent], child, cell);
             bool found=false;
             for (size_t nc=0; nc<l_data[n].size(); ++nc) {
@@ -1145,7 +1141,6 @@ namespace ttcr {
 
             // parent is now at Tx
 
-            //cell.v = (*node_p)[iParent].getDistance( child );
             this->cells.computeDistance( (*node_p)[iParent], child, cell);
             bool found=false;
             for (size_t nc=0; nc<l_data[n].size(); ++nc) {

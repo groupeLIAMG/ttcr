@@ -290,7 +290,6 @@ namespace ttcr {
                         continue;
                     }
 
-                    // this->local3Dsolver( &(this->nodes[neibNo]), threadNo );
                     this->localUpdate3D( &(this->nodes[neibNo]), threadNo );
 
                     if ( !inNarrowBand[neibNo] ) {

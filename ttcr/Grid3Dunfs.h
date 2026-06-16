@@ -181,7 +181,6 @@ namespace ttcr {
                 // ascending
                 for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
@@ -199,7 +198,6 @@ namespace ttcr {
                 // descending
                 for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
@@ -251,7 +249,6 @@ namespace ttcr {
                 // ascending
                 for ( auto vertexC=S[i].begin(); vertexC!=S[i].end(); ++vertexC ) {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
@@ -269,7 +266,6 @@ namespace ttcr {
                 // descending
                 for ( auto vertexC=S[i].rbegin(); vertexC!=S[i].rend(); ++vertexC ) {
                     if ( !frozen[(*vertexC)->getGridIndex()] )
-                        //                    this->local3Dsolver(*vertexC, threadNo);
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
@@ -317,7 +313,6 @@ namespace ttcr {
 
                                 if ( t0[n]+dt < this->nodes[neibNo].getTT(threadNo) ) {
                                     this->nodes[neibNo].setTT( t0[n]+dt, threadNo );
-                                    //frozen[neibNo] = true;
                                 }
                             }
                         }

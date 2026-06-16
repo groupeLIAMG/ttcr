@@ -705,7 +705,6 @@ namespace ttcr {
             vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 
             writer->SetFileName( filename.c_str() );
-            //		writer->SetInputConnection( ugrid->GetProducerPort() );
             writer->SetInputData( ugrid );
             writer->SetDataModeToBinary();
             writer->Update();
@@ -898,10 +897,6 @@ namespace ttcr {
                     // angle at node 0
                     T1 a0 = acos((b*b + c*c - a*a)/(2.*b*c));
 
-                    //				std::cout << nodes[i0].getX() << '\t' << nodes[i0].getZ() << "\t-\t"
-                    //				<< nodes[i1].getX() << '\t' << nodes[i1].getZ() << "\t-\t"
-                    //				<< nodes[i2].getX() << '\t' << nodes[i2].getZ() << "\t-\t"
-                    //				<< nodes[i3].getX() << '\t' << nodes[i3].getZ();
 
 
                     if ( a0 > pi2 ) { // still obtuse -> replace i1 instead of i2 with i3
@@ -921,9 +916,7 @@ namespace ttcr {
                         a0 = acos((b*b + c*c - a*a)/(2.*b*c));
 
 
-                        //					std::cout << "\t\tswapped";
                     }
-                    //				std::cout << "\n\n";
 
                     vn.a[0] = a0;
                     vn.a[1] = acos((c*c + a*a - b*b)/(2.*a*c));
@@ -1054,15 +1047,6 @@ namespace ttcr {
                         indices.find(triangles[ntr].i[2])!=indices.end()) {
                         txCells[nt].push_back(ntr);
                     }
-                    //                    if ( indices.find(triangles[ntr].i[0])!=indices.end() &&
-                    //                        (indices.find(triangles[ntr].i[1])!=indices.end() ||
-                    //                         indices.find(triangles[ntr].i[2])!=indices.end()) ) {
-                    //                        txCells[nt].push_back(ntr);
-                    //                    }
-                    //                    else if ( indices.find(triangles[ntr].i[1])!=indices.end() &&
-                    //                               indices.find(triangles[ntr].i[2])!=indices.end() ) {
-                    //                        txCells[nt].push_back(ntr);
-                    //                    }
                 }
             }
         }

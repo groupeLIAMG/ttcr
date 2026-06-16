@@ -1108,7 +1108,6 @@ namespace ttcr {
             vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
 
             writer->SetFileName( filename.c_str() );
-            //        writer->SetInputConnection( ugrid->GetProducerPort() );
             writer->SetInputData( ugrid );
             writer->SetDataModeToBinary();
             writer->Update();
@@ -1304,7 +1303,6 @@ namespace ttcr {
         vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
 
         writer->SetFileName( fname.c_str() );
-        //    writer->SetInputConnection( rgrid->GetProducerPort() );
         writer->SetInputData( rgrid );
         writer->SetDataModeToBinary();
         writer->Update();
@@ -1482,22 +1480,10 @@ namespace ttcr {
 
                 // project point on AB
 
-                //                k = dot(v_pt,v_c)/dot(v_c,v_c);
-                //                pt.x = vertexA->getX() + k*v_c.x;
-                //                pt.y = vertexA->getY() + k*v_c.y;
-                //                pt.z = vertexA->getZ() + k*v_c.z;
-                //
-                //                T1 xi0 = vertexA->getDistance( pt )/c;
                 T1 xi0 = dot(v_pt,v_c)/dot(v_c,v_c);
 
                 // project point on AC
 
-                //                k = dot(v_pt,v_b)/dot(v_b,v_b);
-                //                pt.x = vertexA->getX() + k*v_b.x;
-                //                pt.y = vertexA->getY() + k*v_b.y;
-                //                pt.z = vertexA->getZ() + k*v_b.z;
-                //
-                //                T1 zeta0 = vertexA->getDistance( pt )/b;
                 T1 zeta0 = dot(v_pt,v_b)/dot(v_b,v_b);
 
 
@@ -1575,7 +1561,6 @@ namespace ttcr {
         pt.z = vertexA->getZ() + k*v_c.z;
 
         T1 rho0 = vertexC->getDistance( pt );
-        //        T1 xi0 = vertexA->getDistance( pt )/c;
         T1 xi0 = k;
 
         T1 xi = xi0 - u*rho0/(w*c);
@@ -1670,8 +1655,6 @@ namespace ttcr {
 
                         T1 d = -vertexA->getX()*a - vertexA->getY()*b - vertexA->getZ()*c;
 
-                        //				T1 k = -(d + a*vertexA->getX() + b*vertexA->getY() + c*vertexA->getZ())/
-                        //				(a*n[0] + b*n[1] + c*n[2]);
                         T1 k = -(d + a*vertexD->getX() + b*vertexD->getY() + c*vertexD->getZ())/  // TODO check here if vertex D
                         (a*n[ns][0] + b*n[ns][1] + c*n[ns][2]);
 
@@ -1683,45 +1666,6 @@ namespace ttcr {
 
 
 
-                        //					// area of ABC
-                        //					T1 ABC = 0.5*sqrt(a*a + b*b + c*c);
-                        //
-                        //					// area of EAB
-                        //					sxyz<T1> v1, v2;
-                        //					// vec(EA)
-                        //					v1.x = vertexA->getX() - E.x;
-                        //					v1.y = vertexA->getY() - E.y;
-                        //					v1.z = vertexA->getZ() - E.z;
-                        //					// vec(EB)
-                        //					v2.x = vertexB->getX() - E.x;
-                        //					v2.y = vertexB->getY() - E.y;
-                        //					v2.z = vertexB->getZ() - E.z;
-                        //
-                        //					sxyz<T1> v3 = cross(v1, v2);
-                        //
-                        //					T1 EAB = 0.5 * norm(v3);
-                        //
-                        //					// area of EAC
-                        //					// vec(EC)
-                        //					v2.x = vertexC->getX() - E.x;
-                        //					v2.y = vertexC->getY() - E.y;
-                        //					v2.z = vertexC->getZ() - E.z;
-                        //
-                        //					v3 = cross(v1, v2);
-                        //
-                        //					T1 EAC = 0.5 * norm(v3);
-                        //
-                        //					// area of EBC
-                        //					// vec(EB)
-                        //					v1.x = vertexB->getX() - E.x;
-                        //					v1.y = vertexB->getY() - E.y;
-                        //					v1.z = vertexB->getZ() - E.z;
-                        //
-                        //					v3 = cross(v1, v2);
-                        //
-                        //					T1 EBC = 0.5 * norm(v3);
-                        //
-                        //					if ( std::abs(EAB+EAC+EBC-ABC)<small ) {
 
                         if ( testInTriangle(vertexA, vertexB, vertexC, E) ) {
 
@@ -1741,13 +1685,6 @@ namespace ttcr {
                             pt.z = vertexD->getZ() + k*n[ns][2];
 
 
-                            //						std::cout << "\nplot3("<< vertexA->getX() << "," << vertexA->getY() << "," << vertexA->getZ() << ",'o'), hold on\n";
-                            //						std::cout << "plot3("<< vertexB->getX() << "," << vertexB->getY() << "," << vertexB->getZ() << ",'o')\n";
-                            //						std::cout << "plot3("<< vertexC->getX() << "," << vertexC->getY() << "," << vertexC->getZ() << ",'o')\n";
-                            //						std::cout << "plot3("<< vertexD->getX() << "," << vertexD->getY() << "," << vertexD->getZ() << ",'ko')\n";
-                            //						std::cout << "plot3("<< E.x << "," << E.y << "," << E.z << ",'go')\n";
-                            //						std::cout << "plot3("<< pt.x << "," << pt.y << "," << pt.z << ",'ro')\n";
-                            //						std::cout << "plot3(["<< pt.x << " "<< pt.x+0.1*n[ns][0]<< "],[" << pt.y << " "<< pt.y+0.1*n[ns][1]<< "],[" << pt.z << " "<< pt.z+0.1*n[ns][2]<< "],'r'), axis equal\n";
 
 
                             sxyz<T1> AD;

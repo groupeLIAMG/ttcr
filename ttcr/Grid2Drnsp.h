@@ -216,11 +216,6 @@ namespace ttcr {
                 }
 
                 // primary nodes
-                //            std::cout << n << "\t p\t-\t" << x << '\t' << z
-                //            << "\t-\t" << cell_upLeft
-                //            << '\t' << cell_downLeft
-                //            << '\t' << cell_upRight
-                //            << '\t' << cell_downRight << '\n';
 
                 if ( cell_upLeft != std::numeric_limits<T2>::max() ) {
                     this->nodes[n].pushOwner( cell_upLeft );
@@ -287,8 +282,6 @@ namespace ttcr {
 
                         T1 zsv = this->zmin + nr*this->dz + (ns+1)*dzs;
 
-                        //                    std::cout << n << "\tsv\t-\t" << x << '\t' << zsv << "\t-\t"
-                        //                    << cell_downLeft << '\t' << cell_downRight << '\n';
 
                         if ( cell_downLeft != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_downLeft );
@@ -310,8 +303,6 @@ namespace ttcr {
 
                         T1 xsh = this->xmin + nc*this->dx + (ns+1)*dxs;
 
-                        //                    std::cout << n << "\tsh\t-\t" << xsh << '\t' << z << "\t-\t"
-                        //                    << cell_upRight << '\t' << cell_downRight << '\n';
 
                         if ( cell_upRight != std::numeric_limits<T2>::max() ) {
                             this->nodes[n].pushOwner( cell_upRight );
@@ -326,9 +317,7 @@ namespace ttcr {
                         this->nodes[n].setPrimary(false);
                     }
                 }
-                //            std::cout << '\n';
             }
-            //        std::cout << '\n';
         }
         // sanity check
         if ( n != this->nodes.size() ) {

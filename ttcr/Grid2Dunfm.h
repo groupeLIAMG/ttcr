@@ -207,7 +207,6 @@ namespace ttcr {
                                         std::vector<bool>& frozen,
                                         const size_t threadNo) const {
 
-        //    size_t n=1;
         while ( !narrow_band.empty() ) {
 
             const Node2Dn<T1,T2>* source = narrow_band.top();

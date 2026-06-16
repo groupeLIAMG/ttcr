@@ -221,12 +221,9 @@ int main(int argc, char * argv[])
                     }
                 }
 
-                //				cout << "myset contains:";
                 for (it=refl_ind.begin(); it!=refl_ind.end(); ++it) {
-                    //					cout << ' ' << *it;
                     reflector.add_coord( nodes[*it] );
                 }
-                //				cout << '\n';
                 if ( ttcr::verbose ) cout << "Saving reflector file " << fname << '\n';
                 reflector.save_rcvfile();
             }
