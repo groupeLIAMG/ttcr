@@ -74,7 +74,7 @@ cdef class Grid3d_d:
 
     Constructor:
 
-    Grid3d_d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False) -> Grid3d_d
+    Grid3d_d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False) -> Grid3d_d
 
         Parameters
         ----------
@@ -99,9 +99,9 @@ cdef class Grid3d_d:
             interpolate velocity instead of slowness at nodes (for
             cell_slowness == False or FSM) (defauls is False)
         eps : double
-            convergence criterion (FSM) (default is 1e-15)
+            convergence criterion (FSM) (default is 1e-5)
         maxit : int
-            max number of sweeping iterations (FSM) (default is 20)
+            max number of sweeping iterations (FSM) (default is 50)
         weno : bool
             use 3rd order weighted essentially non-oscillatory operator (FSM)
             (default is True)
@@ -158,7 +158,7 @@ cdef class Grid3d_d:
                   size_t n_threads=1,
                   bool cell_slowness=1, str method='FSM',
                   bool tt_from_rp=1, bool interp_vel=0,
-                  double eps=1.e-15, int maxit=20, bool weno=1,
+                  double eps=1.e-5, int maxit=50, bool weno=1,
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
                   double radius_factor_tertiary=3.0,
@@ -1314,13 +1314,13 @@ cdef class Grid3d_d:
     @staticmethod
     def builder(filename, size_t n_threads=1, str method='FSM',
                 bool tt_from_rp=1, bool interp_vel=0,
-                double eps=1.e-15, int maxit=20, bool weno=1,
+                double eps=1.e-5, int maxit=50, bool weno=1,
                 uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
                 double radius_factor_tertiary=3.0,
                 bool translate_grid=0):
         """
-        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=0)
+        builder(filename, n_threads=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=0)
 
         Build instance of Grid3d from VTK file
 
@@ -1824,7 +1824,7 @@ cdef class Grid3d_f:
 
     Constructor:
 
-    Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_f
+    Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_f
 
         Parameters
         ----------
@@ -1867,7 +1867,7 @@ cdef class Grid3d_f:
                   size_t n_threads=1,
                   bool cell_slowness=1, str method='FSM',
                   bool tt_from_rp=1, bool interp_vel=0,
-                  float eps=1.e-15, int maxit=20, bool weno=1,
+                  float eps=1.e-5, int maxit=50, bool weno=1,
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
                   float radius_factor_tertiary=3.0,
@@ -2696,7 +2696,7 @@ cdef class Grid3d_f:
     @staticmethod
     def builder(filename, size_t n_threads=1, str method='FSM',
                 bool tt_from_rp=1, bool interp_vel=0,
-                float eps=1.e-15, int maxit=20, bool weno=1,
+                float eps=1.e-5, int maxit=50, bool weno=1,
                 uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
                 float radius_factor_tertiary=3.0,
@@ -2774,7 +2774,7 @@ cdef class Grid2d_d:
 
     Constructor:
 
-    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d
+    Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-5, maxit=50, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d
 
     Parameters
     ----------
@@ -2800,9 +2800,9 @@ cdef class Grid2d_d:
             - 'vti_sh' : vertical transverse isotropy, SH waves
             - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
-        convergence criterion (FSM) (default is 1e-15)
+        convergence criterion (FSM) (default is 1e-5)
     maxit : int
-        max number of sweeping iterations (FSM) (default is 20)
+        max number of sweeping iterations (FSM) (default is 50)
     weno : bool
         use 3rd order weighted essentially non-oscillatory operator (FSM)
         (default is True)
@@ -2859,7 +2859,7 @@ cdef class Grid2d_d:
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
                   np.ndarray[np.double_t, ndim=1] z, size_t n_threads=1,
                   bool cell_slowness=1, str method='SPM', str aniso='iso',
-                  double eps=1.e-15, int maxit=20, bool weno=1,
+                  double eps=1.e-5, int maxit=50, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
                   uint32_t n_secondary=3, uint32_t n_tertiary=3,
                   double radius_factor_tertiary=3.0, bool tt_from_rp=0,
@@ -4477,7 +4477,7 @@ cdef class Grid2d_f:
 
     Constructor:
 
-    Grid2d_f(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-15, maxit=20, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d_f
+    Grid2d_f(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-5, maxit=50, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d_f
 
         Parameters
         ----------
@@ -4513,7 +4513,7 @@ cdef class Grid2d_f:
     def __cinit__(self, np.ndarray[np.float32_t, ndim=1] x,
                   np.ndarray[np.float32_t, ndim=1] z, size_t n_threads=1,
                   bool cell_slowness=1, str method='SPM', str aniso='iso',
-                  float eps=1.e-15, int maxit=20, bool weno=1,
+                  float eps=1.e-5, int maxit=50, bool weno=1,
                   bool rotated_template=0, uint32_t nsnx=10, uint32_t nsnz=10,
                   uint32_t n_secondary=3, uint32_t n_tertiary=3,
                   float radius_factor_tertiary=3.0, bool tt_from_rp=0,
@@ -5578,7 +5578,7 @@ def _rebuild3d_f(x, y, z, constructor_params):
 
 
 def Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM',
-           tt_from_rp=1, interp_vel=0, eps=1.e-15, maxit=20, weno=1,
+           tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1,
            nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2,
            radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False,
            dtype=np.float64):
@@ -5644,7 +5644,7 @@ def _rebuild2d_f(x, z, constructor_params):
 
 
 def Grid2d(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso',
-           eps=1.e-15, maxit=20, weno=1, rotated_template=0,
+           eps=1.e-5, maxit=50, weno=1, rotated_template=0,
            nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3,
            radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False,
            dtype=np.float64):

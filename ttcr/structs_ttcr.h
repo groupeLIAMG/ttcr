@@ -72,7 +72,7 @@ namespace ttcr {
         std::string rcvfile;
         std::vector<std::string> srcfiles;
 
-        input_parameters() : nn(), nt(0), order(2), nitermax(20),
+        input_parameters() : nn(), nt(0), order(2), nitermax(50),
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         gpu_max_threads(4),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),

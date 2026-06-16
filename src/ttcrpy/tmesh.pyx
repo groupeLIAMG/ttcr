@@ -91,9 +91,9 @@ cdef class Mesh3d:
             parameters (interpolation: for cell_slowness == False or FSM)
             (defauls is False)
         eps : double
-            convergence criterion (FSM) (default is 1e-15)
+            convergence criterion (FSM) (default is 1e-5)
         maxit : int
-            max number of sweeping iterations (FSM) (default is 20)
+            max number of sweeping iterations (FSM) (default is 50)
         min_dist : double
             tolerance for backward raytracing (default is 1e-5)
         n_secondary : int
@@ -133,7 +133,7 @@ cdef class Mesh3d:
                   size_t n_threads=1, bool cell_slowness=1,
                   str method='FSM', int gradient_method=1,
                   bool tt_from_rp=1, bool process_vel=0,
-                  double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
+                  double eps=1.e-5, int maxit=50, double min_dist=1.e-5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
                   double radius_factor_tertiary=3.0,
                   bool translate_grid=0):
@@ -1117,7 +1117,7 @@ cdef class Mesh3d:
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM', int gradient_method=1,
                 bool tt_from_rp=1, bool process_vel=0,
-                double eps=1.e-15, int maxit=20, double min_dist=1.e-5,
+                double eps=1.e-5, int maxit=50, double min_dist=1.e-5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
                 double radius_factor_tertiary=3.0, bool translate_grid=0):
         """
@@ -1194,7 +1194,7 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, triangles, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', eps=1e-15, maxit=20, process_obtuse=1, n_secondary=5, n_tertiary=2, radius_factor_tertiary=2, tt_from_rp=0) -> Mesh2d
+    Mesh2d(nodes, triangles, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', eps=1e-5, maxit=50, process_obtuse=1, n_secondary=5, n_tertiary=2, radius_factor_tertiary=2, tt_from_rp=0) -> Mesh2d
 
     Parameters
     ----------
@@ -1218,9 +1218,9 @@ cdef class Mesh2d:
             - 'tilted_elliptical' : tilted elliptical anisotropy
             - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
-        convergence criterion (FSM) (default is 1e-15)
+        convergence criterion (FSM) (default is 1e-5)
     maxit : int
-        max number of sweeping iterations (FSM) (default is 20)
+        max number of sweeping iterations (FSM) (default is 50)
     process_obtuse : bool
         use method of Qian et al (2007) to improve accuracy for triangles
         with obtuse angle (default is True)
@@ -1260,7 +1260,7 @@ cdef class Mesh2d:
     def __cinit__(self, np.ndarray[np.double_t, ndim=2] nodes,
                   np.ndarray[np.int64_t, ndim=2] triangles,
                   size_t n_threads=1, bool cell_slowness=1,
-                  str method='FSM', str aniso='iso', double eps=1.e-15, int maxit=20,
+                  str method='FSM', str aniso='iso', double eps=1.e-5, int maxit=50,
                   bool process_obtuse=1, uint32_t n_secondary=5,
                   uint32_t n_tertiary=2, double radius_factor_tertiary=2.0,
                   bool tt_from_rp=0):
@@ -1977,7 +1977,7 @@ cdef class Mesh2d:
 
     @staticmethod
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
-                str method='FSM',double eps=1.e-15, int maxit=20,
+                str method='FSM',double eps=1.e-5, int maxit=50,
                 bool process_obtuse=1, uint32_t n_secondary=5,
                 uint32_t n_tertiary=2, double radius_factor_tertiary=3.0,
                 bool tt_from_rp=0):
