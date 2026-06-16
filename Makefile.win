@@ -18,14 +18,17 @@ BIN_DIR := bin
 # Output targets
 TTCR3D := $(BIN_DIR)/ttcr3d.exe
 TTCR2D := $(BIN_DIR)/ttcr2d.exe
+TTCR2DS := $(BIN_DIR)/ttcr2ds.exe
 
 # Source files
 SRC_TTCR3D := $(SRC_DIR)/ttcr3d.cpp
 SRC_TTCR2D := $(SRC_DIR)/ttcr2d.cpp
+SRC_TTCR2DS := $(SRC_DIR)/ttcr2ds.cpp
 SRC_TTCR_IO := $(SRC_DIR)/ttcr_io.cpp
 
 OBJ_TTCR3D := $(BUILD_DIR)/ttcr3d.obj
 OBJ_TTCR2D := $(BUILD_DIR)/ttcr2d.obj
+OBJ_TTCR2DS := $(BUILD_DIR)/ttcr2ds.obj
 OBJ_TTCR_IO := $(BUILD_DIR)/ttcr_io.obj
 
 # Header list (for dependency grouping, not auto-checked)
@@ -109,15 +112,15 @@ else
 endif
 
 # Phony targets
-.PHONY: all release debug clean dirs print ttcr3d ttcr2d
+.PHONY: all release debug clean dirs print ttcr3d ttcr2d ttcr2ds
 
 all: release
 
 release:
-	$(MAKE) CONFIG=Release $(TTCR3D) $(TTCR2D)
+	$(MAKE) CONFIG=Release $(TTCR3D) $(TTCR2D) $(TTCR2DS)
 
 debug:
-	$(MAKE) CONFIG=Debug $(TTCR3D) $(TTCR2D)
+	$(MAKE) CONFIG=Debug $(TTCR3D) $(TTCR2D) $(TTCR2DS)
 
 print:
 	@echo TOOLCHAIN: $(TOOLCHAIN)
@@ -128,6 +131,7 @@ print:
 	@echo BOOST_INC: $(BOOST_INC)
 	@echo TTCR3D:    $(TTCR3D)
 	@echo TTCR2D:    $(TTCR2D)
+	@echo TTCR2DS:   $(TTCR2DS)
 
 # Directories
 DIRS := $(BUILD_DIR) $(BIN_DIR)
@@ -145,11 +149,17 @@ $(OBJ_TTCR3D): $(SRC_TTCR3D) $(HEADERS) | dirs
 $(OBJ_TTCR2D): $(SRC_TTCR2D) $(HEADERS) | dirs
 	$(call compile_rule,$<,$@)
 
+$(OBJ_TTCR2DS): $(SRC_TTCR2DS) $(HEADERS) | dirs
+	$(call compile_rule,$<,$@)
+
 # Link executables
 $(TTCR3D): $(OBJ_TTCR_IO) $(OBJ_TTCR3D) | dirs
 	$(call link_rule,$@,$^)
 
 $(TTCR2D): $(OBJ_TTCR_IO) $(OBJ_TTCR2D) | dirs
+	$(call link_rule,$@,$^)
+
+$(TTCR2DS): $(OBJ_TTCR_IO) $(OBJ_TTCR2DS) | dirs
 	$(call link_rule,$@,$^)
 
 # Clean
@@ -159,7 +169,8 @@ ifeq ($(TOOLCHAIN),msvc)
 	@if exist $(BUILD_DIR) rmdir /S /Q $(BUILD_DIR)
 	@if exist $(TTCR3D) del /Q $(TTCR3D)
 	@if exist $(TTCR2D) del /Q $(TTCR2D)
+	@if exist $(TTCR2DS) del /Q $(TTCR2DS)
 else
 	-@rm -rf $(BUILD_DIR)/*.o
-	-@rm -f $(TTCR3D) $(TTCR2D)
+	-@rm -f $(TTCR3D) $(TTCR2D) $(TTCR2DS)
 endif

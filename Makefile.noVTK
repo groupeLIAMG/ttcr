@@ -44,6 +44,12 @@ ttcr2d : ttcr2d.o ttcr_io.o
 ttcr2d.o : ttcr/ttcr2d.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr2d.cpp
 
+ttcr2ds : ttcr2ds.o ttcr_io.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) ttcr_io.o ttcr2ds.o -o ttcr2ds $(LIBS)
+
+ttcr2ds.o : ttcr/ttcr2ds.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -c ttcr/ttcr2ds.cpp
+
 ttcr3d_raypath : ttcr3d_raypath.o ttcr_io.o
 	$(CXX) $(CXXFLAGS) $(LFLAGS) ttcr_io.o ttcr3d_raypath.o -o ttcr3d_raypath $(LIBS)
 
