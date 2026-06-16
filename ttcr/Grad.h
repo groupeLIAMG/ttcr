@@ -140,7 +140,8 @@ namespace ttcr {
          * @param nt thread number
          * @returns value of the travetime gradient
          */
-        sxz<T> compute(const std::set<NODE*> &nodes,
+        template<typename SetT>
+        sxz<T> compute(const SetT &nodes,
                        const size_t nt);
 
     private:
@@ -152,7 +153,8 @@ namespace ttcr {
 
 
     template <typename T, typename NODE>
-    sxz<T> Grad2D_ls_so<T,NODE>::compute(const std::set<NODE*> &nodes,
+    template <typename SetT>
+    sxz<T> Grad2D_ls_so<T,NODE>::compute(const SetT &nodes,
                                          const size_t nt) {
 
         assert(nodes.size()>=5);
