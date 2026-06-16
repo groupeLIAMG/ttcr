@@ -54,6 +54,7 @@ ttcr3d.o
 tests/files/*_rp.vtp
 
 tests/files/*_tt_grid.vt*
+tests/files/*_tt_grid_*.vtr
 
 ambiguity-as_used_for_manuscript.py
 
