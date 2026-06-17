@@ -73,7 +73,9 @@ if platform.system() == 'Darwin':
                        '-L/opt/local/lib', '-Wl,-headerpad_max_install_names',
                        '-Wl,-syslibroot,/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk']
 elif platform.system() == 'Windows':
-    extra_compile_args = ['/O2']
+    # MSVC needs /std:c++17 explicitly; its default (C++14) lacks
+    # <memory_resource> / std::pmr used by the unstructured grid classes.
+    extra_compile_args = ['/O2', '/std:c++17']
     extra_link_args = []
     libraries = ['OpenCL']
     # GitHub runners expose vcpkg through VCPKG_INSTALLATION_ROOT; honour either
