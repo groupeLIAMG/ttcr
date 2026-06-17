@@ -26,9 +26,11 @@
 #define ttcr_Grid2Dun_h
 
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <memory_resource>
 #include <mutex>
 #include <set>
 #include <sstream>
@@ -323,7 +325,7 @@ namespace ttcr {
         T2 findNextCell1(const T2 i0, const T2 i1, const T2 nodeNo) const;
         T2 findNextCell2(const T2 i0, const T2 i1, const T2 cellNo) const;
 
-        void getNeighborNodes(const T2 cellNo, std::set<NODE*> &nnodes) const;
+        template<typename SetT> void getNeighborNodes(const T2 cellNo, SetT &nnodes) const;
 
         void interpSlownessSecondary(const T2 nSecondary);
         void interpVelocitySecondary(const T2 nSecondary);
@@ -1172,7 +1174,9 @@ namespace ttcr {
                     }
                     if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
 
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(*nc, nnodes);
 
                     g = grad2d.compute(nnodes, threadNo);
@@ -1372,7 +1376,9 @@ namespace ttcr {
             } else {
                 // on edge
 
-                std::set<NODE*> nnodes;
+                std::byte nnodes_buf[8192];
+                std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                std::pmr::set<NODE*> nnodes{&nnodes_pool};
                 getNeighborNodes(cellNo, nnodes);
 
                 g = grad2d.compute(nnodes, threadNo);
@@ -1692,7 +1698,9 @@ namespace ttcr {
                     }
                     if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
 
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(*nc, nnodes);
 
                     g = grad2d.compute(nnodes, threadNo);
@@ -1929,7 +1937,9 @@ namespace ttcr {
             } else {
                 // on edge
 
-                std::set<NODE*> nnodes;
+                std::byte nnodes_buf[8192];
+                std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                std::pmr::set<NODE*> nnodes{&nnodes_pool};
                 getNeighborNodes(cellNo, nnodes);
 
                 g = grad2d.compute(nnodes, threadNo);
@@ -2279,7 +2289,9 @@ namespace ttcr {
                     }
                     if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
 
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(*nc, nnodes);
 
                     g = grad2d.compute(nnodes, threadNo);
@@ -2533,7 +2545,9 @@ namespace ttcr {
             } else {
                 // on edge
 
-                std::set<NODE*> nnodes;
+                std::byte nnodes_buf[8192];
+                std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                std::pmr::set<NODE*> nnodes{&nnodes_pool};
                 getNeighborNodes(cellNo, nnodes);
 
                 g = grad2d.compute(nnodes, threadNo);
@@ -2908,7 +2922,9 @@ namespace ttcr {
                     }
                     if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
 
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(*nc, nnodes);
 
                     g = grad2d.compute(nnodes, threadNo);
@@ -3155,7 +3171,9 @@ namespace ttcr {
             } else {
                 // on edge
 
-                std::set<NODE*> nnodes;
+                std::byte nnodes_buf[8192];
+                std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                std::pmr::set<NODE*> nnodes{&nnodes_pool};
                 getNeighborNodes(cellNo, nnodes);
 
                 g = grad2d.compute(nnodes, threadNo);
@@ -3512,7 +3530,9 @@ namespace ttcr {
                     }
                     if ( nb[0]>nb[1] ) std::swap(nb[0], nb[1]);
 
-                    std::set<NODE*> nnodes;
+                    std::byte nnodes_buf[8192];
+                    std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                    std::pmr::set<NODE*> nnodes{&nnodes_pool};
                     getNeighborNodes(*nc, nnodes);
 
                     g = grad2d.compute(nnodes, threadNo);
@@ -3742,7 +3762,9 @@ namespace ttcr {
             } else {
                 // on edge
 
-                std::set<NODE*> nnodes;
+                std::byte nnodes_buf[8192];
+                std::pmr::monotonic_buffer_resource nnodes_pool{nnodes_buf, sizeof(nnodes_buf)};
+                std::pmr::set<NODE*> nnodes{&nnodes_pool};
                 getNeighborNodes(cellNo, nnodes);
 
                 g = grad2d.compute(nnodes, threadNo);
@@ -4056,8 +4078,9 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename S, typename NODE>
+    template<typename SetT>
     void Grid2Dun<T1,T2,S,NODE>::getNeighborNodes(const T2 cellNo,
-                                                  std::set<NODE*> &nnodes) const {
+                                                  SetT &nnodes) const {
 
         for ( size_t n=0; n<3; ++n ) {
             T2 nodeNo = this->neighbors[cellNo][n];
