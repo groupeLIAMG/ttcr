@@ -65,7 +65,7 @@ if platform.system() == 'Darwin':
     # OpenCL ships as a system framework on macOS.
     extra_compile_args = ['-std=c++17', '-stdlib=libc++', '-O3', '-arch', 'x86_64',
                           '-arch', 'arm64',
-                          '-Wno-unused-result', '-Wunreachable-code',
+                          '-Wno-unused-result', '-Wno-sign-compare', '-Wunreachable-code',
                           '-fno-common', '-dynamic', '-DNDEBUG', '-fwrapv',
                           '-pipe', '-isysroot/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk']
     extra_link_args = ['-bundle', '-undefined', 'dynamic_lookup', '-arch', 'x86_64',
@@ -88,9 +88,9 @@ elif platform.system() == 'Windows':
 elif platform.system() == 'Linux':
     if 'readthedocs.org/user_builds/ttcrpy' in os.path.dirname(__file__):
         # do not optimize when building on readthedocs server
-        extra_compile_args = ['-std=c++17', '-O0']
+        extra_compile_args = ['-std=c++17', '-O0', '-Wno-sign-compare']
     else:
-        extra_compile_args = ['-std=c++17', '-O3']
+        extra_compile_args = ['-std=c++17', '-O3', '-Wno-sign-compare']
     extra_link_args = []
     libraries = ['OpenCL']
 
