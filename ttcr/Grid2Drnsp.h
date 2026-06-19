@@ -91,8 +91,8 @@ namespace ttcr {
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
-                      std::vector<std::vector<sxz<double>>>& r_data,
-                      std::vector<std::vector<siv<double>>>& l_data,
+                      std::vector<std::vector<S>>& r_data,
+                      std::vector<std::vector<siv<T1>>>& l_data,
                       const size_t threadNo=0) const;
 
         const T2 getNsnx() const { return nsnx; }
@@ -741,8 +741,8 @@ namespace ttcr {
                                        const std::vector<T1>& t0,
                                        const std::vector<S>& Rx,
                                        std::vector<T1>& traveltimes,
-                                       std::vector<std::vector<sxz<double>>>& r_data,
-                                       std::vector<std::vector<siv<double>>>& l_data,
+                                       std::vector<std::vector<S>>& r_data,
+                                       std::vector<std::vector<siv<T1>>>& l_data,
                                        const size_t threadNo) const {
 
         this->checkPts(Tx);
@@ -791,10 +791,10 @@ namespace ttcr {
             std::vector<Node2Dnsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
 
-            std::vector<sxz<double>> r_tmp;
+            std::vector<S> r_tmp;
             T2 iChild, iParent = nodeParentRx;
-            sxz<double> child;
-            siv<double> cell;
+            S child;
+            siv<T1> cell;
 
             // store the son's coord
             child.x = Rx[n].x;
