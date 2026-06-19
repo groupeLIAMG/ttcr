@@ -153,6 +153,10 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
+        // keep the base-class getTraveltime overloads visible; the overloads
+        // below would otherwise hide them (-Woverloaded-virtual)
+        using Grid3Dun<T1,T2,Node3Dnsp<T1,T2>>::getTraveltime;
+
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<Node3Dnsp<T1,T2>>& nodes,
                          const size_t threadNo) const;
