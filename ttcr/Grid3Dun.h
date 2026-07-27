@@ -311,6 +311,10 @@ namespace ttcr {
                                     const sxyz<T1>& Rx,
                                     const size_t threadNo) const;
 
+        // keep the base-class getRaypath overloads visible; the helper
+        // overloads below would otherwise hide them (-Woverloaded-virtual)
+        using Grid3D<T1,T2>::getRaypath;
+
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,

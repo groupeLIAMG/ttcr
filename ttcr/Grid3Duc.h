@@ -182,20 +182,6 @@ namespace ttcr {
             return zmax;
         }
 
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1> &Rx,
-                        std::vector<sxyz<T1>> &r_data,
-                        T1 &tt,
-                        const size_t threadNo) const;
-
-        void getRaypath(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        const sxyz<T1> &Rx,
-                        std::vector<siv<T1>> &l_data,
-                        T1 &tt,
-                        const size_t threadNo) const;
-
         void saveTT(const std::string &, const int, const size_t nt=0,
                     const int format=1) const;
 
@@ -320,9 +306,27 @@ namespace ttcr {
                                     const sxyz<T1> &Rx,
                                     const size_t threadNo) const;
 
+        // keep the base-class getRaypath overloads visible; the helper
+        // overload below would otherwise hide them (-Woverloaded-virtual)
+        using Grid3D<T1,T2>::getRaypath;
+
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
+                        const size_t threadNo) const;
+
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1> &Rx,
+                        std::vector<sxyz<T1>> &r_data,
+                        T1 &tt,
+                        const size_t threadNo) const;
+
+        void getRaypath(const std::vector<sxyz<T1>>& Tx,
+                        const std::vector<T1>& t0,
+                        const sxyz<T1> &Rx,
+                        std::vector<siv<T1>> &l_data,
+                        T1 &tt,
                         const size_t threadNo) const;
 
         void getStraightRays(const std::vector<sxyz<T1>>& Tx,

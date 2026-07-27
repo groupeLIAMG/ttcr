@@ -124,7 +124,7 @@ namespace ttcr {
                       std::vector<std::vector<sijv<T1>>>&,
                       const size_t=0) const;
 
-        int computeD(const std::vector<sxyz<T1>>&,
+        int computeD(const std::vector<S>&,
                      std::vector<std::vector<siv<T1>>>&) const;
 
     private:
@@ -1014,7 +1014,7 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename S, typename NODE>
-    int Grid2Dunsp<T1,T2,S,NODE>::computeD(const std::vector<sxyz<T1>>& pts,
+    int Grid2Dunsp<T1,T2,S,NODE>::computeD(const std::vector<S>& pts,
                                            std::vector<std::vector<siv<T1>>>& d_data) const{
 
         for ( size_t n=0; n<pts.size(); ++n ) {
