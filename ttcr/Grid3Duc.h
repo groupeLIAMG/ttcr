@@ -606,6 +606,7 @@ namespace ttcr {
             nodes[n].setXYZindex(no[n].x - this->origin.x,
                                  no[n].y - this->origin.y,
                                  no[n].z - this->origin.z, n );
+            nodes[n].setPrimary(true);
         }
 
         

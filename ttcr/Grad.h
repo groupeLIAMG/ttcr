@@ -22,6 +22,28 @@
  *
  */
 
+/**
+ * @file Grad.h
+ * @brief Traveltime-gradient estimators for triangular and tetrahedral meshes.
+ *
+ * Collects the small helper classes that estimate the spatial gradient of the
+ * traveltime field &nabla;t at a mesh element or point, given the traveltimes
+ * stored at surrounding nodes.  These gradients drive raypath tracing (the
+ * raypath follows &minus;&nabla;t) in the unstructured-mesh solvers.
+ *
+ * Two families are provided:
+ * - 2D (triangles): @ref ttcr::Grad2D_ls_fo (first-order least squares) and
+ *   @ref ttcr::Grad2D_ls_so (second-order least squares).
+ * - 3D (tetrahedra): the abstract interface @ref ttcr::Grad3D and its
+ *   implementations @ref ttcr::Grad3D_ls_fo, @ref ttcr::Grad3D_ls_so
+ *   (first/second-order least squares) and @ref ttcr::Grad3D_ab (an
+ *   averaging-based scheme).
+ *
+ * The least-squares variants solve an over-determined system `A x = b` for the
+ * gradient using Eigen's SVD; the estimate is anchored at the element centroid
+ * (or query point) with inverse-distance weighting of the nodal times.
+ */
+
 #ifndef ttcr_Grad_h
 #define ttcr_Grad_h
 
@@ -61,7 +83,7 @@ namespace ttcr {
          * @param n1 second node making the triangle
          * @param n2 third node making the triangle
          * @param nt thread number
-         * @returns value of the travetime gradient
+         * @returns value of the traveltime gradient
          */
         sxz<T> compute(const Node<T> &n0,
                        const Node<T> &n1,
@@ -69,10 +91,10 @@ namespace ttcr {
                        const size_t nt);
 
     private:
-        sxz<T> g;
-        Eigen::Matrix<T, 3, 2> A;
-        Eigen::Matrix<T, 2, 1> x;
-        Eigen::Matrix<T, 3, 1> b;
+        sxz<T> g;                    ///< Reusable gradient result.
+        Eigen::Matrix<T, 3, 2> A;    ///< Design matrix: node offsets from the centroid (3 nodes &times; 2 dims).
+        Eigen::Matrix<T, 2, 1> x;    ///< Solution vector (gradient components).
+        Eigen::Matrix<T, 3, 1> b;    ///< Right-hand side: centroid-to-node traveltime differences.
     };
 
     template <typename T>
@@ -134,21 +156,22 @@ namespace ttcr {
         Grad2D_ls_so() = default;
 
         /**
-         * Compute gradient given  nodes
+         * Compute gradient given nodes
          *
+         * @tparam SetT set-like container type holding the node pointers
          * @param nodes set of nodes neighbours to the triangle
          * @param nt thread number
-         * @returns value of the travetime gradient
+         * @returns value of the traveltime gradient
          */
         template<typename SetT>
         sxz<T> compute(const SetT &nodes,
                        const size_t nt);
 
     private:
-        sxz<T> g;
-        Eigen::Matrix<T, Eigen::Dynamic, 5> A;
-        Eigen::Matrix<T, 5, 1> x;
-        Eigen::Matrix<T, Eigen::Dynamic, 1> b;
+        sxz<T> g;                                ///< Reusable gradient result.
+        Eigen::Matrix<T, Eigen::Dynamic, 5> A;   ///< Design matrix, 5 columns for the quadratic terms [dx, dz, dx&sup2;, dz&sup2;, dx&middot;dz].
+        Eigen::Matrix<T, 5, 1> x;                ///< Solution vector; first two entries are the gradient components.
+        Eigen::Matrix<T, Eigen::Dynamic, 1> b;   ///< Right-hand side: centroid-to-node traveltime differences.
     };
 
 
@@ -231,7 +254,7 @@ namespace ttcr {
          * @param t traveltime at point pt
          * @param nodes nodes surrounding point pt
          * @param nt thread number
-         * @returns value of the travetime gradient
+         * @returns value of the traveltime gradient
          */
         virtual sxyz<T> compute(const sxyz<T> &pt,
                                 const T t,
@@ -259,25 +282,38 @@ namespace ttcr {
         Grad3D_ls_fo() = default;
         ~Grad3D_ls_fo() = default;
 
+        /// @copydoc Grad3D::compute
         sxyz<T> compute(const sxyz<T> &pt, const T t,
                         const std::set<NODE*> &nodes, const size_t nt) override {
             return computeImpl(pt, t, nodes, nt);
         }
+        /// @copydoc Grad3D::compute
         sxyz<T> compute(const sxyz<T> &pt, const T t,
                         const std::pmr::set<NODE*> &nodes, const size_t nt) override {
             return computeImpl(pt, t, nodes, nt);
         }
 
     private:
+        /**
+         * @brief Shared implementation of both @ref compute overloads.
+         *
+         * Builds and solves the least-squares system for the gradient; templated
+         * on the set type so it serves both `std::set` and `std::pmr::set`.
+         * @tparam SetT   Node-pointer set type.
+         * @param pt      Query point.
+         * @param t       Traveltime at @p pt.
+         * @param nodes   Nodes surrounding @p pt (at least 4).
+         * @param nt      Thread number.
+         * @returns Estimated traveltime gradient.
+         */
         template<typename SetT>
         sxyz<T> computeImpl(const sxyz<T> &pt, const T t,
                             const SetT &nodes, const size_t nt);
 
-        sxyz<T> g;
-
-        Eigen::Matrix<T, Eigen::Dynamic, 3> A;
-        Eigen::Matrix<T, 3, 1> x;
-        Eigen::Matrix<T, Eigen::Dynamic, 1> b;
+        sxyz<T> g;                               ///< Reusable gradient result.
+        Eigen::Matrix<T, Eigen::Dynamic, 3> A;   ///< Design matrix: node offsets from @p pt (3 columns).
+        Eigen::Matrix<T, 3, 1> x;                ///< Solution vector (gradient components).
+        Eigen::Matrix<T, Eigen::Dynamic, 1> b;   ///< Right-hand side: point-to-node traveltime differences.
     };
 
 
@@ -333,24 +369,39 @@ namespace ttcr {
         Grad3D_ls_so() = default;
         ~Grad3D_ls_so() = default;
 
+        /// @copydoc Grad3D::compute
         sxyz<T> compute(const sxyz<T> &pt, const T t,
                         const std::set<NODE*> &nodes, const size_t nt) override {
             return computeImpl(pt, t, nodes, nt);
         }
+        /// @copydoc Grad3D::compute
         sxyz<T> compute(const sxyz<T> &pt, const T t,
                         const std::pmr::set<NODE*> &nodes, const size_t nt) override {
             return computeImpl(pt, t, nodes, nt);
         }
 
     private:
+        /**
+         * @brief Shared implementation of both @ref compute overloads.
+         *
+         * Builds and solves the second-order least-squares system (linear plus
+         * quadratic terms) for the gradient; templated on the set type so it
+         * serves both `std::set` and `std::pmr::set`.
+         * @tparam SetT   Node-pointer set type.
+         * @param pt      Query point.
+         * @param t       Traveltime at @p pt.
+         * @param nodes   Nodes surrounding @p pt (at least 9).
+         * @param nt      Thread number.
+         * @returns Estimated traveltime gradient.
+         */
         template<typename SetT>
         sxyz<T> computeImpl(const sxyz<T> &pt, const T t,
                             const SetT &nodes, const size_t nt);
 
-        sxyz<T> g;
-        Eigen::Matrix<T, Eigen::Dynamic, 9> A;
-        Eigen::Matrix<T, 9, 1> x;
-        Eigen::Matrix<T, Eigen::Dynamic, 1> b;
+        sxyz<T> g;                               ///< Reusable gradient result.
+        Eigen::Matrix<T, Eigen::Dynamic, 9> A;   ///< Design matrix, 9 columns for the linear and quadratic terms.
+        Eigen::Matrix<T, 9, 1> x;                ///< Solution vector; first three entries are the gradient components.
+        Eigen::Matrix<T, Eigen::Dynamic, 1> b;   ///< Right-hand side: point-to-node traveltime differences.
     };
 
 
@@ -422,13 +473,14 @@ namespace ttcr {
          * @param ref_pt reference points for tetrahedra connected to pt
          * @param opp_pts points opposed to reference points in corresponding tetrahedra
          * @param nt thread number
-         * @returns value of the travetime gradient
+         * @returns value of the traveltime gradient
          */
         sxyz<T> compute(const sxyz<T> &pt,
                         const std::vector<NODE*>& ref_pt,
                         const std::vector<std::vector<std::array<NODE*,3>>>& opp_pts,
                         const size_t nt);
 
+        /// @brief Not supported by the averaging-based scheme; returns a zero vector. Use the reference/opposed-point overload instead.
         sxyz<T> compute(const sxyz<T> &pt,
                         const T t,
                         const std::set<NODE*> &nodes,
@@ -436,6 +488,7 @@ namespace ttcr {
             return {0.0, 0.0, 0.0};   // should never be called
         }
 
+        /// @brief Not supported by the averaging-based scheme; returns a zero vector. Use the reference/opposed-point overload instead.
         sxyz<T> compute(const sxyz<T> &pt,
                         const T t,
                         const std::pmr::set<NODE*> &nodes,
@@ -444,10 +497,19 @@ namespace ttcr {
         }
 
     private:
-        Eigen::Matrix<T, 3, 3> A;
-        Eigen::Matrix<T, 3, 1> x;
-        Eigen::Matrix<T, 3, 1> b;
+        Eigen::Matrix<T, 3, 3> A;   ///< 3&times;3 system of edge vectors for one tetrahedron.
+        Eigen::Matrix<T, 3, 1> x;   ///< Solution vector (gradient components) for one tetrahedron.
+        Eigen::Matrix<T, 3, 1> b;   ///< Right-hand side: traveltime differences across tetrahedron edges.
 
+        /**
+         * @brief Per-tetrahedron gradient from its four nodes.
+         *
+         * Solves the exact 3&times;3 linear system built from the edges emanating
+         * from @p n0 and the corresponding traveltime differences.
+         * @param n0,n1,n2,n3 The four tetrahedron nodes (@p n0 is the reference).
+         * @param nt          Thread number.
+         * @returns Gradient over that tetrahedron.
+         */
         sxyz<T> solve(const NODE* n0,
                       const NODE* n1,
                       const NODE* n2,

@@ -23,11 +23,39 @@
  *
  */
 
+/**
+ * @file Src.h
+ * @brief Source positions and origin times for a 3-D run.
+ *
+ * Declares ttcr::Src, which reads a source file and holds the resulting
+ * coordinates and origin times. One @c Src object corresponds to one entry of
+ * ttcr::input_parameters::srcfiles; a run with several shots holds a vector of
+ * them.
+ *
+ * @section src_formats Accepted file formats
+ * ttcr::Src::init recognises three layouts, chosen by sniffing the first line:
+ *
+ * - **Legacy VTK ASCII** — first line contains @c "vtk". The third line must say
+ *   @c ASCII; the reader then scans forward to the @c POINTS record and reads
+ *   that many @c "x y z" triples.
+ * - **CRT** — first line ends with @c '/'. Each record is
+ *   @c "name x y z /", read until the stream fails.
+ * - **Plain text** (the default) — a point count on the first line, then one
+ *   @c "x y z t0" row per source.
+ *
+ * @note Only the plain-text format carries origin times. The VTK and CRT
+ *       branches set every @c t0 to zero, so use plain text whenever the shots
+ *       are not all fired at t = 0.
+ *
+ * @sa Src2D.h, Rcv.h, structs_ttcr.h
+ */
+
 #ifndef ttcr_Src_h
 #define ttcr_Src_h
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -42,22 +70,50 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Source coordinates and origin times read from a file.
+     *
+     * @tparam T floating-point type of the coordinates and origin times.
+     *
+     * Construction only records the filename; nothing is read until
+     * @ref init is called.
+     */
     template<typename T>
     class Src {
     public:
+        /// @param f path to the source file; not opened until @ref init.
         Src(const std::string &f) : filename(f) {
         }
 
+        /**
+         * @brief Read the source file into @ref coord and @ref t0.
+         *
+         * Detects the format as described in @ref src_formats and fills both
+         * vectors, which end up the same length.
+         *
+         * @warning Prints to @c std::cerr and calls @c exit(1) if the file
+         *          cannot be opened, or if a VTK file is not ASCII. It does not
+         *          throw, so a caller cannot recover from a bad source file.
+         */
         void init();
+        /// @return Source coordinates.
         const std::vector<sxyz<T>>& get_coord() const { return coord; }
+        /// @return Writable source coordinates, e.g. to reposition sources onto the grid.
         std::vector<sxyz<T>>& get_coord() { return coord; }
+        /// @return Origin time of each source, parallel to @ref get_coord. Zero unless the file was plain text.
         const std::vector<T>& get_t0() const { return t0; }
 
-        void toVTK(const std::string &) const;
+        /**
+         * @brief Write the source positions as a VTK PolyData file.
+         * @param[in] fname output filename.
+         * @note Compiled to an empty function unless @c VTK is defined; without
+         *       VTK support this silently writes nothing.
+         */
+        void toVTK(const std::string &fname) const;
     private:
-        std::string filename;
-        std::vector<sxyz<T>> coord;
-        std::vector<T> t0;
+        std::string filename;         ///< Path handed to the constructor.
+        std::vector<sxyz<T>> coord;   ///< Source coordinates.
+        std::vector<T> t0;            ///< Origin times, parallel to @ref coord.
     };
 
     template<typename T>

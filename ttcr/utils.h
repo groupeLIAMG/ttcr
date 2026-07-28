@@ -22,11 +22,52 @@
  *
  */
 
+/**
+ * @file utils.h
+ * @brief Free-function toolbox: computational geometry, reflector construction
+ *        and VTK output helpers.
+ *
+ * A grab-bag of small templates shared by the grid and mesh classes. Three
+ * loose groups:
+ *
+ * - **Geometric predicates and measures** — @ref ttcr::areCoplanar,
+ *   @ref ttcr::areCollinear, @ref ttcr::testInTriangle,
+ *   @ref ttcr::testInTriangleBoundingBox, @ref ttcr::barycentric,
+ *   @ref ttcr::triangleArea2D, @ref ttcr::distSqPointToSegment,
+ *   @ref ttcr::distPointToPlane, @ref ttcr::distPointToLine. These underpin
+ *   point location on unstructured meshes and the raypath/interface
+ *   intersection tests.
+ * - **Model and result plumbing** — @ref ttcr::buildReflectors turns the named
+ *   surfaces of a Gmsh mesh into receiver arrays; @ref ttcr::saveRayPaths
+ *   writes traced rays to VTK.
+ * - **Odds and ends** — @ref ttcr::factorial, @ref ttcr::pseudoInverse,
+ *   @ref ttcr::to_string.
+ *
+ * @section utils_tol Tolerances
+ * The predicates compare against @ref ttcr::small2 (that is, @ref ttcr::small
+ * squared, @f$10^{-8}@f$) rather than testing for exact equality, so they are
+ * tolerant of round-off but **not scale-invariant**: the tolerance is absolute,
+ * in model units. On a model whose coordinates are in metres this is a tenth of
+ * a millimetre; on one in kilometres it is a tenth of a micron.
+ *
+ * @section utils_overloads Overload pattern
+ * Most predicates come in two or four flavours, differing only in how the
+ * points arrive: as `NODE*` (reading coordinates through `getX()`/`getY()`/
+ * `getZ()`) or as plain @ref ttcr::sxyz / @ref ttcr::sxz values, and in 3-D or
+ * 2-D (x-z). The bodies are otherwise identical.
+ *
+ * @note Several functions here are compiled to no-ops unless @c VTK is defined;
+ *       each says so.
+ *
+ * @sa ttcr_t.h, Interpolator.h, MSHReader.h, Rcv.h
+ */
+
 #ifndef ttcr_utils_h
 #define ttcr_utils_h
 
 #include <iostream>
 #include <set>
+#include <stdexcept>
 #include <vector>
 
 #ifdef VTK
@@ -46,10 +87,16 @@
 namespace ttcr {
 
     /**
-     * Compute the factorial of a number
+     * @brief Compute the factorial of a number.
      *
+     * Recursive and @c constexpr, so a call with a literal argument is folded
+     * at compile time.
+     *
+     * @tparam T integer type of the argument and result.
      * @param n number to compute
      * @returns value of factorial
+     * @warning No overflow check. @f$13!@f$ already exceeds 32 bits and
+     *          @f$21!@f$ exceeds 64, and the result silently wraps.
      */
     template<typename T>
     constexpr T factorial(T n)
@@ -58,9 +105,12 @@ namespace ttcr {
     }
 
     /**
-     * Test if four points are coplanar
+     * @brief Test if four points are coplanar.
      *
-     *  Points are sxyz objects
+     * Points are sxyz objects. Coplanarity is judged by the scalar triple
+     * product, @f$|(x_3-x_1)\cdot[(x_2-x_1)\times(x_4-x_3)]|@f$, which is
+     * (twice) the volume of the tetrahedron they span: zero exactly when the
+     * four points share a plane.
      *
      * @tparam T underlying type of sxyz objects
      * @param x1 first point
@@ -68,6 +118,10 @@ namespace ttcr {
      * @param x3 third point
      * @param x4 fourth point
      * @returns result of test
+     * @note The triple product carries the cube of the coordinate scale while
+     *       @ref small2 is a fixed absolute tolerance, so this test grows
+     *       stricter as the model shrinks and looser as it grows. See
+     *       @ref utils_tol.
      */
     template<typename T>
     bool areCoplanar(const sxyz<T> &x1, const sxyz<T> &x2,
@@ -76,9 +130,10 @@ namespace ttcr {
     }
 
     /**
-     * Test if four points are coplanar
+     * @brief Test if four points are coplanar.
      *
-     *  Points are sxyz and Node objects
+     * Overload taking the last three points as Node objects; otherwise
+     * identical to @ref areCoplanar(const sxyz<T>&, const sxyz<T>&, const sxyz<T>&, const sxyz<T>&).
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -95,9 +150,11 @@ namespace ttcr {
     }
 
     /**
-     * Test if four points are colinear
+     * @brief Test if three points are collinear.
      *
-     *  Points are sxyz and Node objects
+     * Points are sxyz and Node objects. Collinearity is judged from the cross
+     * product @f$(pt-n_0)\times(pt-n_1)@f$, whose magnitude is twice the area
+     * of the triangle they span and so vanishes exactly when they share a line.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -105,6 +162,10 @@ namespace ttcr {
      * @param n0 second point
      * @param n1 third point
      * @returns result of test
+     * @note Compares an unsquared norm against @ref small2, which is @ref small
+     *       *squared* — so the effective tolerance here is @f$10^{-8}@f$, not
+     *       @f$10^{-4}@f$, making this markedly stricter than the name suggests.
+     * @sa http://mathworld.wolfram.com/Collinear.html
      */
     template<typename T, typename NODE>
     bool areCollinear(const sxyz<T> &pt, const NODE &n0, const NODE &n1) {
@@ -116,9 +177,12 @@ namespace ttcr {
     }
 
     /**
-     * Test if four points are colinear
+     * @brief Test if three points are collinear, in the x-z plane.
      *
-     *  Points are sxyz and Node objects
+     * The 2-D counterpart of
+     * @ref areCollinear(const sxyz<T>&, const NODE&, const NODE&). In 2-D the
+     * cross product is the scalar @f$(pt-n_0)\times(pt-n_1)@f$, so its absolute
+     * value is compared directly.
      *
      * @tparam T underlying type of sxz object
      * @tparam NODE type of Node objects
@@ -126,6 +190,12 @@ namespace ttcr {
      * @param n0 second point
      * @param n1 third point
      * @returns result of test
+     * @note As in the 3-D overload the comparison is against @ref small2, i.e.
+     *       @f$10^{-8}@f$.
+     * @warning Calls @c abs unqualified. With @c \<cstdlib\> in scope ahead of
+     *          the floating-point overloads this can select the integer
+     *          @c abs(int) and truncate the argument to zero, making every
+     *          triple look collinear.
      */
     template<typename T, typename NODE>
     bool areCollinear(const sxz<T> &pt, const NODE &n0, const NODE &n1) {
@@ -137,7 +207,10 @@ namespace ttcr {
     }
 
     /**
-     * Compute area of triangle
+     * @brief Compute twice the signed area of a 2-D triangle.
+     *
+     * Evaluates
+     * @f[ 2A = x_1(y_2-y_3) + x_2(y_3-y_1) + x_3(y_1-y_2) @f]
      *
      * @tparam T type of coordinate values
      * @param x1 x coordinate of first point
@@ -147,6 +220,14 @@ namespace ttcr {
      * @param x3 x coordinate of third point
      * @param y3 y coordinate of third point
      * @returns value of area
+     *
+     * @warning Despite the name this is **twice** the area, and it is
+     *          **signed** — negative for a clockwise triple. Neither is an
+     *          oversight: @ref barycentric divides these values by an
+     *          equally-unnormalised denominator, so the factor of two cancels,
+     *          and the sign is what lets it detect points outside the triangle.
+     *          Callers wanting a true area must halve it and take the absolute
+     *          value.
      */
     template<typename T>
     T triangleArea2D(T x1, T y1, T x2, T y2, T x3, T y3) {
@@ -154,7 +235,18 @@ namespace ttcr {
     }
 
     /**
-     * Compute the barycentric coordinates of a point given a triangle
+     * @brief Compute the barycentric coordinates of a point given a triangle.
+     *
+     * The triangle lives in 3-D, so the areas are computed after projecting
+     * onto whichever coordinate plane the triangle is *least* edge-on to —
+     * chosen from the largest component of the unnormalised normal. Projecting
+     * onto a plane the triangle is nearly perpendicular to would collapse it
+     * and destroy precision; picking the largest component maximises the
+     * projected area and keeps the ratios well conditioned.
+     *
+     * The returned weights satisfy @f$u+v+w=1@f$ and reproduce the point as
+     * @f$p = ua + vb + wc@f$. All three are non-negative exactly when @p p lies
+     * inside the triangle, which is how @ref testInTriangle uses them.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -165,6 +257,12 @@ namespace ttcr {
      * @param[out] u 1st barycentric coordinate
      * @param[out] v 2nd barycentric coordinate
      * @param[out] w 3rd barycentric coordinate
+     *
+     * @pre The three nodes are not collinear. A degenerate triangle has a zero
+     *      normal, so the reciprocal is not finite and the weights come back as
+     *      infinities or NaNs — the division is not guarded.
+     * @note @p p is not required to lie in the plane of the triangle; it is
+     *       effectively projected onto it, and no residual is reported.
      */
     template<typename T, typename NODE>
     void barycentric(const NODE *a,
@@ -208,16 +306,24 @@ namespace ttcr {
     }
 
     /**
-     * Compute the barycentric coordinates of a point given a triangle
+     * @brief Compute the barycentric coordinates of a point given a triangle.
+     *
+     * Overload taking the triangle as plain @ref sxyz values rather than Node
+     * pointers; the algorithm is identical to
+     * @ref barycentric(const NODE*, const NODE*, const NODE*, const sxyz<T>&, T&, T&, T&),
+     * whose documentation describes the projection scheme and the degenerate
+     * case.
      *
      * @tparam T underlying type of sxyz object
      * @param[in] a 1st node of triangle
      * @param[in] b 2nd node of triangle
      * @param[in] c 3rd node of triangle
-     * @param[out] p point for which barycentric coordinate are computed
+     * @param[in] p point for which barycentric coordinate are computed
      * @param[out] u 1st barycentric coordinate
      * @param[out] v 2nd barycentric coordinate
      * @param[out] w 3rd barycentric coordinate
+     *
+     * @pre The three vertices are not collinear.
      */
     template<typename T>
     void barycentric(const sxyz<T> &a,
@@ -261,7 +367,11 @@ namespace ttcr {
     }
 
     /**
-     * Test if a point is within a box bounding a triangle
+     * @brief Test if a point is within the axis-aligned box bounding a triangle.
+     *
+     * A cheap conservative reject, used to skip the much costlier
+     * @ref barycentric call in @ref testInTriangle. The box is grown by
+     * @ref small2 on every side so points marginally outside still pass.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -270,6 +380,10 @@ namespace ttcr {
      * @param vertexC 3rd point defining triangle
      * @param E point to test
      * @returns test value
+     *
+     * @note One-sided: false is conclusive (the point cannot be in the
+     *       triangle), true is not (the box is strictly larger than the
+     *       triangle). Only ever use it as a pre-filter.
      */
     template<typename T, typename NODE>
     bool testInTriangleBoundingBox(const NODE *vertexA,
@@ -300,7 +414,11 @@ namespace ttcr {
     }
 
     /**
-     * Test if a point is within a box bounding a triangle
+     * @brief Test if a point is within the box bounding a triangle, in the x-z plane.
+     *
+     * As
+     * @ref testInTriangleBoundingBox(const NODE*, const NODE*, const NODE*, const sxyz<T>&),
+     * but only x and z are bounded — the triangle's y extent is ignored.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -309,6 +427,8 @@ namespace ttcr {
      * @param vertexC 3rd point defining triangle
      * @param E point to test
      * @returns test value
+     *
+     * @note Conservative in the same one-sided sense as the 3-D overload.
      */
     template<typename T, typename NODE>
     bool testInTriangleBoundingBox(const NODE *vertexA,
@@ -333,7 +453,9 @@ namespace ttcr {
     }
 
     /**
-     * Test if a point is within a box bounding a triangle
+     * @brief Test if a point is within the axis-aligned box bounding a triangle.
+     *
+     * Overload taking plain @ref sxyz values instead of Node pointers.
      *
      * @tparam T underlying type of sxyz objects
      * @param vertexA 1st point defining triangle
@@ -341,6 +463,8 @@ namespace ttcr {
      * @param vertexC 3rd point defining triangle
      * @param E point to test
      * @returns test value
+     *
+     * @note Conservative pre-filter: false is conclusive, true is not.
      */
     template<typename T>
     bool testInTriangleBoundingBox(const sxyz<T> &vertexA,
@@ -371,7 +495,9 @@ namespace ttcr {
     }
 
     /**
-     * Test if a point is within a box bounding a triangle
+     * @brief Test if a point is within the box bounding a triangle, in the x-z plane.
+     *
+     * Overload taking plain @ref sxz values; bounds x and z only.
      *
      * @tparam T underlying type of sxyz objects
      * @param vertexA 1st point defining triangle
@@ -379,6 +505,8 @@ namespace ttcr {
      * @param vertexC 3rd point defining triangle
      * @param E point to test
      * @returns test value
+     *
+     * @note Conservative pre-filter: false is conclusive, true is not.
      */
     template<typename T>
     bool testInTriangleBoundingBox(const sxz<T> &vertexA,
@@ -402,7 +530,11 @@ namespace ttcr {
     }
 
     /**
-     * compute closest distance between a point and a line segment
+     * @brief Compute the closest **squared** distance between a point and a line segment.
+     *
+     * Projects @p E onto the infinite line through the segment and clamps the
+     * projection parameter to @f$[0,1]@f$, so a point beyond either end
+     * measures to that endpoint rather than to the line.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -410,6 +542,13 @@ namespace ttcr {
      * @param vertexB 2nd point defining segment
      * @param E point to consider
      * @returns distance
+     *
+     * @warning The result is the **squared** distance — as the name says, but
+     *          not as the @c \@returns line above suggests. Compare it against a
+     *          squared tolerance such as @ref small2, which is what
+     *          @ref testInTriangle does. No square root is taken.
+     * @pre The segment has non-zero length; a degenerate segment divides by
+     *      zero. Not guarded.
      */
     template<typename T, typename NODE>
     T distSqPointToSegment(const NODE *vertexA,
@@ -441,13 +580,21 @@ namespace ttcr {
     }
 
     /**
-     * compute closest distance between a point and a line segment
+     * @brief Compute the closest **squared** distance between a point and a line segment.
+     *
+     * Overload taking plain @ref sxyz values instead of Node pointers; same
+     * clamped projection as
+     * @ref distSqPointToSegment(const NODE*, const NODE*, const sxyz<T>&).
      *
      * @tparam T underlying type of sxyz object
      * @param vertexA 1st point defining segment
      * @param vertexB 2nd point defining segment
      * @param E point to consider
      * @returns distance
+     *
+     * @warning Returns the **squared** distance; compare against a squared
+     *          tolerance.
+     * @pre The segment has non-zero length.
      */
     template<typename T>
     T distSqPointToSegment(const sxyz<T> &vertexA,
@@ -479,7 +626,10 @@ namespace ttcr {
     }
 
     /**
-     * compute closest distance between a point and a plane
+     * @brief Compute the closest **signed** distance between a point and a plane.
+     *
+     * The plane is given by three points; its unit normal comes from
+     * @f$(b-a)\times(c-a)@f$ and the distance is @f$n\cdot(a-pt)@f$.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -488,6 +638,13 @@ namespace ttcr {
      * @param c 3rd point defining plane
      * @param pt point to consider
      * @returns distance
+     *
+     * @note The result is **signed** — its sign tells you which side of the
+     *       plane @p pt is on, which is what makes it usable for
+     *       above/below tests. Take the absolute value for a magnitude.
+     *       The sign follows the winding of @p a, @p b, @p c.
+     * @pre The three points are not collinear; otherwise the normal is zero and
+     *      normalising it is undefined.
      */
     template<typename T, typename NODE>
     T distPointToPlane(const NODE *a,
@@ -504,13 +661,24 @@ namespace ttcr {
     }
 
     /**
-     * compute closest distance between a point and a line
+     * @brief Compute the closest distance between a point and a line, in the x-z plane.
+     *
+     * Forms the implicit line equation @f$ax+bz+c=0@f$ through @p pt1 and
+     * @p pt2 and evaluates @f$|ax+bz+c|/\sqrt{a^2+b^2}@f$.
      *
      * @tparam T underlying type of sxyz object
      * @param pt1 1st point defining line
      * @param pt2 2nd point defining line
      * @param pt point to consider
      * @returns distance
+     *
+     * @note Measures to the **infinite line**, not to the segment — unlike
+     *       @ref distSqPointToSegment, which clamps to the endpoints. Returns
+     *       a true distance, not a squared one.
+     * @pre @p pt1 and @p pt2 are distinct; coincident points give
+     *      @f$a=b=0@f$ and a division by zero.
+     * @warning Calls @c abs and @c sqrt unqualified; see the note on
+     *          @ref areCollinear(const sxz<T>&, const NODE&, const NODE&).
      */
     template<typename T>
     T distPointToLine(const sxz<T>& pt1, const sxz<T>& pt2, const sxz<T>& pt) {
@@ -523,7 +691,14 @@ namespace ttcr {
     }
 
     /**
-     * test if a point is within a triangle
+     * @brief Test if a point lies within a triangle.
+     *
+     * Three stages, cheapest first: reject on the bounding box
+     * (@ref testInTriangleBoundingBox), then accept if the barycentric weights
+     * are all non-negative, and finally accept if the point is within
+     * @ref small2 of any of the three edges. That last stage is what makes a
+     * point sitting exactly on an edge or vertex — the common case when a
+     * raypath crosses from one mesh cell into the next — count as inside.
      *
      * @tparam T underlying type of sxyz object
      * @tparam NODE type of Node objects
@@ -532,6 +707,14 @@ namespace ttcr {
      * @param vertexC 3rd point defining triangle
      * @param E point to consider
      * @returns test results
+     *
+     * @note Because of the edge tolerance, a point on a shared edge tests
+     *       inside **both** adjoining triangles. Callers scanning for the
+     *       containing cell should take the first hit rather than assume it is
+     *       unique.
+     * @note @p E is not required to be coplanar with the triangle; it is
+     *       effectively projected, so a point well off the plane can test
+     *       inside. Pair with @ref distPointToPlane where that matters.
      */
     template<typename T, typename NODE>
     bool testInTriangle(const NODE *vertexA,
@@ -558,7 +741,12 @@ namespace ttcr {
     }
 
     /**
-     * test if a point is within a triangle
+     * @brief Test if a point lies within a triangle.
+     *
+     * Overload taking plain @ref sxyz values instead of Node pointers; the
+     * three-stage test is identical to
+     * @ref testInTriangle(const NODE*, const NODE*, const NODE*, const sxyz<T>&),
+     * whose documentation describes the edge tolerance and its consequences.
      *
      * @tparam T underlying type of sxyz object
      * @param vertexA 1st point defining triangle
@@ -592,10 +780,28 @@ namespace ttcr {
     }
 
     /**
-     * Compute pseudo-inverse of matrix A by SVD decomposition
+     * @brief Compute the Moore-Penrose pseudo-inverse of a matrix by SVD.
      *
+     * Decomposes @f$A = U\Sigma V^{T}@f$ and forms
+     * @f$A^{+} = V\Sigma^{+}U^{T}@f$, where @f$\Sigma^{+}@f$ inverts the
+     * non-zero singular values. Used to solve the over- or under-determined
+     * least-squares systems that arise when fitting a traveltime gradient.
+     *
+     * @tparam T scalar type of the matrices.
+     * @param[in] A matrix to invert; any shape, square or not.
+     * @param[out] pi the pseudo-inverse, resized as needed.
+     * @returns Rank of @p A, as reported by the decomposition.
+     *
+     * @warning The @f$\Sigma^{+}@f$ diagonal is built from
+     *          @c nonzeroSingularValues() with **no relative threshold**, so a
+     *          singular value that is merely tiny rather than exactly zero is
+     *          still inverted, and its reciprocal dominates the result. For a
+     *          near-rank-deficient @p A this is numerically unstable; check the
+     *          returned rank.
+     * @note Uses @c JacobiSVD, which is accurate but @f$O(n^3)@f$ with a large
+     *       constant — fine for the small systems here, poor for big ones.
+     * @sa Grad.h
      */
-
     template<typename T>
     Eigen::Index pseudoInverse(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A,
                                Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pi) {
@@ -615,7 +821,17 @@ namespace ttcr {
     }
 
     /**
-     * Build reflectors from interfaces between two lithologies
+     * @brief Build reflectors from interfaces between two lithologies.
+     *
+     * Each named 2-D physical entity of the Gmsh mesh becomes one reflector.
+     * Its triangles are discretised into a point set — the three vertices, then
+     * @p nsecondary evenly spaced points along each edge, then a triangular
+     * lattice of interior face points — and that set is handed to a
+     * ttcr::Rcv, so a reflector is modelled as a dense receiver array and
+     * reflected arrivals fall out of the ordinary traveltime computation.
+     *
+     * Points are accumulated in a `std::set`, so vertices and edge points
+     * shared between adjacent triangles are stored once rather than duplicated.
      *
      * @tparam T underlying type of sxyz & Rcv objects
      * @param[in] reader reader used to extract indicides of nodes makign the reflectors
@@ -623,6 +839,25 @@ namespace ttcr {
      * @param[in] nsrc number of sources to model
      * @param[in] nsecondary number of secondary nodes
      * @param[out] reflectors vector of Rcv objects making the reflectors
+     *
+     * @pre @p nsecondary is at least 1.
+     * @throws std::invalid_argument if @p nsecondary is 0. The face-point loop
+     *         is bounded by `ncut = nsecondary - 1` on an unsigned type, so 0
+     *         would wrap it to `SIZE_MAX`, divide by a zero segment count and
+     *         try to insert an unbounded number of points. This is reachable in
+     *         normal use — ttcr::input_parameters::nn defaults to zero and the
+     *         caller in grids.h passes `par.nn[0]` whenever
+     *         ttcr::input_parameters::processReflectors is set — so it is
+     *         rejected up front rather than left to hang.
+     * @warning Each ttcr::Rcv is constructed from the reflector's **name**,
+     *          which lands in its filename field. ttcr::Rcv::save_rcvfile would
+     *          therefore write to a file named after the reflector, in the
+     *          working directory.
+     * @warning Reports a mismatch between reflector names and indices on
+     *          @c std::cerr and calls @c exit(1) rather than throwing.
+     * @note Reflectors are appended to @p reflectors, which is not cleared
+     *       first.
+     * @sa MSHReader::getPhysicalNames, Rcv
      */
     template<typename T>
     void buildReflectors(const MSHReader &reader,
@@ -630,6 +865,15 @@ namespace ttcr {
                          const size_t nsrc,
                          const size_t nsecondary,
                          std::vector<Rcv<T>> &reflectors) {
+
+        if ( nsecondary == 0 ) {
+            // ncut below would wrap to SIZE_MAX on this unsigned type, and the
+            // face-point loop would then divide by a zero segment count and try
+            // to insert an unbounded number of points.
+            throw std::invalid_argument("Error: building reflectors requires at "
+                                        "least one secondary node (set \"secondary "
+                                        "nodes\" in the parameter file).");
+        }
 
         std::vector<std::string> reflector_names = reader.getPhysicalNames(2);
         std::vector<size_t> indices = reader.getPhysicalIndices(2);
@@ -736,11 +980,17 @@ namespace ttcr {
     }
 
     /**
-     * Save 3D raypaths in a vtk file
+     * @brief Save 3D raypaths in a vtk file.
+     *
+     * Writes the rays as a VTK PolyData of polylines, one line per raypath,
+     * in binary XML (@c .vtp).
      *
      * @tparam T underlying type of sxyz objects
      * @param fname name of file for saving paths
      * @param r_data raypath coordinates
+     *
+     * @note Compiled to an empty function unless @c VTK is defined — without
+     *       VTK support the call silently writes nothing.
      */
     template<typename T>
     void saveRayPaths(const std::string &fname,
@@ -783,11 +1033,20 @@ namespace ttcr {
     }
 
     /**
-     * Save 2D raypaths in a vtk file
+     * @brief Save 2D raypaths in a vtk file.
+     *
+     * As the 3-D overload, but points are emitted as (x, 0, z) — the missing y
+     * is written as zero — and degenerate raypaths of fewer than two points are
+     * skipped, since they cannot form a drawable polyline.
      *
      * @tparam T underlying type of sxz objects
      * @param fname name of file for saving paths
      * @param r_data raypath coordinates
+     *
+     * @note Compiled to an empty function unless @c VTK is defined.
+     * @note A skipped path still contributes its points to the point array —
+     *       they are written, just not joined into a line — so the file may
+     *       hold points that belong to no polyline.
      */
     template<typename T>
     void saveRayPaths(const std::string &fname,
@@ -811,8 +1070,13 @@ namespace ttcr {
         polydata->SetPoints(pts);
 
         for ( size_t n=0, npts=0; n<r_data.size(); ++n ) {
-            if ( r_data[n].size() == 1 )
+            if ( r_data[n].size() < 2 ) {
+                // A path of fewer than 2 points cannot form a polyline, but its
+                // points were still written to the point array above: step over
+                // them so the following lines keep referring to the right ones.
+                npts += r_data[n].size();
                 continue;
+            }
             vtkSmartPointer<vtkPolyLine> line = vtkSmartPointer<vtkPolyLine>::New();
             line->GetPointIds()->SetNumberOfIds( r_data[n].size() );
             for ( size_t np=0; np<r_data[n].size(); ++np, ++npts ) {
@@ -832,11 +1096,21 @@ namespace ttcr {
     }
 
     /**
-     * Create a string
+     * @brief Create a string from any streamable value.
+     *
+     * Formats @p value through a @c std::ostringstream.
      *
      * @tparam T type of object for which string is created
      * @param value value to convert to string
      * @returns string representation of value
+     *
+     * @note Predates the availability of @c std::to_string here and, unlike it,
+     *       works for any type with an @c operator<<. Being in namespace
+     *       @c ttcr it does not conflict, but an unqualified @c to_string call
+     *       inside the namespace will find this one by ordinary lookup.
+     * @note Uses the stream's default formatting — six significant digits for
+     *       floating-point values, which loses precision. Use an explicit
+     *       stream with @c setprecision where the full value matters.
      */
     template<typename T>
     std::string to_string( const T & value )

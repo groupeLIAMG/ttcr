@@ -15,7 +15,11 @@ import sys
 import sphinx_rtd_theme
 from importlib.metadata import version as get_version
 
-sys.path.insert(0, os.path.abspath('../../src'))
+# Put the in-tree package on the path so autodoc can import ttcrpy without it
+# having been installed.  Resolved against this file rather than the working
+# directory, so it holds however sphinx-build is invoked.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.pardir, 'src'))
 
 
 # -- Project information -----------------------------------------------------

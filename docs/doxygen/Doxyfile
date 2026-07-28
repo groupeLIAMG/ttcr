@@ -1,0 +1,197 @@
+# Doxyfile for the ttcr C++ headers
+#
+# Builds HTML API documentation from the Doxygen comments in the C++ headers
+# (../../ttcr/*.h).  Run from this directory with:
+#
+#     doxygen Doxyfile      # or:  make
+#
+# Output is written to ./html/index.html.  This configuration is deliberately
+# self-contained: it needs only doxygen itself (no Graphviz/dot, no LaTeX).
+
+#---------------------------------------------------------------------------
+# Project
+#---------------------------------------------------------------------------
+PROJECT_NAME           = "ttcr"
+PROJECT_BRIEF          = "C++ traveltime computation and raytracing library"
+OUTPUT_DIRECTORY       = .
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = English
+MARKDOWN_SUPPORT       = YES
+TAB_SIZE               = 4
+
+# Treat the first sentence of a /** */ block as the @brief, so the older
+# comment blocks that open with a plain description line (no explicit @brief)
+# still produce a brief summary.
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+
+#---------------------------------------------------------------------------
+# Build: what to extract
+#---------------------------------------------------------------------------
+# Document everything, including items that carry no comment yet, so the
+# generated reference stays complete as headers are annotated incrementally.
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+INTERNAL_DOCS          = NO
+SORT_MEMBER_DOCS       = NO
+SHOW_INCLUDE_FILES     = YES
+
+#---------------------------------------------------------------------------
+# Warnings
+#---------------------------------------------------------------------------
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_LOGFILE           = doxygen-warnings.log
+
+#---------------------------------------------------------------------------
+# Input
+#---------------------------------------------------------------------------
+# Scope: only the headers reachable from the three command-line programs
+# ttcr3d.cpp, ttcr2d.cpp and ttcr2ds.cpp -- i.e. their transitive include
+# closure, computed with `make input` (see the Makefile).  Regenerate that way
+# rather than editing this list by hand.
+#
+# Deliberately absent, because nothing in those three programs includes them:
+#   Interface.h         unused throughout the project
+#   msh2vtk_io.h        belongs to the separate msh2vtk utility
+#   structs_msh2vtk.h   likewise
+INPUT                  = ../../ttcr/Cell.h \
+                         ../../ttcr/ctpl_stl.h \
+                         ../../ttcr/Grad.h \
+                         ../../ttcr/Grid2D.h \
+                         ../../ttcr/Grid2Drc.h \
+                         ../../ttcr/Grid2Drcdsp.h \
+                         ../../ttcr/Grid2Drcfs.h \
+                         ../../ttcr/Grid2Drcfs_OpenCL.h \
+                         ../../ttcr/Grid2Drcsp.h \
+                         ../../ttcr/Grid2Drn.h \
+                         ../../ttcr/Grid2Drn_kernels_src.h \
+                         ../../ttcr/Grid2Drn_OpenCL.h \
+                         ../../ttcr/Grid2Drndsp.h \
+                         ../../ttcr/Grid2Drnfs.h \
+                         ../../ttcr/Grid2Drnfs_OpenCL.h \
+                         ../../ttcr/Grid2Drnsp.h \
+                         ../../ttcr/Grid2Duc.h \
+                         ../../ttcr/Grid2Ducdsp.h \
+                         ../../ttcr/Grid2Ducfm.h \
+                         ../../ttcr/Grid2Ducfs.h \
+                         ../../ttcr/Grid2Ducsp.h \
+                         ../../ttcr/Grid2Dun.h \
+                         ../../ttcr/Grid2Dundsp.h \
+                         ../../ttcr/Grid2Dunfm.h \
+                         ../../ttcr/Grid2Dunfs.h \
+                         ../../ttcr/Grid2Dunsp.h \
+                         ../../ttcr/Grid3D.h \
+                         ../../ttcr/Grid3Drc.h \
+                         ../../ttcr/Grid3Drcdsp.h \
+                         ../../ttcr/Grid3Drcfs.h \
+                         ../../ttcr/Grid3Drcfs_OpenCL.h \
+                         ../../ttcr/Grid3Drcsp.h \
+                         ../../ttcr/Grid3Drn.h \
+                         ../../ttcr/Grid3Drn_kernels_src.h \
+                         ../../ttcr/Grid3Drn_OpenCL.h \
+                         ../../ttcr/Grid3Drndsp.h \
+                         ../../ttcr/Grid3Drnfs.h \
+                         ../../ttcr/Grid3Drnfs_OpenCL.h \
+                         ../../ttcr/Grid3Drnsp.h \
+                         ../../ttcr/Grid3Duc.h \
+                         ../../ttcr/Grid3Ducdsp.h \
+                         ../../ttcr/Grid3Ducfm.h \
+                         ../../ttcr/Grid3Ducfs.h \
+                         ../../ttcr/Grid3Ducsp.h \
+                         ../../ttcr/Grid3Dun.h \
+                         ../../ttcr/Grid3Dundsp.h \
+                         ../../ttcr/Grid3Dunfm.h \
+                         ../../ttcr/Grid3Dunfs.h \
+                         ../../ttcr/Grid3Dunsp.h \
+                         ../../ttcr/grids.h \
+                         ../../ttcr/Interpolator.h \
+                         ../../ttcr/Metric.h \
+                         ../../ttcr/MSHReader.h \
+                         ../../ttcr/Node.h \
+                         ../../ttcr/Node2Dc.h \
+                         ../../ttcr/Node2Dcd.h \
+                         ../../ttcr/Node2Dcsp.h \
+                         ../../ttcr/Node2Dn.h \
+                         ../../ttcr/Node2Dnd.h \
+                         ../../ttcr/Node2Dnsp.h \
+                         ../../ttcr/Node3Dc.h \
+                         ../../ttcr/Node3Dcd.h \
+                         ../../ttcr/Node3Dcsp.h \
+                         ../../ttcr/Node3Dn.h \
+                         ../../ttcr/Node3Dnd.h \
+                         ../../ttcr/Node3Dnsp.h \
+                         ../../ttcr/NodeKDTree.h \
+                         ../../ttcr/NodeKDTree2D.h \
+                         ../../ttcr/Rcv.h \
+                         ../../ttcr/Rcv2D.h \
+                         ../../ttcr/Src.h \
+                         ../../ttcr/Src2D.h \
+                         ../../ttcr/structs_ttcr.h \
+                         ../../ttcr/ttcr_io.h \
+                         ../../ttcr/ttcr_t.h \
+                         ../../ttcr/utils.h \
+                         ../../ttcr/VTUReader.h
+INPUT_ENCODING         = UTF-8
+FILE_PATTERNS          = *.h
+RECURSIVE              = NO
+STRIP_FROM_PATH        = ../../ttcr
+
+# Skip the OpenCL kernel source blobs and auto-generated kernel string headers;
+# they hold embedded kernel text rather than documented C++ interfaces.
+EXCLUDE_PATTERNS       = *_kernels_src.h *_kernels.cl
+
+USE_MDFILE_AS_MAINPAGE =
+
+#---------------------------------------------------------------------------
+# Preprocessing
+#---------------------------------------------------------------------------
+# Expand only the macros listed in PREDEFINED.  ttcr's headers gate optional
+# features behind VTK / _OPENMP; leaving these undefined simply omits those
+# sections from the reference (define them here to document them too).
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCH_INCLUDES        = NO
+PREDEFINED             =
+SKIP_FUNCTION_MACROS   = YES
+
+#---------------------------------------------------------------------------
+# HTML output
+#---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+SEARCHENGINE           = YES
+
+# Several headers (Cell.h, Interpolator.h) carry many LaTeX formulas (\f$ ... \f$)
+# in their comments.  Render them client-side with MathJax instead of shelling
+# out to latex/dvips/ghostscript per formula: this keeps the build fast and free
+# of a LaTeX toolchain dependency.
+USE_MATHJAX            = YES
+
+#---------------------------------------------------------------------------
+# Disable the formats that would pull in extra tools
+#---------------------------------------------------------------------------
+GENERATE_LATEX         = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+
+#---------------------------------------------------------------------------
+# Diagrams: keep off so Graphviz is not required
+#---------------------------------------------------------------------------
+HAVE_DOT               = NO
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO

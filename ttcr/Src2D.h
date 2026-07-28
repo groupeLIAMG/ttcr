@@ -22,6 +22,28 @@
  *
  */
 
+/**
+ * @file Src2D.h
+ * @brief Source positions and origin times for a 2-D (x-z) run.
+ *
+ * The 2-D counterpart of Src.h: ttcr::Src2D reads a source file and holds the
+ * resulting ttcr::sxz coordinates and origin times.
+ *
+ * @section src2d_formats Accepted file formats
+ * ttcr::Src2D::init recognises two layouts, chosen from the first line:
+ *
+ * - **CRT** — first line ends with @c '/'. Each record is @c "name x z /",
+ *   read until the stream fails; origin times are set to zero.
+ * - **Plain text** (the default) — a source count on the first line, then one
+ *   @c "x z t0" row per source.
+ *
+ * @note Unlike ttcr::Src, this class has **no legacy-VTK branch** — a @c .vtk
+ *       source file that works in 3-D will not be parsed here; it falls through
+ *       to the plain-text branch and misreads the header.
+ *
+ * @sa Src.h, Rcv2D.h
+ */
+
 #ifndef ttcr_Src2D_h
 #define ttcr_Src2D_h
 
@@ -41,21 +63,47 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Source coordinates and origin times for a 2-D run.
+     *
+     * @tparam T floating-point type of the coordinates and origin times.
+     *
+     * Construction only records the filename; nothing is read until
+     * @ref init is called.
+     */
     template<typename T>
     class Src2D {
     public:
+        /// @param f path to the source file; not opened until @ref init.
         Src2D(const std::string &f) : filename(f) {
         }
 
+        /**
+         * @brief Read the source file into @ref coord and @ref t0.
+         *
+         * Detects the format as described in @ref src2d_formats and fills both
+         * vectors, which end up the same length.
+         *
+         * @warning Prints to @c std::cerr and calls @c exit(1) if the file
+         *          cannot be opened. It does not throw.
+         */
         void init();
+        /// @return Source coordinates in the x-z plane.
         const std::vector<sxz<T>>& get_coord() const { return coord; }
+        /// @return Origin time of each source, parallel to @ref get_coord. Zero for CRT input.
         const std::vector<T>& get_t0() const { return t0; }
 
-        void toVTK(const std::string &) const;
+        /**
+         * @brief Write the source positions as a VTK PolyData file.
+         * @param[in] fname output filename.
+         * @note Points are emitted as (x, 0, z) — the missing y is written as zero.
+         * @note Compiled to an empty function unless @c VTK is defined.
+         */
+        void toVTK(const std::string &fname) const;
     private:
-        std::string filename;
-        std::vector<sxz<T>> coord;
-        std::vector<T> t0;
+        std::string filename;        ///< Path handed to the constructor.
+        std::vector<sxz<T>> coord;   ///< Source coordinates in the x-z plane.
+        std::vector<T> t0;           ///< Origin times, parallel to @ref coord.
     };
 
     template<typename T>

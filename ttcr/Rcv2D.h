@@ -22,6 +22,29 @@
  *
  */
 
+/**
+ * @file Rcv2D.h
+ * @brief Receiver positions and computed traveltimes for a 2-D (x-z) run.
+ *
+ * The 2-D counterpart of Rcv.h: ttcr::Rcv2D holds ttcr::sxz receiver coordinates
+ * and the traveltimes computed at them, indexed
+ * @c [source][reflector][receiver] exactly as in @ref rcv_storage.
+ *
+ * @section rcv2d_formats Accepted file formats
+ * ttcr::Rcv2D::init recognises three layouts, chosen from the first line:
+ *
+ * - **Legacy VTK ASCII** — first line contains @c "vtk". Points are read as
+ *   @c "x y z" triples and the **y coordinate is discarded**, so a 3-D VTK
+ *   receiver file can be reused directly for a 2-D run.
+ * - **CRT** — first line ends with @c '/'; records of the form @c "name x z /".
+ * - **Plain text** (the default) — a receiver count, then one @c "x z" row each.
+ *
+ * @note ttcr::Src2D, unlike this class, has no VTK branch — the 2-D source and
+ *       receiver readers do not accept the same set of formats.
+ *
+ * @sa Rcv.h, Src2D.h
+ */
+
 #ifndef ttcr_Rcv2D_h
 #define ttcr_Rcv2D_h
 
@@ -48,22 +71,75 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Receiver coordinates and computed traveltimes for a 2-D run.
+     *
+     * @tparam T floating-point type of the coordinates and traveltimes.
+     *
+     * Two ways to populate it: read a file with @ref init, or build the array
+     * programmatically with @ref add_coord followed by @ref init_tt.
+     */
     template<typename T>
     class Rcv2D {
     public:
+        /// @param f path to the receiver file; not opened until @ref init.
         Rcv2D(const std::string &f) : filename(f) {
         }
 
+        /**
+         * @brief Read the receiver file and size the traveltime storage.
+         *
+         * Detects the format as described in @ref rcv2d_formats, fills
+         * @ref coord, and allocates traveltime room for @p ns sources and
+         * @p nr reflectors.
+         *
+         * @param[in] ns  number of sources the traveltimes will be computed for.
+         * @param[in] nr  number of reflecting interfaces; the default 0 keeps
+         *                direct arrivals only.
+         * @warning Prints to @c std::cerr and calls @c exit(1) if the file
+         *          cannot be opened, or if a VTK file is not ASCII.
+         */
         void init(const size_t ns, const size_t nr=0);
+        /// @return Receiver coordinates in the x-z plane.
         const std::vector<sxz<T>>& get_coord() const { return coord; }
+        /**
+         * @brief Writable traveltimes for one source and one arrival, for a solver to fill.
+         * @param[in] ns  source number.
+         * @param[in] nr  reflector number; 0 (the default) is the direct arrival.
+         * @return Traveltime at each receiver, one entry per receiver.
+         * @pre @ref init or @ref init_tt has been called, and both indices are in range.
+         */
         std::vector<T>& get_tt(const size_t ns, const size_t nr=0) { return tt[ns][nr]; }
+        /// @copydoc get_tt(const size_t, const size_t)
         const std::vector<T>& get_tt(const size_t ns, const size_t nr=0) const {
             return tt[ns][nr];
         }
 
+        /**
+         * @brief Write the traveltimes of one source to a text file.
+         *
+         * One line per receiver; the direct arrival first, then one
+         * tab-separated column per reflector. Written with 9 significant digits.
+         *
+         * @param[in] f   output file.
+         * @param[in] ns  source number to save.
+         * @warning Calls @c exit(1) if the file cannot be opened for writing.
+         */
         void save_tt( const std::string &f, const size_t ns) const;
 
+        /**
+         * @brief Append a receiver position.
+         * @param[in] c coordinates of the new receiver.
+         * @note Does not resize the traveltime storage — call @ref init_tt once
+         *       every receiver has been added.
+         */
         void add_coord(const sxz<T> &c) { coord.push_back(c); }
+        /**
+         * @brief Allocate traveltime storage for direct arrivals only.
+         * @param[in] nsrc number of sources.
+         * @note Allocates the source and reflector levels but leaves the innermost
+         *       vectors empty; the solver writing into @ref get_tt sizes those.
+         */
         void init_tt(const size_t nsrc) {
             tt.resize(nsrc);
             for (size_t ns=0; ns<nsrc; ++ns ) {
@@ -71,12 +147,26 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Write the receiver coordinates back to @ref filename.
+         *
+         * Emits the plain-text format — a count, then one @c "x z" row per
+         * receiver — with 17 significant digits, so a round trip is lossless.
+         *
+         * @warning Overwrites the file the receivers were read from.
+         */
         void save_rcvfile() const;
-        void toVTK(const std::string &) const;
+        /**
+         * @brief Write the receiver positions as a VTK PolyData file.
+         * @param[in] fname output filename.
+         * @note Points are emitted as (x, 0, z) — the missing y is written as zero.
+         * @note Compiled to an empty function unless @c VTK is defined.
+         */
+        void toVTK(const std::string &fname) const;
     private:
-        std::string filename;
-        std::vector<sxz<T>> coord;
-        std::vector<std::vector<std::vector<T>>> tt;
+        std::string filename;       ///< Path handed to the constructor; also the target of @ref save_rcvfile.
+        std::vector<sxz<T>> coord;  ///< Receiver coordinates in the x-z plane.
+        std::vector<std::vector<std::vector<T>>> tt;  ///< Traveltimes, indexed [source][reflector][receiver].
     };
 
     template<typename T>

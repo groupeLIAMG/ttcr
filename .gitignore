@@ -37,6 +37,8 @@ dist/
 examples/example_cmesh2d.vtu
 
 docs/_build/
+docs/doxygen/html/
+docs/doxygen/doxygen-warnings.log
 
 old_stuff/
 

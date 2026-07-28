@@ -8,6 +8,24 @@
 //  Copyright (c) 2013 Bernard Giroux. All rights reserved.
 //
 
+/**
+ * @file Grid3D.h
+ * @brief Abstract base class template for 3D traveltime grids and raytracing.
+ *
+ * @ref ttcr::Grid3D is the common interface shared by every 3D grid/mesh
+ * implementation in ttcr (rectilinear, node-based, dynamic-shortest-path,
+ * fast-sweeping, etc.). It stores the data common to all of them (thread count,
+ * optional origin translation, cell-to-node neighbor lists) and provides the
+ * public @c raytrace() entry points, including the multi-source threaded
+ * variants that fan work out over a thread pool or raw @c std::thread objects.
+ *
+ * Concrete grids override the protected virtual hooks (@c raytrace,
+ * @c getTraveltime, @c getRaypath, ...) and the accessors describing their
+ * geometry; the non-virtual public overloads in this header handle origin
+ * translation, output-buffer sizing, and thread scheduling before delegating
+ * to those hooks.
+ */
+
 /*
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +50,7 @@
 #include <functional>
 #include <fstream>
 #include <future>
+#include <iostream>
 #include <thread>
 #include <vector>
 
@@ -41,9 +60,26 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Abstract base for 3D traveltime grids and raytracing.
+     * @tparam T1 Floating-point type for coordinates, slowness and traveltimes.
+     * @tparam T2 Integer type used for node/cell indices.
+     */
     template<typename T1, typename T2>
     class Grid3D {
     public:
+        /**
+         * @brief Constructs the shared grid state.
+         * @param ttrp             If true, receiver traveltimes are recomputed
+         *                         by integrating along the raypath rather than
+         *                         read directly from the traveltime field.
+         * @param ncells           Number of cells (sizes the neighbor table).
+         * @param nt               Number of worker threads.
+         * @param _translateOrigin If true, coordinates are shifted by @ref origin
+         *                         before computation (improves conditioning).
+         * @param _usePool         If true, use a persistent thread pool; otherwise
+         *                         spawn raw threads per raytrace call.
+         */
         Grid3D(const bool ttrp,
                const size_t ncells,
                const size_t nt=1,
@@ -60,9 +96,20 @@ namespace ttcr {
             }
         }
 
+        /// Virtual destructor.
         virtual ~Grid3D() {}
 
-        // operators: for usage with thread pool
+        /**
+         * @name Thread-pool call operators
+         * Callable entry points invoked by the thread pool; @p id is the
+         * worker/thread number. Each simply forwards to the matching
+         * @c raytrace() overload. The trailing output arguments select what
+         * is computed in addition to traveltimes: @c r_data (raypaths),
+         * @c m_data (model-parameter sensitivities), @c l_data (per-cell ray
+         * length sensitivities).
+         * @{
+         */
+        /// Traveltimes only.
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -70,6 +117,7 @@ namespace ttcr {
             this->raytrace(Tx, t0, Rx, traveltimes, id);
         }
 
+        /// Traveltimes and raypaths.
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -78,6 +126,7 @@ namespace ttcr {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, id);
         }
 
+        /// Traveltimes and model-parameter sensitivities.
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -86,6 +135,7 @@ namespace ttcr {
             this->raytrace(Tx, t0, Rx, traveltimes, m_data, id);
         }
 
+        /// Traveltimes, raypaths and model-parameter sensitivities.
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -95,6 +145,7 @@ namespace ttcr {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, m_data, id);
         }
 
+        /// Traveltimes and per-cell ray-length sensitivities.
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -103,6 +154,7 @@ namespace ttcr {
             this->raytrace(Tx, t0, Rx, traveltimes, l_data, id);
         }
 
+        /// Traveltimes, raypaths and per-cell ray-length sensitivities.
         void operator()(int id, const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const std::vector<sxyz<T1>>& Rx,
@@ -111,19 +163,37 @@ namespace ttcr {
                         std::vector<std::vector<siv<T1>>>& l_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, id);
         }
+        /** @} */
 
+        /**
+         * @brief Compute traveltimes from sources to receivers.
+         * @param Tx          Source locations.
+         * @param t0          Excitation time of each source.
+         * @param Rx          Receiver locations.
+         * @param[out] traveltimes Traveltime to each receiver (resized as needed).
+         * @param threadNo    Worker/thread number.
+         */
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
                               std::vector<T1>& traveltimes,
                               const size_t threadNo=0) const;
 
+        /**
+         * @brief Compute traveltimes to grouped receivers (one group per source).
+         * @param Tx          Source locations.
+         * @param t0          Excitation time of each source.
+         * @param Rx          Receiver locations, grouped per source.
+         * @param[out] traveltimes Pointers to per-group traveltime vectors.
+         * @param threadNo    Worker/thread number.
+         */
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<std::vector<sxyz<T1>>>& Rx,
                               std::vector<std::vector<T1>*>& traveltimes,
                               const size_t threadNo=0) const;
 
+        /// As raytrace(), additionally returning the raypath to each receiver in @p r_data.
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -131,6 +201,7 @@ namespace ttcr {
                               std::vector<std::vector<sxyz<T1>>>& r_data,
                               const size_t threadNo=0) const;
 
+        /// Grouped-receiver variant additionally returning raypaths in @p r_data.
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<std::vector<sxyz<T1>>>& Rx,
@@ -138,6 +209,7 @@ namespace ttcr {
                               std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
                               const size_t threadNo=0) const;
 
+        /// As raytrace(), additionally returning raypaths (@p r_data) and model sensitivities (@p m_data).
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -146,6 +218,7 @@ namespace ttcr {
                               std::vector<std::vector<sijv<T1>>>& m_data,
                               const size_t threadNo=0) const;
 
+        /// As raytrace(), additionally returning model-parameter sensitivities in @p m_data.
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -153,6 +226,7 @@ namespace ttcr {
                               std::vector<std::vector<sijv<T1>>>& m_data,
                               const size_t threadNo=0) const;
 
+        /// As raytrace(), additionally returning per-cell ray-length sensitivities in @p l_data.
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -160,6 +234,7 @@ namespace ttcr {
                               std::vector<std::vector<siv<T1>>>& l_data,
                               const size_t threadNo=0) const;
 
+        /// As raytrace(), additionally returning raypaths (@p r_data) and ray-length sensitivities (@p l_data).
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -168,24 +243,36 @@ namespace ttcr {
                               std::vector<std::vector<siv<T1>>>& l_data,
                               const size_t threadNo=0) const;
 
-        // methods for threaded raytracing
+        /**
+         * @name Multi-source threaded raytracing
+         * Each source set (outer vector index) is raytraced independently; the
+         * work is distributed across @ref nThreads either via the thread pool
+         * or raw threads. The output-argument variants mirror the single-source
+         * overloads above (@c r_data raypaths, @c m_data / @c l_data
+         * sensitivities).
+         * @{
+         */
+        /// Traveltimes only, one source set per outer index.
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes) const;
 
+        /// Traveltimes and raypaths.
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data) const;
 
+        /// Traveltimes and model-parameter sensitivities.
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
 
+        /// Traveltimes, raypaths and model-parameter sensitivities.
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,
@@ -193,99 +280,139 @@ namespace ttcr {
                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
                       std::vector<std::vector<std::vector<sijv<T1>>>>& m_data) const;
 
+        /// Traveltimes and per-cell ray-length sensitivities.
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
 
+        /// Traveltimes, raypaths and per-cell ray-length sensitivities.
         void raytrace(const std::vector<std::vector<sxyz<T1>>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<sxyz<T1>>>>& r_data,
                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+        /** @} */
 
+        /**
+         * @brief Compute straight-ray (no refraction) length sensitivities.
+         * @param Tx          Source locations.
+         * @param Rx          Receiver locations.
+         * @param[out] l_data Per-cell ray-length contributions for each ray.
+         * @throws std::runtime_error if not overridden by a subclass.
+         */
         virtual void getStraightRays(const std::vector<sxyz<T1>>& Tx,
                                      const std::vector<sxyz<T1>>& Rx,
                                      std::vector<std::vector<siv<T1>>>& l_data) const {
             throw std::runtime_error("Method getStraightRays should be implemented in subclass");
         }
 
+        /// Sets the slowness model from a vector (one value per node/cell).
         virtual void setSlowness(const std::vector<T1>& s) {}
+        /// Sets the slowness model from a raw array of @p ns values.
         virtual void setSlowness(const T1 *s, const size_t ns) {
             throw std::runtime_error("Method getSlowness should be implemented in subclass");
         }
+        /// Retrieves the current slowness model.
         virtual void getSlowness(std::vector<T1>&) const {
             throw std::runtime_error("Method getSlowness should be implemented in subclass");
         }
+        /// Sets the anisotropy parameter &chi;, if supported.
         virtual void setChi(const std::vector<T1>& x) {}
+        /// Sets the anisotropy parameter &psi;, if supported.
         virtual void setPsi(const std::vector<T1>& x) {}
 
+        /// Sets the finite source radius used for source regularization.
         virtual void setSourceRadius(const double) {}
 
+        /// Returns the number of grid nodes.
         virtual size_t getNumberOfNodes() const { return 1; }
+        /// Returns the number of grid cells.
         virtual size_t getNumberOfCells() const { return 1; }
+        /// Copies the full traveltime field into @p tt for the given thread.
         virtual void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             throw std::runtime_error("Method getTT should be implemented in subclass");
         }
 
+        /// Saves the traveltime field to a file (subclass-defined format).
         virtual void saveTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}
+        /// Loads a traveltime field from a file (subclass-defined format).
         virtual void loadTT(const std::string &, const int, const size_t nt=0,
                             const int format=1) const {}
 
+        /// Returns the minimum x coordinate of the grid.
         virtual const T1 getXmin() const {
             throw std::runtime_error("Method getXmin should be implemented in subclass");
         }
+        /// Returns the maximum x coordinate of the grid.
         virtual const T1 getXmax() const {
             throw std::runtime_error("Method getXmax should be implemented in subclass");
         }
+        /// Returns the minimum y coordinate of the grid.
         virtual const T1 getYmin() const {
             throw std::runtime_error("Method getYmin should be implemented in subclass");
         }
+        /// Returns the maximum y coordinate of the grid.
         virtual const T1 getYmax() const {
             throw std::runtime_error("Method getYmax should be implemented in subclass");
         }
+        /// Returns the minimum z coordinate of the grid.
         virtual const T1 getZmin() const {
             throw std::runtime_error("Method getZmin should be implemented in subclass");
         }
+        /// Returns the maximum z coordinate of the grid.
         virtual const T1 getZmax() const {
             throw std::runtime_error("Method getZmax should be implemented in subclass");
         }
+        /// Returns the cell size along x.
         virtual const T1 getDx() const {
             throw std::runtime_error("Method getDx should be implemented in subclass");
         }
+        /// Returns the cell size along y.
         virtual const T1 getDy() const {
             throw std::runtime_error("Method getDy should be implemented in subclass");
         }
+        /// Returns the cell size along z.
         virtual const T1 getDz() const {
             throw std::runtime_error("Method getDz should be implemented in subclass");
         }
+        /// Returns the number of cells along x.
         virtual const T2 getNcx() const {
             throw std::runtime_error("Method getNcx should be implemented in subclass");
         }
+        /// Returns the number of cells along y.
         virtual const T2 getNcy() const {
             throw std::runtime_error("Method getNcy should be implemented in subclass");
         }
+        /// Returns the number of cells along z.
         virtual const T2 getNcz() const {
             throw std::runtime_error("Method getNcz should be implemented in subclass");
         }
+        /// Returns the number of secondary nodes per cell edge along x.
         virtual const T2 getNsnx() const {
             throw std::runtime_error("Method getNsnx should be implemented in subclass");
         }
+        /// Returns the number of secondary nodes per cell edge along y.
         virtual const T2 getNsny() const {
             throw std::runtime_error("Method getNsny should be implemented in subclass");
         }
+        /// Returns the number of secondary nodes per cell edge along z.
         virtual const T2 getNsnz() const {
             throw std::runtime_error("Method getNsnz should be implemented in subclass");
         }
 
+        /// Returns the number of iterations performed (iterative solvers).
         virtual const int get_niter() const { return 0; }
+        /// Returns the number of iterations performed within water (iterative solvers).
         virtual const int get_niterw() const { return 0; }
 
+        /// Returns the number of worker threads.
         const size_t getNthreads() const { return nThreads; }
 
+        /// Dumps secondary-node data to a stream (diagnostics; no-op by default).
         virtual void dump_secondary(std::ofstream&) const {}
 
         /**
@@ -299,6 +426,7 @@ namespace ttcr {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 
+        /// Enables/disables the persistent thread pool, resizing it if needed.
         void setUsePool(const bool up) {
             usePool = up;
             if ( nThreads > 1 && usePool && pool.size() != nThreads ) {
@@ -306,6 +434,7 @@ namespace ttcr {
             }
         }
 
+        /// Selects whether receiver traveltimes are obtained by integrating along the raypath.
         void setTraveltimeFromRaypath(const bool ttrp) { tt_from_rp = ttrp; }
 
         /**
@@ -333,6 +462,16 @@ namespace ttcr {
             throw std::runtime_error("Method computeD should be implemented in subclass");
         }
 
+        /**
+         * @brief Compute the smoothing/roughness operator K for the model.
+         * @param[out] d_data          Sparse operator terms, per dimension.
+         * @param order                Derivative order of the operator.
+         * @param taylorSeriesOrder    Order of the Taylor expansion used.
+         * @param weighting            Enable distance-based weighting.
+         * @param s0inside             Include the central point in the stencil.
+         * @param additionnalPoints    Extra stencil points on each side.
+         * @throws std::runtime_error if not overridden by a subclass.
+         */
         virtual void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
                               const int order, const int taylorSeriesOrder,
                               const bool weighting, const bool s0inside,
@@ -340,25 +479,34 @@ namespace ttcr {
             throw std::runtime_error("Method computeK should be implemented in subclass");
         }
 
+        /// Returns the average edge length of the grid/mesh.
         virtual const T1 getAverageEdgeLength() const {
             throw std::runtime_error("Method getAverageEdgeLength should be implemented in subclass");
         }
 
 #ifdef VTK
+        /// Saves the model as an unstructured-grid VTK file (.vtu). Requires VTK.
         virtual void saveModelVTU(const std::string &, const bool saveSlowness=true,
                                   const bool savePhysicalEntity=false) const {}
+        /// Saves the model as a rectilinear-grid VTK file (.vtr). Requires VTK.
         virtual void saveModelVTR(const std::string &,
                                   const bool saveSlowness=true) const {}
+        /// Saves the model as a .vtr file using externally supplied data. Requires VTK.
         virtual void saveModelVTR(const std::string &, const double*,
                                   const bool saveSlowness=true) const {}
 #endif
     protected:
-        size_t nThreads;         // number of threads
-        bool tt_from_rp;
-        bool translateOrigin;
-        sxyz<T1> origin;
-        std::vector<std::vector<T2>> neighbors;  // nodes common to a cell
+        size_t nThreads;         ///< Number of worker threads.
+        bool tt_from_rp;         ///< If true, receiver traveltimes come from raypath integration.
+        bool translateOrigin;    ///< If true, coordinates are shifted by @ref origin.
+        sxyz<T1> origin;         ///< Origin offset applied when @ref translateOrigin is set.
+        std::vector<std::vector<T2>> neighbors;  ///< For each cell, the indices of its nodes.
 
+        /**
+         * @brief Populate @ref neighbors from the nodes' cell-ownership lists.
+         * @tparam N   Node type exposing @c getOwners().
+         * @param nodes The grid nodes.
+         */
         template<typename N>
         void buildGridNeighbors(const std::vector<N>& nodes) {
             //Index the neighbors nodes of each cell
@@ -369,6 +517,15 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Core solver hook: propagate traveltimes from the sources.
+         * @param Tx       Source locations (already origin-translated).
+         * @param t0       Source excitation times.
+         * @param Rx       Receiver locations (used by some solvers to bound work).
+         * @param threadNo Worker/thread number.
+         * @note Must be overridden; the public raytrace() overloads call this
+         *       after translating coordinates and sizing output buffers.
+         */
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<sxyz<T1>>& Rx,
@@ -376,6 +533,7 @@ namespace ttcr {
             throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
 
+        /// Core solver hook, grouped-receiver form.
         virtual void raytrace(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const std::vector<std::vector<sxyz<T1>>>& Rx,
@@ -383,11 +541,13 @@ namespace ttcr {
             throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
 
+        /// Returns the traveltime interpolated at point @p pt from the solved field.
         virtual T1 getTraveltime(const sxyz<T1>& pt,
                                  const size_t threadNo) const {
             throw std::runtime_error("Method getTraveltime should be implemented in subclass");
         }
 
+        /// Returns the receiver traveltime obtained by integrating along the raypath.
         virtual T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                             const std::vector<T1>& t0,
                                             const sxyz<T1>& Rx,
@@ -395,6 +555,15 @@ namespace ttcr {
             throw std::runtime_error("Method getTraveltimeFromRaypath should be implemented in subclass");
         }
 
+        /**
+         * @brief Trace the raypath from a receiver back to the source.
+         * @param Tx       Source locations.
+         * @param t0       Source excitation times.
+         * @param Rx       Receiver location.
+         * @param[out] r_data Ordered points of the raypath.
+         * @param[out] tt  Traveltime along the recovered raypath.
+         * @param threadNo Worker/thread number.
+         */
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const sxyz<T1>& Rx,
@@ -404,6 +573,7 @@ namespace ttcr {
             throw std::runtime_error("Method getRaypath should be implemented in subclass");
         }
 
+        /// Raypath variant returning model-parameter sensitivities @p m_data for receiver @p RxNo.
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const sxyz<T1>& Rx,
@@ -414,6 +584,7 @@ namespace ttcr {
             throw std::runtime_error("Method getRaypath should be implemented in subclass");
         }
 
+        /// Raypath variant returning both raypath points @p r_data and model sensitivities @p m_data.
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const sxyz<T1>& Rx,
@@ -425,6 +596,7 @@ namespace ttcr {
             throw std::runtime_error("Method should be implemented in subclass");
         }
 
+        /// Raypath variant returning per-cell ray-length sensitivities @p l_data.
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const sxyz<T1> &Rx,
@@ -434,6 +606,7 @@ namespace ttcr {
             throw std::runtime_error("Method getRaypathshould be implemented in subclass");
         }
 
+        /// Raypath variant returning both raypath points @p r_data and ray-length sensitivities @p l_data.
         virtual void getRaypath(const std::vector<sxyz<T1>>& Tx,
                                 const std::vector<T1>& t0,
                                 const sxyz<T1> &Rx,
@@ -445,9 +618,14 @@ namespace ttcr {
         }
 
     private:
-        bool usePool;
-        mutable ctpl::thread_pool pool;
+        bool usePool;                     ///< Whether to use the persistent thread pool.
+        mutable ctpl::thread_pool pool;   ///< Reusable pool of worker threads.
 
+        /**
+         * @brief Partition @p nTx source sets into per-thread block sizes.
+         * @param nTx Number of source sets to distribute.
+         * @return Block size for each thread (round-robin, near-even split).
+         */
         const std::vector<size_t> get_blk_size(const size_t nTx) const {
             size_t n_blk = nThreads < nTx ? nThreads : nTx;
             std::vector<size_t> blk_size ( n_blk, 0 );
