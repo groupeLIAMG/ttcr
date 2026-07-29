@@ -196,29 +196,6 @@ namespace ttcr {
                       const size_t threadNo=0) const;
         /// @}
 
-        /**
-         * @brief Alternative propagation, using a deque-backed priority queue.
-         *
-         * Computes the same traveltimes as the first @c raytrace overload, but
-         * runs @c initQueue2 / @c propagate2, whose priority queue is backed by
-         * a @c std::deque rather than a @c std::vector.
-         *
-         * @param Tx          source positions.
-         * @param t0          origin time of each source.
-         * @param Rx          receiver positions.
-         * @param traveltimes traveltime at each receiver.
-         * @param threadNo    thread to compute on.
-         *
-         * @note **Unused.** Nothing outside this header calls it, and the grid
-         *       factories in grids.h never select it, so it is not exercised by
-         *       the programs or the Python bindings.
-         */
-        void raytrace2(const std::vector<sxyz<T1>>& Tx,
-                       const std::vector<T1>& t0,
-                       const std::vector<sxyz<T1>>& Rx,
-                       std::vector<T1>& traveltimes,
-                       const size_t threadNo=0) const;
-
         /// @return Number of secondary nodes per cell edge along x.
         const T2 getNsnx() const { return nsnx; }
         /// @return Number of secondary nodes per cell edge along y.
@@ -262,31 +239,6 @@ namespace ttcr {
                           std::vector<bool>& inQueue,
                           std::vector<bool>& frozen,
                           size_t threadNo) const;
-
-        void initQueue2(const std::vector<sxyz<T1>>& Tx,
-                        const std::vector<T1>& t0,
-                        std::priority_queue<Node3Dcsp<T1,T2>*,
-                        std::deque<Node3Dcsp<T1,T2>*>,
-                        CompareNodePtr<T1>>& queue,
-                        std::vector<Node3Dcsp<T1,T2>>& txNodes,
-                        std::vector<bool>& inQueue,
-                        std::vector<bool>& frozen,
-                        const size_t threadNo) const;
-
-        void propagate2(std::priority_queue<Node3Dcsp<T1,T2>*,
-                        std::deque<Node3Dcsp<T1,T2>*>,
-                        CompareNodePtr<T1>>& queue,
-                        std::vector<bool>& inQueue,
-                        std::vector<bool>& frozen,
-                        size_t threadNo) const;
-
-        void prepropagate2(const Node3Dcsp<T1,T2>& node,
-                           std::priority_queue<Node3Dcsp<T1,T2>*,
-                           std::deque<Node3Dcsp<T1,T2>*>,
-                           CompareNodePtr<T1>>& queue,
-                           std::vector<bool>& inQueue,
-                           std::vector<bool>& frozen,
-                           size_t threadNo) const;
     };
 
     template<typename T1, typename T2, typename CELL>
@@ -444,134 +396,6 @@ namespace ttcr {
 
                 // compute dt
                 T1 dt = this->cells.computeDt(node, this->nodes[neibNo], cellNo);
-
-                if ( node.getTT( threadNo )+dt < this->nodes[neibNo].getTT( threadNo ) ) {
-                    this->nodes[neibNo].setTT( node.getTT( threadNo )+dt, threadNo );
-                    this->nodes[neibNo].setnodeParent( node.getGridIndex(), threadNo );
-                    this->nodes[neibNo].setCellParent( cellNo, threadNo );
-
-                    if ( !inQueue[neibNo] ) {
-                        queue.push( &(this->nodes[neibNo]) );
-                        inQueue[neibNo] = true;
-                    }
-                }
-            }
-        }
-    }
-
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Drcsp<T1,T2,CELL>::initQueue2(const std::vector<sxyz<T1>>& Tx,
-                                            const std::vector<T1>& t0,
-                                            std::priority_queue<Node3Dcsp<T1,T2>*,
-                                            std::deque<Node3Dcsp<T1,T2>*>,
-                                            CompareNodePtr<T1>>& queue,
-                                            std::vector<Node3Dcsp<T1,T2>>& txNodes,
-                                            std::vector<bool>& inQueue,
-                                            std::vector<bool>& frozen,
-                                            const size_t threadNo) const {
-
-        //Find the starting nodes of the transmitters Tx and start the queue list
-        for ( size_t n=0; n<Tx.size(); ++n ) {
-            bool found = false;
-            for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
-                if ( this->nodes[nn] == Tx[n] ) {
-                    found = true;
-                    this->nodes[nn].setTT( t0[n], threadNo );
-                    frozen[nn] = true;
-
-                    prepropagate2(this->nodes[nn], queue, inQueue, frozen, threadNo); // See description in the function declaration
-
-                    //	queue.push( &(this->nodes[nn]) );   	//Don't use if prepropagate is used
-                    //	inQueue[nn] = true;				//Don't use if prepropagate is used
-
-                    break;
-                }
-            }
-            if ( found==false ) {
-                // If Tx[n] is not on a node, we create a new node and initialize the queue:
-                txNodes.push_back( Node3Dcsp<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z, this->nThreads, threadNo));
-                txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
-                txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+txNodes.size()-1) );
-                frozen.push_back( true );
-
-                prepropagate2(txNodes.back(), queue, inQueue, frozen, threadNo); // See description in the function declaration
-
-                //	queue.push( &(txNodes.back()) );	//Don't use if prepropagate is used
-                //	inQueue.push_back( true );			//Don't use if prepropagate is used
-
-            }
-        }
-    }
-
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Drcsp<T1,T2,CELL>::propagate2( std::priority_queue<Node3Dcsp<T1,T2>*,
-                                            std::deque<Node3Dcsp<T1,T2>*>,
-                                            CompareNodePtr<T1>>& queue,
-                                            std::vector<bool>& inQueue,
-                                            std::vector<bool>& frozen,
-                                            size_t threadNo) const {
-
-        while ( !queue.empty() ) {
-            const Node3Dcsp<T1,T2>* source = queue.top();
-            queue.pop();
-            inQueue[ source->getGridIndex() ] = false;
-            for ( size_t no=0; no<source->getOwners().size(); ++no ) {
-                T2 cellNo = source->getOwners()[no];
-                for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
-                    T2 neibNo = this->neighbors[cellNo][k];
-                    if ( neibNo == source->getGridIndex() || frozen[neibNo] ) {
-                        continue;
-                    }
-
-                    T1 ttsource= source->getTT( threadNo );
-                    if (ttsource < this->nodes[neibNo].getTT(threadNo)){
-                        // Compute dt
-                        T1 dt = this->cells.computeDt(source, &(this->nodes[neibNo]), cellNo);
-
-                        if ( ttsource +dt < this->nodes[neibNo].getTT( threadNo ) ) {
-                            this->nodes[neibNo].setTT( ttsource +dt, threadNo );
-                            this->nodes[neibNo].setnodeParent( source->getGridIndex(),
-                                                              threadNo );
-                            this->nodes[neibNo].setCellParent( cellNo, threadNo );
-
-                            if ( !inQueue[neibNo] ) {
-                                queue.push( &(this->nodes[neibNo]) );
-                                inQueue[neibNo] = true;
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-    }
-
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Drcsp<T1,T2,CELL>::prepropagate2(const Node3Dcsp<T1,T2>& node,
-                                               std::priority_queue<Node3Dcsp<T1,T2>*,
-                                               std::deque<Node3Dcsp<T1,T2>*>,
-                                               CompareNodePtr<T1>>& queue,
-                                               std::vector<bool>& inQueue,
-                                               std::vector<bool>& frozen,
-                                               size_t threadNo) const {
-
-        // This function can be used to "prepropagate" each Tx nodes one first time
-        // during "initQueue", before running "propagate".
-        // When a Tx source node seems to be lost in the queue and is not
-        // propagated, corrupting the entire traveltime table,
-        // this function force the propagation of every source points and can
-        // solve the problem.
-
-        for ( size_t no=0; no<node.getOwners().size(); ++no ) {
-            T2 cellNo = node.getOwners()[no];
-            for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
-                size_t neibNo = this->neighbors[cellNo][k];
-                if ( neibNo == node.getGridIndex() || frozen[neibNo] ) {
-                    continue;
-                }
-
-                // compute dt
-                T1 dt = this->cells.computeDt(&node, &(this->nodes[neibNo]), cellNo);
 
                 if ( node.getTT( threadNo )+dt < this->nodes[neibNo].getTT( threadNo ) ) {
                     this->nodes[neibNo].setTT( node.getTT( threadNo )+dt, threadNo );
@@ -1255,54 +1079,6 @@ namespace ttcr {
 
             //  must be sorted to build matrix L
             sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
-        }
-    }
-
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Drcsp<T1,T2,CELL>::raytrace2(const std::vector<sxyz<T1>>& _Tx,
-                                           const std::vector<T1>& t0,
-                                           const std::vector<sxyz<T1>>& _Rx,
-                                           std::vector<T1>& traveltimes,
-                                           const size_t threadNo) const {
-
-        std::vector<sxyz<T1>> Tx = _Tx;
-        std::vector<sxyz<T1>> Rx = _Rx;
-        if ( this->translateOrigin ) {
-            for ( size_t n=0; n<Tx.size(); ++n ) {
-                Tx[n] -= this->origin;
-            }
-            for ( size_t n=0; n<Rx.size(); ++n ) {
-                Rx[n] -= this->origin;
-            }
-        }
-
-        this->checkPts(Tx, true);
-        this->checkPts(Rx, true);
-
-        for ( size_t n=0; n<this->nodes.size(); ++n ) {
-            this->nodes[n].reinit( threadNo );
-        }
-
-        CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node3Dcsp<T1,T2>*, std::deque<Node3Dcsp<T1,T2>*>,
-        CompareNodePtr<T1>> queue(cmp);
-        // txNodes: Extra nodes if the sources points are not on an existing node
-        std::vector<Node3Dcsp<T1,T2>> txNodes;
-        // inQueue lists the nodes waiting in the queue
-        std::vector<bool> inQueue( this->nodes.size(), false );
-        // Tx sources nodes are "frozen" and their traveltime can't be modified
-        std::vector<bool> frozen( this->nodes.size(), false );
-
-        initQueue2(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-
-        propagate2(queue, inQueue, frozen, threadNo);
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-
-        for (size_t n=0; n<Rx.size(); ++n) {
-            traveltimes[n] = this->getTraveltime(Rx[n], this->nodes, threadNo);
         }
     }
 
