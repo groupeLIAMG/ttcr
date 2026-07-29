@@ -22,6 +22,59 @@
  *
  */
 
+/**
+ * @file Grid2Drn.h
+ * @brief Base class for 2-D rectilinear grids with node-based slowness.
+ *
+ * Declares ttcr::Grid2Drn, the mid-level base for every 2-D rectilinear solver
+ * whose slowness lives at the **nodes** rather than in the cells: Grid2Drnsp
+ * (shortest path), Grid2Drnfs (fast sweeping), Grid2Drndsp (dynamic shortest
+ * path), Grid2Drnfs_OpenCL — and also Grid2Drcfs and Grid2Drcfs_OpenCL, which
+ * despite their @c rc names derive from here (see @ref g2drn_cellhook).
+ *
+ * It is the counterpart of ttcr::Grid2Drc and provides the same services —
+ * geometry, node storage, point location, traveltime interpolation, raypath
+ * tracing — plus the fast sweeping stencils, which live here because sweeping
+ * needs nodal slowness.
+ *
+ * @section g2drn_vs_rc Node slowness versus cell slowness
+ * The two families differ in where slowness is defined and, consequently, in
+ * how a traveltime increment along a segment is computed:
+ *
+ * - **@c rn (here)** — one value per node. ttcr::Grid2Drn::computeDt averages
+ *   the slowness at the two ends and multiplies by the distance,
+ *   @f$\Delta t = \tfrac{1}{2}(s_1+s_2)\,\ell@f$ — trapezoidal integration of a
+ *   field that varies linearly along the segment.
+ * - **@c rc (ttcr::Grid2Drc)** — one value per cell, and the increment comes
+ *   from the @c CELL policy, which may be anisotropic.
+ *
+ * A practical consequence: the @c rn grids have no @c CELL template parameter
+ * and are isotropic, since a node carries a single scalar slowness.
+ *
+ * @section g2drn_cellhook The cell-slowness hook
+ * Two virtual hooks, @ref ttcr::Grid2Drn::hasCellSlowness and
+ * @ref ttcr::Grid2Drn::getCellSlowness, let a subclass declare that it really
+ * does hold a piecewise-constant model. The base returns false and throws
+ * respectively; ttcr::Grid2Drcfs overrides both because it accepts a cell model
+ * and merely averages it onto the nodes for the solve.
+ *
+ * The hooks matter when a raypath is integrated: with them the integrator takes
+ * the cell value at each segment midpoint, and without them it averages the
+ * interpolated slowness at the segment ends. So a @c rc-named subclass sweeps on
+ * smoothed nodal values but measures its raypaths against the original
+ * piecewise-constant model.
+ *
+ * @section g2drn_sweeps Fast sweeping stencils
+ * Several update stencils are provided and selected by the solver's options:
+ * axis-aligned (@c sweep), 45-degree rotated (@c sweep45, and @c sweep_xz for
+ * the mixed case) and their third-order WENO variants
+ * (@c sweep_weno3, @c sweep_weno3_xz). Rotated stencils are enabled by
+ * ttcr::input_parameters::rotated_template and WENO by
+ * ttcr::input_parameters::weno3.
+ *
+ * @sa Grid2D.h, Grid2Drc.h, Grid3Drn.h, Grid2Drnsp.h, Grid2Drnfs.h
+ */
+
 #ifndef ttcr_Grid2Drn_h
 #define ttcr_Grid2Drn_h
 
@@ -51,9 +104,44 @@
 
 namespace ttcr {
 
+    /**
+     * @brief 2-D rectilinear grid holding one slowness value per node.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices, normally @c uint32_t.
+     * @tparam S    point type: @ref sxz for a planar grid, @ref sxyz for the
+     *              draped 2-D grids embedded in 3-D.
+     * @tparam NODE node type, e.g. ttcr::Node2Dn or ttcr::Node2Dnsp — whichever
+     *              the derived solver needs. It must expose
+     *              @c getNodeSlowness.
+     *
+     * @note No @c CELL parameter, unlike ttcr::Grid2Drc: a node carries a single
+     *       scalar slowness, so this family is isotropic.
+     * @note Abstract in practice — it implements everything except @c raytrace.
+     */
     template<typename T1, typename T2, typename S, typename NODE>
     class Grid2Drn : public Grid2D<T1,T2,S> {
     public:
+        /**
+         * @brief Build the grid geometry and allocate its nodes.
+         *
+         * @param nx   number of cells along x.
+         * @param nz   number of cells along z.
+         * @param ddx  cell size along x.
+         * @param ddz  cell size along z.
+         * @param minx x coordinate of the grid origin.
+         * @param minz z coordinate of the grid origin.
+         * @param ttrp recompute receiver traveltimes by integrating slowness
+         *             along the traced raypath.
+         * @param nt   number of threads; sizes each node's traveltime array.
+         *
+         * @post The grid holds @f$(n_x+1)(n_z+1)@f$ primary nodes and
+         *       spans @f$[minx,\;minx+n_x\,ddx]@f$ by
+         *       @f$[minz,\;minz+n_z\,ddz]@f$. No cells are allocated — this
+         *       family stores no per-cell data. Slowness is **not** set.
+         * @note Derived classes append secondary nodes afterwards; the node
+         *       vector is primary-first.
+         */
         Grid2Drn(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                  const T1 minx, const T1 minz, const bool ttrp,
                  const size_t nt=1) :
@@ -65,9 +153,23 @@ namespace ttcr {
         {
         }
 
+        /// Destructor.
         virtual ~Grid2Drn() {
         }
 
+        /**
+         * @brief Set the slowness at every node.
+         * @param s one slowness per node — **all** nodes, secondary ones
+         *          included, so its size must equal
+         *          @ref getNumberOfNodes() with the default argument.
+         * @throws std::length_error if the sizes do not match.
+         * @note Solvers that add secondary nodes override this with a version
+         *       taking one value per *primary* node and interpolating onto the
+         *       rest — see ttcr::Grid2Drnsp::setSlowness. This base version is
+         *       used as-is only where no secondary nodes exist.
+         * @warning Not symmetric with @ref getSlowness, which always returns
+         *          primary-node values only.
+         */
         void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -77,6 +179,12 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Copy the primary-node slowness values out of the grid.
+         * @param[out] slowness resized to @f$(n_{cx}+1)(n_{cz}+1)@f$ and filled
+         *                      from the leading primary nodes.
+         * @note Returns primary values only, whatever secondary nodes exist.
+         */
         void getSlowness(std::vector<T1>& slowness) const {
             if (slowness.size() != static_cast<size_t>(ncx+1) * (ncz+1)) {
                 slowness.resize(static_cast<size_t>(ncx+1) * (ncz+1));
@@ -86,6 +194,12 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Number of nodes in the grid.
+         * @param primary true to count only the primary (cell-corner) nodes,
+         *                false (the default) to count every node.
+         * @return The requested count.
+         */
         size_t getNumberOfNodes(const bool primary=false) const {
             if ( primary ) {
                 return static_cast<size_t>(ncx+1) * (ncz+1);
@@ -94,8 +208,18 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Number of cells the grid geometry defines.
+         * @return The product @f$n_{cx}n_{cz}@f$.
+         * @note Geometric only — no per-cell data is stored by this family.
+         */
         size_t getNumberOfCells() const { return static_cast<size_t>(ncx)*ncz; }
 
+        /**
+         * @brief Collect the traveltimes computed at the primary nodes.
+         * @param[out] tt       resized to the primary-node count and filled.
+         * @param[in]  threadNo thread whose solution to read.
+         */
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const {
             size_t nPrimary = static_cast<size_t>(ncx+1) * (ncz+1);
             tt.resize(nPrimary);
@@ -107,69 +231,162 @@ namespace ttcr {
             }
         }
 
-        void saveSlownessXYZ(const char filename[]) const {
-            std::ofstream fout( filename );
-
-            for ( size_t n=0; n<nodes.size(); ++n ) {
-                fout << nodes[n].getX() << "   " << nodes[n].getZ() << "   " << nodes[n].getNodeSlowness() << '\n';
-            }
-
-            fout.close();
-        }
-
-        void saveTT(const std::string &, const int, const size_t nt=0,
+        /**
+         * @brief Write the traveltime field to a file.
+         * @param fname  output filename.
+         * @param all    if nonzero, include the secondary nodes.
+         * @param nt     thread whose solution to write.
+         * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
+         */
+        void saveTT(const std::string &fname, const int all, const size_t nt=0,
                     const int format=1) const;
 
-        void saveTTgrad(const std::string &, const size_t nt=0,
+        /**
+         * @brief Write the traveltime gradient field to a file.
+         * @param fname     output filename.
+         * @param nt        thread whose solution to differentiate.
+         * @param vtkFormat write VTK rather than plain text.
+         * @note Unlike ttcr::Grid2Drc::saveTTgrad, which is an empty stub, this
+         *       one is implemented — the gradient is well defined here because
+         *       slowness is continuous across cell boundaries.
+         */
+        void saveTTgrad(const std::string &fname, const size_t nt=0,
                         const bool vtkFormat=0) const;
 
-        const T1 getXmin() const { return xmin; }
-        const T1 getZmin() const { return zmin; }
-        const T1 getDx() const { return dx; }
-        const T1 getDz() const { return dz; }
-        const T2 getNcx() const { return ncx; }
-        const T2 getNcz() const { return ncz; }
-        
+        const T1 getXmin() const { return xmin; }  ///< @return x coordinate of the grid origin.
+        const T1 getZmin() const { return zmin; }  ///< @return z coordinate of the grid origin.
+        const T1 getDx() const { return dx; }      ///< @return Cell size along x.
+        const T1 getDz() const { return dz; }      ///< @return Cell size along z.
+        const T2 getNcx() const { return ncx; }    ///< @return Number of cells along x.
+        const T2 getNcz() const { return ncz; }    ///< @return Number of cells along z.
+
+        /**
+         * @brief Slowness at an arbitrary point.
+         * @param pt point to sample.
+         * @return Slowness interpolated from the surrounding nodes.
+         * @note Continuous, unlike ttcr::Grid2Drc::computeSlowness which is
+         *       piecewise constant per cell.
+         */
         T1 computeSlowness(const S& pt) const;
 
     protected:
-        T1 dx;           // cell size in x
-        T1 dz;           // cell size in z
-        T1 xmin;         // x origin of the grid
-        T1 zmin;         // z origin of the grid
-        T1 xmax;         // x end of the grid
-        T1 zmax;         // z end of the grid
-        T2 ncx;          // number of cells in x
-        T2 ncz;          // number of cells in x
+        T1 dx;           ///< cell size in x
+        T1 dz;           ///< cell size in z
+        T1 xmin;         ///< x origin of the grid
+        T1 zmin;         ///< z origin of the grid
+        T1 xmax;         ///< x end of the grid
+        T1 zmax;         ///< z end of the grid
+        T2 ncx;          ///< number of cells in x
+        T2 ncz;          ///< number of cells in z
 
+        /// Primary nodes first, then any secondary nodes the derived solver
+        /// added. @c mutable because @c const raytracing methods update the
+        /// traveltimes stored in them.
         mutable std::vector<NODE> nodes;
 
+        /**
+         * @brief Traveltime increment between two nodes.
+         * @param source node the ray comes from.
+         * @param node   node it reaches.
+         * @return The increment @f$\tfrac{1}{2}(s_{source}+s_{node})\,\ell@f$ — the mean of
+         *         the endpoint slownesses times the distance.
+         * @note Trapezoidal integration, exact when slowness varies linearly
+         *       along the segment. @sa @ref g2drn_vs_rc
+         */
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        /**
+         * @brief Traveltime increment from a node to an arbitrary point.
+         * @param source node the ray comes from.
+         * @param node   point it reaches.
+         * @param slo    slowness at that point, which the caller must have
+         *               obtained itself — a plain point carries none.
+         * @return The increment @f$\tfrac{1}{2}(s_{source}+slo)\,\ell@f$.
+         */
         T1 computeDt(const NODE& source, const S& node, T1 slo) const {
             return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        /**
+         * @brief Whether this grid also holds a piecewise-constant cell model.
+         * @return False in the base.
+         * @note Override point — see @ref g2drn_cellhook. Returning true commits
+         *       the class to implementing @ref getCellSlowness.
+         */
         virtual const bool hasCellSlowness() const { return false; }
+        /**
+         * @brief Slowness of one cell, for subclasses that hold a cell model.
+         * @param cell_no cell number.
+         * @return That cell's slowness.
+         * @throws std::runtime_error in the base — reaching it means a subclass
+         *         returned true from @ref hasCellSlowness without overriding
+         *         this.
+         */
         virtual const T1 getCellSlowness(const size_t cell_no) const {
             throw std::runtime_error("Method getCellSlowness should be implemented in subclass");
         }
 
-        void checkPts(const std::vector<S>&) const;
+        /**
+         * @brief Verify that every point lies inside the grid.
+         * @param pts points to check, typically sources or receivers.
+         * @throws std::runtime_error naming the offending point.
+         */
+        void checkPts(const std::vector<S>& pts) const;
 
+        /**
+         * @brief Test whether a point lies inside a polygon.
+         * @param p    point to test.
+         * @param poly polygon vertices, in order.
+         * @param N    number of vertices.
+         * @return True if @p p is inside.
+         */
         bool inPolygon(const S& p, const S poly[], const size_t N) const;
 
+        /**
+         * @brief Traveltime gradient at a node, by grid index.
+         * @param[out] g  gradient vector.
+         * @param[in]  i  x index of the node.
+         * @param[in]  j  z index of the node.
+         * @param[in]  nt thread whose traveltime field to differentiate.
+         */
         void grad(S &g, const size_t i, const size_t j, const size_t nt=0) const;
 
+        /**
+         * @brief Traveltime gradient at an arbitrary point.
+         * @param[out] g  gradient vector.
+         * @param[in]  pt point at which to evaluate it.
+         * @param[in]  nt thread whose traveltime field to differentiate.
+         * @note The raypath tracers step down this gradient.
+         */
         void grad(S &g, const S &pt, const size_t nt=0) const;
 
+        /**
+         * @brief Trace the raypath from a receiver back to the source.
+         * @param[in]  Tx       source positions.
+         * @param[in]  Rx       receiver position.
+         * @param[out] r_data   raypath points, receiver first and source last.
+         * @param[in]  threadNo thread whose solution to use.
+         * @note Integrates down the traveltime gradient. Slowness along the path
+         *       comes from the cell model when @ref hasCellSlowness is true, and
+         *       from the interpolated nodal field otherwise.
+         *       @sa @ref g2drn_cellhook
+         */
         void getRaypath(const std::vector<S>& Tx,
                         const S &Rx,
                         std::vector<S> &r_data,
                         const size_t threadNo=0) const;
 
+        /**
+         * @brief Locate the cell containing a point.
+         * @param pt point to locate.
+         * @return Cell number, z varying fastest.
+         * @note Used to index a subclass's cell model via
+         *       @ref getCellSlowness; this family stores nothing per cell
+         *       itself.
+         * @warning A point outside the grid is not detected.
+         */
         T2 getCellNo(const S& pt) const {
             T1 x = xmax-pt.x < small ? xmax-.5*dx : pt.x;
             T1 z = zmax-pt.z < small ? zmax-.5*dz : pt.z;
@@ -178,44 +395,120 @@ namespace ttcr {
             return nx*ncz + nz;
         }
 
+        /**
+         * @brief Split a cell number into its x and z indices.
+         * @param[in]  cellNo cell number.
+         * @param[out] ind    @c i receives the x index, @c j the z index.
+         * @note Cells are numbered z-fastest here, as in ttcr::Grid2Drc — and
+         *       unlike the 3-D families, which are x-fastest.
+         */
         void getCellIJ(const T2 cellNo, sij<T2>& ind) const {
             ind.i = cellNo / ncz;
             ind.j = cellNo - ncz * ind.i;
         }
 
+        /**
+         * @brief Compute the x and z cell indices of a point.
+         * @param[in]  pt point to locate.
+         * @param[out] i  x index.
+         * @param[out] j  z index.
+         * @warning Unchecked: a point outside the grid yields an out-of-range
+         *          index, and on an unsigned @c T2 a point below the origin
+         *          wraps to a huge value.
+         */
         void getIJ(const S& pt, T2& i, T2& j) const {
             i = static_cast<T2>( small + (pt.x-xmin)/dx );
             j = static_cast<T2>( small + (pt.z-zmin)/dz );
         }
 
+        /**
+         * @brief Compute the x and z cell indices of a point, as signed values.
+         * @param[in]  pt point to locate.
+         * @param[out] i  x index.
+         * @param[out] j  z index.
+         * @note For callers that step off the grid and need a negative index
+         *       rather than a wrap.
+         */
         void getIJ(const S& pt, ptrdiff_t& i, ptrdiff_t& j) const {
             i = static_cast<ptrdiff_t>( small + (pt.x-xmin)/dx );
             j = static_cast<ptrdiff_t>( small + (pt.z-zmin)/dz );
         }
 
+        /**
+         * @name Fast sweeping passes
+         *
+         * One Gauss-Seidel pass over the grid in each of the alternating
+         * directions, relaxing every node that is not frozen. The variants
+         * differ in the stencil used; see @ref g2drn_sweeps.
+         *
+         * @param frozen   per-node flag; a frozen node holds a boundary or
+         *                 source value and is never updated.
+         * @param threadNo thread whose traveltime field to sweep.
+         * @{
+         */
+        /// Axis-aligned first-order stencil.
         void sweep(const std::vector<bool>& frozen,
                    const size_t threadNo) const;
+        /// 45-degree rotated stencil, adding the diagonal directions.
         void sweep45(const std::vector<bool>& frozen,
                      const size_t threadNo) const;
+        /// Mixed x-z stencil, for the draped grids where the plane is not axis-aligned.
         void sweep_xz(const std::vector<bool>& frozen,
                       const size_t threadNo) const;
+        /// Third-order WENO stencil.
         void sweep_weno3(const std::vector<bool>& frozen,
                          const size_t threadNo) const;
+        /// Third-order WENO stencil, mixed x-z form.
         void sweep_weno3_xz(const std::vector<bool>& frozen,
                             const size_t threadNo) const;
+        /// @}
 
+        /**
+         * @name Single-node updates
+         *
+         * Solve the local eikonal update at one node, given its already-relaxed
+         * neighbours. The parameters are the node's x index, its z index and the
+         * thread number. Each corresponds to the sweep of the same name.
+         * @{
+         */
         void update_node(const size_t, const size_t, const size_t=0) const;
         void update_node45(const size_t, const size_t, const size_t=0) const;
         void update_node_xz(const size_t, const size_t, const size_t=0) const;
         void update_node_weno3(const size_t, const size_t, const size_t=0) const;
         void update_node_weno3_xz(const size_t, const size_t, const size_t=0) const;
+        /// @}
 
+        /**
+         * @brief Seed the fast sweeping solve around the sources.
+         * @param[in]  Tx       source positions.
+         * @param[in]  t0       origin time of each source.
+         * @param[out] frozen   per-node flag; nodes near a source are given
+         *                      analytic traveltimes and frozen, so the sweeps
+         *                      cannot move them.
+         * @param[in]  npts     half-width, in nodes, of the frozen region around
+         *                      each source.
+         * @param[in]  threadNo thread to initialise.
+         * @note Sweeping cannot start from a point source directly — the local
+         *       update needs neighbours that already hold valid times, which is
+         *       what this frozen halo provides.
+         */
         void initFSM(const std::vector<S>& Tx,
                      const std::vector<T1>& t0, std::vector<bool>& frozen,
                      const int npts, const size_t threadNo) const;
 
+        /**
+         * @brief Slowness at a point, interpolated from the surrounding nodes.
+         * @param Rx point to sample.
+         * @return Interpolated slowness.
+         */
         T1 getSlowness(const S& Rx) const;
 
+        /**
+         * @brief Write the coordinates of the secondary nodes to a stream.
+         * @param os destination stream, one @c "x z" pair per line.
+         * @note Writes nothing on a grid whose solver adds no secondary nodes,
+         *       which is the case for the sweeping solvers.
+         */
         void dump_secondary(std::ofstream& os) const {
             size_t nPrimary = static_cast<size_t>(ncx+1) * (ncz+1);
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
@@ -226,7 +519,7 @@ namespace ttcr {
     private:
         Grid2Drn() {}
         Grid2Drn(const Grid2Drn<T1,T2,S,NODE>& g) {}
-        Grid2Drn<T1,T2,S,NODE>& operator=(const Grid2Drn<T1,T2,S,NODE>& g) {}
+        Grid2Drn<T1,T2,S,NODE>& operator=(const Grid2Drn<T1,T2,S,NODE>& g) = delete;
 
         T1 getTraveltime(const S& Rx, const size_t threadNo) const;
 

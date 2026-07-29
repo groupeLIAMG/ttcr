@@ -22,6 +22,18 @@
  *
  */
 
+/**
+ * @file Grid3Drnfs.h
+ * @brief Fast sweeping solver on a 3-D rectilinear grid with node-based slowness.
+ *
+ * Declares ttcr::Grid3Drnfs. Slowness is taken at the nodes directly, unlike
+ * ttcr::Grid3Drcfs which accepts a cell model and averages it onto them.
+ *
+ * @warning Cubic cells only, unvalidated — see the class warning.
+ *
+ * @sa Grid3Drn.h, Grid3Drcfs.h, Grid2Drnfs.h, Grid3Drnfs_OpenCL.h
+ */
+
 #ifndef ttcr_Grid3Drnfs_h
 #define ttcr_Grid3Drnfs_h
 
@@ -34,8 +46,63 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Fast sweeping eikonal solver with node-based slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * The 3-D counterpart of ttcr::Grid2Drnfs and the node-slowness sibling of
+     * ttcr::Grid3Drcfs. Slowness is taken at the nodes directly, with none of
+     * the cell-to-node averaging ttcr::Grid3Drcfs performs. The sweep and
+     * single-node update stencils live in ttcr::Grid3Drn
+     * (@ref g3drn_sweeps); this class supplies the iteration driver and the
+     * convergence test.
+     *
+     * @warning **Cubic cells only.** The constructor takes a single cell size
+     *          @p ddx and passes it as all three spacings, and nothing validates
+     *          that: `grids.h` reads three independent spacings from the model
+     *          file but hands only @c d[0] to this constructor. A model with
+     *          @f$d_x \neq d_y@f$ or @f$d_x \neq d_z@f$ is silently solved on a
+     *          grid whose y and z spacings have been replaced by @f$d_x@f$.
+     *          All four 3-D fast sweeping classes share this restriction; the
+     *          shortest-path and dynamic shortest-path builders pass all three
+     *          spacings and are unaffected.
+     *
+     * @section g3drnfs_conv Convergence
+     * Sweeping stops when the summed change in nodal traveltime falls below a
+     * threshold. The constructor multiplies the supplied @p eps by the node
+     * count, so the user-facing tolerance is a **mean** per-node change while
+     * the loop tests an L1 sum; @p maxit caps the iterations.
+     *
+     * @sa Grid3Drn.h, Grid3Drcfs.h, Grid2Drnfs.h, Grid3Drnfs_OpenCL.h
+     */
     class Grid3Drnfs : public Grid3Drn<T1,T2,Node3Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the grid and its nodes.
+         *
+         * @param nx    number of cells along x.
+         * @param ny    number of cells along y.
+         * @param nz    number of cells along z.
+         * @param ddx   cell size, used for **all three** axes — see the class
+         *              warning.
+         * @param minx  x coordinate of the grid origin.
+         * @param miny  y coordinate of the grid origin.
+         * @param minz  z coordinate of the grid origin.
+         * @param eps   convergence tolerance, as a mean per-node traveltime
+         *              change; scaled internally by the node count.
+         *              @sa @ref g3drnfs_conv
+         * @param maxit maximum number of sweep iterations.
+         * @param w     use the 3rd-order WENO stencil.
+         * @param ttrp  recompute receiver traveltimes along the raypath.
+         * @param intVel interpolate velocity rather than slowness.
+         *              @sa @ref g3drn_procvel
+         * @param nt    number of threads.
+         * @param _translateOrigin shift the grid origin to (0,0,0).
+         *
+         * @post Nodes and neighbour lists are built. Slowness is **not** set.
+         */
         Grid3Drnfs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T1 eps, const int maxit, const bool w,
@@ -49,29 +116,55 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /// Destructor.
         ~Grid3Drnfs() {
 
         }
 
+        /// @return Number of sweep iterations the last solve took.
         const int get_niter() const { return niter_final; }
+        /// @return Number of WENO sweep iterations the last solve took.
         const int get_niterw() const { return niterw_final; }
 
     protected:
+        /// Convergence threshold, holding the **scaled** value: the constructor
+        /// multiplies the supplied tolerance by the node count.
+        /// @sa @ref g3drnfs_conv
         T1 epsilon;
-        int nitermax;
-        mutable int niter_final;
-        mutable int niterw_final;
-        bool weno3;
+        int nitermax;             ///< Iteration cap for the sweeps.
+        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable int niterw_final; ///< WENO iterations used by the last solve.
+        bool weno3;               ///< Use the 3rd-order WENO stencil.
 
     private:
+        /// @name Non-copyable
+        /// @{
         Grid3Drnfs() {}
         Grid3Drnfs(const Grid3Drnfs<T1,T2>& g) {}
-        Grid3Drnfs<T1,T2>& operator=(const Grid3Drnfs<T1,T2>& g) {}
+        Grid3Drnfs<T1,T2>& operator=(const Grid3Drnfs<T1,T2>& g) = delete;
+        /// @}
 
+        /**
+         * @brief Propagate the traveltime field and evaluate it at the receivers.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       receiver positions.
+         * @param threadNo thread to compute on.
+         * @note Freezes a halo around each source via
+         *       ttcr::Grid3Drn::initFSM, then sweeps until the change falls
+         *       below @ref epsilon or @ref nitermax is reached.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       const size_t threadNo=0) const;
+        /**
+         * @brief Propagate once and evaluate at several receiver sets.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       the receiver sets.
+         * @param threadNo thread to compute on.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,

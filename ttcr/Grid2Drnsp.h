@@ -22,6 +22,18 @@
  *
  */
 
+/**
+ * @file Grid2Drnsp.h
+ * @brief Shortest-path solver on a 2-D rectilinear grid with node-based slowness.
+ *
+ * Declares ttcr::Grid2Drnsp, the node-slowness counterpart of
+ * ttcr::Grid2Drcsp. Same graph relaxation over primary and secondary nodes;
+ * the difference is how a traveltime increment along an edge is computed —
+ * see @ref g2drn_vs_rc.
+ *
+ * @sa Grid2Drn.h, Grid2Drcsp.h, Node2Dnsp.h, Grid2Drndsp.h
+ */
+
 #ifndef ttcr_Grid2Drnsp_h
 #define ttcr_Grid2Drnsp_h
 
@@ -33,8 +45,47 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S>
+    /**
+     * @brief Shortest-path eikonal solver with node-based slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * The node-slowness counterpart of ttcr::Grid2Drcsp: the grid is treated as
+     * a graph over primary and secondary nodes and relaxed with a
+     * Dijkstra-style propagation, but a traveltime increment is the mean of the
+     * two endpoint slownesses times the distance rather than a cell value.
+     * @sa @ref g2drn_vs_rc
+     *
+     * Accuracy is governed by the number of secondary nodes per cell edge —
+     * more directions available to a ray, at a cost in memory and time.
+     *
+     * @note Isotropic only. ttcr::Grid2Drcsp stays templated on a @c CELL policy
+     *       and so supports the anisotropic models; this one cannot, because a
+     *       node carries a single scalar slowness.
+     *
+     * @sa Grid2Drn.h, Grid2Drcsp.h, Node2Dnsp.h, Grid2Drndsp.h
+     */
     class Grid2Drnsp : public Grid2Drn<T1,T2,S,Node2Dnsp<T1,T2>> {
     public:
+        /**
+         * @brief Build the grid and its secondary nodes.
+         *
+         * @param nx  number of cells along x.
+         * @param nz  number of cells along z.
+         * @param ddx cell size along x.
+         * @param ddz cell size along z.
+         * @param minx x coordinate of the grid origin.
+         * @param minz z coordinate of the grid origin.
+         * @param nnx number of secondary nodes per cell edge along x.
+         * @param nnz number of secondary nodes per cell edge along z.
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param nt  number of threads.
+         *
+         * @post Primary and secondary nodes are built and their neighbour lists
+         *       populated. Slowness is **not** set.
+         */
         Grid2Drnsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
                    const bool ttrp, const size_t nt=1) :
@@ -46,9 +97,21 @@ namespace ttcr {
             this->template buildGridNeighbors<Node2Dnsp<T1,T2>>(this->nodes);
         }
 
+        /// Destructor.
         virtual ~Grid2Drnsp() {
         }
 
+        /**
+         * @brief Set the slowness at the primary nodes, interpolating onto the rest.
+         * @param s one slowness per **primary** node, i.e.
+         *          @f$(n_{cx}+1)(n_{cz}+1)@f$ values.
+         * @throws std::length_error if @p s has the wrong size.
+         * @post Primary nodes take the supplied values and the secondary nodes
+         *       are filled by @ref interpSlownessSecondary.
+         * @note Overrides ttcr::Grid2Drn::setSlowness, which expects one value
+         *       per node including the secondary ones — the caller should not
+         *       have to know how many this class inserted.
+         */
         void setSlowness(const std::vector<T1>& s) {
             if ( nPrimary != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -110,18 +173,29 @@ namespace ttcr {
 
 
     private:
-        T2 nsnx;    // number of secondary nodes in x
-        T2 nsnz;    // number of secondary nodes in z
-        T2 nsgx;    // number of subgrid cells in x
-        T2 nsgz;    // number of subgrid cells in z
-        T2 nPrimary;
+        T2 nsnx;    ///< number of secondary nodes in x
+        T2 nsnz;    ///< number of secondary nodes in z
+        T2 nsgx;    ///< number of subgrid cells in x
+        T2 nsgz;    ///< number of subgrid cells in z
+        T2 nPrimary;///< number of primary nodes; the size @ref setSlowness expects
 
+        /// @name Non-copyable
+        /// @{
         Grid2Drnsp() {}
         Grid2Drnsp(const Grid2Drnsp<T1,T2,S>& g) {}
-        Grid2Drnsp<T1,T2,S>& operator=(const Grid2Drnsp<T1,T2,S>& g) {}
+        Grid2Drnsp<T1,T2,S>& operator=(const Grid2Drnsp<T1,T2,S>& g) = delete;
+        /// @}
 
+        /// @brief Create the primary and secondary nodes and set their positions.
         void buildGridNodes();
 
+        /**
+         * @brief Fill in the slowness of the secondary nodes.
+         * @pre The primary nodes already carry their slowness values.
+         * @note Called by @ref setSlowness. Secondary nodes lie along cell
+         *       edges, so their slowness is interpolated from the primary nodes
+         *       at the ends of that edge.
+         */
         void interpSlownessSecondary();
 
         void propagate(std::priority_queue<Node2Dnsp<T1,T2>*,

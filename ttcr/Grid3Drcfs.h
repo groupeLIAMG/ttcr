@@ -22,6 +22,21 @@
  *
  */
 
+/**
+ * @file Grid3Drcfs.h
+ * @brief Fast sweeping solver on a 3-D rectilinear grid, from a cell slowness
+ *        model.
+ *
+ * Declares ttcr::Grid3Drcfs, the 3-D counterpart of ttcr::Grid2Drcfs. As there,
+ * the class accepts a cell slowness model but derives from the node-slowness
+ * base and averages the values onto the nodes; see @ref g3drcfs_hybrid.
+ *
+ * @warning This solver supports **cubic cells only**, and that is not
+ *          validated anywhere. @sa @ref g3drcfs_cubic
+ *
+ * @sa Grid3Drn.h, Grid3Drc.h, Grid2Drcfs.h, Grid3Drcfs_OpenCL.h
+ */
+
 #ifndef ttcr_Grid3Drcfs_h
 #define ttcr_Grid3Drcfs_h
 
@@ -34,9 +49,63 @@
 // TODO: change base class for Grid3Drc (?) and use tt_from_rp to improve accuracy
 namespace ttcr {
 
+    /**
+     * @brief Fast sweeping eikonal solver taking a cell slowness model.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * @section g3drcfs_hybrid Why it derives from Grid3Drn, not Grid3Drc
+     * As with ttcr::Grid2Drcfs, the @c rc in the name describes the model the
+     * caller supplies, not the internal representation. Fast sweeping needs a
+     * slowness value at every node, so @ref setSlowness accepts one value per
+     * cell and averages them onto the nodes — which is why the base is
+     * ttcr::Grid3Drn. A side effect is that sharp contrasts are smoothed over
+     * one cell before the solve begins.
+     *
+     * @section g3drcfs_cubic Cubic cells only
+     * The constructor takes a **single** cell size @p ddx and passes it as all
+     * three spacings, so this solver only represents cubic cells.
+     *
+     * @warning Nothing checks that. `grids.h` reads three independent spacings
+     *          from the model file but hands only @c d[0] to this constructor,
+     *          so a model with @f$d_x \neq d_y@f$ or @f$d_x \neq d_z@f$ is
+     *          silently solved on a grid whose y and z spacings have been
+     *          replaced by @f$d_x@f$ — wrong traveltimes, no diagnostic. The
+     *          shortest-path and dynamic shortest-path builders pass all three
+     *          spacings and are unaffected.
+     *
+     * @note Not templated on a @c CELL policy, so isotropic only.
+     *
+     * @sa Grid3Drn.h, Grid3Drc.h, Grid2Drcfs.h, Grid3Drcfs_OpenCL.h
+     */
     template<typename T1, typename T2>
     class Grid3Drcfs : public Grid3Drn<T1,T2,Node3Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the grid and its nodes.
+         *
+         * @param nx    number of cells along x.
+         * @param ny    number of cells along y.
+         * @param nz    number of cells along z.
+         * @param ddx   cell size, used for **all three** axes.
+         *              @sa @ref g3drcfs_cubic
+         * @param minx  x coordinate of the grid origin.
+         * @param miny  y coordinate of the grid origin.
+         * @param minz  z coordinate of the grid origin.
+         * @param eps   convergence tolerance, as a mean per-node traveltime
+         *              change; scaled internally by the node count.
+         * @param maxit maximum number of sweep iterations.
+         * @param w     use the 3rd-order WENO stencil.
+         * @param ttrp  recompute receiver traveltimes along the raypath.
+         * @param intVel interpolate velocity rather than slowness
+         *              (ttcr::input_parameters::processVel).
+         * @param nt    number of threads.
+         * @param _translateOrigin shift the grid origin to (0,0,0).
+         *
+         * @post Nodes and neighbour lists are built. Slowness is **not** set —
+         *       call @ref setSlowness before raytracing.
+         */
         Grid3Drcfs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T1 eps, const int maxit, const bool w,
@@ -51,31 +120,68 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /// Destructor.
         virtual ~Grid3Drcfs() {
         }
 
+        /**
+         * @brief Set the cell slowness model and average it onto the nodes.
+         * @param s one slowness per cell, @f$n_{cx}n_{cy}n_{cz}@f$ values in the
+         *          x-fastest order of @ref g3drc_numbering.
+         * @throws std::length_error if @p s has the wrong size.
+         * @note A corner node takes its single adjacent cell, an edge node the
+         *       mean of two, a face node of four and an interior node of eight.
+         *       @sa @ref g3drcfs_hybrid
+         * @note Unlike ttcr::Grid2Drcfs this class keeps no copy of the cell
+         *       values, so there is no @c getCellSlowness here.
+         */
         void setSlowness(const std::vector<T1>& s);
 
+        /// @return Number of sweep iterations the last solve took.
         const int get_niter() const { return niter_final; }
+        /// @return Number of WENO sweep iterations the last solve took.
         const int get_niterw() const { return niterw_final; }
 
     protected:
+        /// Convergence threshold, holding the **scaled** value: the constructor
+        /// multiplies the supplied tolerance by the node count, so the loop can
+        /// test an L1 sum while the user supplies a mean per-node change.
         T1 epsilon;
-        int nitermax;
-        mutable int niter_final;
-        mutable int niterw_final;
-        bool weno3;
+        int nitermax;             ///< Iteration cap for the sweeps.
+        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable int niterw_final; ///< WENO iterations used by the last solve.
+        bool weno3;               ///< Use the 3rd-order WENO stencil.
 
     private:
+        /// @name Non-copyable
+        /// @{
         Grid3Drcfs() {}
         Grid3Drcfs(const Grid3Drcfs<T1,T2>& g) {}
-        Grid3Drcfs<T1,T2>& operator=(const Grid3Drcfs<T1,T2>& g) {}
+        Grid3Drcfs<T1,T2>& operator=(const Grid3Drcfs<T1,T2>& g) = delete;
+        /// @}
 
+        /**
+         * @brief Propagate the traveltime field and evaluate it at the receivers.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       receiver positions.
+         * @param threadNo thread to compute on.
+         * @note Sweeps until the change falls below @ref epsilon or
+         *       @ref nitermax is reached, recording the count in
+         *       @ref niter_final.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       const size_t threadNo=0) const;
 
+        /**
+         * @brief Propagate once and evaluate at several receiver sets.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       the receiver sets.
+         * @param threadNo thread to compute on.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,

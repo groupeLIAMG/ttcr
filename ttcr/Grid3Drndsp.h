@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid3Drndsp.h
+ * @brief Dynamic shortest-path solver on a 3-D rectilinear grid with node-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid3Drndsp, which concentrates node refinement near the
+ * source rather than spreading it uniformly as ttcr::Grid3Drnsp does.
+ *
+ * @sa Grid3Drn.h, Grid3Drcdsp.h, Grid2Drndsp.h, Node3Dnd.h
+ */
+
 #ifndef ttcr_Grid3Drndsp_h
 #define ttcr_Grid3Drndsp_h
 
@@ -32,8 +43,60 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Dynamic shortest-path solver with node-based slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * The 3-D counterpart of ttcr::Grid2Drndsp and the node-slowness sibling of
+     * ttcr::Grid3Drcdsp. Rather than spreading secondary nodes uniformly as
+     * ttcr::Grid3Drnsp does, it keeps a modest permanent set everywhere and
+     * inserts extra **tertiary** nodes only within @ref dynRadius of each
+     * source, where wavefront curvature — and hence the traveltime error — is
+     * greatest.
+     *
+     * Tertiary nodes depend on the source position, so they live per-thread in
+     * @ref tempNodes rather than in the shared node vector, letting different
+     * workers solve different sources concurrently.
+     *
+     * @note All three cell sizes are honoured, unlike ttcr::Grid3Drnfs.
+     *
+     * @sa Grid3Drn.h, Grid3Drcdsp.h, Grid2Drndsp.h, Node3Dnd.h
+     */
     class Grid3Drndsp : public Grid3Drn<T1,T2,Node3Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the grid and its permanent nodes.
+         *
+         * @param nx   number of cells along x.
+         * @param ny   number of cells along y.
+         * @param nz   number of cells along z.
+         * @param ddx  cell size along x.
+         * @param ddy  cell size along y.
+         * @param ddz  cell size along z.
+         * @param minx x coordinate of the grid origin.
+         * @param miny y coordinate of the grid origin.
+         * @param minz z coordinate of the grid origin.
+         * @param ns   number of permanent secondary nodes per cell edge, applied
+         *             to all three axes.
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param nd   number of tertiary nodes added per edge near a source.
+         * @param drad radius around a source within which tertiary nodes are
+         *             inserted.
+         * @param intVel interpolate velocity rather than slowness.
+         *             @sa @ref g3drn_procvel
+         * @param useEdgeLength if true, @p drad is a **multiple of the mean cell
+         *             edge** @f$(ddx+ddy+ddz)/3@f$ rather than an absolute
+         *             distance.
+         * @param nt   number of threads; sizes the per-thread temporary
+         *             containers.
+         * @param _translateOrigin shift the grid origin to (0,0,0).
+         *
+         * @post @ref nPermanent records the node count before any tertiary nodes
+         *       are added, which is how the solver later distinguishes permanent
+         *       nodes from temporary ones.
+         */
         Grid3Drndsp(const T2 nx, const T2 ny, const T2 nz,
                     const T1 ddx, const T1 ddy, const T1 ddz,
                     const T1 minx, const T1 miny, const T1 minz,
@@ -58,24 +121,42 @@ namespace ttcr {
             }
         }
 
+        /// Destructor.
         ~Grid3Drndsp() {
         }
 
+        /**
+         * @brief Set the slowness at the primary nodes, interpolating onto the rest.
+         * @param s one slowness per **primary** node.
+         * @throws std::length_error if @p s has the wrong size.
+         * @post Primary nodes take the supplied values; the permanent secondary
+         *       nodes are interpolated. Tertiary nodes do not exist yet — they
+         *       are created per source at raytrace time and given slowness then.
+         */
         void setSlowness(const std::vector<T1>& s);
 
     private:
-        T2 nSecondary;                 // number of permanent secondary
-        T2 nTertiary;                   // number of temporary secondary
-        T2 nPermanent;                 // total nb of primary & permanent secondary
-        T1 dynRadius;
+        T2 nSecondary;                 ///< number of permanent secondary nodes per edge
+        T2 nTertiary;                  ///< number of tertiary nodes added per edge near a source
+        T2 nPermanent;                 ///< total nb of primary & permanent secondary; nodes beyond this index are temporary
+        T1 dynRadius;                  ///< radius around a source within which tertiary nodes are inserted, already scaled by the mean edge length if requested
 
+        /// Temporary (tertiary) nodes, one set per thread. Kept out of the
+        /// shared node vector because their positions depend on the source.
         // we will store temporary nodes in a separate container.  This is to
         // allow threaded computations with different Tx (location of temp
         // nodes vary from one Tx to the other)
         mutable std::vector<std::vector<Node3Dnd<T1,T2>>> tempNodes;
+        /// Per-thread, per-cell lists of the temporary nodes falling in each cell.
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
 
-        void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
+        /**
+         * @brief Insert tertiary nodes around the sources, for one thread.
+         * @param Tx       source positions.
+         * @param threadNo thread whose @ref tempNodes set to fill.
+         * @post That thread's temporary containers are cleared and repopulated.
+         */
+        void addTemporaryNodes(const std::vector<sxyz<T1>>& Tx, const size_t threadNo) const;
 
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,

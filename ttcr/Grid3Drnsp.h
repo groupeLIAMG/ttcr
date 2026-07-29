@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid3Drnsp.h
+ * @brief Shortest-path solver on a 3-D rectilinear grid with node-based slowness.
+ *
+ * Declares ttcr::Grid3Drnsp, the node-slowness counterpart of
+ * ttcr::Grid3Drcsp. Same graph relaxation over primary and secondary nodes;
+ * the difference is how a traveltime increment along an edge is computed.
+ *
+ * @sa Grid3Drn.h, Grid3Drcsp.h, Grid2Drnsp.h, Node3Dnsp.h
+ */
+
 #ifndef ttcr_Grid3Drnsp_h
 #define ttcr_Grid3Drnsp_h
 
@@ -43,8 +54,54 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Shortest-path eikonal solver with node-based slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * The 3-D counterpart of ttcr::Grid2Drnsp and the node-slowness sibling of
+     * ttcr::Grid3Drcsp: the grid is treated as a graph over primary and
+     * secondary nodes and relaxed with a Dijkstra-style propagation, but a
+     * traveltime increment is the mean of the two endpoint slownesses times the
+     * distance rather than a cell value.
+     *
+     * Uses ttcr::Node3Dnsp, whose parent-node and parent-cell arrays let a
+     * raypath be recovered by walking back from a receiver to the source.
+     *
+     * @note Isotropic only. ttcr::Grid3Drcsp stays templated on a @c CELL policy
+     *       and so supports the anisotropic models; this one cannot, since a
+     *       node carries a single scalar slowness.
+     * @note All three cell sizes are honoured, unlike ttcr::Grid3Drnfs.
+     *
+     * @sa Grid3Drn.h, Grid3Drcsp.h, Grid2Drnsp.h, Node3Dnsp.h
+     */
     class Grid3Drnsp : public Grid3Drn<T1,T2,Node3Dnsp<T1,T2>> {
     public:
+        /**
+         * @brief Build the grid and its secondary nodes.
+         *
+         * @param nx  number of cells along x.
+         * @param ny  number of cells along y.
+         * @param nz  number of cells along z.
+         * @param ddx cell size along x.
+         * @param ddy cell size along y.
+         * @param ddz cell size along z.
+         * @param minx x coordinate of the grid origin.
+         * @param miny y coordinate of the grid origin.
+         * @param minz z coordinate of the grid origin.
+         * @param nnx number of secondary nodes per cell edge along x.
+         * @param nny number of secondary nodes per cell edge along y.
+         * @param nnz number of secondary nodes per cell edge along z.
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param intVel interpolate velocity rather than slowness.
+         *             @sa @ref g3drn_procvel
+         * @param nt  number of threads.
+         * @param _translateOrigin shift the grid origin to (0,0,0).
+         *
+         * @post Primary and secondary nodes are built and their neighbour lists
+         *       populated. Slowness is **not** set.
+         */
         Grid3Drnsp(const T2 nx, const T2 ny, const T2 nz,
                    const T1 ddx, const T1 ddy, const T1 ddz,
                    const T1 minx, const T1 miny, const T1 minz,
@@ -58,12 +115,41 @@ namespace ttcr {
             this->template buildGridNeighbors<Node3Dnsp<T1,T2>>(this->nodes);
         }
 
+        /// Destructor.
         ~Grid3Drnsp() {
 
         }
 
+        /**
+         * @brief Set the slowness at the primary nodes, interpolating onto the rest.
+         * @param s one slowness per **primary** node, i.e.
+         *          @f$(n_{cx}+1)(n_{cy}+1)(n_{cz}+1)@f$ values.
+         * @throws std::length_error if @p s has the wrong size.
+         * @post Primary nodes take the supplied values and the secondary nodes
+         *       are filled by ttcr::Grid3Drn::interpSecondary.
+         * @note Overrides ttcr::Grid3Drn::setSlowness, which expects one value
+         *       per node including the secondary ones — the caller should not
+         *       have to know how many this class inserted.
+         */
         void setSlowness(const std::vector<T1>& s);
 
+        /**
+         * @name Raytracing
+         *
+         * Overloads of the same computation, differing in how much they report:
+         * traveltimes alone, plus raypaths (@c r_data), plus per-cell path
+         * lengths (@c l_data). The receiver argument is either a plain vector or
+         * a set of vectors, letting one propagation serve several receiver sets.
+         *
+         * @param[in]  Tx          source positions.
+         * @param[in]  t0          origin time of each source.
+         * @param[in]  Rx          receiver positions.
+         * @param[out] traveltimes traveltime at each receiver.
+         * @param[in]  threadNo    thread to compute on; concurrent calls must
+         *                         pass distinct values.
+         * @pre Every point lies inside the grid — @ref checkPts throws otherwise.
+         * @{
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
@@ -97,12 +183,25 @@ namespace ttcr {
                       std::vector<std::vector<sxyz<T1>>>& r_data,
                       std::vector<std::vector<siv<T1>>>& l_data,
                       const size_t threadNo=0) const;
+        /// @}
 
+        /**
+         * @brief Write the traveltimes at the primary nodes to a file.
+         * @param filename  output file.
+         * @param nt        thread whose solution to write.
+         * @param vtkFormat write VTK rather than plain text.
+         * @note **Unused** — nothing in the project calls it. It writes only the
+         *       primary nodes, unlike ttcr::Grid3Drn::saveTT which can include
+         *       the secondary ones.
+         */
         void savePrimary(const char filename[], const size_t nt=0,
                          const bool vtkFormat=0) const;
 
+        /// @return Number of secondary nodes per cell edge along x.
         const T2 getNsnx() const { return nsnx; }
+        /// @return Number of secondary nodes per cell edge along y.
         const T2 getNsny() const { return nsny; }
+        /// @return Number of secondary nodes per cell edge along z.
         const T2 getNsnz() const { return nsnz; }
 
     private:

@@ -68,6 +68,20 @@
 
  */
 
+/**
+ * @file Grid2Drnfs.h
+ * @brief Fast sweeping solver on a 2-D rectilinear grid with node-based slowness.
+ *
+ * Declares ttcr::Grid2Drnfs, the serial fast sweeping solver of Zhao (2005),
+ * cited in full above. It takes nodal slowness directly, in contrast to
+ * ttcr::Grid2Drcfs which accepts a cell model and averages it onto the nodes.
+ *
+ * The sweep stencils live in Grid2Drn.h; this file supplies the iteration
+ * driver and convergence test.
+ *
+ * @sa Grid2Drn.h, Grid2Drcfs.h, Grid2Drnfs_OpenCL.h
+ */
+
 #ifndef ttcr_Grid2Drnfs_h
 #define ttcr_Grid2Drnfs_h
 
@@ -78,9 +92,62 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Fast sweeping eikonal solver with node-based slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * Implements Zhao's fast sweeping method (see the citation above): upwind
+     * differences solved by Gauss-Seidel iterations with alternating sweep
+     * orderings, each ordering following one family of characteristics, giving
+     * @f$O(N)@f$ complexity for @f$N@f$ nodes.
+     *
+     * The sweep and single-node update stencils themselves live in
+     * ttcr::Grid2Drn (@ref g2drn_sweeps); this class supplies the iteration
+     * driver, the convergence test and the node construction.
+     *
+     * Unlike ttcr::Grid2Drcfs, which accepts a cell model and averages it onto
+     * the nodes, this class takes nodal slowness directly through the inherited
+     * ttcr::Grid2Drn::setSlowness — one value per node, no smoothing.
+     *
+     * @section g2drnfs_conv Convergence
+     * Sweeping stops when the summed change in nodal traveltime falls below a
+     * threshold. The constructor multiplies the supplied @p eps by the node
+     * count, so the user-facing tolerance
+     * (ttcr::input_parameters::epsilon) is a **mean** per-node change while the
+     * loop tests an L1 sum. Iteration is also capped by @p maxit.
+     *
+     * @sa Grid2Drn.h, Grid2Drcfs.h, Grid2Drnfs_OpenCL.h
+     */
     template<typename T1, typename T2, typename S>
     class Grid2Drnfs : public Grid2Drn<T1,T2,S,Node2Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the grid and its nodes.
+         *
+         * @param nx    number of cells along x.
+         * @param nz    number of cells along z.
+         * @param ddx   cell size along x.
+         * @param ddz   cell size along z.
+         * @param minx  x coordinate of the grid origin.
+         * @param minz  z coordinate of the grid origin.
+         * @param eps   convergence tolerance, as a mean per-node traveltime
+         *              change; scaled internally by the node count.
+         *              @sa @ref g2drnfs_conv
+         * @param maxit maximum number of sweep iterations.
+         * @param w     use the 3rd-order WENO stencil
+         *              (ttcr::input_parameters::weno3).
+         * @param rt    use rotated stencils as well as axis-aligned ones
+         *              (ttcr::input_parameters::rotated_template).
+         * @param ttrp  recompute receiver traveltimes along the raypath.
+         * @param nt    number of threads.
+         *
+         * @post Nodes and neighbour lists are built. Slowness is **not** set.
+         * @note Both cell sizes are honoured here, unlike the 3-D
+         *       ttcr::Grid3Drcfs which is cubic-only.
+         */
         Grid2Drnfs(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T1 eps, const int maxit,
                    const bool w, const bool rt,
@@ -94,31 +161,59 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /// Destructor.
         virtual ~Grid2Drnfs() {
         }
 
+        /// @return Number of sweep iterations the last solve took.
         const int get_niter() const { return niter_final; }
+        /// @return Number of WENO sweep iterations the last solve took.
         const int get_niterw() const { return niterw_final; }
 
     private:
+        /// Convergence threshold, holding the **scaled** value: the constructor
+        /// multiplies the supplied tolerance by the node count.
+        /// @sa @ref g2drnfs_conv
         T1 epsilon;
-        int nitermax;
-        mutable int niter_final;
-        mutable int niterw_final;
-        bool weno3;
-        bool rotated_template;
+        int nitermax;             ///< Iteration cap for the sweeps.
+        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable int niterw_final; ///< WENO iterations used by the last solve.
+        bool weno3;               ///< Use the 3rd-order WENO stencil.
+        bool rotated_template;    ///< Use rotated stencils in addition to axis-aligned ones.
 
+        /// @name Non-copyable
+        /// @{
         Grid2Drnfs() {}
         Grid2Drnfs(const Grid2Drnfs<T1,T2,S>& g) {}
-        Grid2Drnfs<T1,T2,S>& operator=(const Grid2Drnfs<T1,T2,S>& g) {}
+        Grid2Drnfs<T1,T2,S>& operator=(const Grid2Drnfs<T1,T2,S>& g) = delete;
+        /// @}
 
+        /// @brief Create the grid nodes and set their positions.
+        /// @note Primary nodes only; sweeping needs no secondary ones.
         void buildGridNodes();
 
+        /**
+         * @brief Propagate the traveltime field and evaluate it at the receivers.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       receiver positions.
+         * @param threadNo thread to compute on.
+         * @note Freezes a halo around each source via
+         *       ttcr::Grid2Drn::initFSM, then sweeps until the change falls
+         *       below @ref epsilon or @ref nitermax is reached.
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       const size_t threadNo=0) const;
 
+        /**
+         * @brief Propagate once and evaluate at several receiver sets.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       pointers to the receiver sets.
+         * @param threadNo thread to compute on.
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,

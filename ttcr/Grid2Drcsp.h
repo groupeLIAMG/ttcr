@@ -42,6 +42,32 @@
  *
  */
 
+/**
+ * @file Grid2Drcsp.h
+ * @brief Shortest-path solver on a 2-D rectilinear grid with cell-based slowness.
+ *
+ * Declares ttcr::Grid2Drcsp, which solves the eikonal equation by treating the
+ * grid as a graph and running a Dijkstra-style relaxation over it. It derives
+ * from ttcr::Grid2Drc and adds the two things the shortest-path method needs:
+ * **secondary nodes** along the cell edges, and a priority-queue propagation.
+ *
+ * @section g2drcsp_secondary Secondary nodes
+ * With nodes only at the cell corners, a graph method can only propagate along
+ * the few directions those corners allow, and the traveltime error is dominated
+ * by that angular discretisation. The remedy is to add @c nsnx nodes along each
+ * horizontal cell edge and @c nsnz along each vertical one, which multiplies the
+ * number of available ray directions and drives the error down — at a cost in
+ * memory and time that grows quickly with the counts. Accuracy as a function of
+ * these counts is the subject of the reference paper above.
+ *
+ * The secondary nodes are appended after the primary ones in the node vector,
+ * as described in @ref g2drc_numbering, so
+ * @ref ttcr::Grid2Drcsp::getTT still returns a plain
+ * @f$(n_{cx}+1)\times(n_{cz}+1)@f$ field.
+ *
+ * @sa Grid2Drc.h, Node2Dcsp.h, Grid2Drcdsp.h
+ */
+
 #ifndef ttcr_Grid2Drcsp_h
 #define ttcr_Grid2Drcsp_h
 
@@ -50,9 +76,40 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Shortest-path eikonal solver on a rectilinear cell-slowness grid.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices.
+     * @tparam S    point type, @ref sxz or @ref sxyz.
+     * @tparam CELL cell policy from Cell.h; this class stays templated on it, so
+     *              it supports the anisotropic models as well as the isotropic
+     *              one.
+     *
+     * Uses ttcr::Node2Dcsp, whose parent-node and parent-cell arrays let a
+     * raypath be recovered by walking back from a receiver to the source.
+     */
     template<typename T1, typename T2, typename S, typename CELL>
     class Grid2Drcsp : public Grid2Drc<T1,T2,S,Node2Dcsp<T1,T2>,CELL> {
     public:
+        /**
+         * @brief Build the grid and its secondary nodes.
+         *
+         * @param nx  number of cells along x.
+         * @param nz  number of cells along z.
+         * @param ddx cell size along x.
+         * @param ddz cell size along z.
+         * @param minx x coordinate of the grid origin.
+         * @param minz z coordinate of the grid origin.
+         * @param nnx number of secondary nodes per cell edge along x.
+         * @param nnz number of secondary nodes per cell edge along z.
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param nt  number of threads.
+         *
+         * @note Raising @p nnx and @p nnz improves accuracy but costs memory and
+         *       time; see @ref g2drcsp_secondary. They come from
+         *       ttcr::input_parameters::nn.
+         */
         Grid2Drcsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                    const T1 minx, const T1 minz, const T2 nnx, const T2 nnz,
                    const bool ttrp, const size_t nt=1) :
@@ -63,21 +120,62 @@ namespace ttcr {
             this->template buildGridNeighbors<Node2Dcsp<T1,T2>>(this->nodes);
         }
 
+        /// Destructor.
         virtual ~Grid2Drcsp() {
         }
 
+        /**
+         * @name Raytracing
+         *
+         * Seven overloads of the same computation, differing only in how much
+         * they report. All of them propagate the traveltime field from @p Tx
+         * over the whole grid, then evaluate it at the receivers; the extra
+         * output arguments are recovered afterwards by walking the parent
+         * pointers of ttcr::Node2Dcsp back from each receiver.
+         *
+         * Two axes of variation:
+         * - **Receiver grouping** — a plain @c Rx vector, or a vector of
+         *   pointers to receiver vectors, which lets one propagation serve
+         *   several receiver sets (used for reflected arrivals, where each
+         *   reflector is its own set).
+         * - **What is returned** — traveltimes alone; plus @c r_data, the
+         *   raypath geometry; plus @c l_data, the length travelled in each cell,
+         *   which forms one row of the sensitivity matrix.
+         *
+         * @c l_data comes in two flavours: @ref siv holds one value per cell and
+         * @ref siv2 holds two, the second being used by the anisotropic cell
+         * policies that need separate along- and across-axis path lengths.
+         *
+         * @param[in]  Tx          source positions.
+         * @param[in]  t0          origin time of each source, parallel to @p Tx.
+         * @param[in]  Rx          receiver positions.
+         * @param[out] traveltimes traveltime at each receiver.
+         * @param[in]  threadNo    thread to compute on; selects which per-node
+         *                         traveltime slot is written, so concurrent
+         *                         calls must pass distinct values.
+         *
+         * @pre @p Tx and @p t0 have the same length, and every point lies inside
+         *      the grid — @ref checkPts is called and throws otherwise.
+         * @note @c const, but they do mutate the node traveltimes for
+         *       @p threadNo; that is what @c mutable on @ref nodes is for.
+         * @{
+         */
+
+        /// Traveltimes only.
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       const size_t threadNo=0) const;
 
+        /// Traveltimes, for several receiver sets from one propagation.
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,
                       std::vector<std::vector<T1>*>& traveltimes,
                       const size_t threadNo=0) const;
 
+        /// Traveltimes and raypaths.
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -85,13 +183,15 @@ namespace ttcr {
                       std::vector<std::vector<S>>& r_data,
                       const size_t threadNo=0) const;
 
+        /// Traveltimes and raypaths, for several receiver sets.
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,
                       std::vector<std::vector<T1>*>& traveltimes,
                       std::vector<std::vector<std::vector<S>>*>& r_data,
                       const size_t threadNo=0) const;
-        
+
+        /// Traveltimes, raypaths and per-cell path lengths (@ref siv).
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -99,7 +199,8 @@ namespace ttcr {
                       std::vector<std::vector<S>>& r_data,
                       std::vector<std::vector<siv<T1>>>& l_data,
                       const size_t threadNo) const;
-        
+
+        /// Traveltimes, raypaths and two-component per-cell path lengths (@ref siv2).
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -108,16 +209,27 @@ namespace ttcr {
                       std::vector<std::vector<siv2<T1>>>& l_data,
                       const size_t threadNo=0) const;
 
+        /// Traveltimes and two-component per-cell path lengths, without the geometry.
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<siv2<T1>>>& l_data,
                       const size_t threadNo=0) const;
+        /// @}
 
+        /// @return Number of secondary nodes per cell edge along x.
         const T2 getNsnx() const { return nsnx; }
+        /// @return Number of secondary nodes per cell edge along z.
         const T2 getNsnz() const { return nsnz; }
 
+        /**
+         * @brief Collect the traveltimes computed at the primary nodes.
+         * @param[out] tt       resized to the primary-node count and filled.
+         * @param[in]  threadNo thread whose solution to read.
+         * @note Overrides ttcr::Grid2Drc::getTT with an identical implementation;
+         *       the secondary nodes this class adds are skipped either way.
+         */
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             size_t nPrimary = static_cast<size_t>(this->ncx+1) * (this->ncz+1);
             tt.resize(nPrimary);
@@ -129,15 +241,30 @@ namespace ttcr {
         }
 
     private:
-        T2 nsnx;    // number of secondary nodes in x
-        T2 nsnz;    // number of secondary nodes in z
-        T2 nsgx;    // number of subgrid cells in x
-        T2 nsgz;    // number of subgrid cells in z
+        T2 nsnx;    ///< number of secondary nodes in x
+        T2 nsnz;    ///< number of secondary nodes in z
+        T2 nsgx;    ///< number of subgrid cells in x
+        T2 nsgz;    ///< number of subgrid cells in z
 
+        /// @name Non-copyable
+        /// Copy assignment is deleted, so any attempt to assign one grid to
+        /// another is a compile error. The default and copy constructors still
+        /// use the older private-and-defined idiom; they are unreachable from
+        /// outside the class, but unlike the assignment operator they would
+        /// produce an object with uninitialised members if ever called from
+        /// within it.
+        /// @{
         Grid2Drcsp() {}
         Grid2Drcsp(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
-        Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) {}
+        Grid2Drcsp<T1,T2,S,CELL>& operator=(const Grid2Drcsp<T1,T2,S,CELL>& g) = delete;
+        /// @}
 
+        /**
+         * @brief Create the primary and secondary nodes and set their positions.
+         * @post @ref nodes holds the cell corners followed by @ref nsnx and
+         *       @ref nsnz secondary nodes per edge; every node knows which cells
+         *       own it. @sa @ref g2drcsp_secondary
+         */
         void buildGridNodes();
 
         void propagate(std::priority_queue<Node2Dcsp<T1,T2>*,

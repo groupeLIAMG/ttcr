@@ -11,6 +11,22 @@
  *   solver.runSweeps(tt_data, slowness, frozen);
  */
 
+/**
+ * @file Grid3Drn_OpenCL.h
+ * @brief OpenCL device solver backing the GPU fast sweeping grids.
+ *
+ * Declares ttcr::OpenCLSweepSolver, which owns a device context and runs the
+ * sweep kernels, and ttcr::SweepType, which selects the stencil. The grid
+ * classes ttcr::Grid3Drnfs_OpenCL and ttcr::Grid3Drcfs_OpenCL hold one solver
+ * per thread and drive it; nothing else uses this header directly.
+ *
+ * The kernel source is embedded as a string by Grid3Drn_kernels_src.h, which
+ * setup.py generates from @c Grid3Drn_kernels.cl, so an installed wheel needs no
+ * @c .cl file on disk.
+ *
+ * @sa Grid3Drnfs_OpenCL.h, Grid3Drcfs_OpenCL.h, Grid3Drn.h
+ */
+
 #ifndef GRID3DRN_OPENCL_H
 #define GRID3DRN_OPENCL_H
 
@@ -40,15 +56,43 @@ namespace ttcr {
 // Sweep Type Enumeration
 // =============================================================================
 
+/**
+ * @brief Which update stencil the device kernels apply.
+ * @sa @ref g3drn_sweeps
+ */
 enum class SweepType {
-    BASIC,      // First-order sweep
-    WENO3       // Third-order WENO sweep
+    BASIC,      ///< First-order sweep
+    WENO3       ///< Third-order WENO sweep
 };
 
 // =============================================================================
 // OpenCL Sweep Solver Class
 // =============================================================================
 
+/**
+ * @brief Runs the fast sweeping update on an OpenCL device.
+ *
+ * @tparam T1 floating-point type of slowness and traveltimes; must be @c float
+ *            or @c double, enforced by a @c static_assert in @ref initialize
+ *            because the kernel's @c real_t is chosen to match.
+ *
+ * Owns one device context, queue, program and set of buffers, and is held one
+ * per thread by the grid classes (ttcr::Grid3Drnfs_OpenCL,
+ * ttcr::Grid3Drcfs_OpenCL) so that several sources can be solved concurrently.
+ *
+ * @section g3drnocl_planes Why sweeping parallelises at all
+ * A Gauss-Seidel sweep is inherently sequential — each node needs its
+ * already-updated neighbours. The device version exploits the fact that within
+ * one sweep direction, all nodes on a plane @f$i+j+k = \mathrm{const}@f$ depend
+ * only on planes already done, so an entire plane can be updated in parallel.
+ * The solver therefore dispatches one kernel per plane, @c maxlevel planes in
+ * all, rather than one per node.
+ *
+ * @note The kernel source is compiled from the string embedded in
+ *       Grid3Drn_kernels_src.h, so no @c .cl file needs locating at run time.
+ *
+ * @sa Grid3Drnfs_OpenCL.h, Grid3Drcfs_OpenCL.h
+ */
 template<typename T1>
 class OpenCLSweepSolver {
 private:
@@ -115,8 +159,9 @@ private:
     std::vector<cl_event> prof_events;  // pending kernel events for the cycle
 
 public:
-    OpenCLSweepSolver() : 
-        platform(nullptr), device(nullptr), context(nullptr), 
+    /// Construct an uninitialised solver; call @ref initialize before use.
+    OpenCLSweepSolver() :
+        platform(nullptr), device(nullptr), context(nullptr),
         queue(nullptr), program(nullptr),
         kernel_basic(nullptr), kernel_weno3(nullptr),
         d_tt_in(nullptr), d_tt_out(nullptr), d_slowness(nullptr), d_frozen(nullptr),
@@ -128,14 +173,28 @@ public:
     {
     }
     
+    /// Destructor; releases the context, queue, program and device buffers.
     ~OpenCLSweepSolver() {
         cleanup();
     }
-    
+
     // =========================================================================
     // Initialization
     // =========================================================================
-    
+
+    /**
+     * @brief Select a device, build the kernels and allocate device memory.
+     * @param nx node count along x.
+     * @param ny node count along y.
+     * @param nz node count along z.
+     * @param grid_dx node spacing along x.
+     * @param grid_dy node spacing along y.
+     * @param grid_dz node spacing along z.
+     * @throws std::runtime_error if no usable OpenCL device is found or the
+     *         kernels fail to build — which is what the grid classes catch to
+     *         fall back to the CPU.
+     * @note A @c static_assert requires @c T1 to be @c float or @c double.
+     */
     void initialize(size_t nx, size_t ny, size_t nz,
                    T1 grid_dx, T1 grid_dy, T1 grid_dz) {
         // The kernel's real_t is selected to match T1 (see buildKernels); only
@@ -176,6 +235,11 @@ public:
         initialized = true;
     }
     
+    /**
+     * @brief Choose the stencil the next sweeps will use.
+     * @param type ttcr::SweepType::BASIC or ttcr::SweepType::WENO3.
+     * @note Both kernels are built at initialisation, so switching is free.
+     */
     void setSweepType(SweepType type) {
         current_sweep_type = type;
     }
@@ -187,8 +251,8 @@ public:
     /// Enable/disable GPU profiling.  Safe to toggle at any time; the queue is
     /// always created profiling-capable, so this just controls whether events
     /// are attached and timed.
-    void setProfiling(bool on) { profiling = on; }
-    bool isProfiling() const { return profiling; }
+    void setProfiling(bool on) { profiling = on; }  ///< @param on enable or disable profiling.
+    bool isProfiling() const { return profiling; }  ///< @return True if profiling is enabled.
 
     /// Zero the accumulated profiling counters.
     void resetProfile() {
@@ -277,11 +341,20 @@ public:
     }
     
     /**
+     * @brief Run sweep cycles with no host transfer.
+     *
+     * The variant used inside the convergence loop: the traveltimes stay
+     * resident on the device across iterations, so only the final result crosses
+     * the bus. Upload with @ref uploadTravelTimes (or an initial
+     * @ref runSweeps) and retrieve with @ref downloadTravelTimes.
+     *
+     * @param num_sweeps Number of complete sweep cycles
+     * @pre The solver is initialised and the device buffers hold current data.
+     * @throws std::runtime_error if not initialised.
+     *
      * Run sweeps without uploading/downloading data (for iterative convergence loops)
      * Data must already be uploaded with uploadTravelTimes() or runSweeps()
      * Results must be downloaded with downloadTravelTimes()
-     * 
-     * @param num_sweeps Number of complete sweep cycles
      */
     void runSweepsNoTransfer(size_t num_sweeps = 1) {
         if (!initialized) {
@@ -327,6 +400,12 @@ public:
     }
     
     /**
+     * @brief Copy the traveltimes back from the device.
+     * @param[out] tt receives one value per node; must already be sized to the
+     *                node count.
+     * @throws std::runtime_error if the solver is not initialised or @p tt has
+     *         the wrong size.
+     *
      * Download travel time results from GPU (for iterative convergence loops)
      */
     void downloadTravelTimes(std::vector<T1>& tt) {
@@ -341,6 +420,10 @@ public:
     }
     
     /**
+     * @brief Describe the OpenCL device in use.
+     * @return Name, vendor, memory sizes and maximum work-group size, or
+     *         @c "No device initialized".
+     *
      * Get device information string
      */
     std::string getDeviceInfo() const {

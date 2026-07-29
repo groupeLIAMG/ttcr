@@ -24,6 +24,20 @@
  *
  */
 
+/**
+ * @file Grid3Drnfs_OpenCL.h
+ * @brief GPU-accelerated fast sweeping on a 3-D rectilinear grid with node-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid3Drnfs_OpenCL, the OpenCL counterpart of
+ * ttcr::Grid3Drnfs. Slowness is taken at the nodes directly, with none of the
+ * cell-to-node averaging ttcr::Grid3Drcfs_OpenCL performs.
+ *
+ * @warning Cubic cells only, unvalidated — as for every 3-D fast sweeping class.
+ *
+ * @sa Grid3Drnfs.h, Grid3Drn_OpenCL.h, Grid3Drcfs_OpenCL.h
+ */
+
 #ifndef ttcr_Grid3Drnfs_OpenCL_h
 #define ttcr_Grid3Drnfs_OpenCL_h
 
@@ -50,8 +64,30 @@
 namespace ttcr {
 
     /**
+     * @brief GPU-accelerated fast sweeping solver with node-based slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * The OpenCL counterpart of ttcr::Grid3Drnfs, sharing its structure exactly
+     * and moving only the sweep to the device. Slowness is taken at the nodes
+     * through the inherited ttcr::Grid3Drn::setSlowness — no cell-to-node
+     * averaging, unlike ttcr::Grid3Drcfs_OpenCL.
+     *
+     * @warning Inherits the **cubic-cell-only** restriction of the 3-D fast
+     *          sweeping classes: the constructor takes one cell size for all
+     *          three axes and nothing validates that the model's three spacings
+     *          agree.
+     * @note GPU use is requested, not guaranteed — @ref isUsingGPU reports what
+     *       is actually in use, and the class falls back to the CPU otherwise,
+     *       so results are unaffected and only performance changes. One solver
+     *       is held per thread; ttcr::input_parameters::gpu_max_threads caps how
+     *       many run concurrently.
+     *
+     * @sa Grid3Drnfs.h, Grid3Drn_OpenCL.h, Grid3Drcfs_OpenCL.h
+     *
      * GPU-accelerated Grid3Drnfs using OpenCL
-     * 
+     *
      * This class maintains the same interface as Grid3Drnfs but uses
      * GPU-accelerated sweep operations via OpenCL kernels.
      * 
@@ -74,8 +110,8 @@ namespace ttcr {
     class Grid3Drnfs_OpenCL : public Grid3Drn<T1,T2,Node3Dn<T1,T2>> {
     public:
         /**
-         * Constructor
-         * 
+         * @brief Build the grid, its nodes, and the GPU solvers if requested.
+         *
          * @param nx        Number of cells in x
          * @param ny        Number of cells in y
          * @param nz        Number of cells in z
@@ -86,11 +122,18 @@ namespace ttcr {
          * @param eps       Convergence epsilon (stop when change < eps)
          * @param maxit     Maximum iterations
          * @param w         Use WENO3 (true) or basic sweep (false)
-         * @param ttrp      Travel time reciprocal paths
-         * @param intVel    Interpolate velocity
+         * @param ttrp      Recompute receiver traveltimes by integrating
+         *                  slowness along the traced raypath
+         *                  (ttcr::input_parameters::tt_from_rp)
+         * @param intVel    Interpolate velocity. @sa @ref g3drn_procvel
          * @param nt        Number of threads
          * @param _translateOrigin  Translate origin to (0,0,0)
          * @param enableGPU Enable GPU acceleration (true by default)
+         *
+         * @post Nodes and neighbour lists are built and, if @p enableGPU, the
+         *       GPU solvers are initialised — falling back to the CPU if that
+         *       fails. @p eps is scaled by the node count, so the value supplied
+         *       is a mean per-node tolerance. Slowness is **not** set.
          */
         Grid3Drnfs_OpenCL(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                           const T1 minx, const T1 miny, const T1 minz,
@@ -118,53 +161,90 @@ namespace ttcr {
             }
         }
 
+        /// Destructor; the OpenCLSweepSolver destructors release the device state.
         virtual ~Grid3Drnfs_OpenCL() {
             // OpenCLSweepSolver destructor handles cleanup
         }
 
         // Accessors (same as Grid3Drnfs)
+        /// @return Number of basic sweep iterations the last solve took.
         const int get_niter() const { return niter_final; }
+        /// @return Number of WENO3 sweep iterations the last solve took.
         const int get_niterw() const { return niterw_final; }
-        
+
         // GPU-specific methods
+        /**
+         * @brief Whether the solve will actually run on the GPU.
+         * @return True only if GPU use was requested **and** a device was
+         *         successfully initialised.
+         */
         bool isUsingGPU() const { return use_gpu && gpu_available; }
-        void setUseGPU(bool enable) { 
+        /**
+         * @brief Turn GPU acceleration on or off after construction.
+         * @param enable true to use the GPU, false to force the CPU path.
+         * @note Enabling initialises the device on first use; it may still leave
+         *       @ref isUsingGPU false if that fails.
+         */
+        void setUseGPU(bool enable) {
             use_gpu = enable;
             if (use_gpu && !gpu_initialized) {
                 initializeGPU();
             }
         }
-        
+
+        /**
+         * @brief Human-readable description of the OpenCL device in use.
+         * @return Device information, or @c "GPU not available" if the solve
+         *         will run on the CPU.
+         */
         std::string getGPUInfo() const {
             if (gpu_available && !gpu_solvers.empty()) {
                 return gpu_solvers[0]->getDeviceInfo();
             }
             return "GPU not available";
         }
-        
+
 #ifdef VTK
+        /**
+         * @brief Write an arbitrary nodal field as a VTK rectilinear grid.
+         * @param fname output filename.
+         * @param d     one value per node.
+         * @param dname name given to the data array in the file.
+         * @note Available only when built with @c VTK defined. More general
+         *       than ttcr::Grid3Drn::saveModelVTR, which writes the slowness
+         *       model specifically.
+         */
         void saveModelVTR(const std::string &fname, const std::vector<T1> &d, const std::string &dname) const;
 #endif
 
     protected:
-        T1 epsilon;              // Convergence criterion: L1-sum threshold (input per-node tol scaled by nNodes in ctor)
-        int nitermax;            // Maximum iterations
-        mutable int niter_final; // Final iteration count (basic sweep)
-        mutable int niterw_final;// Final iteration count (WENO3 sweep)
-        bool weno3;              // Use WENO3 sweep
+        T1 epsilon;              ///< Convergence criterion: L1-sum threshold (input per-node tol scaled by nNodes in ctor)
+        int nitermax;            ///< Maximum iterations
+        mutable int niter_final; ///< Final iteration count (basic sweep); @c mutable so the @c const raytrace can record it
+        mutable int niterw_final;///< Final iteration count (WENO3 sweep)
+        bool weno3;              ///< Use WENO3 sweep
         
         // GPU-specific members
-        mutable bool use_gpu;
-        mutable bool gpu_initialized;
-        mutable bool gpu_available;
+        mutable bool use_gpu;         ///< GPU acceleration is requested.
+        mutable bool gpu_initialized; ///< Initialisation has been attempted.
+        mutable bool gpu_available;   ///< A device was successfully initialised.
+        /// One independent solver per thread slot, each with its own context,
+        /// queue, kernels and buffers. Indexed by thread number.
         // one independent solver per thread slot (own context/queue/
         // kernels/buffers).  Indexed by threadNo, sized to getNthreads().
         mutable std::vector<std::unique_ptr<OpenCLSweepSolver<T1>>> gpu_solvers;
 
     private:
+        /// @name Non-copyable
+        /// Private, the pre-C++11 idiom. @c operator= returns @c *this without
+        /// copying, so it is not undefined behaviour, but it would silently do
+        /// nothing if reached. ttcr::Grid2Drnfs_OpenCL uses `= delete` for the
+        /// same three.
+        /// @{
         Grid3Drnfs_OpenCL() {}
         Grid3Drnfs_OpenCL(const Grid3Drnfs_OpenCL<T1,T2>& g) {}
         Grid3Drnfs_OpenCL<T1,T2>& operator=(const Grid3Drnfs_OpenCL<T1,T2>& g) { return *this; }
+        /// @}
 
         /**
          * Initialize GPU solver

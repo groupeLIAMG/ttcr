@@ -22,18 +22,85 @@
  *
  */
 
+/**
+ * @file Grid2Drcdsp.h
+ * @brief Dynamic shortest-path solver on a 2-D rectilinear grid with cell-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid2Drcdsp, a variant of the shortest-path method that
+ * concentrates its refinement where it pays off — near the source — instead of
+ * spreading secondary nodes uniformly across the grid as ttcr::Grid2Drcsp does.
+ * See @ref g2drcdsp_dyn.
+ *
+ * @sa Grid2Drc.h, Grid2Drcsp.h, Node2Dcd.h
+ */
+
 #ifndef ttcr_Grid2Drcdsp_h
 #define ttcr_Grid2Drcdsp_h
 
+#include "Cell.h"
 #include "Grid2Drc.h"
 #include "Node2Dc.h"
 #include "Node2Dcd.h"
 
 namespace ttcr {
 
+    /**
+     * @brief Dynamic shortest-path solver on a rectilinear cell-slowness grid.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * @section g2drcdsp_dyn Why "dynamic"
+     * The plain shortest-path method (ttcr::Grid2Drcsp) pays for accuracy with
+     * secondary nodes spread uniformly over the whole grid, even though the
+     * traveltime error is concentrated near the source, where the wavefront
+     * curvature is highest. This class instead keeps a modest number of
+     * permanent secondary nodes everywhere and inserts extra **tertiary** nodes
+     * only within @ref dynRadius of each source, for the duration of that
+     * source's solve.
+     *
+     * Because the tertiary nodes depend on where the source is, they cannot
+     * live in the shared node vector — a second thread solving a different
+     * source would need different ones. They are held in @ref tempNodes, which
+     * is indexed by thread number, so each worker keeps its own set. This is
+     * why the class has a per-thread node container at all.
+     *
+     * @note Not templated on a @c CELL policy: the base is instantiated with a
+     *       fixed isotropic ttcr::Cell, so unlike ttcr::Grid2Drcsp this solver
+     *       does not support anisotropy.
+     *
+     * @sa Grid2Drc.h, Grid2Drcsp.h, Node2Dcd.h
+     */
     template<typename T1, typename T2, typename S>
     class Grid2Drcdsp : public Grid2Drc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1, Node2Dc<T1, T2>, sxz<T1>>> {
     public:
+        /**
+         * @brief Build the grid and its permanent nodes.
+         *
+         * @param nx   number of cells along x.
+         * @param nz   number of cells along z.
+         * @param ddx  cell size along x.
+         * @param ddz  cell size along z.
+         * @param minx x coordinate of the grid origin.
+         * @param minz z coordinate of the grid origin.
+         * @param ns   number of permanent secondary nodes per cell edge.
+         * @param nd   number of tertiary nodes added per edge near a source
+         *             (ttcr::input_parameters::nTertiary).
+         * @param drad radius around a source within which tertiary nodes are
+         *             inserted (ttcr::input_parameters::radius_tertiary_nodes).
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param useEdgeLength if true, @p drad is a **multiple of the mean cell
+         *             edge** @f$(ddx+ddz)/2@f$ rather than an absolute distance;
+         *             the constructor rescales it accordingly.
+         * @param nt   number of threads; sizes the per-thread temporary node
+         *             containers.
+         *
+         * @post @ref nPermanent records the node count before any tertiary nodes
+         *       are added, which is how the solver later tells permanent nodes
+         *       from temporary ones.
+         */
         Grid2Drcdsp(const T2 nx, const T2 nz, const T1 ddx, const T1 ddz,
                     const T1 minx, const T1 minz, const T2 ns, const T2 nd,
                     const T1 drad, const bool ttrp, const bool useEdgeLength=true,
@@ -56,25 +123,50 @@ namespace ttcr {
             }
         }
 
+        /// Destructor.
         ~Grid2Drcdsp() {
         }
 
     private:
-        T2 nSecondary;                 // number of permanent secondary nodes
-        T2 nTertiary;                  // number of tertiary nodes
-        T2 nPermanent;                 // total nb of primary & permanent secondary
-        T1 dynRadius;
+        T2 nSecondary;                 ///< number of permanent secondary nodes per edge
+        T2 nTertiary;                  ///< number of tertiary nodes added per edge near a source
+        T2 nPermanent;                 ///< total nb of primary & permanent secondary; nodes beyond this index are temporary
+        T1 dynRadius;                  ///< radius around a source within which tertiary nodes are inserted, already scaled by the mean edge length if requested
 
+        /// Temporary (tertiary) nodes, one set per thread. Kept apart from the
+        /// shared node vector because their positions depend on the source, so
+        /// two threads solving different sources need different sets.
+        /// @sa @ref g2drcdsp_dyn
         // we will store temporary nodes in a separate container.  This is to
         // allow threaded computations with different Tx (location of temp
         // nodes vary from one Tx to the other)
         mutable std::vector<std::vector<Node2Dcd<T1,T2>>> tempNodes;
+        /// Per-thread, per-cell lists of the temporary nodes falling in each cell.
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
 
+        /// @brief Create the primary and permanent secondary nodes.
         void buildGridNodes();
 
-        void addTemporaryNodes(const std::vector<S>&, const size_t) const;
+        /**
+         * @brief Insert tertiary nodes around the sources, for one thread.
+         * @param Tx       source positions.
+         * @param threadNo thread whose @ref tempNodes set to fill.
+         * @post That thread's temporary containers are cleared and repopulated,
+         *       so the call is safe to repeat for a new source.
+         */
+        void addTemporaryNodes(const std::vector<S>& Tx, const size_t threadNo) const;
 
+        /**
+         * @brief Seed the priority queue with the source nodes.
+         * @param[in]  Tx       source positions.
+         * @param[in]  t0       origin time of each source.
+         * @param[out] queue    min-queue ordered by traveltime.
+         * @param[out] txNodes  nodes created at the source positions themselves,
+         *                      when a source does not coincide with a grid node.
+         * @param[out] inQueue  per-node flag, whether it is already queued.
+         * @param[out] frozen   per-node flag, whether its traveltime is final.
+         * @param[in]  threadNo thread to work on.
+         */
         void initQueue(const std::vector<S>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node2Dc<T1,T2>*,
@@ -85,6 +177,15 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
+        /**
+         * @brief Relax the graph until the queue empties.
+         * @param[in,out] queue    min-queue of nodes to expand.
+         * @param[in,out] inQueue  per-node queued flag.
+         * @param[in,out] frozen   per-node finalised flag.
+         * @param[in]     threadNo thread to work on.
+         * @note Standard Dijkstra expansion: pop the least-traveltime node,
+         *       freeze it, and relax its neighbours.
+         */
         void propagate(std::priority_queue<Node2Dc<T1,T2>*,
                        std::vector<Node2Dc<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
@@ -92,11 +193,27 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
+        /**
+         * @brief Propagate the traveltime field and evaluate it at the receivers.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       receiver positions.
+         * @param threadNo thread to compute on.
+         * @note Adds this thread's tertiary nodes first, then runs
+         *       @ref initQueue and @ref propagate.
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       const size_t threadNo=0) const;
 
+        /**
+         * @brief Propagate once and evaluate at several receiver sets.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       pointers to the receiver sets.
+         * @param threadNo thread to compute on.
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,

@@ -27,6 +27,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file Grid2Drnfs_OpenCL.h
+ * @brief GPU-accelerated fast sweeping on a 2-D rectilinear grid with node-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid2Drnfs_OpenCL, the OpenCL counterpart of
+ * ttcr::Grid2Drnfs. Slowness is taken at the nodes directly, with none of the
+ * cell-to-node averaging that ttcr::Grid2Drcfs_OpenCL performs.
+ *
+ * @sa Grid2Drnfs.h, Grid2Drn_OpenCL.h, Grid2Drcfs_OpenCL.h
+ */
+
 #ifndef ttcr_Grid2Drnfs_OpenCL_h
 #define ttcr_Grid2Drnfs_OpenCL_h
 
@@ -42,10 +54,33 @@
 
 namespace ttcr {
 
+/**
+ * @brief GPU-accelerated fast sweeping solver with node-based slowness.
+ *
+ * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+ * @tparam T2 integer type of node and cell indices.
+ * @tparam S  point type, @ref sxz or @ref sxyz.
+ *
+ * The OpenCL counterpart of ttcr::Grid2Drnfs: same node construction, same
+ * convergence test, with the sweep running on a device. Slowness is taken at
+ * the nodes through the inherited ttcr::Grid2Drn::setSlowness — no cell-to-node
+ * averaging, unlike ttcr::Grid2Drcfs_OpenCL.
+ *
+ * @note GPU use is requested, not guaranteed — @ref isUsingGPU reports what is
+ *       actually in use, and the class falls back to the CPU otherwise, so
+ *       results are unaffected and only performance changes. One solver is held
+ *       per thread; ttcr::input_parameters::gpu_max_threads caps how many run
+ *       concurrently.
+ * @note No @c rotated_template option, unlike ttcr::Grid2Drnfs.
+ *
+ * @sa Grid2Drnfs.h, Grid2Drn_OpenCL.h, Grid2Drcfs_OpenCL.h
+ */
 template<typename T1, typename T2, typename S>
 class Grid2Drnfs_OpenCL : public Grid2Drn<T1,T2,S,Node2Dn<T1,T2>> {
 public:
     /**
+     * @brief Build the grid, its nodes, and the GPU solvers if requested.
+     *
      * @param nx         Number of cells in x
      * @param nz         Number of cells in z
      * @param ddx        Cell size in x
@@ -58,6 +93,11 @@ public:
      * @param ttrp       Compute traveltimes from raypaths
      * @param nt         Number of threads
      * @param enableGPU  Enable GPU acceleration (true by default)
+     *
+     * @post Nodes and neighbour lists are built and, if @p enableGPU, the GPU
+     *       solvers are initialised — falling back to the CPU if that fails.
+     *       @p eps is scaled by the node count, so the value supplied is a mean
+     *       per-node tolerance. Slowness is **not** set.
      */
     Grid2Drnfs_OpenCL(const T2 nx, const T2 nz,
                       const T1 ddx, const T1 ddz,
@@ -79,12 +119,25 @@ public:
         if (use_gpu) initializeGPU();
     }
 
+    /// Destructor; the OpenCLSweepSolver2D destructors release the device state.
     virtual ~Grid2Drnfs_OpenCL() {}
 
+    /// @return Number of sweep iterations the last solve took.
     const int  get_niter()  const { return niter_final;  }
+    /// @return Number of WENO refinement iterations the last solve took.
     const int  get_niterw() const { return niterw_final; }
+    /**
+     * @brief Whether the solve will actually run on the GPU.
+     * @return True only if GPU use was requested **and** a device was
+     *         successfully initialised.
+     */
     bool isUsingGPU()       const { return use_gpu && gpu_available; }
 
+    /**
+     * @brief Human-readable description of the OpenCL device in use.
+     * @return Device information, or @c "GPU not available" if the solve will
+     *         run on the CPU.
+     */
     std::string getGPUInfo() const {
         if (gpu_available && !gpu_solvers.empty())
             return gpu_solvers[0]->getDeviceInfo();
@@ -92,12 +145,15 @@ public:
     }
 
 private:
-    T1  epsilon;
-    int nitermax;
-    mutable int niter_final, niterw_final;
-    bool weno3;
+    T1  epsilon;                   ///< Convergence threshold, already scaled by the node count.
+    int nitermax;                  ///< Iteration cap for the sweeps.
+    mutable int niter_final, niterw_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record them.
+    bool weno3;                    ///< Run the WENO3 refinement pass.
 
-    mutable bool use_gpu, gpu_initialized, gpu_available;
+    mutable bool use_gpu;          ///< GPU acceleration was requested.
+    mutable bool gpu_initialized;  ///< Initialisation has been attempted.
+    mutable bool gpu_available;    ///< A device was successfully initialised.
+    /// One solver per thread, so concurrent sources can each drive the device.
     mutable std::vector<std::unique_ptr<OpenCLSweepSolver2D<T1>>> gpu_solvers;
 
     Grid2Drnfs_OpenCL() = delete;

@@ -26,6 +26,22 @@
 #ifndef ttcr_Grid2Drcfs_OpenCL_h
 #define ttcr_Grid2Drcfs_OpenCL_h
 
+/**
+ * @file Grid2Drcfs_OpenCL.h
+ * @brief GPU-accelerated fast sweeping on a 2-D rectilinear grid, from a cell
+ *        slowness model.
+ *
+ * Declares ttcr::Grid2Drcfs_OpenCL, the OpenCL counterpart of
+ * ttcr::Grid2Drcfs. The class structure is identical — including deriving from
+ * ttcr::Grid2Drn rather than ttcr::Grid2Drc, and averaging the supplied cell
+ * slowness onto the nodes — and only the sweep itself moves to the device.
+ *
+ * Selected by ttcr::input_parameters::method @c == @c FAST_SWEEPING_OPENCL.
+ * GPU use is a request, not a guarantee; see @ref g2drcfsocl_fallback.
+ *
+ * @sa Grid2Drcfs.h, Grid2Drn_OpenCL.h, Grid2Drc.h
+ */
+
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -39,10 +55,41 @@
 
 namespace ttcr {
 
+/**
+ * @brief GPU-accelerated fast sweeping solver taking a cell slowness model.
+ *
+ * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+ * @tparam T2 integer type of node and cell indices.
+ * @tparam S  point type, @ref sxz or @ref sxyz.
+ *
+ * The OpenCL counterpart of ttcr::Grid2Drcfs. It shares that class's structure
+ * exactly — same base (ttcr::Grid2Drn, not ttcr::Grid2Drc; see
+ * @ref g2drcfs_hybrid), same cell-to-node slowness averaging in
+ * @ref setSlowness, same node construction — and differs only in running the
+ * sweep on a GPU device.
+ *
+ * @section g2drcfsocl_fallback GPU availability
+ * GPU use is requested at construction and may not be granted: the device may
+ * be missing, or initialisation may fail. @ref isUsingGPU reports what is
+ * actually in use and @ref getGPUInfo names the device. When the GPU is
+ * unavailable the class falls back to the CPU path, so results are unaffected
+ * and only performance changes.
+ *
+ * One solver object is held per thread, so several sources can be pushed to the
+ * device concurrently; ttcr::input_parameters::gpu_max_threads caps how many.
+ *
+ * @note Unlike ttcr::Grid2Drcfs, this class has no @c rotated_template option,
+ *       and it properly @c = @c delete s its default and copy operations rather
+ *       than using the private-and-undefined idiom.
+ *
+ * @sa Grid2Drcfs.h, Grid2Drn_OpenCL.h
+ */
 template<typename T1, typename T2, typename S>
 class Grid2Drcfs_OpenCL : public Grid2Drn<T1,T2,S,Node2Dn<T1,T2>> {
 public:
     /**
+     * @brief Build the grid, its nodes, and the GPU solvers if requested.
+     *
      * @param nx         Number of cells in x
      * @param nz         Number of cells in z
      * @param ddx        Cell size in x
@@ -55,6 +102,11 @@ public:
      * @param ttrp       Compute traveltimes from raypaths
      * @param nt         Number of threads
      * @param enableGPU  Enable GPU acceleration (true by default)
+     *
+     * @post Nodes and neighbour lists are built and, if @p enableGPU, the GPU
+     *       solvers are initialised — silently falling back to the CPU if that
+     *       fails. @p eps is scaled by the node count, so the value supplied is
+     *       a mean per-node tolerance. Slowness is **not** set.
      */
     Grid2Drcfs_OpenCL(const T2 nx, const T2 nz,
                       const T1 ddx, const T1 ddz,
@@ -81,6 +133,14 @@ public:
     // -------------------------------------------------------------------------
     // Cell-slowness interface (same interpolation as Grid2Drcfs::setSlowness)
     // -------------------------------------------------------------------------
+    /**
+     * @brief Set the cell slowness model and average it onto the nodes.
+     * @param s one slowness per cell, @f$n_{cx}n_{cz}@f$ values.
+     * @throws std::length_error if @p s has the wrong size.
+     * @note Uses the same averaging scheme as ttcr::Grid2Drcfs::setSlowness —
+     *       corner nodes take one cell, edge nodes the mean of two, interior
+     *       nodes the mean of four. @sa @ref g2drcfs_hybrid
+     */
     void setSlowness(const std::vector<T1>& s) {
         if (static_cast<size_t>(this->ncx) * this->ncz != s.size())
             throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -116,13 +176,31 @@ public:
                     0.25*(s[i*nz+j]+s[i*nz+j-1]+s[(i-1)*nz+j]+s[(i-1)*nz+j-1]));
     }
 
+    /**
+     * @brief Retrieve the cell slowness model.
+     * @param[out] s the values passed to @ref setSlowness.
+     * @note Returns the original cell values, not the averaged nodal ones.
+     */
     void getSlowness(std::vector<T1>& s) const { s = cell_slowness; }
 
+    /// @return Number of sweep iterations the last solve took.
     const int  get_niter()  const { return niter_final;  }
+    /// @return Number of WENO refinement iterations the last solve took.
     const int  get_niterw() const { return niterw_final; }
+    /// @return True once @ref setSlowness has been called.
     const bool hasCellSlowness() const { return hasCellSlown; }
+    /**
+     * @brief Whether the solve will actually run on the GPU.
+     * @return True only if GPU use was requested **and** a device was
+     *         successfully initialised. @sa @ref g2drcfsocl_fallback
+     */
     bool isUsingGPU() const { return use_gpu && gpu_available; }
 
+    /**
+     * @brief Human-readable description of the OpenCL device in use.
+     * @return Device information, or @c "GPU not available" if the solve will
+     *         run on the CPU.
+     */
     std::string getGPUInfo() const {
         if (gpu_available && !gpu_solvers.empty())
             return gpu_solvers[0]->getDeviceInfo();
@@ -130,14 +208,17 @@ public:
     }
 
 private:
-    T1  epsilon;
-    int nitermax;
-    mutable int niter_final, niterw_final;
-    bool weno3;
-    bool hasCellSlown;
-    std::vector<T1> cell_slowness;
+    T1  epsilon;                   ///< Convergence threshold, already scaled by the node count.
+    int nitermax;                  ///< Iteration cap for the sweeps.
+    mutable int niter_final, niterw_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record them.
+    bool weno3;                    ///< Run the WENO3 refinement pass.
+    bool hasCellSlown;             ///< Whether @ref cell_slowness has been populated.
+    std::vector<T1> cell_slowness; ///< Copy of the cell slowness model as supplied.
 
-    mutable bool use_gpu, gpu_initialized, gpu_available;
+    mutable bool use_gpu;          ///< GPU acceleration was requested.
+    mutable bool gpu_initialized;  ///< Initialisation has been attempted.
+    mutable bool gpu_available;    ///< A device was successfully initialised. @sa @ref g2drcfsocl_fallback
+    /// One solver per thread, so concurrent sources can each drive the device.
     mutable std::vector<std::unique_ptr<OpenCLSweepSolver2D<T1>>> gpu_solvers;
 
     Grid2Drcfs_OpenCL() = delete;
