@@ -23,6 +23,60 @@
  *
  */
 
+/**
+ * @file Grid3Duc.h
+ * @brief Base class for 3-D unstructured tetrahedral meshes with cell-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid3Duc, the mid-level base shared by every 3-D unstructured
+ * solver whose slowness is constant within each tetrahedron: Grid3Ducsp
+ * (shortest path), Grid3Ducfs (fast sweeping), Grid3Ducfm (fast marching) and
+ * Grid3Ducdsp (dynamic shortest path).
+ *
+ * It is the 3-D counterpart of ttcr::Grid2Duc and the unstructured counterpart
+ * of ttcr::Grid3Drc, but it differs from both in ways worth knowing before
+ * porting code between them.
+ *
+ * @section g3duc_vs_2d Differences from the 2-D unstructured base
+ * - **No @c CELL policy.** ttcr::Grid2Duc is templated on one and so supports
+ *   the anisotropic models of Cell.h; this class stores slowness in a plain
+ *   @c std::vector<T1>, one entry per tetrahedron, and is **isotropic only**.
+ * - **No obtuse-angle correction.** ttcr::Grid2Duc::processObtuse builds
+ *   unfolded virtual nodes to keep the local update causal on obtuse triangles;
+ *   there is no equivalent here. The 3-D local update instead falls back on
+ *   two-dimensional updates over the tetrahedron's faces when the
+ *   three-dimensional one is inadmissible — see @ref g3duc_update.
+ * - **Origin translation** is supported, as in the other 3-D grids: methods
+ *   taking a point also take a flag saying whether it has already been shifted.
+ *
+ * @section g3duc_update The local update, and an unused alternative
+ * Two complete local eikonal solvers are present, each named after its source
+ * in the code:
+ *
+ * - ttcr::Grid3Duc::localUpdate3D — "méthode of Lelievre et al. 2011", the one
+ *   actually used. It attempts a full 3-D update within the tetrahedron and
+ *   falls back to ttcr::Grid3Duc::localUpdate2D over each of the three faces
+ *   when that update is inadmissible. Called by the fast sweeping and fast
+ *   marching solvers of both the @c uc and @c un families.
+ * - ttcr::Grid3Duc::local3Dsolver — "méthode de Qian et al. 2007", together
+ *   with its helpers ttcr::Grid3Duc::local2Dsolver and
+ *   ttcr::Grid3Duc::solveEq23.
+ *
+ * @warning The Qian solver is **unused**: nothing calls @c local3Dsolver, and
+ *          @c local2Dsolver and @c solveEq23 are reachable only from it. The
+ *          same three functions are duplicated, equally unused, in Grid3Dun.h.
+ *
+ * @section g3duc_txinfo Source classification cache
+ * Locating a source in a tetrahedral mesh is more involved than in 2-D: it may
+ * coincide with a node, lie on an edge, lie on a face, or sit inside a
+ * tetrahedron, and each case leads to a different set of starting cells. That
+ * classification is computed once per source and cached per thread in
+ * ttcr::Grid3Duc::txInfoCache, rather than repeated for every
+ * (source, receiver) pair.
+ *
+ * @sa Grid3D.h, Grid2Duc.h, Grid3Dun.h, Grid3Drc.h, Grid3Ducsp.h
+ */
+
 #ifndef ttcr_Grid3Duc_h
 #define ttcr_Grid3Duc_h
 
@@ -71,9 +125,43 @@
 
 namespace ttcr {
 
+    /**
+     * @brief 3-D tetrahedral mesh holding one slowness value per tetrahedron.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices, normally @c uint32_t.
+     * @tparam NODE node type, e.g. ttcr::Node3Dc or ttcr::Node3Dcsp.
+     *
+     * @note No @c CELL template parameter, so isotropic only —
+     *       @sa @ref g3duc_vs_2d
+     * @note Abstract in practice: it implements everything except @c raytrace.
+     */
     template<typename T1, typename T2, typename NODE>
     class Grid3Duc : public Grid3D<T1,T2> {
     public:
+        /**
+         * @brief Build the mesh from a node list and a tetrahedron list.
+         *
+         * @param no   node coordinates; these become the primary nodes, in the
+         *             order given.
+         * @param tet  tetrahedra, each naming four node indices into @p no.
+         * @param rp   raypath method, values of ttcr::gradient_method
+         *             (ttcr::input_parameters::raypath_method).
+         * @param ttrp recompute receiver traveltimes by integrating slowness
+         *             along the traced raypath.
+         * @param md   minimum step retained when integrating a raypath
+         *             (ttcr::input_parameters::min_distance_rp).
+         * @param nt   number of threads; sizes each node's traveltime array and
+         *             the per-thread source cache.
+         * @param _translateOrigin shift the mesh so its origin is at (0,0,0).
+         *
+         * @post Nodes, the slowness vector and the tetrahedron list are
+         *       allocated. Node ownership lists are **not** yet built — the
+         *       derived class calls @ref buildGridNodes. Slowness is not set.
+         * @note The mesh is supplied wholesale, so unlike the rectilinear grids
+         *       there are no cell-size or origin parameters to derive geometry
+         *       from.
+         */
         Grid3Duc(const std::vector<sxyz<T1>>& no,
                  const std::vector<tetrahedronElem<T2>>& tet,
                  const int rp, const bool ttrp, const T1 md,
@@ -89,14 +177,29 @@ namespace ttcr {
         txInfoCache(nt)
         {}
 
+        /// Destructor.
         virtual ~Grid3Duc() {}
 
+        /**
+         * @brief Give every tetrahedron the same slowness.
+         * @param s the uniform value.
+         * @note Convenient for a homogeneous model; no 2-D equivalent exists.
+         */
         void setSlowness(const T1 s) {
             for ( size_t n=0; n<slowness.size(); ++n ) {
                 slowness[n] = s;
             }
         }
 
+        /**
+         * @brief Set the slowness of every tetrahedron, from a raw array.
+         * @param s  one slowness per tetrahedron.
+         * @param ns length of @p s.
+         * @throws std::length_error if @p ns does not match the tetrahedron
+         *         count.
+         * @note The overload the Cython bindings use, to avoid copying a NumPy
+         *       array into a @c std::vector first.
+         */
         void setSlowness(const T1 *s, const size_t ns) {
             if ( slowness.size() != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -106,6 +209,12 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Set the slowness of every tetrahedron.
+         * @param s one slowness per tetrahedron, in the order they were supplied
+         *          to the constructor.
+         * @throws std::length_error if @p s has the wrong size.
+         */
         void setSlowness(const std::vector<T1>& s) {
             if ( slowness.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -115,6 +224,10 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Copy the tetrahedron slowness values out of the mesh.
+         * @param[out] s resized to the tetrahedron count and filled.
+         */
         void getSlowness(std::vector<T1>& s) const {
             if (s.size() != slowness.size()) {
                 s.resize(slowness.size());
@@ -124,14 +237,40 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Treat sources as spheres of the given radius rather than points.
+         * @param r radius; 0 (the default) means a point source.
+         * @note Backs ttcr::input_parameters::source_radius. A finite radius
+         *       spreads the source over the nodes within it, which avoids the
+         *       singularity of a true point source on a coarse mesh.
+         */
         void setSourceRadius(const double r) { source_radius = r; }
 
+        /**
+         * @brief Write a traveltime directly into one node.
+         * @param tt traveltime to store.
+         * @param nn node index.
+         * @param nt thread whose slot to write.
+         * @warning Unchecked and non-@c const: it bypasses the solver. Intended
+         *          for seeding a value, not for use after a solve.
+         */
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
             nodes[nn].setTT(tt, nt);
         }
 
+        /**
+         * @brief Total number of nodes, primary and secondary.
+         * @return @ref nodes size.
+         * @note Takes no "primary only" flag, unlike
+         *       ttcr::Grid2Duc::getNumberOfNodes; use @ref nPrimary for that.
+         */
         size_t getNumberOfNodes() const { return nodes.size(); }
 
+        /**
+         * @brief Collect the traveltimes computed at the primary nodes.
+         * @param[out] tt       resized to @ref nPrimary and filled.
+         * @param[in]  threadNo thread whose solution to read.
+         */
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             tt.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {
@@ -139,6 +278,14 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @name Mesh bounding box
+         *
+         * Computed by scanning every node on each call — an unstructured mesh
+         * has no stored extent, unlike the rectilinear grids where these are
+         * plain members. Cache the result if you need it in a loop.
+         * @{
+         */
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -181,43 +328,117 @@ namespace ttcr {
             }
             return zmax;
         }
+        /// @}
 
-        void saveTT(const std::string &, const int, const size_t nt=0,
+        /**
+         * @brief Write the traveltime field to a file.
+         * @param fname  output filename.
+         * @param all    if nonzero, include the secondary nodes.
+         * @param nt     thread whose solution to write.
+         * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
+         */
+        void saveTT(const std::string &fname, const int all, const size_t nt=0,
                     const int format=1) const;
 
 #ifdef VTK
-        void saveModelVTU(const std::string &, const bool saveSlowness=true,
+        /**
+         * @brief Write the mesh and its model as a VTK unstructured grid.
+         * @param fname              output filename.
+         * @param saveSlowness       write slowness rather than velocity.
+         * @param savePhysicalEntity also write each tetrahedron's
+         *                           physical-entity tag from the Gmsh model.
+         * @note The natural format here, since the mesh has no rectilinear
+         *       structure. Requires a build with @c VTK defined.
+         */
+        void saveModelVTU(const std::string &fname, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
-        void saveModelVTR(const std::string &, const double*,
+        /**
+         * @brief Resample the model onto a rectilinear grid and write it as VTK.
+         * @param fname        output filename.
+         * @param d            cell sizes of the target grid.
+         * @param saveSlowness write slowness rather than velocity.
+         * @note Lossy — the tetrahedra are sampled onto a regular grid, so
+         *       interfaces are stair-stepped. For viewing only.
+         */
+        void saveModelVTR(const std::string &fname, const double* d,
                           const bool saveSlowness=true) const;
 #endif
-        void saveModelCRT(const std::string &, const double*) const;
+        /**
+         * @brief Write the model in CRT format.
+         * @param fname output filename.
+         * @param d     cell sizes of the target grid the model is sampled onto.
+         */
+        void saveModelCRT(const std::string &fname, const double* d) const;
 
-        void saveModelXYZ(const std::string &) const;
+        /**
+         * @brief Write the model as an XYZ text file.
+         * @param fname output filename.
+         * @note One line per tetrahedron, giving a point and its slowness.
+         *       Unlike the rectilinear @c saveSlownessXYZ methods, which were
+         *       unused and have been removed, this one has no VTK dependency.
+         */
+        void saveModelXYZ(const std::string &fname) const;
 
+        /**
+         * @brief Write the coordinates of the secondary nodes to a stream.
+         * @param os destination stream, one @c "x y z" triple per line.
+         * @note Writes nothing when the solver adds none.
+         */
         void dump_secondary(std::ofstream& os) const {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
         }
 
+        /**
+         * @brief Mean edge length over the whole mesh.
+         * @return The average, a natural length scale for a mesh with no uniform
+         *         cell size — used to turn relative radii into absolute
+         *         distances, as in ttcr::Grid3Ducdsp.
+         */
         const T1 getAverageEdgeLength() const;
 
     protected:
+        /// Raypath method, values of ttcr::gradient_method. Selects how the
+        /// traveltime gradient is estimated when tracing a ray.
         int rp_method;
+        /// Number of primary nodes, i.e. the mesh vertices supplied to the
+        /// constructor. Nodes at or beyond this index are secondary.
         T2 nPrimary;
+        /// Source radius; 0 means a point source. @sa setSourceRadius
         T1 source_radius;
+        /// Minimum step retained when integrating a raypath, guarding against
+        /// stalled steps.
         T1 min_dist;
+        /// Primary nodes first, then any secondary nodes the derived solver
+        /// added. @c mutable because @c const raytracing methods update the
+        /// traveltimes stored in them.
         mutable std::vector<NODE> nodes;
+        /// Slowness, one value per tetrahedron. A plain vector, not a @c CELL
+        /// policy — @sa @ref g3duc_vs_2d
         std::vector<T1> slowness;
+        /// The tetrahedra, each naming four node indices.
         std::vector<tetrahedronElem<T2>> tetrahedra;
 
+        /// kd-tree over the **primary** nodes, for fast point location in
+        /// @ref getCellNo. Built lazily on first use by @ref getNearestNode.
         // kd-tree over the primary nodes, for fast point location in getCellNo.
         // Built lazily on first use (std::call_once) since node coordinates are
         // fixed after construction; queries are read-only and thread-safe.
         mutable std::unique_ptr<NodeKDTree<T1,T2>> kdtree;
-        mutable std::once_flag kdtreeFlag;
+        mutable std::once_flag kdtreeFlag;  ///< Guards the one-time @ref kdtree build.
 
+        /**
+         * @brief Index of the primary node closest to a point.
+         * @param pt query point.
+         * @return Nearest primary node index.
+         * @note Indexes only the first @ref nPrimary nodes, so secondary nodes
+         *       are never returned — unlike ttcr::Grid2Duc::getNearestNode,
+         *       whose tree covers every node.
+         * @note @c std::call_once makes the lazy build safe under concurrency,
+         *       and later queries need no synchronisation since node coordinates
+         *       are then fixed.
+         */
         T2 getNearestNode(const sxyz<T1>& pt) const {
             std::call_once(kdtreeFlag, [this]() {
                 kdtree.reset(new NodeKDTree<T1,T2>(nodes, nPrimary));
@@ -232,28 +453,64 @@ namespace ttcr {
         // than once per (source, receiver) pair.  The cache is indexed by
         // threadNo: in parallel runs each thread owns a distinct slot, so no
         // locking is needed.  A slot is recomputed only when its Tx changes.
+        /**
+         * @brief Cached classification of the source points.
+         *
+         * A source in a tetrahedral mesh can sit on a node, on an edge, on a
+         * face, or strictly inside a cell, and each case gives a different set
+         * of starting cells. @sa @ref g3duc_txinfo
+         */
         struct txInfo_t {
-            std::vector<sxyz<T1>> tx;
-            std::vector<bool> txOnNode;
-            std::vector<bool> txOnEdge;
-            std::vector<bool> txOnFace;
-            std::vector<T2> txNode;
-            std::vector<T2> txCell;
-            std::vector<std::array<T2,2>> txEdges;
-            std::vector<std::array<T2,3>> txFaces;
-            std::vector<std::vector<T2>> txNeighborCells;
-            bool valid = false;
+            std::vector<sxyz<T1>> tx;      ///< The source positions this entry describes.
+            std::vector<bool> txOnNode;    ///< Source coincides with a mesh node.
+            std::vector<bool> txOnEdge;    ///< Source lies on a tetrahedron edge.
+            std::vector<bool> txOnFace;    ///< Source lies on a tetrahedron face.
+            std::vector<T2> txNode;        ///< Node index, when on a node.
+            std::vector<T2> txCell;        ///< Containing tetrahedron otherwise.
+            std::vector<std::array<T2,2>> txEdges;  ///< The two nodes of the edge, when on an edge.
+            std::vector<std::array<T2,3>> txFaces;  ///< The three nodes of the face, when on a face.
+            std::vector<std::vector<T2>> txNeighborCells;  ///< Tetrahedra adjacent to the source.
+            bool valid = false;            ///< False until first populated.
         };
+        /// One ttcr::Grid3Duc::txInfo_t per thread, so parallel runs with different sources
+        /// do not invalidate each other's cache. @c mutable because the @c const
+        /// raytracing methods fill it.
         mutable std::vector<txInfo_t> txInfoCache;
 
+        /**
+         * @brief Source classification for a thread, computing it if stale.
+         * @param Tx       source positions.
+         * @param threadNo thread whose cache slot to use.
+         * @return The cached ttcr::Grid3Duc::txInfo_t, recomputed only if this thread's
+         *         entry is unset or describes different sources.
+         */
         const txInfo_t& getTxInfo(const std::vector<sxyz<T1>>& Tx,
                                   const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime increment from a node to a point within one cell.
+         * @param source  node the ray comes from.
+         * @param node    point it reaches.
+         * @param cellNo  tetrahedron the segment lies in.
+         * @return The increment @f$s_{cell}\,\ell@f$ — the cell's slowness times
+         *         the distance.
+         * @note Exact, because slowness is constant within the tetrahedron. The
+         *       node-slowness families instead average the endpoint values, and
+         *       ttcr::Grid2Duc delegates to a @c CELL policy that may be
+         *       anisotropic.
+         */
         T1 computeDt(const NODE& source, const sxyz<T1>& node,
                      const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
         }
 
+        /**
+         * @brief Traveltime increment between two nodes within one cell.
+         * @param source node the ray comes from.
+         * @param node   node it reaches.
+         * @param cellNo tetrahedron the segment lies in.
+         * @return The increment @f$s_{cell}\,\ell@f$.
+         */
         T1 computeDt(const NODE& source, const NODE& node,
                      const size_t cellNo) const {
             return slowness[cellNo] * source.getDistance( node );
@@ -262,44 +519,151 @@ namespace ttcr {
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime at a receiver.
+         * @param Rx       receiver position.
+         * @param nodes    node vector to read from — passed explicitly so the
+         *                 dynamic solver can supply a set including its
+         *                 temporary nodes.
+         * @param threadNo thread whose solution to read.
+         * @return Traveltime, interpolated if @p Rx does not sit on a node.
+         */
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime at a receiver, also reporting where it came from.
+         * @param[in]  Rx           receiver position.
+         * @param[in]  nodes        node vector to read from.
+         * @param[out] nodeParentRx node the ray arrived from.
+         * @param[out] cellParentRx tetrahedron it crossed to get there.
+         * @param[in]  threadNo     thread whose solution to read.
+         * @return Traveltime at @p Rx.
+         */
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<NODE>& nodes,
                          T2& nodeParentRx,
                          T2& cellParentRx,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Verify that every point lies inside the mesh.
+         * @param pts        points to check. Taken **by value**, since they may
+         *                   be translated.
+         * @param translated true if @p pts are already in the translated frame.
+         * @throws std::runtime_error naming the offending point.
+         */
         void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
 
-        bool insideTetrahedron(const sxyz<T1>&, const T2) const;
-        bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
+        /**
+         * @brief Test whether a point lies inside a given tetrahedron.
+         * @param pt  point to test.
+         * @param tet tetrahedron index.
+         * @return True if inside.
+         * @note The primitive underlying @ref getCellNo.
+         */
+        bool insideTetrahedron(const sxyz<T1>& pt, const T2 tet) const;
+        /**
+         * @brief Alternative inside-tetrahedron test.
+         * @param pt  point to test.
+         * @param tet tetrahedron index.
+         * @return True if inside.
+         * @note A second formulation of the same predicate, kept alongside
+         *       @ref insideTetrahedron; they differ in how they handle points on
+         *       a face or edge.
+         */
+        bool insideTetrahedron2(const sxyz<T1>& pt, const T2 tet) const;
 
+        /**
+         * @brief Locate the tetrahedron containing a point.
+         * @param pt point to locate.
+         * @return Index of the containing tetrahedron.
+         * @throws std::runtime_error if the point lies outside the mesh.
+         * @note Uses the kd-tree to find the nearest primary node and tests the
+         *       tetrahedra incident to it before falling back to a wider search
+         *       — point location has no closed form on an unstructured mesh.
+         */
         T2 getCellNo(const sxyz<T1>& pt) const;
 
-        void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
-        void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const T2, const size_t);
+        /**
+         * @brief Position the primary nodes and build their ownership lists.
+         * @param no node coordinates.
+         * @param nt number of threads.
+         * @post Every node knows which tetrahedra are incident to it.
+         */
+        void buildGridNodes(const std::vector<sxyz<T1>>& no, const size_t nt);
+        /**
+         * @brief Build the primary nodes plus secondary nodes along each edge.
+         * @param no         node coordinates.
+         * @param nsecondary number of secondary nodes per tetrahedron edge.
+         * @param nt         number of threads.
+         * @note The overload used by the shortest-path solvers.
+         */
+        void buildGridNodes(const std::vector<sxyz<T1>>& no,
+                            const T2 nsecondary, const size_t nt);
 
+        /**
+         * @brief Local eikonal update at one vertex — the method in use.
+         * @param vertexC  node to update.
+         * @param threadNo thread whose traveltimes to read and write.
+         * @note Implements the method of Lelievre et al. (2011). Attempts a full
+         *       3-D update within the tetrahedron and falls back to
+         *       @ref localUpdate2D over each of the three faces when that update
+         *       is inadmissible — which is how this family keeps the update
+         *       causal, in place of the 2-D family's obtuse-angle correction.
+         *       @sa @ref g3duc_update
+         */
         void localUpdate3D(NODE *vertexC, const size_t threadNo) const;
 
+        /**
+         * @brief Two-dimensional update over one face of a tetrahedron.
+         * @param vertexA  first known vertex.
+         * @param vertexB  second known vertex.
+         * @param vertexC  vertex being updated.
+         * @param tetraNo  tetrahedron supplying the slowness.
+         * @param threadNo thread whose traveltimes to read.
+         * @return Candidate traveltime, or @c T1's maximum if the update is
+         *         inadmissible.
+         * @note Called by @ref localUpdate3D as its fallback.
+         */
         T1 localUpdate2D(const NODE *vertexA,
                          const NODE *vertexB,
                          const NODE *vertexC,
                          const T2 tetraNo,
                          const size_t threadNo) const;
 
+        /**
+         * @name Unused alternative solver
+         *
+         * The method of Qian et al. (2007), a complete second implementation of
+         * the local update.
+         *
+         * @warning **Dead code.** Nothing calls @c local3Dsolver;
+         *          @c local2Dsolver and @c solveEq23 are reachable only from it.
+         *          The same three functions are duplicated, equally unused, in
+         *          Grid3Dun.h. @sa @ref g3duc_update
+         * @{
+         */
+        /// Qian-method counterpart of @ref localUpdate3D.
         void local3Dsolver(NODE *vertexC, const size_t threadNo) const;
 
+        /// Qian-method counterpart of @ref localUpdate2D.
         T1 local2Dsolver(const NODE *vertexA,
                          const NODE *vertexB,
                          const NODE *vertexC,
                          const T2 tetraNo,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Solve the 2x3 system arising in the Qian update.
+         * @param a  first row.
+         * @param b  second row.
+         * @param n  receives up to two solution vectors.
+         * @return Number of solutions found.
+         */
         int solveEq23(const T1 a[], const T1 b[], T1 n[][3]) const;
+        /// @}
 
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,

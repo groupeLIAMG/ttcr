@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid3Ducfs.h
+ * @brief Fast sweeping solver on a 3-D tetrahedral mesh with cell-based slowness.
+ *
+ * Declares ttcr::Grid3Ducfs. As in 2-D, a tetrahedral mesh supplies no natural
+ * sweep order, so one is built from user-supplied reference points — see
+ * @ref g3ducfs_ordering and Metric.h.
+ *
+ * @sa Grid3Duc.h, Metric.h, Grid2Ducfs.h, Grid3Ducfm.h
+ */
+
 #ifndef ttcr_Grid3Ducfs_h
 #define ttcr_Grid3Ducfs_h
 
@@ -37,11 +48,58 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Fast sweeping eikonal solver on a tetrahedral mesh, slowness per cell.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * Relaxes the mesh with ttcr::Grid3Duc::localUpdate3D — the Lelievre
+     * method — sweeping repeatedly until the field stops changing.
+     *
+     * @section g3ducfs_ordering Sweep orderings on a tetrahedral mesh
+     * A rectilinear grid sweeps along its axes; a tetrahedral mesh has no such
+     * order, so one is constructed. @ref initOrdering sorts every node by its
+     * distance to each of a set of user-supplied **reference points**, and the
+     * sweeps run up and down each ordering in turn. The distance metric is
+     * @f$\ell^1@f$ or @f$\ell^2@f$, chosen by the @c order argument.
+     * @sa Metric.h
+     *
+     * The reference-point-free constructor leaves the orderings empty, so a
+     * caller using that form must call @ref initOrdering before raytracing.
+     *
+     * @section g3ducfs_conv Convergence
+     * Sweeping stops when the summed change in nodal traveltime falls below a
+     * threshold. Both constructors multiply the supplied @p eps by the node
+     * count, so the user-facing tolerance is a **mean** per-node change while
+     * the loop tests an L1 sum; @p maxit caps the iterations.
+     *
+     * @sa Grid3Duc.h, Metric.h, Grid2Ducfs.h, Grid3Ducfm.h
+     */
     class Grid3Ducfs : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh, without sweep orderings.
+         *
+         * @param no    node coordinates.
+         * @param tet   tetrahedra, each naming four node indices.
+         * @param eps   convergence tolerance, as a mean per-node traveltime
+         *              change; scaled internally by the node count.
+         *              @sa @ref g3ducfs_conv
+         * @param maxit maximum number of sweep iterations.
+         * @param rp    raypath method, values of ttcr::gradient_method.
+         * @param rptt  recompute receiver traveltimes along the raypath.
+         * @param md    minimum step retained when integrating a raypath.
+         * @param nt    number of threads.
+         * @param _translateOrigin shift the mesh origin to (0,0,0).
+         *
+         * @post Nodes and neighbour lists are built. The sweep orderings are
+         *       **empty** — call @ref initOrdering before raytracing. Slowness
+         *       is not set.
+         */
         Grid3Ducfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const T1 eps, const int maxit, const bool rp,
+                   const T1 eps, const int maxit, const int rp,
                    const bool rptt, const T1 md, const size_t nt=1,
                    const bool _translateOrigin=false) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt, _translateOrigin),
@@ -52,11 +110,31 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /**
+         * @brief Build the mesh and its sweep orderings in one step.
+         *
+         * @param no     node coordinates.
+         * @param tet    tetrahedra, each naming four node indices.
+         * @param eps    convergence tolerance, as a mean per-node change.
+         * @param maxit  maximum number of sweep iterations.
+         * @param refPts reference points defining the sweep orderings — one
+         *               ordering per point. @sa @ref g3ducfs_ordering
+         * @param order  1 for the @f$\ell^1@f$ metric, otherwise @f$\ell^2@f$
+         *               (ttcr::input_parameters::order).
+         * @param rp     raypath method, values of ttcr::gradient_method.
+         * @param rptt   recompute receiver traveltimes along the raypath.
+         * @param md     minimum step retained when integrating a raypath.
+         * @param nt     number of threads.
+         * @param _translateOrigin shift the mesh origin to (0,0,0).
+         *
+         * @post As the other constructor, plus the orderings populated, so the
+         *       mesh is ready to raytrace once slowness is set.
+         */
         Grid3Ducfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps, const int maxit,
                    const std::vector<sxyz<T1>>& refPts, const int order,
-                   const bool rp, const bool rptt, const T1 md,
+                   const int rp, const bool rptt, const T1 md,
                    const size_t nt=1,
                    const bool _translateOrigin=false) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt, _translateOrigin),
@@ -68,17 +146,43 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /// Destructor.
         ~Grid3Ducfs() {
         }
 
+        /**
+         * @brief Build the node orderings the sweeps follow.
+         * @param refPts reference points; one ordering per point, sorting every
+         *               node by its distance to that point.
+         * @param order  1 selects ttcr::Metric1 (@f$\ell^1@f$), anything else
+         *               ttcr::Metric2 (@f$\ell^2@f$).
+         * @post @ref S holds one ordering per reference point.
+         * @note The metric affects only the **order** in which nodes are
+         *       relaxed, hence the convergence rate — not the fixed point the
+         *       sweeps converge to. @sa @ref g3ducfs_ordering, Metric.h
+         */
         void initOrdering(const std::vector<sxyz<T1>>& refPts, const int order);
 
     private:
+        /// Convergence threshold, holding the **scaled** value: the constructor
+        /// multiplies the supplied tolerance by the node count.
+        /// @sa @ref g3ducfs_conv
         T1 epsilon;
-        int nitermax;
-        mutable int niter_final;
+        int nitermax;             ///< Iteration cap for the sweeps.
+        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        /// One node ordering per reference point, each sorted by distance to
+        /// that point. Empty until @ref initOrdering runs.
+        /// @sa @ref g3ducfs_ordering
         std::vector<std::vector<Node3Dc<T1,T2>*>> S;
 
+        /**
+         * @brief Seed the sweep with the source traveltimes.
+         * @param[in]  Tx       source positions.
+         * @param[in]  t0       origin time of each source.
+         * @param[out] frozen   per-node flag; nodes given a source value are
+         *                      frozen so the sweeps cannot move them.
+         * @param[in]  threadNo thread to initialise.
+         */
         void initTx(const std::vector<sxyz<T1>>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
 

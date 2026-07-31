@@ -41,6 +41,18 @@
 //	}
 //
 
+/**
+ * @file Grid2Ducfm.h
+ * @brief Fast marching solver on a 2-D triangular mesh with cell-based slowness.
+ *
+ * Declares ttcr::Grid2Ducfm, the narrow-band single-pass alternative to the
+ * iterative ttcr::Grid2Ducfs and the graph-based ttcr::Grid2Ducsp. It is the
+ * only fast marching implementation in the 2-D cell-slowness family; there is
+ * no rectilinear @c rcfm counterpart.
+ *
+ * @sa Grid2Duc.h, Grid2Ducfs.h, Grid2Ducsp.h
+ */
+
 #ifndef ttcr_Grid2Ducfm_h
 #define ttcr_Grid2Ducfm_h
 
@@ -51,9 +63,47 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Fast marching eikonal solver on a triangular mesh, slowness per cell.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * Advances a **narrow band** outward from the sources: the least-traveltime
+     * node in the band is accepted as final, its untouched neighbours are
+     * updated with @ref localSolver and pushed, and the process repeats. A
+     * priority queue keeps the band ordered, giving a single pass with no
+     * iteration to convergence — unlike ttcr::Grid2Ducfs, which sweeps until the
+     * change falls below a tolerance.
+     *
+     * That single-pass property is why this class has no @c epsilon,
+     * @c nitermax or sweep orderings: there is nothing to converge and no
+     * direction to choose. It is also why obtuse triangles matter especially
+     * here — an update that violates causality cannot be corrected on a later
+     * pass, since there is none. @sa @ref g2duc_obtuse
+     *
+     * @note Not templated on a @c CELL policy, so isotropic only.
+     *
+     * @sa Grid2Duc.h, Grid2Ducfs.h, Grid2Ducsp.h
+     */
     template<typename T1, typename T2, typename S>
     class Grid2Ducfm : public Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1,Node2Dc<T1,T2>,sxz<T1>>> {
     public:
+        /**
+         * @brief Build the mesh and its nodes.
+         *
+         * @param no   node coordinates.
+         * @param tri  triangles, each naming three node indices.
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param nt   number of threads.
+         * @param procObtuse run @ref processObtuse to correct obtuse triangles.
+         *
+         * @post Nodes, neighbour lists and (optionally) the obtuse corrections
+         *       are built. Slowness is **not** set.
+         * @note No secondary nodes — fast marching works on the mesh vertices
+         *       alone.
+         */
         Grid2Ducfm(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const bool ttrp, const size_t nt=1, const bool procObtuse=true) :
@@ -64,20 +114,45 @@ namespace ttcr {
             if ( procObtuse ) this->processObtuse();
         }
 
+        /// Destructor.
         ~Grid2Ducfm() {
         }
 
     private:
+        /**
+         * @brief Seed the narrow band with the sources.
+         * @param[in]  Tx          source positions.
+         * @param[in]  t0          origin time of each source.
+         * @param[out] narrow_band min-queue holding the band, ordered by
+         *                         traveltime.
+         * @param[out] txNodes     nodes created at source positions that do not
+         *                         coincide with a mesh vertex.
+         * @param[out] inBand      per-node flag, whether it is in the band.
+         * @param[out] frozen      per-node flag, whether it has been accepted.
+         * @param[in]  threadNo    thread to work on.
+         * @note The last five are unnamed in this declaration; the names used
+         *       here are those of the out-of-class definition.
+         */
         void initBand(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       std::priority_queue<Node2Dc<T1,T2>*,
                       std::vector<Node2Dc<T1,T2>*>,
-                      CompareNodePtr<T1>>&,
-                      std::vector<Node2Dc<T1,T2>>&,
-                      std::vector<bool>&,
-                      std::vector<bool>&,
-                      const size_t) const;
+                      CompareNodePtr<T1>>& narrow_band,
+                      std::vector<Node2Dc<T1,T2>>& txNodes,
+                      std::vector<bool>& inBand,
+                      std::vector<bool>& frozen,
+                      const size_t threadNo) const;
 
+        /**
+         * @brief Advance the narrow band until it empties.
+         *
+         * Repeatedly accepts the least-traveltime node in the band as final and
+         * relaxes its not-yet-accepted neighbours. The arguments are the band
+         * queue, the "in band" and "accepted" flags, and the thread number.
+         *
+         * @note Each node is accepted once and never revisited, which is what
+         *       makes this a single-pass method.
+         */
         void propagate(std::priority_queue<Node2Dc<T1,T2>*,
                        std::vector<Node2Dc<T1,T2>*>,
                        CompareNodePtr<T1>>&,
@@ -85,11 +160,27 @@ namespace ttcr {
                        std::vector<bool>&,
                        const size_t) const;
 
+        /**
+         * @brief Propagate the traveltime field and evaluate it at the receivers.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       receiver positions.
+         * @param threadNo thread to compute on.
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       const size_t threadNo=0) const;
 
+        /**
+         * @brief Propagate once and evaluate at several receiver sets.
+         * @param Tx       source positions.
+         * @param t0       origin time of each source.
+         * @param Rx       pointers to the receiver sets.
+         * @param threadNo thread to compute on.
+         * @note This overload has **no default** for @p threadNo, unlike the
+         *       one above and unlike the equivalent in the other solvers.
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<const std::vector<S>*>& Rx,

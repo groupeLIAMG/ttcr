@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid2Dunfs.h
+ * @brief Fast sweeping solver on a 2-D triangular mesh with node-based slowness.
+ *
+ * Declares ttcr::Grid2Dunfs. As in ttcr::Grid2Ducfs, a triangulation supplies
+ * no natural sweep order, so one is built from user-supplied reference points.
+ * @sa Metric.h
+ *
+ * @sa Grid2Dun.h, Grid2Ducfs.h, Grid2Drnfs.h, Metric.h
+ */
+
 #ifndef ttcr_Grid2Dunfs_h
 #define ttcr_Grid2Dunfs_h
 
@@ -35,6 +46,25 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S>
+    /**
+     * @brief Fast sweeping eikonal solver on a triangular mesh, slowness per node.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * The node-slowness counterpart of ttcr::Grid2Ducfs. As there, the sweep
+     * orderings are built by @ref initOrdering from user-supplied reference
+     * points, since a triangulation has no natural sweep direction; the metric
+     * is chosen by the @c order argument. @sa Metric.h
+     *
+     * The reference-point-free constructor leaves the orderings empty, so a
+     * caller using that form must call @ref initOrdering before raytracing.
+     * Convergence is tested as an L1 sum against a tolerance scaled by the node
+     * count, so the user-facing value is a mean per-node change.
+     *
+     * @sa Grid2Dun.h, Grid2Ducfs.h, Grid2Drnfs.h, Metric.h
+     */
     class Grid2Dunfs : public Grid2Dun<T1,T2,S,Node2Dn<T1,T2>> {
     public:
         Grid2Dunfs(const std::vector<S>& no,

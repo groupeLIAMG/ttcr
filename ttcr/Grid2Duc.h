@@ -22,6 +22,54 @@
  *
  */
  
+/**
+ * @file Grid2Duc.h
+ * @brief Base class for 2-D unstructured triangular meshes with cell-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid2Duc, the mid-level base shared by every 2-D unstructured
+ * solver whose slowness is constant within each triangle: Grid2Ducsp
+ * (shortest path), Grid2Ducfs (fast sweeping), Grid2Ducfm (fast marching) and
+ * Grid2Ducdsp (dynamic shortest path).
+ *
+ * It is the unstructured counterpart of ttcr::Grid2Drc. The @c u in the name
+ * means the mesh is **unstructured** — an arbitrary triangulation rather than a
+ * regular grid — and @c c that slowness is held **per cell**, as opposed to
+ * @c n (per node, see Grid2Dun.h).
+ *
+ * @section g2duc_vs_rect What changes on an unstructured mesh
+ * Losing the regular grid costs the conveniences the rectilinear classes rely
+ * on, and each has a replacement here:
+ *
+ * - **Point location** has no index arithmetic. ttcr::Grid2Duc::getCellNo first
+ *   asks a kd-tree for the nearest node and tests only the triangles incident to
+ *   it, falling back to an exhaustive scan if that misses.
+ * - **Cell geometry** is not uniform, so each triangle caches its interior
+ *   angles and edge lengths in a ttcr::triangleElemAngle rather than recomputing
+ *   them from @c dx and @c dz.
+ * - **Obtuse triangles** break the local update; see @ref g2duc_obtuse.
+ *
+ * @section g2duc_obtuse Obtuse triangles and virtual nodes
+ * The local eikonal update assumes the wavefront reaches a vertex from within
+ * the angular sector spanned by its two already-known neighbours. When the angle
+ * at that vertex exceeds 90 degrees the assumption fails: the true first arrival
+ * can come from outside the triangle, and a naive update violates causality and
+ * overestimates the traveltime.
+ *
+ * ttcr::Grid2Duc::processObtuse repairs this once, at construction. For each
+ * obtuse angle it finds the triangle across the opposite edge and builds a
+ * ttcr::virtualNode — a support point obtained by unfolding into that neighbour,
+ * so the update can be posed over a wider, non-obtuse sector. The results are
+ * cached in ttcr::Grid2Duc::virtualNodes, keyed by triangle, and
+ * ttcr::Grid2Duc::localSolver consults them whenever it meets an obtuse angle.
+ *
+ * Triangles on the boundary of the domain have no opposite neighbour to unfold
+ * into, so **no correction is applied there** and the traveltime at such a
+ * vertex keeps the obtuse-angle error.
+ *
+ * @sa Grid2D.h, Grid2Drc.h, Grid2Dun.h, Cell.h, Grid2Ducsp.h
+ */
+
 #ifndef ttcr_Grid2Duc_h
 #define ttcr_Grid2Duc_h
 
@@ -65,9 +113,41 @@
 
 namespace ttcr {
 
+    /**
+     * @brief 2-D triangular mesh holding one slowness value per triangle.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices, normally @c uint32_t.
+     * @tparam S    point type: @ref sxz for a planar mesh, @ref sxyz for a
+     *              draped mesh embedded in 3-D (the @c 2Ds programs).
+     * @tparam NODE node type, e.g. ttcr::Node2Dc or ttcr::Node2Dcsp.
+     * @tparam CELL cell policy supplying the slowness model, from Cell.h —
+     *              what makes the class isotropic or anisotropic.
+     *
+     * @note Abstract in practice: it implements everything except @c raytrace.
+     */
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
     class Grid2Duc : public Grid2D<T1,T2,S> {
     public:
+        /**
+         * @brief Build the mesh from a node list and a triangle list.
+         *
+         * @param no   node coordinates; these become the primary nodes, in the
+         *             order given.
+         * @param tri  triangles, each naming three node indices into @p no.
+         * @param ttrp recompute receiver traveltimes by integrating slowness
+         *             along the traced raypath.
+         * @param nt   number of threads; sizes each node's traveltime array.
+         *
+         * @post Nodes and cells are allocated and the triangles copied into
+         *       @ref triangles as ttcr::triangleElemAngle. Their angles and edge
+         *       lengths are **not** yet computed, nor are the node ownership
+         *       lists or the obtuse-angle corrections — the derived class calls
+         *       @ref buildGridNodes and @ref processObtuse. Slowness is not set.
+         * @note Unlike the rectilinear grids there is no geometry to derive:
+         *       the mesh is supplied wholesale, so there are no cell-size or
+         *       origin parameters.
+         */
         Grid2Duc(const std::vector<S>& no,
                  const std::vector<triangleElem<T2>>& tri, const bool ttrp,
                  const size_t nt=1) :
@@ -81,8 +161,18 @@ namespace ttcr {
             }
         }
 
+        /// Destructor.
         virtual ~Grid2Duc() {}
 
+        /**
+         * @brief Set the slowness of every triangle.
+         * @param s one slowness per triangle, in the order the triangles were
+         *          supplied to the constructor.
+         * @throws std::length_error if @p s does not match the triangle count,
+         *         plus whatever the @c CELL policy raises.
+         * @note The @c try / @c catch rethrows unchanged and so has no effect;
+         *       the same idiom is repeated in the setters below.
+         */
         void setSlowness(const std::vector<T1>& s) {
             try {
                 cells.setSlowness( s );
@@ -90,6 +180,13 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set the elliptical anisotropy ratio @f$\xi@f$ of every triangle.
+         * @param x one value per triangle.
+         * @throws std::exception if the @c CELL policy does not model @f$\xi@f$.
+         *         Whether these anisotropy setters do anything depends entirely
+         *         on which policy was supplied — see Cell.h.
+         */
         void setXi(const std::vector<T1>& x) {
             try {
                 cells.setXi( x );
@@ -97,6 +194,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set the symmetry-axis tilt angle of every triangle.
+         * @param t one angle per triangle, in radians.
+         * @throws std::exception if the @c CELL policy is not tilted.
+         */
         void setTiltAngle(const std::vector<T1>& t) {
             try {
                 cells.setTiltAngle( t );
@@ -104,6 +206,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set the P-wave velocity along the symmetry axis, @f$V_{P0}@f$.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy is not VTI.
+         */
         void setVp0(const std::vector<T1>& s) {
             try {
                 cells.setVp0(s);
@@ -111,6 +218,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set the S-wave velocity along the symmetry axis, @f$V_{S0}@f$.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy is not VTI.
+         */
         void setVs0(const std::vector<T1>& s) {
             try {
                 cells.setVs0(s);
@@ -118,6 +230,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set Thomsen's @f$\delta@f$ for every triangle.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy is not VTI.
+         */
         void setDelta(const std::vector<T1>& s) {
             try {
                 cells.setDelta(s);
@@ -125,6 +242,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set Thomsen's @f$\epsilon@f$ for every triangle.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy is not VTI.
+         */
         void setEpsilon(const std::vector<T1>& s) {
             try {
                 cells.setEpsilon(s);
@@ -132,6 +254,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set Thomsen's @f$\gamma@f$ for every triangle.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy does not model SH anisotropy.
+         */
         void setGamma(const std::vector<T1>& s) {
             try {
                 cells.setGamma(s);
@@ -139,6 +266,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set the weakly-anelliptical coefficient @f$s_2@f$ of every triangle.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy is not weakly anelliptical.
+         */
         void setS2(const std::vector<T1>& s) {
             try {
                 cells.setS2(s);
@@ -146,6 +278,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Set the weakly-anelliptical coefficient @f$s_4@f$ of every triangle.
+         * @param s one value per triangle.
+         * @throws std::exception if the @c CELL policy is not weakly anelliptical.
+         */
         void setS4(const std::vector<T1>& s) {
             try {
                 cells.setS4(s);
@@ -153,6 +290,11 @@ namespace ttcr {
                 throw;
             }
         }
+        /**
+         * @brief Copy the triangle slowness values out of the mesh.
+         * @param[out] s resized to the triangle count and filled in triangle
+         *               order.
+         */
         void getSlowness(std::vector<T1>& s) const {
             if (s.size() != triangles.size()) {
                 s.resize(triangles.size());
@@ -162,10 +304,26 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Write a traveltime directly into one node.
+         * @param tt traveltime to store.
+         * @param nn node index.
+         * @param nt thread whose slot to write.
+         * @warning Unchecked and non-@c const: it bypasses the solver entirely.
+         *          Intended for seeding a boundary or source value; using it
+         *          after a solve corrupts the field.
+         */
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
             nodes[nn].setTT(tt, nt);
         }
 
+        /**
+         * @brief Number of nodes in the mesh.
+         * @param primary true to count only the primary nodes — those supplied
+         *                to the constructor — false (the default) to include the
+         *                secondary nodes a solver has added.
+         * @return The requested count.
+         */
         size_t getNumberOfNodes(const bool primary=false) const {
             if ( primary ) {
                 return nPrimary;
@@ -173,8 +331,14 @@ namespace ttcr {
                 return nodes.size();
             }
         }
+        /// @return Number of triangles.
         size_t getNumberOfCells() const { return triangles.size(); }
 
+        /**
+         * @brief Collect the traveltimes computed at the primary nodes.
+         * @param[out] tt       resized to @ref nPrimary and filled.
+         * @param[in]  threadNo thread whose solution to read.
+         */
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             tt.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {
@@ -182,6 +346,14 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @name Mesh bounding box
+         *
+         * Computed by scanning every node on each call — an unstructured mesh
+         * has no stored extent, unlike the rectilinear grids where these are
+         * plain members. Cache the result if you need it in a loop.
+         * @{
+         */
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -210,40 +382,108 @@ namespace ttcr {
             }
             return zmax;
         }
+        /// @}
 
-        void saveTT(const std::string &, const int, const size_t nt=0,
+        /**
+         * @brief Write the traveltime field to a file.
+         * @param fname  output filename.
+         * @param all    if nonzero, include the secondary nodes.
+         * @param nt     thread whose solution to write.
+         * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
+         */
+        void saveTT(const std::string &fname, const int all, const size_t nt=0,
                     const int format=1) const;
 
 #ifdef VTK
-        void saveModelVTU(const std::string &, const bool saveSlowness=true,
+        /**
+         * @brief Write the mesh and its model as a VTK unstructured grid.
+         * @param fname              output filename.
+         * @param saveSlowness       write slowness rather than velocity.
+         * @param savePhysicalEntity also write each triangle's physical-entity
+         *                           tag, the reflector/region label carried over
+         *                           from the Gmsh model.
+         * @note Available only when built with @c VTK defined. The natural
+         *       format here, since the mesh has no rectilinear structure.
+         */
+        void saveModelVTU(const std::string &fname, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
-        void saveModelVTR(const std::string &, const double*,
+        /**
+         * @brief Resample the model onto a rectilinear grid and write it as VTK.
+         * @param fname        output filename.
+         * @param d            cell sizes of the target grid, as a 3-element array.
+         * @param saveSlowness write slowness rather than velocity.
+         * @note Lossy: the triangulation is sampled onto a regular grid, so
+         *       sharp interfaces are stair-stepped. For viewing only.
+         */
+        void saveModelVTR(const std::string &fname, const double* d,
                           const bool saveSlowness=true) const;
 #endif
 
-        void calculateArea(std::vector<T1> &) const;
-        void interpolateAtNodes(std::vector<T1> &) const;
-        void interpolateAtNodes(const std::vector<T1> &,
-                                std::vector<T1> &) const;
+        /**
+         * @brief Compute the area of every triangle.
+         * @param[out] area resized to the triangle count and filled.
+         * @note Used to area-weight the cell-to-node interpolation, so a large
+         *       triangle counts for more than a small one at a shared vertex.
+         */
+        void calculateArea(std::vector<T1> &area) const;
+        /**
+         * @brief Interpolate the cell slowness model onto the nodes, in place.
+         * @param[out] s resized to the node count and filled with the
+         *               area-weighted mean of the incident triangles' slowness.
+         * @note The mesh keeps its per-cell model; this only produces a nodal
+         *       view of it, for output or for a solver that needs one.
+         */
+        void interpolateAtNodes(std::vector<T1> &s) const;
+        /**
+         * @brief Interpolate an arbitrary per-cell field onto the nodes.
+         * @param[in]  cellVal one value per triangle.
+         * @param[out] nodeVal resized to the node count and filled with the
+         *                     area-weighted mean at each node.
+         */
+        void interpolateAtNodes(const std::vector<T1> &cellVal,
+                                std::vector<T1> &nodeVal) const;
 
+        /**
+         * @brief Write the coordinates of the secondary nodes to a stream.
+         * @param os destination stream, one @c "x z" pair per line.
+         * @note Writes nothing when the solver adds none.
+         */
         void dump_secondary(std::ofstream& os) const {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
             }
         }
 
+        /**
+         * @brief Copy out the primary node coordinates.
+         * @param[out] _nodes resized to @ref nPrimary and filled.
+         * @note Secondary nodes are omitted, so the result matches the node list
+         *       originally supplied to the constructor.
+         */
         void getNodes(std::vector<S>& _nodes) const final {
             _nodes.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {
                 _nodes[n] = nodes[n];
             }
         }
+        /**
+         * @brief Copy out the triangle connectivity, as fixed-size arrays.
+         * @param[out] tri resized to the triangle count; each entry holds the
+         *                 three node indices.
+         */
         void getTriangles(std::vector<std::array<T2, 3>>& tri) const final {
             tri.resize(triangles.size());
             for ( size_t n=0; n<triangles.size(); ++n ) {
                 tri[n] = {triangles[n].i[0], triangles[n].i[1], triangles[n].i[2]};
             }
         }
+        /**
+         * @brief Copy out the triangle connectivity, as vectors.
+         * @param[out] tri resized to the triangle count; each entry holds the
+         *                 three node indices.
+         * @note Same data as the @c std::array overload, in the shape the Cython
+         *       bindings want.
+         */
         void getTriangles(std::vector<std::vector<T2>>& tri) const final {
             tri.resize(triangles.size());
             for ( size_t n=0; n<triangles.size(); ++n ) {
@@ -252,22 +492,55 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Mean edge length over the whole mesh.
+         * @return The average, a natural length scale for a mesh with no
+         *         uniform cell size — used to turn relative tolerances and
+         *         radii into absolute distances.
+         */
         const T1 getAverageEdgeLength() const;
 
     protected:
+        /// Number of primary nodes, i.e. the mesh vertices supplied to the
+        /// constructor. Nodes at or beyond this index are secondary.
         T2 nPrimary;
+        /// Primary nodes first, then any secondary nodes the derived solver
+        /// added. @c mutable because @c const raytracing methods update the
+        /// traveltimes stored in them.
         mutable std::vector<NODE> nodes;
+        /// The triangles, each caching its interior angles and edge lengths —
+        /// the unstructured stand-in for the rectilinear grids' @c dx / @c dz.
         std::vector<triangleElemAngle<T1,T2>> triangles;
+        /// Unfolded support points for obtuse triangles, keyed by triangle
+        /// index. Empty for a mesh with no obtuse angles.
+        /// @sa @ref g2duc_obtuse
         std::map<T2, virtualNode<T1,NODE>> virtualNodes;
-        
+
+        /// Slowness model, one value per triangle. Its type is the @c CELL
+        /// policy, so this member also carries any anisotropy parameters.
         CELL cells;
 
-        void buildGridNodes(const std::vector<S>&,
-                            const size_t);
+        /**
+         * @brief Position the primary nodes and build their ownership lists.
+         * @param no node coordinates.
+         * @param nt number of threads.
+         * @post Every node knows which triangles are incident to it, which is
+         *       what makes @ref getCellNo and @ref processObtuse possible.
+         */
+        void buildGridNodes(const std::vector<S>& no,
+                            const size_t nt);
 
-        void buildGridNodes(const std::vector<S>&,
-                            const T2,
-                            const size_t);
+        /**
+         * @brief Build the primary nodes plus secondary nodes along each edge.
+         * @param no    node coordinates.
+         * @param nsecondary number of secondary nodes per triangle edge.
+         * @param nt    number of threads.
+         * @note The overload used by the shortest-path solvers, which need the
+         *       extra nodes for ray-direction resolution.
+         */
+        void buildGridNodes(const std::vector<S>& no,
+                            const T2 nsecondary,
+                            const size_t nt);
 
         // kd-tree over all nodes, for fast point location and on-node lookup.
         // Built lazily; node coordinates are fixed after construction and
@@ -275,6 +548,15 @@ namespace ttcr {
         mutable std::unique_ptr<NodeKDTree2D<T1,T2>> kdtree;
         mutable std::once_flag kdtreeFlag;
 
+        /**
+         * @brief Index of the node closest to a point.
+         * @param pt query point.
+         * @return Nearest node index — always a valid one, whether or not the
+         *         node actually coincides with @p pt.
+         * @note Builds @ref kdtree on first call; @c std::call_once makes that
+         *       safe under concurrency, and later queries need no
+         *       synchronisation since node coordinates are then fixed.
+         */
         T2 getNearestNode(const S& pt) const {
             std::call_once(kdtreeFlag, [this]() {
                 kdtree.reset(new NodeKDTree2D<T1,T2>(nodes, nodes.size()));
@@ -282,6 +564,22 @@ namespace ttcr {
             return kdtree->findNearest(pt.x, pt.z);
         }
 
+        /**
+         * @brief Locate the triangle containing a point.
+         * @param pt point to locate.
+         * @return Index of the containing triangle.
+         * @throws std::runtime_error naming the point if it lies outside the
+         *         mesh — unlike the rectilinear grids, which return an
+         *         out-of-range index silently.
+         * @note Two-stage: the containing triangle is almost always incident to
+         *       the nearest node, so those few are tested first via the kd-tree,
+         *       and only a miss falls back to scanning every triangle. Point
+         *       location has no closed form on an unstructured mesh.
+         *       @sa @ref g2duc_vs_rect
+         * @note Where several incident triangles match — a point exactly on a
+         *       shared edge or vertex — the lowest index wins, making the result
+         *       deterministic.
+         */
         T2 getCellNo(const S& pt) const {
             // The containing triangle is, in the common case, incident to the
             // nearest node, so check that node's triangles first.
@@ -306,20 +604,40 @@ namespace ttcr {
             throw std::runtime_error(msg.str());
         }
 
+        /**
+         * @brief Cached classification of the source points.
+         *
+         * Locating a source — deciding whether it sits on a node and which
+         * triangle holds it — costs a node scan and a @ref getCellNo call.
+         * Without caching that would repeat for every (source, receiver) pair;
+         * with it, once per source.
+         */
         // Cached classification of the Tx points (initTxVars), so the per-Tx
         // node scan + getCellNo runs once per source rather than once per
         // (source, receiver) pair.  Indexed by threadNo (each thread owns a
         // slot in parallel runs); recomputed only when its Tx changes.
         struct txInfo_t {
-            std::vector<sxz<T1>> tx;
-            std::vector<bool> txOnNode;
-            std::vector<T2> txNode;
-            std::vector<T2> txCell;
-            std::vector<std::vector<T2>> txCells;
-            bool valid = false;
+            std::vector<sxz<T1>> tx;            ///< The source positions this entry describes.
+            std::vector<bool> txOnNode;         ///< Whether each source coincides with a node.
+            std::vector<T2> txNode;             ///< Node index for the sources that do.
+            std::vector<T2> txCell;             ///< Containing triangle for the sources that do not.
+            std::vector<std::vector<T2>> txCells; ///< Triangles adjacent to each source.
+            bool valid = false;                 ///< False until first populated.
         };
+        /// One ttcr::Grid2Duc::txInfo_t per thread, so parallel runs with different sources
+        /// do not invalidate each other's cache. @c mutable because the @c const
+        /// raytracing methods fill it.
         mutable std::vector<txInfo_t> txInfoCache;
 
+        /**
+         * @brief Source classification for a thread, computing it if stale.
+         * @param Tx       source positions.
+         * @param threadNo thread whose cache slot to use.
+         * @return The cached ttcr::Grid2Duc::txInfo_t, recomputed via @ref initTxVars only
+         *         if this thread's entry is unset or describes different sources.
+         * @note The cache is keyed on the @p Tx vector itself, compared
+         *       element-wise, so moving a source invalidates it correctly.
+         */
         const txInfo_t& getTxInfo(const std::vector<sxz<T1>>& Tx,
                                   const size_t threadNo) const {
             if ( txInfoCache.size() <= threadNo ) {
@@ -339,26 +657,85 @@ namespace ttcr {
             return ti;
         }
 
+        /**
+         * @brief Traveltime at a receiver.
+         * @param Rx       receiver position.
+         * @param threadNo thread whose solution to read.
+         * @return Traveltime, interpolated if @p Rx does not sit on a node.
+         */
         T1 getTraveltime(const S& Rx,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime at a receiver, also reporting where it came from.
+         * @param[in]  Rx           receiver position.
+         * @param[out] nodeParentRx node the ray arrived from.
+         * @param[out] cellParentRx triangle it crossed to get there.
+         * @param[in]  threadNo     thread whose solution to read.
+         * @return Traveltime at @p Rx.
+         * @note The two outputs start the walk back along a raypath.
+         */
         T1 getTraveltime(const S& Rx,
                          T2& nodeParentRx,
                          T2& cellParentRx,
                          const size_t threadNo) const;
 
 
-        void checkPts(const std::vector<sxz<T1>>&) const;
-        void checkPts(const std::vector<sxyz<T1>>&) const;
+        /**
+         * @brief Verify that every point lies inside the mesh.
+         * @param pts points to check, typically sources or receivers.
+         * @throws std::runtime_error naming the offending point.
+         * @note Two overloads so a draped mesh can be checked with either point
+         *       type.
+         */
+        void checkPts(const std::vector<sxz<T1>>& pts) const;
+        /// @copydoc checkPts(const std::vector<sxz<T1>>&) const
+        void checkPts(const std::vector<sxyz<T1>>& pts) const;
 
-        bool insideTriangle(const sxz<T1>&, const T2) const;
-        bool insideTriangle(const sxyz<T1>&, const T2) const;
+        /**
+         * @brief Test whether a point lies inside a given triangle.
+         * @param pt  point to test.
+         * @param tri triangle index.
+         * @return True if inside.
+         * @note The primitive underlying @ref getCellNo.
+         */
+        bool insideTriangle(const sxz<T1>& pt, const T2 tri) const;
+        /// @copydoc insideTriangle(const sxz<T1>&, const T2) const
+        bool insideTriangle(const sxyz<T1>& pt, const T2 tri) const;
 
+        /**
+         * @brief Build the virtual nodes that correct obtuse triangles.
+         *
+         * Run once after the mesh is built. For each interior angle above 90
+         * degrees it unfolds into the triangle across the opposite edge and
+         * records a ttcr::virtualNode in ttcr::virtualNodes, keyed by triangle.
+         *
+         * @note Triangles on the domain boundary have no opposite neighbour, so
+         *       no correction is stored for them and the obtuse-angle error
+         *       remains there. @sa @ref g2duc_obtuse
+         */
         void processObtuse();
 
+        /**
+         * @brief Solve the local eikonal update at one vertex.
+         * @param vertexC  node to update.
+         * @param threadNo thread whose traveltimes to read and write.
+         * @note Consults ttcr::virtualNodes when the angle at @p vertexC is
+         *       obtuse, and uses the triangle's own cached angles otherwise.
+         */
         void localSolver(NODE *vertexC, const size_t threadNo) const;
 
 
+        /**
+         * @brief Classify the source points against the mesh.
+         * @param[in]  Tx       source positions.
+         * @param[out] txOnNode whether each source coincides with a node.
+         * @param[out] txNode   node index for those that do.
+         * @param[out] txCell   containing triangle for those that do not.
+         * @param[out] txCells  triangles adjacent to each source.
+         * @note Called through @ref getTxInfo, which caches the result per
+         *       thread — do not call it directly in a loop.
+         */
         void initTxVars(const std::vector<sxz<T1>>& Tx,
                         std::vector<bool>& txOnNode,
                         std::vector<T2>& txNode,

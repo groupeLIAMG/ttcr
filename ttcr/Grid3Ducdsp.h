@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid3Ducdsp.h
+ * @brief Dynamic shortest-path solver on a 3-D tetrahedral mesh with cell-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid3Ducdsp, which concentrates node refinement near the
+ * source rather than spreading it uniformly as ttcr::Grid3Ducsp does.
+ *
+ * @sa Grid3Duc.h, Grid2Ducdsp.h, Grid3Ducsp.h, Node3Dcd.h
+ */
+
 #ifndef ttcr_Grid3Ducdsp_h
 #define ttcr_Grid3Ducdsp_h
 
@@ -32,8 +43,49 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Dynamic shortest-path solver on a tetrahedral mesh, slowness per cell.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * The 3-D counterpart of ttcr::Grid2Ducdsp. Rather than spreading secondary
+     * nodes uniformly as ttcr::Grid3Ducsp does, it keeps a modest permanent set
+     * everywhere and inserts extra **tertiary** nodes only within
+     * @ref dyn_radius of each source, where wavefront curvature — and hence the
+     * traveltime error — is greatest. Tertiary nodes depend on the source, so
+     * they live per-thread in @ref tempNodes rather than the shared node vector.
+     *
+     * @warning The constructor takes **two** radii, easily confused: @c rad is
+     *          the source radius (ttcr::input_parameters::source_radius, how far
+     *          the source itself is spread) and @c drad the tertiary-node radius
+     *          (ttcr::input_parameters::radius_tertiary_nodes, how far the
+     *          refinement extends). They are unrelated.
+     *
+     * @sa Grid3Duc.h, Grid2Ducdsp.h, Grid3Ducsp.h, Node3Dcd.h
+     */
     class Grid3Ducdsp : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh and its permanent nodes.
+         *
+         * @param no   node coordinates.
+         * @param tet  tetrahedra, each naming four node indices.
+         * @param ns   number of permanent secondary nodes per tetrahedron edge.
+         * @param nd   number of tertiary nodes added per edge near a source.
+         * @param rad  **source** radius; sets ttcr::Grid3Duc::source_radius.
+         * @param rp   raypath method, values of ttcr::gradient_method.
+         * @param rptt recompute receiver traveltimes along the raypath.
+         * @param min_dist minimum step retained when integrating a raypath.
+         * @param drad **tertiary-node** radius — not the same as @p rad.
+         * @param useEdgeLength if true, @p drad is a multiple of the mesh's
+         *             average edge length rather than an absolute distance.
+         * @param nt   number of threads.
+         * @param _translateOrigin shift the mesh origin to (0,0,0).
+         *
+         * @post @ref nPermanent records the node count before any tertiary
+         *       nodes are added. Slowness is not set.
+         */
         Grid3Ducdsp(const std::vector<sxyz<T1>>& no,
                     const std::vector<tetrahedronElem<T2>>& tet,
                     const int ns, const int nd, const T1 rad,
@@ -56,19 +108,23 @@ namespace ttcr {
             if (useEdgeLength) dyn_radius *= this->getAverageEdgeLength();
         }
 
+        /// Destructor.
         ~Grid3Ducdsp() {
         }
 
     private:
-        T2 nSecondary;
-        T2 nTertiary;
-        T2 nPermanent;
-        T1 dyn_radius;
+        T2 nSecondary;   ///< number of permanent secondary nodes per tetrahedron edge
+        T2 nTertiary;    ///< number of tertiary nodes added per edge near a source
+        T2 nPermanent;   ///< total nb of primary & permanent secondary; nodes beyond this index are temporary
+        T1 dyn_radius;   ///< tertiary-node radius, already scaled by the average edge length if requested. Not the source radius — see the class warning.
 
+        /// Temporary (tertiary) nodes, one set per thread. Kept out of the
+        /// shared node vector because their positions depend on the source.
         // we will store temporary nodes in a separate container.  This is to
         // allow threaded computations with different Tx (location of temp
         // nodes vary from one Tx to the other)
         mutable std::vector<std::vector<Node3Dcd<T1,T2>>> tempNodes;
+        /// Per-thread, per-tetrahedron lists of the temporary nodes in each cell.
         mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
 
         void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;

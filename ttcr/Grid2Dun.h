@@ -22,6 +22,51 @@
  *
  */
 
+/**
+ * @file Grid2Dun.h
+ * @brief Base class for 2-D unstructured triangular meshes with node-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid2Dun, the mid-level base shared by every 2-D unstructured
+ * solver whose slowness lives at the **nodes**: Grid2Dunsp (shortest path),
+ * Grid2Dunfs (fast sweeping), Grid2Dunfm (fast marching) and Grid2Dundsp
+ * (dynamic shortest path).
+ *
+ * It completes the 2x2 of 2-D bases: unstructured like ttcr::Grid2Duc,
+ * node-slowness like ttcr::Grid2Drn.
+ *
+ * @section g2dun_vs_uc Node slowness versus cell slowness
+ * As in the rectilinear families, the difference is where slowness lives and
+ * how a traveltime increment is formed:
+ *
+ * - **@c un (here)** — one value per node. ttcr::Grid2Dun::computeDt averages
+ *   the slowness at the two ends and multiplies by the distance,
+ *   @f$\Delta t = \tfrac{1}{2}(s_1+s_2)\,\ell@f$.
+ * - **@c uc (ttcr::Grid2Duc)** — one value per triangle, drawn from a @c CELL
+ *   policy that may be anisotropic.
+ *
+ * So this family has no @c CELL template parameter and is isotropic, and its
+ * slowness is continuous across triangle boundaries rather than piecewise
+ * constant. That continuity is why @ref ttcr::Grid2Dun::computeSlowness comes in
+ * three forms — sampling at a point, within a known triangle, or along a known
+ * edge — where the cell-based version needs only one.
+ *
+ * @section g2dun_obtuse Obtuse triangles
+ * Like ttcr::Grid2Duc, this class corrects obtuse triangles by unfolding into
+ * the neighbour across the opposite edge and caching a @ref ttcr::virtualNode
+ * per triangle; see @ref g2duc_obtuse for the reasoning. Both 2-D unstructured
+ * families do this. The 3-D unstructured families do not — they fall back on
+ * face-wise two-dimensional updates instead (@ref g3duc_update).
+ *
+ * @section g2dun_project Projecting sources and receivers
+ * ttcr::Grid2Dun::projectPts snaps points onto the nearest triangle. It exists
+ * for the **draped** meshes used by the @c ttcr2ds program, where a 2-D surface
+ * is embedded in 3-D and a survey's sources and receivers rarely lie exactly on
+ * it. Enabled by ttcr::input_parameters::projectTxRx.
+ *
+ * @sa Grid2D.h, Grid2Duc.h, Grid2Drn.h, Grid3Dun.h, Grid2Dunsp.h
+ */
+
 #ifndef ttcr_Grid2Dun_h
 #define ttcr_Grid2Dun_h
 
@@ -45,9 +90,35 @@
 
 namespace ttcr {
 
+    /**
+     * @brief 2-D triangular mesh holding one slowness value per node.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices, normally @c uint32_t.
+     * @tparam S    point type: @ref sxz for a planar mesh, @ref sxyz for a
+     *              draped mesh embedded in 3-D.
+     * @tparam NODE node type; must expose @c getNodeSlowness.
+     *
+     * @note No @c CELL parameter, so isotropic only — @sa @ref g2dun_vs_uc
+     * @note Abstract in practice: it implements everything except @c raytrace.
+     */
     template<typename T1, typename T2, typename S, typename NODE>
     class Grid2Dun : public Grid2D<T1,T2,S> {
     public:
+        /**
+         * @brief Build the mesh from a node list and a triangle list.
+         *
+         * @param no   node coordinates; these become the primary nodes.
+         * @param tri  triangles, each naming three node indices into @p no.
+         * @param ttrp recompute receiver traveltimes by integrating slowness
+         *             along the traced raypath.
+         * @param nt   number of threads; sizes each node's traveltime array.
+         *
+         * @post Nodes are allocated and the triangles copied in. Their angles
+         *       and edge lengths, the node ownership lists and the obtuse-angle
+         *       corrections are **not** yet built — the derived class calls
+         *       @ref buildGridNodes and @ref processObtuse. Slowness is not set.
+         */
         Grid2Dun(const std::vector<S>& no,
                  const std::vector<triangleElem<T2>>& tri, const bool ttrp,
                  const size_t nt=1) :
@@ -62,14 +133,32 @@ namespace ttcr {
             }
         }
 
+        /// Destructor.
         virtual ~Grid2Dun() {}
 
+        /**
+         * @brief Give every node the same slowness.
+         * @param s the uniform value.
+         * @note Applies to **all** nodes, secondary ones included, so it needs
+         *       no companion interpolation step — every node ends up with the
+         *       same value whichever kind it is.
+         */
         void setSlowness(const T1 s) {
             for ( size_t n=0; n<nodes.size(); ++n ) {
-                nodes[n].setSlowness( s );
+                nodes[n].setNodeSlowness( s );
             }
         }
 
+        /**
+         * @brief Set the slowness at every node, from a raw array.
+         * @param s  one slowness per node.
+         * @param ns length of @p s.
+         * @throws std::length_error if @p ns does not match the node count.
+         * @note Sized against **all** nodes, secondary ones included — unlike
+         *       @ref getSlowness, which returns primary values only. The derived
+         *       solvers that add secondary nodes override this with a
+         *       primary-sized version.
+         */
         void setSlowness(const T1 *s, const size_t ns) {
             if ( nodes.size() != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -79,6 +168,10 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Copy the primary-node slowness values out of the mesh.
+         * @param[out] slowness resized to @ref nPrimary and filled.
+         */
         void getSlowness(std::vector<T1>& slowness) const {
             if (slowness.size() != nPrimary) {
                 slowness.resize(nPrimary);
@@ -88,6 +181,15 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Set the slowness at every node.
+         * @param s one slowness per node, secondary ones included.
+         * @throws std::length_error if @p s has the wrong size.
+         * @note Virtual, and overridden by ttcr::Grid2Dunsp and
+         *       ttcr::Grid2Dundsp with versions taking one value per *primary*
+         *       node and interpolating onto the rest — the caller should not
+         *       have to know how many secondary nodes were inserted.
+         */
         virtual void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -97,18 +199,38 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Write a traveltime directly into one node.
+         * @param tt traveltime to store.
+         * @param nn node index.
+         * @param nt thread whose slot to write.
+         * @warning Unchecked and non-@c const: it bypasses the solver.
+         */
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
             nodes[nn].setTT(tt, nt);
         }
 
+        /**
+         * @brief Number of nodes in the mesh.
+         * @param primary true to count only the primary nodes — those supplied
+         *                to the constructor — false (the default) to include
+         *                the secondary nodes a solver has added.
+         * @return The requested count.
+         */
         size_t getNumberOfNodes(const bool primary=false) const {
             if ( primary ) {
                 return nPrimary;
             }
             return nodes.size();
         }
+        /// @return Number of triangles.
         size_t getNumberOfCells() const { return triangles.size(); }
 
+        /**
+         * @brief Collect the traveltimes computed at the primary nodes.
+         * @param[out] tt       resized to @ref nPrimary and filled.
+         * @param[in]  threadNo thread whose solution to read.
+         */
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             tt.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {
@@ -116,6 +238,13 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @name Mesh bounding box
+         *
+         * Computed by scanning every node on each call — an unstructured mesh
+         * has no stored extent. Cache the result if you need it in a loop.
+         * @{
+         */
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -144,52 +273,153 @@ namespace ttcr {
             }
             return zmax;
         }
+        /// @}
 
-        void saveTT(const std::string &, const int, const size_t nt=0,
+        /**
+         * @brief Write the traveltime field to a file.
+         * @param fname  output filename.
+         * @param all    if nonzero, include the secondary nodes.
+         * @param nt     thread whose solution to write.
+         * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
+         */
+        void saveTT(const std::string &fname, const int all, const size_t nt=0,
                     const int format=1) const;
 
-        int projectPts(std::vector<S>&) const;
+        /**
+         * @brief Snap points onto the mesh surface.
+         * @param[in,out] pts points to project, modified in place.
+         * @return 0 on success.
+         * @note For each point, finds the triangle whose **centroid** is nearest
+         *       and projects onto that triangle's plane, after Heidrich (2005).
+         *       Nearest-centroid is a heuristic, not a true nearest-triangle
+         *       test, so on a mesh with strongly varying triangle sizes the
+         *       chosen triangle may not be the closest one.
+         * @note Exists for the draped meshes of the @c ttcr2ds program, where
+         *       sources and receivers rarely lie exactly on the surface.
+         *       Enabled by ttcr::input_parameters::projectTxRx.
+         *       @sa @ref g2dun_project
+         */
+        int projectPts(std::vector<S>& pts) const;
 
 #ifdef VTK
-        void saveModelVTU(const std::string &, const bool saveSlowness=true,
+        /**
+         * @brief Write the mesh and its model as a VTK unstructured grid.
+         * @param fname              output filename.
+         * @param saveSlowness       write slowness rather than velocity.
+         * @param savePhysicalEntity also write each triangle's physical-entity
+         *                           tag from the Gmsh model.
+         * @note Requires a build with @c VTK defined.
+         */
+        void saveModelVTU(const std::string &fname, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
+        /**
+         * @brief Resample the model onto a rectilinear grid and write it as VTK.
+         * @warning **Not implemented.** The body prints a message to
+         *          @c std::cerr and returns without writing anything. Unlike
+         *          ttcr::Grid2Duc::saveModelVTR, which does the resampling.
+         */
         void saveModelVTR(const std::string &, const double*,
                           const bool saveSlowness=true) const {
             std::cerr << "saveModelVTR not yet implemented, doing nothing...\n";
         }
 #endif
 
+        /// @return Number of threads the mesh was built for.
         const size_t getNthreads() const { return nThreads; }
 
+        /**
+         * @brief Write the coordinates of the secondary nodes to a stream.
+         * @param os destination stream, one @c "x z" pair per line.
+         * @note Writes nothing when the solver adds none.
+         */
         void dump_secondary(std::ofstream& os) const {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getZ() << '\n';
             }
         }
 
+        /**
+         * @brief Mean edge length over the whole mesh.
+         * @return The average, a natural length scale for a mesh with no
+         *         uniform cell size — used to turn relative radii into absolute
+         *         distances, as in ttcr::Grid2Dundsp.
+         */
         const T1 getAverageEdgeLength() const;
 
     protected:
         const size_t nThreads;
+        /// Number of primary nodes, i.e. the mesh vertices supplied to the
+        /// constructor. Nodes at or beyond this index are secondary.
         T2 nPrimary;
+        /// Primary nodes first, then any secondary nodes the derived solver
+        /// added. @c mutable because @c const raytracing methods update the
+        /// traveltimes stored in them.
         mutable std::vector<NODE> nodes;
+        /// The triangles, each caching its interior angles and edge lengths.
         std::vector<triangleElemAngle<T1,T2>> triangles;
+        /// Unfolded support points for obtuse triangles, keyed by triangle
+        /// index. @sa @ref g2dun_obtuse
         std::map<T2, virtualNode<T1,NODE>> virtualNodes;
 
-        void buildGridNodes(const std::vector<S>&, const size_t);
-        void buildGridNodes(const std::vector<S>&, const T2, const size_t);
+        /**
+         * @brief Position the primary nodes and build their ownership lists.
+         * @param no node coordinates.
+         * @param nt number of threads.
+         * @post Every node knows which triangles are incident to it.
+         */
+        void buildGridNodes(const std::vector<S>& no, const size_t nt);
+        /**
+         * @brief Build the primary nodes plus secondary nodes along each edge.
+         * @param no         node coordinates.
+         * @param nsecondary number of secondary nodes per triangle edge.
+         * @param nt         number of threads.
+         */
+        void buildGridNodes(const std::vector<S>& no, const T2 nsecondary,
+                            const size_t nt);
 
+        /**
+         * @brief Traveltime increment between two nodes.
+         * @param source node the ray comes from.
+         * @param node   node it reaches.
+         * @return The increment @f$\tfrac{1}{2}(s_{source}+s_{node})\,\ell@f$ —
+         *         trapezoidal integration along the segment.
+         * @note Contrast ttcr::Grid2Duc, where the increment comes from the
+         *       triangle's own constant slowness. @sa @ref g2dun_vs_uc
+         */
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        /**
+         * @brief Traveltime increment from a node to an arbitrary point.
+         * @param source node the ray comes from.
+         * @param node   point it reaches.
+         * @param slo    slowness at that point, which the caller must supply.
+         * @return The increment @f$\tfrac{1}{2}(s_{source}+slo)\,\ell@f$.
+         */
         T1 computeDt(const NODE& source, const S& node, T1 slo) const {
             return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        /**
+         * @name Slowness at an arbitrary point
+         *
+         * Three forms, differing in how much the caller already knows. All
+         * interpolate between nodal values, so the field is continuous —
+         * the piecewise-constant ttcr::Grid2Duc needs only a single form.
+         * @{
+         */
+        /// @param Rx point to sample. @return Interpolated slowness, locating
+        /// the containing triangle first.
         T1 computeSlowness(const S& Rx) const;
+        /// @param Rx point to sample. @param cellNo triangle already known to
+        /// contain it. @return Interpolated slowness, skipping point location.
         T1 computeSlowness(const S& Rx, const T2 cellNo) const;
+        /// @param pt point to sample. @param edgeNodes the two nodes of the edge
+        /// it lies on. @return Slowness interpolated along that edge — the case
+        /// where the point is on a triangle boundary rather than inside one.
         T1 computeSlowness(const S& pt, std::array<T2,2>& edgeNodes) const;
+        /// @}
 
         // kd-tree over all nodes, for fast point location and on-node lookup.
         // Built lazily; node coordinates are fixed after construction and
@@ -197,6 +427,13 @@ namespace ttcr {
         mutable std::unique_ptr<NodeKDTree2D<T1,T2>> kdtree;
         mutable std::once_flag kdtreeFlag;
 
+        /**
+         * @brief Index of the node closest to a point.
+         * @param pt query point.
+         * @return Nearest node index, whether or not it coincides with @p pt.
+         * @note Builds @ref kdtree on first call; @c std::call_once makes that
+         *       safe under concurrency.
+         */
         T2 getNearestNode(const S& pt) const {
             std::call_once(kdtreeFlag, [this]() {
                 kdtree.reset(new NodeKDTree2D<T1,T2>(nodes, nodes.size()));
@@ -204,6 +441,16 @@ namespace ttcr {
             return kdtree->findNearest(pt.x, pt.z);
         }
 
+        /**
+         * @brief Locate the triangle containing a point.
+         * @param pt point to locate.
+         * @return Index of the containing triangle.
+         * @throws std::runtime_error naming the point if it lies outside the mesh.
+         * @note Two-stage: the containing triangle is almost always incident to
+         *       the nearest node, so those few are tested first, with an
+         *       exhaustive scan as fallback. Where several match — a point on a
+         *       shared edge or vertex — the lowest index wins.
+         */
         T2 getCellNo(const S& pt) const {
             // The containing triangle is, in the common case, incident to the
             // nearest node, so check that node's triangles first.
@@ -276,8 +523,21 @@ namespace ttcr {
         bool insideTriangle(const sxz<T1>&, const T2) const;
         bool insideTriangle(const sxyz<T1>&, const T2) const;
 
+        /**
+         * @brief Build the virtual nodes that correct obtuse triangles.
+         * @note Run once after the mesh is built. Triangles on the domain
+         *       boundary have no opposite neighbour to unfold into, so no
+         *       correction is stored for them. @sa @ref g2dun_obtuse
+         */
         void processObtuse();
 
+        /**
+         * @brief Solve the local eikonal update at one vertex.
+         * @param vertexC  node to update.
+         * @param threadNo thread whose traveltimes to read and write.
+         * @note Consults @ref virtualNodes when the angle at @p vertexC is
+         *       obtuse, and the triangle's own cached angles otherwise.
+         */
         void localSolver(NODE *vertexC, const size_t threadNo) const;
 
         void initTxVars(const std::vector<sxz<T1>>& Tx,

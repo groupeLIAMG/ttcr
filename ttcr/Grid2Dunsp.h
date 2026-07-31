@@ -22,6 +22,18 @@
  *
  */
 
+/**
+ * @file Grid2Dunsp.h
+ * @brief Shortest-path solver on a 2-D triangular mesh with node-based slowness.
+ *
+ * Declares ttcr::Grid2Dunsp, the node-slowness counterpart of
+ * ttcr::Grid2Ducsp: same graph relaxation over primary and secondary nodes,
+ * differing in how a traveltime increment along an edge is formed.
+ * @sa @ref g2dun_vs_uc
+ *
+ * @sa Grid2Dun.h, Grid2Ducsp.h, Grid2Drnsp.h, Node2Dnsp.h
+ */
+
 #ifndef ttcr_Grid2Dunsp_h
 #define ttcr_Grid2Dunsp_h
 
@@ -36,6 +48,27 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S, typename NODE>
+    /**
+     * @brief Shortest-path eikonal solver on a triangular mesh, slowness per node.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices.
+     * @tparam S    point type, @ref sxz or @ref sxyz.
+     * @tparam NODE node type, normally ttcr::Node2Dnsp.
+     *
+     * The node-slowness counterpart of ttcr::Grid2Ducsp. Secondary nodes along
+     * the triangle edges widen the set of ray directions; a traveltime
+     * increment is the mean of the two endpoint slownesses times the distance.
+     *
+     * @note Overrides @c setSlowness with primary-node-sized versions, so the
+     *       caller need not know how many secondary nodes were inserted; those
+     *       overloads interpolate onto the secondary nodes afterwards. A
+     *       @c using declaration keeps the base's scalar
+     *       ttcr::Grid2Dun::setSlowness(const T1) reachable, which would
+     *       otherwise be hidden by them.
+     *
+     * @sa Grid2Dun.h, Grid2Ducsp.h, Node2Dnsp.h, Grid2Dundsp.h
+     */
     class Grid2Dunsp : public Grid2Dun<T1,T2,S,NODE> {
     public:
         Grid2Dunsp(const std::vector<S>& no,
@@ -50,6 +83,10 @@ namespace ttcr {
 
         ~Grid2Dunsp() {
         }
+
+        // the overloads below hide every base setSlowness; bring back the
+        // scalar one, which needs no secondary-node interpolation
+        using Grid2Dun<T1,T2,S,NODE>::setSlowness;
 
         void setSlowness(const std::vector<T1>& s) {
             if ( this->nPrimary != s.size() ) {

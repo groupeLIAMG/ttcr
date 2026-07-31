@@ -23,6 +23,117 @@
  *
  */
 
+/**
+ * @file Grid3Dun.h
+ * @brief Base class for 3-D unstructured tetrahedral meshes with node-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid3Dun, the mid-level base shared by every 3-D unstructured
+ * solver whose slowness lives at the **nodes**: Grid3Dunsp (shortest path),
+ * Grid3Dunfs (fast sweeping), Grid3Dunfm (fast marching) and Grid3Dundsp
+ * (dynamic shortest path).
+ *
+ * It is the last corner of the 2x2 of 3-D bases: unstructured like
+ * ttcr::Grid3Duc, node-slowness like ttcr::Grid3Drn. At roughly 12 000 lines it
+ * is the largest file in the project, almost all of it raypath tracing.
+ *
+ * @section g3dun_vs_uc Node slowness versus cell slowness
+ * As in every other family, the difference is where slowness lives and how a
+ * traveltime increment is formed:
+ *
+ * - **@c un (here)** — one value per node. ttcr::Grid3Dun::computeDt averages
+ *   the slowness at the two ends and multiplies by the distance,
+ *   @f$\Delta t = \tfrac{1}{2}(s_1+s_2)\,\ell@f$.
+ * - **@c uc (ttcr::Grid3Duc)** — one value per tetrahedron, drawn from a
+ *   @c CELL policy that may be anisotropic.
+ *
+ * So this family has no @c CELL template parameter and is isotropic, and its
+ * slowness field is continuous across element boundaries rather than piecewise
+ * constant. Sampling that continuous field is what
+ * ttcr::Grid3Dun::computeSlowness does, in two forms: at an arbitrary point
+ * (locate the tetrahedron, then interpolate over its four primary nodes), or at
+ * a point already known to lie on a node, an edge or a face — the form the
+ * raypath tracer uses, since it always knows which.
+ *
+ * @section g3dun_procvel Velocity versus slowness interpolation
+ * Interpolating slowness and interpolating velocity give different answers,
+ * because the mean of the reciprocals is not the reciprocal of the mean. The
+ * @c processVel flag, set from ttcr::input_parameters::processVel, selects
+ * which: when true the node velocities are interpolated and the result
+ * inverted; when false slowness is interpolated directly. The distinction runs
+ * right through the file — it is tested at over a hundred sites, wherever a
+ * value is needed between nodes.
+ *
+ * This mirrors @ref g3drn_procvel in the rectilinear node-slowness family. Only
+ * the node-slowness families offer the choice; with cell slowness there is
+ * nothing to interpolate.
+ *
+ * @section g3dun_update The local update, and an unused alternative
+ * ttcr::Grid3Dun::localUpdate3D computes the traveltime at a tetrahedron's
+ * fourth vertex from the other three (Lelievre et al., 2011), falling back to
+ * ttcr::Grid3Dun::localUpdate2D on each face when the three-dimensional stencil
+ * is not causal. This is what the sweeping and marching solvers call.
+ *
+ * There is no obtuse-triangle machinery here, unlike the 2-D unstructured
+ * families (@ref g2duc_obtuse): the face-wise fallback plays that role.
+ *
+ * A second, older stencil — ttcr::Grid3Dun::local3Dsolver,
+ * ttcr::Grid3Dun::local2Dsolver and ttcr::Grid3Dun::solveEq23, after Qian et
+ * al. (2007) — is present but **dead**: nothing outside the three of them calls
+ * any of them. The same trio, likewise dead, appears in ttcr::Grid3Duc; see
+ * @ref g3duc_update.
+ *
+ * @section g3dun_raypath Raypath tracing
+ * Raypaths are traced backwards from receiver to source, stepping cell by cell
+ * along the negated traveltime gradient. The gradient estimator is chosen by
+ * the @c rp_method constructor argument:
+ *
+ * | @c rp_method | estimator |
+ * | :----------: | :-------- |
+ * | 0 | ttcr::Grad3D_ls_fo — least squares, first order |
+ * | 1 | ttcr::Grad3D_ls_so — least squares, second order |
+ * | 2 | ttcr::Grad3D_ab — averaged over the cells sharing the point |
+ *
+ * Methods 0 and 1 estimate a gradient at a point; method 2 differs enough that
+ * several code paths branch on @c rp_method @c < @c 2.
+ *
+ * The tracer tracks whether the current point sits on a node, on an edge or on
+ * a face, since each case has its own way of finding the next cell.
+ * @c min_dist, from ttcr::input_parameters::min_distance_rp, is the tolerance
+ * for snapping an intersection point onto a nearby node rather than leaving it
+ * a hair away on the edge.
+ *
+ * @section g3dun_blti An unused second raypath implementation
+ * The file also carries a complete alternative raypath implementation, the
+ * @c blti group (Nasr, 2018): ttcr::Grid3Dun::getTraveltime_blti,
+ * ttcr::Grid3Dun::getRaypath_blti and the helpers @c blti_raytrace,
+ * @c blti2D_raytrace and @c blti_solver_around_source, together with their own
+ * @c txInfoCacheBlti / @c getTxInfoBlti source cache. Rather than following a
+ * gradient it solves for the ray's exit point on each face directly.
+ *
+ * It is **dead code**: neither entry point is called anywhere in the C++ sources
+ * or the Cython bindings. The group spans roughly 1 900 lines, about 15 % of the
+ * file.
+ *
+ * @section g3dun_txinfo Source classification cache
+ * Like ttcr::Grid3Duc, this class caches the classification of the Tx points —
+ * whether each lies on a node, an edge or a face, and which cells own it — in
+ * @c txInfoCache, indexed by thread number so no locking is needed. The setup
+ * scans every node, so doing it once per source rather than once per
+ * (source, receiver) pair matters. See @ref g3duc_txinfo.
+ *
+ * @section g3dun_tomo Tomography operators
+ * Two methods build matrices for inversion rather than forward modelling:
+ *
+ * - ttcr::Grid3Dun::computeD — interpolation weights mapping node slowness onto
+ *   arbitrary points, one row per point.
+ * - ttcr::Grid3Dun::computeK — first- or second-order spatial derivative
+ *   operators at every primary node, from a weighted least-squares Taylor fit
+ *   over the surrounding nodes. Used to regularise an inversion.
+ *
+ * @sa Grid3D.h, Grid3Duc.h, Grid3Drn.h, Grid2Dun.h, Grid3Dunsp.h
+ */
+
 #ifndef ttcr_Grid3Dun_h
 #define ttcr_Grid3Dun_h
 
@@ -69,9 +180,44 @@
 
 namespace ttcr {
 
+    /**
+     * @brief 3-D tetrahedral mesh holding one slowness value per node.
+     *
+     * Holds the geometry (nodes and tetrahedra), the slowness field, and
+     * everything the derived solvers share: point location, the local
+     * traveltime update, raypath tracing and the tomography operators. It does
+     * not itself propagate a wavefront — that is what the four derived classes
+     * differ in.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 unsigned integer type used for node and cell indices.
+     * @tparam NODE node type; ttcr::Node3Dnsp for the shortest-path solver
+     *              (it carries the graph edges), ttcr::Node3Dn for the others.
+     *
+     * @sa Grid3Dunsp.h, Grid3Dunfs.h, Grid3Dunfm.h, Grid3Dundsp.h
+     */
     template<typename T1, typename T2, typename NODE>
     class Grid3Dun : public Grid3D<T1,T2> {
     public:
+        /**
+         * @brief Build the mesh from its nodes and tetrahedra.
+         * @param no  primary node coordinates.
+         * @param tet tetrahedra, given as quadruples of indices into @p no.
+         * @param rp  raypath gradient estimator, 0, 1 or 2; see
+         *            @ref g3dun_raypath.
+         * @param procVel interpolate velocity rather than slowness; see
+         *            @ref g3dun_procvel.
+         * @param ttrp compute traveltimes by integrating along the raypath
+         *            instead of reading them off the grid.
+         * @param md  minimum distance for snapping a raypath point onto a node.
+         * @param nt  number of threads; per-thread storage is sized from it.
+         * @param _translateOrigin shift the mesh so its lower corner sits at the
+         *            origin, which helps conditioning when coordinates are large.
+         *
+         * @note Only the primary nodes are created here. Secondary nodes are
+         *       added by the derived class, which alone knows how many it wants;
+         *       see ttcr::Grid3Dun::buildGridNodes.
+         */
         Grid3Dun(const std::vector<sxyz<T1>>& no,
                  const std::vector<tetrahedronElem<T2>>& tet,
                  const int rp,
@@ -92,12 +238,34 @@ namespace ttcr {
 
         virtual ~Grid3Dun() {}
 
+        /**
+         * @name Slowness accessors
+         * @{
+         */
+
+        /**
+         * @brief Give every node the same slowness.
+         * @param s the uniform value.
+         * @note Applies to **all** nodes, secondary ones included, so it needs
+         *       no companion interpolation step — every node ends up with the
+         *       same value whichever kind it is.
+         */
         void setSlowness(const T1 s) {
             for ( size_t n=0; n<nodes.size(); ++n ) {
-                nodes[n].setNodeSlowness( s[n] );
+                nodes[n].setNodeSlowness( s );
             }
         }
 
+        /**
+         * @brief Set the slowness at every node, from a raw array.
+         * @param s  array of slowness values, one per node.
+         * @param ns length of @p s.
+         * @throws std::length_error if @p ns differs from the node count.
+         *
+         * @note The count must cover **all** nodes, secondary ones included, so
+         *       this is not the overload a caller working in terms of the
+         *       primary nodes wants; the derived classes provide that.
+         */
         void setSlowness(const T1 *s, const size_t ns) {
             if ( nodes.size() != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -107,6 +275,11 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Set the slowness at every node.
+         * @param s one value per node, secondary nodes included.
+         * @throws std::length_error if @p s does not match the node count.
+         */
         void setSlowness(const std::vector<T1>& s) {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -115,6 +288,14 @@ namespace ttcr {
                 nodes[n].setNodeSlowness( s[n] );
             }
         }
+
+        /**
+         * @brief Retrieve the slowness at the primary nodes.
+         * @param[out] slowness resized to the primary node count if needed.
+         *
+         * @note Asymmetric with the setters: this returns only the primary
+         *       values, being the model parameters, while they take all nodes.
+         */
         void getSlowness(std::vector<T1>& slowness) const {
             if (slowness.size() != nPrimary) {
                 slowness.resize(nPrimary);
@@ -123,14 +304,55 @@ namespace ttcr {
                 slowness[n] = nodes[n].getNodeSlowness();
             }
         }
+        /** @} */
+
+        /**
+         * @brief Set the radius around a source used to seed the initial
+         *        traveltimes.
+         * @param r radius; 0 (the default) seeds only the immediate neighbours.
+         *
+         * Controls how widely the wavefront is initialised before sweeping or
+         * marching begins. Every node within @p r of the source is given the
+         * straight-ray estimate @f$t_0 + \tfrac{1}{2}(s_{tx}+s_n)\,d@f$, kept
+         * only if it improves on the node's current value. With @p r left at
+         * zero the seeding reaches just the nodes sharing a tetrahedron with the
+         * source.
+         *
+         * Widening it helps where the wavefront curvature near a point source is
+         * too strong for the stencils to resolve. Only the source node itself is
+         * frozen; the seeded nodes are ordinary nodes that the solver may still
+         * lower.
+         *
+         * @note Used by the sweeping and marching solvers. The shortest-path
+         *       solvers ignore it, and ttcr::Grid3Dundsp instead sets it to its
+         *       own tertiary-node radius.
+         */
         void setSourceRadius(const double r) { source_radius = r; }
 
+        /**
+         * @brief Set the traveltime at one node.
+         * @param tt the value.
+         * @param nn node index.
+         * @param nt thread number.
+         */
         void setTT(const T1 tt, const size_t nn, const size_t nt=0) {
             nodes[nn].setTT(tt, nt);
         }
 
+        /**
+         * @brief Total node count, secondary nodes included.
+         * @return the number of nodes.
+         * @note Compare @c nPrimary, the count of mesh vertices alone.
+         */
         size_t getNumberOfNodes() const { return nodes.size(); }
 
+        /**
+         * @brief Retrieve the traveltimes at the primary nodes.
+         * @param[out] tt resized to the primary node count.
+         * @param threadNo thread number.
+         * @note Secondary nodes are omitted: they are an artefact of the
+         *       discretisation, not part of the model.
+         */
         void getTT(std::vector<T1>& tt, const size_t threadNo=0) const final {
             tt.resize(nPrimary);
             for ( size_t n=0; n<nPrimary; ++n ) {
@@ -138,6 +360,12 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @name Bounding box
+         * Extent of the mesh, computed by scanning every node on each call.
+         * @{
+         */
+        /** @brief Smallest node x coordinate. */
         const T1 getXmin() const {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -145,6 +373,7 @@ namespace ttcr {
             }
             return xmin;
         }
+        /** @brief Largest node x coordinate. */
         const T1 getXmax() const {
             T1 xmax = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -152,6 +381,7 @@ namespace ttcr {
             }
             return xmax;
         }
+        /** @brief Smallest node y coordinate. */
         const T1 getYmin() const {
             T1 ymin = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -159,6 +389,7 @@ namespace ttcr {
             }
             return ymin;
         }
+        /** @brief Largest node y coordinate. */
         const T1 getYmax() const {
             T1 ymax = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -166,6 +397,7 @@ namespace ttcr {
             }
             return ymax;
         }
+        /** @brief Smallest node z coordinate. */
         const T1 getZmin() const {
             T1 zmin = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -173,6 +405,7 @@ namespace ttcr {
             }
             return zmin;
         }
+        /** @brief Largest node z coordinate. */
         const T1 getZmax() const {
             T1 zmax = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
@@ -181,42 +414,129 @@ namespace ttcr {
             }
             return zmax;
         }
+        /** @} */
 
-        void saveTT(const std::string &, const int, const size_t nt=0,
+        /**
+         * @brief Write the traveltime field to disk.
+         * @param fname  base filename; the extension follows from @p format.
+         * @param all    if 1, include the secondary nodes.
+         * @param nt     thread number.
+         * @param format output format:
+         *               | value | file | contents |
+         *               | :---: | :--- | :------- |
+         *               | 1 | @c .dat | ASCII, one @c "x y z t" line per node |
+         *               | 2 | @c .vtu | VTK unstructured grid |
+         *               | 3 | @c .bin | raw binary |
+         *
+         * @note @p all is honoured by formats 1 and 3 only; the VTK output
+         *       always writes just the primary nodes, since the secondary ones
+         *       are not vertices of any cell.
+         */
+        void saveTT(const std::string &fname, const int all, const size_t nt=0,
                     const int format=1) const;
-        void loadTT(const std::string &, const int, const size_t nt=0,
+        /**
+         * @brief Read back a traveltime field written by @ref saveTT.
+         * @param fname  base filename.
+         * @param all    if 1, expect the secondary nodes too.
+         * @param nt     thread number.
+         * @param format must match the one used to write.
+         *
+         * @note Declared @c const yet it writes into the nodes; it can do so
+         *       because @c nodes is @c mutable.
+         */
+        void loadTT(const std::string &fname, const int all, const size_t nt=0,
                     const int format=1) const;
 
 #ifdef VTK
-        void saveModelVTU(const std::string &, const bool saveSlowness=true,
+        /**
+         * @brief Write the mesh and its slowness model to a VTK @c .vtu file.
+         * @param fname filename.
+         * @param saveSlowness write slowness; when false, velocity is written.
+         * @param savePhysicalEntity also write the tetrahedra's physical-entity
+         *        tags, as carried over from the Gmsh mesh.
+         */
+        void saveModelVTU(const std::string &fname, const bool saveSlowness=true,
                           const bool savePhysicalEntity=false) const;
 #endif
 
+        /**
+         * @brief Write the coordinates of the secondary nodes, for debugging.
+         * @param os open output stream; one @c "x y z" line per node.
+         */
         void dump_secondary(std::ofstream& os) const {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
         }
 
+        /**
+         * @brief Build the interpolation weights mapping node slowness onto a
+         *        set of points.
+         * @param pts        the points; taken by value since they may be
+         *                   translated in place.
+         * @param[out] d_data one row per point, each a list of
+         *                   (point, node, weight) triplets.
+         * @param translated set when @p pts are already in translated
+         *                   coordinates, so the origin shift is not applied
+         *                   twice.
+         *
+         * A point coinciding with a node gets a single unit weight; otherwise
+         * the weights are the barycentric coordinates within its tetrahedron.
+         * Used to relate a measurement to the model parameters in tomography.
+         *
+         * @sa computeK
+         */
         void computeD(std::vector<sxyz<T1>> pts,
                       std::vector<std::vector<sijv<T1>>> &d_data,
                       const bool translated=false) const;
 
-        void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& d_data,
+        /**
+         * @brief Build spatial derivative operators at every primary node.
+         * @param[out] k_data three matrices, for @f$\partial/\partial x@f$,
+         *             @f$\partial/\partial y@f$ and @f$\partial/\partial z@f$,
+         *             each with one row of (node, weight) pairs per primary node.
+         * @param order derivative order, 1 or 2.
+         * @param taylorSeriesOrder order of the Taylor expansion fitted, 1 or 2.
+         * @param weighting weight the neighbours by inverse distance.
+         * @param s0inside treat the centre node's own value as an unknown of the
+         *        fit rather than as fixed; selects the @c buildA2 /
+         *        @c fill_k_data2 variants.
+         * @param additionnalPoints widen the neighbourhood beyond the minimum
+         *        needed for the fit, which helps where the mesh is irregular.
+         *
+         * At each node the surrounding nodes are collected and a weighted
+         * least-squares Taylor fit is solved for the derivative coefficients.
+         * The resulting operators regularise an inversion by penalising
+         * roughness.
+         *
+         * @throws std::runtime_error if @p order or @p taylorSeriesOrder is
+         *         outside {1, 2}, or if a second-order derivative is asked of a
+         *         first-order expansion, which cannot supply it.
+         * @sa computeD, getSurroundingNodes, buildA
+         */
+        void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& k_data,
                       const int order=2, const int taylorSeriesOrder=2,
                       const bool weighting=1, const bool s0inside=0,
                       const int additionnalPoints=0) const;
 
+        /**
+         * @brief Mean length of the tetrahedron edges.
+         * @return the average.
+         *
+         * A characteristic length for the mesh, used by ttcr::Grid3Dundsp to
+         * express its tertiary-node radius as a multiple of the local element
+         * size rather than as an absolute distance.
+         */
         const T1 getAverageEdgeLength() const;
 
     protected:
-        int rp_method;
-        bool processVel;
-        T2 nPrimary;
-        T1 source_radius;
-        T1 min_dist;
-        mutable std::vector<NODE> nodes;
-        std::vector<tetrahedronElem<T2>> tetrahedra;
+        int rp_method;   ///< Raypath gradient estimator; see @ref g3dun_raypath.
+        bool processVel; ///< Interpolate velocity rather than slowness; see @ref g3dun_procvel.
+        T2 nPrimary;     ///< Number of primary nodes, i.e. mesh vertices. They occupy the first @c nPrimary slots of @c nodes.
+        T1 source_radius;///< Radius for seeding traveltimes around a source; see @ref setSourceRadius.
+        T1 min_dist;     ///< Tolerance for snapping a raypath point onto a node.
+        mutable std::vector<NODE> nodes;             ///< Primary nodes first, then the secondary ones. @c mutable so that @c const methods can write traveltimes.
+        std::vector<tetrahedronElem<T2>> tetrahedra; ///< The elements, each holding four primary node indices.
 
         // kd-tree over the primary nodes, for fast point location in getCellNo.
         // Built lazily on first use (std::call_once) since node coordinates are
@@ -231,81 +551,279 @@ namespace ttcr {
             return kdtree->findNearest(pt.x, pt.y, pt.z);
         }
 
-        // Cached classification of the Tx points (on node / edge / face, owning
-        // cell, neighbour cells).  For a given source the Tx are constant while
-        // looping over all receivers, so this setup -- which scans every node
-        // and calls getCellNo per Tx -- need only be done once per source rather
-        // than once per (source, receiver) pair.  The cache is indexed by
-        // threadNo: in parallel runs each thread owns a distinct slot, so no
-        // locking is needed.  A slot is recomputed only when its Tx changes.
+        /**
+         * @brief Cached classification of the Tx points.
+         *
+         * For a given source the Tx are constant while looping over all
+         * receivers, so this setup -- which scans every node and calls
+         * @ref getCellNo per Tx -- need only be done once per source rather than
+         * once per (source, receiver) pair. See @ref g3dun_txinfo.
+         */
         struct txInfo_t {
-            std::vector<sxyz<T1>> tx;
-            std::vector<bool> txOnNode;
-            std::vector<bool> txOnEdge;
-            std::vector<bool> txOnFace;
-            std::vector<T2> txNode;
-            std::vector<T2> txCell;
-            std::vector<std::array<T2,2>> txEdges;
-            std::vector<std::array<T2,3>> txFaces;
-            std::vector<std::vector<T2>> txNeighborCells;
-            bool valid = false;
+            std::vector<sxyz<T1>> tx;        ///< The Tx the rest of the struct describes; compared against to detect staleness.
+            std::vector<bool> txOnNode;      ///< Whether each Tx coincides with a node.
+            std::vector<bool> txOnEdge;      ///< Whether each Tx lies on an edge.
+            std::vector<bool> txOnFace;      ///< Whether each Tx lies on a face.
+            std::vector<T2> txNode;          ///< Node index, where @c txOnNode.
+            std::vector<T2> txCell;          ///< Index of the tetrahedron containing each Tx.
+            std::vector<std::array<T2,2>> txEdges; ///< The two nodes of the edge, where @c txOnEdge.
+            std::vector<std::array<T2,3>> txFaces; ///< The three nodes of the face, where @c txOnFace.
+            std::vector<std::vector<T2>> txNeighborCells; ///< Cells sharing a node with each Tx.
+            bool valid = false;              ///< Set once the slot has been filled.
         };
+        /**
+         * @brief Per-thread Tx classification cache.
+         * Indexed by thread number, so parallel runs need no locking: each
+         * thread owns a distinct slot. A slot is recomputed only when its Tx
+         * changes.
+         */
         mutable std::vector<txInfo_t> txInfoCache;
-        // separate cache for the "blti" raypath methods, whose Tx setup differs:
-        // it matches any (primary or secondary) node and computes only the owning
-        // cell and neighbour cells, with no edge/face classification.
+        /**
+         * @brief Separate cache for the @c blti raypath methods, whose Tx setup
+         *        differs: it matches any (primary or secondary) node and
+         *        computes only the owning cell and neighbour cells, with no
+         *        edge/face classification.
+         * @note Dead along with the rest of the @c blti group; see
+         *       @ref g3dun_blti.
+         */
         mutable std::vector<txInfo_t> txInfoCacheBlti;
 
+        /**
+         * @brief Classify the Tx points, reusing the cached result when possible.
+         * @param Tx       source coordinates.
+         * @param threadNo thread number, selecting the cache slot.
+         * @return the cache entry, recomputed only if @p Tx differs from the one
+         *         it holds.
+         */
         const txInfo_t& getTxInfo(const std::vector<sxyz<T1>>& Tx,
                                   const size_t threadNo) const;
 
+        /**
+         * @brief Tx classification for the @c blti methods.
+         * @param Tx       source coordinates.
+         * @param threadNo thread number.
+         * @return the cache entry.
+         * @note Dead code; see @ref g3dun_blti.
+         */
         const txInfo_t& getTxInfoBlti(const std::vector<sxyz<T1>>& Tx,
                                       const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime increment between two nodes.
+         * @param source the node departed from.
+         * @param node   the node arrived at.
+         * @return the trapezoidal rule along the straight segment,
+         *         @f$\tfrac{1}{2}(s_1+s_2)\,\ell@f$.
+         *
+         * This averaging of the endpoint slownesses is what distinguishes the
+         * node-slowness families from the cell-slowness ones, where the single
+         * cell value applies; see @ref g3dun_vs_uc.
+         */
         T1 computeDt(const NODE& source, const NODE& node) const {
             return (node.getNodeSlowness()+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        /**
+         * @brief Traveltime increment from a node to an arbitrary point.
+         * @param source the node departed from.
+         * @param node   the point arrived at.
+         * @param slo    slowness at @p node, which the caller must supply since
+         *               a bare point carries none.
+         * @return the increment @f$\tfrac{1}{2}(s_1+s_2)\,\ell@f$.
+         */
         T1 computeDt(const NODE& source, const sxyz<T1>& node, T1 slo) const {
             return (slo+source.getNodeSlowness())/2 * source.getDistance( node );
         }
 
+        /**
+         * @brief Traveltime at an arbitrary point, interpolated from the nodes.
+         * @param Rx       the point.
+         * @param threadNo thread number.
+         * @return the traveltime; read directly if @p Rx sits on a node,
+         *         otherwise interpolated over its tetrahedron.
+         */
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime at a point, using a caller-supplied node set.
+         * @param Rx       the point.
+         * @param nodes    the nodes to interpolate from.
+         * @param threadNo thread number.
+         * @return the traveltime.
+         *
+         * @note The @p nodes parameter shadows the member of the same name. It
+         *       lets ttcr::Grid3Dundsp pass its augmented set, which includes
+         *       the tertiary nodes inserted around the source.
+         */
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<NODE>& nodes,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Verify that points lie within the mesh.
+         * @param pts        the points; taken by value as they may be
+         *                   translated in place.
+         * @param translated set when @p pts are already in translated
+         *                   coordinates.
+         * @throws std::runtime_error naming the offending point if one falls
+         *         outside every tetrahedron.
+         */
         void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
 
-        bool insideTetrahedron(const sxyz<T1>&, const T2) const;
-        bool insideTetrahedron2(const sxyz<T1>&, const T2) const;
+        /**
+         * @brief Whether a point lies inside a tetrahedron, by determinants.
+         * @param pt      the point.
+         * @param tetraNo the tetrahedron.
+         * @return true if inside.
+         *
+         * Forms the five signed volumes @f$D_0 \ldots D_4@f$ obtained by
+         * substituting @p pt for each vertex in turn; the point is inside when
+         * they all share the sign of @f$D_0@f$. A zero among them puts the point
+         * on a face, an edge or a vertex.
+         *
+         * @sa insideTetrahedron2, which decides the same question differently.
+         */
+        bool insideTetrahedron(const sxyz<T1>& pt, const T2 tetraNo) const;
+        /**
+         * @brief Whether a point lies inside a tetrahedron, by face tests.
+         * @param pt      the point.
+         * @param tetraNo the tetrahedron.
+         * @return true if inside.
+         *
+         * Asks of each of the four faces whether @p pt falls on the same side as
+         * the opposite vertex.
+         */
+        bool insideTetrahedron2(const sxyz<T1>& pt, const T2 tetraNo) const;
 
+        /**
+         * @brief Find the tetrahedron containing a point.
+         * @param pt the point.
+         * @return the cell index.
+         *
+         * Starts from the nearest primary node — a kd-tree query — and searches
+         * only the tetrahedra owning it, keeping the one whose split volumes
+         * best match its own. Restricting the search this way is what keeps
+         * point location off the critical path.
+         */
         T2 getCellNo(const sxyz<T1>& pt) const;
 
-        void buildGridNodes(const std::vector<sxyz<T1>>&, const size_t);
-        void buildGridNodes(const std::vector<sxyz<T1>>&,
-                            const T2, const size_t);
+        /**
+         * @name Node construction
+         * Called from a derived class's constructor, which alone knows how many
+         * secondary nodes it wants.
+         * @{
+         */
+        /**
+         * @brief Build the primary nodes only.
+         * @param no coordinates of the mesh vertices.
+         * @param nt number of threads.
+         */
+        void buildGridNodes(const std::vector<sxyz<T1>>& no, const size_t nt);
+        /**
+         * @brief Build the primary nodes and insert secondary ones.
+         * @param no          coordinates of the mesh vertices.
+         * @param nsecondary  number of secondary nodes per edge.
+         * @param nt          number of threads.
+         *
+         * Secondary nodes are placed along the edges and across the faces,
+         * refining the discretisation without changing the mesh. They follow the
+         * primary nodes in @c nodes, so the first @c nPrimary slots keep their
+         * meaning.
+         */
+        void buildGridNodes(const std::vector<sxyz<T1>>& no,
+                            const T2 nsecondary, const size_t nt);
+        /** @} */
 
+        /**
+         * @brief Update the traveltime at one vertex from a neighbouring
+         *        tetrahedron.
+         * @param vertexC  the node to update; lowered only if the new value is
+         *                 smaller.
+         * @param threadNo thread number.
+         *
+         * The three-dimensional local solver of Lelievre et al. (2011): for each
+         * tetrahedron owning @p vertexC, the traveltime is extrapolated from the
+         * other three vertices. Where that stencil is not causal — the incoming
+         * ray would enter through the wrong face — it falls back to
+         * @ref localUpdate2D on each face in turn.
+         *
+         * This is the workhorse of the sweeping and marching solvers; see
+         * @ref g3dun_update.
+         */
         void localUpdate3D(NODE *vertexC, const size_t threadNo) const;
 
+        /**
+         * @brief Update a vertex from one triangular face.
+         * @param vertexA  first known vertex.
+         * @param vertexB  second known vertex.
+         * @param vertexC  the vertex being updated.
+         * @param tetraNo  the tetrahedron the face belongs to.
+         * @param threadNo thread number.
+         * @return the candidate traveltime, or infinity if the face yields no
+         *         causal solution.
+         *
+         * The two-dimensional fallback used by @ref localUpdate3D.
+         */
         T1 localUpdate2D(const NODE *vertexA,
                          const NODE *vertexB,
                          const NODE *vertexC,
                          const T2 tetraNo,
                          const size_t threadNo) const;
 
-        void local3Dsolver(NODE *vertexC, const size_t threadNo) const;
+        /**
+         * @name Unused local solver (Qian et al., 2007)
+         * An older alternative to @ref localUpdate3D. **Dead code**: nothing
+         * outside these three functions calls any of them. The same trio,
+         * likewise dead, appears in ttcr::Grid3Duc. See @ref g3dun_update.
+         * @{
+         */
+        /**
+         * @brief Update a vertex by the Qian stencil.
+         * @param vertexD  the node to update.
+         * @param threadNo thread number.
+         */
+        void local3Dsolver(NODE *vertexD, const size_t threadNo) const;
 
+        /**
+         * @brief Face-wise fallback for @ref local3Dsolver.
+         * @param vertexA  first known vertex.
+         * @param vertexB  second known vertex.
+         * @param vertexC  the vertex being updated.
+         * @param tetraNo  the tetrahedron.
+         * @param threadNo thread number.
+         * @return the candidate traveltime.
+         */
         T1 local2Dsolver(const NODE *vertexA,
                          const NODE *vertexB,
                          const NODE *vertexC,
                          const T2 tetraNo,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Solve the quadratic system arising in @ref local3Dsolver.
+         * @param a      first coefficient triplet.
+         * @param b      second coefficient triplet.
+         * @param[out] n up to two solution vectors.
+         * @return the number of real solutions found, 0, 1 or 2.
+         */
         int solveEq23(const T1 a[], const T1 b[], T1 n[][3]) const;
+        /** @} */
 
+        /**
+         * @brief Traveltime obtained by integrating slowness along the raypath.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinate.
+         * @param threadNo thread number.
+         * @return the integrated traveltime.
+         *
+         * An alternative to reading the traveltime off the grid, selected by
+         * ttcr::input_parameters::tt_from_rp. It traces the raypath and
+         * accumulates @f$\int s\,d\ell@f$ along it, which avoids the
+         * interpolation error of sampling the traveltime field at a point that
+         * is not a node, at the cost of tracing a ray per receiver.
+         */
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const sxyz<T1>& Rx,
@@ -315,11 +833,36 @@ namespace ttcr {
         // overloads below would otherwise hide them (-Woverloaded-virtual)
         using Grid3D<T1,T2>::getRaypath;
 
+        /**
+         * @name Raypath tracing
+         * Five overloads over the same traversal, differing only in what they
+         * accumulate: the ray geometry (@p r_data), the tomography matrix row
+         * (@p m_data), the traveltime (@p tt), or some combination. All trace
+         * backwards from @p Rx to the nearest @p Tx along the negated
+         * traveltime gradient; see @ref g3dun_raypath.
+         * @{
+         */
+        /**
+         * @brief Trace a raypath.
+         * @param Tx            source coordinates.
+         * @param Rx            receiver coordinate.
+         * @param[out] r_data   the raypath, from receiver to source.
+         * @param threadNo      thread number.
+         */
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,
                         const size_t threadNo) const;
 
+        /**
+         * @brief Trace a raypath and integrate the traveltime along it.
+         * @param Tx            source coordinates.
+         * @param t0            source excitation times.
+         * @param Rx            receiver coordinate.
+         * @param[out] r_data   the raypath.
+         * @param[out] tt       the integrated traveltime.
+         * @param threadNo      thread number.
+         */
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
@@ -327,6 +870,18 @@ namespace ttcr {
                         T1 &tt,
                         const size_t threadNo) const;
 
+        /**
+         * @brief Accumulate a tomography matrix row and the traveltime,
+         *        discarding the ray geometry.
+         * @param Tx            source coordinates.
+         * @param t0            source excitation times.
+         * @param Rx            receiver coordinate.
+         * @param[out] m_data   (row, node, weight) triplets giving the ray's
+         *                      sensitivity to each node slowness.
+         * @param RxNo          receiver index, used as the row number.
+         * @param[out] tt       the integrated traveltime.
+         * @param threadNo      thread number.
+         */
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
@@ -335,6 +890,15 @@ namespace ttcr {
                         T1 &tt,
                         const size_t threadNo) const;
 
+        /**
+         * @brief Trace a raypath and accumulate a tomography matrix row.
+         * @param Tx            source coordinates.
+         * @param Rx            receiver coordinate.
+         * @param[out] r_data   the raypath.
+         * @param[out] m_data   the matrix row.
+         * @param RxNo          receiver index.
+         * @param threadNo      thread number.
+         */
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,
@@ -342,6 +906,18 @@ namespace ttcr {
                         const size_t RxNo,
                         const size_t threadNo) const;
 
+        /**
+         * @brief Trace a raypath, accumulating both the matrix row and the
+         *        traveltime.
+         * @param Tx            source coordinates.
+         * @param t0            source excitation times.
+         * @param Rx            receiver coordinate.
+         * @param[out] r_data   the raypath.
+         * @param[out] m_data   the matrix row.
+         * @param RxNo          receiver index.
+         * @param[out] tt       the integrated traveltime.
+         * @param threadNo      thread number.
+         */
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1>& Rx,
@@ -350,12 +926,38 @@ namespace ttcr {
                         const size_t RxNo,
                         T1 &tt,
                         const size_t threadNo) const;
+        /** @} */
 
+        /**
+         * @name Unused raypath implementation (blti)
+         * A second, self-contained raypath implementation that solves for the
+         * ray's exit point on each face rather than following a gradient.
+         * **Dead code**: neither entry point is called anywhere in the C++
+         * sources or the Cython bindings. See @ref g3dun_blti.
+         * @{
+         */
+        /**
+         * @brief Traveltime along a @c blti raypath.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinate.
+         * @param threadNo thread number.
+         * @return the integrated traveltime.
+         */
         T1 getTraveltime_blti(const std::vector<sxyz<T1>>& Tx,
                               const std::vector<T1>& t0,
                               const sxyz<T1>& Rx,
                               const size_t threadNo) const;
 
+        /**
+         * @brief Trace a @c blti raypath.
+         * @param Tx            source coordinates.
+         * @param t0            source excitation times.
+         * @param Rx            receiver coordinate.
+         * @param[out] r_data   the raypath.
+         * @param[out] tt       the integrated traveltime.
+         * @param threadNo      thread number.
+         */
         void getRaypath_blti(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<T1>& t0,
                              const sxyz<T1>& Rx,
@@ -363,23 +965,71 @@ namespace ttcr {
                              T1 &tt,
                              const size_t threadNo) const;
 
+        /**
+         * @brief Locate the ray's crossing of a face near the source.
+         * @param Source            the source point.
+         * @param curr_pt           current point on the ray.
+         * @param face              the three nodes of the face.
+         * @param[out] barycenters  barycentric coordinates of the crossing.
+         * @return true if the straight segment from @p curr_pt to @p Source
+         *         crosses @p face.
+         */
         bool blti_solver_around_source(const sxyz<T1>& Source,
                                        const sxyz<T1>& curr_pt,
                                        const std::array<T2,3>& face,
                                        std::array<T1,3>& barycenters) const;
+        /**
+         * @brief Advance the ray across one face.
+         * @param curr_pt       current point.
+         * @param faces         the three nodes of the face.
+         * @param[out] next_pt  the exit point.
+         * @param threadNo      thread number.
+         * @param s             slowness at @p curr_pt.
+         * @return true if a valid exit point was found within the face.
+         */
         bool blti_raytrace(const sxyz<T1>& curr_pt,
                            const std::array<T2, 3>& faces,
                            sxyz<T1>& next_pt,
                            const size_t threadNo,
                            const T1& s) const;
+        /**
+         * @brief Advance the ray along one edge.
+         * @param curr_pt       current point.
+         * @param node1         first node of the edge.
+         * @param node2         second node of the edge.
+         * @param[out] next_pt  the exit point.
+         * @param threadNo      thread number.
+         * @param s             slowness at @p curr_pt.
+         * @return true if a valid exit point was found.
+         */
         bool blti2D_raytrace(const sxyz<T1>& curr_pt,
                              const T2& node1,
                              const T2& node2,
                              sxyz<T1>& next_pt,
                              const size_t threadNo,
                              const T1& s) const;
+        /** @} */
 
-
+        /**
+         * @name Locating a raypath point
+         * The tracer must know at every step whether the current point sits on a
+         * node, on an edge or on a face, since each case offers a different set
+         * of cells to step into.
+         * @{
+         */
+        /**
+         * @brief Classify a point against the nodes of one face.
+         * @param[in,out] curr_pt the point; snapped onto a node or edge when
+         *                within @c min_dist of one.
+         * @param ind            the three nodes to test against.
+         * @param[out] onNode    set when the point coincides with a node.
+         * @param[out] nodeNo    that node, when @p onNode.
+         * @param[out] onEdge    set when the point lies on an edge.
+         * @param[out] edgeNodes that edge's two nodes, when @p onEdge.
+         * @param[out] onFace    set when the point lies on a face.
+         * @param[out] faceNodes that face's three nodes, when @p onFace.
+         * @return true if the point was located.
+         */
         bool check_pt_location(sxyz<T1>& curr_pt,
                                const std::array<T2,3>& ind,
                                bool& onNode,
@@ -389,6 +1039,19 @@ namespace ttcr {
                                bool& onFace,
                                std::array<T2,3>& faceNodes) const;
 
+        /**
+         * @brief Classify a point against a wider set of candidates.
+         * @param[in,out] curr_pt the point.
+         * @param ind1           candidate nodes to test first.
+         * @param ind2           the three nodes of a face, tested after.
+         * @param[out] onNode    set when the point coincides with a node.
+         * @param[out] nodeNo    that node.
+         * @param[out] onEdge    set when the point lies on an edge.
+         * @param[out] edgeNodes that edge's two nodes.
+         * @param[out] onFace    set when the point lies on a face.
+         * @param[out] faceNodes that face's three nodes.
+         * @return true if the point was located.
+         */
         bool check_pt_location(sxyz<T1>& curr_pt,
                                const std::vector<T2>& ind1,
                                const std::array<T2,3>& ind2,
@@ -398,47 +1061,188 @@ namespace ttcr {
                                std::array<T2,2>& edgeNodes,
                                bool& onFace,
                                std::array<T2,3>& faceNodes) const;
+        /** @} */
 
+        /**
+         * @name Accumulating a tomography matrix row
+         * Called once per raypath segment to spread the segment's length over
+         * the nodes that influence the slowness along it.
+         * @{
+         */
+        /**
+         * @brief Add one segment's contribution to a matrix row.
+         * @param[in,out] m_data the row being built.
+         * @param m              scratch triplet, reused across calls.
+         * @param allNodes       nodes whose slowness affects this segment.
+         * @param mid_pt         segment midpoint, where the weights are
+         *                       evaluated.
+         * @param ds             segment length.
+         */
         void update_m_data(std::vector<sijv<T1>>& m_data,
                            sijv<T1>& m,
                            const std::set<T2>& allNodes,
                            const sxyz<T1>& mid_pt,
                            const T1 ds) const ;
 
+        /**
+         * @brief Add one segment's contribution, scaled by squared slowness.
+         * @param[in,out] m_data the row being built.
+         * @param m              scratch triplet.
+         * @param allNodes       nodes whose slowness affects this segment.
+         * @param mid_pt         segment midpoint.
+         * @param ds             segment length.
+         * @param s_sq           squared slowness at the midpoint.
+         *
+         * The extra factor is what @ref g3dun_procvel demands: when velocity is
+         * the interpolated quantity, the derivative with respect to a node value
+         * picks up an @f$s^2@f$ from differentiating the reciprocal.
+         */
         void update_m_data(std::vector<sijv<T1>>& m_data,
                            sijv<T1>& m,
                            const std::set<T2>& allNodes,
                            const sxyz<T1>& mid_pt,
                            const T1 ds,
                            const T1 s_sq) const ;
+        /** @} */
 
+        /**
+         * @name Ray/element intersection
+         * @{
+         */
+        /**
+         * @brief Intersect a ray leaving a node with a triangle.
+         * @param iO         node the ray leaves from.
+         * @param vec        ray direction.
+         * @param iA         first triangle node.
+         * @param iB         second triangle node.
+         * @param iC         third triangle node.
+         * @param[out] pt_i  the intersection point.
+         * @return true if the ray meets the triangle within its bounds.
+         */
         bool intersectVecTriangle(const T2 iO, const sxyz<T1> &vec,
                                   const T2 iA, T2 iB, T2 iC,
                                   sxyz<T1> &pt_i) const;
+        /**
+         * @brief Intersect a ray leaving an arbitrary point with a triangle.
+         * @param O          origin of the ray.
+         * @param vec        ray direction.
+         * @param iA         first triangle node.
+         * @param iB         second triangle node.
+         * @param iC         third triangle node.
+         * @param[out] pt_i  the intersection point.
+         * @return true if the ray meets the triangle within its bounds.
+         */
         bool intersectVecTriangle(const sxyz<T1> &O, const sxyz<T1> &vec,
                                   const T2 iA, T2 iB, T2 iC,
                                   sxyz<T1> &pt_i) const;
 
+        /**
+         * @brief Intersect a ray with the edges of a face.
+         * @param curr_pt        origin of the ray.
+         * @param g              ray direction.
+         * @param faceNodes      the face's three nodes.
+         * @param[out] pt_i      the intersection point.
+         * @param[out] edgeNodes the two nodes of the edge crossed.
+         * @return true if an edge was crossed.
+         *
+         * Used when the ray leaves a face through one of its sides rather than
+         * through its interior.
+         */
         bool intersectVecEdge(const sxyz<T1>& curr_pt,
                               const sxyz<T1>& g,
                               std::array<T2,3>& faceNodes,
                               sxyz<T1>&  pt_i,
                               std::array<T2,2>& edgeNodes) const;
+        /** @} */
 
+        /**
+         * @name Stepping to the next cell
+         * @{
+         */
+        /**
+         * @brief Find a cell sharing a face, given a node it must contain.
+         * @param faceNodes the face's three nodes.
+         * @param nodeNo    a node the cell must own.
+         * @return the cell index, or the cell count if none qualifies.
+         */
         T2 findAdjacentCell1(const std::array<T2,3> &faceNodes, const T2 nodeNo) const;
+        /**
+         * @brief Find the cell on the far side of a face.
+         * @param faceNodes the face's three nodes.
+         * @param cellNo    the cell being left.
+         * @return the neighbouring cell, or the cell count if @p faceNodes lies
+         *         on the mesh boundary.
+         */
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes, const T2 cellNo) const;
+        /**
+         * @brief Find the cell on the far side of a face, disambiguating by
+         *        point.
+         * @param faceNodes the face's three nodes.
+         * @param cellNo    the cell being left.
+         * @param curr_pt   the current point, used to pick among candidates when
+         *                  the face is degenerate or the point sits on an edge.
+         * @return the neighbouring cell.
+         */
         T2 findAdjacentCell2(const std::array<T2,3> &faceNodes,
                              const T2 & cellNo,
                              const sxyz<T1>& curr_pt ) const;
+        /** @} */
 
-        template<typename SetT> void getNeighborNodes(const T2, SetT&) const;
-        void getNeighborNodesAB(const std::vector<NODE*>&,
-                                std::vector<std::vector<std::array<NODE*,3>>>&) const;
+        /**
+         * @brief Collect the nodes sharing a cell with a given node.
+         * @tparam SetT     any set-like container; the caller chooses, which
+         *                  lets a polymorphic-memory-resource set be used to
+         *                  keep the allocation off the heap in hot loops.
+         * @param nodeNo    the node.
+         * @param[out] nodes the neighbours found.
+         */
+        template<typename SetT> void getNeighborNodes(const T2 nodeNo, SetT& nodes) const;
 
+        /**
+         * @brief Group the nodes surrounding each of a set of nodes into
+         *        triangles.
+         * @param nodes     the nodes of interest.
+         * @param[out] nb   for each input node, the triangles of neighbours
+         *                  around it.
+         *
+         * Supplies ttcr::Grad3D_ab with the triangle fan it averages a gradient
+         * over.
+         */
+        void getNeighborNodesAB(const std::vector<NODE*>& nodes,
+                                std::vector<std::vector<std::array<NODE*,3>>>& nb) const;
+
+        /**
+         * @brief Collect enough nodes around one node to fit a Taylor expansion.
+         * @param nodeNumber     the centre node.
+         * @param minNbrPoints   minimum number of neighbours required; the
+         *                       search widens through successive rings until it
+         *                       is met.
+         * @param[out] surroundingNodes the neighbourhood.
+         *
+         * @sa computeK, which needs 4 points for a first-order expansion and 10
+         *     for a second-order one.
+         */
         void getSurroundingNodes(const T2 nodeNumber,
                                  const T2 minNbrPoints,
                                  std::set<T2>& surroundingNodes) const;
 
+        /**
+         * @name Least-squares fit for the derivative operators
+         * Build the design matrix of a Taylor expansion about one node, then
+         * turn its pseudo-inverse into operator rows. The plain and @c 2
+         * variants differ in whether the centre node's own value is an unknown
+         * of the fit — see @c s0inside in @ref computeK.
+         * @{
+         */
+        /**
+         * @brief Build the design matrix, centre node value taken as known.
+         * @param nodeNumber       the centre node.
+         * @param surroundingNodes its neighbourhood.
+         * @param weighting        weight rows by inverse distance.
+         * @param order            order of the Taylor expansion, 1 or 2.
+         * @param[out] A           the design matrix.
+         * @param[out] W           the diagonal weight matrix.
+         */
         void buildA(const T2 nodeNumber,
                     const std::set<T2>& surroundingNodes,
                     const bool weighting,
@@ -446,6 +1250,16 @@ namespace ttcr {
                     Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& A,
                     Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic>& W) const;
 
+        /**
+         * @brief Build the design matrix, centre node value treated as unknown.
+         * @param nodeNumber       the centre node.
+         * @param surroundingNodes its neighbourhood.
+         * @param weighting        weight rows by inverse distance.
+         * @param order            order of the Taylor expansion, 1 or 2.
+         * @param[out] A           the design matrix, one column wider than
+         *                         @ref buildA gives.
+         * @param[out] W           the diagonal weight matrix.
+         */
         void buildA2(const T2 nodeNumber,
                      const std::set<T2>& surroundingNodes,
                      const bool weighting,
@@ -453,29 +1267,117 @@ namespace ttcr {
                      Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& A,
                      Eigen::Matrix<T1,Eigen::Dynamic, Eigen::Dynamic>& W) const;
 
+        /**
+         * @brief Copy fitted coefficients into the operator rows.
+         * @param nodeNo           the centre node, indexing the row.
+         * @param surroundingNodes its neighbourhood, indexing the columns.
+         * @param i                row of @p Acoefs holding the x derivative.
+         * @param j                row holding the y derivative.
+         * @param k                row holding the z derivative.
+         * @param Acoefs           the pseudo-inverse of the design matrix.
+         * @param[out] k_data      the three operators being built.
+         */
         void fill_k_data(const T2 nodeNo, const std::set<T2>& surroundingNodes,
                          const int i, const int j, const int k,
                          const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& Acoefs,
                          std::vector<std::vector<std::vector<siv<T1>>>>& k_data) const;
 
+        /**
+         * @brief Copy fitted coefficients into the operator rows, including the
+         *        centre node's own weight.
+         * @param nodeNo           the centre node.
+         * @param surroundingNodes its neighbourhood.
+         * @param i                row of @p Acoefs holding the x derivative.
+         * @param j                row holding the y derivative.
+         * @param k                row holding the z derivative.
+         * @param Acoefs           the pseudo-inverse of the design matrix.
+         * @param[out] k_data      the three operators being built.
+         */
         void fill_k_data2(const T2 nodeNo, const std::set<T2>& surroundingNodes,
                           const int i, const int j, const int k,
                           const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>& Acoefs,
                           std::vector<std::vector<std::vector<siv<T1>>>>& k_data) const;
+        /** @} */
 
+        /**
+         * @brief Print a cell, a point within it and a gradient, for debugging.
+         * @param cellNo the cell.
+         * @param pt     the point.
+         * @param g      the gradient.
+         */
         void plotCell(const T2 cellNo, const sxyz<T1> &pt, const sxyz<T1> &g) const;
 
+        /**
+         * @name Sampling the slowness field
+         * @{
+         */
+        /**
+         * @brief Slowness at an arbitrary point.
+         * @param pt           the point; taken by value as it may be translated
+         *                     in place.
+         * @param isTranslated set when @p pt is already in translated
+         *                     coordinates.
+         * @return the interpolated slowness.
+         *
+         * Locates the containing tetrahedron and interpolates over its four
+         * primary nodes, honouring @c processVel.
+         */
         T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const;
+        /**
+         * @brief Slowness at a point whose position is already classified.
+         * @param curr_pt   the point.
+         * @param onNode    set when it coincides with a node.
+         * @param nodeNo    that node, when @p onNode.
+         * @param onEdge    set when it lies on an edge.
+         * @param edgeNodes that edge's two nodes.
+         * @param faceNodes the face's three nodes, used when neither of the
+         *                  above holds.
+         * @return the slowness: read directly at a node, interpolated linearly
+         *         along an edge, bilinearly across a face.
+         *
+         * The form the raypath tracer uses, since it always knows where the
+         * point sits and so can skip the point location the other overload does.
+         */
         T1 computeSlowness(const sxyz<T1>& curr_pt,
                            const bool onNode,
                            const T2 nodeNo,
                            const bool onEdge,
                            const std::array<T2,2>& edgeNodes,
                            const std::array<T2,3>& faceNodes) const;
+        /** @} */
 
+        /**
+         * @name Filling in the secondary nodes
+         * The model is defined at the primary nodes only, so after it is set the
+         * secondary nodes must be given values consistent with it. Which of the
+         * two a derived class calls follows from @c processVel.
+         * @{
+         */
+        /**
+         * @brief Interpolate slowness onto the secondary nodes.
+         * @param nSecondary number of secondary nodes per edge.
+         */
         void interpSlownessSecondary(const T2 nSecondary);
+        /**
+         * @brief Interpolate velocity onto the secondary nodes, storing the
+         *        reciprocal.
+         * @param nSecondary number of secondary nodes per edge.
+         */
         void interpVelocitySecondary(const T2 nSecondary);
+        /** @} */
 
+        /**
+         * @brief Print the tracer's state at one step, for debugging.
+         * @param curr_pt   current point.
+         * @param g         current gradient.
+         * @param onNode    whether the point is on a node.
+         * @param onEdge    whether it is on an edge.
+         * @param onFace    whether it is on a face.
+         * @param cellNo    the current cell.
+         * @param nodeNo    the current node, where applicable.
+         * @param edgeNodes the current edge, where applicable.
+         * @param faceNodes the current face, where applicable.
+         */
         void printRaypathData(const sxyz<T1>& curr_pt,
                               const sxyz<T1>& g,
                               const bool onNode,
@@ -486,6 +1388,14 @@ namespace ttcr {
                               const std::array<T2,2> &edgeNodes,
                               const std::array<T2,3> &faceNodes) const;
 
+        /**
+         * @brief The four primary nodes of a tetrahedron.
+         * @param cellNo the cell.
+         * @return its four vertices.
+         *
+         * @c neighbors[cellNo] lists secondary nodes alongside primary ones, so
+         * the vertices have to be filtered out of it.
+         */
         std::array<T2,4> getPrimary(const T2 cellNo) const {
             size_t i = 0;
             std::array<T2,4> tmp;
@@ -497,6 +1407,26 @@ namespace ttcr {
             return tmp;
         }
 
+        /**
+         * @name Steering into the source
+         * Near the source the traveltime gradient is unreliable — the field is
+         * steepest and most curved exactly there — so once the ray is within one
+         * cell of a Tx the gradient is replaced outright by the direction
+         * straight to it. Without this the ray tends to circle the source
+         * without reaching it.
+         * @{
+         */
+        /**
+         * @brief Aim the gradient at a source, if the current cell touches one.
+         * @param curr_pt   current point.
+         * @param[in,out] g the gradient; overwritten with @c Tx-curr_pt on a hit.
+         * @param cellNo    the cell the ray is in.
+         * @param Tx        source coordinates.
+         * @param txCell    the cell containing each Tx.
+         *
+         * A hit means @p cellNo is owned by one of the primary nodes of a Tx
+         * cell, i.e. the two cells share at least a vertex.
+         */
         void checkCloseToTx(const sxyz<T1>& curr_pt,
                             sxyz<T1>& g,
                             const T2 cellNo,
@@ -516,6 +1446,16 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Aim the gradient at a source, if the current edge touches one.
+         * @param curr_pt   current point, known to lie on an edge.
+         * @param[in,out] g the gradient; overwritten on a hit.
+         * @param edgeNodes the edge's two nodes.
+         * @param Tx        source coordinates.
+         * @param txCell    the cell containing each Tx.
+         *
+         * A hit means an endpoint of the edge is a vertex of a Tx cell.
+         */
         void checkCloseToTx(const sxyz<T1>& curr_pt,
                             sxyz<T1>& g,
                             const std::array<T2,2> &edgeNodes,
@@ -533,6 +1473,25 @@ namespace ttcr {
             }
         }
 
+        /** @} */
+
+        /**
+         * @name Projecting onto a face
+         * When the ray sits on a face or an edge, the raw gradient generally
+         * points out of the mesh or back into the cell just left. Projecting it
+         * into the plane of a face keeps the ray on the surface it is
+         * constrained to follow.
+         * @{
+         */
+        /**
+         * @brief Project a gradient into the plane of a face.
+         * @param g         the gradient.
+         * @param faceNodes the face's three nodes.
+         * @return the component of @p g lying in the face.
+         *
+         * Computed as @f$\mathbf{n}\times(\mathbf{g}\times\mathbf{n})@f$ with
+         * @f$\mathbf{n}@f$ the unit face normal.
+         */
         sxyz<T1> projectOnFace(const sxyz<T1>& g, const std::array<T2,3>& faceNodes) const {
 
             // calculate normal to the face
@@ -547,29 +1506,81 @@ namespace ttcr {
             return cross(n, cross(g, n));
         }
 
+        /**
+         * @brief Project a gradient onto the best face around an edge, and find
+         *        where it leaves.
+         * @param curr_pt            the point, on an edge.
+         * @param g                  the gradient.
+         * @param[in,out] edgeNodes  the edge; updated if the ray moves onto
+         *                           another one.
+         * @param cells              the cells sharing the edge, the candidates.
+         * @param[out] pt_i          where the projected direction leaves the
+         *                           chosen face.
+         * @return the projected direction.
+         *
+         * An edge is shared by several faces, so unlike the face overload this
+         * one must choose: it keeps the face whose projection stays closest to
+         * @p g.
+         */
         sxyz<T1> projectOnFace(const sxyz<T1>& curr_pt,
                                const sxyz<T1>& g,
                                std::array<T2,2>& edgeNodes,
                                const std::vector<T2> cells,
                                sxyz<T1>&  pt_i) const;
 
+        /**
+         * @brief Project a gradient onto a face around a node.
+         * @param curr_pt           the point, on a node.
+         * @param nodeNo            that node.
+         * @param[in,out] g         the gradient; replaced by its projection.
+         * @param[out] edgeNodes    the edge the ray moves onto.
+         * @param[out] pt_i         where it leaves the face.
+         * @return true if a suitable face was found.
+         */
         bool projectOnFace(const sxyz<T1>& curr_pt,
                            const T2 nodeNo,
                            sxyz<T1>& g,
                            std::array<T2,2>& edgeNodes,
                            sxyz<T1>& pt_i) const;
+        /**
+         * @brief Project a gradient onto a face around a node, choosing by
+         *        traveltime.
+         * @param curr_pt           the point, on a node.
+         * @param nodeNo            that node.
+         * @param[in,out] g         the gradient; replaced by its projection.
+         * @param[out] edgeNodes    the edge the ray moves onto.
+         * @param[out] pt_i         where it leaves the face.
+         * @param threadNo          thread number, needed to read traveltimes.
+         * @return true if a suitable face was found.
+         *
+         * Having the traveltimes to hand lets this overload break ties by
+         * preferring the face the wavefront actually arrived through.
+         */
         bool projectOnFace(const sxyz<T1>& curr_pt,
                            const T2 nodeNo,
                            sxyz<T1>& g,
                            std::array<T2,2>& edgeNodes,
                            sxyz<T1>& pt_i,
                            const size_t & threadNo ) const;
+        /**
+         * @brief Project a gradient onto a face around an edge, choosing by
+         *        traveltime.
+         * @param curr_pt            the point, on an edge.
+         * @param g                  the gradient.
+         * @param[in,out] edgeNodes  the edge; updated if the ray moves on.
+         * @param cells              the cells sharing the edge.
+         * @param[out] pt_i          where the projected direction leaves the
+         *                           face.
+         * @param threadNo           thread number.
+         * @return the projected direction.
+         */
         sxyz<T1> projectOnFace(const sxyz<T1>& curr_pt,
                                const sxyz<T1>& g,
                                std::array<T2,2>& edgeNodes,
                                const std::vector<T2> cells,
                                sxyz<T1>&  pt_i,
                                const size_t & threadNo) const;
+        /** @} */
     };
 
     template<typename T1, typename T2, typename NODE>

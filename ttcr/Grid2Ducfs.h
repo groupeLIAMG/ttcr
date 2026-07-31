@@ -38,6 +38,18 @@
 //	}
 //
 
+/**
+ * @file Grid2Ducfs.h
+ * @brief Fast sweeping solver on a 2-D triangular mesh with cell-based slowness.
+ *
+ * Declares ttcr::Grid2Ducfs. The interesting difference from the rectilinear
+ * fast sweeping classes is that a triangulation supplies no natural sweep
+ * order, so one is built from user-supplied reference points — see
+ * @ref g2ducfs_ordering and Metric.h.
+ *
+ * @sa Grid2Duc.h, Metric.h, Grid2Drcfs.h, Grid2Ducfm.h
+ */
+
 #ifndef ttcr_Grid2Ducfs_h
 #define ttcr_Grid2Ducfs_h
 
@@ -51,8 +63,59 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S>
+    /**
+     * @brief Fast sweeping eikonal solver on a triangular mesh, slowness per cell.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * @section g2ducfs_ordering Sweep orderings on an unstructured mesh
+     * A rectilinear grid sweeps along its axes — the index order supplies the
+     * alternating directions the method needs. A triangulation has no such
+     * order, so one is constructed: @ref initOrdering sorts every node by its
+     * distance to each of a set of user-supplied **reference points**, and the
+     * sweeps then run up and down each of those orderings in turn. The
+     * distance metric is @f$\ell^1@f$ or @f$\ell^2@f$, chosen by the @c order
+     * argument. @sa Metric.h
+     *
+     * The orderings live in @ref sorted, one per reference point. The
+     * reference-point-free constructor leaves it empty, so a caller using that
+     * form must call @ref initOrdering before raytracing.
+     *
+     * @section g2ducfs_conv Convergence
+     * Sweeping stops when the summed change in nodal traveltime falls below a
+     * threshold. Both constructors multiply the supplied @p eps by the node
+     * count, so the user-facing tolerance is a **mean** per-node change while
+     * the loop tests an L1 sum; @p maxit caps the iterations.
+     *
+     * @note Not templated on a @c CELL policy — the base is instantiated with a
+     *       fixed isotropic ttcr::Cell, so unlike ttcr::Grid2Ducsp this solver
+     *       does not support anisotropy.
+     *
+     * @sa Grid2Duc.h, Metric.h, Grid2Drcfs.h, Grid2Ducfm.h
+     */
     class Grid2Ducfs : public Grid2Duc<T1,T2,S,Node2Dc<T1,T2>,Cell<T1,Node2Dc<T1,T2>,sxz<T1>>> {
     public:
+        /**
+         * @brief Build the mesh, without sweep orderings.
+         *
+         * @param no    node coordinates.
+         * @param tri   triangles, each naming three node indices.
+         * @param eps   convergence tolerance, as a mean per-node traveltime
+         *              change; scaled internally by the node count.
+         *              @sa @ref g2ducfs_conv
+         * @param maxit maximum number of sweep iterations.
+         * @param ttrp  recompute receiver traveltimes along the raypath.
+         * @param nt    number of threads.
+         * @param procObtuse run @ref processObtuse to correct obtuse triangles;
+         *              leave true unless you specifically want the uncorrected
+         *              behaviour. @sa @ref g2duc_obtuse
+         *
+         * @post Nodes, neighbour lists and (optionally) the obtuse corrections
+         *       are built. @ref sorted is **empty** — call @ref initOrdering
+         *       before raytracing. Slowness is not set.
+         */
         Grid2Ducfs(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T1 eps, const int maxit, const bool ttrp,
@@ -67,6 +130,24 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /**
+         * @brief Build the mesh and its sweep orderings in one step.
+         *
+         * @param no     node coordinates.
+         * @param tri    triangles, each naming three node indices.
+         * @param eps    convergence tolerance, as a mean per-node change.
+         * @param maxit  maximum number of sweep iterations.
+         * @param refPts reference points defining the sweep orderings — one
+         *               ordering per point. @sa @ref g2ducfs_ordering
+         * @param order  1 for the @f$\ell^1@f$ metric, otherwise @f$\ell^2@f$
+         *               (ttcr::input_parameters::order).
+         * @param ttrp   recompute receiver traveltimes along the raypath.
+         * @param nt     number of threads.
+         * @param procObtuse run @ref processObtuse to correct obtuse triangles.
+         *
+         * @post As the other constructor, plus @ref sorted populated, so the
+         *       grid is ready to raytrace once slowness is set.
+         */
         Grid2Ducfs(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T1 eps, const int maxit,
@@ -83,19 +164,46 @@ namespace ttcr {
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
+        /// Destructor.
         ~Grid2Ducfs() {
         }
 
+        /**
+         * @brief Build the node orderings the sweeps follow.
+         * @param refPts reference points; one ordering is produced per point,
+         *               sorting every node by its distance to that point.
+         * @param order  1 selects ttcr::Metric1 (@f$\ell^1@f$), anything else
+         *               ttcr::Metric2 (@f$\ell^2@f$).
+         * @post @ref sorted holds one ordering per reference point.
+         * @note The metric affects only the **order** in which nodes are
+         *       relaxed, hence the convergence rate — not the fixed point the
+         *       sweeps converge to. @sa @ref g2ducfs_ordering, Metric.h
+         */
         void initOrdering(const std::vector<S>& refPts, const int order);
 
+        /// @return Number of sweep iterations the last solve took.
         const int get_niter() const { return niter_final; }
 
     private:
+        /// Convergence threshold, holding the **scaled** value: the constructor
+        /// multiplies the supplied tolerance by the node count.
+        /// @sa @ref g2ducfs_conv
         T1 epsilon;
-        int nitermax;
-        mutable int niter_final;
+        int nitermax;             ///< Iteration cap for the sweeps.
+        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        /// One node ordering per reference point, each sorted by distance to
+        /// that point. Empty until @ref initOrdering runs.
+        /// @sa @ref g2ducfs_ordering
         std::vector<std::vector<Node2Dc<T1,T2>*>> sorted;
 
+        /**
+         * @brief Seed the sweep with the source traveltimes.
+         * @param[in]  Tx       source positions.
+         * @param[in]  t0       origin time of each source.
+         * @param[out] frozen   per-node flag; nodes given a source value are
+         *                      frozen so the sweeps cannot move them.
+         * @param[in]  threadNo thread to initialise.
+         */
         void initTx(const std::vector<S>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
 

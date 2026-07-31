@@ -22,6 +22,32 @@
  *
  */
 
+/**
+ * @file Grid3Dunfm.h
+ * @brief Fast-marching solver on a 3-D tetrahedral mesh with node slowness.
+ *
+ * Declares ttcr::Grid3Dunfm, which solves the eikonal equation by advancing a
+ * narrow band outwards from the sources in order of increasing traveltime
+ * (Sethian, 1996). It is the node-slowness counterpart of ttcr::Grid3Ducfm and
+ * the 3-D counterpart of ttcr::Grid2Dunfm.
+ *
+ * @section g3dunfm_vs_fs Marching versus sweeping
+ * Both solve the same equation on the same mesh; they differ in how they order
+ * the work.
+ *
+ * - **Marching (here)** — a priority queue holds the band of nodes adjacent to
+ *   the solved region. The one of least traveltime is frozen and its neighbours
+ *   updated. One pass suffices, since a node is only frozen once every path
+ *   that could reach it has been considered.
+ * - **Sweeping (ttcr::Grid3Dunfs)** — fixed node orderings are swept
+ *   repeatedly until the field stops changing. No queue, but several passes.
+ *
+ * Marching is the more predictable of the two — a single pass, no convergence
+ * tolerance to choose — at the cost of maintaining the queue.
+ *
+ * @sa Grid3Dun.h, Grid3Ducfm.h, Grid2Dunfm.h, Grid3Dunfs.h
+ */
+
 #ifndef ttcr_Grid3Dunfm_h
 #define ttcr_Grid3Dunfm_h
 
@@ -35,12 +61,35 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Fast-marching traveltimes on a tetrahedral mesh with node slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 unsigned integer type used for node and cell indices.
+     *
+     * Uses ttcr::Node3Dn and inserts no secondary nodes; the mesh connectivity
+     * is all the algorithm needs.
+     *
+     * @sa Grid3Dun.h, Grid3Dunfs.h, Grid3Ducfm.h
+     */
     template<typename T1, typename T2>
     class Grid3Dunfm : public Grid3Dun<T1,T2,Node3Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh.
+         * @param no   primary node coordinates.
+         * @param tet  tetrahedra, as quadruples of indices into @p no.
+         * @param rp   raypath gradient estimator; see @ref g3dun_raypath.
+         * @param iv   interpolate velocity rather than slowness.
+         * @param rptt compute traveltimes by integrating along the raypath.
+         * @param md   minimum distance for snapping a raypath point onto a node.
+         * @param nt   number of threads.
+         * @param _translateOrigin shift the mesh to the origin.
+         *
+         */
         Grid3Dunfm(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const bool rp, const bool iv, const bool rptt, const T1 md,
+                   const int rp, const bool iv, const bool rptt, const T1 md,
                    const size_t nt=1, const bool _translateOrigin=false) :
         Grid3Dun<T1,T2,Node3Dn<T1,T2>>(no, tet, rp, iv, rptt, md, nt, _translateOrigin)
         {
@@ -53,27 +102,68 @@ namespace ttcr {
 
     private:
 
+        /**
+         * @brief Seed the narrow band from the sources.
+         * @param Tx source coordinates.
+         * @param t0 source excitation times.
+         * @param[out] narrow_band the priority queue, ordered by traveltime.
+         * @param[out] inQueue     whether each node is currently in the band.
+         * @param[out] frozen      whether each node's traveltime is final.
+         * @param threadNo         thread number.
+         *
+         * Sets the source nodes' traveltimes, freezes them, and puts their
+         * neighbours into the band. How far the seeding reaches is governed by
+         * @c source_radius; see ttcr::Grid3Dun::setSourceRadius.
+         */
         void initBand(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       std::priority_queue<Node3Dn<T1,T2>*,
                       std::vector<Node3Dn<T1,T2>*>,
-                      CompareNodePtr<T1>>&,
-                      std::vector<bool>&,
-                      std::vector<bool>&,
-                      const size_t) const;
+                      CompareNodePtr<T1>>& narrow_band,
+                      std::vector<bool>& inQueue,
+                      std::vector<bool>& frozen,
+                      const size_t threadNo) const;
 
+        /**
+         * @brief Advance the narrow band until it is empty.
+         * @param[in,out] narrow_band the priority queue.
+         * @param[in,out] inQueue     band membership flags.
+         * @param[in,out] frozen      finalised flags.
+         * @param threadNo            thread number.
+         *
+         * Takes the band node of least traveltime, freezes it, updates its
+         * unfrozen neighbours through ttcr::Grid3Dun::localUpdate3D, and adds
+         * any newly reachable node to the band.
+         */
         void propagate(std::priority_queue<Node3Dn<T1,T2>*,
                        std::vector<Node3Dn<T1,T2>*>,
-                       CompareNodePtr<T1>>&,
-                       std::vector<bool>&,
-                       std::vector<bool>&,
-                       const size_t) const;
+                       CompareNodePtr<T1>>& narrow_band,
+                       std::vector<bool>& inQueue,
+                       std::vector<bool>& frozen,
+                       const size_t threadNo) const;
 
+        /**
+         * @brief Solve the traveltime field by marching.
+         * @param Tx       source coordinates, already origin-translated.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinates; checked to lie in the mesh.
+         * @param threadNo thread number.
+         *
+         * Overrides the base class's solver hook, which the public @c raytrace
+         * overloads call; see ttcr::Grid3D.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       const size_t threadNo=0) const;
 
+        /**
+         * @brief Solver hook, grouped-receiver form.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinates, one group per source.
+         * @param threadNo thread number.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,

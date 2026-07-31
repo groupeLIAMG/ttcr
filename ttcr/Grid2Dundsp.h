@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid2Dundsp.h
+ * @brief Dynamic shortest-path solver on a 2-D triangular mesh with node-based
+ *        slowness.
+ *
+ * Declares ttcr::Grid2Dundsp, which concentrates node refinement near the
+ * source rather than spreading it uniformly as ttcr::Grid2Dunsp does.
+ *
+ * @sa Grid2Dun.h, Grid2Ducdsp.h, Grid2Drndsp.h, Node2Dnd.h
+ */
+
 #ifndef ttcr_Grid2Dundsp_h
 #define ttcr_Grid2Dundsp_h
 
@@ -32,6 +43,24 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S>
+    /**
+     * @brief Dynamic shortest-path solver on a triangular mesh, slowness per node.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * The node-slowness counterpart of ttcr::Grid2Ducdsp. Rather than spreading
+     * secondary nodes uniformly as ttcr::Grid2Dunsp does, it keeps a modest
+     * permanent set everywhere and inserts extra tertiary nodes only near each
+     * source, where the traveltime error is greatest. Tertiary nodes depend on
+     * the source, so they live per-thread rather than in the shared node vector.
+     *
+     * @note On a mesh there is no cell size to scale the radius against, so
+     *       ttcr::Grid2Dun::getAverageEdgeLength supplies the length scale.
+     *
+     * @sa Grid2Dun.h, Grid2Ducdsp.h, Grid2Drndsp.h, Node2Dnd.h
+     */
     class Grid2Dundsp : public Grid2Dun<T1,T2,S,Node2Dn<T1,T2>> {
     public:
         Grid2Dundsp(const std::vector<S>& no,
@@ -55,6 +84,10 @@ namespace ttcr {
 
         ~Grid2Dundsp() {
         }
+
+        // the overloads below hide every base setSlowness; bring back the
+        // scalar one, which needs no secondary-node interpolation
+        using Grid2Dun<T1,T2,S,Node2Dn<T1,T2>>::setSlowness;
 
         void setSlowness(const std::vector<T1>& s) {
             if ( this->nPrimary != s.size() ) {

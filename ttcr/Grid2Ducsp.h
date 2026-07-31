@@ -22,6 +22,17 @@
  *
  */
 
+/**
+ * @file Grid2Ducsp.h
+ * @brief Shortest-path solver on a 2-D triangular mesh with cell-based slowness.
+ *
+ * Declares ttcr::Grid2Ducsp, the unstructured counterpart of
+ * ttcr::Grid2Drcsp: the mesh is treated as a graph over primary and secondary
+ * nodes and relaxed with a Dijkstra-style propagation.
+ *
+ * @sa Grid2Duc.h, Grid2Drcsp.h, Node2Dcsp.h, Grid2Ducdsp.h
+ */
+
 #ifndef ttcr_Grid2Ducsp_h
 #define ttcr_Grid2Ducsp_h
 
@@ -33,9 +44,46 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Shortest-path eikonal solver on a triangular mesh, slowness per cell.
+     *
+     * @tparam T1   floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2   integer type of node and cell indices.
+     * @tparam S    point type, @ref sxz or @ref sxyz.
+     * @tparam NODE node type, normally ttcr::Node2Dcsp.
+     * @tparam CELL cell policy from Cell.h; the class stays templated on it, so
+     *              it supports the anisotropic models.
+     *
+     * The unstructured counterpart of ttcr::Grid2Drcsp: the mesh is treated as a
+     * graph over primary and secondary nodes and relaxed with a Dijkstra-style
+     * propagation. Secondary nodes are placed along the triangle edges to widen
+     * the set of ray directions available, exactly as in the rectilinear case —
+     * the difference is only that the edges are those of an arbitrary
+     * triangulation.
+     *
+     * @note Alone among the four @c uc solvers, this one is templated on @c NODE
+     *       and @c CELL; the other three fix them to ttcr::Node2Dc and the
+     *       isotropic ttcr::Cell, so only this one supports anisotropy.
+     *
+     * @sa Grid2Duc.h, Grid2Drcsp.h, Node2Dcsp.h, Grid2Ducdsp.h
+     */
     template<typename T1, typename T2, typename S, typename NODE, typename CELL>
     class Grid2Ducsp : public Grid2Duc<T1,T2,S,NODE,CELL> {
     public:
+        /**
+         * @brief Build the mesh and its secondary nodes.
+         *
+         * @param no   node coordinates.
+         * @param tri  triangles, each naming three node indices.
+         * @param ns   number of secondary nodes per triangle edge; higher is
+         *             more accurate and more expensive
+         *             (ttcr::input_parameters::nn).
+         * @param ttrp recompute receiver traveltimes along the raypath.
+         * @param nt   number of threads.
+         *
+         * @post Primary and secondary nodes are built and their neighbour lists
+         *       populated. Slowness is **not** set.
+         */
         Grid2Ducsp(const std::vector<S>& no,
                    const std::vector<triangleElem<T2>>& tri,
                    const T2 ns, const bool ttrp, const size_t nt=1) :
@@ -45,9 +93,36 @@ namespace ttcr {
             this->template buildGridNeighbors<NODE>(this->nodes);
         }
 
+        /// Destructor.
         ~Grid2Ducsp() {
         }
 
+        /**
+         * @name Raytracing
+         *
+         * Six overloads of the same computation, differing only in how much they
+         * report. Each propagates the traveltime field from @p Tx over the whole
+         * mesh, then evaluates it at the receivers; raypaths (@c r_data) and
+         * per-cell path lengths (@c l_data) are recovered afterwards by walking
+         * the parent pointers of the node type back from each receiver.
+         *
+         * The receiver argument is either a plain vector or a vector of pointers
+         * to receiver sets, the latter letting one propagation serve several
+         * sets — used for reflected arrivals, where each reflector is its own
+         * set.
+         *
+         * @param[in]  Tx          source positions.
+         * @param[in]  t0          origin time of each source, parallel to @p Tx.
+         * @param[in]  Rx          receiver positions.
+         * @param[out] traveltimes traveltime at each receiver.
+         * @param[in]  threadNo    thread to compute on; concurrent calls must
+         *                         pass distinct values.
+         *
+         * @pre Every point lies inside the mesh — @ref checkPts throws otherwise.
+         * @note Declared @c const, but they do mutate the node traveltimes for
+         *       @p threadNo; that is what @c mutable on @ref nodes is for.
+         * @{
+         */
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
@@ -88,6 +163,7 @@ namespace ttcr {
                       std::vector<T1>&,
                       std::vector<std::vector<siv<T1>>>&,
                       const size_t=0) const;
+        /// @}
 
     private:
 

@@ -22,6 +22,28 @@
  *
  */
 
+/**
+ * @file Grid3Dunsp.h
+ * @brief Shortest-path solver on a 3-D tetrahedral mesh with node slowness.
+ *
+ * Declares ttcr::Grid3Dunsp, which computes traveltimes by Dijkstra's algorithm
+ * on the graph formed by the mesh nodes (Moser, 1991). It is the node-slowness
+ * counterpart of ttcr::Grid3Ducsp and the 3-D counterpart of ttcr::Grid2Dunsp.
+ *
+ * @section g3dunsp_secondary Secondary nodes
+ * A graph over the mesh vertices alone would only admit rays travelling along
+ * the edges, so the traveltimes would be systematically too large. Secondary
+ * nodes are inserted along the edges and across the faces to widen the set of
+ * directions a ray can take; the accuracy improves with their number, at a cost
+ * growing faster than linearly.
+ *
+ * This is why the class uses ttcr::Node3Dnsp rather than ttcr::Node3Dn: that
+ * node type carries the graph's adjacency, which the sweeping and marching
+ * solvers have no use for.
+ *
+ * @sa Grid3Dun.h, Grid3Ducsp.h, Grid2Dunsp.h, Node3Dnsp.h, Grid3Dundsp.h
+ */
+
 #ifndef ttcr_Grid3Dunsp_h
 #define ttcr_Grid3Dunsp_h
 
@@ -41,9 +63,42 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Shortest-path traveltimes on a tetrahedral mesh with node slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 unsigned integer type used for node and cell indices.
+     *
+     * @note Overrides @c setSlowness with primary-node-sized versions, so the
+     *       caller need not know how many secondary nodes were inserted; those
+     *       overloads interpolate onto the secondary nodes afterwards. A
+     *       @c using declaration keeps the base's scalar
+     *       ttcr::Grid3Dun::setSlowness(const T1) reachable, which would
+     *       otherwise be hidden by them.
+     *
+     * @sa Grid3Dun.h, Grid3Ducsp.h, Grid3Dundsp.h
+     */
     template<typename T1, typename T2>
     class Grid3Dunsp : public Grid3Dun<T1,T2,Node3Dnsp<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh and its shortest-path graph.
+         * @param no  primary node coordinates.
+         * @param tet tetrahedra, as quadruples of indices into @p no.
+         * @param ns  number of secondary nodes per edge; see
+         *            @ref g3dunsp_secondary.
+         * @param iv  interpolate velocity rather than slowness; see
+         *            @ref g3dun_procvel.
+         * @param rptt compute traveltimes by integrating along the raypath.
+         * @param md  minimum distance for snapping a raypath point onto a node.
+         * @param nt  number of threads.
+         * @param _translateOrigin shift the mesh to the origin.
+         *
+         * @note Passes 1 for the base's @c rp_method, fixing the raypath
+         *       gradient estimator at least-squares second order; unlike the
+         *       other solvers in this family it is not configurable here.
+         *       ttcr::Grid3Ducsp does the same.
+         */
         Grid3Dunsp(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T2 ns, const bool iv, const bool rptt, const T1 md,
@@ -58,6 +113,18 @@ namespace ttcr {
         ~Grid3Dunsp() {
         }
 
+        // the overloads below hide every base setSlowness; bring back the
+        // scalar one, which needs no secondary-node interpolation
+        using Grid3Dun<T1,T2,Node3Dnsp<T1,T2>>::setSlowness;
+
+        /**
+         * @brief Set the slowness at the primary nodes.
+         * @param s one value per primary node.
+         * @throws std::length_error if @p s does not match the primary node
+         *         count.
+         * @post The secondary nodes are refilled by interpolation, of velocity
+         *       or of slowness according to @c processVel.
+         */
         void setSlowness(const std::vector<T1>& s) {
             if ( this->nPrimary != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -74,6 +141,13 @@ namespace ttcr {
         }
 
 
+        /**
+         * @brief Set the slowness at the primary nodes, from a raw array.
+         * @param s  array of slowness values.
+         * @param ns length of @p s; must equal the primary node count.
+         * @throws std::length_error on a size mismatch.
+         * @post The secondary nodes are refilled by interpolation.
+         */
         void setSlowness(const T1 *s, const size_t ns) {
             if ( this->nPrimary != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -90,45 +164,109 @@ namespace ttcr {
         }
 
 
+        /**
+         * @name Raytracing
+         * Five overloads differing in what they return and whether the receivers
+         * are one flat list or grouped per source. The grouped forms exist so
+         * that a survey's shots can be spread over threads.
+         * @{
+         */
+        /**
+         * @brief Traveltimes from one source set to a list of receivers.
+         * @param Tx source coordinates.
+         * @param t0 source excitation times.
+         * @param Rx receiver coordinates.
+         * @param[out] traveltimes one value per receiver.
+         * @param threadNo thread number.
+         * @throws std::runtime_error if a point falls outside the mesh.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      std::vector<T1>& traveltimes,
+                      const size_t threadNo=0) const;
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<sxyz<T1>>&,
-                      std::vector<T1>&,
-                      const size_t=0) const;
+        /**
+         * @brief Traveltimes for receivers grouped per source.
+         * @param Tx source coordinates.
+         * @param t0 source excitation times.
+         * @param Rx receiver coordinates, one group per source.
+         * @param[out] traveltimes one group per source.
+         * @param threadNo thread number.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>*>& traveltimes,
+                      const size_t threadNo=0) const;
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<std::vector<sxyz<T1>>>&,
-                      std::vector<std::vector<T1>*>&,
-                      const size_t=0) const;
+        /**
+         * @brief Traveltimes and raypaths.
+         * @param Tx source coordinates.
+         * @param t0 source excitation times.
+         * @param Rx receiver coordinates.
+         * @param[out] traveltimes one value per receiver.
+         * @param[out] r_data one raypath per receiver.
+         * @param threadNo thread number.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<sxyz<T1>>>& r_data,
+                      const size_t threadNo=0) const;
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>& ,
-                      const std::vector<sxyz<T1>>&,
-                      std::vector<T1>&,
-                      std::vector<std::vector<sxyz<T1>>>&,
-                      const size_t=0) const;
+        /**
+         * @brief Traveltimes and raypaths, grouped per source.
+         * @param Tx source coordinates.
+         * @param t0 source excitation times.
+         * @param Rx receiver coordinates, one group per source.
+         * @param[out] traveltimes one group per source.
+         * @param[out] r_data raypaths, one group per source.
+         * @param threadNo thread number.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      std::vector<std::vector<T1>*>& traveltimes,
+                      std::vector<std::vector<std::vector<sxyz<T1>>>*>& r_data,
+                      const size_t threadNo=0) const;
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<std::vector<sxyz<T1>>>&,
-                      std::vector<std::vector<T1>*>&,
-                      std::vector<std::vector<std::vector<sxyz<T1>>>*>&,
-                      const size_t=0) const;
-
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>& ,
-                      const std::vector<sxyz<T1>>&,
-                      std::vector<T1>&,
-                      std::vector<std::vector<sxyz<T1>>>&,
-                      std::vector<std::vector<siv<T1>>>&,
-                      const size_t=0) const;
+        /**
+         * @brief Traveltimes, raypaths and the tomography matrix.
+         * @param Tx source coordinates.
+         * @param t0 source excitation times.
+         * @param Rx receiver coordinates.
+         * @param[out] traveltimes one value per receiver.
+         * @param[out] r_data one raypath per receiver.
+         * @param[out] l_data one matrix row per receiver, giving the ray's
+         *             sensitivity to each cell.
+         * @param threadNo thread number.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<sxyz<T1>>>& r_data,
+                      std::vector<std::vector<siv<T1>>>& l_data,
+                      const size_t threadNo=0) const;
+        /** @} */
 
 
     private:
-        T2 nSecondary;
+        T2 nSecondary; ///< Number of secondary nodes per edge.
 
+        /**
+         * @brief Seed the priority queue with the source nodes.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param[out] queue the queue, ordered by traveltime.
+         * @param[out] txNodes nodes created for any Tx not coinciding with an
+         *             existing node; held by the caller so they outlive the run.
+         * @param[out] inQueue whether each node is currently queued.
+         * @param[out] frozen  whether each node's traveltime is final.
+         * @param threadNo thread number.
+         */
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node3Dnsp<T1,T2>*,
@@ -139,6 +277,18 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
+        /**
+         * @brief Relax the neighbours of a source node before the main sweep.
+         * @param node     the source node.
+         * @param[in,out] queue the priority queue.
+         * @param[in,out] inQueue queued flags.
+         * @param[in,out] frozen  finalised flags.
+         * @param threadNo thread number.
+         *
+         * Gives the nodes immediately around a source their straight-ray
+         * traveltimes, so the Dijkstra sweep starts from a sensible front rather
+         * than from a single point.
+         */
         void prepropagate(const Node3Dnsp<T1,T2>& node,
                           std::priority_queue<Node3Dnsp<T1,T2>*, std::vector<Node3Dnsp<T1,T2>*>,
                           CompareNodePtr<T1>>& queue,
@@ -146,6 +296,18 @@ namespace ttcr {
                           std::vector<bool>& frozen,
                           size_t threadNo) const;
 
+        /**
+         * @brief Run the Dijkstra sweep to completion.
+         * @param[in,out] queue the priority queue.
+         * @param[in,out] inQueue queued flags.
+         * @param[in,out] frozen  finalised flags.
+         * @param threadNo thread number.
+         *
+         * Repeatedly takes the queued node of least traveltime, freezes it, and
+         * relaxes its neighbours. A node's traveltime is final once it leaves
+         * the queue, since slowness is positive and so no later path can be
+         * shorter.
+         */
         void propagate(std::priority_queue<Node3Dnsp<T1,T2>*,
                        std::vector<Node3Dnsp<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
@@ -159,10 +321,30 @@ namespace ttcr {
         using Grid3Dun<T1,T2,Node3Dnsp<T1,T2>>::getTraveltime;
 
     private:
+        /**
+         * @brief Traveltime at a receiver, from a given node set.
+         * @param Rx       receiver coordinate.
+         * @param nodes    the nodes to search.
+         * @param threadNo thread number.
+         * @return the traveltime.
+         */
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<Node3Dnsp<T1,T2>>& nodes,
                          const size_t threadNo) const;
 
+        /**
+         * @brief Traveltime at a receiver, also reporting its graph parent.
+         * @param Rx       receiver coordinate.
+         * @param nodes    the nodes to search.
+         * @param[out] nodeParentRx the node the ray arrives from.
+         * @param[out] cellParentRx the cell it arrives through.
+         * @param threadNo thread number.
+         * @return the traveltime.
+         *
+         * The parent links are what a raypath is reconstructed from: following
+         * them back from the receiver retraces the shortest path to the source,
+         * so no gradient tracing is needed.
+         */
         T1 getTraveltime(const sxyz<T1>& Rx,
                          const std::vector<Node3Dnsp<T1,T2>>& nodes,
                          T2& nodeParentRx,

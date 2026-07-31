@@ -22,6 +22,15 @@
  *
  */
 
+/**
+ * @file Grid3Ducsp.h
+ * @brief Shortest-path solver on a 3-D tetrahedral mesh with cell-based slowness.
+ *
+ * Declares ttcr::Grid3Ducsp, the 3-D counterpart of ttcr::Grid2Ducsp.
+ *
+ * @sa Grid3Duc.h, Grid2Ducsp.h, Node3Dcsp.h, Grid3Ducdsp.h
+ */
+
 #ifndef ttcr_Grid3Ducsp_h
 #define ttcr_Grid3Ducsp_h
 
@@ -40,8 +49,45 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Shortest-path eikonal solver on a tetrahedral mesh, slowness per cell.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * The 3-D counterpart of ttcr::Grid2Ducsp: the mesh is treated as a graph
+     * over primary and secondary nodes and relaxed with a Dijkstra-style
+     * propagation. Secondary nodes are placed along the tetrahedron edges to
+     * widen the set of ray directions available.
+     *
+     * Being graph-based, it does not use the local eikonal update of
+     * ttcr::Grid3Duc::localUpdate3D at all — that belongs to the sweeping and
+     * marching solvers.
+     *
+     * @sa Grid3Duc.h, Grid2Ducsp.h, Node3Dcsp.h, Grid3Ducdsp.h
+     */
     class Grid3Ducsp : public Grid3Duc<T1,T2,Node3Dcsp<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh and its secondary nodes.
+         *
+         * @param no   node coordinates.
+         * @param tet  tetrahedra, each naming four node indices.
+         * @param ns   number of secondary nodes per tetrahedron edge
+         *             (ttcr::input_parameters::nn).
+         * @param rptt recompute receiver traveltimes along the raypath.
+         * @param md   minimum step retained when integrating a raypath.
+         * @param nt   number of threads.
+         * @param _translateOrigin shift the mesh origin to (0,0,0).
+         *
+         * @post Primary and secondary nodes are built and their neighbour lists
+         *       populated. Slowness is **not** set.
+         * @note The base's raypath method is hard-wired to **1**
+         *       (ttcr::LS_SO, second-order least squares) rather than taken from
+         *       ttcr::input_parameters::raypath_method, so that setting has no
+         *       effect on this solver — unlike ttcr::Grid3Ducfs and
+         *       ttcr::Grid3Ducdsp, which pass it through.
+         */
         Grid3Ducsp(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const int ns, const bool rptt, const T1 md,

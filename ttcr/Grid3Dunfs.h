@@ -22,6 +22,39 @@
  *
  */
 
+/**
+ * @file Grid3Dunfs.h
+ * @brief Fast-sweeping solver on a 3-D tetrahedral mesh with node slowness.
+ *
+ * Declares ttcr::Grid3Dunfs, which solves the eikonal equation by Gauss-Seidel
+ * iteration with alternating sweep orders (Qian et al., 2007). It is the
+ * node-slowness counterpart of ttcr::Grid3Ducfs and the 3-D counterpart of
+ * ttcr::Grid2Dunfs.
+ *
+ * @section g3dunfs_ordering Sweep orderings
+ * On a rectilinear grid the sweeps run along the axes, and the @f$2^3@f$
+ * combinations of directions between them cover every possible ray direction.
+ * An unstructured mesh has no axes, so the orderings must be built: the nodes
+ * are sorted by their distance from each of a set of reference points, and each
+ * such ordering is swept forwards and backwards. The reference points are
+ * usually the corners of the model's bounding box.
+ *
+ * ttcr::Grid3Dunfs::initOrdering builds them, using a ttcr::Metric to measure
+ * distance — @f$L_1@f$ or @f$L_2@f$, selected by
+ * ttcr::input_parameters::order. Since it may be called after construction, the
+ * class offers a constructor that takes the reference points and one that does
+ * not.
+ *
+ * @section g3dunfs_converge Convergence
+ * Sweeping repeats until the summed change in traveltime falls below a
+ * tolerance or @c nitermax iterations have run. The tolerance given to the
+ * constructor is **per node**; it is multiplied by the node count so that the
+ * test can be applied to the @f$L_1@f$ sum directly, which keeps the criterion
+ * independent of mesh size.
+ *
+ * @sa Grid3Dun.h, Grid3Ducfs.h, Grid2Dunfs.h, Grid3Dunfm.h, Metric.h
+ */
+
 #ifndef ttcr_Grid3Dunfs_h
 #define ttcr_Grid3Dunfs_h
 
@@ -36,9 +69,39 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Fast-sweeping traveltimes on a tetrahedral mesh with node slowness.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 unsigned integer type used for node and cell indices.
+     *
+     * Uses ttcr::Node3Dn: no graph adjacency is needed, only the mesh
+     * connectivity, so the lighter node type suffices. There are no secondary
+     * nodes either — accuracy comes from iterating rather than from refining the
+     * discretisation.
+     *
+     * @sa Grid3Dun.h, Grid3Dunfm.h, Grid3Ducfs.h
+     */
     template<typename T1, typename T2>
     class Grid3Dunfs : public Grid3Dun<T1,T2,Node3Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh, leaving the sweep orderings unset.
+         * @param no    primary node coordinates.
+         * @param tet   tetrahedra, as quadruples of indices into @p no.
+         * @param eps   convergence tolerance **per node**; see
+         *              @ref g3dunfs_converge.
+         * @param maxit maximum number of sweep iterations.
+         * @param rp    raypath gradient estimator; see @ref g3dun_raypath.
+         * @param iv    interpolate velocity rather than slowness.
+         * @param rptt  compute traveltimes by integrating along the raypath.
+         * @param md    minimum distance for snapping a raypath point onto a node.
+         * @param nt    number of threads.
+         * @param _translateOrigin shift the mesh to the origin.
+         *
+         * @pre ttcr::Grid3Dunfs::initOrdering must be called before raytracing;
+         *      with no orderings there is nothing to sweep.
+         */
         Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps,
@@ -56,6 +119,22 @@ namespace ttcr {
             this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
             epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
+        /**
+         * @brief Build the mesh and its sweep orderings.
+         * @param no     primary node coordinates.
+         * @param tet    tetrahedra.
+         * @param eps    convergence tolerance per node.
+         * @param maxit  maximum number of sweep iterations.
+         * @param refPts reference points the orderings are built from; see
+         *               @ref g3dunfs_ordering.
+         * @param order  1 for the @f$L_1@f$ metric, otherwise @f$L_2@f$.
+         * @param rp     raypath gradient estimator.
+         * @param iv     interpolate velocity rather than slowness.
+         * @param rptt   compute traveltimes by integrating along the raypath.
+         * @param md     minimum distance for snapping a raypath point.
+         * @param nt     number of threads.
+         * @param _translateOrigin shift the mesh to the origin.
+         */
         Grid3Dunfs(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const T1 eps,
@@ -80,41 +159,70 @@ namespace ttcr {
         ~Grid3Dunfs() {
         }
 
+        /**
+         * @brief Build the sweep orderings from a set of reference points.
+         * @param refPts the reference points, typically the corners of the
+         *               bounding box.
+         * @param order  1 for the @f$L_1@f$ metric, otherwise @f$L_2@f$.
+         *
+         * Sorts the nodes by distance from each reference point, giving one
+         * ordering per point. Each is swept forwards and backwards, so
+         * @p refPts.size() points yield twice that many sweep directions. See
+         * @ref g3dunfs_ordering.
+         */
         void initOrdering(const std::vector<sxyz<T1>>& refPts, const int order);
 
+        /**
+         * @brief Number of sweep iterations the last solve took.
+         * @return the count; equal to @c nitermax if it did not converge.
+         */
         const int get_niter() const { return niter_final; }
 
     private:
-        T1 epsilon;
-        int nitermax;
-        std::vector<std::vector<Node3Dn<T1,T2>*>> S;
-        mutable int niter_final;
+        T1 epsilon;    ///< Convergence threshold on the @f$L_1@f$ change, already scaled by the node count.
+        int nitermax;  ///< Iteration cap.
+        std::vector<std::vector<Node3Dn<T1,T2>*>> S; ///< One node ordering per reference point.
+        mutable int niter_final; ///< Iterations taken; @c mutable so the @c const solver can record it.
 
+        /**
+         * @brief Set the traveltimes at the source nodes and freeze them.
+         * @param Tx           source coordinates.
+         * @param t0           source excitation times.
+         * @param[out] frozen  flags marking nodes that must not be updated.
+         * @param threadNo     thread number.
+         *
+         * Also seeds the nodes around each source, out to @c source_radius; see
+         * ttcr::Grid3Dun::setSourceRadius.
+         */
         void initTx(const std::vector<sxyz<T1>>& Tx, const std::vector<T1>& t0,
                     std::vector<bool>& frozen, const size_t threadNo) const;
 
-        void initBand(const std::vector<sxyz<T1>>& Tx,
-                      const std::vector<T1>& t0,
-                      std::priority_queue<Node3Dn<T1,T2>*,
-                      std::vector<Node3Dn<T1,T2>*>,
-                      CompareNodePtr<T1>>&,
-                      std::vector<Node3Dn<T1,T2>>&,
-                      std::vector<bool>&,
-                      std::vector<bool>&,
-                      const size_t) const;
-
-        void propagate(std::priority_queue<Node3Dn<T1,T2>*,
-                       std::vector<Node3Dn<T1,T2>*>,
-                       CompareNodePtr<T1>>&,
-                       std::vector<bool>&,
-                       std::vector<bool>&,
-                       const size_t) const;
-
+        /**
+         * @brief Solve the traveltime field by sweeping.
+         * @param Tx       source coordinates, already origin-translated.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinates; checked to lie in the mesh, but
+         *                 they do not bound the work — the whole field is
+         *                 solved.
+         * @param threadNo thread number.
+         *
+         * Overrides the base class's solver hook, which the public @c raytrace
+         * overloads call; see ttcr::Grid3D. Sweeps each ordering forwards then
+         * backwards, repeating until the change falls below @c epsilon or
+         * @c nitermax is reached.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<sxyz<T1>>& Rx,
                       const size_t threadNo=0) const;
 
+        /**
+         * @brief Solver hook, grouped-receiver form.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinates, one group per source.
+         * @param threadNo thread number.
+         */
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<std::vector<sxyz<T1>>>& Rx,

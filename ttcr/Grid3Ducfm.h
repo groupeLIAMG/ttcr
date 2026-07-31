@@ -42,6 +42,16 @@
 //	}
 //
 
+/**
+ * @file Grid3Ducfm.h
+ * @brief Fast marching solver on a 3-D tetrahedral mesh with cell-based slowness.
+ *
+ * Declares ttcr::Grid3Ducfm, the narrow-band single-pass alternative to the
+ * iterative ttcr::Grid3Ducfs and the graph-based ttcr::Grid3Ducsp.
+ *
+ * @sa Grid3Duc.h, Grid3Ducfs.h, Grid2Ducfm.h
+ */
+
 #ifndef ttcr_Grid3Ducfm_h
 #define ttcr_Grid3Ducfm_h
 
@@ -56,11 +66,41 @@
 namespace ttcr {
 
     template<typename T1, typename T2>
+    /**
+     * @brief Fast marching eikonal solver on a tetrahedral mesh, slowness per cell.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     *
+     * Advances a **narrow band** outward from the sources: the least-traveltime
+     * node in the band is accepted as final, its untouched neighbours are
+     * updated with ttcr::Grid3Duc::localUpdate3D and pushed, and the process
+     * repeats. A single pass with no iteration to convergence, unlike
+     * ttcr::Grid3Ducfs — which is why this class has no tolerance, no iteration
+     * cap and no sweep orderings.
+     *
+     * @sa Grid3Duc.h, Grid3Ducfs.h, Grid2Ducfm.h
+     */
     class Grid3Ducfm : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh and its nodes.
+         *
+         * @param no   node coordinates.
+         * @param tet  tetrahedra, each naming four node indices.
+         * @param rp   raypath method, values of ttcr::gradient_method.
+         * @param rptt recompute receiver traveltimes along the raypath.
+         * @param md   minimum step retained when integrating a raypath.
+         * @param nt   number of threads.
+         * @param _translateOrigin shift the mesh origin to (0,0,0).
+         *
+         * @post Nodes and neighbour lists are built. Slowness is **not** set.
+         * @note No secondary nodes — fast marching works on the mesh vertices
+         *       alone.
+         */
         Grid3Ducfm(const std::vector<sxyz<T1>>& no,
                    const std::vector<tetrahedronElem<T2>>& tet,
-                   const bool rp, const bool rptt, const T1 md,
+                   const int rp, const bool rptt, const T1 md,
                    const size_t nt=1, const bool _translateOrigin=false) :
         Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt, _translateOrigin)
         {

@@ -22,6 +22,45 @@
  *
  */
 
+/**
+ * @file Grid3Dundsp.h
+ * @brief Dynamic shortest-path solver on a 3-D tetrahedral mesh with node
+ *        slowness.
+ *
+ * Declares ttcr::Grid3Dundsp, a shortest-path solver that refines the graph
+ * near the sources instead of everywhere. It is the node-slowness counterpart
+ * of ttcr::Grid3Ducdsp and the 3-D counterpart of ttcr::Grid2Dundsp.
+ *
+ * @section g3dundsp_why Why refine only near the source
+ * The shortest-path method's error comes from the graph admitting only the ray
+ * directions its edges provide, and that error is worst near the source, where
+ * the wavefront curves most sharply. Refining the whole mesh to fix it is
+ * wasteful: ttcr::Grid3Dunsp's cost grows faster than linearly in the secondary
+ * node count, and away from the source the extra resolution buys little.
+ *
+ * So this class inserts a further tier of **tertiary** nodes, but only within
+ * @c dyn_radius of a Tx. They are created per source and discarded afterwards,
+ * which is why they live in @c tempNodes rather than in the base's @c nodes:
+ * with one set per thread, several sources can be traced at once even though
+ * each puts its tertiary nodes somewhere different.
+ *
+ * @c nPermanent records where the permanent nodes end, so the temporary ones
+ * can be told apart by index alone.
+ *
+ * @section g3dundsp_radii Two radii
+ * The constructor takes two distances, easily confused:
+ *
+ * - @c rad — passed to ttcr::Grid3Dun::setSourceRadius, governing how widely the
+ *   **initial traveltimes** are seeded.
+ * - @c drad — @c dyn_radius, governing where the **tertiary nodes** go.
+ *
+ * @c drad is a multiple of the mean edge length unless @c useEdgeLength is
+ * false, in which case it is an absolute distance. @c rad is always absolute.
+ * ttcr::Grid3Ducdsp takes the same pair.
+ *
+ * @sa Grid3Dun.h, Grid3Dunsp.h, Grid3Ducdsp.h, Grid2Dundsp.h, Node3Dnd.h
+ */
+
 #ifndef ttcr_Grid3Dundsp_h
 #define ttcr_Grid3Dundsp_h
 
@@ -38,9 +77,47 @@
 
 namespace ttcr {
 
+    /**
+     * @brief Shortest-path traveltimes with extra graph refinement near the
+     *        sources.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 unsigned integer type used for node and cell indices.
+     *
+     * @note Overrides @c setSlowness with primary-node-sized versions. A
+     *       @c using declaration keeps the base's scalar
+     *       ttcr::Grid3Dun::setSlowness(const T1) reachable, which would
+     *       otherwise be hidden by them.
+     *
+     * @sa Grid3Dunsp.h, Grid3Ducdsp.h, Grid2Dundsp.h
+     */
     template<typename T1, typename T2>
     class Grid3Dundsp : public Grid3Dun<T1,T2,Node3Dn<T1,T2>> {
     public:
+        /**
+         * @brief Build the mesh and its permanent graph nodes.
+         * @param no   primary node coordinates.
+         * @param tet  tetrahedra, as quadruples of indices into @p no.
+         * @param ns   number of secondary nodes per edge, inserted everywhere.
+         * @param nd   number of tertiary nodes per edge, inserted only near a
+         *             source.
+         * @param rad  radius for seeding the initial traveltimes; see
+         *             @ref g3dundsp_radii.
+         * @param iv   interpolate velocity rather than slowness.
+         * @param rp   raypath gradient estimator; see @ref g3dun_raypath.
+         * @param rptt compute traveltimes by integrating along the raypath.
+         * @param md   minimum distance for snapping a raypath point onto a node.
+         * @param drad radius within which tertiary nodes are inserted.
+         * @param useEdgeLength read @p drad as a multiple of the mean edge
+         *             length rather than as an absolute distance.
+         * @param nt   number of threads; one tertiary-node set is kept per
+         *             thread.
+         * @param _translateOrigin shift the mesh to the origin.
+         *
+         * @warning @p rad and @p drad are different radii serving different
+         *          purposes, and are adjacent in neither the parameter list nor
+         *          meaning; see @ref g3dundsp_radii.
+         */
         Grid3Dundsp(const std::vector<sxyz<T1>>& no,
                     const std::vector<tetrahedronElem<T2>>& tet,
                     const T2 ns, const T2 nd, const T1 rad,
@@ -66,6 +143,19 @@ namespace ttcr {
         ~Grid3Dundsp() {
         }
 
+        // the overloads below hide every base setSlowness; bring back the
+        // scalar one, which needs no secondary-node interpolation
+        using Grid3Dun<T1,T2,Node3Dn<T1,T2>>::setSlowness;
+
+        /**
+         * @brief Set the slowness at the primary nodes.
+         * @param s one value per primary node.
+         * @throws std::length_error if @p s does not match the primary node
+         *         count.
+         * @post The secondary nodes are refilled by interpolation. Tertiary
+         *       nodes need no attention: they do not exist yet, being created
+         *       per source at raytracing time.
+         */
         void setSlowness(const std::vector<T1>& s) {
             if ( this->nPrimary != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -81,6 +171,13 @@ namespace ttcr {
             }
         }
 
+        /**
+         * @brief Set the slowness at the primary nodes, from a raw array.
+         * @param s  array of slowness values.
+         * @param ns length of @p s; must equal the primary node count.
+         * @throws std::length_error on a size mismatch.
+         * @post The secondary nodes are refilled by interpolation.
+         */
         void setSlowness(const T1 *s, const size_t ns) {
             if ( this->nPrimary != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
@@ -97,19 +194,39 @@ namespace ttcr {
         }
 
     private:
-        T2 nSecondary;
-        T2 nTertiary;
-        T2 nPermanent;
-        T1 dyn_radius;
+        T2 nSecondary; ///< Secondary nodes per edge, inserted everywhere.
+        T2 nTertiary;  ///< Tertiary nodes per edge, inserted only near a source.
+        T2 nPermanent; ///< Size of @c nodes before any tertiary node is added; separates permanent from temporary by index.
+        T1 dyn_radius; ///< Radius within which tertiary nodes are inserted, already scaled by the mean edge length when asked for.
 
         // we will store temporary nodes in a separate container.  This is to
         // allow threaded computations with different Tx (location of temp
         // nodes vary from one Tx to the other)
-        mutable std::vector<std::vector<Node3Dnd<T1,T2>>> tempNodes;
-        mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors;
+        mutable std::vector<std::vector<Node3Dnd<T1,T2>>> tempNodes;     ///< Tertiary nodes, one set per thread.
+        mutable std::vector<std::vector<std::vector<T2>>> tempNeighbors; ///< Tertiary node indices per tetrahedron, one set per thread.
 
-        void addTemporaryNodes(const std::vector<sxyz<T1>>&, const size_t) const;
+        /**
+         * @brief Insert the tertiary nodes around a source.
+         * @param Tx       source coordinates.
+         * @param threadNo thread number, selecting which node set to fill.
+         *
+         * Clears whatever the previous source left, finds the tetrahedra whose
+         * centroid lies within @c dyn_radius of a Tx, and subdivides their edges
+         * and faces with @c nTertiary nodes apiece.
+         */
+        void addTemporaryNodes(const std::vector<sxyz<T1>>& Tx, const size_t threadNo) const;
 
+        /**
+         * @brief Seed the priority queue with the source nodes.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param[out] queue   the queue, ordered by traveltime.
+         * @param[out] txNodes nodes created for any Tx not coinciding with an
+         *             existing one.
+         * @param[out] inQueue whether each node is currently queued.
+         * @param[out] frozen  whether each node's traveltime is final.
+         * @param threadNo thread number.
+         */
         void initQueue(const std::vector<sxyz<T1>>& Tx,
                        const std::vector<T1>& t0,
                        std::priority_queue<Node3Dn<T1,T2>*,
@@ -120,6 +237,16 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
+        /**
+         * @brief Run the Dijkstra sweep to completion.
+         * @param[in,out] queue the priority queue.
+         * @param[in,out] inQueue queued flags.
+         * @param[in,out] frozen  finalised flags.
+         * @param threadNo thread number.
+         *
+         * As in ttcr::Grid3Dunsp, but the graph it walks includes this thread's
+         * tertiary nodes.
+         */
         void propagate(std::priority_queue<Node3Dn<T1,T2>*,
                        std::vector<Node3Dn<T1,T2>*>,
                        CompareNodePtr<T1>>& queue,
@@ -127,15 +254,32 @@ namespace ttcr {
                        std::vector<bool>& frozen,
                        const size_t threadNo) const;
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<sxyz<T1>>&,
-                      const size_t=0) const;
+        /**
+         * @brief Solve the traveltime field.
+         * @param Tx       source coordinates, already origin-translated.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinates.
+         * @param threadNo thread number.
+         *
+         * Overrides the base class's solver hook; see ttcr::Grid3D. Inserts the
+         * tertiary nodes for this source before sweeping.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      const size_t threadNo=0) const;
 
-        void raytrace(const std::vector<sxyz<T1>>&,
-                      const std::vector<T1>&,
-                      const std::vector<std::vector<sxyz<T1>>>&,
-                      const size_t=0) const;
+        /**
+         * @brief Solver hook, grouped-receiver form.
+         * @param Tx       source coordinates.
+         * @param t0       source excitation times.
+         * @param Rx       receiver coordinates, one group per source.
+         * @param threadNo thread number.
+         */
+        void raytrace(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<std::vector<sxyz<T1>>>& Rx,
+                      const size_t threadNo=0) const;
 
     };
 

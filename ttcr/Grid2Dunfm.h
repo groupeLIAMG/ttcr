@@ -22,6 +22,16 @@
  *
  */
 
+/**
+ * @file Grid2Dunfm.h
+ * @brief Fast marching solver on a 2-D triangular mesh with node-based slowness.
+ *
+ * Declares ttcr::Grid2Dunfm, the narrow-band single-pass alternative to the
+ * iterative ttcr::Grid2Dunfs and the graph-based ttcr::Grid2Dunsp.
+ *
+ * @sa Grid2Dun.h, Grid2Ducfm.h, Grid2Dunfs.h
+ */
+
 #ifndef ttcr_Grid2Dunfm_h
 #define ttcr_Grid2Dunfm_h
 
@@ -33,6 +43,20 @@
 namespace ttcr {
 
     template<typename T1, typename T2, typename S>
+    /**
+     * @brief Fast marching eikonal solver on a triangular mesh, slowness per node.
+     *
+     * @tparam T1 floating-point type of coordinates, slowness and traveltimes.
+     * @tparam T2 integer type of node and cell indices.
+     * @tparam S  point type, @ref sxz or @ref sxyz.
+     *
+     * Advances a narrow band outward from the sources, accepting the
+     * least-traveltime node as final and relaxing its neighbours. A single pass
+     * with no iteration to convergence, unlike ttcr::Grid2Dunfs — hence no
+     * tolerance, no iteration cap and no sweep orderings.
+     *
+     * @sa Grid2Dun.h, Grid2Ducfm.h, Grid2Dunfs.h
+     */
     class Grid2Dunfm : public Grid2Dun<T1,T2,S,Node2Dn<T1,T2>> {
     public:
         Grid2Dunfm(const std::vector<S>& no,
