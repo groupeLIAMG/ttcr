@@ -4099,8 +4099,12 @@ cdef class Grid2d_d:
             ncells = self.get_number_of_cells()
             for n in range(nTx):
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
+                if self.iso == b'i':
+                    for ni in range(l_data[n].size()):
+                        nnz += l_data[n][ni].size()
+                else:
+                    for ni in range(l_data2[n].size()):
+                        nnz += l_data2[n][ni].size()
 
                 if self.iso == b'i':
                     indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
@@ -5440,8 +5444,12 @@ cdef class Grid2d_f:
             ncells = self.get_number_of_cells()
             for n in range(nTx):
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
+                if self.iso == b'i':
+                    for ni in range(l_data[n].size()):
+                        nnz += l_data[n][ni].size()
+                else:
+                    for ni in range(l_data2[n].size()):
+                        nnz += l_data2[n][ni].size()
 
                 if self.iso == b'i':
                     indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
