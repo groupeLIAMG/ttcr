@@ -363,6 +363,93 @@ class Data_kernel(unittest.TestCase):
         self.assertAlmostEqual(np.sum(np.abs(tt-tt2)), 0.0)
 
 
+class TestVTI(unittest.TestCase):
+    """Traveltimes in homogeneous VTI media, qP/qSV and SH phases.
+
+    The traveltime along a ray segment is its length divided by the *group*
+    (energy) velocity taken in the direction of the segment.  Dividing by the
+    phase velocity instead underestimates it by several percent away from the
+    symmetry axes, phase and group velocities coinciding only along those axes.
+    """
+
+    vp, vs, eps, dlt, gam = 3.094, 1.51, 0.256, -0.0505, 0.15
+
+    @classmethod
+    def _phase(cls, theta, sign):
+        """Phase velocity of the qP (sign=+1) or qSV (sign=-1) wave, and its
+        derivative with respect to the phase angle."""
+        f = 1. - cls.vs**2 / cls.vp**2
+        s = np.sin(theta)**2
+        a = 1. + 2.*cls.eps*s/f
+        r = a*a - 8.*(cls.eps-cls.dlt)*s*(1.-s)/f
+        g = 1. + cls.eps*s - f/2. + sign*(f/2.)*np.sqrt(np.maximum(r, 0.))
+        drds = 2.*a*(2.*cls.eps/f) - 8.*(cls.eps-cls.dlt)*(1.-2.*s)/f
+        dgds = cls.eps + sign*(f/4.)*drds/np.sqrt(np.maximum(r, 1.e-300))
+        v = cls.vp*np.sqrt(g)
+        return v, cls.vp*dgds*np.sin(2.*theta)/(2.*np.sqrt(g))
+
+    @classmethod
+    def _group_vel(cls, psi, sign):
+        """Group velocity of the first arrival, for a ray angle psi."""
+        theta = np.linspace(-np.pi, np.pi, 400001)
+        v, dv = cls._phase(theta, sign)
+        vg = np.sqrt(v*v + dv*dv)
+        ray = theta + np.arctan2(dv, v)
+        d = ((ray - psi + np.pi) % (2.*np.pi)) - np.pi
+        return max(vg[k] for k in np.where(np.diff(np.sign(d)) != 0)[0])
+
+    def setUp(self):
+        n, h = 101, 0.02
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.radius = 0.7
+        self.angles = np.radians(np.arange(5., 90., 5.))
+        self.src = np.array([[1., 1.]])
+        self.rcv = np.column_stack([1. + self.radius*np.sin(self.angles),
+                                    1. + self.radius*np.cos(self.angles)])
+
+    def test_vti_psv_homogeneous(self):
+        # the python wrapper does not call setPhase(), so the qP phase is used
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                      aniso='vti_psv')
+        g.set_Vp0(np.full(self.ncells, self.vp))
+        g.set_Vs0(np.full(self.ncells, self.vs))
+        g.set_epsilon(np.full(self.ncells, self.eps))
+        g.set_delta(np.full(self.ncells, self.dlt))
+        tt = g.raytrace(self.src, self.rcv)
+        ref = np.array([self.radius/self._group_vel(a, 1.) for a in self.angles])
+        self.assertLess(np.max(np.abs(tt-ref)/ref), 0.005)
+
+    def test_vti_sh_homogeneous(self):
+        vs0 = 1.8
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                      aniso='vti_sh')
+        g.set_Vs0(np.full(self.ncells, vs0))
+        g.set_gamma(np.full(self.ncells, self.gam))
+        tt = g.raytrace(self.src, self.rcv)
+        # the SH phase velocity is elliptical, so the traveltime is closed form
+        lx = self.radius*np.sin(self.angles)
+        lz = self.radius*np.cos(self.angles)
+        ref = np.sqrt(lx*lx/(1. + 2.*self.gam) + lz*lz)/vs0
+        self.assertLess(np.max(np.abs(tt-ref)/ref), 0.005)
+
+    def test_vti_sh_matches_elliptical(self):
+        # the same medium described through two different cell classes
+        vs0 = 1.8
+        xi = np.sqrt(1. + 2.*self.gam)     # set_xi squares its argument
+        gh = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                       aniso='vti_sh')
+        gh.set_Vs0(np.full(self.ncells, vs0))
+        gh.set_gamma(np.full(self.ncells, self.gam))
+        ge = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                       aniso='elliptical')
+        ge.set_slowness(np.full(self.ncells, 1./(vs0*xi)))
+        ge.set_xi(np.full(self.ncells, xi))
+        self.assertLess(np.max(np.abs(gh.raytrace(self.src, self.rcv) -
+                                      ge.raytrace(self.src, self.rcv))), 1.e-12)
+
+
 if __name__ == '__main__':
 
     unittest.main()

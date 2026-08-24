@@ -63,8 +63,10 @@
 #ifndef ttcr_Cell_h
 #define ttcr_Cell_h
 
+#include <array>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <vector>
 
@@ -634,6 +636,187 @@ namespace ttcr {
 
 
     /**
+     * @brief Group (energy) velocity tables for VTI qP/qSV media
+     *
+     * In anisotropic media the traveltime along a ray segment is its length
+     * divided by the **group** (energy) velocity taken in the direction of the
+     * segment, not by the phase velocity: the two coincide only along the
+     * symmetry directions.  Unlike the elliptical and weakly anelliptical
+     * cases, the group velocity of the coupled qP/qSV system has no closed
+     * form, so it is tabulated.
+     *
+     * For a phase angle @f$\theta@f$ measured from the vertical symmetry axis,
+     * the group velocity magnitude and the ray (group) angle are
+     * @f[ V_g = \sqrt{v^2 + \left(\frac{dv}{d\theta}\right)^2},
+     *     \qquad
+     *     \psi = \theta + \arctan\left(\frac{1}{v}\frac{dv}{d\theta}\right) @f]
+     * The parametric curve @f$(\psi, V_g)@f$ is sampled densely in
+     * @f$\theta@f$ and scattered into a table indexed by @f$\psi@f$, keeping
+     * the *largest* @f$V_g@f$ of every bin.  Where the qSV group-velocity
+     * surface is multivalued (triplications) this automatically selects the
+     * first arrival, without any explicit branch handling.
+     *
+     * Tables are shared by all the cells having the same
+     * @f$(V_{P0}, V_{S0}, \epsilon, \delta)@f$, so layered and blocky models
+     * hold only a handful of them.  A model in which every cell has distinct
+     * parameters holds one table per cell, costing 901 values per cell.
+     *
+     * @tparam T type of the medium parameters and traveltimes (float or double)
+     */
+    template <typename T>
+    class VTI_PSV_GroupVel {
+    public:
+        /**
+         * @brief Build one table per distinct set of medium parameters
+         * @param Vp0     vertical P-wave velocity of the cells
+         * @param Vs0     vertical S-wave velocity of the cells
+         * @param epsilon Thomsen's parameter epsilon of the cells
+         * @param delta   Thomsen's parameter delta of the cells
+         * @param sign    +1 for the qP phase, -1 for the qSV phase
+         */
+        void build(const std::vector<T>& Vp0, const std::vector<T>& Vs0,
+                   const std::vector<T>& epsilon, const std::vector<T>& delta,
+                   const T sign) {
+            const size_t n = Vp0.size();
+            tables.clear();
+            index.assign(n, 0);
+            std::map<std::array<T,4>, size_t> seen;
+            for ( size_t i=0; i<n; ++i ) {
+                const std::array<T,4> key = {{ Vp0[i], Vs0[i], epsilon[i], delta[i] }};
+                const typename std::map<std::array<T,4>, size_t>::const_iterator it
+                    = seen.find(key);
+                if ( it == seen.end() ) {
+                    index[i] = tables.size();
+                    seen[key] = index[i];
+                    tables.push_back( tabulate(Vp0[i], Vs0[i], epsilon[i],
+                                               delta[i], sign) );
+                } else {
+                    index[i] = it->second;
+                }
+            }
+        }
+
+        /// @brief True if no table has been built yet
+        bool empty() const { return tables.empty(); }
+
+        /// @brief Number of distinct tables held
+        size_t size() const { return tables.size(); }
+
+        /**
+         * @brief Group velocity in the direction of a ray segment
+         * @param lh     horizontal component of the segment
+         * @param lz     vertical component of the segment
+         * @param cellNo index of the cell holding the segment
+         * @return the group (energy) velocity of the first arrival
+         * @throws std::logic_error if the medium parameters were not all set
+         */
+        T velocity(const T lh, const T lz, const size_t cellNo) const {
+            if ( tables.empty() ) {
+                throw std::logic_error("Error: medium parameters of VTI_PSV cells not set.");
+            }
+            const std::vector<T>& tab = tables[ index[cellNo] ];
+            // VTI symmetry: the table spans [0, pi/2] only
+            const T psi = std::atan2( std::abs(lh), std::abs(lz) );
+            const T x = psi / halfPi() * (nSamples-1);
+            size_t i = static_cast<size_t>(x);
+            if ( i >= nSamples-1 ) {
+                return tab[nSamples-1];
+            }
+            const T w = x - static_cast<T>(i);
+            return (1.-w)*tab[i] + w*tab[i+1];
+        }
+
+        /**
+         * @brief Phase velocity and its derivative w/r to the phase angle
+         * @param[in]  theta phase angle measured from the vertical axis
+         * @param[in]  Vp0   vertical P-wave velocity
+         * @param[in]  Vs0   vertical S-wave velocity
+         * @param[in]  eps   Thomsen's parameter epsilon
+         * @param[in]  dlt   Thomsen's parameter delta
+         * @param[in]  sign  +1 for the qP phase, -1 for the qSV phase
+         * @param[out] v     phase velocity
+         * @param[out] dv    derivative of the phase velocity w/r to theta
+         */
+        static void phaseVelocity(const T theta, const T Vp0, const T Vs0,
+                                  const T eps, const T dlt, const T sign,
+                                  T& v, T& dv) {
+            const T f  = 1. - (Vs0*Vs0)/(Vp0*Vp0);
+            const T st = std::sin(theta);
+            const T s  = st*st;
+            const T A  = 1. + 2.*eps*s/f;
+            const T R  = A*A - 8.*(eps-dlt)*s*(1.-s)/f;
+            const T sqR = std::sqrt( R > 0. ? R : 0. );
+            const T G  = 1. + eps*s - f/2. + sign*(f/2.)*sqR;
+            const T dRds = 2.*A*(2.*eps/f) - 8.*(eps-dlt)*(1.-2.*s)/f;
+            const T dGds = eps + ( sqR > 0. ? sign*(f/4.)*dRds/sqR : 0. );
+            const T sqG = std::sqrt( G > 0. ? G : 0. );
+            v  = Vp0*sqG;
+            dv = ( sqG > 0. ? Vp0*dGds*std::sin(2.*theta)/(2.*sqG) : 0. );
+        }
+
+    private:
+        /// Number of samples of a table, spanning [0, pi/2]
+        static const size_t nSamples = 901;
+        /// Oversampling of the phase angle when building a table
+        static const size_t oversampling = 16;
+
+        std::vector<std::vector<T>> tables;  ///< one table per distinct medium
+        std::vector<size_t> index;           ///< table used by each cell
+
+        static T halfPi() { return static_cast<T>(1.57079632679489661923); }
+        static T pi()     { return static_cast<T>(3.14159265358979323846); }
+
+        /// @brief Tabulate the group velocity over [0, pi/2] for one medium
+        static std::vector<T> tabulate(const T Vp0, const T Vs0, const T eps,
+                                       const T dlt, const T sign) {
+            std::vector<T> tab(nSamples, T(0));
+            const size_t m = (nSamples-1)*oversampling + 1;
+            for ( size_t k=0; k<m; ++k ) {
+                const T theta = pi() * static_cast<T>(k) / static_cast<T>(m-1);
+                T v, dv;
+                phaseVelocity(theta, Vp0, Vs0, eps, dlt, sign, v, dv);
+                if ( v <= 0. ) continue;
+                const T vg = std::sqrt(v*v + dv*dv);
+                // fold the ray angle into [0, pi/2] using the VTI symmetries
+                T psi = std::abs( theta + std::atan2(dv, v) );
+                if ( psi > halfPi() ) psi = pi() - psi;
+                psi = std::abs(psi);
+                size_t j = static_cast<size_t>( psi/halfPi()*(nSamples-1) + 0.5 );
+                if ( j >= nSamples ) j = nSamples-1;
+                if ( vg > tab[j] ) tab[j] = vg;   // keep the first arrival
+            }
+            fillGaps(tab);
+            return tab;
+        }
+
+        /// @brief Linearly interpolate the bins that no sample reached
+        static void fillGaps(std::vector<T>& tab) {
+            size_t lo = 0;
+            while ( lo < tab.size() && tab[lo] == T(0) ) ++lo;
+            if ( lo == tab.size() ) {
+                throw std::runtime_error("Error: could not tabulate the group "
+                                         "velocity of a VTI_PSV cell.");
+            }
+            for ( size_t i=0; i<lo; ++i ) tab[i] = tab[lo];
+            size_t hi = tab.size()-1;
+            while ( tab[hi] == T(0) ) --hi;
+            for ( size_t i=hi+1; i<tab.size(); ++i ) tab[i] = tab[hi];
+            size_t i = lo;
+            while ( i < hi ) {
+                if ( tab[i+1] != T(0) ) { ++i; continue; }
+                size_t j = i+1;
+                while ( tab[j] == T(0) ) ++j;
+                for ( size_t k=i+1; k<j; ++k ) {
+                    const T w = static_cast<T>(k-i)/static_cast<T>(j-i);
+                    tab[k] = (1.-w)*tab[i] + w*tab[j];
+                }
+                i = j;
+            }
+        }
+    };
+
+
+    /**
      * @brief Cells with VTI anisotropy, P or SV phase, in 2D (y dimension ignored)
      *
      * The medium is described by the vertical velocities @f$V_{P0}@f$ and
@@ -651,9 +834,17 @@ namespace ttcr {
      * values are not validated: @f$V_{P0} = 0@f$ or @f$V_{S0} = V_{P0}@f$
      * (which makes @f$f = 0@f$) produces a division by zero.
      *
-     * The traveltime is then the
-     * length of the ray segment divided by @f$v(\theta)@f$, @f$\theta@f$ being
-     * taken as the direction of the segment.
+     * The traveltime along a ray segment is its length divided by the
+     * **group** (energy) velocity taken in the direction of the segment.  That
+     * velocity has no closed form here and is tabulated by VTI_PSV_GroupVel,
+     * which also selects the first arrival where the qSV group-velocity surface
+     * is multivalued.  The phase velocity must not be used in its place: the
+     * two coincide only along the symmetry directions, and using the phase
+     * velocity underestimates the traveltime by up to about 9% for qSV in
+     * strongly anisotropic media.
+     *
+     * The tables are (re)built as soon as the four medium parameters have been
+     * assigned, and again whenever one of them or the phase is changed.
      *
      * The phase to model is selected with setPhase().
      *
@@ -676,7 +867,8 @@ namespace ttcr {
         Vp0(std::vector<T>(n)),
         Vs0(std::vector<T>(n)),
         epsilon(std::vector<T>(n)),
-        delta(std::vector<T>(n)) {
+        delta(std::vector<T>(n)),
+        paramsSet(0) {
         }
 
         /**
@@ -689,6 +881,8 @@ namespace ttcr {
                 throw std::length_error("Error: Vp0 vectors of incompatible size.");
             }
             Vp0 = s;
+            paramsSet |= 1;
+            buildTables();
         }
 
         /**
@@ -701,6 +895,8 @@ namespace ttcr {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
             }
             Vs0 = s;
+            paramsSet |= 2;
+            buildTables();
         }
 
         /**
@@ -713,6 +909,8 @@ namespace ttcr {
                 throw std::length_error("Error: epsilon vectors of incompatible size.");
             }
             epsilon = s;
+            paramsSet |= 4;
+            buildTables();
         }
 
         /**
@@ -725,6 +923,8 @@ namespace ttcr {
                 throw std::length_error("Error: delta vectors of incompatible size.");
             }
             delta = s;
+            paramsSet |= 8;
+            buildTables();
         }
 
         /**
@@ -734,6 +934,7 @@ namespace ttcr {
         void setPhase(const int p) {
             if ( p==1 ) sign = 1.;  // P wave
             else sign = -1.;        // SV wave
+            buildTables();
         }
 
         /// @brief Not applicable: always throws std::logic_error
@@ -780,17 +981,8 @@ namespace ttcr {
          */
         T computeDt(const S& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T theta = atan2(node.x - source.x, node.z - source.z);
-            T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-
-            T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-
-            tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
-            sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-
-            T v = Vp0[cellNo] * sqrt( tmp );
-            return source.getDistance( node ) / v;
+            return source.getDistance( node ) /
+                   gv.velocity(node.x - source.x, node.z - source.z, cellNo);
         }
 
         /**
@@ -802,17 +994,8 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T theta = atan2(node.x - source.getX(), node.z - source.getZ());
-            T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-
-            T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-
-            tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
-            sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-
-            T v = Vp0[cellNo] * sqrt( tmp );
-            return source.getDistance( node ) / v;
+            return source.getDistance( node ) /
+                   gv.velocity(node.x - source.getX(), node.z - source.getZ(), cellNo);
         }
 
         /**
@@ -824,17 +1007,8 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T theta = atan2(node.getX() - source.getX(), node.getZ() - source.getZ());
-            T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-
-            T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-
-            tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
-            sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-
-            T v = Vp0[cellNo] * sqrt( tmp );
-            return source.getDistance( node ) / v;
+            return source.getDistance( node ) /
+                   gv.velocity(node.getX() - source.getX(), node.getZ() - source.getZ(), cellNo);
         }
 
         /**
@@ -869,11 +1043,25 @@ namespace ttcr {
         }
 
     private:
+        /**
+         * @brief (Re)build the group-velocity tables
+         *
+         * Does nothing until the four medium parameters have all been assigned,
+         * so that the setters may be called in any order.
+         */
+        void buildTables() {
+            if ( paramsSet == 15 ) {
+                gv.build(Vp0, Vs0, epsilon, delta, sign);
+            }
+        }
+
         T sign;                  ///< +1 for the qP phase, -1 for the qSV phase
         std::vector<T> Vp0;      ///< vertical P-wave velocity of the cells
         std::vector<T> Vs0;      ///< vertical S-wave velocity of the cells
         std::vector<T> epsilon;  ///< Thomsen's parameter epsilon of the cells
         std::vector<T> delta;    ///< Thomsen's parameter delta of the cells
+        unsigned char paramsSet; ///< bitmask of the medium parameters assigned
+        VTI_PSV_GroupVel<T> gv;  ///< group-velocity tables
     };
 
 
@@ -886,8 +1074,16 @@ namespace ttcr {
      * wave, for a phase angle @f$\theta@f$ measured from the vertical
      * (symmetry) axis, is
      * @f[ v(\theta) = V_{S0} \sqrt{1 + 2 \gamma \sin^2\theta} @f]
-     * The traveltime is then the length of the ray segment divided by
-     * @f$v(\theta)@f$, @f$\theta@f$ being taken as the direction of the segment.
+     * This phase velocity is elliptical, with semi-axis @f$V_{S0}@f$ along the
+     * vertical (symmetry) axis and @f$V_{S0}\sqrt{1 + 2\gamma}@f$ along the
+     * horizontal one.  The traveltime along a ray segment of components
+     * @f$(l_x, l_z)@f$ therefore has the closed form
+     * @f[ dt = \frac{1}{V_{S0}}
+     *         \sqrt{\frac{l_x^2}{1 + 2\gamma} + l_z^2} @f]
+     * which is the group (energy) velocity result.  Dividing the segment length
+     * by the phase velocity taken in the direction of the segment would
+     * underestimate the traveltime: phase and group velocities coincide only
+     * along the symmetry directions.
      *
      * @tparam T    type of the medium parameters and traveltimes (float or double)
      * @tparam NODE type of the grid nodes (Node2Dc, Node2Dcsp, ...)
@@ -983,10 +1179,9 @@ namespace ttcr {
          */
         T computeDt(const S& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T theta = atan2(node.x - source.x, node.z - source.z);
-            T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
-            return source.getDistance( node ) / v;
+            T lx = node.x - source.x;
+            T lz = node.z - source.z;
+            return std::sqrt( lx*lx / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
         /**
@@ -998,10 +1193,9 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T theta = atan2(node.x - source.getX(), node.z - source.getZ());
-            T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
-            return source.getDistance( node ) / v;
+            T lx = node.x - source.getX();
+            T lz = node.z - source.getZ();
+            return std::sqrt( lx*lx / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
         /**
@@ -1013,10 +1207,9 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
-            T theta = atan2(node.getX() - source.getX(), node.getZ() - source.getZ());
-            T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
-            return source.getDistance( node ) / v;
+            T lx = node.getX() - source.getX();
+            T lz = node.getZ() - source.getZ();
+            return std::sqrt( lx*lx / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
         /**
@@ -1476,7 +1669,8 @@ namespace ttcr {
         Vp0(std::vector<T>(n)),
         Vs0(std::vector<T>(n)),
         epsilon(std::vector<T>(n)),
-        delta(std::vector<T>(n)) {
+        delta(std::vector<T>(n)),
+        paramsSet(0) {
         }
 
         /**
@@ -1489,6 +1683,8 @@ namespace ttcr {
                 throw std::length_error("Error: Vp0 vectors of incompatible size.");
             }
             Vp0 = s;
+            paramsSet |= 1;
+            buildTables();
         }
 
         /**
@@ -1501,6 +1697,8 @@ namespace ttcr {
                 throw std::length_error("Error: Vs0 vectors of incompatible size.");
             }
             Vs0 = s;
+            paramsSet |= 2;
+            buildTables();
         }
 
         /**
@@ -1513,6 +1711,8 @@ namespace ttcr {
                 throw std::length_error("Error: epsilon vectors of incompatible size.");
             }
             epsilon = s;
+            paramsSet |= 4;
+            buildTables();
         }
 
         /**
@@ -1525,6 +1725,8 @@ namespace ttcr {
                 throw std::length_error("Error: delta vectors of incompatible size.");
             }
             delta = s;
+            paramsSet |= 8;
+            buildTables();
         }
 
         /**
@@ -1534,6 +1736,7 @@ namespace ttcr {
         void setPhase(const int p) {
             if ( p==1 ) sign = 1.;  // P wave
             else sign = -1.;        // SV wave
+            buildTables();
         }
 
         /// @brief Not applicable: always throws std::logic_error
@@ -1560,20 +1763,10 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
             T lx = node.x - source.getX();
             T ly = node.y - source.getY();
-            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
-            T theta = atan2(lx, node.z - source.getZ());
-            T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-
-            T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-
-            tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
-            sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-
-            T v = Vp0[cellNo] * sqrt( tmp );
-            return source.getDistance( node ) / v;
+            return source.getDistance( node ) /
+                   gv.velocity(std::sqrt(lx*lx + ly*ly), node.z - source.getZ(), cellNo);
         }
 
         /**
@@ -1585,28 +1778,32 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
             T lx = node.getX() - source.getX();
             T ly = node.getY() - source.getY();
-            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
-            T theta = atan2(lx, node.getZ() - source.getZ());
-            T f = 1. - (Vs0[cellNo]*Vs0[cellNo]) / (Vp0[cellNo]*Vp0[cellNo]);
-
-            T tmp = 1. + (2.*epsilon[cellNo]*sin(theta)*sin(theta)) / f;
-
-            tmp = 1. + epsilon[cellNo]*sin(theta)*sin(theta) - f/2. +
-            sign*f/2.*sqrt( tmp*tmp - (2.*(epsilon[cellNo]-delta[cellNo])*sin(2.*theta)*sin(2.*theta))/f );
-
-            T v = Vp0[cellNo] * sqrt( tmp );
-            return source.getDistance( node ) / v;
+            return source.getDistance( node ) /
+                   gv.velocity(std::sqrt(lx*lx + ly*ly), node.getZ() - source.getZ(), cellNo);
         }
 
     private:
+        /**
+         * @brief (Re)build the group-velocity tables
+         *
+         * Does nothing until the four medium parameters have all been assigned,
+         * so that the setters may be called in any order.
+         */
+        void buildTables() {
+            if ( paramsSet == 15 ) {
+                gv.build(Vp0, Vs0, epsilon, delta, sign);
+            }
+        }
+
         T sign;                  ///< +1 for the qP phase, -1 for the qSV phase
         std::vector<T> Vp0;      ///< vertical P-wave velocity of the cells
         std::vector<T> Vs0;      ///< vertical S-wave velocity of the cells
         std::vector<T> epsilon;  ///< Thomsen's parameter epsilon of the cells
         std::vector<T> delta;    ///< Thomsen's parameter delta of the cells
+        unsigned char paramsSet; ///< bitmask of the medium parameters assigned
+        VTI_PSV_GroupVel<T> gv;  ///< group-velocity tables
     };
 
 
@@ -1614,11 +1811,15 @@ namespace ttcr {
     /**
      * @brief Cells with VTI anisotropy, SH phase, in 3D
      *
-     * Three-dimensional counterpart of CellVTI_SH: the angle @f$\theta@f$ from
-     * the vertical axis is computed from the horizontal offset
-     * @f$\sqrt{l_x^2 + l_y^2}@f$ and the vertical offset @f$l_z@f$, and the
-     * phase velocity is
+     * Three-dimensional counterpart of CellVTI_SH.  The phase velocity for a
+     * phase angle @f$\theta@f$ measured from the vertical (symmetry) axis is
      * @f[ v(\theta) = V_{S0} \sqrt{1 + 2 \gamma \sin^2\theta} @f]
+     * and, being elliptical, yields the closed-form traveltime along a ray
+     * segment of components @f$(l_x, l_y, l_z)@f$
+     * @f[ dt = \frac{1}{V_{S0}}
+     *         \sqrt{\frac{l_x^2 + l_y^2}{1 + 2\gamma} + l_z^2} @f]
+     * which is the group (energy) velocity result.  See CellVTI_SH for why the
+     * phase velocity must not be used directly.
      *
      * @tparam T    type of the medium parameters and traveltimes (float or double)
      * @tparam NODE type of the grid nodes (Node3Dc, Node3Dcsp, ...)
@@ -1694,13 +1895,10 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const S& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
             T lx = node.x - source.getX();
             T ly = node.y - source.getY();
-            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
-            T theta = atan2(lx, node.z - source.getZ());
-            T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
-            return source.getDistance( node ) / v;
+            T lz = node.z - source.getZ();
+            return std::sqrt( (lx*lx + ly*ly) / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
         /**
@@ -1712,13 +1910,10 @@ namespace ttcr {
          */
         T computeDt(const NODE& source, const NODE& node,
                     const size_t cellNo) const {
-            // theta: angle w/r to vertical axis
             T lx = node.getX() - source.getX();
             T ly = node.getY() - source.getY();
-            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
-            T theta = atan2(lx, node.getZ() - source.getZ());
-            T v = Vs0[cellNo] * sqrt(1. + 2.*gamma[cellNo]*sin(theta)*sin(theta));
-            return source.getDistance( node ) / v;
+            T lz = node.getZ() - source.getZ();
+            return std::sqrt( (lx*lx + ly*ly) / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
     private:
