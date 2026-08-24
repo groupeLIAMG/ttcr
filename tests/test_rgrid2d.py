@@ -450,6 +450,103 @@ class TestVTI(unittest.TestCase):
                                       ge.raytrace(self.src, self.rcv))), 1.e-12)
 
 
+class TestTTI(unittest.TestCase):
+    """Traveltimes in homogeneous TTI media.
+
+    Tilting a transversely isotropic medium rotates its group-velocity surface
+    rigidly, so a TTI cell with a zero tilt angle must reproduce its VTI
+    counterpart, and a tilted one must reproduce it with the ray angle shifted
+    by the tilt.  The tilt convention is that of CellTiltedElliptical: the
+    symmetry axis lies at -theta from the vertical.
+    """
+
+    vp, vs, eps, dlt, gam = 3.094, 1.51, 0.256, -0.0505, 0.15
+    vs0 = 1.8
+
+    def setUp(self):
+        n, h = 101, 0.02
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.radius = 0.7
+        self.angles = np.radians(np.arange(-85., 90., 5.))
+        self.src = np.array([[1., 1.]])
+        self.rcv = np.column_stack([1. + self.radius*np.sin(self.angles),
+                                    1. + self.radius*np.cos(self.angles)])
+
+    def _psv(self, aniso, tilt=None):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                      aniso=aniso)
+        g.set_Vp0(np.full(self.ncells, self.vp))
+        g.set_Vs0(np.full(self.ncells, self.vs))
+        g.set_epsilon(np.full(self.ncells, self.eps))
+        g.set_delta(np.full(self.ncells, self.dlt))
+        if tilt is not None:
+            g.set_tilt_angle(np.full(self.ncells, tilt))
+        return g
+
+    def _sh(self, aniso, tilt=None):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                      aniso=aniso)
+        g.set_Vs0(np.full(self.ncells, self.vs0))
+        g.set_gamma(np.full(self.ncells, self.gam))
+        if tilt is not None:
+            g.set_tilt_angle(np.full(self.ncells, tilt))
+        return g
+
+    def test_tti_psv_zero_tilt(self):
+        tt_tti = self._psv('tti_psv', 0.0).raytrace(self.src, self.rcv)
+        tt_vti = self._psv('vti_psv').raytrace(self.src, self.rcv)
+        self.assertLess(np.max(np.abs(tt_tti-tt_vti)), 1.e-12)
+
+    def test_tti_sh_zero_tilt(self):
+        tt_tti = self._sh('tti_sh', 0.0).raytrace(self.src, self.rcv)
+        tt_vti = self._sh('vti_sh').raytrace(self.src, self.rcv)
+        self.assertLess(np.max(np.abs(tt_tti-tt_vti)), 1.e-12)
+
+    def test_tti_sh_matches_tilted_elliptical(self):
+        # the SH phase velocity is elliptical, so a tilted SH medium is a
+        # tilted elliptical one described through a different cell class
+        tilt = np.radians(30.)
+        xi = np.sqrt(1. + 2.*self.gam)     # set_xi squares its argument
+        gh = self._sh('tti_sh', tilt)
+        ge = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                       aniso='tilted_elliptical')
+        ge.set_slowness(np.full(self.ncells, 1./(self.vs0*xi)))
+        ge.set_xi(np.full(self.ncells, xi))
+        ge.set_tilt_angle(np.full(self.ncells, tilt))
+        self.assertLess(np.max(np.abs(gh.raytrace(self.src, self.rcv) -
+                                      ge.raytrace(self.src, self.rcv))), 1.e-12)
+
+    def test_tti_psv_rotation(self):
+        # a tilted medium probed at psi must match the untilted one at psi+tilt
+        tilt = np.radians(30.)
+        g_tti = self._psv('tti_psv', tilt)
+        g_vti = self._psv('vti_psv')
+        rcv_rot = np.column_stack([
+            1. + self.radius*np.sin(self.angles+tilt),
+            1. + self.radius*np.cos(self.angles+tilt)])
+        tt_tti = g_tti.raytrace(self.src, self.rcv)
+        tt_vti = g_vti.raytrace(self.src, rcv_rot)
+        self.assertLess(np.max(np.abs(tt_tti-tt_vti)/tt_vti), 0.002)
+
+    def test_tti_psv_symmetry_axis(self):
+        # qP is slowest along the symmetry axis, which lies at -tilt
+        tilt = np.radians(35.)
+        g = self._psv('tti_psv', tilt)
+        rcv = np.array([[1.-self.radius*np.sin(tilt), 1.+self.radius*np.cos(tilt)],
+                        [1.+self.radius*np.cos(tilt), 1.+self.radius*np.sin(tilt)]])
+        tt = g.raytrace(self.src, rcv)
+        v_axis, v_normal = self.radius/tt[0], self.radius/tt[1]
+        self.assertLess(abs(v_axis/self.vp - 1.), 0.005)
+        self.assertLess(abs(v_normal/(self.vp*np.sqrt(1.+2.*self.eps)) - 1.), 0.005)
+
+    def test_tti_pickle(self):
+        import pickle
+        g = self._psv('tti_psv', np.radians(20.))
+        self.assertEqual(pickle.loads(pickle.dumps(g)).__class__, g.__class__)
+
+
 if __name__ == '__main__':
 
     unittest.main()

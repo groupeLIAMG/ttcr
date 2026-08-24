@@ -1065,6 +1065,283 @@ namespace ttcr {
     };
 
 
+    /**
+     * @brief Cells with TTI anisotropy, qP or qSV phase, in 2D (y dimension ignored)
+     *
+     * Tilted counterpart of CellVTI_PSV: the same transversely isotropic medium,
+     * with its symmetry axis rotated by the tilt angle @f$\theta_t@f$ of the
+     * cell, assigned with setTiltAngle().
+     *
+     * Tilting the medium rotates its slowness and group-velocity surfaces
+     * rigidly, so the group velocity of a segment is that of the underlying VTI
+     * medium taken in the frame of the symmetry axis.  The components
+     * @f$(l_x, l_z)@f$ of the segment are rotated with the same convention as
+     * CellTiltedElliptical,
+     * @f[ t_1 = l_x \cos\theta_t + l_z \sin\theta_t, \quad
+     *     t_2 = l_z \cos\theta_t - l_x \sin\theta_t @f]
+     * @f$t_2@f$ being the component along the symmetry axis.  A segment making
+     * an angle @f$\psi@f$ with the vertical therefore makes an angle
+     * @f$\psi + \theta_t@f$ with the symmetry axis, which lies at
+     * @f$-\theta_t@f$ from the vertical.
+     *
+     * The tables of VTI_PSV_GroupVel are reused unchanged, and changing the
+     * tilt angle does not rebuild them: they are expressed in the frame of the
+     * symmetry axis, which the tilt does not alter.
+     *
+     * With @f$\theta_t = 0@f$ the class is equivalent to CellVTI_PSV.
+     *
+     * @pre Every cell satisfies @f$V_{P0} > 0@f$ and @f$V_{S0} \neq V_{P0}@f$.
+     *
+     * The phase to model is selected with setPhase().
+     *
+     * @tparam T    type of the medium parameters and traveltimes (float or double)
+     * @tparam NODE type of the grid nodes (Node2Dc, Node2Dcsp, ...)
+     * @tparam S    type of the coordinate struct (sxz<T>)
+     *
+     * @sa CellVTI_PSV, VTI_PSV_GroupVel, CellTTI_SH
+     */
+    template <typename T, typename NODE, typename S>
+    class CellTTI_PSV {
+    public:
+        /**
+         * @brief Constructor
+         *
+         * The qP phase and a vertical symmetry axis are selected by default.
+         *
+         * @param n number of cells of the grid
+         */
+        CellTTI_PSV(const size_t n) :
+        sign(1.0),
+        Vp0(std::vector<T>(n)),
+        Vs0(std::vector<T>(n)),
+        epsilon(std::vector<T>(n)),
+        delta(std::vector<T>(n)),
+        tAngle(std::vector<T>(n, 0.0)),
+        ca(std::vector<T>(n, 1.0)),
+        sa(std::vector<T>(n, 0.0)),
+        paramsSet(0) {
+        }
+
+        /**
+         * @brief Assign the vertical P-wave velocity of the cells
+         * @param s values of @f$V_{P0}@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setVp0(const std::vector<T>& s) {
+            if ( Vp0.size() != s.size() ) {
+                throw std::length_error("Error: Vp0 vectors of incompatible size.");
+            }
+            Vp0 = s;
+            paramsSet |= 1;
+            buildTables();
+        }
+
+        /**
+         * @brief Assign the vertical S-wave velocity of the cells
+         * @param s values of @f$V_{S0}@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setVs0(const std::vector<T>& s) {
+            if ( Vs0.size() != s.size() ) {
+                throw std::length_error("Error: Vs0 vectors of incompatible size.");
+            }
+            Vs0 = s;
+            paramsSet |= 2;
+            buildTables();
+        }
+
+        /**
+         * @brief Assign Thomsen's parameter @f$\epsilon@f$ of the cells
+         * @param s values of @f$\epsilon@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setEpsilon(const std::vector<T>& s) {
+            if ( epsilon.size() != s.size() ) {
+                throw std::length_error("Error: epsilon vectors of incompatible size.");
+            }
+            epsilon = s;
+            paramsSet |= 4;
+            buildTables();
+        }
+
+        /**
+         * @brief Assign Thomsen's parameter @f$\delta@f$ of the cells
+         * @param s values of @f$\delta@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setDelta(const std::vector<T>& s) {
+            if ( delta.size() != s.size() ) {
+                throw std::length_error("Error: delta vectors of incompatible size.");
+            }
+            delta = s;
+            paramsSet |= 8;
+            buildTables();
+        }
+
+        /**
+         * @brief Assign the angle between the symmetry axis and the vertical
+         * @param s values of @f$\theta_t@f$, in radians, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setTiltAngle(const std::vector<T>& s) {
+            if ( tAngle.size() != s.size() ) {
+                throw std::length_error("Error: angle vectors of incompatible size.");
+            }
+            for ( size_t n=0; n<tAngle.size(); ++n ) {
+                tAngle[n] = s[n];
+                ca[n] = std::cos(s[n]);
+                sa[n] = std::sin(s[n]);
+            }
+            // the group-velocity tables live in the frame of the symmetry axis
+            // and are unaffected by the tilt: no rebuild needed
+        }
+
+        /**
+         * @brief Select the phase to model
+         * @param p 1 for the qP wave, any other value for the qSV wave
+         */
+        void setPhase(const int p) {
+            if ( p==1 ) sign = 1.;  // P wave
+            else sign = -1.;        // SV wave
+            buildTables();
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setSlowness(const std::vector<T>& s) {
+            throw std::logic_error("Error: slowness not defined for CellTTI_PSV.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        const T getSlowness(const size_t i) const {
+            throw std::logic_error("Error: slowness not defined for CellTTI_PSV.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setXi(const std::vector<T>& s) {
+            throw std::logic_error("Error: xi not defined for CellTTI_PSV.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setGamma(const std::vector<T>& s) {
+            throw std::logic_error("Error: gamma not defined for CellTTI_PSV.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for CellTTI_PSV.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for CellTTI_PSV.");
+        }
+
+        /**
+         * @brief Traveltime between two points of a cell
+         * @param source first point
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            const T lx = node.x - source.x;
+            const T lz = node.z - source.z;
+            return source.getDistance( node ) /
+                   gv.velocity(lx*ca[cellNo] + lz*sa[cellNo],
+                               lz*ca[cellNo] - lx*sa[cellNo], cellNo);
+        }
+
+        /**
+         * @brief Traveltime between a node and a point of a cell
+         * @param source node from which the ray originates
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const NODE& source, const S& node,
+                    const size_t cellNo) const {
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            return source.getDistance( node ) /
+                   gv.velocity(lx*ca[cellNo] + lz*sa[cellNo],
+                               lz*ca[cellNo] - lx*sa[cellNo], cellNo);
+        }
+
+        /**
+         * @brief Traveltime between two nodes of a cell
+         * @param source node from which the ray originates
+         * @param node   second node
+         * @param cellNo index of the cell holding the two nodes
+         * @return the traveltime along the segment joining the two nodes
+         */
+        T computeDt(const NODE& source, const NODE& node,
+                    const size_t cellNo) const {
+            const T lx = node.getX() - source.getX();
+            const T lz = node.getZ() - source.getZ();
+            return source.getDistance( node ) /
+                   gv.velocity(lx*ca[cellNo] + lz*sa[cellNo],
+                               lz*ca[cellNo] - lx*sa[cellNo], cellNo);
+        }
+
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         * @param[in]  source unused
+         * @param[in]  node   unused
+         * @param[out] cell   unused
+         * @throws std::logic_error always
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            throw std::logic_error("Error: computeDistance with siv not defined for CellTTI_PSV.");
+        }
+
+        /**
+         * @brief Components of a ray segment, stored in a siv2 struct
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   struct holding the horizontal component of the
+         *                    segment in member `v`, and its vertical component
+         *                    in member `v2`
+         *
+         * @note As for the other anisotropic classes, these two components do
+         * not suffice to form the sensitivity of the traveltime to the medium
+         * parameters of a tilted transversely isotropic cell.
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv2<T>& cell) const {
+            cell.v  = std::abs(node.x - source.getX());
+            cell.v2 = std::abs(node.z - source.getZ());
+        }
+
+    private:
+        /**
+         * @brief (Re)build the group-velocity tables
+         *
+         * Does nothing until the four medium parameters have all been assigned,
+         * so that the setters may be called in any order.
+         */
+        void buildTables() {
+            if ( paramsSet == 15 ) {
+                gv.build(Vp0, Vs0, epsilon, delta, sign);
+            }
+        }
+
+        T sign;                  ///< +1 for the qP phase, -1 for the qSV phase
+        std::vector<T> Vp0;      ///< vertical P-wave velocity of the cells
+        std::vector<T> Vs0;      ///< vertical S-wave velocity of the cells
+        std::vector<T> epsilon;  ///< Thomsen's parameter epsilon of the cells
+        std::vector<T> delta;    ///< Thomsen's parameter delta of the cells
+        std::vector<T> tAngle;   ///< angle of the symmetry axis, in radians
+        std::vector<T> ca;       ///< cosine of tAngle
+        std::vector<T> sa;       ///< sine of tAngle
+        unsigned char paramsSet; ///< bitmask of the medium parameters assigned
+        VTI_PSV_GroupVel<T> gv;  ///< group-velocity tables
+    };
+
+
+
+
 
     /**
      * @brief Cells with VTI anisotropy, SH phase, in 2D (y dimension ignored)
@@ -1247,6 +1524,213 @@ namespace ttcr {
         std::vector<T> Vs0;    ///< vertical S-wave velocity of the cells
         std::vector<T> gamma;  ///< Thomsen's parameter gamma of the cells
     };
+
+
+    /**
+     * @brief Cells with TTI anisotropy, SH phase, in 2D (y dimension ignored)
+     *
+     * Tilted counterpart of CellVTI_SH: the symmetry axis is rotated by the tilt
+     * angle @f$\theta_t@f$ of the cell, assigned with setTiltAngle() and using
+     * the same convention as CellTiltedElliptical.
+     *
+     * The SH phase velocity being elliptical, the traveltime keeps a closed
+     * form once the segment is expressed in the frame of the symmetry axis,
+     * @f[ t_1 = l_x \cos\theta_t + l_z \sin\theta_t, \quad
+     *     t_2 = l_z \cos\theta_t - l_x \sin\theta_t @f]
+     * @f[ dt = \frac{1}{V_{S0}}
+     *         \sqrt{\frac{t_1^2}{1 + 2\gamma} + t_2^2} @f]
+     * @f$t_2@f$ being the component along the symmetry axis, which lies at
+     * @f$-\theta_t@f$ from the vertical.
+     *
+     * With @f$\theta_t = 0@f$ the class is equivalent to CellVTI_SH.
+     *
+     * @tparam T    type of the medium parameters and traveltimes (float or double)
+     * @tparam NODE type of the grid nodes (Node2Dc, Node2Dcsp, ...)
+     * @tparam S    type of the coordinate struct (sxz<T>)
+     *
+     * @sa CellVTI_SH, CellTTI_PSV
+     */
+    template <typename T, typename NODE, typename S>
+    class CellTTI_SH {
+    public:
+        /**
+         * @brief Constructor
+         *
+         * A vertical symmetry axis is selected by default.
+         *
+         * @param n number of cells of the grid
+         */
+        CellTTI_SH(const size_t n) :
+        Vs0(std::vector<T>(n)),
+        gamma(std::vector<T>(n)),
+        tAngle(std::vector<T>(n, 0.0)),
+        ca(std::vector<T>(n, 1.0)),
+        sa(std::vector<T>(n, 0.0)) {
+        }
+
+        /**
+         * @brief Assign the vertical S-wave velocity of the cells
+         * @param s values of @f$V_{S0}@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setVs0(const std::vector<T>& s) {
+            if ( Vs0.size() != s.size() ) {
+                throw std::length_error("Error: Vs0 vectors of incompatible size.");
+            }
+            Vs0 = s;
+        }
+
+        /**
+         * @brief Assign Thomsen's parameter @f$\gamma@f$ of the cells
+         * @param s values of @f$\gamma@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setGamma(const std::vector<T>& s) {
+            if ( gamma.size() != s.size() ) {
+                throw std::length_error("Error: gamma vectors of incompatible size.");
+            }
+            gamma = s;
+        }
+
+        /**
+         * @brief Assign the angle between the symmetry axis and the vertical
+         * @param s values of @f$\theta_t@f$, in radians, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setTiltAngle(const std::vector<T>& s) {
+            if ( tAngle.size() != s.size() ) {
+                throw std::length_error("Error: angle vectors of incompatible size.");
+            }
+            for ( size_t n=0; n<tAngle.size(); ++n ) {
+                tAngle[n] = s[n];
+                ca[n] = std::cos(s[n]);
+                sa[n] = std::sin(s[n]);
+            }
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setSlowness(const std::vector<T>& s) {
+            throw std::logic_error("Error: slowness not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        const T getSlowness(const size_t i) const {
+            throw std::logic_error("Error: slowness not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setXi(const std::vector<T>& s) {
+            throw std::logic_error("Error: xi not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setVp0(const std::vector<T>& s) {
+            throw std::logic_error("Error: Vp0 not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setDelta(const std::vector<T>& s) {
+            throw std::logic_error("Error: delta not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setEpsilon(const std::vector<T>& s) {
+            throw std::logic_error("Error: epsilon not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setS2(const std::vector<T>& r) {
+            throw std::logic_error("Error: s2 not defined for CellTTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setS4(const std::vector<T>& r) {
+            throw std::logic_error("Error: s4 not defined for CellTTI_SH.");
+        }
+
+        /**
+         * @brief Traveltime between two points of a cell
+         * @param source first point
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            return dt(node.x - source.x, node.z - source.z, cellNo);
+        }
+
+        /**
+         * @brief Traveltime between a node and a point of a cell
+         * @param source node from which the ray originates
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const NODE& source, const S& node,
+                    const size_t cellNo) const {
+            return dt(node.x - source.getX(), node.z - source.getZ(), cellNo);
+        }
+
+        /**
+         * @brief Traveltime between two nodes of a cell
+         * @param source node from which the ray originates
+         * @param node   second node
+         * @param cellNo index of the cell holding the two nodes
+         * @return the traveltime along the segment joining the two nodes
+         */
+        T computeDt(const NODE& source, const NODE& node,
+                    const size_t cellNo) const {
+            return dt(node.getX() - source.getX(),
+                      node.getZ() - source.getZ(), cellNo);
+        }
+
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         * @param[in]  source unused
+         * @param[in]  node   unused
+         * @param[out] cell   unused
+         * @throws std::logic_error always
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            throw std::logic_error("Error: computeDistance with siv not defined for CellTTI_SH.");
+        }
+
+        /**
+         * @brief Components of a ray segment, stored in a siv2 struct
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   struct holding the horizontal component of the
+         *                    segment in member `v`, and its vertical component
+         *                    in member `v2`
+         *
+         * @note As for the other anisotropic classes, these two components do
+         * not suffice to form the sensitivity of the traveltime to the medium
+         * parameters of a tilted transversely isotropic cell.
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv2<T>& cell) const {
+            cell.v  = std::abs(node.x - source.getX());
+            cell.v2 = std::abs(node.z - source.getZ());
+        }
+
+    private:
+        /// @brief Traveltime along a segment of components (lx, lz)
+        T dt(const T lx, const T lz, const size_t cellNo) const {
+            const T t1 = lx*ca[cellNo] + lz*sa[cellNo];
+            const T t2 = lz*ca[cellNo] - lx*sa[cellNo];
+            return std::sqrt( t1*t1 / (1. + 2.*gamma[cellNo]) + t2*t2 ) / Vs0[cellNo];
+        }
+
+        std::vector<T> Vs0;    ///< vertical S-wave velocity of the cells
+        std::vector<T> gamma;  ///< Thomsen's parameter gamma of the cells
+        std::vector<T> tAngle; ///< angle of the symmetry axis, in radians
+        std::vector<T> ca;     ///< cosine of tAngle
+        std::vector<T> sa;     ///< sine of tAngle
+    };
+
+
 
 
     /**

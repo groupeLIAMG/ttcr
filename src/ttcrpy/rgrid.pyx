@@ -2798,6 +2798,8 @@ cdef class Grid2d_d:
             - 'tilted_elliptical' : tilted elliptical anisotropy
             - 'vti_psv' : vertical transverse isotropy, P and SV waves
             - 'vti_sh' : vertical transverse isotropy, SH waves
+            - 'tti_psv' : tilted transverse isotropy, P and SV waves
+            - 'tti_sh' : tilted transverse isotropy, SH waves
             - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
         convergence criterion (FSM) (default is 1e-5)
@@ -2922,6 +2924,16 @@ cdef class Grid2d_d:
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_psv':
+                    self.iso = b'P'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_tp](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_sh':
+                    self.iso = b'H'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_th](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'weakly_anelliptical':
                     self.iso = b'w'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_wa](
@@ -2995,6 +3007,10 @@ cdef class Grid2d_d:
             aniso = 'vti_psv'
         elif self.iso == b'h':
             aniso = 'vti_sh'
+        elif self.iso == b'P':
+            aniso = 'tti_psv'
+        elif self.iso == b'H':
+            aniso = 'tti_sh'
         elif self.iso == b'w':
             aniso = 'weakly_anelliptical'
 
@@ -3278,7 +3294,11 @@ cdef class Grid2d_d:
         """
         set_tilt_angle(theta)
 
-        Assign tilted elliptical anisotropy angle to grid
+        Assign anisotropy tilt angle to grid
+
+        Applies to the 'tilted_elliptical', 'tti_psv' and 'tti_sh' media.  The
+        angle is measured in radians; the symmetry axis lies at -theta from the
+        vertical.
 
         Parameters
         ----------
@@ -3892,8 +3912,8 @@ cdef class Grid2d_d:
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
 
-        if compute_L and (self.iso == b'p' or self.iso == b'h'):
-            raise NotImplementedError('compute_L not implemented for VTI media')
+        if compute_L and self.iso in (b'p', b'h', b'P', b'H'):
+            raise NotImplementedError('compute_L not implemented for VTI and TTI media')
 
         if source.shape[1] == 2:
             src = source
@@ -4576,6 +4596,16 @@ cdef class Grid2d_f:
                     self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellVTI_SH[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_psv':
+                    self.iso = b'P'
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellTTI_PSV[float,Node2Dcsp[float,uint32_t],sxz[float]]](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_sh':
+                    self.iso = b'H'
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellTTI_SH[float,Node2Dcsp[float,uint32_t],sxz[float]]](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'weakly_anelliptical':
                     self.iso = b'w'
                     self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellWeaklyAnelliptical[float,Node2Dcsp[float,uint32_t],sxz[float]]](
@@ -4649,6 +4679,10 @@ cdef class Grid2d_f:
             aniso = 'vti_psv'
         elif self.iso == b'h':
             aniso = 'vti_sh'
+        elif self.iso == b'P':
+            aniso = 'tti_psv'
+        elif self.iso == b'H':
+            aniso = 'tti_sh'
         elif self.iso == b'w':
             aniso = 'weakly_anelliptical'
 
@@ -5222,8 +5256,8 @@ cdef class Grid2d_f:
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
 
-        if compute_L and (self.iso == b'p' or self.iso == b'h'):
-            raise NotImplementedError('compute_L not implemented for VTI media')
+        if compute_L and self.iso in (b'p', b'h', b'P', b'H'):
+            raise NotImplementedError('compute_L not implemented for VTI and TTI media')
 
         if source.shape[1] == 2:
             src = source

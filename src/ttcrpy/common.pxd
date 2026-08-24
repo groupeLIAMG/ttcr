@@ -56,6 +56,10 @@ cdef extern from "Cell.h" namespace "ttcr" nogil:
         pass
     cdef cppclass CellVTI_SH[T,NODE,S]:
         pass
+    cdef cppclass CellTTI_PSV[T,NODE,S]:
+        pass
+    cdef cppclass CellTTI_SH[T,NODE,S]:
+        pass
     cdef cppclass CellWeaklyAnelliptical[T,NODE,S]:
         pass
 

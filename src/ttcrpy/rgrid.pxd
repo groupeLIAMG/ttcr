@@ -7,7 +7,8 @@ from libcpp cimport bool
 
 from ttcrpy.common cimport sxz, sxyz, siv, siv2, sijv, Node3Dc, Node3Dcsp, \
 Node3Dn, Node3Dnsp, Cell, CellElliptical, CellTiltedElliptical, CellVTI_PSV, \
-CellVTI_SH, CellWeaklyAnelliptical, Node2Dcsp, Node2Dn, Node2Dnsp, Node2Dc
+CellVTI_SH, CellTTI_PSV, CellTTI_SH, CellWeaklyAnelliptical, Node2Dcsp, \
+Node2Dn, Node2Dnsp, Node2Dc
 
 
 cdef extern from "typedefs.h" namespace "ttcr":
@@ -22,6 +23,10 @@ cdef extern from "typedefs.h" namespace "ttcr":
     cdef cppclass cell2d_p:
         pass
     cdef cppclass cell2d_h:
+        pass
+    cdef cppclass cell2d_tp:
+        pass
+    cdef cppclass cell2d_th:
         pass
     cdef cppclass cell2d_wa:
         pass
