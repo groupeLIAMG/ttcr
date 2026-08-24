@@ -147,6 +147,22 @@ namespace ttcr {
                         const std::vector<T1>& t0,
                         const std::vector<S>& Rx,
                         std::vector<T1>& traveltimes,
+                        std::vector<std::vector<siv4<T1>>>& l_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, l_data, id);
+        }
+
+        void operator()(int id, const std::vector<S>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<S>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<siv5<T1>>>& l_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, l_data, id);
+        }
+
+        void operator()(int id, const std::vector<S>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<S>& Rx,
+                        std::vector<T1>& traveltimes,
                         std::vector<std::vector<sijv<T1>>>& m_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, m_data, id);
         }
@@ -166,6 +182,24 @@ namespace ttcr {
                         std::vector<T1>& traveltimes,
                         std::vector<std::vector<S>>& r_data,
                         std::vector<std::vector<siv<T1>>>& l_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, id);
+        }
+
+        void operator()(int id, const std::vector<S>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<S>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<S>>& r_data,
+                        std::vector<std::vector<siv4<T1>>>& l_data) const {
+            this->raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, id);
+        }
+
+        void operator()(int id, const std::vector<S>& Tx,
+                        const std::vector<T1>& t0,
+                        const std::vector<S>& Rx,
+                        std::vector<T1>& traveltimes,
+                        std::vector<std::vector<S>>& r_data,
+                        std::vector<std::vector<siv5<T1>>>& l_data) const {
             this->raytrace(Tx, t0, Rx, traveltimes, r_data, l_data, id);
         }
 
@@ -244,6 +278,28 @@ namespace ttcr {
             throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
 
+        /// @brief Traveltimes, raypaths and four-component sensitivities (`siv4`). Subclass must override.
+        virtual void raytrace(const std::vector<S>& Tx,
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<S>>& r_data,
+                              std::vector<std::vector<siv4<T1>>>& l_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method raytrace should be implemented in subclass");
+        }
+
+        /// @brief Traveltimes, raypaths and five-component sensitivities (`siv5`). Subclass must override.
+        virtual void raytrace(const std::vector<S>& Tx,
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<S>>& r_data,
+                              std::vector<std::vector<siv5<T1>>>& l_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method raytrace should be implemented in subclass");
+        }
+
         /// @brief Traveltimes, raypaths and model-parameter sensitivities (`sijv`). Subclass must override.
         virtual void raytrace(const std::vector<S>& Tx,
                               const std::vector<T1>& t0,
@@ -261,6 +317,26 @@ namespace ttcr {
                               const std::vector<S>& Rx,
                               std::vector<T1>& traveltimes,
                               std::vector<std::vector<siv2<T1>>>& l_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method raytrace should be implemented in subclass");
+        }
+
+        /// @brief Traveltimes and four-component sensitivities only (`siv4`, no raypath). Subclass must override.
+        virtual void raytrace(const std::vector<S>& Tx,
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<siv4<T1>>>& l_data,
+                              const size_t threadNo=0) const {
+            throw std::runtime_error("Method raytrace should be implemented in subclass");
+        }
+
+        /// @brief Traveltimes and five-component sensitivities only (`siv5`, no raypath). Subclass must override.
+        virtual void raytrace(const std::vector<S>& Tx,
+                              const std::vector<T1>& t0,
+                              const std::vector<S>& Rx,
+                              std::vector<T1>& traveltimes,
+                              std::vector<std::vector<siv5<T1>>>& l_data,
                               const size_t threadNo=0) const {
             throw std::runtime_error("Method raytrace should be implemented in subclass");
         }
@@ -341,6 +417,24 @@ namespace ttcr {
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
 
+        /// @brief Several sources, four-component sensitivities (@ref siv4).
+        void raytrace(const std::vector<std::vector<S>>& Tx,
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<S>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<siv4<T1>>>>& l_data) const {
+            raytraceMulti(Tx, t0, Rx, traveltimes, l_data);
+        }
+
+        /// @brief Several sources, five-component sensitivities (@ref siv5).
+        void raytrace(const std::vector<std::vector<S>>& Tx,
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<S>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<siv5<T1>>>>& l_data) const {
+            raytraceMulti(Tx, t0, Rx, traveltimes, l_data);
+        }
+
         void raytrace(const std::vector<std::vector<S>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
                       const std::vector<std::vector<S>>& Rx,
@@ -361,6 +455,26 @@ namespace ttcr {
                       std::vector<std::vector<T1>>& traveltimes,
                       std::vector<std::vector<std::vector<S>>>& r_data,
                       std::vector<std::vector<std::vector<siv<T1>>>>& l_data) const;
+
+        /// @brief Several sources, raypaths and four-component sensitivities.
+        void raytrace(const std::vector<std::vector<S>>& Tx,
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<S>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<S>>>& r_data,
+                      std::vector<std::vector<std::vector<siv4<T1>>>>& l_data) const {
+            raytraceMulti(Tx, t0, Rx, traveltimes, r_data, l_data);
+        }
+
+        /// @brief Several sources, raypaths and five-component sensitivities.
+        void raytrace(const std::vector<std::vector<S>>& Tx,
+                      const std::vector<std::vector<T1>>& t0,
+                      const std::vector<std::vector<S>>& Rx,
+                      std::vector<std::vector<T1>>& traveltimes,
+                      std::vector<std::vector<std::vector<S>>>& r_data,
+                      std::vector<std::vector<std::vector<siv5<T1>>>>& l_data) const {
+            raytraceMulti(Tx, t0, Rx, traveltimes, r_data, l_data);
+        }
 
         void raytrace(const std::vector<std::vector<S>>& Tx,
                       const std::vector<std::vector<T1>>& t0,
@@ -527,6 +641,102 @@ namespace ttcr {
         virtual void saveModelVTR(const std::string &, const double*,
                                   const bool saveSlowness=true) const {}
 #endif
+
+        /**
+         * @brief Spread several sources over the threads, whatever the container
+         *
+         * The work is distributed as in the overloads taking @ref siv or
+         * @ref siv2, which predate the wider containers and keep their own
+         * copy of it.
+         */
+        template<typename SIV>
+        void raytraceMulti(const std::vector<std::vector<S>>& Tx,
+                           const std::vector<std::vector<T1>>& t0,
+                           const std::vector<std::vector<S>>& Rx,
+                           std::vector<std::vector<T1>>& traveltimes,
+                           std::vector<std::vector<std::vector<SIV>>>& l_data) const {
+            if ( Tx.size() == 1 ) {
+                this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], l_data[0], 0);
+            } else if ( nThreads == 1 ) {
+                for ( size_t n=0; n<Tx.size(); ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], 0);
+                }
+            } else if ( usePool ) {
+                std::vector<std::future<void>> results(Tx.size());
+                for ( size_t n=0; n<Tx.size(); ++n ) {
+                    results[n] = pool.push(std::ref(*this),
+                                           std::ref(Tx[n]),
+                                           std::ref(t0[n]),
+                                           std::ref(Rx[n]),
+                                           std::ref(traveltimes[n]),
+                                           std::ref(l_data[n]));
+                }
+                for ( size_t n=0; n<Tx.size(); ++n ) {
+                    results[n].get();
+                }
+            } else {
+                std::vector<size_t> blk_size = get_blk_size(Tx.size());
+                std::vector<std::thread> threads(blk_size.size());
+                size_t blk_start = 0;
+                for ( size_t i=0; i<blk_size.size(); ++i ) {
+                    size_t blk_end = blk_start + blk_size[i];
+                    threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&l_data,blk_start,blk_end,i]{
+                        for ( size_t n=blk_start; n<blk_end; ++n ) {
+                            this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], l_data[n], i);
+                        }
+                    });
+                    blk_start = blk_end;
+                }
+                std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+            }
+        }
+
+        /// @brief The same, also returning the raypaths
+        template<typename SIV>
+        void raytraceMulti(const std::vector<std::vector<S>>& Tx,
+                           const std::vector<std::vector<T1>>& t0,
+                           const std::vector<std::vector<S>>& Rx,
+                           std::vector<std::vector<T1>>& traveltimes,
+                           std::vector<std::vector<std::vector<S>>>& r_data,
+                           std::vector<std::vector<std::vector<SIV>>>& l_data) const {
+            if ( Tx.size() == 1 ) {
+                this->raytrace(Tx[0], t0[0], Rx[0], traveltimes[0], r_data[0], l_data[0], 0);
+            } else if ( nThreads == 1 ) {
+                for ( size_t n=0; n<Tx.size(); ++n ) {
+                    this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], 0);
+                }
+            } else if ( usePool ) {
+                std::vector<std::future<void>> results(Tx.size());
+                for ( size_t n=0; n<Tx.size(); ++n ) {
+                    results[n] = pool.push(std::ref(*this),
+                                           std::ref(Tx[n]),
+                                           std::ref(t0[n]),
+                                           std::ref(Rx[n]),
+                                           std::ref(traveltimes[n]),
+                                           std::ref(r_data[n]),
+                                           std::ref(l_data[n]));
+                }
+                for ( size_t n=0; n<Tx.size(); ++n ) {
+                    results[n].get();
+                }
+            } else {
+                std::vector<size_t> blk_size = get_blk_size(Tx.size());
+                std::vector<std::thread> threads(blk_size.size());
+                size_t blk_start = 0;
+                for ( size_t i=0; i<blk_size.size(); ++i ) {
+                    size_t blk_end = blk_start + blk_size[i];
+                    threads[i]=std::thread( [this,&Tx,&t0,&Rx,&traveltimes,&r_data,&l_data,blk_start,blk_end,i]{
+                        for ( size_t n=blk_start; n<blk_end; ++n ) {
+                            this->raytrace(Tx[n], t0[n], Rx[n], traveltimes[n], r_data[n], l_data[n], i);
+                        }
+                    });
+                    blk_start = blk_end;
+                }
+                std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
+            }
+        }
+
+
     protected:
         size_t nThreads;                         ///< Number of worker threads.
         bool tt_from_rp;                         ///< If true, receiver traveltimes are integrated along the raypath.
