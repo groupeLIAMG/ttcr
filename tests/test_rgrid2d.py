@@ -547,6 +547,105 @@ class TestTTI(unittest.TestCase):
         self.assertEqual(pickle.loads(pickle.dumps(g)).__class__, g.__class__)
 
 
+class TestComputeL(unittest.TestCase):
+    """Sensitivity matrix returned by compute_L.
+
+    Two invariants are checked.  First, compute_L must not change the
+    traveltimes: every raytrace() mode has to return the same values.  Second,
+    for a homogeneous medium the rays are straight, so the row sums of the
+    matrix are known -- the path length for an isotropic medium, and the
+    horizontal and vertical extents of the ray for the two blocks of an
+    anisotropic one.
+    """
+
+    def setUp(self):
+        n, h = 41, 0.05
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.src = np.array([[0.2, 0.2]])
+        self.rcv = np.array([[1.7, 1.6], [1.8, 0.5], [0.5, 1.8]])
+        self.dx = np.abs(self.rcv[:, 0] - self.src[0, 0])
+        self.dz = np.abs(self.rcv[:, 1] - self.src[0, 1])
+
+    def _grid(self, aniso):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso=aniso)
+        if aniso == 'iso':
+            g.set_slowness(np.full(self.ncells, 0.5))
+        elif aniso in ('elliptical', 'tilted_elliptical'):
+            g.set_slowness(np.full(self.ncells, 0.5))
+            g.set_xi(np.full(self.ncells, 1.1))
+            if aniso == 'tilted_elliptical':
+                g.set_tilt_angle(np.full(self.ncells, np.radians(20.)))
+        elif aniso == 'weakly_anelliptical':
+            g.set_slowness(np.full(self.ncells, 0.5))
+            g.set_s2(np.full(self.ncells, 0.05))
+            g.set_s4(np.full(self.ncells, 0.01))
+        return g
+
+    def test_compute_L_does_not_change_traveltimes(self):
+        # regression: without its own l_data override, Grid2Drcsp fell back to
+        # the gradient-following raypath of Grid2D and returned traveltimes
+        # several percent higher than the other raytrace() modes
+        for aniso in ('iso', 'elliptical', 'tilted_elliptical',
+                      'weakly_anelliptical'):
+            with self.subTest(aniso=aniso):
+                tt_plain = self._grid(aniso).raytrace(self.src, self.rcv)
+                tt_L, _ = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                     compute_L=True)
+                out = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                 compute_L=True,
+                                                 return_rays=True)
+                self.assertLess(np.max(np.abs(tt_L-tt_plain)), 1.e-9)
+                self.assertLess(np.max(np.abs(out[0]-tt_plain)), 1.e-9)
+
+    def test_compute_L_iso(self):
+        g = self._grid('iso')
+        tt, L = g.raytrace(self.src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], self.ncells))
+        # straight rays in a homogeneous medium: row sum is the ray length
+        length = np.sqrt(self.dx**2 + self.dz**2)
+        self.assertLess(np.max(np.abs(np.asarray(L.sum(axis=1)).ravel()
+                                      - length)/length), 0.01)
+        # and L must reproduce the traveltimes
+        self.assertLess(np.max(np.abs(L @ np.full(self.ncells, 0.5) - tt)),
+                        1.e-9)
+
+    def _check_two_blocks(self, aniso):
+        g = self._grid(aniso)
+        tt, L = g.raytrace(self.src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], 2*self.ncells))
+        L = L.toarray()
+        sx = L[:, :self.ncells].sum(axis=1)
+        sz = L[:, self.ncells:].sum(axis=1)
+        # the two blocks hold the horizontal and vertical extents of the ray
+        self.assertLess(np.max(np.abs(sx - self.dx)/self.dx), 0.02)
+        self.assertLess(np.max(np.abs(sz - self.dz)/self.dz), 0.02)
+
+    def test_compute_L_receiver_on_source(self):
+        # a receiver coinciding with the source has no path to walk; without a
+        # guard the parent walk dereferenced nodes[T2::max()] and crashed
+        rcv = np.vstack([self.src, self.rcv])
+        for aniso in ('iso', 'elliptical', 'tilted_elliptical',
+                      'weakly_anelliptical'):
+            with self.subTest(aniso=aniso):
+                tt, L = self._grid(aniso).raytrace(self.src, rcv,
+                                                   compute_L=True)
+                self.assertEqual(tt[0], 0.0)
+                self.assertEqual(L[0].nnz, 0)      # empty row, zero path
+                self.assertTrue(np.all(tt[1:] > 0.))
+
+    def test_compute_L_elliptical(self):
+        self._check_two_blocks('elliptical')
+
+    def test_compute_L_tilted_elliptical(self):
+        self._check_two_blocks('tilted_elliptical')
+
+    def test_compute_L_weakly_anelliptical(self):
+        self._check_two_blocks('weakly_anelliptical')
+
+
 if __name__ == '__main__':
 
     unittest.main()
