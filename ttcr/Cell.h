@@ -678,6 +678,7 @@ namespace ttcr {
                    const std::vector<T>& epsilon, const std::vector<T>& delta,
                    const T sign) {
             const size_t n = Vp0.size();
+            sgn = sign;
             tables.clear();
             index.assign(n, 0);
             std::map<std::array<T,4>, size_t> seen;
@@ -711,19 +712,88 @@ namespace ttcr {
          * @throws std::logic_error if the medium parameters were not all set
          */
         T velocity(const T lh, const T lz, const size_t cellNo) const {
-            if ( tables.empty() ) {
-                throw std::logic_error("Error: medium parameters of VTI_PSV cells not set.");
-            }
-            const std::vector<T>& tab = tables[ index[cellNo] ];
-            // VTI symmetry: the table spans [0, pi/2] only
-            const T psi = std::atan2( std::abs(lh), std::abs(lz) );
-            const T x = psi / halfPi() * (nSamples-1);
-            size_t i = static_cast<size_t>(x);
-            if ( i >= nSamples-1 ) {
-                return tab[nSamples-1];
-            }
-            const T w = x - static_cast<T>(i);
-            return (1.-w)*tab[i] + w*tab[i+1];
+            const Table& t = table(cellNo);
+            size_t i;
+            T w;
+            locate(t, lh, lz, i, w);
+            return (1.-w)*t.vg[i] + w*t.vg[i+1];
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * The traveltime across a segment of length @f$\ell@f$ making an angle
+         * @f$\psi@f$ with the symmetry axis is @f$\ell / V_g(\psi)@f$.  Writing
+         * the group velocity through the phase velocity of the branch carrying
+         * the arrival, @f$V_g = v / \cos(\psi - \theta_s)@f$, and noting that
+         * @f$\theta_s@f$ is stationary for @f$\cos(\psi-\theta)/v(\theta)@f$,
+         * the envelope theorem removes the derivative of @f$\theta_s@f$ with
+         * respect to @f$p@f$ and leaves
+         * @f[ \frac{\partial}{\partial p}\frac{\ell}{V_g}
+         *     = -\frac{\ell}{V_g\,v}\,\frac{\partial v}{\partial p}
+         *     \qquad \text{evaluated at } \theta_s @f]
+         * which holds on whichever branch is selected and is therefore valid
+         * through the triplications of the qSV wave.
+         *
+         * @param[in]  lh     horizontal component of the segment
+         * @param[in]  lz     vertical component of the segment
+         * @param[in]  cellNo index of the cell holding the segment
+         * @param[out] out    the four derivatives, w/r to @f$V_{P0}@f$,
+         *                    @f$V_{S0}@f$, @f$\epsilon@f$ and @f$\delta@f$
+         * @throws std::logic_error if the medium parameters were not all set
+         */
+        void sensitivity(const T lh, const T lz, const size_t cellNo,
+                         T* out) const {
+            const Table& t = table(cellNo);
+            size_t i;
+            T w;
+            locate(t, lh, lz, i, w);
+            const T vg = (1.-w)*t.vg[i] + w*t.vg[i+1];
+            // the branch may change from one sample to the next at a
+            // triplication cusp; interpolating across such a step would
+            // describe neither branch, so the nearer sample is taken instead
+            const T th = ( std::abs(t.th[i+1]-t.th[i]) < branchStep() ) ?
+                         (1.-w)*t.th[i] + w*t.th[i+1] :
+                         ( w < 0.5 ? t.th[i] : t.th[i+1] );
+            T v, dvdVp0, dvdVs0, dvdEps, dvdDlt;
+            phaseVelocityDerivatives(th, t.Vp0, t.Vs0, t.eps, t.dlt, sgn,
+                                     v, dvdVp0, dvdVs0, dvdEps, dvdDlt);
+            const T ell = std::sqrt(lh*lh + lz*lz);
+            const T c = ( vg > 0. && v > 0. ) ? -ell/(vg*v) : T(0);
+            out[0] = c*dvdVp0;
+            out[1] = c*dvdVs0;
+            out[2] = c*dvdEps;
+            out[3] = c*dvdDlt;
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the ray angle
+         *
+         * @f$\partial(\ell/V_g)/\partial\psi = -\ell V_g^{-2}\,dV_g/d\psi@f$.
+         * Tilting the medium by @f$\theta_t@f$ shifts the angle the segment
+         * makes with the symmetry axis by the same amount, so this is also the
+         * derivative with respect to the tilt angle of a tilted cell.
+         *
+         * @param lh     horizontal component of the segment
+         * @param lz     vertical component of the segment
+         * @param cellNo index of the cell holding the segment
+         * @return the derivative of the segment traveltime w/r to @f$\psi@f$
+         * @throws std::logic_error if the medium parameters were not all set
+         *
+         * @note @f$dV_g/d\psi@f$ is obtained by differencing the tabulated
+         * group velocity, so its accuracy degrades at the cusps bounding a qSV
+         * triplication, where @f$V_g@f$ has a corner.
+         */
+        T dt_dpsi(const T lh, const T lz, const size_t cellNo) const {
+            const Table& t = table(cellNo);
+            size_t i;
+            T w;
+            locate(t, lh, lz, i, w);
+            const T vg  = (1.-w)*t.vg[i]  + w*t.vg[i+1];
+            const T dvg = (1.-w)*t.dvg[i] + w*t.dvg[i+1];
+            if ( vg <= 0. ) return T(0);
+            const T ell = std::sqrt(lh*lh + lz*lz);
+            return -ell*dvg/(vg*vg);
         }
 
         /**
@@ -754,22 +824,144 @@ namespace ttcr {
             dv = ( sqG > 0. ? Vp0*dGds*std::sin(2.*theta)/(2.*sqG) : 0. );
         }
 
+        /**
+         * @brief Phase velocity and its derivatives w/r to the medium parameters
+         *
+         * Obtained by differentiating the same expression as phaseVelocity(),
+         * @f$v = V_{P0}\sqrt{G}@f$, the dependence on the vertical velocities
+         * running through @f$f = 1 - V_{S0}^2/V_{P0}^2@f$.
+         *
+         * @param[in]  theta  phase angle measured from the vertical axis
+         * @param[in]  Vp0    vertical P-wave velocity
+         * @param[in]  Vs0    vertical S-wave velocity
+         * @param[in]  eps    Thomsen's parameter epsilon
+         * @param[in]  dlt    Thomsen's parameter delta
+         * @param[in]  sign   +1 for the qP phase, -1 for the qSV phase
+         * @param[out] v      phase velocity
+         * @param[out] dvdVp0 derivative of the phase velocity w/r to Vp0
+         * @param[out] dvdVs0 derivative of the phase velocity w/r to Vs0
+         * @param[out] dvdEps derivative of the phase velocity w/r to epsilon
+         * @param[out] dvdDlt derivative of the phase velocity w/r to delta
+         */
+        static void phaseVelocityDerivatives(const T theta, const T Vp0,
+                                             const T Vs0, const T eps,
+                                             const T dlt, const T sign,
+                                             T& v, T& dvdVp0, T& dvdVs0,
+                                             T& dvdEps, T& dvdDlt) {
+            const T f  = 1. - (Vs0*Vs0)/(Vp0*Vp0);
+            const T st = std::sin(theta);
+            const T s  = st*st;
+            const T A  = 1. + 2.*eps*s/f;
+            const T R  = A*A - 8.*(eps-dlt)*s*(1.-s)/f;
+            const T sqR = std::sqrt( R > 0. ? R : 0. );
+            const T G  = 1. + eps*s - f/2. + sign*(f/2.)*sqR;
+            const T sqG = std::sqrt( G > 0. ? G : 0. );
+            v = Vp0*sqG;
+            if ( sqG <= 0. || sqR <= 0. ) {
+                dvdVp0 = dvdVs0 = dvdEps = dvdDlt = T(0);
+                return;
+            }
+            const T dRdEps = 2.*A*(2.*s/f) - 8.*s*(1.-s)/f;
+            const T dRdDlt = 8.*s*(1.-s)/f;
+            const T dRdf   = 2.*A*(-2.*eps*s/(f*f))
+                           + 8.*(eps-dlt)*s*(1.-s)/(f*f);
+            const T dGdEps = s + sign*(f/4.)*dRdEps/sqR;
+            const T dGdDlt =     sign*(f/4.)*dRdDlt/sqR;
+            const T dGdf   = -0.5 + sign*0.5*sqR + sign*(f/4.)*dRdf/sqR;
+            const T dfdVp0 =  2.*Vs0*Vs0/(Vp0*Vp0*Vp0);
+            const T dfdVs0 = -2.*Vs0/(Vp0*Vp0);
+            dvdVp0 = sqG + Vp0*dGdf*dfdVp0/(2.*sqG);
+            dvdVs0 =       Vp0*dGdf*dfdVs0/(2.*sqG);
+            dvdEps =       Vp0*dGdEps/(2.*sqG);
+            dvdDlt =       Vp0*dGdDlt/(2.*sqG);
+        }
+
     private:
         /// Number of samples of a table, spanning [0, pi/2]
-        static const size_t nSamples = 901;
+        static constexpr size_t nSamples = 901;
         /// Oversampling of the phase angle when building a table
-        static const size_t oversampling = 16;
+        static constexpr size_t oversampling = 16;
 
-        std::vector<std::vector<T>> tables;  ///< one table per distinct medium
-        std::vector<size_t> index;           ///< table used by each cell
+        /**
+         * @brief Group velocity of one medium, tabulated against the ray angle
+         *
+         * The three vectors span @f$[0, \pi/2]@f$, the VTI symmetries giving
+         * the remaining quadrants.  The medium parameters are kept because the
+         * sensitivities are formed from the phase velocity of the branch
+         * carrying the arrival.
+         */
+        struct Table {
+            std::vector<T> ps;   ///< ray angle of the sample kept in each bin
+            std::vector<T> vg;   ///< group velocity of the first arrival
+            std::vector<T> th;   ///< phase angle of the branch, in [0, pi/2]
+            std::vector<T> dvg;  ///< derivative of vg w/r to the ray angle
+            T Vp0;               ///< vertical P-wave velocity
+            T Vs0;               ///< vertical S-wave velocity
+            T eps;               ///< Thomsen's parameter epsilon
+            T dlt;               ///< Thomsen's parameter delta
+        };
+
+        std::vector<Table> tables;  ///< one table per distinct medium
+        std::vector<size_t> index;  ///< table used by each cell
+        T sgn;                      ///< +1 for the qP phase, -1 for the qSV phase
 
         static T halfPi() { return static_cast<T>(1.57079632679489661923); }
         static T pi()     { return static_cast<T>(3.14159265358979323846); }
 
+        /// @brief Largest step of the phase angle treated as a single branch
+        static T branchStep() { return static_cast<T>(0.05); }
+
+        /// @brief Table of a cell
+        /// @throws std::logic_error if the medium parameters were not all set
+        const Table& table(const size_t cellNo) const {
+            if ( tables.empty() ) {
+                throw std::logic_error("Error: medium parameters of VTI_PSV cells not set.");
+            }
+            return tables[ index[cellNo] ];
+        }
+
+        /**
+         * @brief Sample bracketing the direction of a segment, and its weight
+         *
+         * Interpolation uses the ray angles actually sampled rather than the
+         * centres of the bins holding them: the sample kept in a bin is the one
+         * of largest group velocity, which lies towards the edge of the bin the
+         * group velocity increases to, and assuming it sits at the centre
+         * distorts the interpolated slope.
+         */
+        static void locate(const Table& t, const T lh, const T lz,
+                           size_t& i, T& w) {
+            // VTI symmetry: the tables span [0, pi/2] only
+            const T psi = std::atan2( std::abs(lh), std::abs(lz) );
+            const T x = psi / halfPi() * (nSamples-1);
+            if ( !(x > 0.) ) {
+                i = 0;
+            } else if ( x >= nSamples-1 ) {
+                i = nSamples-2;
+            } else {
+                i = static_cast<size_t>(x);
+            }
+            // the sampled angles are ordered but need not bracket psi from the
+            // bin index alone
+            while ( i+1 < nSamples-1 && t.ps[i+1] < psi ) ++i;
+            while ( i > 0 && t.ps[i] > psi ) --i;
+            const T d = t.ps[i+1] - t.ps[i];
+            w = ( d > 0. ) ? (psi - t.ps[i])/d : T(0);
+            if ( w < 0. ) w = T(0);
+            if ( w > 1. ) w = T(1);
+        }
+
         /// @brief Tabulate the group velocity over [0, pi/2] for one medium
-        static std::vector<T> tabulate(const T Vp0, const T Vs0, const T eps,
-                                       const T dlt, const T sign) {
-            std::vector<T> tab(nSamples, T(0));
+        static Table tabulate(const T Vp0, const T Vs0, const T eps,
+                              const T dlt, const T sign) {
+            Table t;
+            t.Vp0 = Vp0;
+            t.Vs0 = Vs0;
+            t.eps = eps;
+            t.dlt = dlt;
+            t.vg.assign(nSamples, T(0));
+            t.th.assign(nSamples, T(0));
+            t.ps.assign(nSamples, T(0));
             const size_t m = (nSamples-1)*oversampling + 1;
             for ( size_t k=0; k<m; ++k ) {
                 const T theta = pi() * static_cast<T>(k) / static_cast<T>(m-1);
@@ -783,32 +975,64 @@ namespace ttcr {
                 psi = std::abs(psi);
                 size_t j = static_cast<size_t>( psi/halfPi()*(nSamples-1) + 0.5 );
                 if ( j >= nSamples ) j = nSamples-1;
-                if ( vg > tab[j] ) tab[j] = vg;   // keep the first arrival
+                if ( vg > t.vg[j] ) {          // keep the first arrival
+                    t.vg[j] = vg;
+                    t.ps[j] = psi;
+                    // the phase velocity and its derivatives depend on the
+                    // phase angle only through sin^2, so folding it likewise
+                    // loses nothing and keeps neighbouring samples comparable
+                    t.th[j] = ( theta > halfPi() ) ? pi() - theta : theta;
+                }
             }
-            fillGaps(tab);
-            return tab;
+            fillGaps(t.vg, t.th, t.ps);
+            // derivative of the group velocity w/r to the ray angle; Vg is
+            // symmetric about both ends of the interval, so it vanishes there
+            t.dvg.assign(nSamples, T(0));
+            for ( size_t i=1; i+1<nSamples; ++i ) {
+                const T d = t.ps[i+1] - t.ps[i-1];
+                if ( d > 0. ) t.dvg[i] = (t.vg[i+1] - t.vg[i-1])/d;
+            }
+            return t;
         }
 
-        /// @brief Linearly interpolate the bins that no sample reached
-        static void fillGaps(std::vector<T>& tab) {
+        /**
+         * @brief Fill the bins that no sample reached
+         *
+         * The group velocity is interpolated linearly; the phase angle is
+         * copied from the nearer filled bin, a gap being as likely as not to
+         * straddle a change of branch.
+         */
+        static void fillGaps(std::vector<T>& vg, std::vector<T>& th,
+                             std::vector<T>& ps) {
+            const T dpsi = halfPi()/static_cast<T>(nSamples-1);
             size_t lo = 0;
-            while ( lo < tab.size() && tab[lo] == T(0) ) ++lo;
-            if ( lo == tab.size() ) {
+            while ( lo < vg.size() && vg[lo] == T(0) ) ++lo;
+            if ( lo == vg.size() ) {
                 throw std::runtime_error("Error: could not tabulate the group "
                                          "velocity of a VTI_PSV cell.");
             }
-            for ( size_t i=0; i<lo; ++i ) tab[i] = tab[lo];
-            size_t hi = tab.size()-1;
-            while ( tab[hi] == T(0) ) --hi;
-            for ( size_t i=hi+1; i<tab.size(); ++i ) tab[i] = tab[hi];
+            for ( size_t i=0; i<lo; ++i ) {
+                vg[i] = vg[lo];
+                th[i] = th[lo];
+                ps[i] = static_cast<T>(i)*dpsi;
+            }
+            size_t hi = vg.size()-1;
+            while ( vg[hi] == T(0) ) --hi;
+            for ( size_t i=hi+1; i<vg.size(); ++i ) {
+                vg[i] = vg[hi];
+                th[i] = th[hi];
+                ps[i] = static_cast<T>(i)*dpsi;
+            }
             size_t i = lo;
             while ( i < hi ) {
-                if ( tab[i+1] != T(0) ) { ++i; continue; }
+                if ( vg[i+1] != T(0) ) { ++i; continue; }
                 size_t j = i+1;
-                while ( tab[j] == T(0) ) ++j;
+                while ( vg[j] == T(0) ) ++j;
                 for ( size_t k=i+1; k<j; ++k ) {
                     const T w = static_cast<T>(k-i)/static_cast<T>(j-i);
-                    tab[k] = (1.-w)*tab[i] + w*tab[j];
+                    vg[k] = (1.-w)*vg[i] + w*vg[j];
+                    th[k] = ( w < 0.5 ) ? th[i] : th[j];
+                    ps[k] = static_cast<T>(k)*dpsi;
                 }
                 i = j;
             }
