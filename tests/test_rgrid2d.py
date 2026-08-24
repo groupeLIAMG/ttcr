@@ -637,8 +637,37 @@ class TestComputeL(unittest.TestCase):
                 self.assertTrue(np.all(tt[1:] > 0.))
 
     def test_compute_L_elliptical(self):
-        self._check_two_blocks('elliptical')
+        # the elliptical cells report derivatives of the traveltime with
+        # respect to the slowness and the anisotropy ratio
+        sx, xi = 0.5, 1.1
+        g = self._grid('elliptical')
+        tt, L = g.raytrace(self.src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], 2*self.ncells))
+        L = L.toarray()
+        # dt is homogeneous of degree one in the slowness, so Euler's identity
+        # makes the first block reproduce the traveltimes exactly
+        self.assertLess(np.max(np.abs(L[:, :self.ncells] @
+                                      np.full(self.ncells, sx) - tt)), 1.e-9)
+        # and both blocks must match a finite difference of the traveltimes
+        for blk, val, name in ((0, sx, 'slowness'), (1, xi, 'xi')):
+            h = 1.e-4
+            up, dn = [self._grid('elliptical') for _ in range(2)]
+            if blk == 0:
+                up.set_slowness(np.full(self.ncells, sx+h))
+                dn.set_slowness(np.full(self.ncells, sx-h))
+            else:
+                up.set_xi(np.full(self.ncells, xi+h))
+                dn.set_xi(np.full(self.ncells, xi-h))
+            fd = (up.raytrace(self.src, self.rcv) -
+                  dn.raytrace(self.src, self.rcv))/(2*h)
+            ana = L[:, blk*self.ncells:(blk+1)*self.ncells].sum(axis=1)
+            self.assertLess(np.max(np.abs(ana-fd)/np.abs(fd)), 5.e-3,
+                            'd(tt)/d(%s) disagrees with a finite difference'
+                            % name)
 
+    # the tilted elliptical and weakly anelliptical cells still report the
+    # components of the ray segment through siv2; they move to the wider
+    # containers, and to derivatives, when the assembly of L is extended
     def test_compute_L_tilted_elliptical(self):
         self._check_two_blocks('tilted_elliptical')
 

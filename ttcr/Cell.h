@@ -87,6 +87,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class Cell {
     public:
+        /// Number of medium parameters of the cells: the slowness
+        static constexpr size_t nParams = 1;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -258,6 +260,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellElliptical {
     public:
+        /// Number of medium parameters of the cells: the slowness and the anisotropy ratio
+        static constexpr size_t nParams = 2;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -404,17 +408,28 @@ namespace ttcr {
             throw std::logic_error("Error: computeDistance with siv not defined for CellElliptical.");
         }
         /**
-         * @brief Components of a ray segment, stored in a siv2 struct
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * With @f$ dt = s\sqrt{l_x^2 + \xi^2 l_z^2} @f$,
+         * @f[ \frac{\partial dt}{\partial s} = \frac{dt}{s}, \qquad
+         *     \frac{\partial dt}{\partial \xi} = \frac{s^2 \xi l_z^2}{dt} @f]
+         *
          * @param[in]  source node from which the ray segment originates
          * @param[in]  node   end point of the ray segment
-         * @param[out] cell   struct holding the horizontal component of the
-         *                    segment in member `v`, and its vertical component
+         * @param[out] cell   derivatives w/r to the slowness along the fast
+         *                    axis in member `v`, and to the anisotropy ratio
          *                    in member `v2`
          */
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            const T q  = std::sqrt( lx*lx + xi[cell.i]*lz*lz );
+            const T s  = slowness[cell.i];
+            const T dt = s*q;
+            cell.v  = q;
+            cell.v2 = ( dt > 0. ) ?
+                      s*s*std::sqrt(xi[cell.i])*lz*lz/dt : T(0);
         }
 
     private:
@@ -441,6 +456,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellTiltedElliptical {
     public:
+        /// Number of medium parameters of the cells: the slowness, the anisotropy ratio and the tilt angle
+        static constexpr size_t nParams = 3;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -626,6 +643,40 @@ namespace ttcr {
             cell.v2 = std::abs(node.z - source.getZ());
         }
 
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * With @f$ t_1 = l_x\cos\theta + l_z\sin\theta @f$,
+         * @f$ t_2 = l_z\cos\theta - l_x\sin\theta @f$ and
+         * @f$ dt = s\sqrt{t_1^2 + \xi^2 t_2^2} @f$,
+         * @f[ \frac{\partial dt}{\partial s} = \frac{dt}{s}, \quad
+         *     \frac{\partial dt}{\partial \xi} = \frac{s^2 \xi t_2^2}{dt},
+         *     \quad
+         *     \frac{\partial dt}{\partial \theta}
+         *       = \frac{s^2 t_1 t_2 (1-\xi^2)}{dt} @f]
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to the slowness, the anisotropy
+         *                    ratio and the tilt angle, in members `v`, `v2`
+         *                    and `v3`; member `v4` is left at zero
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            const T t1 = lx*ca[cell.i] + lz*sa[cell.i];
+            const T t2 = lz*ca[cell.i] - lx*sa[cell.i];
+            const T x2 = xi[cell.i];              // xi is stored squared
+            const T q  = std::sqrt( t1*t1 + x2*t2*t2 );
+            const T s  = slowness[cell.i];
+            const T dt = s*q;
+            cell.v  = q;
+            cell.v2 = ( dt > 0. ) ? s*s*std::sqrt(x2)*t2*t2/dt : T(0);
+            cell.v3 = ( dt > 0. ) ? s*s*t1*t2*(1.-x2)/dt : T(0);
+            cell.v4 = T(0);
+        }
+
     private:
         std::vector<T> slowness;  ///< slowness of the cells along the fast axis
         std::vector<T> xi;        ///< anisotropy ratio, xi = sz / sx, *** squared ***
@@ -777,7 +828,9 @@ namespace ttcr {
          * @param lh     horizontal component of the segment
          * @param lz     vertical component of the segment
          * @param cellNo index of the cell holding the segment
-         * @return the derivative of the segment traveltime w/r to @f$\psi@f$
+         * @return the derivative of the segment traveltime w/r to the angle
+         *         @f$\psi@f$ the segment makes with the symmetry axis, signed
+         *         as @f$\mathrm{atan2}(l_h, l_z)@f$
          * @throws std::logic_error if the medium parameters were not all set
          *
          * @note @f$dV_g/d\psi@f$ is obtained by differencing the tabulated
@@ -793,7 +846,11 @@ namespace ttcr {
             const T dvg = (1.-w)*t.dvg[i] + w*t.dvg[i+1];
             if ( vg <= 0. ) return T(0);
             const T ell = std::sqrt(lh*lh + lz*lz);
-            return -ell*dvg/(vg*vg);
+            // the tables span [0, pi/2]; folding the angle of the segment into
+            // that interval reverses the sense in which it varies whenever the
+            // two components have opposite signs
+            const T fold = ( (lh < 0.) == (lz < 0.) ) ? T(1) : T(-1);
+            return -fold*ell*dvg/(vg*vg);
         }
 
         /**
@@ -1079,6 +1136,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellVTI_PSV {
     public:
+        /// Number of medium parameters of the cells: the two vertical velocities and Thomsen's epsilon and delta
+        static constexpr size_t nParams = 4;
         /**
          * @brief Constructor
          *
@@ -1266,6 +1325,28 @@ namespace ttcr {
             cell.v2 = std::abs(node.z - source.getZ());
         }
 
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * Formed by VTI_PSV_GroupVel::sensitivity(), which applies the envelope
+         * theorem on the branch of the slowness surface carrying the arrival.
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to Vp0, Vs0, epsilon and delta,
+         *                    in members `v`, `v2`, `v3` and `v4`
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            T s[4];
+            gv.sensitivity(node.x - source.getX(), node.z - source.getZ(),
+                           cell.i, s);
+            cell.v  = s[0];
+            cell.v2 = s[1];
+            cell.v3 = s[2];
+            cell.v4 = s[3];
+        }
+
     private:
         /**
          * @brief (Re)build the group-velocity tables
@@ -1327,6 +1408,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellTTI_PSV {
     public:
+        /// Number of medium parameters of the cells: the two vertical velocities, Thomsen's epsilon and delta, and the tilt angle
+        static constexpr size_t nParams = 5;
         /**
          * @brief Constructor
          *
@@ -1538,6 +1621,34 @@ namespace ttcr {
             cell.v2 = std::abs(node.z - source.getZ());
         }
 
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * The segment is expressed in the frame of the symmetry axis and passed
+         * to VTI_PSV_GroupVel.  Tilting the medium shifts the angle the segment
+         * makes with that axis by the tilt angle, so the derivative with respect
+         * to the tilt is the derivative with respect to the ray angle.
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to Vp0, Vs0, epsilon, delta and
+         *                    the tilt angle, in members `v` to `v5`
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv5<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            const T t1 = lx*ca[cell.i] + lz*sa[cell.i];
+            const T t2 = lz*ca[cell.i] - lx*sa[cell.i];
+            T s[4];
+            gv.sensitivity(t1, t2, cell.i, s);
+            cell.v  = s[0];
+            cell.v2 = s[1];
+            cell.v3 = s[2];
+            cell.v4 = s[3];
+            cell.v5 = gv.dt_dpsi(t1, t2, cell.i);
+        }
+
     private:
         /**
          * @brief (Re)build the group-velocity tables
@@ -1593,6 +1704,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellVTI_SH {
     public:
+        /// Number of medium parameters of the cells: the vertical S-wave velocity and Thomsen's gamma
+        static constexpr size_t nParams = 2;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -1740,8 +1853,13 @@ namespace ttcr {
          */
         void computeDistance(const NODE& source, const S& node,
                              siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            const T g  = 1. + 2.*gamma[cell.i];
+            const T dt = std::sqrt( lx*lx/g + lz*lz )/Vs0[cell.i];
+            cell.v  = -dt/Vs0[cell.i];
+            cell.v2 = ( dt > 0. ) ?
+                      -lx*lx/(Vs0[cell.i]*Vs0[cell.i]*dt*g*g) : T(0);
         }
 
     private:
@@ -1777,6 +1895,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellTTI_SH {
     public:
+        /// Number of medium parameters of the cells: the vertical S-wave velocity, Thomsen's gamma and the tilt angle
+        static constexpr size_t nParams = 3;
         /**
          * @brief Constructor
          *
@@ -1939,6 +2059,38 @@ namespace ttcr {
             cell.v2 = std::abs(node.z - source.getZ());
         }
 
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * With @f$ g = 1+2\gamma @f$ and
+         * @f$ dt = V_{S0}^{-1}\sqrt{t_1^2/g + t_2^2} @f$,
+         * @f[ \frac{\partial dt}{\partial V_{S0}} = -\frac{dt}{V_{S0}}, \quad
+         *     \frac{\partial dt}{\partial \gamma}
+         *       = -\frac{t_1^2}{V_{S0}^2\,dt\,g^2}, \quad
+         *     \frac{\partial dt}{\partial \theta}
+         *       = \frac{t_1 t_2 (g^{-1}-1)}{V_{S0}^2\,dt} @f]
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to the vertical S-wave velocity,
+         *                    Thomsen's gamma and the tilt angle, in members
+         *                    `v`, `v2` and `v3`; member `v4` is left at zero
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            const T t1 = lx*ca[cell.i] + lz*sa[cell.i];
+            const T t2 = lz*ca[cell.i] - lx*sa[cell.i];
+            const T g  = 1. + 2.*gamma[cell.i];
+            const T vs = Vs0[cell.i];
+            const T dt = std::sqrt( t1*t1/g + t2*t2 )/vs;
+            cell.v  = -dt/vs;
+            cell.v2 = ( dt > 0. ) ? -t1*t1/(vs*vs*dt*g*g) : T(0);
+            cell.v3 = ( dt > 0. ) ? t1*t2*(1./g - 1.)/(vs*vs*dt) : T(0);
+            cell.v4 = T(0);
+        }
+
     private:
         /// @brief Traveltime along a segment of components (lx, lz)
         T dt(const T lx, const T lz, const size_t cellNo) const {
@@ -1976,6 +2128,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellWeaklyAnelliptical {
     public:
+        /// Number of medium parameters of the cells: the vertical slowness and the two anisotropy coefficients
+        static constexpr size_t nParams = 3;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -2157,6 +2311,35 @@ namespace ttcr {
                              siv2<T>& cell) const {
             cell.v  = std::abs(node.x - source.getX());
             cell.v2 = std::abs(node.z - source.getZ());
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * With @f$ u = \sin^2\theta @f$, @f$ P = 1 + (s_2 + s_4 u)u @f$ and
+         * @f$ dt = \ell s / P @f$, @f$s@f$ being the vertical slowness,
+         * @f[ \frac{\partial dt}{\partial s} = \frac{dt}{s}, \quad
+         *     \frac{\partial dt}{\partial s_2} = -\frac{dt\,u}{P}, \quad
+         *     \frac{\partial dt}{\partial s_4} = -\frac{dt\,u^2}{P} @f]
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to the vertical slowness and to
+         *                    the two anisotropy coefficients, in members `v`,
+         *                    `v2` and `v3`; member `v4` is left at zero
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T lz = node.z - source.getZ();
+            const T st = std::sin( std::atan2(lx, lz) );
+            const T u  = st*st;
+            const T P  = 1. + (s2[cell.i] + s4[cell.i]*u)*u;
+            const T dt = std::sqrt(lx*lx + lz*lz)/(v0[cell.i]*P);
+            cell.v  = dt*v0[cell.i];          // d(dt)/d(slowness), s = 1/v0
+            cell.v2 = -dt*u/P;
+            cell.v3 = -dt*u*u/P;
+            cell.v4 = T(0);
         }
 
     private:
