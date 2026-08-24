@@ -800,14 +800,9 @@ namespace ttcr {
             T w;
             locate(t, lh, lz, i, w);
             const T vg = (1.-w)*t.vg[i] + w*t.vg[i+1];
-            // the branch may change from one sample to the next at a
-            // triplication cusp; interpolating across such a step would
-            // describe neither branch, so the nearer sample is taken instead
-            const T th = ( std::abs(t.th[i+1]-t.th[i]) < branchStep() ) ?
-                         (1.-w)*t.th[i] + w*t.th[i+1] :
-                         ( w < 0.5 ? t.th[i] : t.th[i+1] );
             T v, dvdVp0, dvdVs0, dvdEps, dvdDlt;
-            phaseVelocityDerivatives(th, t.Vp0, t.Vs0, t.eps, t.dlt, sgn,
+            phaseVelocityDerivatives(branchAngle(t, i, w),
+                                     t.Vp0, t.Vs0, t.eps, t.dlt, sgn,
                                      v, dvdVp0, dvdVs0, dvdEps, dvdDlt);
             const T ell = std::sqrt(lh*lh + lz*lz);
             const T c = ( vg > 0. && v > 0. ) ? -ell/(vg*v) : T(0);
@@ -833,24 +828,34 @@ namespace ttcr {
          *         as @f$\mathrm{atan2}(l_h, l_z)@f$
          * @throws std::logic_error if the medium parameters were not all set
          *
-         * @note @f$dV_g/d\psi@f$ is obtained by differencing the tabulated
-         * group velocity, so its accuracy degrades at the cusps bounding a qSV
-         * triplication, where @f$V_g@f$ has a corner.
+         * Along a branch parametrised by the phase angle,
+         * @f$dV_g/d\theta = v'(v+v'')/V_g@f$ and
+         * @f$d\psi/d\theta = v(v+v'')/V_g^2@f$, so the second derivative
+         * cancels between them and
+         * @f[ \frac{dV_g}{d\psi} = \frac{v' V_g}{v}, \qquad
+         *     \frac{\partial}{\partial\psi}\frac{\ell}{V_g}
+         *       = -\frac{\ell\,v'}{v\,V_g} @f]
+         * the same factor as the derivatives with respect to the medium
+         * parameters, with the derivative of the phase velocity taken with
+         * respect to the phase angle instead.
          */
         T dt_dpsi(const T lh, const T lz, const size_t cellNo) const {
             const Table& t = table(cellNo);
             size_t i;
             T w;
             locate(t, lh, lz, i, w);
-            const T vg  = (1.-w)*t.vg[i]  + w*t.vg[i+1];
-            const T dvg = (1.-w)*t.dvg[i] + w*t.dvg[i+1];
+            const T vg = (1.-w)*t.vg[i] + w*t.vg[i+1];
             if ( vg <= 0. ) return T(0);
+            T v, dv;
+            phaseVelocity(branchAngle(t, i, w), t.Vp0, t.Vs0, t.eps, t.dlt,
+                          sgn, v, dv);
+            if ( v <= 0. ) return T(0);
             const T ell = std::sqrt(lh*lh + lz*lz);
             // the tables span [0, pi/2]; folding the angle of the segment into
             // that interval reverses the sense in which it varies whenever the
             // two components have opposite signs
             const T fold = ( (lh < 0.) == (lz < 0.) ) ? T(1) : T(-1);
-            return -fold*ell*dvg/(vg*vg);
+            return -fold*ell*dv/(v*vg);
         }
 
         /**
@@ -951,7 +956,6 @@ namespace ttcr {
             std::vector<T> ps;   ///< ray angle of the sample kept in each bin
             std::vector<T> vg;   ///< group velocity of the first arrival
             std::vector<T> th;   ///< phase angle of the branch, in [0, pi/2]
-            std::vector<T> dvg;  ///< derivative of vg w/r to the ray angle
             T Vp0;               ///< vertical P-wave velocity
             T Vs0;               ///< vertical S-wave velocity
             T eps;               ///< Thomsen's parameter epsilon
@@ -967,6 +971,19 @@ namespace ttcr {
 
         /// @brief Largest step of the phase angle treated as a single branch
         static T branchStep() { return static_cast<T>(0.05); }
+
+        /**
+         * @brief Phase angle of the branch carrying the arrival
+         *
+         * The branch may change from one sample to the next at a triplication
+         * cusp; interpolating across such a step would describe neither branch,
+         * so the nearer sample is taken instead.
+         */
+        static T branchAngle(const Table& t, const size_t i, const T w) {
+            return ( std::abs(t.th[i+1]-t.th[i]) < branchStep() ) ?
+                   (1.-w)*t.th[i] + w*t.th[i+1] :
+                   ( w < 0.5 ? t.th[i] : t.th[i+1] );
+        }
 
         /// @brief Table of a cell
         /// @throws std::logic_error if the medium parameters were not all set
@@ -1026,29 +1043,26 @@ namespace ttcr {
                 phaseVelocity(theta, Vp0, Vs0, eps, dlt, sign, v, dv);
                 if ( v <= 0. ) continue;
                 const T vg = std::sqrt(v*v + dv*dv);
-                // fold the ray angle into [0, pi/2] using the VTI symmetries
-                T psi = std::abs( theta + std::atan2(dv, v) );
-                if ( psi > halfPi() ) psi = pi() - psi;
-                psi = std::abs(psi);
+                // fold the ray angle into [0, pi/2] using the VTI symmetries,
+                // applying every reflection to the phase angle as well.  The
+                // phase velocity depends on it only through its squared sine,
+                // so the reflections leave the velocity alone, but they do
+                // reverse its derivative, which dt_dpsi() needs signed to match
+                // the folded ray angle.
+                T psi = theta + std::atan2(dv, v);
+                T phi = theta;
+                if ( psi < 0. )       { psi = -psi;       phi = -phi; }
+                if ( psi > halfPi() ) { psi = pi() - psi; phi = pi() - phi; }
+                if ( psi < 0. )       { psi = -psi;       phi = -phi; }
                 size_t j = static_cast<size_t>( psi/halfPi()*(nSamples-1) + 0.5 );
                 if ( j >= nSamples ) j = nSamples-1;
                 if ( vg > t.vg[j] ) {          // keep the first arrival
                     t.vg[j] = vg;
                     t.ps[j] = psi;
-                    // the phase velocity and its derivatives depend on the
-                    // phase angle only through sin^2, so folding it likewise
-                    // loses nothing and keeps neighbouring samples comparable
-                    t.th[j] = ( theta > halfPi() ) ? pi() - theta : theta;
+                    t.th[j] = phi;
                 }
             }
             fillGaps(t.vg, t.th, t.ps);
-            // derivative of the group velocity w/r to the ray angle; Vg is
-            // symmetric about both ends of the interval, so it vanishes there
-            t.dvg.assign(nSamples, T(0));
-            for ( size_t i=1; i+1<nSamples; ++i ) {
-                const T d = t.ps[i+1] - t.ps[i-1];
-                if ( d > 0. ) t.dvg[i] = (t.vg[i+1] - t.vg[i-1])/d;
-            }
             return t;
         }
 
