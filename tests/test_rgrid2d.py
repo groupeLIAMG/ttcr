@@ -552,10 +552,11 @@ class TestComputeL(unittest.TestCase):
 
     Two invariants are checked.  First, compute_L must not change the
     traveltimes: every raytrace() mode has to return the same values.  Second,
-    for a homogeneous medium the rays are straight, so the row sums of the
-    matrix are known -- the path length for an isotropic medium, and the
-    horizontal and vertical extents of the ray for the two blocks of an
-    anisotropic one.
+    for a homogeneous medium the rays are straight, so the row sum of the
+    matrix is the length of the ray.
+
+    What the anisotropic media report, and how wide a matrix they give, is
+    checked per medium by TestSensitivity.
     """
 
     def setUp(self):
@@ -612,17 +613,6 @@ class TestComputeL(unittest.TestCase):
         self.assertLess(np.max(np.abs(L @ np.full(self.ncells, 0.5) - tt)),
                         1.e-9)
 
-    def _check_two_blocks(self, aniso):
-        g = self._grid(aniso)
-        tt, L = g.raytrace(self.src, self.rcv, compute_L=True)
-        self.assertEqual(L.shape, (self.rcv.shape[0], 2*self.ncells))
-        L = L.toarray()
-        sx = L[:, :self.ncells].sum(axis=1)
-        sz = L[:, self.ncells:].sum(axis=1)
-        # the two blocks hold the horizontal and vertical extents of the ray
-        self.assertLess(np.max(np.abs(sx - self.dx)/self.dx), 0.02)
-        self.assertLess(np.max(np.abs(sz - self.dz)/self.dz), 0.02)
-
     def test_compute_L_receiver_on_source(self):
         # a receiver coinciding with the source has no path to walk; without a
         # guard the parent walk dereferenced nodes[T2::max()] and crashed
@@ -665,14 +655,115 @@ class TestComputeL(unittest.TestCase):
                             'd(tt)/d(%s) disagrees with a finite difference'
                             % name)
 
-    # the tilted elliptical and weakly anelliptical cells still report the
-    # components of the ray segment through siv2; they move to the wider
-    # containers, and to derivatives, when the assembly of L is extended
-    def test_compute_L_tilted_elliptical(self):
-        self._check_two_blocks('tilted_elliptical')
 
-    def test_compute_L_weakly_anelliptical(self):
-        self._check_two_blocks('weakly_anelliptical')
+
+class TestSensitivity(unittest.TestCase):
+    """The matrix returned by compute_L, for every anisotropy model.
+
+    L holds one block of ncells columns per medium parameter.  Two things are
+    asked of it: that each block matches a finite difference of the traveltimes
+    with respect to that parameter, and that it satisfies the homogeneity
+    identities, which hold exactly and need no finite difference.
+    """
+
+    # aniso : (setter, base value, step, tolerance) per parameter
+    MEDIA = {
+        'iso': [('set_slowness', 0.5, 1.e-5, 5.e-3)],
+        'elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                       ('set_xi', 1.1, 1.e-5, 5.e-3)],
+        'vti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3)],
+        'tilted_elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                              ('set_xi', 1.1, 1.e-5, 5.e-3),
+                              ('set_tilt_angle', 0.3, 1.e-5, 5.e-3)],
+        'tti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3),
+                   ('set_tilt_angle', 0.3, 1.e-5, 5.e-3)],
+        'weakly_anelliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                                ('set_s2', 0.05, 1.e-5, 5.e-3),
+                                ('set_s4', 0.01, 1.e-5, 5.e-3)],
+        # the group velocity of the coupled cells is tabulated every tenth of a
+        # degree, so a finite difference has to take a much larger step, which
+        # in turn costs it some accuracy
+        'vti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2)],
+        'tti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2),
+                    ('set_tilt_angle', 0.3, 0.02, 5.e-2)],
+    }
+
+    def setUp(self):
+        n, h = 41, 0.05
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.src = np.array([[0.3, 0.3]])
+        self.rcv = np.array([[1.7, 1.6], [1.8, 0.6], [0.6, 1.8]])
+
+    def _grid(self, aniso, bump=None):
+        """bump = (setter, value) replacing the base value of one parameter"""
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso=aniso)
+        for setter, base, _, _ in self.MEDIA[aniso]:
+            value = base
+            if bump is not None and bump[0] == setter:
+                value = bump[1]
+            getattr(g, setter)(np.full(self.ncells, value))
+        return g
+
+    def test_L_shape(self):
+        for aniso, params in self.MEDIA.items():
+            with self.subTest(aniso=aniso):
+                _, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                  compute_L=True)
+                self.assertEqual(L.shape,
+                                 (self.rcv.shape[0], len(params)*self.ncells))
+
+    def test_L_against_finite_differences(self):
+        for aniso, params in self.MEDIA.items():
+            _, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                              compute_L=True)
+            L = L.toarray()
+            for blk, (setter, base, h, tol) in enumerate(params):
+                with self.subTest(aniso=aniso, param=setter):
+                    up = self._grid(aniso, (setter, base+h))
+                    dn = self._grid(aniso, (setter, base-h))
+                    fd = (up.raytrace(self.src, self.rcv) -
+                          dn.raytrace(self.src, self.rcv))/(2*h)
+                    ana = L[:, blk*self.ncells:(blk+1)*self.ncells].sum(axis=1)
+                    den = np.maximum(np.abs(fd), 1.e-6)
+                    self.assertLess(np.max(np.abs(ana-fd)/den), tol)
+
+    def test_L_homogeneity(self):
+        # the traveltime is homogeneous of degree one in a slowness and of
+        # degree minus one in a velocity, and the group velocity of a coupled
+        # cell scales with both of its vertical velocities together
+        for aniso, blk, value, sign in (
+                ('iso', 0, 0.5, 1.), ('elliptical', 0, 0.5, 1.),
+                ('tilted_elliptical', 0, 0.5, 1.),
+                ('weakly_anelliptical', 0, 0.5, 1.),
+                ('vti_sh', 0, 1.8, -1.), ('tti_sh', 0, 1.8, -1.)):
+            with self.subTest(aniso=aniso):
+                tt, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = L[:, blk*self.ncells:(blk+1)*self.ncells] @ \
+                    np.full(self.ncells, value)
+                self.assertLess(np.max(np.abs(got - sign*tt)/tt), 1.e-9)
+
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                tt, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                       L[:, self.ncells:2*self.ncells] @
+                       np.full(self.ncells, 1.51))
+                self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
 
 
 if __name__ == '__main__':

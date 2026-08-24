@@ -629,19 +629,6 @@ namespace ttcr {
                              siv<T>& cell) const {
             throw std::logic_error("Error: computeDistance with siv not defined for CellTiltedElliptical.");
         }
-        /**
-         * @brief Components of a ray segment, stored in a siv2 struct
-         * @param[in]  source node from which the ray segment originates
-         * @param[in]  node   end point of the ray segment
-         * @param[out] cell   struct holding the horizontal component of the
-         *                    segment in member `v`, and its vertical component
-         *                    in member `v2`
-         */
-        void computeDistance(const NODE& source, const S& node,
-                             siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
-        }
 
         /**
          * @brief Sensitivity of a segment traveltime to the medium parameters
@@ -1325,19 +1312,6 @@ namespace ttcr {
                              siv<T>& cell) const {
             throw std::logic_error("Error: computeDistance with siv not defined for CellVTI_PSV.");
         }
-        /**
-         * @brief Components of a ray segment, stored in a siv2 struct
-         * @param[in]  source node from which the ray segment originates
-         * @param[in]  node   end point of the ray segment
-         * @param[out] cell   struct holding the horizontal component of the
-         *                    segment in member `v`, and its vertical component
-         *                    in member `v2`
-         */
-        void computeDistance(const NODE& source, const S& node,
-                             siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
-        }
 
         /**
          * @brief Sensitivity of a segment traveltime to the medium parameters
@@ -1617,23 +1591,6 @@ namespace ttcr {
             throw std::logic_error("Error: computeDistance with siv not defined for CellTTI_PSV.");
         }
 
-        /**
-         * @brief Components of a ray segment, stored in a siv2 struct
-         * @param[in]  source node from which the ray segment originates
-         * @param[in]  node   end point of the ray segment
-         * @param[out] cell   struct holding the horizontal component of the
-         *                    segment in member `v`, and its vertical component
-         *                    in member `v2`
-         *
-         * @note As for the other anisotropic classes, these two components do
-         * not suffice to form the sensitivity of the traveltime to the medium
-         * parameters of a tilted transversely isotropic cell.
-         */
-        void computeDistance(const NODE& source, const S& node,
-                             siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
-        }
 
         /**
          * @brief Sensitivity of a segment traveltime to the medium parameters
@@ -2055,23 +2012,6 @@ namespace ttcr {
             throw std::logic_error("Error: computeDistance with siv not defined for CellTTI_SH.");
         }
 
-        /**
-         * @brief Components of a ray segment, stored in a siv2 struct
-         * @param[in]  source node from which the ray segment originates
-         * @param[in]  node   end point of the ray segment
-         * @param[out] cell   struct holding the horizontal component of the
-         *                    segment in member `v`, and its vertical component
-         *                    in member `v2`
-         *
-         * @note As for the other anisotropic classes, these two components do
-         * not suffice to form the sensitivity of the traveltime to the medium
-         * parameters of a tilted transversely isotropic cell.
-         */
-        void computeDistance(const NODE& source, const S& node,
-                             siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
-        }
 
         /**
          * @brief Sensitivity of a segment traveltime to the medium parameters
@@ -2312,19 +2252,6 @@ namespace ttcr {
         void computeDistance(const NODE& source, const S& node,
                              siv<T>& cell) const {
             throw std::logic_error("Error: computeDistance with siv not defined for CellWeaklyAnelliptical.");
-        }
-        /**
-         * @brief Components of a ray segment, stored in a siv2 struct
-         * @param[in]  source node from which the ray segment originates
-         * @param[in]  node   end point of the ray segment
-         * @param[out] cell   struct holding the horizontal component of the
-         *                    segment in member `v`, and its vertical component
-         *                    in member `v2`
-         */
-        void computeDistance(const NODE& source, const S& node,
-                             siv2<T>& cell) const {
-            cell.v  = std::abs(node.x - source.getX());
-            cell.v2 = std::abs(node.z - source.getZ());
         }
 
         /**

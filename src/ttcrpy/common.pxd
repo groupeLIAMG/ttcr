@@ -23,6 +23,23 @@ cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
         T v
         T v2
 
+    cdef cppclass siv4[T]:
+        siv4() except +
+        size_t i
+        T v
+        T v2
+        T v3
+        T v4
+
+    cdef cppclass siv5[T]:
+        siv5() except +
+        size_t i
+        T v
+        T v2
+        T v3
+        T v4
+        T v5
+
     cdef cppclass sijv[T]:
         sijv(size_t, T) except +
         size_t i
