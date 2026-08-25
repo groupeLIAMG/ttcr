@@ -208,6 +208,146 @@ class TestAniso(unittest.TestCase):
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'SPM accuracy failed (elliptical anisotropy)')
 
+class TestSensitivity(unittest.TestCase):
+    """The matrix returned by compute_L on a triangular mesh.
+
+    L holds one block of ncells columns per medium parameter.  Three things are
+    asked of it: that it has the width the model calls for, that each block
+    matches a finite difference of the traveltimes with respect to that
+    parameter, and that it satisfies the homogeneity identities, which hold
+    exactly and need no finite difference.
+
+    That last one is the check the mesh could not pass while it took the length
+    of every segment itself instead of asking the cells: the matrix was one of
+    path lengths, so L times the slowness reproduced the traveltime of an
+    isotropic medium rather than the one the call returned.
+    """
+
+    # aniso : (setter, base value, step, tolerance) per parameter
+    MEDIA = {
+        'iso': [('set_slowness', 0.5, 1.e-5, 5.e-3)],
+        'elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                       ('set_xi', 1.1, 1.e-5, 5.e-3)],
+        'vti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3)],
+        'tilted_elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                              ('set_xi', 1.1, 1.e-5, 5.e-3),
+                              ('set_tilt_angle', 0.3, 1.e-5, 5.e-3)],
+        'tti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3),
+                   ('set_tilt_angle', 0.3, 1.e-5, 5.e-3)],
+        'weakly_anelliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                                ('set_s2', 0.05, 1.e-5, 5.e-3),
+                                ('set_s4', 0.01, 1.e-5, 5.e-3)],
+        # the group velocity of the coupled cells is tabulated every tenth of a
+        # degree, so a finite difference has to take a much larger step, which
+        # in turn costs it some accuracy
+        'vti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2)],
+        'tti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2),
+                    ('set_tilt_angle', 0.3, 0.02, 5.e-2)],
+    }
+
+    # the parameter the traveltime is homogeneous in, the block holding its
+    # derivative, and the degree: +1 for a slowness, -1 for a velocity
+    HOMOGENEOUS = {
+        'iso': (0.5, 0, 1.), 'elliptical': (0.5, 0, 1.),
+        'tilted_elliptical': (0.5, 0, 1.), 'weakly_anelliptical': (0.5, 0, 1.),
+        'vti_sh': (1.8, 0, -1.), 'tti_sh': (1.8, 0, -1.),
+    }
+
+    def setUp(self):
+        # a triangulated square, built here so that the medium is uniform and
+        # the identities above are exact
+        n = 9
+        xs = np.linspace(0., 1., n)
+        X, Z = np.meshgrid(xs, xs, indexing='ij')
+        self.nodes = np.column_stack([X.ravel(), Z.ravel()])
+        tri = []
+        for i in range(n-1):
+            for j in range(n-1):
+                a, b = i*n+j, (i+1)*n+j
+                c, d = i*n+j+1, (i+1)*n+j+1
+                tri.append([a, b, c])
+                tri.append([b, d, c])
+        self.tri = np.array(tri, dtype=np.int64)
+        self.ncells = self.tri.shape[0]
+        self.src = np.array([[0.15, 0.15]])
+        self.rcv = np.array([[0.85, 0.8], [0.85, 0.25], [0.3, 0.85]])
+
+    def _mesh(self, aniso, bump=None):
+        """bump = (setter, value) replacing the base value of one parameter"""
+        m = tm.Mesh2d(self.nodes, self.tri, method='SPM', aniso=aniso,
+                      n_secondary=10, cell_slowness=1)
+        for setter, base, _, _ in self.MEDIA[aniso]:
+            value = base
+            if bump is not None and bump[0] == setter:
+                value = bump[1]
+            getattr(m, setter)(np.full(self.ncells, value))
+        return m
+
+    def test_L_shape(self):
+        for aniso, params in self.MEDIA.items():
+            with self.subTest(aniso=aniso):
+                _, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                                  compute_L=True)
+                self.assertEqual(L.shape,
+                                 (self.rcv.shape[0], len(params)*self.ncells))
+
+    def test_L_against_finite_differences(self):
+        for aniso, params in self.MEDIA.items():
+            _, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                              compute_L=True)
+            L = L.toarray()
+            for blk, (setter, base, h, tol) in enumerate(params):
+                with self.subTest(aniso=aniso, param=setter):
+                    up = self._mesh(aniso, (setter, base+h))
+                    dn = self._mesh(aniso, (setter, base-h))
+                    fd = (up.raytrace(self.src, self.rcv) -
+                          dn.raytrace(self.src, self.rcv))/(2*h)
+                    ana = L[:, blk*self.ncells:(blk+1)*self.ncells].sum(axis=1)
+                    den = np.maximum(np.abs(fd), 1.e-6)
+                    self.assertLess(np.max(np.abs(ana-fd)/den), tol)
+
+    def test_L_homogeneity(self):
+        # the traveltime is homogeneous of degree one in a slowness and of
+        # degree minus one in a velocity
+        for aniso, (value, blk, sign) in self.HOMOGENEOUS.items():
+            with self.subTest(aniso=aniso):
+                tt, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = L[:, blk*self.ncells:(blk+1)*self.ncells] @ \
+                    np.full(self.ncells, value)
+                self.assertLess(np.max(np.abs(got - sign*tt)/tt), 1.e-9)
+
+        # the group velocity of a coupled cell scales with both of its vertical
+        # velocities together
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                tt, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                       L[:, self.ncells:2*self.ncells] @
+                       np.full(self.ncells, 1.51))
+                self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+    def test_L_does_not_change_traveltimes(self):
+        # asking for the matrix must not change the traveltimes
+        for aniso in self.MEDIA:
+            with self.subTest(aniso=aniso):
+                tt_plain = self._mesh(aniso).raytrace(self.src, self.rcv)
+                tt_L, _ = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                                     compute_L=True)
+                self.assertLess(np.max(np.abs(tt_L-tt_plain)), 1.e-9)
+
+
 class TestWeakly(unittest.TestCase):
 
     def setUp(self):
