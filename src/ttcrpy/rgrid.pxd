@@ -170,6 +170,7 @@ cdef extern from "Grid2D.h" namespace "ttcr" nogil:
         void getSlowness(vector[T1]&) except +
         void setXi(vector[T1]&) except +
         void setTiltAngle(vector[T1]&) except +
+        void setPhase(int) except +
         void setVp0(vector[T1]&) except +
         void setVs0(vector[T1]&) except +
         void setDelta(vector[T1]&) except +

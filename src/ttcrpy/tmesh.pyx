@@ -1254,6 +1254,7 @@ cdef class Mesh2d:
     cdef int maxit
     cdef char method
     cdef char iso
+    cdef char phase
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
     cdef double radius_factor_tertiary
@@ -1275,6 +1276,7 @@ cdef class Mesh2d:
         self.maxit = maxit
         self.process_obtuse = process_obtuse
         self.iso = b'i'
+        self.phase = b'P'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -1464,6 +1466,9 @@ cdef class Mesh2d:
                               self.eps, self.maxit, self.process_obtuse,
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp)
+        if self.iso == b'p' or self.iso == b'P':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild2d, (constructor_params,))
 
     @property
@@ -1614,6 +1619,38 @@ cdef class Mesh2d:
         for i in range(xi.size):
             var.push_back(xi[i])
         self.grid.setXi(var)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' and 'tti_psv' media describe both waves; the others
+        raise.  The qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_tilt_angle(self, theta):
         """
@@ -2313,6 +2350,11 @@ def _rebuild3d(constructor_params):
     return g
 
 def _rebuild2d(constructor_params):
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 14:
+        constructor_params, phase = constructor_params[:13], constructor_params[13]
     (nodes, triangles, method, aniso, cell_slowness, n_threads, eps, maxit,
      process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary,
      tt_from_rp) = constructor_params
@@ -2320,4 +2362,6 @@ def _rebuild2d(constructor_params):
     g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, aniso, eps,
                maxit, process_obtuse, n_secondary, n_tertiary,
                radius_factor_tertiary, tt_from_rp)
+    if phase is not None:
+        g.set_phase(phase)
     return g

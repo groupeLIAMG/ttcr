@@ -2844,6 +2844,7 @@ cdef class Grid2d_d:
     cdef size_t _n_threads
     cdef char method
     cdef char iso
+    cdef char phase
     cdef double eps
     cdef int maxit
     cdef bool weno
@@ -2882,6 +2883,7 @@ cdef class Grid2d_d:
         self.nsnx = nsnx
         self.nsnz = nsnz
         self.iso = b'i'
+        self.phase = b'P'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -3020,6 +3022,9 @@ cdef class Grid2d_d:
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp,
                               self.fsm_gpu)
+        if self.iso == b'p' or self.iso == b'P':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild2d_d, (self.x, self.z, constructor_params))
 
     @property
@@ -3289,6 +3294,38 @@ cdef class Grid2d_d:
         else:
             raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' and 'tti_psv' media describe both waves; the others
+        raise.  The qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_tilt_angle(self, theta):
         """
@@ -4591,6 +4628,7 @@ cdef class Grid2d_f:
     cdef size_t _n_threads
     cdef char method
     cdef char iso
+    cdef char phase
     cdef float eps
     cdef int maxit
     cdef bool weno
@@ -4629,6 +4667,7 @@ cdef class Grid2d_f:
         self.nsnx = nsnx
         self.nsnz = nsnz
         self.iso = b'i'
+        self.phase = b'P'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -4767,6 +4806,9 @@ cdef class Grid2d_f:
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp,
                               self.fsm_gpu)
+        if self.iso == b'p' or self.iso == b'P':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild2d_f, (self.x, self.z, constructor_params))
 
     @property
@@ -4937,6 +4979,38 @@ cdef class Grid2d_f:
         else:
             raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' and 'tti_psv' media describe both waves; the others
+        raise.  The qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_tilt_angle(self, theta):
         if self.cell_slowness:
@@ -5792,22 +5866,36 @@ Grid3d.builder = Grid3d_d.builder
 Grid3d.data_kernel_straight_rays = Grid3d_d.data_kernel_straight_rays
 
 def _rebuild2d_d(x, z, constructor_params):
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 16:
+        constructor_params, phase = constructor_params[:15], constructor_params[15]
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
      radius_factor_tertiary, tt_from_rp, fsm_gpu) = constructor_params
     g = Grid2d_d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                  rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
                  radius_factor_tertiary, tt_from_rp, fsm_gpu)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 
 def _rebuild2d_f(x, z, constructor_params):
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 16:
+        constructor_params, phase = constructor_params[:15], constructor_params[15]
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
      radius_factor_tertiary, tt_from_rp, fsm_gpu) = constructor_params
     g = Grid2d_f(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                  rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
                  radius_factor_tertiary, tt_from_rp, fsm_gpu)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 

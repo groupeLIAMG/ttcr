@@ -497,6 +497,10 @@ namespace ttcr {
         virtual void setTiltAngle(const std::vector<T1>& x) {
             throw std::runtime_error("Method setTiltAngle should be implemented in subclass");
         }
+        /// @brief Select the phase to model, qP or qSV. Subclass must override.
+        virtual void setPhase(const int p) {
+            throw std::runtime_error("Method setPhase should be implemented in subclass");
+        }
         /// @brief Set the P-wave axial velocity Vp0. Subclass must override.
         virtual void setVp0(const std::vector<T1>& s) {
             throw std::runtime_error("Method setVp0 should be implemented in subclass");

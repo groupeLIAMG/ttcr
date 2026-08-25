@@ -348,6 +348,89 @@ class TestSensitivity(unittest.TestCase):
                 self.assertLess(np.max(np.abs(tt_L-tt_plain)), 1.e-9)
 
 
+class TestPhaseAndPickle(unittest.TestCase):
+    """Choosing the wave modelled, and rebuilding a mesh from a pickle.
+
+    A mesh could not be pickled at all before: __reduce__ handed the whole
+    parameter tuple to _rebuild2d as positional arguments rather than as one,
+    and _rebuild2d did not take the anisotropy of the mesh from it.
+    """
+
+    def setUp(self):
+        n = 7
+        xs = np.linspace(0., 1., n)
+        X, Z = np.meshgrid(xs, xs, indexing='ij')
+        self.nodes = np.column_stack([X.ravel(), Z.ravel()])
+        tri = []
+        for i in range(n-1):
+            for j in range(n-1):
+                a, b = i*n+j, (i+1)*n+j
+                c, d = i*n+j+1, (i+1)*n+j+1
+                tri.append([a, b, c])
+                tri.append([b, d, c])
+        self.tri = np.array(tri, dtype=np.int64)
+        self.ncells = self.tri.shape[0]
+        self.src = np.array([[0.15, 0.15]])
+        self.rcv = np.array([[0.85, 0.8], [0.85, 0.25]])
+
+    def _mesh(self, aniso='vti_psv', phase=None):
+        m = tm.Mesh2d(self.nodes, self.tri, method='SPM', aniso=aniso,
+                      n_secondary=8)
+        if aniso in ('vti_psv', 'tti_psv'):
+            m.set_Vp0(np.full(self.ncells, 3.094))
+            m.set_Vs0(np.full(self.ncells, 1.51))
+            m.set_epsilon(np.full(self.ncells, 0.256))
+            m.set_delta(np.full(self.ncells, -0.0505))
+            if aniso == 'tti_psv':
+                m.set_tilt_angle(np.full(self.ncells, 0.3))
+        else:
+            m.set_slowness(np.full(self.ncells, 0.5))
+            m.set_xi(np.full(self.ncells, 1.1))
+        if phase is not None:
+            m.set_phase(phase)
+        return m
+
+    def test_qSV_is_slower_than_qP(self):
+        tp = self._mesh('vti_psv', 'qP').raytrace(self.src, self.rcv)
+        ts = self._mesh('vti_psv', 'qSV').raytrace(self.src, self.rcv)
+        self.assertTrue(np.all(ts > tp))
+
+    def test_sensitivity_follows_the_phase(self):
+        for phase in ('qP', 'qSV'):
+            with self.subTest(phase=phase):
+                tt, L = self._mesh('vti_psv', phase).raytrace(
+                    self.src, self.rcv, compute_L=True)
+                L = L.toarray()
+                got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                       L[:, self.ncells:2*self.ncells] @
+                       np.full(self.ncells, 1.51))
+                self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+    def test_pickle_keeps_the_anisotropy(self):
+        import pickle
+        m = self._mesh('elliptical')
+        tt = m.raytrace(self.src, self.rcv)
+        m2 = pickle.loads(pickle.dumps(m))
+        # a pickle carries the geometry and the options, not the medium
+        m2.set_slowness(np.full(self.ncells, 0.5))
+        m2.set_xi(np.full(self.ncells, 1.1))
+        self.assertTrue(np.allclose(tt, m2.raytrace(self.src, self.rcv)))
+
+    def test_pickle_keeps_the_phase(self):
+        import pickle
+        for phase in ('qP', 'qSV'):
+            with self.subTest(phase=phase):
+                m = self._mesh('vti_psv', phase)
+                tt = m.raytrace(self.src, self.rcv)
+                m2 = pickle.loads(pickle.dumps(m))
+                m2.set_Vp0(np.full(self.ncells, 3.094))
+                m2.set_Vs0(np.full(self.ncells, 1.51))
+                m2.set_epsilon(np.full(self.ncells, 0.256))
+                m2.set_delta(np.full(self.ncells, -0.0505))
+                self.assertTrue(np.allclose(
+                    tt, m2.raytrace(self.src, self.rcv)))
+
+
 class TestWeakly(unittest.TestCase):
 
     def setUp(self):

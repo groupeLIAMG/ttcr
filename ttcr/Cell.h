@@ -118,6 +118,11 @@ namespace ttcr {
         }
 
         /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: phase not defined for Cell.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
         void setXi(const std::vector<T>& s) {
             throw std::logic_error("Error: xi not defined for Cell.");
         }
@@ -306,6 +311,11 @@ namespace ttcr {
             for ( size_t n=0; n<xi.size(); ++n ) {
                 xi[n] = s[n]*s[n];
             }
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: phase not defined for CellElliptical.");
         }
 
         /// @brief Not applicable: always throws std::logic_error
@@ -524,6 +534,11 @@ namespace ttcr {
                 ca[n] = std::cos(s[n]);
                 sa[n] = std::sin(s[n]);
             }
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: phase not defined for CellTiltedElliptical.");
         }
 
         /// @brief Not applicable: always throws std::logic_error
@@ -1711,6 +1726,11 @@ namespace ttcr {
         }
 
         /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: phase not defined for CellVTI_SH.");
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
         void setSlowness(const std::vector<T>& s) {
             throw std::logic_error("Error: slowness not defined for CellVTI_SH.");
         }
@@ -1921,6 +1941,11 @@ namespace ttcr {
                 ca[n] = std::cos(s[n]);
                 sa[n] = std::sin(s[n]);
             }
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: phase not defined for CellTTI_SH.");
         }
 
         /// @brief Not applicable: always throws std::logic_error
@@ -2150,6 +2175,11 @@ namespace ttcr {
                 throw std::length_error("Error: s4 vectors of incompatible size.");
             }
             s4 = r;
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: phase not defined for CellWeaklyAnelliptical.");
         }
 
         /// @brief Not applicable: always throws std::logic_error

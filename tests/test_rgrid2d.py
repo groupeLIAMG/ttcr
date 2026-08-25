@@ -766,6 +766,97 @@ class TestSensitivity(unittest.TestCase):
                 self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
 
 
+class TestPhase(unittest.TestCase):
+    """Choosing the wave modelled in a transversely isotropic medium.
+
+    The coupled cells describe both a quasi-compressional and a quasi-shear
+    wave; the qP one is modelled until set_phase says otherwise.
+    """
+
+    def setUp(self):
+        n, h = 41, 0.05
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.src = np.array([[0.3, 0.3]])
+        self.rcv = np.array([[1.7, 1.6], [1.8, 0.6]])
+
+    def _grid(self, aniso='vti_psv', phase=None):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso=aniso)
+        g.set_Vp0(np.full(self.ncells, 3.094))
+        g.set_Vs0(np.full(self.ncells, 1.51))
+        g.set_epsilon(np.full(self.ncells, 0.256))
+        g.set_delta(np.full(self.ncells, -0.0505))
+        if aniso == 'tti_psv':
+            g.set_tilt_angle(np.full(self.ncells, 0.3))
+        if phase is not None:
+            g.set_phase(phase)
+        return g
+
+    def test_qSV_is_slower_than_qP(self):
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                tp = self._grid(aniso, 'qP').raytrace(self.src, self.rcv)
+                ts = self._grid(aniso, 'qSV').raytrace(self.src, self.rcv)
+                self.assertTrue(np.all(ts > tp))
+
+    def test_qP_is_the_default(self):
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                self.assertTrue(np.allclose(
+                    self._grid(aniso).raytrace(self.src, self.rcv),
+                    self._grid(aniso, 'qP').raytrace(self.src, self.rcv)))
+
+    def test_integers_of_the_cpp_setter(self):
+        # setPhase takes 1 for qP and anything else for qSV
+        self.assertTrue(np.allclose(
+            self._grid('vti_psv', 1).raytrace(self.src, self.rcv),
+            self._grid('vti_psv', 'qP').raytrace(self.src, self.rcv)))
+        self.assertTrue(np.allclose(
+            self._grid('vti_psv', 2).raytrace(self.src, self.rcv),
+            self._grid('vti_psv', 'qSV').raytrace(self.src, self.rcv)))
+
+    def test_sensitivity_follows_the_phase(self):
+        # the identity must hold whichever wave is modelled
+        for phase in ('qP', 'qSV'):
+            with self.subTest(phase=phase):
+                tt, L = self._grid('vti_psv', phase).raytrace(
+                    self.src, self.rcv, compute_L=True)
+                L = L.toarray()
+                got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                       L[:, self.ncells:2*self.ncells] @
+                       np.full(self.ncells, 1.51))
+                self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+    def test_a_medium_without_a_phase_refuses(self):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso='elliptical')
+        g.set_slowness(np.full(self.ncells, 0.5))
+        g.set_xi(np.full(self.ncells, 1.1))
+        self.assertRaises(RuntimeError, g.set_phase, 'qSV')
+        self.assertRaises(ValueError, self._grid('vti_psv').set_phase, 'qX')
+
+    def test_phase_survives_a_pickle(self):
+        import pickle
+        for aniso in ('vti_psv', 'tti_psv'):
+            for phase in ('qP', 'qSV'):
+                with self.subTest(aniso=aniso, phase=phase):
+                    g = self._grid(aniso, phase)
+                    tt = g.raytrace(self.src, self.rcv)
+                    # a pickle carries the geometry and the options, not the
+                    # medium, which has to be given to the rebuilt grid again
+                    g2 = pickle.loads(pickle.dumps(g))
+                    g2.set_Vp0(np.full(self.ncells, 3.094))
+                    g2.set_Vs0(np.full(self.ncells, 1.51))
+                    g2.set_epsilon(np.full(self.ncells, 0.256))
+                    g2.set_delta(np.full(self.ncells, -0.0505))
+                    if aniso == 'tti_psv':
+                        g2.set_tilt_angle(np.full(self.ncells, 0.3))
+                    self.assertTrue(np.allclose(
+                        tt, g2.raytrace(self.src, self.rcv)))
+
+
 if __name__ == '__main__':
 
     unittest.main()

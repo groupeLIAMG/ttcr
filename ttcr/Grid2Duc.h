@@ -211,6 +211,18 @@ namespace ttcr {
          * @param s one value per triangle.
          * @throws std::exception if the @c CELL policy is not VTI.
          */
+        /**
+         * @brief Select the phase to model in a transversely isotropic medium.
+         * @param p 1 for the qP wave, any other value for the qSV wave.
+         * @throws std::exception if the @c CELL policy describes no such choice.
+         */
+        void setPhase(const int p) {
+            try {
+                cells.setPhase(p);
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
         void setVp0(const std::vector<T1>& s) {
             try {
                 cells.setVp0(s);
