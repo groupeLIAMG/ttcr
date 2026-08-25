@@ -639,6 +639,27 @@ namespace ttcr {
         }
     };
 
+    /**
+     * @brief Whether a cell class reports its sensitivity into a given container
+     *
+     * The number of values a cell reports is the number of medium parameters it
+     * describes, so each cell class provides computeDistance() for one container
+     * only.  A grid, however, has to override every raytrace() of Grid2D,
+     * whichever cells it holds, and the overrides are emitted with the vtable
+     * whether or not they are ever called.  This tells them apart, so that the
+     * ones the cells cannot serve fail when called rather than when compiled.
+     */
+    template<typename CELL, typename SIV, typename NODE, typename S,
+             typename = void>
+    struct cell_reports_into : std::false_type {};
+
+    template<typename CELL, typename SIV, typename NODE, typename S>
+    struct cell_reports_into<CELL, SIV, NODE, S,
+        std::void_t<decltype(std::declval<const CELL&>().computeDistance(
+            std::declval<const NODE&>(), std::declval<const S&>(),
+            std::declval<SIV&>()))>> : std::true_type {};
+
+
 
     /**
      * @brief Parameters of a single transmitter (source).
