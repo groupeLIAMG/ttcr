@@ -5,7 +5,7 @@ from libc.stdint cimport uint32_t, int64_t
 from libc.math cimport sqrt
 from libcpp cimport bool
 
-from ttcrpy.common cimport sxz, sxyz, siv, siv2, siv4, siv5, sijv, \
+from ttcrpy.common cimport sxz, sxyz, siv, siv2, siv4, siv5, sijv, l_nparams, \
     Node3Dc, Node3Dcsp, \
 Node3Dn, Node3Dnsp, Cell, CellElliptical, CellTiltedElliptical, CellVTI_PSV, \
 CellVTI_SH, CellTTI_PSV, CellTTI_SH, CellWeaklyAnelliptical, Node2Dcsp, \

@@ -2766,20 +2766,6 @@ cdef class Grid3d_f:
         return g
 
 
-cdef int _l_nparams(char iso):
-    """Number of medium parameters of an anisotropy model, and so the number of
-    blocks of columns the matrix of sensitivities holds."""
-    if iso == b'e' or iso == b'h':
-        return 2
-    elif iso == b't' or iso == b'H' or iso == b'w':
-        return 3
-    elif iso == b'p':
-        return 4
-    elif iso == b'P':
-        return 5
-    return 1
-
-
 cdef class Grid2d_d:
     """
     class to perform raytracing with 2D rectilinear grids (double precision)
@@ -4016,7 +4002,7 @@ cdef class Grid2d_d:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
-        nparams = _l_nparams(self.iso)
+        nparams = l_nparams(self.iso)
         if compute_L:
             if nparams == 1:
                 l_data.resize(nTx)
@@ -5419,7 +5405,7 @@ cdef class Grid2d_f:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
-        nparams = _l_nparams(self.iso)
+        nparams = l_nparams(self.iso)
         if compute_L:
             if nparams == 1:
                 l_data.resize(nTx)
