@@ -914,7 +914,7 @@ cdef class Grid3d_d:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
             
         if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L defined for the FSM')
+            raise NotImplementedError('compute_L not defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:
@@ -2345,7 +2345,7 @@ cdef class Grid3d_f:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
 
         if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L defined for the FSM')
+            raise NotImplementedError('compute_L not defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:
