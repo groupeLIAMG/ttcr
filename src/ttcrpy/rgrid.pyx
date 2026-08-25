@@ -852,22 +852,7 @@ cdef class Grid3d_d:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to the
-            medium parameters.  L holds one block of ncells columns per
-            parameter, in the order the setters take them:
-
-            ==================== ==========================================
-            aniso                blocks of columns
-            ==================== ==========================================
-            iso                  slowness
-            elliptical           slowness, xi
-            vti_sh               Vs0, gamma
-            tilted_elliptical    slowness, xi, tilt angle
-            tti_sh               Vs0, gamma, tilt angle
-            weakly_anelliptical  slowness, s2, s4
-            vti_psv              Vp0, Vs0, epsilon, delta
-            tti_psv              Vp0, Vs0, epsilon, delta, tilt angle
-            ==================== ========================================== (implemeted for the SPM & DSPM with slowness
+            Compute matrices of partial derivative of travel time w/r to slowness (implemeted for the SPM & DSPM with slowness
                 defined at cells).
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
@@ -3906,6 +3891,7 @@ cdef class Grid2d_d:
             vti_psv              Vp0, Vs0, epsilon, delta
             tti_psv              Vp0, Vs0, epsilon, delta, tilt angle
             ==================== ==========================================
+
         return_rays : bool (False by default)
             Return raypaths
 

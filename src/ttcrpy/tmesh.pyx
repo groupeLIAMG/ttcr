@@ -1823,8 +1823,6 @@ cdef class Mesh2d:
             tti_sh; slowness, s2 and s4 for weakly_anelliptical; Vp0, Vs0,
             epsilon and delta for vti_psv; and those four with the tilt angle
             for tti_psv.
-            Compute matrices of partial derivative of travel time w/r to
-            slowness
         return_rays : bool (False by default)
             Return raypaths
 
