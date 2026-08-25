@@ -51,7 +51,7 @@ Transversely isotropic, SH wave
 -------------------------------
 
 The medium is described by the vertical S-wave velocity :math:`V_{S0}` and by
-Thomsen's :math:`\gamma`.  The phase velocity, for a phase angle :math:`\theta`
+Thomsen's :math:`\gamma` (Thomsen, 1986).  The phase velocity, for a phase angle :math:`\theta`
 measured from the symmetry axis, is
 
 .. math::
@@ -66,7 +66,8 @@ Transversely isotropic, qP and qSV waves
 The medium is described by the two vertical velocities :math:`V_{P0}` and
 :math:`V_{S0}` and by Thomsen's :math:`\epsilon` and :math:`\delta`.  The
 compressional and shear waves are coupled, their phase velocities being the two
-roots of one quartic, and the medium is not restricted to weak anisotropy.
+roots of one quartic.  The expression used is the exact one, so the medium is
+not restricted to weak anisotropy (Thomsen, 1986; Tsvankin, 2012).
 
 The wave to model is chosen with ``set_phase``:
 
@@ -81,8 +82,8 @@ else for qSV, are accepted as well.
 Weakly anelliptical
 -------------------
 
-The formulation of B. Rommel, in which the energy velocity is expanded in powers
-of :math:`\sin^2\theta`,
+The formulation of Rommel (2024), in which the energy velocity is expanded in
+powers of :math:`\sin^2\theta`,
 
 .. math::
 
@@ -116,8 +117,8 @@ Phase and group velocity
 In an anisotropic medium the traveltime along a ray segment is its length
 divided by the **group** (or energy) velocity taken in the direction of the
 segment, not by the phase velocity.  The two differ everywhere except along the
-symmetry directions, the group slowness being the support function of the phase
-slowness surface,
+symmetry directions (Červený, 2001), the group slowness being the support
+function of the phase slowness surface,
 
 .. math::
 
@@ -240,3 +241,37 @@ grid or mesh rebuilt from a pickle has to be given them again:
 
    g2 = pickle.loads(pickle.dumps(g))
    g2.set_Vp0(np.full(ncells, 3.094))      # and the rest
+
+References
+==========
+
+- Thomsen, L., 1986. Weak elastic anisotropy. Geophysics, 51(10), 1954-1966.
+  DOI : 10.1190/1.1442051
+  https://library.seg.org/doi/10.1190/1.1442051
+
+  The parameters :math:`\epsilon`, :math:`\delta` and :math:`\gamma` used here
+  to describe transversely isotropic media, and the exact phase velocities from
+  which the weak-anisotropy approximations are drawn.
+
+- Tsvankin, I., 2012. Seismic Signatures and Analysis of Reflection Data in
+  Anisotropic Media, 3rd edition. Society of Exploration Geophysicists,
+  Geophysical References Series No. 19.
+
+  Phase and group velocities of transversely isotropic media, and the coupling
+  of the qP and qSV waves.
+
+- Červený, V., 2001. Seismic Ray Theory. Cambridge University Press.
+
+  Ray theory in anisotropic media, and the relation between the phase and the
+  group velocity that the traveltime along a ray segment rests on.
+
+- Rommel, B. E., 2024. Weakly anelliptical traveltime analysis: Ambiguity
+  between subsurface and elasticity. Geophysics, 89(4), C171-C182.
+  DOI : 10.1190/geo2023-0274.1
+  https://library.seg.org/doi/10.1190/geo2023-0274.1
+
+  The weakly anelliptical model, and the notation this package follows for it.
+  The companion material is at
+  https://github.com/bjornrommel/steinkauz
+
+See also the :ref:`references` describing the algorithms themselves.
