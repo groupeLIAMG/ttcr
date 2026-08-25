@@ -284,7 +284,7 @@ cdef class Mesh3d:
                               self.eps, self.maxit, self.gradient_method,
                               self.min_dist, self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.translate_grid)
-        return (_rebuild3d, constructor_params)
+        return (_rebuild3d, (constructor_params,))
 
     @property
     def n_threads(self):
@@ -1464,7 +1464,7 @@ cdef class Mesh2d:
                               self.eps, self.maxit, self.process_obtuse,
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp)
-        return (_rebuild2d, constructor_params)
+        return (_rebuild2d, (constructor_params,))
 
     @property
     def n_threads(self):
@@ -2313,10 +2313,11 @@ def _rebuild3d(constructor_params):
     return g
 
 def _rebuild2d(constructor_params):
-    (nodes, triangles, method, cell_slowness, n_threads, eps, maxit,
+    (nodes, triangles, method, aniso, cell_slowness, n_threads, eps, maxit,
      process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary,
      tt_from_rp) = constructor_params
 
-    g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit,
-        process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp)
+    g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, aniso, eps,
+               maxit, process_obtuse, n_secondary, n_tertiary,
+               radius_factor_tertiary, tt_from_rp)
     return g
