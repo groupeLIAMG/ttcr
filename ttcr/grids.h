@@ -1060,7 +1060,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfm<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(nodes,
+                    g = new Grid3Ducfm<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.raypath_method,
                                                     par.tt_from_rp,
@@ -1091,7 +1091,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfs<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(nodes,
+                    g = new Grid3Ducfs<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.epsilon,
                                                     par.nitermax,
@@ -1128,7 +1128,7 @@ namespace ttcr {
                 ptsRef.push_back( {xmax, ymax, zmin} );
                 ptsRef.push_back( {xmax, ymax, zmax} );
                 if ( constCells )
-                    dynamic_cast<Grid3Ducfs<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 else
                     dynamic_cast<Grid3Dunfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -1157,7 +1157,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducdsp<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(nodes,
+                    g = new Grid3Ducdsp<T, uint32_t>(nodes,
                                                      tetrahedra,
                                                      par.nn[0],
                                                      par.nTertiary,
@@ -1399,7 +1399,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfm<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(nodes,
+                    g = new Grid3Ducfm<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.raypath_method,
                                                     par.tt_from_rp,
@@ -1437,7 +1437,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducfs<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(nodes,
+                    g = new Grid3Ducfs<T, uint32_t>(nodes,
                                                     tetrahedra,
                                                     par.epsilon,
                                                     par.nitermax,
@@ -1475,7 +1475,7 @@ namespace ttcr {
                 ptsRef.push_back( {xmax, ymax, zmin} );
                 ptsRef.push_back( {xmax, ymax, zmax} );
                 if ( constCells )
-                    dynamic_cast<Grid3Ducfs<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>*>(g)->initOrdering( ptsRef, par.order );
+                    dynamic_cast<Grid3Ducfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 else
                     dynamic_cast<Grid3Dunfs<T, uint32_t>*>(g)->initOrdering( ptsRef, par.order );
                 if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
@@ -1504,7 +1504,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducdsp<T, uint32_t, Cell<T,Node3Dc<T,uint32_t>,sxyz<T>>>(nodes,
+                    g = new Grid3Ducdsp<T, uint32_t>(nodes,
                                                      tetrahedra,
                                                      par.nn[0],
                                                      par.nTertiary,

@@ -42,7 +42,7 @@
 
 namespace ttcr {
 
-    template<typename T1, typename T2, typename CELL>
+    template<typename T1, typename T2>
     /**
      * @brief Dynamic shortest-path solver on a tetrahedral mesh, slowness per cell.
      *
@@ -64,7 +64,7 @@ namespace ttcr {
      *
      * @sa Grid3Duc.h, Grid2Ducdsp.h, Grid3Ducsp.h, Node3Dcd.h
      */
-    class Grid3Ducdsp : public Grid3Duc<T1,T2,Node3Dc<T1,T2>,CELL> {
+    class Grid3Ducdsp : public Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>> {
     public:
         /**
          * @brief Build the mesh and its permanent nodes.
@@ -92,7 +92,7 @@ namespace ttcr {
                     const int rp, const bool rptt, const T1 min_dist,
                     const T1 drad, const bool useEdgeLength=true,
                     const size_t nt=1, const bool _translateOrigin=false) :
-        Grid3Duc<T1,T2,Node3Dc<T1,T2>,CELL>(no, tet, rp, rptt, min_dist, nt, _translateOrigin),
+        Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>(no, tet, rp, rptt, min_dist, nt, _translateOrigin),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dcd<T1,T2>>>(nt)),
@@ -158,8 +158,8 @@ namespace ttcr {
 
     };
 
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Ducdsp<T1,T2,CELL>::addTemporaryNodes(const std::vector<sxyz<T1>>& Tx,
+    template<typename T1, typename T2>
+    void Grid3Ducdsp<T1,T2>::addTemporaryNodes(const std::vector<sxyz<T1>>& Tx,
                                                const size_t threadNo) const {
 
         // clear previously assigned nodes
@@ -387,8 +387,8 @@ namespace ttcr {
             std::cout << "  *** thread no " << threadNo << ": " << tempNodes[threadNo].size() << " dynamic nodes were added ***" << std::endl;
     }
 
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Ducdsp<T1,T2,CELL>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    template<typename T1, typename T2>
+    void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
                                       const std::vector<sxyz<T1>>& Rx,
                                       const size_t threadNo) const {
@@ -414,8 +414,8 @@ namespace ttcr {
         propagate(queue, inQueue, frozen, threadNo);
     }
 
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Ducdsp<T1,T2,CELL>::raytrace(const std::vector<sxyz<T1>>& Tx,
+    template<typename T1, typename T2>
+    void Grid3Ducdsp<T1,T2>::raytrace(const std::vector<sxyz<T1>>& Tx,
                                       const std::vector<T1>& t0,
                                       const std::vector<std::vector<sxyz<T1>>>& Rx,
                                       const size_t threadNo) const {
@@ -443,8 +443,8 @@ namespace ttcr {
         propagate(queue, inQueue, frozen, threadNo);
     }
 
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Ducdsp<T1,T2,CELL>::initQueue(const std::vector<sxyz<T1>>& Tx,
+    template<typename T1, typename T2>
+    void Grid3Ducdsp<T1,T2>::initQueue(const std::vector<sxyz<T1>>& Tx,
                                        const std::vector<T1>& t0,
                                        std::priority_queue<Node3Dc<T1,T2>*,
                                        std::vector<Node3Dc<T1,T2>*>,
@@ -496,8 +496,8 @@ namespace ttcr {
         }
     }
 
-    template<typename T1, typename T2, typename CELL>
-    void Grid3Ducdsp<T1,T2,CELL>::propagate(std::priority_queue<Node3Dc<T1,T2>*,
+    template<typename T1, typename T2>
+    void Grid3Ducdsp<T1,T2>::propagate(std::priority_queue<Node3Dc<T1,T2>*,
                                        std::vector<Node3Dc<T1,T2>*>,
                                        CompareNodePtr<T1>>& queue,
                                        std::vector<bool>& inQueue,

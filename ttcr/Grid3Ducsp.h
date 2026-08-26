@@ -642,6 +642,132 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename CELL>
+    void Grid3Ducsp<T1,T2,CELL>::initQueue(const std::vector<sxyz<T1>>& Tx,
+                                      const std::vector<T1>& t0,
+                                      std::priority_queue<Node3Dcsp<T1,T2>*,
+                                      std::vector<Node3Dcsp<T1,T2>*>,
+                                      CompareNodePtr<T1>>& queue,
+                                      std::vector<Node3Dcsp<T1,T2>>& txNodes,
+                                      std::vector<bool>& inQueue,
+                                      std::vector<bool>& frozen,
+                                      const size_t threadNo) const {
+
+        for (size_t n=0; n<Tx.size(); ++n) {
+            bool found = false;
+            for ( size_t nn=0; nn<this->nodes.size(); ++nn ) {
+                if ( this->nodes[nn] == Tx[n] ) {
+                    found = true;
+                    this->nodes[nn].setTT( t0[n], threadNo );
+                    queue.push( &(this->nodes[nn]) );
+                    inQueue[nn] = true;
+                    frozen[nn] = true;
+                    break;
+                }
+            }
+            if ( found==false ) {
+                // If Tx[n] is not on a node, we create a new node and initialize the queue:
+                txNodes.push_back( Node3Dcsp<T1,T2>(t0[n], Tx[n].x, Tx[n].y, Tx[n].z,
+                                                    this->nThreads, threadNo));
+                txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
+                txNodes.back().setGridIndex( static_cast<T2>(this->nodes.size()+
+                                                             txNodes.size()-1) );
+                frozen.push_back( true );
+
+                prepropagate(txNodes.back(), queue, inQueue, frozen, threadNo); // See description in the function declaration
+
+                //	queue.push( &(txNodes.back()) );	//Don't use if prepropagate is used
+                //	inQueue.push_back( true );			//Don't use if prepropagate is used
+
+            }
+        }
+    }
+
+
+    template<typename T1, typename T2, typename CELL>
+    void Grid3Ducsp<T1,T2,CELL>::prepropagate(const Node3Dcsp<T1,T2>& node,
+                                         std::priority_queue<Node3Dcsp<T1,T2>*,
+                                         std::vector<Node3Dcsp<T1,T2>*>,
+                                         CompareNodePtr<T1>>& queue,
+                                         std::vector<bool>& inQueue,
+                                         std::vector<bool>& frozen,
+                                         size_t threadNo) const {
+
+        // This function can be used to "prepropagate" each Tx nodes one first time
+        // during "initQueue", before running "propagate".
+        // When a Tx source node seems to be lost in the queue and is not
+        // propagated, corrupting the entire traveltime table,
+        // this function force the propagation of every source points and can
+        // solve the problem.
+
+        for ( size_t no=0; no<node.getOwners().size(); ++no ) {
+            T2 cellNo = node.getOwners()[no];
+            for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                size_t neibNo = this->neighbors[cellNo][k];
+                if ( neibNo == node.getGridIndex() || frozen[neibNo] ) {
+                    continue;
+                }
+
+                // compute dt
+                T1 dt = this->computeDt(node, this->nodes[neibNo], cellNo);
+
+                if ( node.getTT( threadNo )+dt < this->nodes[neibNo].getTT( threadNo ) ) {
+                    this->nodes[neibNo].setTT( node.getTT( threadNo )+dt, threadNo );
+                    this->nodes[neibNo].setnodeParent( node.getGridIndex(), threadNo );
+                    this->nodes[neibNo].setCellParent( cellNo, threadNo );
+
+                    if ( !inQueue[neibNo] ) {
+                        queue.push( &(this->nodes[neibNo]) );
+                        inQueue[neibNo] = true;
+                    }
+                }
+            }
+        }
+    }
+
+
+    template<typename T1, typename T2, typename CELL>
+    void Grid3Ducsp<T1,T2,CELL>::propagate(std::priority_queue<Node3Dcsp<T1,T2>*,
+                                      std::vector<Node3Dcsp<T1,T2>*>,
+                                      CompareNodePtr<T1>>& queue,
+                                      std::vector<bool>& inQueue,
+                                      std::vector<bool>& frozen,
+                                      const size_t threadNo) const {
+
+        while ( !queue.empty() ) {
+            const Node3Dcsp<T1,T2>* src = queue.top();
+            queue.pop();
+            inQueue[ src->getGridIndex() ] = false;
+            frozen[ src->getGridIndex() ] = true;
+
+            for ( size_t no=0; no<src->getOwners().size(); ++no ) {
+
+                T2 cellNo = src->getOwners()[no];
+
+                for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
+                    T2 neibNo = this->neighbors[cellNo][k];
+                    if ( neibNo == src->getGridIndex() || frozen[neibNo] ) {
+                        continue;
+                    }
+
+                    // compute dt
+                    T1 dt = this->computeDt(*src, this->nodes[neibNo], cellNo);
+
+                    if (src->getTT(threadNo)+dt < this->nodes[neibNo].getTT(threadNo)) {
+                        this->nodes[neibNo].setTT( src->getTT(threadNo)+dt, threadNo );
+                        this->nodes[neibNo].setnodeParent(src->getGridIndex(),threadNo);
+                        this->nodes[neibNo].setCellParent(cellNo, threadNo );
+
+                        if ( !inQueue[neibNo] ) {
+                            queue.push( &(this->nodes[neibNo]) );
+                            inQueue[neibNo] = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename CELL>
     template<typename SIV>
     void Grid3Ducsp<T1,T2,CELL>::raytraceSensitivity(const std::vector<sxyz<T1>>& _Tx,
                                                      const std::vector<T1>& t0,
