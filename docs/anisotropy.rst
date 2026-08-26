@@ -4,12 +4,14 @@ Anisotropy
 
 ``ttcrpy`` can compute traveltimes in anisotropic media, and return the
 sensitivity of those traveltimes to the parameters describing the medium.  Both
-are available on 2D rectilinear grids (:class:`ttcrpy.rgrid.Grid2d`) and on 2D
-triangular meshes (:class:`ttcrpy.tmesh.Mesh2d`).
+are available on 2D rectilinear grids (:class:`ttcrpy.rgrid.Grid2d`), on 2D
+triangular meshes (:class:`ttcrpy.tmesh.Mesh2d`) and, for the models with a
+vertical symmetry axis, on 3D rectilinear grids
+(:class:`ttcrpy.rgrid.Grid3d`).
 
 Anisotropy is described cell by cell, so it requires ``cell_slowness=True``, and
-it is implemented for the Shortest-Path Method only, ``method='SPM'``.  The 3D
-classes are isotropic.
+it is implemented for the Shortest-Path Method only, ``method='SPM'``.
+Tetrahedral meshes (:class:`ttcrpy.tmesh.Mesh3d`) are isotropic.
 
 Models
 ======
@@ -18,6 +20,9 @@ The model is chosen with the ``aniso`` argument of the constructor, and its
 parameters are given with the setters listed below.  The order of the setters is
 also the order in which the blocks of the sensitivity matrix appear, so it is
 worth reading the table with :ref:`the section on the Jacobian <jacobian>`.
+
+In two dimensions
+-----------------
 
 =======================  ============================================================================
 ``aniso``                parameters, in the order the setters take them
@@ -35,6 +40,49 @@ worth reading the table with :ref:`the section on the Jacobian <jacobian>`.
 Note that ``set_slowness`` means different things from one model to the next.
 For an elliptical medium it is the slowness along the horizontal axis, while for
 a weakly anelliptical one it is the slowness along the vertical axis.
+
+In three dimensions
+-------------------
+
+:class:`ttcrpy.rgrid.Grid3d` takes the four models whose symmetry axis is
+vertical.  The tilted ones have no 3D counterpart yet: a tilted axis in three
+dimensions needs a dip *and* an azimuth, which is a different model rather than
+the same one with an extra parameter.
+
+=======================  ============================================================================
+``aniso``                parameters, in the order the setters take them
+=======================  ============================================================================
+``iso``                  ``set_slowness``
+``vti_sh``               ``set_Vs0``, ``set_gamma``
+``elliptical``           ``set_slowness``, ``set_chi``, ``set_psi``
+``weakly_anelliptical``  ``set_slowness``, ``set_s2``, ``set_s4``
+``vti_psv``              ``set_Vp0``, ``set_Vs0``, ``set_epsilon``, ``set_delta``
+=======================  ============================================================================
+
+``vti_sh``, ``vti_psv`` and ``weakly_anelliptical`` describe the same media as
+in 2D, the polar angle being measured from the vertical axis and computed from
+the horizontal magnitude :math:`\sqrt{l_x^2 + l_y^2}` of the ray segment.
+Being transversely isotropic they are symmetric in azimuth, so the traveltime
+depends on the direction of a segment only through that polar angle.
+
+``elliptical`` is the exception: in 3D it is an **ellipsoid with two
+independent ratios**, more general than a transversely isotropic medium.  It is
+described by the *vertical* slowness :math:`s_z` and by
+
+.. math::
+
+   \chi = \frac{s_x}{s_z}, \qquad \psi = \frac{s_y}{s_z}
+
+so that the traveltime along a segment of components :math:`(l_x, l_y, l_z)` is
+
+.. math::
+
+   dt = s_z \sqrt{\chi^2 l_x^2 + \psi^2 l_y^2 + l_z^2}
+
+the axes of the ellipsoid being aligned with those of the grid.  Beware that
+``set_slowness`` therefore takes the **vertical** slowness here, where the 2D
+``elliptical`` takes the horizontal one, and that :math:`\psi` is the ratio
+along :math:`y`, not the ray angle it denotes elsewhere on this page.
 
 Elliptical
 ----------

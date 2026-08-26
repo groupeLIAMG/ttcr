@@ -31,6 +31,26 @@ cdef extern from "typedefs.h" namespace "ttcr":
         pass
     cdef cppclass cell2d_wa:
         pass
+    cdef cppclass node3d:
+        pass
+    cdef cppclass cell3d_e:
+        pass
+    cdef cppclass cell3d_p:
+        pass
+    cdef cppclass cell3d_h:
+        pass
+    cdef cppclass cell3d_wa:
+        pass
+    cdef cppclass node3df:
+        pass
+    cdef cppclass cell3df_e:
+        pass
+    cdef cppclass cell3df_p:
+        pass
+    cdef cppclass cell3df_h:
+        pass
+    cdef cppclass cell3df_wa:
+        pass
 
 
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
@@ -39,6 +59,17 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
         void setTraveltimeFromRaypath(bool)
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
+        void setChi(vector[T1]&) except +
+        void setPsi(vector[T1]&) except +
+        void setTiltAngle(vector[T1]&) except +
+        void setPhase(int) except +
+        void setVp0(vector[T1]&) except +
+        void setVs0(vector[T1]&) except +
+        void setDelta(vector[T1]&) except +
+        void setEpsilon(vector[T1]&) except +
+        void setGamma(vector[T1]&) except +
+        void setS2(vector[T1]&) except +
+        void setS4(vector[T1]&) except +
         void getSlowness(vector[T1]&) except +
         T1 computeSlowness(sxyz[T1]) except +    # we use the fact that second argument is False by default
         void getTT(vector[T1]& tt, size_t threadNo) except +
@@ -110,6 +141,54 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
                       vector[vector[T1]]& traveltimes,
                       vector[vector[vector[sxyz[T1]]]]& r_data,
                       vector[vector[vector[siv[T1]]]]& l_data) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[siv2[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[siv4[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[sxyz[T1]]]& r_data,
+                      vector[vector[siv2[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[sxyz[T1]]]& r_data,
+                      vector[vector[siv4[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[siv2[T1]]]]& l_data) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[siv4[T1]]]]& l_data) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[sxyz[T1]]]]& r_data,
+                      vector[vector[vector[siv2[T1]]]]& l_data) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[sxyz[T1]]]]& r_data,
+                      vector[vector[vector[siv4[T1]]]]& l_data) except +
 
 
 cdef extern from "Grid3Drn.h" namespace "ttcr" nogil:
