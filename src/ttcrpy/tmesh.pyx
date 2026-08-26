@@ -2719,6 +2719,9 @@ def _rebuild3d(constructor_params):
     phase = None
     if len(constructor_params) == 17:
         constructor_params, phase = constructor_params[:16], constructor_params[16]
+    elif len(constructor_params) == 15:
+        # Backward compatibility: older pickles did not include `aniso`
+        constructor_params = constructor_params[:3] + ('iso',) + constructor_params[3:]
     (nodes, tetra, method, aniso, cell_slowness, n_threads, tt_from_rp,
      process_vel, eps, maxit, gradient_method, min_dist, n_secondary,
      n_tertiary, radius_factor_tertiary, translate_grid) = constructor_params
