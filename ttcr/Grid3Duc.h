@@ -5107,10 +5107,10 @@ namespace ttcr {
                         }
                         // pick fastest cell
                         cell.i = cellsAround[0];
-for ( size_t nc0=1; nc0<cellsAround.size(); ++nc0 ) {
-    if ( cells.getSlowness(cell.i) > cells.getSlowness(cellsAround[nc0]) ) {
-        cell.i = cellsAround[nc0];
-    }
+                        for ( size_t nc0=1; nc0<cellsAround.size(); ++nc0 ) {
+                            if ( cells.getSlowness(cell.i) > cells.getSlowness(cellsAround[nc0]) ) {
+                                cell.i = cellsAround[nc0];
+                            }
                         }
                         cell.v = nodes[nodeNo].getDistance(nodes[prevNode]);
                         l_data.push_back(cell);

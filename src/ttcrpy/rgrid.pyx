@@ -6831,6 +6831,9 @@ def _rebuild3d_d(x, y, z, constructor_params):
     phase = None
     if len(constructor_params) == 18:
         constructor_params, phase = constructor_params[:17], constructor_params[17]
+    elif len(constructor_params) == 16:
+        # a grid pickled before aniso was carried has no such entry
+        constructor_params = constructor_params[:3] + ('iso',) + constructor_params[3:]
     (n_threads, cell_slowness, method, aniso, tt_from_rp, interp_vel, eps,
      maxit, weno, nsnx, nsny, nsnz, n_secondary,
      n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu) = constructor_params
@@ -6848,6 +6851,9 @@ def _rebuild3d_f(x, y, z, constructor_params):
     phase = None
     if len(constructor_params) == 18:
         constructor_params, phase = constructor_params[:17], constructor_params[17]
+    elif len(constructor_params) == 16:
+        # a grid pickled before aniso was carried has no such entry
+        constructor_params = constructor_params[:3] + ('iso',) + constructor_params[3:]
     (n_threads, cell_slowness, method, aniso, tt_from_rp, interp_vel, eps,
      maxit, weno, nsnx, nsny, nsnz, n_secondary,
      n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu) = constructor_params
