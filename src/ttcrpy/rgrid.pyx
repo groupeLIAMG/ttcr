@@ -93,6 +93,30 @@ cdef class Grid3d_d:
                 - 'FSM' : fast sweeping method
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
+        aniso : string
+            type of anisotropy (SPM method and cell_slowness only)
+                - 'iso' : isotropic medium
+                - 'elliptical' : ellipsoidal anisotropy, axes aligned with the
+                  grid; set_slowness takes the **vertical** slowness and the
+                  two ratios are given with set_chi and set_psi
+                - 'vti_psv' : vertical transverse isotropy, P and SV waves
+                - 'vti_sh' : vertical transverse isotropy, SH waves
+                - 'weakly_anelliptical' : Weakly-Anelliptical formulation of
+                  B. Rommel; set_slowness takes the vertical slowness
+
+            The tilted models of Grid2d have no 3D counterpart yet.  The
+            parameters of each model, and the order of the blocks of columns
+            compute_L returns, are
+
+            ===================== ==========================================
+            aniso                 setters, in the order the blocks appear
+            ===================== ==========================================
+            'iso'                 set_slowness
+            'elliptical'          set_slowness, set_chi, set_psi
+            'vti_sh'              set_Vs0, set_gamma
+            'weakly_anelliptical' set_slowness, set_s2, set_s4
+            'vti_psv'             set_Vp0, set_Vs0, set_epsilon, set_delta
+            ===================== ==========================================
         tt_from_rp : bool
             compute traveltimes from raypaths (FSM or DSPM only) (default is 1)
         interp_vel : bool
@@ -137,6 +161,8 @@ cdef class Grid3d_d:
     cdef bool cell_slowness
     cdef size_t _n_threads
     cdef char method
+    cdef char iso
+    cdef char phase
     cdef bool tt_from_rp
     cdef bool interp_vel
     cdef bool translate_grid
@@ -157,6 +183,7 @@ cdef class Grid3d_d:
                   np.ndarray[np.double_t, ndim=1] z,
                   size_t n_threads=1,
                   bool cell_slowness=1, str method='FSM',
+                  str aniso='iso',
                   bool tt_from_rp=1, bool interp_vel=0,
                   double eps=1.e-5, int maxit=50, bool weno=1,
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
@@ -175,6 +202,8 @@ cdef class Grid3d_d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self.iso = b'i'
+        self.phase = b'P'
         self.tt_from_rp = tt_from_rp
         self.interp_vel = interp_vel
         self.eps = eps
@@ -206,6 +235,8 @@ cdef class Grid3d_d:
         self._z.shrink_to_fit()
 
         if cell_slowness:
+            if aniso != 'iso' and method != 'SPM':
+                raise ValueError('Anisotropy is implemented for the SPM method only')
             if method == 'FSM' and fsm_gpu:
                 self.method = b'f'
                 self.grid = new Grid3Drcfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx,
@@ -224,13 +255,42 @@ cdef class Grid3d_d:
                                                             translate_grid)
             elif method == 'SPM':
                 self.method = b's'
-                self.grid = new Grid3Drcsp[double,uint32_t,Cell[double,Node3Dcsp[double,uint32_t],sxyz[double]]](nx, ny, nz,
-                                                            self._dx, self._dy, self._dz,
-                                                            xmin, ymin, zmin,
-                                                            nsnx, nsny, nsnz,
-                                                            tt_from_rp,
-                                                            n_threads,
-                                                            translate_grid)
+                if aniso == 'iso':
+                    self.grid = new Grid3Drcsp[double,uint32_t,Cell[double,Node3Dcsp[double,uint32_t],sxyz[double]]](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'elliptical':
+                    self.iso = b'E'
+                    self.grid = new Grid3Drcsp[double,uint32_t,cell3d_e](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'vti_psv':
+                    self.iso = b'p'
+                    self.grid = new Grid3Drcsp[double,uint32_t,cell3d_p](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'vti_sh':
+                    self.iso = b'h'
+                    self.grid = new Grid3Drcsp[double,uint32_t,cell3d_h](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'weakly_anelliptical':
+                    self.iso = b'w'
+                    self.grid = new Grid3Drcsp[double,uint32_t,cell3d_wa](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                else:
+                    raise ValueError('Anisotropy model not implemented')
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Drcdsp[double,uint32_t,Cell[double,Node3Dc[double,uint32_t],sxyz[double]]](nx, ny, nz,
@@ -243,6 +303,8 @@ cdef class Grid3d_d:
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
+            if aniso != 'iso':
+                raise ValueError('Anisotropy requires slowness defined for cells')
             if method == 'FSM' and fsm_gpu:
                 self.method = b'f'
                 self.grid = new Grid3Drnfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx,
@@ -292,12 +354,26 @@ cdef class Grid3d_d:
         elif self.method == b'd':
             method = 'DSPM'
 
+        if self.iso == b'i':
+            aniso = 'iso'
+        elif self.iso == b'E':
+            aniso = 'elliptical'
+        elif self.iso == b'p':
+            aniso = 'vti_psv'
+        elif self.iso == b'h':
+            aniso = 'vti_sh'
+        elif self.iso == b'w':
+            aniso = 'weakly_anelliptical'
+
         constructor_params = (self.n_threads, self.cell_slowness, method,
-                              self.tt_from_rp, self.interp_vel, self.eps,
+                              aniso, self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.translate_grid,
                               self.fsm_gpu)
+        if self.iso == b'p':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild3d_d, (self.x, self.y, self.z, constructor_params))
 
     @property
@@ -567,6 +643,389 @@ cdef class Grid3d_d:
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+
+    def set_chi(self, chi):
+        """
+        set_chi(chi)
+
+        Assign elliptical anisotropy ratio :math:`\chi = s_x/s_z` to grid
+
+        Parameters
+        ----------
+        chi : np ndarray, shape (nx, ny, nz)
+            chi may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if chi.size != nx*ny*nz:
+            raise ValueError('chi vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if chi.ndim == 3:
+            if chi.shape != (nx, ny, nz):
+                raise ValueError('chi has wrong shape')
+            tmp = chi.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif chi.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = chi.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('chi must be 1D or 3D ndarray')
+        self.grid.setChi(data)
+
+    def set_psi(self, psi):
+        """
+        set_psi(psi)
+
+        Assign elliptical anisotropy ratio :math:`\psi = s_y/s_z` to grid
+
+        Parameters
+        ----------
+        psi : np ndarray, shape (nx, ny, nz)
+            psi may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if psi.size != nx*ny*nz:
+            raise ValueError('psi vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if psi.ndim == 3:
+            if psi.shape != (nx, ny, nz):
+                raise ValueError('psi has wrong shape')
+            tmp = psi.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif psi.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = psi.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('psi must be 1D or 3D ndarray')
+        self.grid.setPsi(data)
+
+    def set_Vp0(self, v):
+        """
+        set_Vp0(v)
+
+        Assign vertical P-wave velocity (transversely isotropic medium) to grid
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, ny, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if v.size != nx*ny*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 3:
+            if v.shape != (nx, ny, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = v.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVp0(data)
+
+    def set_Vs0(self, v):
+        """
+        set_Vs0(v)
+
+        Assign vertical S-wave velocity (transversely isotropic medium) to grid
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, ny, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if v.size != nx*ny*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if v.ndim == 3:
+            if v.shape != (nx, ny, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = v.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVs0(data)
+
+    def set_epsilon(self, epsilon):
+        """
+        set_epsilon(epsilon)
+
+        Assign Thomsen's parameter :math:`\epsilon` to grid
+
+        Parameters
+        ----------
+        epsilon : np ndarray, shape (nx, ny, nz)
+            epsilon may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if epsilon.size != nx*ny*nz:
+            raise ValueError('epsilon vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if epsilon.ndim == 3:
+            if epsilon.shape != (nx, ny, nz):
+                raise ValueError('epsilon has wrong shape')
+            tmp = epsilon.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif epsilon.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = epsilon.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('epsilon must be 1D or 3D ndarray')
+        self.grid.setEpsilon(data)
+
+    def set_delta(self, delta):
+        """
+        set_delta(delta)
+
+        Assign Thomsen's parameter :math:`\delta` to grid
+
+        Parameters
+        ----------
+        delta : np ndarray, shape (nx, ny, nz)
+            delta may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if delta.size != nx*ny*nz:
+            raise ValueError('delta vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if delta.ndim == 3:
+            if delta.shape != (nx, ny, nz):
+                raise ValueError('delta has wrong shape')
+            tmp = delta.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif delta.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = delta.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('delta must be 1D or 3D ndarray')
+        self.grid.setDelta(data)
+
+    def set_gamma(self, gamma):
+        """
+        set_gamma(gamma)
+
+        Assign Thomsen's parameter :math:`\gamma` to grid
+
+        Parameters
+        ----------
+        gamma : np ndarray, shape (nx, ny, nz)
+            gamma may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if gamma.size != nx*ny*nz:
+            raise ValueError('gamma vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if gamma.ndim == 3:
+            if gamma.shape != (nx, ny, nz):
+                raise ValueError('gamma has wrong shape')
+            tmp = gamma.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif gamma.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = gamma.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('gamma must be 1D or 3D ndarray')
+        self.grid.setGamma(data)
+
+    def set_s2(self, s2):
+        """
+        set_s2(s2)
+
+        Assign second-order anisotropy coefficient (weakly anelliptical medium) to grid
+
+        Parameters
+        ----------
+        s2 : np ndarray, shape (nx, ny, nz)
+            s2 may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if s2.size != nx*ny*nz:
+            raise ValueError('s2 vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if s2.ndim == 3:
+            if s2.shape != (nx, ny, nz):
+                raise ValueError('s2 has wrong shape')
+            tmp = s2.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif s2.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = s2.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('s2 must be 1D or 3D ndarray')
+        self.grid.setS2(data)
+
+    def set_s4(self, s4):
+        """
+        set_s4(s4)
+
+        Assign fourth-order anisotropy coefficient (weakly anelliptical medium) to grid
+
+        Parameters
+        ----------
+        s4 : np ndarray, shape (nx, ny, nz)
+            s4 may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if s4.size != nx*ny*nz:
+            raise ValueError('s4 vector has wrong size')
+
+        cdef vector[double] data
+        cdef int i
+        if s4.ndim == 3:
+            if s4.shape != (nx, ny, nz):
+                raise ValueError('s4 has wrong shape')
+            tmp = s4.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif s4.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = s4.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('s4 must be 1D or 3D ndarray')
+        self.grid.setS4(data)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' medium describes both waves; the others raise.  The
+        qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_velocity(self, velocity):
         """
@@ -958,6 +1417,8 @@ cdef class Grid3d_d:
 
         cdef vector[vector[vector[sxyz[double]]]] r_data
         cdef vector[vector[vector[siv[double]]]] l_data
+        cdef vector[vector[vector[siv2[double]]]] l_data2
+        cdef vector[vector[vector[siv4[double]]]] l_data4
         cdef vector[vector[vector[sijv[double]]]] m_data
         cdef size_t thread_nb
 
@@ -967,8 +1428,14 @@ cdef class Grid3d_d:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        nparams = l_nparams(self.iso)
         if compute_L:
-            l_data.resize(nTx)
+            if nparams == 1:
+                l_data.resize(nTx)
+            elif nparams == 2:
+                l_data2.resize(nTx)
+            else:
+                l_data4.resize(nTx)
         if compute_M:
             m_data.resize(nTx)
         if return_rays:
@@ -1050,10 +1517,20 @@ cdef class Grid3d_d:
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
             elif compute_L and return_rays:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                    if nparams == 1:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                    elif nparams == 2:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                    else:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
             elif compute_L:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                    if nparams == 1:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                    elif nparams == 2:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                    else:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             elif compute_M:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
@@ -1095,9 +1572,19 @@ cdef class Grid3d_d:
             elif compute_M and return_rays:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
             elif compute_L and return_rays:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                if nparams == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                elif nparams == 2:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
             elif compute_L:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                if nparams == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nparams == 2:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             elif compute_M:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
             else:
@@ -1124,28 +1611,63 @@ cdef class Grid3d_d:
 
             # we build an array of matrices, for each event
             L = []
-            NN = self.get_number_of_cells()
+            ncells = self.get_number_of_cells()
+            NN = nparams * ncells
             for n in range(nTx):
+                MM = vRx[n].size()
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
-                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                if nparams == 1:
+                    for ni in range(MM):
+                        nnz += l_data[n][ni].size()
+                elif nparams == 2:
+                    for ni in range(MM):
+                        nnz += l_data2[n][ni].size()
+                else:
+                    for ni in range(MM):
+                        nnz += l_data4[n][ni].size()
+                nnz *= nparams
+
+                indptr = np.empty((MM+1,), dtype=np.int64)
                 indices = np.empty((nnz,), dtype=np.int64)
                 val = np.empty((nnz,))
 
                 k = 0
-                MM = vRx[n].size()
+                # one block of ncells columns per medium parameter, in the order
+                # the setters are listed in the class docstring
                 for i in range(MM):
                     indptr[i] = k
-#                    for j in range(NN):
-                    for nn in range(l_data[n][i].size()):
-                        indices[k] = self._f2c_ind(l_data[n][i][nn].i)
-                        val[k] = l_data[n][i][nn].v
-                        k += 1
-#                            if self._f2c_ind(l_data[n][i][nn].i) == j:
-#                                indices[k] = j
-#                                val[k] = l_data[n][i][nn].v
-#                                k += 1
+                    if nparams == 1:
+                        for nn in range(l_data[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data[n][i][nn].i)
+                            val[k] = l_data[n][i][nn].v
+                            k += 1
+                    elif nparams == 2:
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data2[n][i][nn].i)
+                            val[k] = l_data2[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data2[n][i][nn].i) + ncells
+                            val[k] = l_data2[n][i][nn].v2
+                            k += 1
+                    else:
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data4[n][i][nn].i)
+                            val[k] = l_data4[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data4[n][i][nn].i) + ncells
+                            val[k] = l_data4[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data4[n][i][nn].i) + 2*ncells
+                            val[k] = l_data4[n][i][nn].v3
+                            k += 1
+                        if nparams == 4:
+                            for nn in range(l_data4[n][i].size()):
+                                indices[k] = self._f2c_ind(l_data4[n][i][nn].i) + 3*ncells
+                                val[k] = l_data4[n][i][nn].v4
+                                k += 1
 
                 indptr[MM] = k
                 L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
@@ -1824,7 +2346,7 @@ cdef class Grid3d_f:
 
     Constructor:
 
-    Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_f
+    Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_f
 
         Parameters
         ----------
@@ -1846,6 +2368,8 @@ cdef class Grid3d_f:
     cdef bool cell_slowness
     cdef size_t _n_threads
     cdef char method
+    cdef char iso
+    cdef char phase
     cdef bool tt_from_rp
     cdef bool interp_vel
     cdef bool translate_grid
@@ -1866,6 +2390,7 @@ cdef class Grid3d_f:
                   np.ndarray[np.float32_t, ndim=1] z,
                   size_t n_threads=1,
                   bool cell_slowness=1, str method='FSM',
+                  str aniso='iso',
                   bool tt_from_rp=1, bool interp_vel=0,
                   float eps=1.e-5, int maxit=50, bool weno=1,
                   uint32_t nsnx=5, uint32_t nsny=5, uint32_t nsnz=5,
@@ -1884,6 +2409,8 @@ cdef class Grid3d_f:
         cdef float zmin = z[0]
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self.iso = b'i'
+        self.phase = b'P'
         self.tt_from_rp = tt_from_rp
         self.interp_vel = interp_vel
         self.eps = eps
@@ -1915,6 +2442,8 @@ cdef class Grid3d_f:
         self._z.shrink_to_fit()
 
         if cell_slowness:
+            if aniso != 'iso' and method != 'SPM':
+                raise ValueError('Anisotropy is implemented for the SPM method only')
             if method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drcfs[float,uint32_t](nx, ny, nz, self._dx,
@@ -1925,13 +2454,42 @@ cdef class Grid3d_f:
                                                            translate_grid)
             elif method == 'SPM':
                 self.method = b's'
-                self.grid = new Grid3Drcsp[float,uint32_t,Cell[float,Node3Dcsp[float,uint32_t],sxyz[float]]](nx, ny, nz,
-                                                           self._dx, self._dy, self._dz,
-                                                           xmin, ymin, zmin,
-                                                           nsnx, nsny, nsnz,
-                                                           tt_from_rp,
-                                                           n_threads,
-                                                           translate_grid)
+                if aniso == 'iso':
+                    self.grid = new Grid3Drcsp[float,uint32_t,Cell[float,Node3Dcsp[float,uint32_t],sxyz[float]]](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'elliptical':
+                    self.iso = b'E'
+                    self.grid = new Grid3Drcsp[float,uint32_t,cell3df_e](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'vti_psv':
+                    self.iso = b'p'
+                    self.grid = new Grid3Drcsp[float,uint32_t,cell3df_p](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'vti_sh':
+                    self.iso = b'h'
+                    self.grid = new Grid3Drcsp[float,uint32_t,cell3df_h](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                elif aniso == 'weakly_anelliptical':
+                    self.iso = b'w'
+                    self.grid = new Grid3Drcsp[float,uint32_t,cell3df_wa](nx, ny, nz,
+                                    self._dx, self._dy, self._dz,
+                                    xmin, ymin, zmin,
+                                    nsnx, nsny, nsnz,
+                                    tt_from_rp, n_threads, translate_grid)
+                else:
+                    raise ValueError('Anisotropy model not implemented')
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Drcdsp[float,uint32_t,Cell[float,Node3Dc[float,uint32_t],sxyz[float]]](nx, ny, nz,
@@ -1944,6 +2502,8 @@ cdef class Grid3d_f:
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
+            if aniso != 'iso':
+                raise ValueError('Anisotropy requires slowness defined for cells')
             if method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drnfs[float,uint32_t](nx, ny, nz, self._dx,
@@ -1985,12 +2545,26 @@ cdef class Grid3d_f:
         elif self.method == b'd':
             method = 'DSPM'
 
+        if self.iso == b'i':
+            aniso = 'iso'
+        elif self.iso == b'E':
+            aniso = 'elliptical'
+        elif self.iso == b'p':
+            aniso = 'vti_psv'
+        elif self.iso == b'h':
+            aniso = 'vti_sh'
+        elif self.iso == b'w':
+            aniso = 'weakly_anelliptical'
+
         constructor_params = (self.n_threads, self.cell_slowness, method,
-                              self.tt_from_rp, self.interp_vel, self.eps,
+                              aniso, self.tt_from_rp, self.interp_vel, self.eps,
                               self.maxit, self.weno, self.nsnx, self.nsny,
                               self.nsnz, self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.translate_grid,
                               self.fsm_gpu)
+        if self.iso == b'p':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild3d_f, (self.x, self.y, self.z, constructor_params))
 
     @property
@@ -2143,6 +2717,389 @@ cdef class Grid3d_f:
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+
+    def set_chi(self, chi):
+        """
+        set_chi(chi)
+
+        Assign elliptical anisotropy ratio :math:`\chi = s_x/s_z` to grid
+
+        Parameters
+        ----------
+        chi : np ndarray, shape (nx, ny, nz)
+            chi may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if chi.size != nx*ny*nz:
+            raise ValueError('chi vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if chi.ndim == 3:
+            if chi.shape != (nx, ny, nz):
+                raise ValueError('chi has wrong shape')
+            tmp = chi.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif chi.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = chi.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('chi must be 1D or 3D ndarray')
+        self.grid.setChi(data)
+
+    def set_psi(self, psi):
+        """
+        set_psi(psi)
+
+        Assign elliptical anisotropy ratio :math:`\psi = s_y/s_z` to grid
+
+        Parameters
+        ----------
+        psi : np ndarray, shape (nx, ny, nz)
+            psi may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if psi.size != nx*ny*nz:
+            raise ValueError('psi vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if psi.ndim == 3:
+            if psi.shape != (nx, ny, nz):
+                raise ValueError('psi has wrong shape')
+            tmp = psi.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif psi.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = psi.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('psi must be 1D or 3D ndarray')
+        self.grid.setPsi(data)
+
+    def set_Vp0(self, v):
+        """
+        set_Vp0(v)
+
+        Assign vertical P-wave velocity (transversely isotropic medium) to grid
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, ny, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if v.size != nx*ny*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if v.ndim == 3:
+            if v.shape != (nx, ny, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = v.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVp0(data)
+
+    def set_Vs0(self, v):
+        """
+        set_Vs0(v)
+
+        Assign vertical S-wave velocity (transversely isotropic medium) to grid
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nx, ny, nz)
+            v may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if v.size != nx*ny*nz:
+            raise ValueError('v vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if v.ndim == 3:
+            if v.shape != (nx, ny, nz):
+                raise ValueError('v has wrong shape')
+            tmp = v.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif v.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = v.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('v must be 1D or 3D ndarray')
+        self.grid.setVs0(data)
+
+    def set_epsilon(self, epsilon):
+        """
+        set_epsilon(epsilon)
+
+        Assign Thomsen's parameter :math:`\epsilon` to grid
+
+        Parameters
+        ----------
+        epsilon : np ndarray, shape (nx, ny, nz)
+            epsilon may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if epsilon.size != nx*ny*nz:
+            raise ValueError('epsilon vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if epsilon.ndim == 3:
+            if epsilon.shape != (nx, ny, nz):
+                raise ValueError('epsilon has wrong shape')
+            tmp = epsilon.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif epsilon.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = epsilon.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('epsilon must be 1D or 3D ndarray')
+        self.grid.setEpsilon(data)
+
+    def set_delta(self, delta):
+        """
+        set_delta(delta)
+
+        Assign Thomsen's parameter :math:`\delta` to grid
+
+        Parameters
+        ----------
+        delta : np ndarray, shape (nx, ny, nz)
+            delta may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if delta.size != nx*ny*nz:
+            raise ValueError('delta vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if delta.ndim == 3:
+            if delta.shape != (nx, ny, nz):
+                raise ValueError('delta has wrong shape')
+            tmp = delta.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif delta.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = delta.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('delta must be 1D or 3D ndarray')
+        self.grid.setDelta(data)
+
+    def set_gamma(self, gamma):
+        """
+        set_gamma(gamma)
+
+        Assign Thomsen's parameter :math:`\gamma` to grid
+
+        Parameters
+        ----------
+        gamma : np ndarray, shape (nx, ny, nz)
+            gamma may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if gamma.size != nx*ny*nz:
+            raise ValueError('gamma vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if gamma.ndim == 3:
+            if gamma.shape != (nx, ny, nz):
+                raise ValueError('gamma has wrong shape')
+            tmp = gamma.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif gamma.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = gamma.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('gamma must be 1D or 3D ndarray')
+        self.grid.setGamma(data)
+
+    def set_s2(self, s2):
+        """
+        set_s2(s2)
+
+        Assign second-order anisotropy coefficient (weakly anelliptical medium) to grid
+
+        Parameters
+        ----------
+        s2 : np ndarray, shape (nx, ny, nz)
+            s2 may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if s2.size != nx*ny*nz:
+            raise ValueError('s2 vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if s2.ndim == 3:
+            if s2.shape != (nx, ny, nz):
+                raise ValueError('s2 has wrong shape')
+            tmp = s2.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif s2.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = s2.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('s2 must be 1D or 3D ndarray')
+        self.grid.setS2(data)
+
+    def set_s4(self, s4):
+        """
+        set_s4(s4)
+
+        Assign fourth-order anisotropy coefficient (weakly anelliptical medium) to grid
+
+        Parameters
+        ----------
+        s4 : np ndarray, shape (nx, ny, nz)
+            s4 may also have been flattened (with default 'C' order)
+        """
+        if self.cell_slowness:
+            nx = self._x.size()-1
+            ny = self._y.size()-1
+            nz = self._z.size()-1
+        else:
+            nx = self._x.size()
+            ny = self._y.size()
+            nz = self._z.size()
+        if s4.size != nx*ny*nz:
+            raise ValueError('s4 vector has wrong size')
+
+        cdef vector[float] data
+        cdef int i
+        if s4.ndim == 3:
+            if s4.shape != (nx, ny, nz):
+                raise ValueError('s4 has wrong shape')
+            tmp = s4.flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        elif s4.ndim == 1:
+            # values are in 'C' order and we must pass them in 'F' order
+            tmp = s4.reshape((nx, ny, nz)).flatten('F')
+            for i in range(nx*ny*nz):
+                data.push_back(tmp[i])
+        else:
+            raise ValueError('s4 must be 1D or 3D ndarray')
+        self.grid.setS4(data)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' medium describes both waves; the others raise.  The
+        qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_velocity(self, velocity):
         if self.cell_slowness:
@@ -2389,6 +3346,8 @@ cdef class Grid3d_f:
 
         cdef vector[vector[vector[sxyz[float]]]] r_data
         cdef vector[vector[vector[siv[float]]]] l_data
+        cdef vector[vector[vector[siv2[float]]]] l_data2
+        cdef vector[vector[vector[siv4[float]]]] l_data4
         cdef vector[vector[vector[sijv[float]]]] m_data
         cdef size_t thread_nb
 
@@ -2398,8 +3357,14 @@ cdef class Grid3d_f:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        nparams = l_nparams(self.iso)
         if compute_L:
-            l_data.resize(nTx)
+            if nparams == 1:
+                l_data.resize(nTx)
+            elif nparams == 2:
+                l_data2.resize(nTx)
+            else:
+                l_data4.resize(nTx)
         if compute_M:
             m_data.resize(nTx)
         if return_rays:
@@ -2468,10 +3433,20 @@ cdef class Grid3d_f:
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
             elif compute_L and return_rays:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                    if nparams == 1:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                    elif nparams == 2:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                    else:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
             elif compute_L:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                    if nparams == 1:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                    elif nparams == 2:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                    else:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             elif compute_M:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
@@ -2511,9 +3486,19 @@ cdef class Grid3d_f:
             elif compute_M and return_rays:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
             elif compute_L and return_rays:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                if nparams == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                elif nparams == 2:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
             elif compute_L:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                if nparams == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nparams == 2:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             elif compute_M:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
             else:
@@ -2537,24 +3522,65 @@ cdef class Grid3d_f:
                     rays[iRx[n][nt]] = r[nt]
 
         if compute_L:
+            # we build an array of matrices, for each event
             L = []
-            NN = self.get_number_of_cells()
+            ncells = self.get_number_of_cells()
+            NN = nparams * ncells
             for n in range(nTx):
+                MM = vRx[n].size()
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
-                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                if nparams == 1:
+                    for ni in range(MM):
+                        nnz += l_data[n][ni].size()
+                elif nparams == 2:
+                    for ni in range(MM):
+                        nnz += l_data2[n][ni].size()
+                else:
+                    for ni in range(MM):
+                        nnz += l_data4[n][ni].size()
+                nnz *= nparams
+
+                indptr = np.empty((MM+1,), dtype=np.int64)
                 indices = np.empty((nnz,), dtype=np.int64)
                 val = np.empty((nnz,), dtype=np.float32)
 
                 k = 0
-                MM = vRx[n].size()
+                # one block of ncells columns per medium parameter, in the order
+                # the setters are listed in the class docstring
                 for i in range(MM):
                     indptr[i] = k
-                    for nn in range(l_data[n][i].size()):
-                        indices[k] = self._f2c_ind(l_data[n][i][nn].i)
-                        val[k] = l_data[n][i][nn].v
-                        k += 1
+                    if nparams == 1:
+                        for nn in range(l_data[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data[n][i][nn].i)
+                            val[k] = l_data[n][i][nn].v
+                            k += 1
+                    elif nparams == 2:
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data2[n][i][nn].i)
+                            val[k] = l_data2[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data2[n][i][nn].i) + ncells
+                            val[k] = l_data2[n][i][nn].v2
+                            k += 1
+                    else:
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data4[n][i][nn].i)
+                            val[k] = l_data4[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data4[n][i][nn].i) + ncells
+                            val[k] = l_data4[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = self._f2c_ind(l_data4[n][i][nn].i) + 2*ncells
+                            val[k] = l_data4[n][i][nn].v3
+                            k += 1
+                        if nparams == 4:
+                            for nn in range(l_data4[n][i].size()):
+                                indices[k] = self._f2c_ind(l_data4[n][i][nn].i) + 3*ncells
+                                val[k] = l_data4[n][i][nn].v4
+                                k += 1
 
                 indptr[MM] = k
                 L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
@@ -5800,32 +6826,46 @@ cdef class Grid2d_f:
 
 
 def _rebuild3d_d(x, y, z, constructor_params):
-    (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
-     weno, nsnx, nsny, nsnz, n_secondary,
+    # a phase is appended only by the media that describe one, so a grid
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 18:
+        constructor_params, phase = constructor_params[:17], constructor_params[17]
+    (n_threads, cell_slowness, method, aniso, tt_from_rp, interp_vel, eps,
+     maxit, weno, nsnx, nsny, nsnz, n_secondary,
      n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu) = constructor_params
-    g = Grid3d_d(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
+    g = Grid3d_d(x, y, z, n_threads, cell_slowness, method, aniso, tt_from_rp,
                  interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
                  n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 
 def _rebuild3d_f(x, y, z, constructor_params):
-    (n_threads, cell_slowness, method, tt_from_rp, interp_vel, eps, maxit,
-     weno, nsnx, nsny, nsnz, n_secondary,
+    # a phase is appended only by the media that describe one, so a grid
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 18:
+        constructor_params, phase = constructor_params[:17], constructor_params[17]
+    (n_threads, cell_slowness, method, aniso, tt_from_rp, interp_vel, eps,
+     maxit, weno, nsnx, nsny, nsnz, n_secondary,
      n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu) = constructor_params
-    g = Grid3d_f(x, y, z, n_threads, cell_slowness, method, tt_from_rp,
+    g = Grid3d_f(x, y, z, n_threads, cell_slowness, method, aniso, tt_from_rp,
                  interp_vel, eps, maxit, weno, nsnx, nsny, nsnz, n_secondary,
                  n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 
 def Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM',
-           tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1,
+           aniso='iso', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1,
            nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2,
            radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False,
            dtype=np.float64):
     """
-    Grid3d(x, y, z, ..., dtype=np.float64) -> Grid3d_d or Grid3d_f
+    Grid3d(x, y, z, ..., aniso='iso', ..., dtype=np.float64) -> Grid3d_d or Grid3d_f
 
     Factory that returns a 3D rectilinear-grid raytracer with the requested
     numeric precision.
@@ -5848,14 +6888,16 @@ def Grid3d(x, y, z, n_threads=1, cell_slowness=1, method='FSM',
         return Grid3d_d(np.asarray(x, dtype=np.float64),
                         np.asarray(y, dtype=np.float64),
                         np.asarray(z, dtype=np.float64),
-                        n_threads, cell_slowness, method, tt_from_rp, interp_vel,
+                        n_threads, cell_slowness, method, aniso, tt_from_rp,
+                        interp_vel,
                         eps, maxit, weno, nsnx, nsny, nsnz, n_secondary, n_tertiary,
                         radius_factor_tertiary, translate_grid, fsm_gpu)
     elif np.dtype(dtype) == np.dtype(np.float32):
         return Grid3d_f(np.asarray(x, dtype=np.float32),
                         np.asarray(y, dtype=np.float32),
                         np.asarray(z, dtype=np.float32),
-                        n_threads, cell_slowness, method, tt_from_rp, interp_vel,
+                        n_threads, cell_slowness, method, aniso, tt_from_rp,
+                        interp_vel,
                         eps, maxit, weno, nsnx, nsny, nsnz, n_secondary, n_tertiary,
                         radius_factor_tertiary, translate_grid, fsm_gpu)
     else:

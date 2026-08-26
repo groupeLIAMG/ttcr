@@ -928,6 +928,40 @@ namespace ttcr {
         std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfElements());
         bool constCells = reader.isConstCell();
 
+        // Anisotropy is described cell by cell, and only the shortest-path
+        // solver consults the cells, so these models are offered for a mesh of
+        // constant-slowness cells raytraced with SHORTEST_PATH.  The arrays are
+        // looked for in the cell data only: the same names given at the nodes
+        // are ignored, and such a mesh is read as isotropic.
+        bool foundChi = constCells && reader.hasVariable<T>("chi", true);
+        bool foundPsi = constCells && reader.hasVariable<T>("psi", true);
+        bool foundVp0 = constCells && reader.hasVariable<T>("Vp0", true);
+        bool foundVs0 = constCells && reader.hasVariable<T>("Vs0", true);
+        bool foundEpsilon = constCells && reader.hasVariable<T>("epsilon", true);
+        bool foundDelta = constCells && reader.hasVariable<T>("delta", true);
+        bool foundGamma = constCells && reader.hasVariable<T>("gamma", true);
+        bool foundS2 = constCells && reader.hasVariable<T>("s2", true);
+        bool foundS4 = constCells && reader.hasVariable<T>("s4", true);
+
+        if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
+            std::cerr << "Error: Model should contain both epsilon and delta" << std::endl; abort();
+        }
+        if ( (foundEpsilon || foundGamma) && !foundVs0 ) {
+            std::cerr << "Error: Model should contain Vs0" << std::endl; abort();
+        }
+        if ( foundEpsilon && !foundVp0 ) {
+            std::cerr << "Error: Model should contain Vp0" << std::endl; abort();
+        }
+        if ( (foundS2 || foundS4) && !(foundS2 && foundS4) ) {
+            std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl; abort();
+        }
+        if ( (foundChi || foundPsi) && !(foundChi && foundPsi) ) {
+            std::cerr << "Error: Model should contain both chi and psi ratios" << std::endl; abort();
+        }
+        // the coupled and SH media are described by velocities, not a slowness
+        bool velocityModel = foundEpsilon || foundGamma;
+        bool anisotropic = velocityModel || foundS2 || foundChi;
+
         std::vector<T> slowness;
         if ( constCells )
             slowness.resize(reader.getNumberOfElements());
@@ -936,7 +970,8 @@ namespace ttcr {
 
         reader.readNodes3D(nodes);
         reader.readTetrahedronElements(tetrahedra);
-        reader.readSlowness(slowness, constCells);
+        if ( !velocityModel )
+            reader.readSlowness(slowness, constCells);
 
         if ( verbose ) {
             std::cout << "done.\n  Unstructured mesh in file has"
@@ -959,14 +994,48 @@ namespace ttcr {
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                if ( constCells )
-                    g = new Grid3Ducsp<T, uint32_t>(nodes,
-                                                    tetrahedra,
-                                                    par.nn[0],
-                                                    par.tt_from_rp,
-                                                    par.min_distance_rp,
-                                                    nt,
-                                                    par.translateOrigin);
+                if ( constCells ) {
+                    if ( foundEpsilon )
+                        g = new Grid3Ducsp<T, uint32_t, CellVTI_PSV3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(nodes,
+                                                        tetrahedra,
+                                                        par.nn[0],
+                                                        par.tt_from_rp,
+                                                        par.min_distance_rp,
+                                                        nt,
+                                                        par.translateOrigin);
+                    else if ( foundGamma )
+                        g = new Grid3Ducsp<T, uint32_t, CellVTI_SH3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(nodes,
+                                                        tetrahedra,
+                                                        par.nn[0],
+                                                        par.tt_from_rp,
+                                                        par.min_distance_rp,
+                                                        nt,
+                                                        par.translateOrigin);
+                    else if ( foundS2 )
+                        g = new Grid3Ducsp<T, uint32_t, CellWeaklyAnelliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(nodes,
+                                                        tetrahedra,
+                                                        par.nn[0],
+                                                        par.tt_from_rp,
+                                                        par.min_distance_rp,
+                                                        nt,
+                                                        par.translateOrigin);
+                    else if ( foundChi )
+                        g = new Grid3Ducsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(nodes,
+                                                        tetrahedra,
+                                                        par.nn[0],
+                                                        par.tt_from_rp,
+                                                        par.min_distance_rp,
+                                                        nt,
+                                                        par.translateOrigin);
+                    else
+                        g = new Grid3Ducsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(nodes,
+                                                        tetrahedra,
+                                                        par.nn[0],
+                                                        par.tt_from_rp,
+                                                        par.min_distance_rp,
+                                                        nt,
+                                                        par.translateOrigin);
+                }
                 else
                     g = new Grid3Dunsp<T, uint32_t>(nodes,
                                                     tetrahedra,
@@ -1141,7 +1210,20 @@ namespace ttcr {
             begin = std::chrono::high_resolution_clock::now();
         }
         try {
-            g->setSlowness(slowness);
+            if ( !velocityModel )
+                g->setSlowness(slowness);
+            if ( anisotropic ) {
+                std::vector<T> v;
+                if ( foundVp0 ) { reader.readVariable("Vp0", v, true); g->setVp0(v); }
+                if ( foundVs0 ) { reader.readVariable("Vs0", v, true); g->setVs0(v); }
+                if ( foundEpsilon ) { reader.readVariable("epsilon", v, true); g->setEpsilon(v); }
+                if ( foundDelta ) { reader.readVariable("delta", v, true); g->setDelta(v); }
+                if ( foundGamma ) { reader.readVariable("gamma", v, true); g->setGamma(v); }
+                if ( foundS2 ) { reader.readVariable("s2", v, true); g->setS2(v); }
+                if ( foundS4 ) { reader.readVariable("s4", v, true); g->setS4(v); }
+                if ( foundChi ) { reader.readVariable("chi", v, true); g->setChi(v); }
+                if ( foundPsi ) { reader.readVariable("psi", v, true); g->setPsi(v); }
+            }
         } catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
             delete g;
@@ -1286,7 +1368,7 @@ namespace ttcr {
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells )
-                    g = new Grid3Ducsp<T, uint32_t>(nodes,
+                    g = new Grid3Ducsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(nodes,
                                                     tetrahedra,
                                                     par.nn[0],
                                                     par.tt_from_rp,

@@ -472,7 +472,9 @@ namespace ttcr {
             reader->SetFileName(filename.c_str());
             reader->Update();
             return reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ||
-            reader->GetOutput()->GetCellData()->HasArray("Velocity") == 1;
+            reader->GetOutput()->GetCellData()->HasArray("Velocity") == 1 ||
+            reader->GetOutput()->GetCellData()->HasArray("Vp0") == 1 ||
+            reader->GetOutput()->GetCellData()->HasArray("Vs0") == 1;
         }
 
 
@@ -503,6 +505,13 @@ namespace ttcr {
             if ( reader->GetOutput() ) {
 
                 if ( constCells ) { // slowness defined at cells
+
+                    // a transversely isotropic medium carries axial velocities
+                    // instead of a slowness; the cell class reads them itself
+                    if ( reader->GetOutput()->GetCellData()->HasArray("Vp0") == 1 ||
+                        reader->GetOutput()->GetCellData()->HasArray("Vs0") == 1 ) {
+                        return true;
+                    }
 
                     if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 0 &&
                         reader->GetOutput()->GetCellData()->HasArray("Velocity") == 0 ) {

@@ -200,9 +200,6 @@ namespace ttcr {
          * @param x one value per cell.
          * @throws std::exception if the @c CELL policy does not model
          *         @f$\chi@f$ — see Cell.h.
-         * @note The 3-D base exposes only @f$\chi@f$ and @f$\psi@f$, whereas
-         *       ttcr::Grid2Drc also forwards the Thomsen and
-         *       weakly-anelliptical parameters.
          */
         void setChi(const std::vector<T1>& x) {
             cells.setChi( x );
@@ -215,6 +212,132 @@ namespace ttcr {
          */
         void setPsi(const std::vector<T1>& x) {
             cells.setPsi( x );
+        }
+
+        /**
+         * @brief Set the symmetry-axis tilt angle of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setTiltAngle(const std::vector<T1>& s) {
+            try {
+                cells.setTiltAngle( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Select the phase to model, qP or qSV.
+         * @param p 1 for qP, anything else for qSV.
+         * @throws std::exception if the @c CELL policy models a single phase —
+         *         see Cell.h.
+         */
+        void setPhase(const int p) {
+            try {
+                cells.setPhase( p );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set the P-wave axial velocity @f$V_{P0}@f$ of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setVp0(const std::vector<T1>& s) {
+            try {
+                cells.setVp0( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set the S-wave axial velocity @f$V_{S0}@f$ of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setVs0(const std::vector<T1>& s) {
+            try {
+                cells.setVs0( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set Thomsen's @f$\delta@f$ of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setDelta(const std::vector<T1>& s) {
+            try {
+                cells.setDelta( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set Thomsen's @f$\epsilon@f$ of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setEpsilon(const std::vector<T1>& s) {
+            try {
+                cells.setEpsilon( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set Thomsen's @f$\gamma@f$ of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setGamma(const std::vector<T1>& s) {
+            try {
+                cells.setGamma( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set the second-order anisotropy coefficient of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setS2(const std::vector<T1>& s) {
+            try {
+                cells.setS2( s );
+            } catch (std::exception& e) {
+                throw;
+            }
+        }
+
+        /**
+         * @brief Set the fourth-order anisotropy coefficient of every cell.
+         * @param s one value per cell.
+         * @throws std::exception if the @c CELL policy does not model it —
+         *         see Cell.h.
+         */
+        void setS4(const std::vector<T1>& s) {
+            try {
+                cells.setS4( s );
+            } catch (std::exception& e) {
+                throw;
+            }
         }
 
         /**

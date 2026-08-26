@@ -81,7 +81,7 @@ namespace ttcr {
      *
      * @sa Grid3Duc.h, Grid3Ducfs.h, Grid2Ducfm.h
      */
-    class Grid3Ducfm : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
+    class Grid3Ducfm : public Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>> {
     public:
         /**
          * @brief Build the mesh and its nodes.
@@ -102,7 +102,7 @@ namespace ttcr {
                    const std::vector<tetrahedronElem<T2>>& tet,
                    const int rp, const bool rptt, const T1 md,
                    const size_t nt=1, const bool _translateOrigin=false) :
-        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, md, nt, _translateOrigin)
+        Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>(no, tet, rp, rptt, md, nt, _translateOrigin)
         {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node3Dc<T1,T2>>(this->nodes);
@@ -215,7 +215,7 @@ namespace ttcr {
                     frozen[nn] = true;
 
                     if ( Tx.size()==1 ) {
-                        if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius == 0.0 ) {
+                        if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>::source_radius == 0.0 ) {
                             // populate around Tx
                             for ( size_t no=0; no<this->nodes[nn].getOwners().size(); ++no ) {
 
@@ -245,12 +245,12 @@ namespace ttcr {
                                 if ( no == nn ) continue;
 
                                 T1 d = this->nodes[nn].getDistance( this->nodes[no] );
-                                if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius ) {
+                                if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>::source_radius ) {
 
                                     // compute average slowness with cells touching the source node
                                     T1 slown = 0.0;
                                     for ( size_t nc=0; nc<this->nodes[nn].getOwners().size(); ++nc ) {
-                                        slown += Grid3Duc<T1,T2,Node3Dc<T1,T2>>::slowness[this->nodes[nn].getOwners()[nc]];
+                                        slown += Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>::cells.getSlowness(this->nodes[nn].getOwners()[nc]);
                                     }
                                     slown /= this->nodes[nn].getOwners().size();
                                     T1 dt = d * slown;
@@ -282,7 +282,7 @@ namespace ttcr {
             if ( found==false ) {
 
                 T2 cellNo = this->getCellNo(Tx[n]);
-                if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius == 0.0 ) {
+                if ( Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>::source_radius == 0.0 ) {
                     // populate around Tx
 
                     for ( size_t k=0; k< this->neighbors[cellNo].size(); ++k ) {
@@ -303,9 +303,9 @@ namespace ttcr {
                     for ( size_t no=0; no<this->nodes.size(); ++no ) {
 
                         T1 d = this->nodes[no].getDistance( Tx[n] );
-                        if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>>::source_radius ) {
+                        if ( d <= Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>::source_radius ) {
 
-                            T1 dt = d * Grid3Duc<T1,T2,Node3Dc<T1,T2>>::slowness[cellNo];
+                            T1 dt = d * Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>::cells.getSlowness(cellNo);
 
                             if ( t0[n]+dt < this->nodes[no].getTT(threadNo) ) {
                                 this->nodes[no].setTT( t0[n]+dt, threadNo );

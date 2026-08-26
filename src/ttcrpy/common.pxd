@@ -104,10 +104,14 @@ cdef inline int l_nparams(char iso):
     The codes are those the grid and mesh classes store in their `iso` member:
     e elliptical, h VTI SH, t tilted elliptical, H TTI SH, w weakly
     anelliptical, p VTI qP/qSV, P TTI qP/qSV, anything else isotropic.
+
+    E is the 3D ellipsoid of CellElliptical3D, which takes a vertical slowness
+    and two ratios where the 2D ellipse takes a horizontal slowness and one.
+    The upper case marks it as the three-dimensional model, not a tilted one.
     """
     if iso == b'e' or iso == b'h':
         return 2
-    elif iso == b't' or iso == b'H' or iso == b'w':
+    elif iso == b't' or iso == b'H' or iso == b'w' or iso == b'E':
         return 3
     elif iso == b'p':
         return 4

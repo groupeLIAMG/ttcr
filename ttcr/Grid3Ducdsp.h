@@ -64,7 +64,7 @@ namespace ttcr {
      *
      * @sa Grid3Duc.h, Grid2Ducdsp.h, Grid3Ducsp.h, Node3Dcd.h
      */
-    class Grid3Ducdsp : public Grid3Duc<T1,T2,Node3Dc<T1,T2>> {
+    class Grid3Ducdsp : public Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>> {
     public:
         /**
          * @brief Build the mesh and its permanent nodes.
@@ -92,7 +92,7 @@ namespace ttcr {
                     const int rp, const bool rptt, const T1 min_dist,
                     const T1 drad, const bool useEdgeLength=true,
                     const size_t nt=1, const bool _translateOrigin=false) :
-        Grid3Duc<T1,T2,Node3Dc<T1,T2>>(no, tet, rp, rptt, min_dist, nt, _translateOrigin),
+        Grid3Duc<T1,T2,Node3Dc<T1,T2>,Cell<T1,Node3Dc<T1,T2>,sxyz<T1>>>(no, tet, rp, rptt, min_dist, nt, _translateOrigin),
         nSecondary(ns), nTertiary(nd), nPermanent(0),
         dyn_radius(drad),
         tempNodes(std::vector<std::vector<Node3Dcd<T1,T2>>>(nt)),
