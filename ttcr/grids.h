@@ -928,18 +928,20 @@ namespace ttcr {
         std::vector<tetrahedronElem<uint32_t>> tetrahedra(reader.getNumberOfElements());
         bool constCells = reader.isConstCell();
 
-        // anisotropy is described cell by cell, and only the shortest-path
-        // solver consults the cells, so the models below are offered for a
-        // mesh of constant-slowness cells raytraced with SHORTEST_PATH
-        bool foundChi = reader.hasVariable<T>("chi", constCells);
-        bool foundPsi = reader.hasVariable<T>("psi", constCells);
-        bool foundVp0 = reader.hasVariable<T>("Vp0", constCells);
-        bool foundVs0 = reader.hasVariable<T>("Vs0", constCells);
-        bool foundEpsilon = reader.hasVariable<T>("epsilon", constCells);
-        bool foundDelta = reader.hasVariable<T>("delta", constCells);
-        bool foundGamma = reader.hasVariable<T>("gamma", constCells);
-        bool foundS2 = reader.hasVariable<T>("s2", constCells);
-        bool foundS4 = reader.hasVariable<T>("s4", constCells);
+        // Anisotropy is described cell by cell, and only the shortest-path
+        // solver consults the cells, so these models are offered for a mesh of
+        // constant-slowness cells raytraced with SHORTEST_PATH.  The arrays are
+        // looked for in the cell data only: the same names given at the nodes
+        // are ignored, and such a mesh is read as isotropic.
+        bool foundChi = constCells && reader.hasVariable<T>("chi", true);
+        bool foundPsi = constCells && reader.hasVariable<T>("psi", true);
+        bool foundVp0 = constCells && reader.hasVariable<T>("Vp0", true);
+        bool foundVs0 = constCells && reader.hasVariable<T>("Vs0", true);
+        bool foundEpsilon = constCells && reader.hasVariable<T>("epsilon", true);
+        bool foundDelta = constCells && reader.hasVariable<T>("delta", true);
+        bool foundGamma = constCells && reader.hasVariable<T>("gamma", true);
+        bool foundS2 = constCells && reader.hasVariable<T>("s2", true);
+        bool foundS4 = constCells && reader.hasVariable<T>("s4", true);
 
         if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
             std::cerr << "Error: Model should contain both epsilon and delta" << std::endl; abort();
@@ -1212,15 +1214,15 @@ namespace ttcr {
                 g->setSlowness(slowness);
             if ( anisotropic ) {
                 std::vector<T> v;
-                if ( foundVp0 ) { reader.readVariable("Vp0", v, constCells); g->setVp0(v); }
-                if ( foundVs0 ) { reader.readVariable("Vs0", v, constCells); g->setVs0(v); }
-                if ( foundEpsilon ) { reader.readVariable("epsilon", v, constCells); g->setEpsilon(v); }
-                if ( foundDelta ) { reader.readVariable("delta", v, constCells); g->setDelta(v); }
-                if ( foundGamma ) { reader.readVariable("gamma", v, constCells); g->setGamma(v); }
-                if ( foundS2 ) { reader.readVariable("s2", v, constCells); g->setS2(v); }
-                if ( foundS4 ) { reader.readVariable("s4", v, constCells); g->setS4(v); }
-                if ( foundChi ) { reader.readVariable("chi", v, constCells); g->setChi(v); }
-                if ( foundPsi ) { reader.readVariable("psi", v, constCells); g->setPsi(v); }
+                if ( foundVp0 ) { reader.readVariable("Vp0", v, true); g->setVp0(v); }
+                if ( foundVs0 ) { reader.readVariable("Vs0", v, true); g->setVs0(v); }
+                if ( foundEpsilon ) { reader.readVariable("epsilon", v, true); g->setEpsilon(v); }
+                if ( foundDelta ) { reader.readVariable("delta", v, true); g->setDelta(v); }
+                if ( foundGamma ) { reader.readVariable("gamma", v, true); g->setGamma(v); }
+                if ( foundS2 ) { reader.readVariable("s2", v, true); g->setS2(v); }
+                if ( foundS4 ) { reader.readVariable("s4", v, true); g->setS4(v); }
+                if ( foundChi ) { reader.readVariable("chi", v, true); g->setChi(v); }
+                if ( foundPsi ) { reader.readVariable("psi", v, true); g->setPsi(v); }
             }
         } catch (std::exception& e) {
             std::cerr << e.what() << std::endl;

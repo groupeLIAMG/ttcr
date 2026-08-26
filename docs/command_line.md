@@ -77,7 +77,7 @@ rcv.dat        # rcvfile,
 
 Models can be defined in VTK (http://vtk.org) format or custom GRD format.
 
-**VTK files**: These files must hold the slowness data, which can be defined either in terms of slowness or velocity, as cell data for grid with cells of constant slowness or as point data for slowness defined at grid nodes.
+**VTK files**: These files must hold the slowness data, which can be defined either in terms of slowness or velocity, as cell data for grid with cells of constant slowness or as point data for slowness defined at grid nodes.  Extra cell arrays may be added to describe an anisotropic medium, see [Anisotropic models](#anisotropic-models) below.
 
 **GRD files**: For this format, the grid dimensions are given in a file with a .grd extension.  The format is the following, where values are given for x, y and z in that order (2D grids should have 0 cells in y):
 
@@ -140,7 +140,7 @@ OpenCL accelerated implementations of the sweeping method are provided for 3D re
 
 Models are defined in either VTK (http://www.vtk.org) or gmsh (http://geuz.org/gmsh/) files.
 
-**VTK files**: As for rectilinear grids, these files must hold the slowness data, which can be defined either in terms of slowness or velocity (see routines in files grids.h and VTUReader.h for details).
+**VTK files**: As for rectilinear grids, these files must hold the slowness data, which can be defined either in terms of slowness or velocity (see routines in files grids.h and VTUReader.h for details).  Extra cell arrays may be added to describe an anisotropic medium, see [Anisotropic models](#anisotropic-models) below.
 
 **MSH files**: gmsh file format version 2.2 is supported.  This format does not allow storing cell attributes, so slowness data must be stored in other files.  There are two options: the first is to have a file holding the slowness values for each cell, in the same cell order than found in the msh file.  This type of file corresponds to the `slofile` found in the parameter file.  The other option is to define velocity values for physical entities (volumes in 3D or surfaces in 2D) found in msh files.  These data are given in `velfile`.  The following gives an example of a geometry file used by gmsh to generate the mesh, and the associated `velfile`.
 
@@ -196,6 +196,73 @@ Example `model2ds.vel`
 ###### Slowness defined at grid nodes for unstructured meshes
 
 It is possible to define slowness at grid nodes rather than for mesh cells.  This improves accuracy for models where slowness gradients are present.  For VTK files, this is done by assigning slowness or velocity values at nodes.  For MSH files, this is done by using a `slofile` with slowness values for each mesh node in the order found in the msh file (`velfile` cannot be used in this case).
+
+#### Anisotropic models
+
+An anisotropic medium is described by adding **cell** arrays to the VTK file,
+alongside (or instead of) the slowness.  The model is chosen from the arrays the
+file carries: no keyword in the parameter file selects it.
+
+Anisotropy is a property of a cell, so it requires a model of constant-slowness
+cells — arrays given as point data are ignored — and it is used by the
+**shortest-path method** only.  A file carrying anisotropy arrays raytraced with
+the fast sweeping, fast marching or dynamic shortest-path method is read as
+isotropic.
+
+| arrays in the file | model | 2D `.vtr` | 2D `.vtu` | 3D `.vtr` | 3D `.vtu` |
+| --- | --- | :-: | :-: | :-: | :-: |
+| `xi` | elliptical | yes | yes | — | — |
+| `xi`, `theta` | tilted elliptical | yes | yes | — | — |
+| `s2`, `s4` | weakly anelliptical | yes | yes | — | yes |
+| `chi`, `psi` | ellipsoidal | — | — | yes | yes |
+| `Vs0`, `gamma` | transversely isotropic, SH wave | — | — | — | yes |
+| `Vp0`, `Vs0`, `epsilon`, `delta` | transversely isotropic, qP and qSV waves | — | — | — | yes |
+
+These are the same models the Python classes take through their `aniso`
+argument; the anisotropy page of the documentation describes each of them, and
+gives the traveltime and the sensitivities they produce.
+
+**What `Slowness` means.**  For most models the `Slowness` (or `Velocity`) array
+is still required, but it is not always the same slowness:
+
+- *elliptical* and *tilted elliptical* (2D): the **horizontal** slowness
+  `sx`, with `xi` = sz/sx and `theta` the tilt angle of the symmetry axis, in
+  radians;
+- *weakly anelliptical*: the **vertical** slowness, with `s2` and `s4` the
+  second- and fourth-order coefficients;
+- *ellipsoidal* (3D): the **vertical** slowness `sz`, with `chi` = sx/sz and
+  `psi` = sy/sz.  The axes of the ellipsoid are aligned with the axes of the
+  model;
+- *transversely isotropic* (`Vs0`/`gamma`, or `Vp0`/`Vs0`/`epsilon`/`delta`):
+  **no `Slowness` array is needed**, and any present is ignored.  These media are
+  described by their axial velocities and Thomsen's parameters, so the file may
+  carry no slowness at all.
+
+**Incomplete sets are refused.**  Giving `epsilon` without `delta`, `s2` without
+`s4`, `chi` without `psi`, or `epsilon`/`gamma` without the velocity they need,
+stops the program with a message rather than falling back to an isotropic run.
+
+**When several models could be read** the first match wins, in the order the
+table lists them: `theta` before `xi` before `s2`/`s4` in 2D, and
+`epsilon` before `gamma` before `s2`/`s4` before `chi`/`psi` in 3D.
+
+**The qP wave is the one modelled** for a `Vp0`/`Vs0`/`epsilon`/`delta` medium.
+The stand-alone programs offer no way to ask for qSV; use the Python classes and
+their `set_phase` method for that.
+
+Example: a 3D tetrahedral mesh in `model.vtu` holding the cell arrays `Vp0`,
+`Vs0`, `epsilon` and `delta` is raytraced with
+
+```
+ttcr3d_vti     # basename,
+model.vtu      # modelfile,
+src.dat        # srcfile,
+rcv.dat        # rcvfile,
+5              # secondary nodes,
+1              # saveRayPaths,
+```
+
+no keyword being needed beyond those a normal run takes.
 
 ### Src and Rcv files
 
