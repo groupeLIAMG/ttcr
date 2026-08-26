@@ -21,6 +21,7 @@ typedef CellWeaklyAnelliptical<double,node2d,sxz<double>> cell2d_wa;
 // The 3D grids come in both precisions, so each anisotropic cell class has a
 // double and a float typedef; the float ones carry an f on the dimension.
 typedef Node3Dcsp<double, uint32_t> node3d;
+typedef Cell<double, node3d, sxyz<double>> cell3d;
 typedef CellElliptical3D<double,node3d,sxyz<double>> cell3d_e;
 typedef CellVTI_PSV3D<double,node3d,sxyz<double>> cell3d_p;
 typedef CellVTI_SH3D<double,node3d,sxyz<double>> cell3d_h;

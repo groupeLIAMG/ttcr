@@ -27,6 +27,16 @@ cdef extern from "typedefs.h" namespace "ttcr":
         pass
     cdef cppclass cell2d_wa:
         pass
+    cdef cppclass cell3d:
+        pass
+    cdef cppclass cell3d_e:
+        pass
+    cdef cppclass cell3d_p:
+        pass
+    cdef cppclass cell3d_h:
+        pass
+    cdef cppclass cell3d_wa:
+        pass
 
 cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
     cdef cppclass triangleElem[T]:
@@ -50,6 +60,17 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
         void computeK(vector[vector[vector[siv[T1]]]]&, int, int, bool, bool, int) except +
         size_t getNthreads()
         void setSlowness(vector[T1]&) except +
+        void setChi(vector[T1]&) except +
+        void setPsi(vector[T1]&) except +
+        void setTiltAngle(vector[T1]&) except +
+        void setPhase(int) except +
+        void setVp0(vector[T1]&) except +
+        void setVs0(vector[T1]&) except +
+        void setDelta(vector[T1]&) except +
+        void setEpsilon(vector[T1]&) except +
+        void setGamma(vector[T1]&) except +
+        void setS2(vector[T1]&) except +
+        void setS4(vector[T1]&) except +
         T1 computeSlowness(sxyz[T1]) except +  # we use the fact that second argument is False by default
         void getTT(vector[T1]& tt, size_t threadNo) except +
         void raytrace(vector[sxyz[T1]]& Tx,
@@ -114,6 +135,54 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
                       vector[vector[sxyz[T1]]]& Rx,
                       vector[vector[T1]]& traveltimes,
                       vector[vector[vector[siv[T1]]]]& l_data) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[siv2[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[siv4[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[sxyz[T1]]]& r_data,
+                      vector[vector[siv2[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[sxyz[T1]]]& r_data,
+                      vector[vector[siv4[T1]]]& l_data,
+                      size_t thread_no) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[siv2[T1]]]]& l_data) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[siv4[T1]]]]& l_data) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[sxyz[T1]]]]& r_data,
+                      vector[vector[vector[siv2[T1]]]]& l_data) except +
+        void raytrace(vector[vector[sxyz[T1]]]& Tx,
+                      vector[vector[T1]]& t0,
+                      vector[vector[sxyz[T1]]]& Rx,
+                      vector[vector[T1]]& traveltimes,
+                      vector[vector[vector[sxyz[T1]]]]& r_data,
+                      vector[vector[vector[siv4[T1]]]]& l_data) except +
         void raytrace(vector[vector[sxyz[T1]]]& Tx,
                       vector[vector[T1]]& t0,
                       vector[vector[sxyz[T1]]]& Rx,
@@ -125,7 +194,7 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
                              vector[vector[siv[T1]]]& l_data) except +
 
 cdef extern from "Grid3Duc.h" namespace "ttcr" nogil:
-    cdef cppclass Grid3Duc[T1,T2,N](Grid3D[T1,T2]):
+    cdef cppclass Grid3Duc[T1,T2,N,CELL](Grid3D[T1,T2]):
         pass
 
 cdef extern from "Grid3Dun.h" namespace "ttcr" nogil:
@@ -133,18 +202,18 @@ cdef extern from "Grid3Dun.h" namespace "ttcr" nogil:
         pass
 
 cdef extern from "Grid3Ducfs.h" namespace "ttcr" nogil:
-    cdef cppclass Grid3Ducfs[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2]]):
+    cdef cppclass Grid3Ducfs[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2],Cell[T1,Node3Dc[T1,T2],sxyz[T1]]]):
         Grid3Ducfs(vector[sxyz[T1]], vector[tetrahedronElem[T2]], T1, int,
                    vector[sxyz[T1]]& ref_pts, int order, bool, bool, T1,
                    size_t, bool) except +
 
 cdef extern from "Grid3Ducsp.h" namespace "ttcr" nogil:
-    cdef cppclass Grid3Ducsp[T1, T2](Grid3Duc[T1,T2,Node3Dcsp[T1,T2]]):
+    cdef cppclass Grid3Ducsp[T1, T2, CELL](Grid3Duc[T1,T2,Node3Dcsp[T1,T2],CELL]):
         Grid3Ducsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]],
                    int, bool, T1, size_t, bool) except +
 
 cdef extern from "Grid3Ducdsp.h" namespace "ttcr" nogil:
-    cdef cppclass Grid3Ducdsp[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2]]):
+    cdef cppclass Grid3Ducdsp[T1, T2](Grid3Duc[T1,T2,Node3Dc[T1,T2],Cell[T1,Node3Dc[T1,T2],sxyz[T1]]]):
         Grid3Ducdsp(vector[sxyz[T1]], vector[tetrahedronElem[T2]],
                     int, int, T1, int, bool, T1, T1, bool, size_t, bool) except +
 

@@ -78,6 +78,30 @@ cdef class Mesh3d:
                 - 'FSM' : fast sweeping method
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
+        aniso : string
+            type of anisotropy (SPM method and cell_slowness only)
+                - 'iso' : isotropic medium
+                - 'elliptical' : ellipsoidal anisotropy, axes aligned with the
+                  global axes; set_slowness takes the **vertical** slowness and
+                  the two ratios are given with set_chi and set_psi
+                - 'vti_psv' : vertical transverse isotropy, P and SV waves
+                - 'vti_sh' : vertical transverse isotropy, SH waves
+                - 'weakly_anelliptical' : Weakly-Anelliptical formulation of
+                  B. Rommel; set_slowness takes the vertical slowness
+
+            Every setter takes one value per tetrahedron.  The tilted models of
+            Mesh2d have no 3D counterpart yet.  The parameters of each model,
+            and the order of the blocks of columns compute_L returns, are
+
+            ===================== ==========================================
+            aniso                 setters, in the order the blocks appear
+            ===================== ==========================================
+            'iso'                 set_slowness
+            'elliptical'          set_slowness, set_chi, set_psi
+            'vti_sh'              set_Vs0, set_gamma
+            'weakly_anelliptical' set_slowness, set_s2, set_s4
+            'vti_psv'             set_Vp0, set_Vs0, set_epsilon, set_delta
+            ===================== ==========================================
         gradient_method : int
             method to compute traveltime gradient (default is 1)
                 - 0 : least-squares first-order
@@ -117,6 +141,8 @@ cdef class Mesh3d:
     cdef bool tt_from_rp
     cdef bool process_vel
     cdef bool translate_grid
+    cdef char iso
+    cdef char phase
     cdef double eps
     cdef int maxit
     cdef int gradient_method
@@ -131,7 +157,7 @@ cdef class Mesh3d:
     def __cinit__(self, np.ndarray[np.double_t, ndim=2] nodes,
                   np.ndarray[np.int64_t, ndim=2] tetra,
                   size_t n_threads=1, bool cell_slowness=1,
-                  str method='FSM', int gradient_method=1,
+                  str method='FSM', str aniso='iso', int gradient_method=1,
                   bool tt_from_rp=1, bool process_vel=0,
                   double eps=1.e-5, int maxit=50, double min_dist=1.e-5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
@@ -140,6 +166,8 @@ cdef class Mesh3d:
 
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self.iso = b'i'
+        self.phase = b'P'
         self.tt_from_rp = tt_from_rp
         self.process_vel = process_vel
         self.eps = eps
@@ -188,6 +216,8 @@ cdef class Mesh3d:
             pts_ref.push_back(sxyz[double](xmax, ymax, zmax))
 
         if cell_slowness:
+            if aniso != 'iso' and method != 'SPM':
+                raise ValueError('Anisotropy is implemented for the SPM method only')
             if method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Ducfs[double,uint32_t](self.no, self.tet,
@@ -199,11 +229,32 @@ cdef class Mesh3d:
                                                             translate_grid)
             elif method == 'SPM':
                 self.method = b's'
-                self.grid = new Grid3Ducsp[double,uint32_t](self.no, self.tet,
-                                                            n_secondary,
-                                                            tt_from_rp,
-                                                            min_dist, n_threads,
-                                                            translate_grid)
+                if aniso == 'iso':
+                    self.grid = new Grid3Ducsp[double,uint32_t,cell3d](self.no, self.tet,
+                                    n_secondary, tt_from_rp,
+                                    min_dist, n_threads, translate_grid)
+                elif aniso == 'elliptical':
+                    self.iso = b'E'
+                    self.grid = new Grid3Ducsp[double,uint32_t,cell3d_e](self.no, self.tet,
+                                    n_secondary, tt_from_rp,
+                                    min_dist, n_threads, translate_grid)
+                elif aniso == 'vti_psv':
+                    self.iso = b'p'
+                    self.grid = new Grid3Ducsp[double,uint32_t,cell3d_p](self.no, self.tet,
+                                    n_secondary, tt_from_rp,
+                                    min_dist, n_threads, translate_grid)
+                elif aniso == 'vti_sh':
+                    self.iso = b'h'
+                    self.grid = new Grid3Ducsp[double,uint32_t,cell3d_h](self.no, self.tet,
+                                    n_secondary, tt_from_rp,
+                                    min_dist, n_threads, translate_grid)
+                elif aniso == 'weakly_anelliptical':
+                    self.iso = b'w'
+                    self.grid = new Grid3Ducsp[double,uint32_t,cell3d_wa](self.no, self.tet,
+                                    n_secondary, tt_from_rp,
+                                    min_dist, n_threads, translate_grid)
+                else:
+                    raise ValueError('Anisotropy model not implemented')
             elif method == 'DSPM':
                 self.method = b'd'
                 self.grid = new Grid3Ducdsp[double,uint32_t](self.no, self.tet,
@@ -221,6 +272,8 @@ cdef class Mesh3d:
             else:
                 raise ValueError('Method {0:s} undefined'.format(method))
         else:
+            if aniso != 'iso':
+                raise ValueError('Anisotropy requires slowness defined for cells')
             if method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Dunfs[double,uint32_t](self.no, self.tet,
@@ -279,11 +332,25 @@ cdef class Mesh3d:
             for nn in range(4):
                 tetra[n, nn] = self.tet[n].i[nn]
 
-        constructor_params = (nodes, tetra, method, self.cell_slowness,
+        if self.iso == b'i':
+            aniso = 'iso'
+        elif self.iso == b'E':
+            aniso = 'elliptical'
+        elif self.iso == b'p':
+            aniso = 'vti_psv'
+        elif self.iso == b'h':
+            aniso = 'vti_sh'
+        elif self.iso == b'w':
+            aniso = 'weakly_anelliptical'
+
+        constructor_params = (nodes, tetra, method, aniso, self.cell_slowness,
                               self._n_threads, self.tt_from_rp, self.process_vel,
                               self.eps, self.maxit, self.gradient_method,
                               self.min_dist, self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.translate_grid)
+        if self.iso == b'p':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild3d, (constructor_params,))
 
     @property
@@ -416,6 +483,245 @@ cdef class Mesh3d:
         for i in range(slowness.size):
             slown.push_back(slowness[i])
         self.grid.setSlowness(slown)
+
+    def set_chi(self, chi):
+        """
+        set_chi(chi)
+
+        Assign ellipsoidal anisotropy ratio :math:`\chi = s_x/s_z` to mesh
+
+        Parameters
+        ----------
+        chi : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if chi.size != self.nparams:
+            raise ValueError('chi vector has wrong size')
+
+        if not chi.flags['C_CONTIGUOUS']:
+            chi = np.ascontiguousarray(chi)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(chi.size):
+            data.push_back(chi[i])
+        self.grid.setChi(data)
+
+    def set_psi(self, psi):
+        """
+        set_psi(psi)
+
+        Assign ellipsoidal anisotropy ratio :math:`\psi = s_y/s_z` to mesh
+
+        Parameters
+        ----------
+        psi : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if psi.size != self.nparams:
+            raise ValueError('psi vector has wrong size')
+
+        if not psi.flags['C_CONTIGUOUS']:
+            psi = np.ascontiguousarray(psi)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(psi.size):
+            data.push_back(psi[i])
+        self.grid.setPsi(data)
+
+    def set_Vp0(self, v):
+        """
+        set_Vp0(v)
+
+        Assign vertical P-wave velocity (transversely isotropic medium) to mesh
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if v.size != self.nparams:
+            raise ValueError('v vector has wrong size')
+
+        if not v.flags['C_CONTIGUOUS']:
+            v = np.ascontiguousarray(v)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(v.size):
+            data.push_back(v[i])
+        self.grid.setVp0(data)
+
+    def set_Vs0(self, v):
+        """
+        set_Vs0(v)
+
+        Assign vertical S-wave velocity (transversely isotropic medium) to mesh
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if v.size != self.nparams:
+            raise ValueError('v vector has wrong size')
+
+        if not v.flags['C_CONTIGUOUS']:
+            v = np.ascontiguousarray(v)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(v.size):
+            data.push_back(v[i])
+        self.grid.setVs0(data)
+
+    def set_epsilon(self, epsilon):
+        """
+        set_epsilon(epsilon)
+
+        Assign Thomsen's parameter :math:`\epsilon` to mesh
+
+        Parameters
+        ----------
+        epsilon : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if epsilon.size != self.nparams:
+            raise ValueError('epsilon vector has wrong size')
+
+        if not epsilon.flags['C_CONTIGUOUS']:
+            epsilon = np.ascontiguousarray(epsilon)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(epsilon.size):
+            data.push_back(epsilon[i])
+        self.grid.setEpsilon(data)
+
+    def set_delta(self, delta):
+        """
+        set_delta(delta)
+
+        Assign Thomsen's parameter :math:`\delta` to mesh
+
+        Parameters
+        ----------
+        delta : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if delta.size != self.nparams:
+            raise ValueError('delta vector has wrong size')
+
+        if not delta.flags['C_CONTIGUOUS']:
+            delta = np.ascontiguousarray(delta)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(delta.size):
+            data.push_back(delta[i])
+        self.grid.setDelta(data)
+
+    def set_gamma(self, gamma):
+        """
+        set_gamma(gamma)
+
+        Assign Thomsen's parameter :math:`\gamma` to mesh
+
+        Parameters
+        ----------
+        gamma : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if gamma.size != self.nparams:
+            raise ValueError('gamma vector has wrong size')
+
+        if not gamma.flags['C_CONTIGUOUS']:
+            gamma = np.ascontiguousarray(gamma)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(gamma.size):
+            data.push_back(gamma[i])
+        self.grid.setGamma(data)
+
+    def set_s2(self, s2):
+        """
+        set_s2(s2)
+
+        Assign second-order anisotropy coefficient (weakly anelliptical medium) to mesh
+
+        Parameters
+        ----------
+        s2 : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if s2.size != self.nparams:
+            raise ValueError('s2 vector has wrong size')
+
+        if not s2.flags['C_CONTIGUOUS']:
+            s2 = np.ascontiguousarray(s2)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(s2.size):
+            data.push_back(s2[i])
+        self.grid.setS2(data)
+
+    def set_s4(self, s4):
+        """
+        set_s4(s4)
+
+        Assign fourth-order anisotropy coefficient (weakly anelliptical medium) to mesh
+
+        Parameters
+        ----------
+        s4 : np ndarray, shape (nparams, )
+            one value per tetrahedron
+        """
+        if s4.size != self.nparams:
+            raise ValueError('s4 vector has wrong size')
+
+        if not s4.flags['C_CONTIGUOUS']:
+            s4 = np.ascontiguousarray(s4)
+
+        cdef vector[double] data
+        cdef int i
+        for i in range(s4.size):
+            data.push_back(s4[i])
+        self.grid.setS4(data)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' medium describes both waves; the others raise.  The
+        qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_velocity(self, velocity):
         """
@@ -721,6 +1027,8 @@ cdef class Mesh3d:
 
         cdef vector[vector[vector[sxyz[double]]]] r_data
         cdef vector[vector[vector[siv[double]]]] l_data
+        cdef vector[vector[vector[siv2[double]]]] l_data2
+        cdef vector[vector[vector[siv4[double]]]] l_data4
         cdef vector[vector[vector[sijv[double]]]] m_data
         cdef size_t thread_nb
 
@@ -730,8 +1038,14 @@ cdef class Mesh3d:
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        nparams = l_nparams(self.iso)
         if compute_L and self.cell_slowness:
-            l_data.resize(nTx)
+            if nparams == 1:
+                l_data.resize(nTx)
+            elif nparams == 2:
+                l_data2.resize(nTx)
+            else:
+                l_data4.resize(nTx)
         elif compute_L and not self.cell_slowness:
             m_data.resize(nTx)
 
@@ -800,14 +1114,24 @@ cdef class Mesh3d:
                 if self.cell_slowness:
                     # TODO: implement this in C++ codebase!
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                        if nparams == 1:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                        elif nparams == 2:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                        else:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
                 else:
                     for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
             elif compute_L:
                 if self.cell_slowness:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        if nparams == 1:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        elif nparams == 2:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                        else:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
                 else:
                     for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
@@ -847,12 +1171,22 @@ cdef class Mesh3d:
                 self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_L and return_rays:
                 if self.cell_slowness:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                    if nparams == 1:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                    elif nparams == 2:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                    else:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
                 else:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
             elif compute_L:
                 if self.cell_slowness:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                    if nparams == 1:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                    elif nparams == 2:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                    else:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
                 else:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
             else:
@@ -908,23 +1242,63 @@ cdef class Mesh3d:
         
         if compute_L and self.cell_slowness:
             L = []
-            NN = self.get_number_of_cells()
+            ncells = self.get_number_of_cells()
+            NN = nparams * ncells
             for n in range(nTx):
+                MM = vRx[n].size()
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
-                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                if nparams == 1:
+                    for ni in range(MM):
+                        nnz += l_data[n][ni].size()
+                elif nparams == 2:
+                    for ni in range(MM):
+                        nnz += l_data2[n][ni].size()
+                else:
+                    for ni in range(MM):
+                        nnz += l_data4[n][ni].size()
+                nnz *= nparams
+
+                indptr = np.empty((MM+1,), dtype=np.int64)
                 indices = np.empty((nnz,), dtype=np.int64)
                 val = np.empty((nnz,))
 
                 k = 0
-                MM = vRx[n].size()
+                # one block of ncells columns per medium parameter, in the order
+                # the setters are listed in the class docstring
                 for i in range(MM):
                     indptr[i] = k
-                    for nn in range(l_data[n][i].size()):
-                        indices[k] = l_data[n][i][nn].i
-                        val[k] = l_data[n][i][nn].v
-                        k += 1
+                    if nparams == 1:
+                        for nn in range(l_data[n][i].size()):
+                            indices[k] = l_data[n][i][nn].i
+                            val[k] = l_data[n][i][nn].v
+                            k += 1
+                    elif nparams == 2:
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i
+                            val[k] = l_data2[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i + ncells
+                            val[k] = l_data2[n][i][nn].v2
+                            k += 1
+                    else:
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i
+                            val[k] = l_data4[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + ncells
+                            val[k] = l_data4[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + 2*ncells
+                            val[k] = l_data4[n][i][nn].v3
+                            k += 1
+                        if nparams == 4:
+                            for nn in range(l_data4[n][i].size()):
+                                indices[k] = l_data4[n][i][nn].i + 3*ncells
+                                val[k] = l_data4[n][i][nn].v4
+                                k += 1
 
                 indptr[MM] = k
                 L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
@@ -2340,13 +2714,20 @@ cdef class Mesh2d:
 
 
 def _rebuild3d(constructor_params):
-    (nodes, tetra, method, cell_slowness, n_threads, tt_from_rp, process_vel, eps,
-     maxit, gradient_method, min_dist, n_secondary, n_tertiary,
-     radius_factor_tertiary, translate_grid) = constructor_params
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 17:
+        constructor_params, phase = constructor_params[:16], constructor_params[16]
+    (nodes, tetra, method, aniso, cell_slowness, n_threads, tt_from_rp,
+     process_vel, eps, maxit, gradient_method, min_dist, n_secondary,
+     n_tertiary, radius_factor_tertiary, translate_grid) = constructor_params
 
-    g = Mesh3d(nodes, tetra, n_threads, cell_slowness, method, gradient_method,
-               tt_from_rp, process_vel, eps, maxit, min_dist, n_secondary,
-               n_tertiary, radius_factor_tertiary, translate_grid)
+    g = Mesh3d(nodes, tetra, n_threads, cell_slowness, method, aniso,
+               gradient_method, tt_from_rp, process_vel, eps, maxit, min_dist,
+               n_secondary, n_tertiary, radius_factor_tertiary, translate_grid)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 def _rebuild2d(constructor_params):

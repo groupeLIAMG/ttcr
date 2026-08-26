@@ -247,3 +247,206 @@ class TestMesh3Dn(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
+
+
+def _unit_cube_mesh(n=5, h=0.25):
+    """A conforming tetrahedral mesh of a cube, n nodes per side.
+
+    Each cube is split the Freudenthal way, into the six tetrahedra sharing the
+    (0,0,0)-(1,1,1) diagonal, which keeps the mesh conforming across faces.
+    """
+    idx = lambda i, j, k: (i*n + j)*n + k
+    nodes = np.empty(((n)**3, 3))
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                nodes[idx(i, j, k)] = (i*h, j*h, k*h)
+
+    steps = [(0, 1, 2), (0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1), (2, 1, 0)]
+    tet = []
+    for i in range(n-1):
+        for j in range(n-1):
+            for k in range(n-1):
+                base = np.array([i, j, k])
+                for perm in steps:
+                    c = base.copy()
+                    verts = [idx(*c)]
+                    for ax in perm:
+                        c = c.copy()
+                        c[ax] += 1
+                        verts.append(idx(*c))
+                    # keep a positive volume, as the solver expects
+                    p = nodes[verts]
+                    if np.dot(np.cross(p[1]-p[0], p[2]-p[0]), p[3]-p[0]) < 0:
+                        verts[1], verts[2] = verts[2], verts[1]
+                    tet.append(verts)
+    return nodes, np.array(tet, dtype=int)
+
+
+class TestSensitivity3d(unittest.TestCase):
+    """The matrix returned by compute_L, for every 3D anisotropy model.
+
+    L holds one block of ncells columns per medium parameter.  Two things are
+    asked of it: that each block matches a finite difference of the traveltimes
+    with respect to that parameter, and that it satisfies the homogeneity
+    identities, which hold exactly and need no finite difference.
+    """
+
+    MEDIA = {
+        'iso': [('set_slowness', 0.5, 1.e-5, 5.e-3)],
+        'elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                       ('set_chi', 1.1, 1.e-5, 5.e-3),
+                       ('set_psi', 0.9, 1.e-5, 5.e-3)],
+        'vti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3)],
+        'weakly_anelliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                                ('set_s2', 0.05, 1.e-5, 5.e-3),
+                                ('set_s4', 0.01, 1.e-5, 5.e-3)],
+        # the group velocity of the coupled cells is tabulated every tenth of a
+        # degree, so a finite difference has to take a much larger step, which
+        # in turn costs it some accuracy
+        'vti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2)],
+    }
+
+    def setUp(self):
+        self.nodes, self.tet = _unit_cube_mesh(5, 0.25)
+        self.ncells = self.tet.shape[0]
+        self.src = np.array([[0.15, 0.15, 0.15]])
+        self.rcv = np.array([[0.85, 0.7, 0.85], [0.9, 0.3, 0.6]])
+
+    def _mesh(self, aniso, bump=None, values=None):
+        g = tm.Mesh3d(self.nodes, self.tet, method='SPM', aniso=aniso,
+                      n_secondary=2, tt_from_rp=False)
+        for setter, base, _, _ in self.MEDIA[aniso]:
+            if values is not None:
+                v = values[setter]
+            else:
+                v = base
+                if bump is not None and bump[0] == setter:
+                    v = bump[1]
+                v = np.full(self.ncells, v)
+            getattr(g, setter)(v)
+        return g
+
+    def test_L_shape(self):
+        for aniso, params in self.MEDIA.items():
+            with self.subTest(aniso=aniso):
+                _, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                                  compute_L=True)
+                self.assertEqual(L.shape,
+                                 (self.rcv.shape[0], len(params)*self.ncells))
+
+    def test_L_against_finite_differences(self):
+        for aniso, params in self.MEDIA.items():
+            _, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                              compute_L=True)
+            L = L.toarray()
+            for blk, (setter, base, h, tol) in enumerate(params):
+                with self.subTest(aniso=aniso, param=setter):
+                    up = self._mesh(aniso, (setter, base+h))
+                    dn = self._mesh(aniso, (setter, base-h))
+                    fd = (up.raytrace(self.src, self.rcv) -
+                          dn.raytrace(self.src, self.rcv))/(2*h)
+                    ana = L[:, blk*self.ncells:(blk+1)*self.ncells].sum(axis=1)
+                    den = np.maximum(np.abs(fd), 1.e-6)
+                    self.assertLess(np.max(np.abs(ana-fd)/den), tol)
+
+    def test_L_homogeneity(self):
+        """L times the medium must reproduce the traveltimes of the same call.
+
+        The traveltime is homogeneous of degree one in a slowness and of degree
+        minus one in a velocity, and the group velocity of a coupled cell
+        scales with both of its vertical velocities together.  This is also the
+        check that L is not a matrix of path lengths.
+        """
+        for aniso, value, sign in (('iso', 0.5, 1.),
+                                   ('elliptical', 0.5, 1.),
+                                   ('weakly_anelliptical', 0.5, 1.),
+                                   ('vti_sh', 1.8, -1.)):
+            with self.subTest(aniso=aniso):
+                tt, L = self._mesh(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = L[:, :self.ncells] @ np.full(self.ncells, value)
+                self.assertLess(np.max(np.abs(got - sign*tt)/tt), 1.e-9)
+
+        with self.subTest(aniso='vti_psv'):
+            tt, L = self._mesh('vti_psv').raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+            L = L.toarray()
+            got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                   L[:, self.ncells:2*self.ncells] @ np.full(self.ncells, 1.51))
+            self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+    def test_L_heterogeneous(self):
+        """The same identities on a medium that varies tetrahedron to tetrahedron.
+
+        With every cell holding the same value, a column written into the wrong
+        cell of its block would go unnoticed, since the row sum is unchanged.
+        Making the model vary ties each column to its own cell.
+        """
+        rng = np.random.default_rng(20240826)
+
+        def model(aniso, scale):
+            return {s: b*(1. + scale*rng.random(self.ncells))
+                    for s, b, _, _ in self.MEDIA[aniso]}
+
+        for aniso, sign in (('iso', 1.), ('elliptical', 1.),
+                            ('weakly_anelliptical', 1.), ('vti_sh', -1.)):
+            with self.subTest(aniso=aniso):
+                vals = model(aniso, 0.3)
+                tt, L = self._mesh(aniso, values=vals).raytrace(
+                    self.src, self.rcv, compute_L=True)
+                first = self.MEDIA[aniso][0][0]
+                got = L.toarray()[:, :self.ncells] @ vals[first]
+                self.assertLess(np.max(np.abs(got - sign*tt)/tt), 1.e-9)
+
+        with self.subTest(aniso='vti_psv'):
+            vals = model('vti_psv', 0.2)
+            tt, L = self._mesh('vti_psv', values=vals).raytrace(
+                self.src, self.rcv, compute_L=True)
+            L = L.toarray()
+            got = (L[:, :self.ncells] @ vals['set_Vp0'] +
+                   L[:, self.ncells:2*self.ncells] @ vals['set_Vs0'])
+            self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+    def test_vertical_and_horizontal_are_the_axial_velocities(self):
+        """Along the symmetry axis the group velocity is Vp0 exactly, and along
+        the horizontal it is Vp0*sqrt(1+2*epsilon).  A straight path between two
+        nodes of the mesh must reproduce those, up to what the shortest-path
+        discretisation costs."""
+        Vp0, eps = 3.094, 0.256
+        g = self._mesh('vti_psv')
+        src = np.array([[0.5, 0.5, 0.0]])
+        rcv = np.array([[0.5, 0.5, 1.0],       # along the symmetry axis
+                        [1.0, 0.5, 0.0]])      # perpendicular to it
+        tt = g.raytrace(src, rcv)
+        self.assertAlmostEqual(tt[0], 1.0/Vp0, delta=1.e-3*1.0/Vp0)
+        v_h = Vp0*np.sqrt(1. + 2.*eps)
+        self.assertAlmostEqual(tt[1], 0.5/v_h, delta=1.e-3*0.5/v_h)
+
+    def test_phase_and_pickle(self):
+        import pickle
+        g = self._mesh('vti_psv')
+        tt_qp = g.raytrace(self.src, self.rcv)
+        g.set_phase('qSV')
+        tt_qsv = g.raytrace(self.src, self.rcv)
+        self.assertTrue(np.all(tt_qsv > tt_qp))
+
+        g2 = pickle.loads(pickle.dumps(g))
+        for setter, base, _, _ in self.MEDIA['vti_psv']:
+            getattr(g2, setter)(np.full(self.ncells, base))
+        np.testing.assert_allclose(g2.raytrace(self.src, self.rcv), tt_qsv,
+                                   rtol=1.e-12)
+
+    def test_refused_where_not_implemented(self):
+        with self.assertRaises(ValueError):
+            tm.Mesh3d(self.nodes, self.tet, method='FSM', aniso='vti_psv')
+        with self.assertRaises(ValueError):
+            tm.Mesh3d(self.nodes, self.tet, method='SPM', aniso='vti_psv',
+                      cell_slowness=0)
+        with self.assertRaises(ValueError):
+            tm.Mesh3d(self.nodes, self.tet, method='SPM', aniso='tti_psv')
