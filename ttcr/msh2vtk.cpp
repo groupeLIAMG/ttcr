@@ -321,7 +321,7 @@ int main(int argc, char * argv[])
             cout.flush();
         }
         if ( constCells )
-            g = new Grid3Ducfm<double, uint32_t>(nodes, tetrahedra, false, false, false, 1.e-5);
+            g = new Grid3Ducfm<double, uint32_t, Cell<double,Node3Dc<double,uint32_t>,sxyz<double>>>(nodes, tetrahedra, false, false, false, 1.e-5);
         else
             g = new Grid3Dunfm<double, uint32_t>(nodes, tetrahedra, false, false, false, 1.e-5);
         if ( ttcr::verbose ) {
