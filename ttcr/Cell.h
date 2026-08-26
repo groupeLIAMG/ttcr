@@ -2717,6 +2717,34 @@ namespace ttcr {
         }
 
         /**
+         * @brief Not applicable: always throws std::logic_error
+         *
+         * The medium is described by two velocities and two Thomsen
+         * parameters, not by a slowness.
+         *
+         * @param i unused
+         * @throws std::logic_error always
+         */
+        const T getSlowness(const size_t i) const {
+            throw std::logic_error("Error: slowness not defined for CellVTI_PSV3D.");
+        }
+
+        /**
+         * @brief Traveltime between two points of a cell
+         * @param source first point
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            T lx = node.x - source.x;
+            T ly = node.y - source.y;
+            return source.getDistance( node ) /
+                   gv.velocity(std::sqrt(lx*lx + ly*ly), node.z - source.z, cellNo);
+        }
+
+        /**
          * @brief Traveltime between two nodes of a cell
          * @param source node from which the ray originates
          * @param node   second node
@@ -2917,6 +2945,34 @@ namespace ttcr {
             T lx = node.x - source.getX();
             T ly = node.y - source.getY();
             T lz = node.z - source.getZ();
+            return std::sqrt( (lx*lx + ly*ly) / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
+        }
+
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         *
+         * The medium is described by a velocity and Thomsen's gamma, not by a
+         * slowness.
+         *
+         * @param i unused
+         * @throws std::logic_error always
+         */
+        const T getSlowness(const size_t i) const {
+            throw std::logic_error("Error: slowness not defined for CellVTI_SH3D.");
+        }
+
+        /**
+         * @brief Traveltime between two points of a cell
+         * @param source first point
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            T lx = node.x - source.x;
+            T ly = node.y - source.y;
+            T lz = node.z - source.z;
             return std::sqrt( (lx*lx + ly*ly) / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
@@ -3122,6 +3178,32 @@ namespace ttcr {
             T ly = node.y - source.getY();
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T v = get_energy_vel(lx, node.z - source.getZ(), cellNo);
+            return source.getDistance( node ) / v;
+        }
+
+        /**
+         * @brief Get the vertical slowness of a cell
+         * @param i index of the cell
+         * @return the reciprocal of the vertical velocity of cell @p i
+         * @throws std::out_of_range if @p i is not a valid cell index
+         */
+        const T getSlowness(const size_t i) const {
+            return 1. / v0.at(i);
+        }
+
+        /**
+         * @brief Traveltime between two points of a cell
+         * @param source first point
+         * @param node   second point
+         * @param cellNo index of the cell holding the two points
+         * @return the traveltime along the segment joining the two points
+         */
+        T computeDt(const S& source, const S& node,
+                    const size_t cellNo) const {
+            T lx = node.x - source.x;
+            T ly = node.y - source.y;
+            lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
+            T v = get_energy_vel(lx, node.z - source.z, cellNo);
             return source.getDistance( node ) / v;
         }
 
