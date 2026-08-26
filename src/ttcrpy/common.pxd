@@ -23,6 +23,23 @@ cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
         T v
         T v2
 
+    cdef cppclass siv4[T]:
+        siv4() except +
+        size_t i
+        T v
+        T v2
+        T v3
+        T v4
+
+    cdef cppclass siv5[T]:
+        siv5() except +
+        size_t i
+        T v
+        T v2
+        T v3
+        T v4
+        T v5
+
     cdef cppclass sijv[T]:
         sijv(size_t, T) except +
         size_t i
@@ -56,6 +73,10 @@ cdef extern from "Cell.h" namespace "ttcr" nogil:
         pass
     cdef cppclass CellVTI_SH[T,NODE,S]:
         pass
+    cdef cppclass CellTTI_PSV[T,NODE,S]:
+        pass
+    cdef cppclass CellTTI_SH[T,NODE,S]:
+        pass
     cdef cppclass CellWeaklyAnelliptical[T,NODE,S]:
         pass
 
@@ -74,3 +95,22 @@ cdef extern from "Node2Dnsp.h" namespace "ttcr" nogil:
 cdef extern from "Node2Dcsp.h" namespace "ttcr" nogil:
     cdef cppclass Node2Dcsp[T1,T2]:
         pass
+
+
+cdef inline int l_nparams(char iso):
+    """Number of medium parameters of an anisotropy model, and so the number of
+    blocks of columns the matrix of sensitivities holds.
+
+    The codes are those the grid and mesh classes store in their `iso` member:
+    e elliptical, h VTI SH, t tilted elliptical, H TTI SH, w weakly
+    anelliptical, p VTI qP/qSV, P TTI qP/qSV, anything else isotropic.
+    """
+    if iso == b'e' or iso == b'h':
+        return 2
+    elif iso == b't' or iso == b'H' or iso == b'w':
+        return 3
+    elif iso == b'p':
+        return 4
+    elif iso == b'P':
+        return 5
+    return 1

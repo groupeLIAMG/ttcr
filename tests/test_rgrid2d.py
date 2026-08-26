@@ -450,6 +450,413 @@ class TestVTI(unittest.TestCase):
                                       ge.raytrace(self.src, self.rcv))), 1.e-12)
 
 
+class TestTTI(unittest.TestCase):
+    """Traveltimes in homogeneous TTI media.
+
+    Tilting a transversely isotropic medium rotates its group-velocity surface
+    rigidly, so a TTI cell with a zero tilt angle must reproduce its VTI
+    counterpart, and a tilted one must reproduce it with the ray angle shifted
+    by the tilt.  The tilt convention is that of CellTiltedElliptical: the
+    symmetry axis lies at -theta from the vertical.
+    """
+
+    vp, vs, eps, dlt, gam = 3.094, 1.51, 0.256, -0.0505, 0.15
+    vs0 = 1.8
+
+    def setUp(self):
+        n, h = 101, 0.02
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.radius = 0.7
+        self.angles = np.radians(np.arange(-85., 90., 5.))
+        self.src = np.array([[1., 1.]])
+        self.rcv = np.column_stack([1. + self.radius*np.sin(self.angles),
+                                    1. + self.radius*np.cos(self.angles)])
+
+    def _psv(self, aniso, tilt=None):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                      aniso=aniso)
+        g.set_Vp0(np.full(self.ncells, self.vp))
+        g.set_Vs0(np.full(self.ncells, self.vs))
+        g.set_epsilon(np.full(self.ncells, self.eps))
+        g.set_delta(np.full(self.ncells, self.dlt))
+        if tilt is not None:
+            g.set_tilt_angle(np.full(self.ncells, tilt))
+        return g
+
+    def _sh(self, aniso, tilt=None):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                      aniso=aniso)
+        g.set_Vs0(np.full(self.ncells, self.vs0))
+        g.set_gamma(np.full(self.ncells, self.gam))
+        if tilt is not None:
+            g.set_tilt_angle(np.full(self.ncells, tilt))
+        return g
+
+    def test_tti_psv_zero_tilt(self):
+        tt_tti = self._psv('tti_psv', 0.0).raytrace(self.src, self.rcv)
+        tt_vti = self._psv('vti_psv').raytrace(self.src, self.rcv)
+        self.assertLess(np.max(np.abs(tt_tti-tt_vti)), 1.e-12)
+
+    def test_tti_sh_zero_tilt(self):
+        tt_tti = self._sh('tti_sh', 0.0).raytrace(self.src, self.rcv)
+        tt_vti = self._sh('vti_sh').raytrace(self.src, self.rcv)
+        self.assertLess(np.max(np.abs(tt_tti-tt_vti)), 1.e-12)
+
+    def test_tti_sh_matches_tilted_elliptical(self):
+        # the SH phase velocity is elliptical, so a tilted SH medium is a
+        # tilted elliptical one described through a different cell class
+        tilt = np.radians(30.)
+        xi = np.sqrt(1. + 2.*self.gam)     # set_xi squares its argument
+        gh = self._sh('tti_sh', tilt)
+        ge = rg.Grid2d(self.x, self.z, method='SPM', nsnx=15, nsnz=15,
+                       aniso='tilted_elliptical')
+        ge.set_slowness(np.full(self.ncells, 1./(self.vs0*xi)))
+        ge.set_xi(np.full(self.ncells, xi))
+        ge.set_tilt_angle(np.full(self.ncells, tilt))
+        self.assertLess(np.max(np.abs(gh.raytrace(self.src, self.rcv) -
+                                      ge.raytrace(self.src, self.rcv))), 1.e-12)
+
+    def test_tti_psv_rotation(self):
+        # a tilted medium probed at psi must match the untilted one at psi+tilt
+        tilt = np.radians(30.)
+        g_tti = self._psv('tti_psv', tilt)
+        g_vti = self._psv('vti_psv')
+        rcv_rot = np.column_stack([
+            1. + self.radius*np.sin(self.angles+tilt),
+            1. + self.radius*np.cos(self.angles+tilt)])
+        tt_tti = g_tti.raytrace(self.src, self.rcv)
+        tt_vti = g_vti.raytrace(self.src, rcv_rot)
+        self.assertLess(np.max(np.abs(tt_tti-tt_vti)/tt_vti), 0.002)
+
+    def test_tti_psv_symmetry_axis(self):
+        # qP is slowest along the symmetry axis, which lies at -tilt
+        tilt = np.radians(35.)
+        g = self._psv('tti_psv', tilt)
+        rcv = np.array([[1.-self.radius*np.sin(tilt), 1.+self.radius*np.cos(tilt)],
+                        [1.+self.radius*np.cos(tilt), 1.+self.radius*np.sin(tilt)]])
+        tt = g.raytrace(self.src, rcv)
+        v_axis, v_normal = self.radius/tt[0], self.radius/tt[1]
+        self.assertLess(abs(v_axis/self.vp - 1.), 0.005)
+        self.assertLess(abs(v_normal/(self.vp*np.sqrt(1.+2.*self.eps)) - 1.), 0.005)
+
+    def test_tti_pickle(self):
+        import pickle
+        g = self._psv('tti_psv', np.radians(20.))
+        self.assertEqual(pickle.loads(pickle.dumps(g)).__class__, g.__class__)
+
+
+class TestComputeL(unittest.TestCase):
+    """Sensitivity matrix returned by compute_L.
+
+    Two invariants are checked.  First, compute_L must not change the
+    traveltimes: every raytrace() mode has to return the same values.  Second,
+    for a homogeneous medium the rays are straight, so the row sum of the
+    matrix is the length of the ray.
+
+    What the anisotropic media report, and how wide a matrix they give, is
+    checked per medium by TestSensitivity.
+    """
+
+    def setUp(self):
+        n, h = 41, 0.05
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.src = np.array([[0.2, 0.2]])
+        self.rcv = np.array([[1.7, 1.6], [1.8, 0.5], [0.5, 1.8]])
+        self.dx = np.abs(self.rcv[:, 0] - self.src[0, 0])
+        self.dz = np.abs(self.rcv[:, 1] - self.src[0, 1])
+
+    def _grid(self, aniso):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso=aniso)
+        if aniso == 'iso':
+            g.set_slowness(np.full(self.ncells, 0.5))
+        elif aniso in ('elliptical', 'tilted_elliptical'):
+            g.set_slowness(np.full(self.ncells, 0.5))
+            g.set_xi(np.full(self.ncells, 1.1))
+            if aniso == 'tilted_elliptical':
+                g.set_tilt_angle(np.full(self.ncells, np.radians(20.)))
+        elif aniso == 'weakly_anelliptical':
+            g.set_slowness(np.full(self.ncells, 0.5))
+            g.set_s2(np.full(self.ncells, 0.05))
+            g.set_s4(np.full(self.ncells, 0.01))
+        return g
+
+    def test_compute_L_does_not_change_traveltimes(self):
+        # regression: without its own l_data override, Grid2Drcsp fell back to
+        # the gradient-following raypath of Grid2D and returned traveltimes
+        # several percent higher than the other raytrace() modes
+        for aniso in ('iso', 'elliptical', 'tilted_elliptical',
+                      'weakly_anelliptical'):
+            with self.subTest(aniso=aniso):
+                tt_plain = self._grid(aniso).raytrace(self.src, self.rcv)
+                tt_L, _ = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                     compute_L=True)
+                out = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                 compute_L=True,
+                                                 return_rays=True)
+                self.assertLess(np.max(np.abs(tt_L-tt_plain)), 1.e-9)
+                self.assertLess(np.max(np.abs(out[0]-tt_plain)), 1.e-9)
+
+    def test_compute_L_iso(self):
+        g = self._grid('iso')
+        tt, L = g.raytrace(self.src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], self.ncells))
+        # straight rays in a homogeneous medium: row sum is the ray length
+        length = np.sqrt(self.dx**2 + self.dz**2)
+        self.assertLess(np.max(np.abs(np.asarray(L.sum(axis=1)).ravel()
+                                      - length)/length), 0.01)
+        # and L must reproduce the traveltimes
+        self.assertLess(np.max(np.abs(L @ np.full(self.ncells, 0.5) - tt)),
+                        1.e-9)
+
+    def test_compute_L_receiver_on_source(self):
+        # a receiver coinciding with the source has no path to walk; without a
+        # guard the parent walk dereferenced nodes[T2::max()] and crashed
+        rcv = np.vstack([self.src, self.rcv])
+        for aniso in ('iso', 'elliptical', 'tilted_elliptical',
+                      'weakly_anelliptical'):
+            with self.subTest(aniso=aniso):
+                tt, L = self._grid(aniso).raytrace(self.src, rcv,
+                                                   compute_L=True)
+                self.assertEqual(tt[0], 0.0)
+                self.assertEqual(L[0].nnz, 0)      # empty row, zero path
+                self.assertTrue(np.all(tt[1:] > 0.))
+
+    def test_compute_L_elliptical(self):
+        # the elliptical cells report derivatives of the traveltime with
+        # respect to the slowness and the anisotropy ratio
+        sx, xi = 0.5, 1.1
+        g = self._grid('elliptical')
+        tt, L = g.raytrace(self.src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], 2*self.ncells))
+        L = L.toarray()
+        # dt is homogeneous of degree one in the slowness, so Euler's identity
+        # makes the first block reproduce the traveltimes exactly
+        self.assertLess(np.max(np.abs(L[:, :self.ncells] @
+                                      np.full(self.ncells, sx) - tt)), 1.e-9)
+        # and both blocks must match a finite difference of the traveltimes
+        for blk, val, name in ((0, sx, 'slowness'), (1, xi, 'xi')):
+            h = 1.e-4
+            up, dn = [self._grid('elliptical') for _ in range(2)]
+            if blk == 0:
+                up.set_slowness(np.full(self.ncells, sx+h))
+                dn.set_slowness(np.full(self.ncells, sx-h))
+            else:
+                up.set_xi(np.full(self.ncells, xi+h))
+                dn.set_xi(np.full(self.ncells, xi-h))
+            fd = (up.raytrace(self.src, self.rcv) -
+                  dn.raytrace(self.src, self.rcv))/(2*h)
+            ana = L[:, blk*self.ncells:(blk+1)*self.ncells].sum(axis=1)
+            self.assertLess(np.max(np.abs(ana-fd)/np.abs(fd)), 5.e-3,
+                            'd(tt)/d(%s) disagrees with a finite difference'
+                            % name)
+
+
+
+class TestSensitivity(unittest.TestCase):
+    """The matrix returned by compute_L, for every anisotropy model.
+
+    L holds one block of ncells columns per medium parameter.  Two things are
+    asked of it: that each block matches a finite difference of the traveltimes
+    with respect to that parameter, and that it satisfies the homogeneity
+    identities, which hold exactly and need no finite difference.
+    """
+
+    # aniso : (setter, base value, step, tolerance) per parameter
+    MEDIA = {
+        'iso': [('set_slowness', 0.5, 1.e-5, 5.e-3)],
+        'elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                       ('set_xi', 1.1, 1.e-5, 5.e-3)],
+        'vti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3)],
+        'tilted_elliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                              ('set_xi', 1.1, 1.e-5, 5.e-3),
+                              ('set_tilt_angle', 0.3, 1.e-5, 5.e-3)],
+        'tti_sh': [('set_Vs0', 1.8, 1.e-5, 5.e-3),
+                   ('set_gamma', 0.15, 1.e-5, 5.e-3),
+                   ('set_tilt_angle', 0.3, 1.e-5, 5.e-3)],
+        'weakly_anelliptical': [('set_slowness', 0.5, 1.e-5, 5.e-3),
+                                ('set_s2', 0.05, 1.e-5, 5.e-3),
+                                ('set_s4', 0.01, 1.e-5, 5.e-3)],
+        # the group velocity of the coupled cells is tabulated every tenth of a
+        # degree, so a finite difference has to take a much larger step, which
+        # in turn costs it some accuracy
+        'vti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2)],
+        'tti_psv': [('set_Vp0', 3.094, 0.02, 5.e-2),
+                    ('set_Vs0', 1.51, 0.02, 5.e-2),
+                    ('set_epsilon', 0.256, 0.02, 5.e-2),
+                    ('set_delta', -0.0505, 0.02, 5.e-2),
+                    ('set_tilt_angle', 0.3, 0.02, 5.e-2)],
+    }
+
+    def setUp(self):
+        n, h = 41, 0.05
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.src = np.array([[0.3, 0.3]])
+        self.rcv = np.array([[1.7, 1.6], [1.8, 0.6], [0.6, 1.8]])
+
+    def _grid(self, aniso, bump=None):
+        """bump = (setter, value) replacing the base value of one parameter"""
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso=aniso)
+        for setter, base, _, _ in self.MEDIA[aniso]:
+            value = base
+            if bump is not None and bump[0] == setter:
+                value = bump[1]
+            getattr(g, setter)(np.full(self.ncells, value))
+        return g
+
+    def test_L_shape(self):
+        for aniso, params in self.MEDIA.items():
+            with self.subTest(aniso=aniso):
+                _, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                  compute_L=True)
+                self.assertEqual(L.shape,
+                                 (self.rcv.shape[0], len(params)*self.ncells))
+
+    def test_L_against_finite_differences(self):
+        for aniso, params in self.MEDIA.items():
+            _, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                              compute_L=True)
+            L = L.toarray()
+            for blk, (setter, base, h, tol) in enumerate(params):
+                with self.subTest(aniso=aniso, param=setter):
+                    up = self._grid(aniso, (setter, base+h))
+                    dn = self._grid(aniso, (setter, base-h))
+                    fd = (up.raytrace(self.src, self.rcv) -
+                          dn.raytrace(self.src, self.rcv))/(2*h)
+                    ana = L[:, blk*self.ncells:(blk+1)*self.ncells].sum(axis=1)
+                    den = np.maximum(np.abs(fd), 1.e-6)
+                    self.assertLess(np.max(np.abs(ana-fd)/den), tol)
+
+    def test_L_homogeneity(self):
+        # the traveltime is homogeneous of degree one in a slowness and of
+        # degree minus one in a velocity, and the group velocity of a coupled
+        # cell scales with both of its vertical velocities together
+        for aniso, blk, value, sign in (
+                ('iso', 0, 0.5, 1.), ('elliptical', 0, 0.5, 1.),
+                ('tilted_elliptical', 0, 0.5, 1.),
+                ('weakly_anelliptical', 0, 0.5, 1.),
+                ('vti_sh', 0, 1.8, -1.), ('tti_sh', 0, 1.8, -1.)):
+            with self.subTest(aniso=aniso):
+                tt, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = L[:, blk*self.ncells:(blk+1)*self.ncells] @ \
+                    np.full(self.ncells, value)
+                self.assertLess(np.max(np.abs(got - sign*tt)/tt), 1.e-9)
+
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                tt, L = self._grid(aniso).raytrace(self.src, self.rcv,
+                                                   compute_L=True)
+                L = L.toarray()
+                got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                       L[:, self.ncells:2*self.ncells] @
+                       np.full(self.ncells, 1.51))
+                self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+
+class TestPhase(unittest.TestCase):
+    """Choosing the wave modelled in a transversely isotropic medium.
+
+    The coupled cells describe both a quasi-compressional and a quasi-shear
+    wave; the qP one is modelled until set_phase says otherwise.
+    """
+
+    def setUp(self):
+        n, h = 41, 0.05
+        self.x = np.arange(n)*h
+        self.z = np.arange(n)*h
+        self.ncells = (n-1)*(n-1)
+        self.src = np.array([[0.3, 0.3]])
+        self.rcv = np.array([[1.7, 1.6], [1.8, 0.6]])
+
+    def _grid(self, aniso='vti_psv', phase=None):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso=aniso)
+        g.set_Vp0(np.full(self.ncells, 3.094))
+        g.set_Vs0(np.full(self.ncells, 1.51))
+        g.set_epsilon(np.full(self.ncells, 0.256))
+        g.set_delta(np.full(self.ncells, -0.0505))
+        if aniso == 'tti_psv':
+            g.set_tilt_angle(np.full(self.ncells, 0.3))
+        if phase is not None:
+            g.set_phase(phase)
+        return g
+
+    def test_qSV_is_slower_than_qP(self):
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                tp = self._grid(aniso, 'qP').raytrace(self.src, self.rcv)
+                ts = self._grid(aniso, 'qSV').raytrace(self.src, self.rcv)
+                self.assertTrue(np.all(ts > tp))
+
+    def test_qP_is_the_default(self):
+        for aniso in ('vti_psv', 'tti_psv'):
+            with self.subTest(aniso=aniso):
+                self.assertTrue(np.allclose(
+                    self._grid(aniso).raytrace(self.src, self.rcv),
+                    self._grid(aniso, 'qP').raytrace(self.src, self.rcv)))
+
+    def test_integers_of_the_cpp_setter(self):
+        # setPhase takes 1 for qP and anything else for qSV
+        self.assertTrue(np.allclose(
+            self._grid('vti_psv', 1).raytrace(self.src, self.rcv),
+            self._grid('vti_psv', 'qP').raytrace(self.src, self.rcv)))
+        self.assertTrue(np.allclose(
+            self._grid('vti_psv', 2).raytrace(self.src, self.rcv),
+            self._grid('vti_psv', 'qSV').raytrace(self.src, self.rcv)))
+
+    def test_sensitivity_follows_the_phase(self):
+        # the identity must hold whichever wave is modelled
+        for phase in ('qP', 'qSV'):
+            with self.subTest(phase=phase):
+                tt, L = self._grid('vti_psv', phase).raytrace(
+                    self.src, self.rcv, compute_L=True)
+                L = L.toarray()
+                got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
+                       L[:, self.ncells:2*self.ncells] @
+                       np.full(self.ncells, 1.51))
+                self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-9)
+
+    def test_a_medium_without_a_phase_refuses(self):
+        g = rg.Grid2d(self.x, self.z, method='SPM', nsnx=10, nsnz=10,
+                      aniso='elliptical')
+        g.set_slowness(np.full(self.ncells, 0.5))
+        g.set_xi(np.full(self.ncells, 1.1))
+        self.assertRaises(RuntimeError, g.set_phase, 'qSV')
+        self.assertRaises(ValueError, self._grid('vti_psv').set_phase, 'qX')
+
+    def test_phase_survives_a_pickle(self):
+        import pickle
+        for aniso in ('vti_psv', 'tti_psv'):
+            for phase in ('qP', 'qSV'):
+                with self.subTest(aniso=aniso, phase=phase):
+                    g = self._grid(aniso, phase)
+                    tt = g.raytrace(self.src, self.rcv)
+                    # a pickle carries the geometry and the options, not the
+                    # medium, which has to be given to the rebuilt grid again
+                    g2 = pickle.loads(pickle.dumps(g))
+                    g2.set_Vp0(np.full(self.ncells, 3.094))
+                    g2.set_Vs0(np.full(self.ncells, 1.51))
+                    g2.set_epsilon(np.full(self.ncells, 0.256))
+                    g2.set_delta(np.full(self.ncells, -0.0505))
+                    if aniso == 'tti_psv':
+                        g2.set_tilt_angle(np.full(self.ncells, 0.3))
+                    self.assertTrue(np.allclose(
+                        tt, g2.raytrace(self.src, self.rcv)))
+
+
 if __name__ == '__main__':
 
     unittest.main()

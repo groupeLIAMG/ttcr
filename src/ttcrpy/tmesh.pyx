@@ -284,7 +284,7 @@ cdef class Mesh3d:
                               self.eps, self.maxit, self.gradient_method,
                               self.min_dist, self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.translate_grid)
-        return (_rebuild3d, constructor_params)
+        return (_rebuild3d, (constructor_params,))
 
     @property
     def n_threads(self):
@@ -1216,6 +1216,10 @@ cdef class Mesh2d:
             - 'iso' : isotropic medium
             - 'elliptical' : elliptical anisotropy
             - 'tilted_elliptical' : tilted elliptical anisotropy
+            - 'vti_psv' : vertical transverse isotropy, P and SV waves
+            - 'vti_sh' : vertical transverse isotropy, SH waves
+            - 'tti_psv' : tilted transverse isotropy, P and SV waves
+            - 'tti_sh' : tilted transverse isotropy, SH waves
             - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
         convergence criterion (FSM) (default is 1e-5)
@@ -1250,6 +1254,7 @@ cdef class Mesh2d:
     cdef int maxit
     cdef char method
     cdef char iso
+    cdef char phase
     cdef uint32_t n_secondary
     cdef uint32_t n_tertiary
     cdef double radius_factor_tertiary
@@ -1271,6 +1276,7 @@ cdef class Mesh2d:
         self.maxit = maxit
         self.process_obtuse = process_obtuse
         self.iso = b'i'
+        self.phase = b'P'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -1343,6 +1349,34 @@ cdef class Mesh2d:
                                                                                                                  n_secondary,
                                                                                                                  tt_from_rp,
                                                                                                                  n_threads)
+                elif aniso == 'vti_psv':
+                    self.iso = b'p'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_p](self.no,
+                                                                      self.tri,
+                                                                      n_secondary,
+                                                                      tt_from_rp,
+                                                                      n_threads)
+                elif aniso == 'vti_sh':
+                    self.iso = b'h'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_h](self.no,
+                                                                      self.tri,
+                                                                      n_secondary,
+                                                                      tt_from_rp,
+                                                                      n_threads)
+                elif aniso == 'tti_psv':
+                    self.iso = b'P'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_tp](self.no,
+                                                                       self.tri,
+                                                                       n_secondary,
+                                                                       tt_from_rp,
+                                                                       n_threads)
+                elif aniso == 'tti_sh':
+                    self.iso = b'H'
+                    self.grid = new Grid2Ducsp[double,uint32_t,sxz[double],Node2Dcsp[double,uint32_t],cell2d_th](self.no,
+                                                                       self.tri,
+                                                                       n_secondary,
+                                                                       tt_from_rp,
+                                                                       n_threads)
                     
             elif method == 'DSPM':
                 self.method = b'd'
@@ -1406,6 +1440,14 @@ cdef class Mesh2d:
             aniso = 'tilted_elliptical'
         elif self.iso == b'w':
             aniso = 'weakly_anelliptical'
+        elif self.iso == b'p':
+            aniso = 'vti_psv'
+        elif self.iso == b'h':
+            aniso = 'vti_sh'
+        elif self.iso == b'P':
+            aniso = 'tti_psv'
+        elif self.iso == b'H':
+            aniso = 'tti_sh'
 
         nodes = np.ndarray((self.no.size(), 2))
         triangles = np.ndarray((self.tri.size(), 3), dtype=int)
@@ -1424,7 +1466,10 @@ cdef class Mesh2d:
                               self.eps, self.maxit, self.process_obtuse,
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp)
-        return (_rebuild2d, constructor_params)
+        if self.iso == b'p' or self.iso == b'P':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
+        return (_rebuild2d, (constructor_params,))
 
     @property
     def n_threads(self):
@@ -1575,6 +1620,38 @@ cdef class Mesh2d:
             var.push_back(xi[i])
         self.grid.setXi(var)
 
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' and 'tti_psv' media describe both waves; the others
+        raise.  The qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
+
     def set_tilt_angle(self, theta):
         """
         set_tilt_angle(theta)
@@ -1641,6 +1718,116 @@ cdef class Mesh2d:
             var.push_back(s4[i])
         self.grid.setS4(var)
 
+    def set_Vp0(self, v):
+        """
+        set_Vp0(v)
+
+        Assign vertical P-wave velocity to mesh (VTI or TTI medium)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nparams, )
+        """
+        if v.size != self.nparams:
+            raise ValueError('v vector has wrong size')
+
+        if not v.flags['C_CONTIGUOUS']:
+                v = np.ascontiguousarray(v)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(v.size):
+            var.push_back(v[i])
+        self.grid.setVp0(var)
+
+    def set_Vs0(self, v):
+        """
+        set_Vs0(v)
+
+        Assign vertical S-wave velocity to mesh (VTI or TTI medium)
+
+        Parameters
+        ----------
+        v : np ndarray, shape (nparams, )
+        """
+        if v.size != self.nparams:
+            raise ValueError('v vector has wrong size')
+
+        if not v.flags['C_CONTIGUOUS']:
+                v = np.ascontiguousarray(v)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(v.size):
+            var.push_back(v[i])
+        self.grid.setVs0(var)
+
+    def set_epsilon(self, e):
+        """
+        set_epsilon(e)
+
+        Assign Thomsen's parameter epsilon to mesh
+
+        Parameters
+        ----------
+        e : np ndarray, shape (nparams, )
+        """
+        if e.size != self.nparams:
+            raise ValueError('e vector has wrong size')
+
+        if not e.flags['C_CONTIGUOUS']:
+                e = np.ascontiguousarray(e)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(e.size):
+            var.push_back(e[i])
+        self.grid.setEpsilon(var)
+
+    def set_delta(self, d):
+        """
+        set_delta(d)
+
+        Assign Thomsen's parameter delta to mesh
+
+        Parameters
+        ----------
+        d : np ndarray, shape (nparams, )
+        """
+        if d.size != self.nparams:
+            raise ValueError('d vector has wrong size')
+
+        if not d.flags['C_CONTIGUOUS']:
+                d = np.ascontiguousarray(d)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(d.size):
+            var.push_back(d[i])
+        self.grid.setDelta(var)
+
+    def set_gamma(self, g):
+        """
+        set_gamma(g)
+
+        Assign Thomsen's parameter gamma to mesh (SH wave)
+
+        Parameters
+        ----------
+        g : np ndarray, shape (nparams, )
+        """
+        if g.size != self.nparams:
+            raise ValueError('g vector has wrong size')
+
+        if not g.flags['C_CONTIGUOUS']:
+                g = np.ascontiguousarray(g)
+
+        cdef vector[double] var
+        cdef int i
+        for i in range(g.size):
+            var.push_back(g[i])
+        self.grid.setGamma(var)
+
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, return_rays=False):
         """
@@ -1664,8 +1851,15 @@ cdef class Mesh2d:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to
-            slowness
+            Compute the matrix of partial derivatives of travel time w/r to the
+            medium parameters.  For a mesh with slowness defined at the cells, L
+            holds one block of ncells columns per parameter, in the order the
+            setters take them: slowness for an isotropic medium; slowness and xi
+            for an elliptical one; Vs0 and gamma for vti_sh; slowness, xi and the
+            tilt angle for tilted_elliptical; Vs0, gamma and the tilt angle for
+            tti_sh; slowness, s2 and s4 for weakly_anelliptical; Vp0, Vs0,
+            epsilon and delta for vti_psv; and those four with the tilt angle
+            for tti_psv.
         return_rays : bool (False by default)
             Return raypaths
 
@@ -1724,9 +1918,15 @@ cdef class Mesh2d:
 
         cdef vector[vector[vector[sxz[double]]]] r_data
         cdef vector[vector[vector[siv[double]]]] l_data
+        cdef vector[vector[vector[siv2[double]]]] l_data2
+        cdef vector[vector[vector[siv4[double]]]] l_data4
+        cdef vector[vector[vector[siv5[double]]]] l_data5
         cdef size_t thread_nb
 
         cdef int i, n, n2, nt
+        # number of blocks of columns of L, one per medium parameter.  Not to be
+        # confused with self.nparams, which counts the cells of the mesh.
+        cdef int nblocks
 
         vTx.resize(nTx)
         vRx.resize(nTx)
@@ -1734,8 +1934,16 @@ cdef class Mesh2d:
         vtt.resize(nTx)
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L not implemented for mesh with slowness defined at nodes')
+        nblocks = l_nparams(self.iso)
         if compute_L:
-            l_data.resize(nTx)
+            if nblocks == 1:
+                l_data.resize(nTx)
+            elif nblocks == 2:
+                l_data2.resize(nTx)
+            elif nblocks == 5:
+                l_data5.resize(nTx)
+            else:
+                l_data4.resize(nTx)
 
         if return_rays:
             r_data.resize(nTx)
@@ -1781,10 +1989,24 @@ cdef class Mesh2d:
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
             elif compute_L==True and return_rays==False:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                    if nblocks == 1:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                    elif nblocks == 2:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                    elif nblocks == 5:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
+                    else:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             else:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                    if nblocks == 1:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                    elif nblocks == 2:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                    elif nblocks == 5:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
+                    else:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
 
         elif thread_no is not None:
             # we should be here for just one event
@@ -1818,9 +2040,23 @@ cdef class Mesh2d:
             elif compute_L==False and return_rays==True:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
             elif compute_L==True and return_rays==False:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                if nblocks == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nblocks == 2:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                elif nblocks == 5:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             else:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                if nblocks == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                elif nblocks == 2:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                elif nblocks == 5:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
 
         for n in range(nTx):
             for nt in range(vtt[n].size()):
@@ -1843,24 +2079,84 @@ cdef class Mesh2d:
             L = []
             ncells = self.get_number_of_cells()
             for n in range(nTx):
+                MM = vRx[n].size()
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
+                if nblocks == 1:
+                    for ni in range(MM):
+                        nnz += l_data[n][ni].size()
+                elif nblocks == 2:
+                    for ni in range(MM):
+                        nnz += l_data2[n][ni].size()
+                elif nblocks == 5:
+                    for ni in range(MM):
+                        nnz += l_data5[n][ni].size()
+                else:
+                    for ni in range(MM):
+                        nnz += l_data4[n][ni].size()
+                nnz *= nblocks
 
-                indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
+                indptr = np.empty((MM+1,), dtype=np.int64)
                 indices = np.empty((nnz,), dtype=np.int64)
                 val = np.empty((nnz,))
+                NN = nblocks*ncells
 
+                # the cells of a row are sorted, so writing one block of columns
+                # after another leaves the indices of the row ascending
                 k = 0
-                MM = vRx[n].size()
-                NN = ncells
                 for i in range(MM):
                     indptr[i] = k
-                    for j in range(NN):
+                    if nblocks == 1:
                         for nn in range(l_data[n][i].size()):
-                            if l_data[n][i][nn].i == j:
-                                indices[k] = j
-                                val[k] = l_data[n][i][nn].v
+                            indices[k] = l_data[n][i][nn].i
+                            val[k] = l_data[n][i][nn].v
+                            k += 1
+                    elif nblocks == 2:
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i
+                            val[k] = l_data2[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i + ncells
+                            val[k] = l_data2[n][i][nn].v2
+                            k += 1
+                    elif nblocks == 5:
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i
+                            val[k] = l_data5[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + ncells
+                            val[k] = l_data5[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 2*ncells
+                            val[k] = l_data5[n][i][nn].v3
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 3*ncells
+                            val[k] = l_data5[n][i][nn].v4
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 4*ncells
+                            val[k] = l_data5[n][i][nn].v5
+                            k += 1
+                    else:
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i
+                            val[k] = l_data4[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + ncells
+                            val[k] = l_data4[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + 2*ncells
+                            val[k] = l_data4[n][i][nn].v3
+                            k += 1
+                        if nblocks == 4:
+                            for nn in range(l_data4[n][i].size()):
+                                indices[k] = l_data4[n][i][nn].i + 3*ncells
+                                val[k] = l_data4[n][i][nn].v4
                                 k += 1
 
                 indptr[MM] = k
@@ -2054,10 +2350,18 @@ def _rebuild3d(constructor_params):
     return g
 
 def _rebuild2d(constructor_params):
-    (nodes, triangles, method, cell_slowness, n_threads, eps, maxit,
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 14:
+        constructor_params, phase = constructor_params[:13], constructor_params[13]
+    (nodes, triangles, method, aniso, cell_slowness, n_threads, eps, maxit,
      process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary,
      tt_from_rp) = constructor_params
 
-    g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, eps, maxit,
-        process_obtuse, n_secondary, n_tertiary, radius_factor_tertiary, tt_from_rp)
+    g = Mesh2d(nodes, triangles, n_threads, cell_slowness, method, aniso, eps,
+               maxit, process_obtuse, n_secondary, n_tertiary,
+               radius_factor_tertiary, tt_from_rp)
+    if phase is not None:
+        g.set_phase(phase)
     return g

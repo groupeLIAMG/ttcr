@@ -914,7 +914,7 @@ cdef class Grid3d_d:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
             
         if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L defined for the FSM')
+            raise NotImplementedError('compute_L not defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:
@@ -961,7 +961,7 @@ cdef class Grid3d_d:
         cdef vector[vector[vector[sijv[double]]]] m_data
         cdef size_t thread_nb
 
-        cdef int i, j, k, n, nn, MM, NN
+        cdef int i, j, k, n, nn, MM, NN, nparams
 
         vTx.resize(nTx)
         vRx.resize(nTx)
@@ -2345,7 +2345,7 @@ cdef class Grid3d_f:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
 
         if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L defined for the FSM')
+            raise NotImplementedError('compute_L not defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:
@@ -2392,7 +2392,7 @@ cdef class Grid3d_f:
         cdef vector[vector[vector[sijv[float]]]] m_data
         cdef size_t thread_nb
 
-        cdef int i, j, k, n, nn, MM, NN
+        cdef int i, j, k, n, nn, MM, NN, nparams
 
         vTx.resize(nTx)
         vRx.resize(nTx)
@@ -2798,6 +2798,8 @@ cdef class Grid2d_d:
             - 'tilted_elliptical' : tilted elliptical anisotropy
             - 'vti_psv' : vertical transverse isotropy, P and SV waves
             - 'vti_sh' : vertical transverse isotropy, SH waves
+            - 'tti_psv' : tilted transverse isotropy, P and SV waves
+            - 'tti_sh' : tilted transverse isotropy, SH waves
             - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
         convergence criterion (FSM) (default is 1e-5)
@@ -2842,6 +2844,7 @@ cdef class Grid2d_d:
     cdef size_t _n_threads
     cdef char method
     cdef char iso
+    cdef char phase
     cdef double eps
     cdef int maxit
     cdef bool weno
@@ -2880,6 +2883,7 @@ cdef class Grid2d_d:
         self.nsnx = nsnx
         self.nsnz = nsnz
         self.iso = b'i'
+        self.phase = b'P'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -2920,6 +2924,16 @@ cdef class Grid2d_d:
                 elif aniso == 'vti_sh':
                     self.iso = b'h'
                     self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_h](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_psv':
+                    self.iso = b'P'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_tp](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_sh':
+                    self.iso = b'H'
+                    self.grid = new Grid2Drcsp[double,uint32_t,sxz[double],cell2d_th](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'weakly_anelliptical':
@@ -2995,6 +3009,10 @@ cdef class Grid2d_d:
             aniso = 'vti_psv'
         elif self.iso == b'h':
             aniso = 'vti_sh'
+        elif self.iso == b'P':
+            aniso = 'tti_psv'
+        elif self.iso == b'H':
+            aniso = 'tti_sh'
         elif self.iso == b'w':
             aniso = 'weakly_anelliptical'
 
@@ -3004,6 +3022,9 @@ cdef class Grid2d_d:
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp,
                               self.fsm_gpu)
+        if self.iso == b'p' or self.iso == b'P':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild2d_d, (self.x, self.z, constructor_params))
 
     @property
@@ -3274,11 +3295,47 @@ cdef class Grid2d_d:
             raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
 
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' and 'tti_psv' media describe both waves; the others
+        raise.  The qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
+
     def set_tilt_angle(self, theta):
         """
         set_tilt_angle(theta)
 
-        Assign tilted elliptical anisotropy angle to grid
+        Assign anisotropy tilt angle to grid
+
+        Applies to the 'tilted_elliptical', 'tti_psv' and 'tti_sh' media.  The
+        angle is measured in radians; the symmetry axis lies at -theta from the
+        vertical.
 
         Parameters
         ----------
@@ -3855,7 +3912,23 @@ cdef class Grid2d_d:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to slowness
+            Compute matrices of partial derivative of travel time w/r to the
+            medium parameters.  L holds one block of ncells columns per
+            parameter, in the order the setters take them:
+
+            ==================== ==========================================
+            aniso                blocks of columns
+            ==================== ==========================================
+            iso                  slowness
+            elliptical           slowness, xi
+            vti_sh               Vs0, gamma
+            tilted_elliptical    slowness, xi, tilt angle
+            tti_sh               Vs0, gamma, tilt angle
+            weakly_anelliptical  slowness, s2, s4
+            vti_psv              Vp0, Vs0, epsilon, delta
+            tti_psv              Vp0, Vs0, epsilon, delta, tilt angle
+            ==================== ==========================================
+
         return_rays : bool (False by default)
             Return raypaths
 
@@ -3891,9 +3964,6 @@ cdef class Grid2d_d:
 
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
-
-        if compute_L and (self.iso == b'p' or self.iso == b'h'):
-            raise NotImplementedError('compute_L not implemented for VTI media')
 
         if source.shape[1] == 2:
             src = source
@@ -3945,19 +4015,26 @@ cdef class Grid2d_d:
         cdef vector[vector[vector[sxz[double]]]] r_data
         cdef vector[vector[vector[siv[double]]]] l_data
         cdef vector[vector[vector[siv2[double]]]] l_data2
+        cdef vector[vector[vector[siv4[double]]]] l_data4
+        cdef vector[vector[vector[siv5[double]]]] l_data5
         cdef size_t thread_nb
 
-        cdef int i, j, k, n, nn, MM, NN
+        cdef int i, j, k, n, nn, MM, NN, nparams
 
         vTx.resize(nTx)
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        nparams = l_nparams(self.iso)
         if compute_L:
-            if self.iso == b'i':
+            if nparams == 1:
                 l_data.resize(nTx)
-            else:
+            elif nparams == 2:
                 l_data2.resize(nTx)
+            elif nparams == 5:
+                l_data5.resize(nTx)
+            else:
+                l_data4.resize(nTx)
         if return_rays:
             r_data.resize(nTx)
 
@@ -3998,19 +4075,31 @@ cdef class Grid2d_d:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_L and return_rays:
-                if self.iso == b'i':
+                if nparams == 1:
                     for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
-                else:
+                elif nparams == 2:
                     for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
-            elif compute_L:
-                if self.iso == b'i':
+                elif nparams == 5:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
                 else:
                     for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
+            elif compute_L:
+                if nparams == 1:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                elif nparams == 2:
+                    for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                elif nparams == 5:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
+                else:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             else:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
@@ -4045,15 +4134,23 @@ cdef class Grid2d_d:
             if compute_L==False and return_rays==False:
                 self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_L and return_rays:
-                if self.iso == b'i':
+                if nparams == 1:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
-                else:
+                elif nparams == 2:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
-            elif compute_L:
-                if self.iso == b'i':
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nparams == 5:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
                 else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
+            elif compute_L:
+                if nparams == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nparams == 2:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                elif nparams == 5:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             else:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
@@ -4078,53 +4175,88 @@ cdef class Grid2d_d:
             L = []
             ncells = self.get_number_of_cells()
             for n in range(nTx):
+                MM = vRx[n].size()
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
-
-                if self.iso == b'i':
-                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
-                    indices = np.empty((nnz,), dtype=np.int64)
-                    val = np.empty((nnz,))
-
-                    k = 0
-                    MM = vRx[n].size()
-                    NN = ncells
-                    for i in range(MM):
-                        indptr[i] = k
-                        for j in range(NN):
-                            for nn in range(l_data[n][i].size()):
-                                if l_data[n][i][nn].i == j:
-                                    indices[k] = j
-                                    val[k] = l_data[n][i][nn].v
-                                    k += 1
-
-                    indptr[MM] = k
-                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                if nparams == 1:
+                    for ni in range(MM):
+                        nnz += l_data[n][ni].size()
+                elif nparams == 2:
+                    for ni in range(MM):
+                        nnz += l_data2[n][ni].size()
+                elif nparams == 5:
+                    for ni in range(MM):
+                        nnz += l_data5[n][ni].size()
                 else:
-                    nnz *= 2
-                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
-                    indices = np.empty((nnz,), dtype=np.int64)
-                    val = np.empty((nnz,))
+                    for ni in range(MM):
+                        nnz += l_data4[n][ni].size()
+                nnz *= nparams
 
-                    k = 0
-                    MM = vRx[n].size()
-                    NN = 2*ncells
-                    for i in range(MM):
-                        indptr[i] = k
-                        for j in range(NN):
-                            for nn in range(l_data2[n][i].size()):
-                                if l_data2[n][i][nn].i == j:
-                                    indices[k] = j
-                                    val[k] = l_data2[n][i][nn].v
-                                    k += 1
-                                elif l_data2[n][i][nn].i+ncells == j:
-                                    indices[k] = j
-                                    val[k] = l_data2[n][i][nn].v2
-                                    k += 1
+                indptr = np.empty((MM+1,), dtype=np.int64)
+                indices = np.empty((nnz,), dtype=np.int64)
+                val = np.empty((nnz,))
+                NN = nparams*ncells
 
-                    indptr[MM] = k
-                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                # the cells of a row are sorted, so writing one block of columns
+                # after another leaves the indices of the row ascending
+                k = 0
+                for i in range(MM):
+                    indptr[i] = k
+                    if nparams == 1:
+                        for nn in range(l_data[n][i].size()):
+                            indices[k] = l_data[n][i][nn].i
+                            val[k] = l_data[n][i][nn].v
+                            k += 1
+                    elif nparams == 2:
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i
+                            val[k] = l_data2[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i + ncells
+                            val[k] = l_data2[n][i][nn].v2
+                            k += 1
+                    elif nparams == 5:
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i
+                            val[k] = l_data5[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + ncells
+                            val[k] = l_data5[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 2*ncells
+                            val[k] = l_data5[n][i][nn].v3
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 3*ncells
+                            val[k] = l_data5[n][i][nn].v4
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 4*ncells
+                            val[k] = l_data5[n][i][nn].v5
+                            k += 1
+                    else:
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i
+                            val[k] = l_data4[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + ncells
+                            val[k] = l_data4[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + 2*ncells
+                            val[k] = l_data4[n][i][nn].v3
+                            k += 1
+                        if nparams == 4:
+                            for nn in range(l_data4[n][i].size()):
+                                indices[k] = l_data4[n][i][nn].i + 3*ncells
+                                val[k] = l_data4[n][i][nn].v4
+                                k += 1
+
+                indptr[MM] = k
+                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
             # we want a single matrix
             tmp = sp.vstack(L)
             itmp = []
@@ -4496,6 +4628,7 @@ cdef class Grid2d_f:
     cdef size_t _n_threads
     cdef char method
     cdef char iso
+    cdef char phase
     cdef float eps
     cdef int maxit
     cdef bool weno
@@ -4534,6 +4667,7 @@ cdef class Grid2d_f:
         self.nsnx = nsnx
         self.nsnz = nsnz
         self.iso = b'i'
+        self.phase = b'P'
         self.n_secondary = n_secondary
         self.n_tertiary = n_tertiary
         self.radius_factor_tertiary = radius_factor_tertiary
@@ -4574,6 +4708,16 @@ cdef class Grid2d_f:
                 elif aniso == 'vti_sh':
                     self.iso = b'h'
                     self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellVTI_SH[float,Node2Dcsp[float,uint32_t],sxz[float]]](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_psv':
+                    self.iso = b'P'
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellTTI_PSV[float,Node2Dcsp[float,uint32_t],sxz[float]]](
+                                    nx, nz, self._dx, self._dz,
+                                    xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
+                elif aniso == 'tti_sh':
+                    self.iso = b'H'
+                    self.grid = new Grid2Drcsp[float,uint32_t,sxz[float],CellTTI_SH[float,Node2Dcsp[float,uint32_t],sxz[float]]](
                                     nx, nz, self._dx, self._dz,
                                     xmin, zmin, nsnx, nsnz, tt_from_rp, n_threads)
                 elif aniso == 'weakly_anelliptical':
@@ -4649,6 +4793,10 @@ cdef class Grid2d_f:
             aniso = 'vti_psv'
         elif self.iso == b'h':
             aniso = 'vti_sh'
+        elif self.iso == b'P':
+            aniso = 'tti_psv'
+        elif self.iso == b'H':
+            aniso = 'tti_sh'
         elif self.iso == b'w':
             aniso = 'weakly_anelliptical'
 
@@ -4658,6 +4806,9 @@ cdef class Grid2d_f:
                               self.n_secondary, self.n_tertiary,
                               self.radius_factor_tertiary, self.tt_from_rp,
                               self.fsm_gpu)
+        if self.iso == b'p' or self.iso == b'P':
+            constructor_params = constructor_params + (
+                'qP' if self.phase == b'P' else 'qSV',)
         return (_rebuild2d_f, (self.x, self.z, constructor_params))
 
     @property
@@ -4828,6 +4979,38 @@ cdef class Grid2d_f:
         else:
             raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
+
+    def set_phase(self, phase):
+        """
+        set_phase(phase)
+
+        Select the wave to model in a transversely isotropic medium
+
+        Parameters
+        ----------
+        phase : str or int
+            'qP' for the quasi-compressional wave, 'qSV' for the quasi-shear
+            one.  The integers the C++ setPhase() takes are accepted as well,
+            1 for qP and anything else for qSV.
+
+        Notes
+        -----
+        Only the 'vti_psv' and 'tti_psv' media describe both waves; the others
+        raise.  The qP wave is the one modelled until this is called.
+        """
+        cdef int p
+        if isinstance(phase, str):
+            key = phase.strip().lower()
+            if key == 'qp':
+                p = 1
+            elif key == 'qsv':
+                p = 2
+            else:
+                raise ValueError("phase should be 'qP' or 'qSV'")
+        else:
+            p = 1 if int(phase) == 1 else 2
+        self.grid.setPhase(p)
+        self.phase = b'P' if p == 1 else b'S'
 
     def set_tilt_angle(self, theta):
         if self.cell_slowness:
@@ -5222,9 +5405,6 @@ cdef class Grid2d_f:
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
 
-        if compute_L and (self.iso == b'p' or self.iso == b'h'):
-            raise NotImplementedError('compute_L not implemented for VTI media')
-
         if source.shape[1] == 2:
             src = source
             _, ind = np.unique(source, axis=0, return_index=True)
@@ -5275,19 +5455,26 @@ cdef class Grid2d_f:
         cdef vector[vector[vector[sxz[float]]]] r_data
         cdef vector[vector[vector[siv[float]]]] l_data
         cdef vector[vector[vector[siv2[float]]]] l_data2
+        cdef vector[vector[vector[siv4[float]]]] l_data4
+        cdef vector[vector[vector[siv5[float]]]] l_data5
         cdef size_t thread_nb
 
-        cdef int i, j, k, n, nn, MM, NN
+        cdef int i, j, k, n, nn, MM, NN, nparams
 
         vTx.resize(nTx)
         vRx.resize(nTx)
         vt0.resize(nTx)
         vtt.resize(nTx)
+        nparams = l_nparams(self.iso)
         if compute_L:
-            if self.iso == b'i':
+            if nparams == 1:
                 l_data.resize(nTx)
-            else:
+            elif nparams == 2:
                 l_data2.resize(nTx)
+            elif nparams == 5:
+                l_data5.resize(nTx)
+            else:
+                l_data4.resize(nTx)
         if return_rays:
             r_data.resize(nTx)
 
@@ -5328,19 +5515,31 @@ cdef class Grid2d_f:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_L and return_rays:
-                if self.iso == b'i':
+                if nparams == 1:
                     for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
-                else:
+                elif nparams == 2:
                     for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
-            elif compute_L:
-                if self.iso == b'i':
+                elif nparams == 5:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
                 else:
                     for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
+            elif compute_L:
+                if nparams == 1:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                elif nparams == 2:
+                    for n in range(nTx):
                         self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                elif nparams == 5:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
+                else:
+                    for n in range(nTx):
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             else:
                 for n in range(nTx):
                     self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
@@ -5373,15 +5572,23 @@ cdef class Grid2d_f:
             if compute_L==False and return_rays==False:
                 self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_L and return_rays:
-                if self.iso == b'i':
+                if nparams == 1:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
-                else:
+                elif nparams == 2:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
-            elif compute_L:
-                if self.iso == b'i':
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nparams == 5:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
                 else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
+            elif compute_L:
+                if nparams == 1:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                elif nparams == 2:
                     self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                elif nparams == 5:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
+                else:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             else:
                 self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
@@ -5405,53 +5612,88 @@ cdef class Grid2d_f:
             L = []
             ncells = self.get_number_of_cells()
             for n in range(nTx):
+                MM = vRx[n].size()
                 nnz = 0
-                for ni in range(l_data[n].size()):
-                    nnz += l_data[n][ni].size()
-
-                if self.iso == b'i':
-                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
-                    indices = np.empty((nnz,), dtype=np.int64)
-                    val = np.empty((nnz,), dtype=np.float32)
-
-                    k = 0
-                    MM = vRx[n].size()
-                    NN = ncells
-                    for i in range(MM):
-                        indptr[i] = k
-                        for j in range(NN):
-                            for nn in range(l_data[n][i].size()):
-                                if l_data[n][i][nn].i == j:
-                                    indices[k] = j
-                                    val[k] = l_data[n][i][nn].v
-                                    k += 1
-
-                    indptr[MM] = k
-                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                if nparams == 1:
+                    for ni in range(MM):
+                        nnz += l_data[n][ni].size()
+                elif nparams == 2:
+                    for ni in range(MM):
+                        nnz += l_data2[n][ni].size()
+                elif nparams == 5:
+                    for ni in range(MM):
+                        nnz += l_data5[n][ni].size()
                 else:
-                    nnz *= 2
-                    indptr = np.empty((vRx[n].size()+1,), dtype=np.int64)
-                    indices = np.empty((nnz,), dtype=np.int64)
-                    val = np.empty((nnz,), dtype=np.float32)
+                    for ni in range(MM):
+                        nnz += l_data4[n][ni].size()
+                nnz *= nparams
 
-                    k = 0
-                    MM = vRx[n].size()
-                    NN = 2*ncells
-                    for i in range(MM):
-                        indptr[i] = k
-                        for j in range(NN):
-                            for nn in range(l_data2[n][i].size()):
-                                if l_data2[n][i][nn].i == j:
-                                    indices[k] = j
-                                    val[k] = l_data2[n][i][nn].v
-                                    k += 1
-                                elif l_data2[n][i][nn].i+ncells == j:
-                                    indices[k] = j
-                                    val[k] = l_data2[n][i][nn].v2
-                                    k += 1
+                indptr = np.empty((MM+1,), dtype=np.int64)
+                indices = np.empty((nnz,), dtype=np.int64)
+                val = np.empty((nnz,), dtype=np.float32)
+                NN = nparams*ncells
 
-                    indptr[MM] = k
-                    L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                # the cells of a row are sorted, so writing one block of columns
+                # after another leaves the indices of the row ascending
+                k = 0
+                for i in range(MM):
+                    indptr[i] = k
+                    if nparams == 1:
+                        for nn in range(l_data[n][i].size()):
+                            indices[k] = l_data[n][i][nn].i
+                            val[k] = l_data[n][i][nn].v
+                            k += 1
+                    elif nparams == 2:
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i
+                            val[k] = l_data2[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data2[n][i].size()):
+                            indices[k] = l_data2[n][i][nn].i + ncells
+                            val[k] = l_data2[n][i][nn].v2
+                            k += 1
+                    elif nparams == 5:
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i
+                            val[k] = l_data5[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + ncells
+                            val[k] = l_data5[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 2*ncells
+                            val[k] = l_data5[n][i][nn].v3
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 3*ncells
+                            val[k] = l_data5[n][i][nn].v4
+                            k += 1
+                        for nn in range(l_data5[n][i].size()):
+                            indices[k] = l_data5[n][i][nn].i + 4*ncells
+                            val[k] = l_data5[n][i][nn].v5
+                            k += 1
+                    else:
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i
+                            val[k] = l_data4[n][i][nn].v
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + ncells
+                            val[k] = l_data4[n][i][nn].v2
+                            k += 1
+                        for nn in range(l_data4[n][i].size()):
+                            indices[k] = l_data4[n][i][nn].i + 2*ncells
+                            val[k] = l_data4[n][i][nn].v3
+                            k += 1
+                        if nparams == 4:
+                            for nn in range(l_data4[n][i].size()):
+                                indices[k] = l_data4[n][i][nn].i + 3*ncells
+                                val[k] = l_data4[n][i][nn].v4
+                                k += 1
+
+                indptr[MM] = k
+                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
             tmp = sp.vstack(L)
             itmp = []
             for n in range(nTx):
@@ -5624,22 +5866,36 @@ Grid3d.builder = Grid3d_d.builder
 Grid3d.data_kernel_straight_rays = Grid3d_d.data_kernel_straight_rays
 
 def _rebuild2d_d(x, z, constructor_params):
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 16:
+        constructor_params, phase = constructor_params[:15], constructor_params[15]
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
      radius_factor_tertiary, tt_from_rp, fsm_gpu) = constructor_params
     g = Grid2d_d(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                  rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
                  radius_factor_tertiary, tt_from_rp, fsm_gpu)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 
 def _rebuild2d_f(x, z, constructor_params):
+    # a phase is appended only by the media that describe one, so a mesh
+    # pickled before it was carried still loads
+    phase = None
+    if len(constructor_params) == 16:
+        constructor_params, phase = constructor_params[:15], constructor_params[15]
     (n_threads, cell_slowness, method, aniso, eps, maxit, weno,
      rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
      radius_factor_tertiary, tt_from_rp, fsm_gpu) = constructor_params
     g = Grid2d_f(x, z, n_threads, cell_slowness, method, aniso, eps, maxit, weno,
                  rotated_template, nsnx, nsnz, n_secondary, n_tertiary,
                  radius_factor_tertiary, tt_from_rp, fsm_gpu)
+    if phase is not None:
+        g.set_phase(phase)
     return g
 
 

@@ -191,31 +191,97 @@ namespace ttcr {
                       std::vector<std::vector<std::vector<S>>*>& r_data,
                       const size_t threadNo=0) const;
 
-        /// Traveltimes, raypaths and per-cell path lengths (@ref siv).
+        /// @name Traveltimes and per-cell sensitivities
+        ///
+        /// The cells report the sensitivity of the traveltime to their medium
+        /// parameters, one value per parameter, so the container widens with
+        /// the number of parameters the medium has: @ref siv for an isotropic
+        /// cell, @ref siv2, @ref siv4 or @ref siv5 for the anisotropic ones.
+        /// All of these walk the same shortest-path tree, through
+        /// raytraceSensitivity().
+        /// @{
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<S>>& r_data,
                       std::vector<std::vector<siv<T1>>>& l_data,
-                      const size_t threadNo) const;
+                      const size_t threadNo) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, &r_data, l_data, threadNo);
+        }
 
-        /// Traveltimes, raypaths and two-component per-cell path lengths (@ref siv2).
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<S>>& r_data,
                       std::vector<std::vector<siv2<T1>>>& l_data,
-                      const size_t threadNo=0) const;
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, &r_data, l_data, threadNo);
+        }
 
-        /// Traveltimes and two-component per-cell path lengths, without the geometry.
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<S>>& r_data,
+                      std::vector<std::vector<siv4<T1>>>& l_data,
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, &r_data, l_data, threadNo);
+        }
+
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<S>>& r_data,
+                      std::vector<std::vector<siv5<T1>>>& l_data,
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, &r_data, l_data, threadNo);
+        }
+
+        /// The same, without the raypaths.
+        ///
+        /// Without these overrides the calls would resolve to
+        /// Grid2D::raytrace(), which traces the raypath by following the
+        /// gradient of the traveltime field instead of walking the
+        /// shortest-path tree, yielding a longer path and a traveltime
+        /// inconsistent with the other raytrace() overloads of this class.
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<siv<T1>>>& l_data,
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, nullptr, l_data, threadNo);
+        }
+
         void raytrace(const std::vector<S>& Tx,
                       const std::vector<T1>& t0,
                       const std::vector<S>& Rx,
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<siv2<T1>>>& l_data,
-                      const size_t threadNo=0) const;
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, nullptr, l_data, threadNo);
+        }
+
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<siv4<T1>>>& l_data,
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, nullptr, l_data, threadNo);
+        }
+
+        void raytrace(const std::vector<S>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<S>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<siv5<T1>>>& l_data,
+                      const size_t threadNo=0) const {
+            raytraceSensitivity(Tx, t0, Rx, traveltimes, nullptr, l_data, threadNo);
+        }
         /// @}
 
         /// @return Number of secondary nodes per cell edge along x.
@@ -300,6 +366,47 @@ namespace ttcr {
                       std::vector<bool>& inQueue,
                       std::vector<bool>& frozen,
                       const size_t threadNo) const;
+
+        /**
+         * @brief Traveltimes and per-cell sensitivities, whatever the container
+         *
+         * Walks the shortest-path tree from each receiver back to the source,
+         * asking the cells for the sensitivity of the traveltime of every
+         * segment and accumulating it.  The four public overloads differ only
+         * in the container the cells report into, and in whether the raypath is
+         * wanted, so they share this one body.
+         *
+         * @param Tx          source coordinates
+         * @param t0          source excitation times
+         * @param Rx          receiver coordinates
+         * @param traveltimes traveltimes at the receivers
+         * @param r_data      raypaths, or nullptr if they are not wanted
+         * @param l_data      per-cell sensitivities
+         * @param threadNo    thread on which to run
+         */
+        template<typename SIV>
+        void raytraceSensitivity(const std::vector<S>& Tx,
+                                 const std::vector<T1>& t0,
+                                 const std::vector<S>& Rx,
+                                 std::vector<T1>& traveltimes,
+                                 std::vector<std::vector<S>>* r_data,
+                                 std::vector<std::vector<SIV>>& l_data,
+                                 const size_t threadNo) const;
+
+        /// @brief Add the contribution of a segment to the cell it crosses
+        ///
+        /// A ray may cross the same cell more than once, passing through the
+        /// secondary nodes along an edge, so the contributions are summed.
+        template<typename SIV>
+        static void accumulate(std::vector<SIV>& row, const SIV& cell) {
+            for ( size_t nc=0; nc<row.size(); ++nc ) {
+                if ( row[nc].i == cell.i ) {
+                    row[nc] += cell;
+                    return;
+                }
+            }
+            row.push_back( cell );
+        }
 
         T1 get_tt_corr(const siv2<T1>& cell,
                        const Grid2Drcsp<T1,T2,S,CELL> *grid,
@@ -918,17 +1025,23 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
-                                            std::vector<std::vector<S>>& r_data,
-                                            std::vector<std::vector<siv<T1>>>& l_data,
-                                            const size_t threadNo) const {
+    template<typename SIV>
+    void Grid2Drcsp<T1,T2,S,CELL>::raytraceSensitivity(const std::vector<S>& Tx,
+                                                       const std::vector<T1>& t0,
+                                                       const std::vector<S>& Rx,
+                                                       std::vector<T1>& traveltimes,
+                                                       std::vector<std::vector<S>>* r_data,
+                                                       std::vector<std::vector<SIV>>& l_data,
+                                                       const size_t threadNo) const {
+
+        if constexpr ( !cell_reports_into<CELL, SIV, Node2Dcsp<T1,T2>, S>::value ) {
+            throw std::logic_error("Error: these cells do not report their "
+                                   "sensitivity in the container requested.");
+        } else {
 
         this->checkPts(Tx);
         this->checkPts(Rx);
-        
+
         for ( size_t n=0; n<this->nodes.size(); ++n ) {
             this->nodes[n].reinit( threadNo );
         }
@@ -941,9 +1054,9 @@ namespace ttcr {
         std::vector<bool> frozen( this->nodes.size(), false );
 
         initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-        
+
         propagate(queue, inQueue, frozen, threadNo);
-        
+
         if ( traveltimes.size() != Rx.size() ) {
             traveltimes.resize( Rx.size() );
         }
@@ -953,271 +1066,33 @@ namespace ttcr {
         for ( size_t ni=0; ni<l_data.size(); ++ni ) {
             l_data[ni].resize( 0 );
         }
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
+        if ( r_data != nullptr ) {
+            if ( r_data->size() != Rx.size() ) {
+                r_data->resize( Rx.size() );
+            }
+            for ( size_t ni=0; ni<r_data->size(); ++ni ) {
+                (*r_data)[ni].resize( 0 );
+            }
         }
         T2 nodeParentRx;
         T2 cellParentRx;
-        
+
         for (size_t n=0; n<Rx.size(); ++n) {
-            
-            traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
-                                           threadNo);
-            
-            // Rx are in nodes (not txNodes)
-            std::vector<Node2Dcsp<T1,T2>> *node_p;
-            node_p = &(this->nodes);
-            
-            std::vector<sxz<T1>> r_tmp;
-            T2 iChild, iParent = nodeParentRx;
-            sxz<T1> child;
-            siv<T1> cell;
-            
-            // store the son's coord
-            child.x = Rx[n].x;
-            child.z = Rx[n].z;
-            cell.i = cellParentRx;
-            while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
-                
-                r_tmp.push_back( child );
-                
-                this->cells.computeDistance( (*node_p)[iParent], child, cell);
-                bool found=false;
-                for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                    if ( l_data[n][nc].i == cell.i ) {
-                        l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
-                        found = true;
-                        break;
+
+            // check if Rx is on one of Tx nodes
+            bool foundTx = false;
+            for (size_t nt=0; nt<Tx.size(); ++nt) {
+                if (Tx[nt] == Rx[n]) {
+                    traveltimes[n] = t0[nt];
+                    if ( r_data != nullptr ) {
+                        (*r_data)[n].push_back(Tx[nt]);
                     }
-                }
-                if ( found == false ) {
-                    l_data[n].push_back( cell );
-                }
-                
-                // we now go up in time - parent becomes the child of grand'pa
-                iChild = iParent;
-                child.x = (*node_p)[iChild].getX();
-                child.z = (*node_p)[iChild].getZ();
-                cell.i = (*node_p)[iChild].getCellParent(threadNo);
-                
-                // grand'pa is now papa
-                iParent = (*node_p)[iChild].getNodeParent(threadNo);
-                if ( iParent >= this->nodes.size() ) {
-                    node_p = &txNodes;
-                    iParent -= this->nodes.size();
-                }
-                else {
-                    node_p = &(this->nodes);
-                }
-            }
-            
-            // parent is now at Tx
-            r_tmp.push_back( child );
-            
-            this->cells.computeDistance( (*node_p)[iParent], child, cell);
-            bool found=false;
-            for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                if ( l_data[n][nc].i == cell.i ) {
-                    l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
-                    found = true;
+                    foundTx = true;
                     break;
                 }
             }
-            if ( found == false ) {
-                l_data[n].push_back( cell );
-            }
-            
-            // finally, store Tx position
-            child.x = (*node_p)[iParent].getX();
-            child.z = (*node_p)[iParent].getZ();
-            r_tmp.push_back( child );
-            
-            //  must be sorted to build matrix L
-            sort(l_data[n].begin(), l_data[n].end(), CompareSiv_i<T1>());
-            
-            // the order should be from Tx to Rx, so we reorder...
-            iParent = static_cast<T2>(r_tmp.size());
-            r_data[n].resize( r_tmp.size() );
-            for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-                r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-                r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
-            }
-        }
-    }
-
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
-                                            std::vector<std::vector<S>>& r_data,
-                                            std::vector<std::vector<siv2<T1>>>& l_data,
-                                            const size_t threadNo) const {
-
-        this->checkPts(Tx);
-        this->checkPts(Rx);
-
-        for ( size_t n=0; n<this->nodes.size(); ++n ) {
-            this->nodes[n].reinit( threadNo );
-        }
-
-        CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-        CompareNodePtr<T1>> queue( cmp );
-        std::vector<Node2Dcsp<T1,T2>> txNodes;
-        std::vector<bool> inQueue( this->nodes.size(), false );
-        std::vector<bool> frozen( this->nodes.size(), false );
-
-        initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-
-        propagate(queue, inQueue, frozen, threadNo);
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        if ( l_data.size() != Rx.size() ) {
-            l_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
-            l_data[ni].resize( 0 );
-        }
-        if ( r_data.size() != Rx.size() ) {
-            r_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<r_data.size(); ++ni ) {
-            r_data[ni].resize( 0 );
-        }
-        T2 nodeParentRx;
-        T2 cellParentRx;
-
-        for (size_t n=0; n<Rx.size(); ++n) {
-
-            traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx, cellParentRx,
-                                           threadNo);
-
-            // Rx are in nodes (not txNodes)
-            std::vector<Node2Dcsp<T1,T2>> *node_p;
-            node_p = &(this->nodes);
-
-            std::vector<S> r_tmp;
-            T2 iChild, iParent = nodeParentRx;
-            S child;
-            siv2<T1> cell;
-
-            // store the son's coord
-            child.x = Rx[n].x;
-            child.z = Rx[n].z;
-            cell.i = cellParentRx;
-            while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
-
-                r_tmp.push_back( child );
-
-                this->cells.computeDistance( (*node_p)[iParent], child, cell);
-                bool found=false;
-                for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                    if ( l_data[n][nc].i == cell.i ) {
-                        l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
-                        found = true;
-                        break;
-                    }
-                }
-                if ( found == false ) {
-                    l_data[n].push_back( cell );
-                }
-
-                // we now go up in time - parent becomes the child of grand'pa
-                iChild = iParent;
-                child.x = (*node_p)[iChild].getX();
-                child.z = (*node_p)[iChild].getZ();
-                cell.i = (*node_p)[iChild].getCellParent(threadNo);
-
-                // grand'pa is now papa
-                iParent = (*node_p)[iChild].getNodeParent(threadNo);
-                if ( iParent >= this->nodes.size() ) {
-                    node_p = &txNodes;
-                    iParent -= this->nodes.size();
-                }
-                else {
-                    node_p = &(this->nodes);
-                }
-            }
-
-            // parent is now at Tx
-            r_tmp.push_back( child );
-
-            this->cells.computeDistance( (*node_p)[iParent], child, cell);
-            bool found=false;
-            for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                if ( l_data[n][nc].i == cell.i ) {
-                    l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
-                    found = true;
-                    break;
-                }
-            }
-            if ( found == false ) {
-                l_data[n].push_back( cell );
-            }
-
-            // finally, store Tx position
-            child.x = (*node_p)[iParent].getX();
-            child.z = (*node_p)[iParent].getZ();
-            r_tmp.push_back( child );
-
-            //  must be sorted to build matrix L
-            sort(l_data[n].begin(), l_data[n].end(), CompareSiv2_i<T1>());
-
-            // the order should be from Tx to Rx, so we reorder...
-            iParent = static_cast<T2>(r_tmp.size());
-            r_data[n].resize( r_tmp.size() );
-            for ( size_t nn=0; nn<r_data[n].size(); ++nn ) {
-                r_data[n][nn].x = r_tmp[ iParent-1-nn ].x;
-                r_data[n][nn].z = r_tmp[ iParent-1-nn ].z;
-            }
-        }
-    }
-
-    template<typename T1, typename T2, typename S, typename CELL>
-    void Grid2Drcsp<T1,T2,S,CELL>::raytrace(const std::vector<S>& Tx,
-                                            const std::vector<T1>& t0,
-                                            const std::vector<S>& Rx,
-                                            std::vector<T1>& traveltimes,
-                                            std::vector<std::vector<siv2<T1>>>& l_data,
-                                            const size_t threadNo) const {
-
-        this->checkPts(Tx);
-        this->checkPts(Rx);
-
-        for ( size_t n=0; n<this->nodes.size(); ++n ) {
-            this->nodes[n].reinit( threadNo );
-        }
-
-        CompareNodePtr<T1> cmp(threadNo);
-        std::priority_queue< Node2Dcsp<T1,T2>*, std::vector<Node2Dcsp<T1,T2>*>,
-        CompareNodePtr<T1>> queue( cmp );
-        std::vector<Node2Dcsp<T1,T2>> txNodes;
-        std::vector<bool> inQueue( this->nodes.size(), false );
-        std::vector<bool> frozen( this->nodes.size(), false );
-
-        initQueue(Tx, t0, queue, txNodes, inQueue, frozen, threadNo);
-
-        propagate(queue, inQueue, frozen, threadNo);
-
-        if ( traveltimes.size() != Rx.size() ) {
-            traveltimes.resize( Rx.size() );
-        }
-        if ( l_data.size() != Rx.size() ) {
-            l_data.resize( Rx.size() );
-        }
-        for ( size_t ni=0; ni<l_data.size(); ++ni ) {
-            l_data[ni].resize( 0 );
-        }
-        T2 nodeParentRx;
-        T2 cellParentRx;
-
-        for (size_t n=0; n<Rx.size(); ++n) {
+            if (foundTx)
+                continue;
 
             traveltimes[n] = getTraveltime(Rx[n], this->nodes, nodeParentRx,
                                            cellParentRx, threadNo);
@@ -1226,9 +1101,10 @@ namespace ttcr {
             std::vector<Node2Dcsp<T1,T2>> *node_p;
             node_p = &(this->nodes);
 
+            std::vector<S> r_tmp;
             T2 iChild, iParent = nodeParentRx;
             S child;
-            siv2<T1> cell;
+            SIV cell;
 
             // store the son's coord
             child.x = Rx[n].x;
@@ -1236,18 +1112,10 @@ namespace ttcr {
             cell.i = cellParentRx;
             while ( (*node_p)[iParent].getNodeParent(threadNo) != std::numeric_limits<T2>::max() ) {
 
+                if ( r_data != nullptr ) r_tmp.push_back( child );
+
                 this->cells.computeDistance( (*node_p)[iParent], child, cell);
-                bool found=false;
-                for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                    if ( l_data[n][nc].i == cell.i ) {
-                        l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
-                        found = true;
-                        break;
-                    }
-                }
-                if ( found == false ) {
-                    l_data[n].push_back( cell );
-                }
+                accumulate(l_data[n], cell);
 
                 // we now go up in time - parent becomes the child of grand'pa
                 iChild = iParent;
@@ -1267,28 +1135,33 @@ namespace ttcr {
             }
 
             // parent is now at Tx
+            if ( r_data != nullptr ) r_tmp.push_back( child );
 
             this->cells.computeDistance( (*node_p)[iParent], child, cell);
-            bool found=false;
-            for (size_t nc=0; nc<l_data[n].size(); ++nc) {
-                if ( l_data[n][nc].i == cell.i ) {
-                    l_data[n][nc] += cell;  // must add in case we pass through secondary nodes along edge
-                    found = true;
-                    break;
-                }
-            }
-            if ( found == false ) {
-                l_data[n].push_back( cell );
-            }
+            accumulate(l_data[n], cell);
 
             // finally, store Tx position
             child.x = (*node_p)[iParent].getX();
             child.z = (*node_p)[iParent].getZ();
+            if ( r_data != nullptr ) r_tmp.push_back( child );
 
             //  must be sorted to build matrix L
-            sort(l_data[n].begin(), l_data[n].end(), CompareSiv2_i<T1>());
+            std::sort(l_data[n].begin(), l_data[n].end(),
+                      [](const SIV& a, const SIV& b) { return a.i < b.i; });
+
+            if ( r_data != nullptr ) {
+                // the order should be from Tx to Rx, so we reorder...
+                iParent = static_cast<T2>(r_tmp.size());
+                (*r_data)[n].resize( r_tmp.size() );
+                for ( size_t nn=0; nn<(*r_data)[n].size(); ++nn ) {
+                    (*r_data)[n][nn].x = r_tmp[ iParent-1-nn ].x;
+                    (*r_data)[n][nn].z = r_tmp[ iParent-1-nn ].z;
+                }
+            }
+        }
         }
     }
+
 
     template<typename T1, typename T2, typename S, typename CELL>
     void Grid2Drcsp<T1,T2,S,CELL>::propagate(std::priority_queue<Node2Dcsp<T1,T2>*,

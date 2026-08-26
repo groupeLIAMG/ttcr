@@ -521,6 +521,70 @@ namespace ttcr {
         }
     };
 
+    /**
+     * @brief An index paired with four values.
+     *
+     * Used to hold the sensitivity of the traveltime to the medium parameters
+     * of one cell, one value per parameter.  The meaning and the order of the
+     * values are those documented by the cell class filling the struct; a class
+     * describing fewer than four parameters leaves the trailing values at zero,
+     * the number of meaningful values being given by its @c nParams member.
+     *
+     * @tparam T Numeric type of the values.
+     */
+    template<typename T>
+    struct siv4 {
+        size_t i;    ///< Index.
+        T v;         ///< First value.
+        T v2;        ///< Second value.
+        T v3;        ///< Third value.
+        T v4;        ///< Fourth value.
+
+        /// Constructs (index 0, values 0).
+        siv4() : i(0), v(0), v2(0), v3(0), v4(0) {}
+
+        /// Accumulates the four values of @p s (index is left unchanged).
+        siv4<T>& operator+=(const siv4<T>& s) {
+            v += s.v;
+            v2 += s.v2;
+            v3 += s.v3;
+            v4 += s.v4;
+            return *this;
+        }
+    };
+
+    /**
+     * @brief An index paired with five values.
+     *
+     * Five-parameter counterpart of @ref siv4, needed by the tilted
+     * transversely isotropic cells, whose medium parameters are @f$V_{P0}@f$,
+     * @f$V_{S0}@f$, @f$\epsilon@f$, @f$\delta@f$ and the tilt angle.
+     *
+     * @tparam T Numeric type of the values.
+     */
+    template<typename T>
+    struct siv5 {
+        size_t i;    ///< Index.
+        T v;         ///< First value.
+        T v2;        ///< Second value.
+        T v3;        ///< Third value.
+        T v4;        ///< Fourth value.
+        T v5;        ///< Fifth value.
+
+        /// Constructs (index 0, values 0).
+        siv5() : i(0), v(0), v2(0), v3(0), v4(0), v5(0) {}
+
+        /// Accumulates the five values of @p s (index is left unchanged).
+        siv5<T>& operator+=(const siv5<T>& s) {
+            v += s.v;
+            v2 += s.v2;
+            v3 += s.v3;
+            v4 += s.v4;
+            v5 += s.v5;
+            return *this;
+        }
+    };
+
     /// Comparator ordering @ref siv by ascending index.
     template<typename T>
     class CompareSiv_i {
@@ -556,6 +620,45 @@ namespace ttcr {
             return n1.i < n2.i;
         }
     };
+
+    /// Comparator ordering @ref siv4 by ascending index.
+    template<typename T>
+    class CompareSiv4_i {
+    public:
+        bool operator()(const siv4<T> n1, const siv4<T> n2) const {
+            return n1.i < n2.i;
+        }
+    };
+
+    /// Comparator ordering @ref siv5 by ascending index.
+    template<typename T>
+    class CompareSiv5_i {
+    public:
+        bool operator()(const siv5<T> n1, const siv5<T> n2) const {
+            return n1.i < n2.i;
+        }
+    };
+
+    /**
+     * @brief Whether a cell class reports its sensitivity into a given container
+     *
+     * The number of values a cell reports is the number of medium parameters it
+     * describes, so each cell class provides computeDistance() for one container
+     * only.  A grid, however, has to override every raytrace() of Grid2D,
+     * whichever cells it holds, and the overrides are emitted with the vtable
+     * whether or not they are ever called.  This tells them apart, so that the
+     * ones the cells cannot serve fail when called rather than when compiled.
+     */
+    template<typename CELL, typename SIV, typename NODE, typename S,
+             typename = void>
+    struct cell_reports_into : std::false_type {};
+
+    template<typename CELL, typename SIV, typename NODE, typename S>
+    struct cell_reports_into<CELL, SIV, NODE, S,
+        std::void_t<decltype(std::declval<const CELL&>().computeDistance(
+            std::declval<const NODE&>(), std::declval<const S&>(),
+            std::declval<SIV&>()))>> : std::true_type {};
+
 
 
     /**

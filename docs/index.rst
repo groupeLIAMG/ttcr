@@ -33,6 +33,7 @@ https://www.sciencedirect.com/science/article/pii/S2352711021001217
    getting_started.rst
    model_discretization.rst
    algorithms.rst
+   anisotropy.rst
    performance.rst
    code.rst
    references.rst
