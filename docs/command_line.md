@@ -205,18 +205,20 @@ file carries: no keyword in the parameter file selects it.
 
 Anisotropy is a property of a cell, so it requires a model of constant-slowness
 cells — arrays given as point data are ignored — and it is used by the
-**shortest-path method** only.  A file carrying anisotropy arrays raytraced with
-the fast sweeping, fast marching or dynamic shortest-path method is read as
-isotropic.
+**shortest-path method** only.  Asking for another method has one of two
+outcomes.  A model that still carries a `Slowness` array is simply read as
+isotropic and the anisotropy arrays are ignored.  A model described by axial
+velocities carries no slowness to fall back on, so the program stops with a
+message rather than raytrace a medium it has not been given.
 
 | arrays in the file | model | 2D `.vtr` | 2D `.vtu` | 3D `.vtr` | 3D `.vtu` |
 | --- | --- | :-: | :-: | :-: | :-: |
 | `xi` | elliptical | yes | yes | — | — |
 | `xi`, `theta` | tilted elliptical | yes | yes | — | — |
-| `s2`, `s4` | weakly anelliptical | yes | yes | — | yes |
+| `s2`, `s4` | weakly anelliptical | yes | yes | yes | yes |
 | `chi`, `psi` | ellipsoidal | — | — | yes | yes |
-| `Vs0`, `gamma` | transversely isotropic, SH wave | — | — | — | yes |
-| `Vp0`, `Vs0`, `epsilon`, `delta` | transversely isotropic, qP and qSV waves | — | — | — | yes |
+| `Vs0`, `gamma` | transversely isotropic, SH wave | — | — | yes | yes |
+| `Vp0`, `Vs0`, `epsilon`, `delta` | transversely isotropic, qP and qSV waves | — | — | yes | yes |
 
 These are the same models the Python classes take through their `aniso`
 argument; the anisotropy page of the documentation describes each of them, and
@@ -243,8 +245,9 @@ is still required, but it is not always the same slowness:
 stops the program with a message rather than falling back to an isotropic run.
 
 **When several models could be read** the first match wins, in the order the
-table lists them: `theta` before `xi` before `s2`/`s4` in 2D, and
-`epsilon` before `gamma` before `s2`/`s4` before `chi`/`psi` in 3D.
+table lists them: `theta` before `xi` before `s2`/`s4` in 2D, and `epsilon`
+before `gamma` before `s2`/`s4` before `chi`/`psi` in 3D, on both the
+rectilinear grid and the tetrahedral mesh.
 
 **The qP wave is the one modelled** for a `Vp0`/`Vs0`/`epsilon`/`delta` medium.
 The stand-alone programs offer no way to ask for qSV; use the Python classes and

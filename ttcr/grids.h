@@ -507,6 +507,7 @@ namespace ttcr {
         std::vector<T> slowness;
         std::vector<T> chi;
         std::vector<T> psi;
+        std::vector<T> Vp0, Vs0, epsilon, delta, gamma, s2, s4;
         if ( pd->HasArray("P-wave velocity") ||
             pd->HasArray("Velocity") ||
             pd->HasArray("Slowness") ) {
@@ -682,10 +683,58 @@ namespace ttcr {
             }
 
         } else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
-                   cd->HasArray("Slowness") ) {
+                   cd->HasArray("Slowness") || cd->HasArray("Vp0") ||
+                   cd->HasArray("Vs0") ) {
 
-            bool foundChi = false;
-            bool foundPsi = false;
+            // Anisotropy is described cell by cell, and only the shortest-path
+            // solver consults the cells.  The model is chosen from the arrays
+            // the file carries; see docs/command_line.md.
+            auto readCellArray = [&](const char *name, std::vector<T>& v) -> bool {
+                if ( cd->HasArray(name) == 0 ) return false;
+                vtkDataArray *x = cd->GetArray(name);
+                if ( x->GetNumberOfTuples() != numberOfCells ) {
+                    std::cerr << "Problem with " << name << " data (wrong size)" << std::endl;
+                    std::abort();
+                }
+                v.resize( numberOfCells );
+                for ( vtkIdType n=0; n<numberOfCells; ++n ) {
+                    v[n] = static_cast<T>( x->GetTuple1(n) );
+                }
+                if ( verbose ) { std::cout << "Model contains " << name << '\n'; }
+                return true;
+            };
+            bool foundChi = readCellArray("chi", chi);
+            bool foundPsi = readCellArray("psi", psi);
+            bool foundVp0 = readCellArray("Vp0", Vp0);
+            bool foundVs0 = readCellArray("Vs0", Vs0);
+            bool foundEpsilon = readCellArray("epsilon", epsilon);
+            bool foundDelta = readCellArray("delta", delta);
+            bool foundGamma = readCellArray("gamma", gamma);
+            bool foundS2 = readCellArray("s2", s2);
+            bool foundS4 = readCellArray("s4", s4);
+
+            if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
+                std::cerr << "Error: Model should contain both epsilon and delta" << std::endl; abort();
+            }
+            if ( (foundEpsilon || foundGamma) && !foundVs0 ) {
+                std::cerr << "Error: Model should contain Vs0" << std::endl; abort();
+            }
+            if ( foundEpsilon && !foundVp0 ) {
+                std::cerr << "Error: Model should contain Vp0" << std::endl; abort();
+            }
+            if ( (foundS2 || foundS4) && !(foundS2 && foundS4) ) {
+                std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl; abort();
+            }
+            if ( (foundChi || foundPsi) && !(foundChi && foundPsi) ) {
+                std::cerr << "Error: Model should contain both chi and psi ratios" << std::endl; abort();
+            }
+            // the coupled and SH media are described by velocities, not a slowness
+            bool velocityModel = foundEpsilon || foundGamma;
+            if ( velocityModel && par.method != SHORTEST_PATH ) {
+                std::cerr << "Error: transversely isotropic media are implemented "
+                          << "for the shortest-path method only" << std::endl;
+                return nullptr;
+            }
             for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
                     strcmp(cd->GetArrayName(na), "Velocity")==0 ) {
@@ -714,82 +763,66 @@ namespace ttcr {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                     foundSlowness = true;
-                    if ( cd->HasArray("chi") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("chi") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with chi data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        chi.resize( x->GetSize() );
-                        for ( size_t n=0; n<x->GetSize(); ++n ) {
-                            chi[n] = x->GetComponent(n, 0);
-                        }
-                        foundChi = true;
-                        if ( verbose ) { std::cout << "Model contains anisotropy ratio chi\n"; }
-                    }
-                    if ( cd->HasArray("psi") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("psi") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with psi data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        psi.resize( x->GetSize() );
-                        for ( size_t n=0; n<x->GetSize(); ++n ) {
-                            psi[n] = x->GetComponent(n, 0);
-                        }
-                        foundPsi = true;
-                        if ( verbose ) { std::cout << "Model contains anisotropy ratio xi\n"; }
-                    }
                     break;
                 }
             }
-            if ( foundSlowness ) {
+            if ( foundSlowness || velocityModel ) {
                 switch (par.method) {
                     case SHORTEST_PATH:
 
                         if ( verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        if ( foundChi && foundPsi ) {
+                        if ( foundEpsilon )
+                            g = new Grid3Drcsp<T, uint32_t, CellVTI_PSV3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else if ( foundGamma )
+                            g = new Grid3Drcsp<T, uint32_t, CellVTI_SH3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else if ( foundS2 )
+                            g = new Grid3Drcsp<T, uint32_t, CellWeaklyAnelliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else if ( foundChi )
                             g = new Grid3Drcsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
-                                                                                                               d[0], d[1], d[2],
-                                                                                                               xrange[0], yrange[0], zrange[0],
-                                                                                                               par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt,
-                                                                                                               par.translateOrigin);
-                        } else {
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else
                             g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
-                                                                                                   d[0], d[1], d[2],
-                                                                                                   xrange[0], yrange[0], zrange[0],
-                                                                                                   par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt,
-                                                                                                   par.translateOrigin);
-                        }
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
                         try {
-                            g->setSlowness(slowness);
+                            if ( !velocityModel )
+                                g->setSlowness(slowness);
+                            if ( foundVp0 ) g->setVp0( Vp0 );
+                            if ( foundVs0 ) g->setVs0( Vs0 );
+                            if ( foundEpsilon ) g->setEpsilon( epsilon );
+                            if ( foundDelta ) g->setDelta( delta );
+                            if ( foundGamma ) g->setGamma( gamma );
+                            if ( foundS2 ) g->setS2( s2 );
+                            if ( foundS4 ) g->setS4( s4 );
+                            if ( foundChi ) g->setChi( chi );
+                            if ( foundPsi ) g->setPsi( psi );
                         } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
-                        }
-                        if ( foundChi && foundPsi ) {
-                            try{
-                                g->setPsi( psi );
-                                g->setChi( chi );
-                            } catch (std::exception& e) {
-                                std::cerr << e.what() << "\naborting" << std::endl;
-                                std::abort();
-                            }
                         }
                         if ( verbose ) std::cout << "done.\n";
                         break;
