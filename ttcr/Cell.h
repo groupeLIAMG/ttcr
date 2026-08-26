@@ -2351,6 +2351,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellElliptical3D {
     public:
+        /// Number of medium parameters of the cells: the vertical slowness and the two anisotropy ratios
+        static constexpr size_t nParams = 3;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -2359,6 +2361,19 @@ namespace ttcr {
         slowness(std::vector<T>(n)),
         chi(std::vector<T>(n)),
         psi(std::vector<T>(n)) {
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setS2(const std::vector<T>& s) {
+            throw std::logic_error("Error: S2 not defined for CellElliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setS4(const std::vector<T>& s) {
+            throw std::logic_error("Error: S4 not defined for CellElliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: Phase not defined for CellElliptical3D.");
         }
 
         /**
@@ -2488,6 +2503,53 @@ namespace ttcr {
             return slowness[cellNo] * std::sqrt( chi[cellNo]*lx*lx + psi[cellNo]*ly*ly + lz*lz );
         }
 
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         *
+         * A single length cannot describe the sensitivity of an anisotropic
+         * cell; the siv4 overload must be used instead.
+         *
+         * @param[in]  source unused
+         * @param[in]  node   unused
+         * @param[out] cell   unused
+         * @throws std::logic_error always
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            throw std::logic_error("Error: computeDistance with siv not defined for CellElliptical3D.");
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * With @f$ dt = s_z\sqrt{\chi^2 l_x^2 + \psi^2 l_y^2 + l_z^2} @f$,
+         * @f[ \frac{\partial dt}{\partial s_z} = \frac{dt}{s_z}, \quad
+         *     \frac{\partial dt}{\partial \chi} = \frac{s_z^2 \chi l_x^2}{dt},
+         *     \quad
+         *     \frac{\partial dt}{\partial \psi} = \frac{s_z^2 \psi l_y^2}{dt} @f]
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to the vertical slowness and the
+         *                    two anisotropy ratios, in members `v`, `v2` and
+         *                    `v3`; member `v4` is left at zero
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T ly = node.y - source.getY();
+            const T lz = node.z - source.getZ();
+            const T c2 = chi[cell.i];             // chi is stored squared
+            const T p2 = psi[cell.i];             // psi is stored squared
+            const T q  = std::sqrt( c2*lx*lx + p2*ly*ly + lz*lz );
+            const T s  = slowness[cell.i];
+            const T dt = s*q;
+            cell.v  = q;
+            cell.v2 = ( dt > 0. ) ? s*s*std::sqrt(c2)*lx*lx/dt : T(0);
+            cell.v3 = ( dt > 0. ) ? s*s*std::sqrt(p2)*ly*ly/dt : T(0);
+            cell.v4 = T(0);
+        }
+
     private:
         std::vector<T> slowness;  ///< this vector contains sz
         std::vector<T> chi;       ///< anisotropy ratio, chi = sx / sz, *** squared ***
@@ -2519,6 +2581,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellVTI_PSV3D {
     public:
+        /// Number of medium parameters of the cells: the two vertical velocities and Thomsen's epsilon and delta
+        static constexpr size_t nParams = 4;
         /**
          * @brief Constructor
          *
@@ -2533,6 +2597,27 @@ namespace ttcr {
         epsilon(std::vector<T>(n)),
         delta(std::vector<T>(n)),
         paramsSet(0) {
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setSlowness(const std::vector<T>& s) {
+            throw std::logic_error("Error: slowness not defined for CellVTI_PSV3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setChi(const std::vector<T>& s) {
+            throw std::logic_error("Error: chi not defined for CellVTI_PSV3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setPsi(const std::vector<T>& s) {
+            throw std::logic_error("Error: psi not defined for CellVTI_PSV3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setS2(const std::vector<T>& s) {
+            throw std::logic_error("Error: S2 not defined for CellVTI_PSV3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setS4(const std::vector<T>& s) {
+            throw std::logic_error("Error: S4 not defined for CellVTI_PSV3D.");
         }
 
         /**
@@ -2646,6 +2731,51 @@ namespace ttcr {
                    gv.velocity(std::sqrt(lx*lx + ly*ly), node.getZ() - source.getZ(), cellNo);
         }
 
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         *
+         * A single length cannot describe the sensitivity of an anisotropic
+         * cell; the siv4 overload must be used instead.
+         *
+         * @param[in]  source unused
+         * @param[in]  node   unused
+         * @param[out] cell   unused
+         * @throws std::logic_error always
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            throw std::logic_error("Error: computeDistance with siv not defined for CellVTI_PSV3D.");
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * Formed by VTI_PSV_GroupVel::sensitivity(), as in CellVTI_PSV.  The
+         * medium being transversely isotropic about the vertical axis, it is
+         * azimuthally symmetric, so the segment is described by its horizontal
+         * magnitude @f$\sqrt{l_x^2+l_y^2}@f$ and its vertical component: the
+         * problem in the vertical plane containing the segment is the
+         * two-dimensional one, and the tabulation, the selection of the branch
+         * carrying the arrival and the envelope theorem carry over unchanged.
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to Vp0, Vs0, epsilon and delta,
+         *                    in members `v`, `v2`, `v3` and `v4`
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T ly = node.y - source.getY();
+            T s[4];
+            gv.sensitivity(std::sqrt(lx*lx + ly*ly), node.z - source.getZ(),
+                           cell.i, s);
+            cell.v  = s[0];
+            cell.v2 = s[1];
+            cell.v3 = s[2];
+            cell.v4 = s[3];
+        }
+
     private:
         /**
          * @brief (Re)build the group-velocity tables
@@ -2690,6 +2820,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellVTI_SH3D {
     public:
+        /// Number of medium parameters of the cells: the vertical S-wave velocity and Thomsen's gamma
+        static constexpr size_t nParams = 2;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -2697,6 +2829,31 @@ namespace ttcr {
         CellVTI_SH3D(const size_t n) :
         Vs0(std::vector<T>(n)),
         gamma(std::vector<T>(n)) {
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setSlowness(const std::vector<T>& s) {
+            throw std::logic_error("Error: slowness not defined for CellVTI_SH3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setChi(const std::vector<T>& s) {
+            throw std::logic_error("Error: chi not defined for CellVTI_SH3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setPsi(const std::vector<T>& s) {
+            throw std::logic_error("Error: psi not defined for CellVTI_SH3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setS2(const std::vector<T>& s) {
+            throw std::logic_error("Error: S2 not defined for CellVTI_SH3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setS4(const std::vector<T>& s) {
+            throw std::logic_error("Error: S4 not defined for CellVTI_SH3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: Phase not defined for CellVTI_SH3D.");
         }
 
         /**
@@ -2778,6 +2935,49 @@ namespace ttcr {
             return std::sqrt( (lx*lx + ly*ly) / (1. + 2.*gamma[cellNo]) + lz*lz ) / Vs0[cellNo];
         }
 
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         *
+         * A single length cannot describe the sensitivity of an anisotropic
+         * cell; the siv2 overload must be used instead.
+         *
+         * @param[in]  source unused
+         * @param[in]  node   unused
+         * @param[out] cell   unused
+         * @throws std::logic_error always
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            throw std::logic_error("Error: computeDistance with siv not defined for CellVTI_SH3D.");
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * With @f$ l_h^2 = l_x^2 + l_y^2 @f$, @f$ g = 1 + 2\gamma @f$ and
+         * @f$ dt = \sqrt{l_h^2/g + l_z^2}\,/\,V_{S0} @f$,
+         * @f[ \frac{\partial dt}{\partial V_{S0}} = -\frac{dt}{V_{S0}}, \quad
+         *     \frac{\partial dt}{\partial \gamma}
+         *       = -\frac{l_h^2}{V_{S0}^2\, dt\, g^2} @f]
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to the vertical S-wave velocity
+         *                    and Thomsen's gamma, in members `v` and `v2`
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv2<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T ly = node.y - source.getY();
+            const T lz = node.z - source.getZ();
+            const T lh2 = lx*lx + ly*ly;
+            const T g  = 1. + 2.*gamma[cell.i];
+            const T dt = std::sqrt( lh2/g + lz*lz )/Vs0[cell.i];
+            cell.v  = -dt/Vs0[cell.i];
+            cell.v2 = ( dt > 0. ) ?
+                      -lh2/(Vs0[cell.i]*Vs0[cell.i]*dt*g*g) : T(0);
+        }
+
     private:
         std::vector<T> Vs0;    ///< vertical S-wave velocity of the cells
         std::vector<T> gamma;  ///< Thomsen's parameter gamma of the cells
@@ -2804,6 +3004,8 @@ namespace ttcr {
     template <typename T, typename NODE, typename S>
     class CellWeaklyAnelliptical3D {
     public:
+        /// Number of medium parameters of the cells: the vertical slowness and the two anisotropy coefficients
+        static constexpr size_t nParams = 3;
         /**
          * @brief Constructor
          * @param n number of cells of the grid
@@ -2812,6 +3014,62 @@ namespace ttcr {
         v0(std::vector<T>(n)),
         s2(std::vector<T>(n)),
         s4(std::vector<T>(n)) {
+        }
+
+        /**
+         * @brief Assign the vertical slowness of the cells
+         *
+         * Mirrors CellWeaklyAnelliptical: the reciprocal is stored, so that
+         * this class and its two-dimensional counterpart take the same
+         * parameter.  setV0() assigns the velocity directly.
+         *
+         * @param s values of @f$s = 1/v_0@f$, one per cell
+         * @throws std::length_error if @p s does not hold one value per cell
+         */
+        void setSlowness(const std::vector<T>& s) {
+            if ( v0.size() != s.size() ) {
+                throw std::length_error("Error: slowness vectors of incompatible size.");
+            }
+            for ( size_t n=0; n<v0.size(); ++n ) {
+                v0[n] = 1. / s[n];
+            }
+        }
+
+        /// @brief Not applicable: always throws std::logic_error
+        void setChi(const std::vector<T>& s) {
+            throw std::logic_error("Error: chi not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setPsi(const std::vector<T>& s) {
+            throw std::logic_error("Error: psi not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setTiltAngle(const std::vector<T>& s) {
+            throw std::logic_error("Error: tiltAngle not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setVp0(const std::vector<T>& s) {
+            throw std::logic_error("Error: Vp0 not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setVs0(const std::vector<T>& s) {
+            throw std::logic_error("Error: Vs0 not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setDelta(const std::vector<T>& s) {
+            throw std::logic_error("Error: delta not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setEpsilon(const std::vector<T>& s) {
+            throw std::logic_error("Error: epsilon not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setGamma(const std::vector<T>& s) {
+            throw std::logic_error("Error: gamma not defined for CellWeaklyAnelliptical3D.");
+        }
+        /// @brief Not applicable: always throws std::logic_error
+        void setPhase(const int p) {
+            throw std::logic_error("Error: Phase not defined for CellWeaklyAnelliptical3D.");
         }
 
         /**
@@ -2882,6 +3140,55 @@ namespace ttcr {
             lx = std::sqrt( lx*lx + ly*ly ); // horizontal distance
             T v = get_energy_vel(lx, node.getZ() - source.getZ(), cellNo);
             return source.getDistance( node ) / v;
+        }
+
+        /**
+         * @brief Not applicable: always throws std::logic_error
+         *
+         * A single length cannot describe the sensitivity of an anisotropic
+         * cell; the siv4 overload must be used instead.
+         *
+         * @param[in]  source unused
+         * @param[in]  node   unused
+         * @param[out] cell   unused
+         * @throws std::logic_error always
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv<T>& cell) const {
+            throw std::logic_error("Error: computeDistance with siv not defined for CellWeaklyAnelliptical3D.");
+        }
+
+        /**
+         * @brief Sensitivity of a segment traveltime to the medium parameters
+         *
+         * As in CellWeaklyAnelliptical, the polar angle @f$\theta@f$ being
+         * taken from the horizontal magnitude @f$\sqrt{l_x^2+l_y^2}@f$.  With
+         * @f$ u = \sin^2\theta @f$, @f$ P = 1 + (s_2 + s_4 u)u @f$ and
+         * @f$ dt = \ell s / P @f$, @f$s@f$ being the vertical slowness,
+         * @f[ \frac{\partial dt}{\partial s} = \frac{dt}{s}, \quad
+         *     \frac{\partial dt}{\partial s_2} = -\frac{dt\,u}{P}, \quad
+         *     \frac{\partial dt}{\partial s_4} = -\frac{dt\,u^2}{P} @f]
+         *
+         * @param[in]  source node from which the ray segment originates
+         * @param[in]  node   end point of the ray segment
+         * @param[out] cell   derivatives w/r to the vertical slowness and to
+         *                    the two anisotropy coefficients, in members `v`,
+         *                    `v2` and `v3`; member `v4` is left at zero
+         */
+        void computeDistance(const NODE& source, const S& node,
+                             siv4<T>& cell) const {
+            const T lx = node.x - source.getX();
+            const T ly = node.y - source.getY();
+            const T lz = node.z - source.getZ();
+            const T lh = std::sqrt( lx*lx + ly*ly );
+            const T st = std::sin( std::atan2(lh, lz) );
+            const T u  = st*st;
+            const T P  = 1. + (s2[cell.i] + s4[cell.i]*u)*u;
+            const T dt = std::sqrt(lh*lh + lz*lz)/(v0[cell.i]*P);
+            cell.v  = dt*v0[cell.i];          // d(dt)/d(slowness), s = 1/v0
+            cell.v2 = -dt*u/P;
+            cell.v3 = -dt*u*u/P;
+            cell.v4 = T(0);
         }
 
     private:
