@@ -18,7 +18,7 @@ ttvel below and use them independently outside that package.
 
 Note, due to some misunderstanding of ttcrpy on my side, there is a conflict of
 notation: the parameter r in ttcpry, see the example 5,
-https://github.com/groupeLIAMG/ttcr/blob/master/examples/example5.ipynb
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example5_anisotropy_elliptical.ipynb
 ought to be the linear energy-velocity parameter s of my paper; the latter is
 computed below and must be used in place of the parameter r in ttcpry!
 

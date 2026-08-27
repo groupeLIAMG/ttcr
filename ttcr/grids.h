@@ -230,8 +230,8 @@ namespace ttcr {
                     constCells = false;
                 } else {
                     std::cerr << "Error: slowness file should contain " << slowness.size()
-                    << " values.\nAborting." << std::endl;
-                    abort();
+                    << " values." << std::endl;
+                    return nullptr;
                 }
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
@@ -239,8 +239,8 @@ namespace ttcr {
             }
 
         } else {
-            std::cerr << "Error: slowness file should be defined.\nAborting." << std::endl;
-            abort();
+            std::cerr << "Error: slowness file should be defined." << std::endl;
+            return nullptr;
         }
 
 
@@ -507,6 +507,7 @@ namespace ttcr {
         std::vector<T> slowness;
         std::vector<T> chi;
         std::vector<T> psi;
+        std::vector<T> Vp0, Vs0, epsilon, delta, gamma, s2, s4;
         if ( pd->HasArray("P-wave velocity") ||
             pd->HasArray("Velocity") ||
             pd->HasArray("Slowness") ) {
@@ -682,10 +683,68 @@ namespace ttcr {
             }
 
         } else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
-                   cd->HasArray("Slowness") ) {
+                   cd->HasArray("Slowness") || cd->HasArray("Vp0") ||
+                   cd->HasArray("Vs0") ) {
 
-            bool foundChi = false;
-            bool foundPsi = false;
+            // Anisotropy is described cell by cell, and only the shortest-path
+            // solver consults the cells.  The model is chosen from the arrays
+            // the file carries; see docs/command_line.md.
+            bool badArray = false;
+            auto readCellArray = [&](const char *name, std::vector<T>& v) -> bool {
+                if ( cd->HasArray(name) == 0 ) return false;
+                vtkDataArray *x = cd->GetArray(name);
+                if ( x->GetNumberOfTuples() != numberOfCells ) {
+                    std::cerr << "Problem with " << name << " data (wrong size)" << std::endl;
+                    badArray = true;
+                    return true;
+                }
+                v.resize( numberOfCells );
+                for ( vtkIdType n=0; n<numberOfCells; ++n ) {
+                    v[n] = static_cast<T>( x->GetTuple1(n) );
+                }
+                if ( verbose ) { std::cout << "Model contains " << name << '\n'; }
+                return true;
+            };
+            bool foundChi = readCellArray("chi", chi);
+            bool foundPsi = readCellArray("psi", psi);
+            bool foundVp0 = readCellArray("Vp0", Vp0);
+            bool foundVs0 = readCellArray("Vs0", Vs0);
+            bool foundEpsilon = readCellArray("epsilon", epsilon);
+            bool foundDelta = readCellArray("delta", delta);
+            bool foundGamma = readCellArray("gamma", gamma);
+            bool foundS2 = readCellArray("s2", s2);
+            bool foundS4 = readCellArray("s4", s4);
+            if ( badArray ) {
+                return nullptr;
+            }
+
+            if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
+                std::cerr << "Error: Model should contain both epsilon and delta" << std::endl;
+                return nullptr;
+            }
+            if ( (foundEpsilon || foundGamma) && !foundVs0 ) {
+                std::cerr << "Error: Model should contain Vs0" << std::endl;
+                return nullptr;
+            }
+            if ( foundEpsilon && !foundVp0 ) {
+                std::cerr << "Error: Model should contain Vp0" << std::endl;
+                return nullptr;
+            }
+            if ( (foundS2 || foundS4) && !(foundS2 && foundS4) ) {
+                std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl;
+                return nullptr;
+            }
+            if ( (foundChi || foundPsi) && !(foundChi && foundPsi) ) {
+                std::cerr << "Error: Model should contain both chi and psi ratios" << std::endl;
+                return nullptr;
+            }
+            // the coupled and SH media are described by velocities, not a slowness
+            bool velocityModel = foundEpsilon || foundGamma;
+            if ( velocityModel && par.method != SHORTEST_PATH ) {
+                std::cerr << "Error: transversely isotropic media are implemented "
+                          << "for the shortest-path method only" << std::endl;
+                return nullptr;
+            }
             for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
                     strcmp(cd->GetArrayName(na), "Velocity")==0 ) {
@@ -714,82 +773,66 @@ namespace ttcr {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                     foundSlowness = true;
-                    if ( cd->HasArray("chi") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("chi") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with chi data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        chi.resize( x->GetSize() );
-                        for ( size_t n=0; n<x->GetSize(); ++n ) {
-                            chi[n] = x->GetComponent(n, 0);
-                        }
-                        foundChi = true;
-                        if ( verbose ) { std::cout << "Model contains anisotropy ratio chi\n"; }
-                    }
-                    if ( cd->HasArray("psi") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("psi") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with psi data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        psi.resize( x->GetSize() );
-                        for ( size_t n=0; n<x->GetSize(); ++n ) {
-                            psi[n] = x->GetComponent(n, 0);
-                        }
-                        foundPsi = true;
-                        if ( verbose ) { std::cout << "Model contains anisotropy ratio xi\n"; }
-                    }
                     break;
                 }
             }
-            if ( foundSlowness ) {
+            if ( foundSlowness || velocityModel ) {
                 switch (par.method) {
                     case SHORTEST_PATH:
 
                         if ( verbose ) { std::cout << "Building grid (Grid3Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        if ( foundChi && foundPsi ) {
+                        if ( foundEpsilon )
+                            g = new Grid3Drcsp<T, uint32_t, CellVTI_PSV3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else if ( foundGamma )
+                            g = new Grid3Drcsp<T, uint32_t, CellVTI_SH3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else if ( foundS2 )
+                            g = new Grid3Drcsp<T, uint32_t, CellWeaklyAnelliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else if ( foundChi )
                             g = new Grid3Drcsp<T, uint32_t, CellElliptical3D<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
-                                                                                                               d[0], d[1], d[2],
-                                                                                                               xrange[0], yrange[0], zrange[0],
-                                                                                                               par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt,
-                                                                                                               par.translateOrigin);
-                        } else {
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
+                        else
                             g = new Grid3Drcsp<T, uint32_t, Cell<T,Node3Dcsp<T,uint32_t>,sxyz<T>>>(ncells[0], ncells[1], ncells[2],
-                                                                                                   d[0], d[1], d[2],
-                                                                                                   xrange[0], yrange[0], zrange[0],
-                                                                                                   par.nn[0], par.nn[1], par.nn[2], par.tt_from_rp, nt,
-                                                                                                   par.translateOrigin);
-                        }
+                                            d[0], d[1], d[2],
+                                            xrange[0], yrange[0], zrange[0],
+                                            par.nn[0], par.nn[1], par.nn[2],
+                                            par.tt_from_rp, nt, par.translateOrigin);
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
                             std::cout << "done.\nTotal number of nodes: " << g->getNumberOfNodes()
                             << "\nAssigning slowness at grid cells ... ";
                         }
                         try {
-                            g->setSlowness(slowness);
+                            if ( !velocityModel )
+                                g->setSlowness(slowness);
+                            if ( foundVp0 ) g->setVp0( Vp0 );
+                            if ( foundVs0 ) g->setVs0( Vs0 );
+                            if ( foundEpsilon ) g->setEpsilon( epsilon );
+                            if ( foundDelta ) g->setDelta( delta );
+                            if ( foundGamma ) g->setGamma( gamma );
+                            if ( foundS2 ) g->setS2( s2 );
+                            if ( foundS4 ) g->setS4( s4 );
+                            if ( foundChi ) g->setChi( chi );
+                            if ( foundPsi ) g->setPsi( psi );
                         } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
-                        }
-                        if ( foundChi && foundPsi ) {
-                            try{
-                                g->setPsi( psi );
-                                g->setChi( chi );
-                            } catch (std::exception& e) {
-                                std::cerr << e.what() << "\naborting" << std::endl;
-                                std::abort();
-                            }
                         }
                         if ( verbose ) std::cout << "done.\n";
                         break;
@@ -944,19 +987,24 @@ namespace ttcr {
         bool foundS4 = constCells && reader.hasVariable<T>("s4", true);
 
         if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
-            std::cerr << "Error: Model should contain both epsilon and delta" << std::endl; abort();
+            std::cerr << "Error: Model should contain both epsilon and delta" << std::endl;
+                return nullptr;
         }
         if ( (foundEpsilon || foundGamma) && !foundVs0 ) {
-            std::cerr << "Error: Model should contain Vs0" << std::endl; abort();
+            std::cerr << "Error: Model should contain Vs0" << std::endl;
+                return nullptr;
         }
         if ( foundEpsilon && !foundVp0 ) {
-            std::cerr << "Error: Model should contain Vp0" << std::endl; abort();
+            std::cerr << "Error: Model should contain Vp0" << std::endl;
+                return nullptr;
         }
         if ( (foundS2 || foundS4) && !(foundS2 && foundS4) ) {
-            std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl; abort();
+            std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl;
+                return nullptr;
         }
         if ( (foundChi || foundPsi) && !(foundChi && foundPsi) ) {
-            std::cerr << "Error: Model should contain both chi and psi ratios" << std::endl; abort();
+            std::cerr << "Error: Model should contain both chi and psi ratios" << std::endl;
+                return nullptr;
         }
         // the coupled and SH media are described by velocities, not a slowness
         bool velocityModel = foundEpsilon || foundGamma;
@@ -1306,8 +1354,8 @@ namespace ttcr {
                     constCells = false;
                 } else {
                     std::cerr << "Error: slowness file should contain " << slowness.size()
-                    << " values.\nAborting." << std::endl;
-                    abort();
+                    << " values." << std::endl;
+                    return nullptr;
                 }
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
@@ -1678,7 +1726,7 @@ namespace ttcr {
 
         if ( ncells[1]>0 ) {
             std::cerr << "Error - model is not 2D\n";
-            abort();
+            return nullptr;
         }
         nnodes[0] = ncells[0]+1;
         nnodes[1] = ncells[1]+1;
@@ -1713,8 +1761,8 @@ namespace ttcr {
                     constCells = false;
                 } else {
                     std::cerr << "Error: slowness file should contain " << slowness.size()
-                    << " values.\nAborting." << std::endl;
-                    abort();
+                    << " values." << std::endl;
+                    return nullptr;
                 }
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
@@ -1722,8 +1770,8 @@ namespace ttcr {
             }
 
         } else {
-            std::cerr << "Error: slowness file should be defined.\nAborting." << std::endl;
-            abort();
+            std::cerr << "Error: slowness file should be defined." << std::endl;
+            return nullptr;
         }
 
 
@@ -1947,7 +1995,7 @@ namespace ttcr {
 
         if ( nnodes[1]>1 ) {
             std::cerr << "Error - model is not 2D\n";
-            abort();
+            return nullptr;
         }
 
         if ( verbose ) {
@@ -1980,6 +2028,7 @@ namespace ttcr {
         std::vector<T> v0;
         std::vector<T> s2;
         std::vector<T> s4;
+        std::vector<T> Vp0, Vs0, epsilon, delta, gamma;
         if ( pd->HasArray("P-wave velocity") ||
             pd->HasArray("Velocity") ||
             pd->HasArray("Slowness") ) {  // properties defined at nodes
@@ -2167,12 +2216,68 @@ namespace ttcr {
             }
 
         } else if ( cd->HasArray("P-wave velocity") || cd->HasArray("Velocity") ||
-                   cd->HasArray("Slowness") ) { // properties defined at cells
+                   cd->HasArray("Slowness") || cd->HasArray("Vp0") ||
+                   cd->HasArray("Vs0") ) { // properties defined at cells
 
-            bool foundXi = false;
-            bool foundTheta = false;
-            bool foundS2 = false;
-            bool foundS4 = false;
+            // Anisotropy is described cell by cell, and only the shortest-path
+            // solver consults the cells.  The model is chosen from the arrays
+            // the file carries; see docs/command_line.md.  VTK has x as the
+            // fast axis and the grids want z, so every array is reordered the
+            // way the slowness is.
+            bool badArray = false;
+            auto readCellArray = [&](const char *name, std::vector<T>& v) -> bool {
+                if ( cd->HasArray(name) == 0 ) return false;
+                vtkDataArray *x = cd->GetArray(name);
+                if ( x->GetNumberOfTuples() != numberOfCells ) {
+                    std::cerr << "Problem with " << name << " data (wrong size)" << std::endl;
+                    badArray = true;
+                    return true;
+                }
+                v.resize( numberOfCells );
+                for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
+                    for ( size_t k=0; k<ncells[2]; ++k,++n ) {
+                        vtkIdType ii = k * ncells[0] + i;
+                        v[n] = static_cast<T>( x->GetTuple1(ii) );
+                    }
+                }
+                if ( verbose ) { std::cout << "Model contains " << name << '\n'; }
+                return true;
+            };
+            bool foundXi = readCellArray("xi", xi);
+            bool foundTheta = readCellArray("theta", theta);
+            bool foundS2 = readCellArray("s2", s2);
+            bool foundS4 = readCellArray("s4", s4);
+            bool foundVp0 = readCellArray("Vp0", Vp0);
+            bool foundVs0 = readCellArray("Vs0", Vs0);
+            bool foundEpsilon = readCellArray("epsilon", epsilon);
+            bool foundDelta = readCellArray("delta", delta);
+            bool foundGamma = readCellArray("gamma", gamma);
+            if ( badArray ) {
+                return nullptr;
+            }
+            if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
+                std::cerr << "Error: Model should contain both epsilon and delta" << std::endl;
+                return nullptr;
+            }
+            if ( (foundEpsilon || foundGamma) && !foundVs0 ) {
+                std::cerr << "Error: Model should contain Vs0" << std::endl;
+                return nullptr;
+            }
+            if ( foundEpsilon && !foundVp0 ) {
+                std::cerr << "Error: Model should contain Vp0" << std::endl;
+                return nullptr;
+            }
+            if ( (foundS2 || foundS4) && !(foundS2 && foundS4) ) {
+                std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl;
+                return nullptr;
+            }
+            // the coupled and SH media are described by velocities, not a slowness
+            bool velocityModel = foundEpsilon || foundGamma;
+            if ( velocityModel && par.method != SHORTEST_PATH ) {
+                std::cerr << "Error: transversely isotropic media are implemented "
+                          << "for the shortest-path method only" << std::endl;
+                return nullptr;
+            }
 
             for (int na = 0; na < cd->GetNumberOfArrays(); na++) {
                 if ( strcmp(cd->GetArrayName(na), "P-wave velocity")==0 ||
@@ -2187,49 +2292,6 @@ namespace ttcr {
                     }
                     foundSlowness = true;
                     
-                    if ( cd->HasArray("s2") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("s2") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with s2 data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        s2.resize( x->GetSize() );
-                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
-                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                                // VTK: x is fast axis, we want z as fast axis
-                                vtkIdType ii = k * ncells[0] + i;
-                                s2[n] = x->GetComponent(ii, 0);
-                            }
-                        }
-                        foundS2 = true;
-                        if ( verbose ) { std::cout << "Model contains energy-velocity parameter s2\n"; }
-                    }
-                    
-                    if ( cd->HasArray("s4") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("s4") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with s4 data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        s4.resize( x->GetSize() );
-                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
-                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                                // VTK: x is fast axis, we want z as fast axis
-                                vtkIdType ii = k * ncells[0] + i;
-                                s4[n] = x->GetComponent(ii, 0);
-                            }
-                        }
-                        foundS4 = true;
-                        if ( verbose ) { std::cout << "Model contains energy-velocity parameter s4\n"; }
-                    }
                     break;
                 } else if ( strcmp(cd->GetArrayName(na), "Slowness")==0 ) {
 
@@ -2251,93 +2313,70 @@ namespace ttcr {
                     }
                     foundSlowness = true;
 
-                    if ( cd->HasArray("xi") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("xi") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with xi data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        xi.resize( x->GetSize() );
-                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
-                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                                // VTK: x is fast axis, we want z as fast axis
-                                vtkIdType ii = k * ncells[0] + i;
-                                xi[n] = x->GetComponent(ii, 0);
-                            }
-                        }
-                        foundXi = true;
-                        if ( verbose ) { std::cout << "Model contains anisotropy ratio\n"; }
-                    }
-                    if ( cd->HasArray("theta") ) {
-
-                        vtkSmartPointer<vtkDoubleArray> x = vtkSmartPointer<vtkDoubleArray>::New();
-                        x = vtkDoubleArray::SafeDownCast( cd->GetArray("theta") );
-
-                        if ( x->GetSize() != dataSet->GetNumberOfCells() ) {
-                            std::cout << "Problem with theta data (wrong size)" << std::endl;
-                            return nullptr;
-                        }
-
-                        theta.resize( x->GetSize() );
-                        for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
-                            for ( size_t k=0; k<ncells[2]; ++k,++n ) {
-                                // VTK: x is fast axis, we want z as fast axis
-                                vtkIdType ii = k * ncells[0] + i;
-                                theta[n] = x->GetComponent(ii, 0);
-                            }
-                        }
-                        foundTheta = true;
-                        if ( verbose ) { std::cout << "Model contains anisotropy tilt angle\n"; }
-                    }
                     break;
                 }
             }
-            if ( foundSlowness ) {
+            if ( foundSlowness || velocityModel ) {
                 switch ( par.method ) {
                     case SHORTEST_PATH:
                     {
                         if ( verbose ) { std::cout << "Building grid (Grid2Drcsp) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                        if ( foundTheta ) {
-                            if ( foundXi==false ) { std::cerr << "Error: Model should contain anisotropy ratio" << std::endl; abort(); }
-                            g = new Grid2Drcsp<T, uint32_t, sxz<T>,
-                            CellTiltedElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
-                                                                                     xrange[0], zrange[0],
-                                                                                     par.nn[0], par.nn[2],
-                                                                                     par.tt_from_rp,
-                                                                                     nt);
+                        // a tilt angle turns each medium into its tilted counterpart
+                        if ( foundEpsilon ) {
+                            if ( foundTheta )
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellTTI_PSV<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                    xrange[0], zrange[0],
+                                                                                                                    par.nn[0], par.nn[2],
+                                                                                                                    par.tt_from_rp,
+                                                                                                                    nt);
+                            else
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellVTI_PSV<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                    xrange[0], zrange[0],
+                                                                                                                    par.nn[0], par.nn[2],
+                                                                                                                    par.tt_from_rp,
+                                                                                                                    nt);
+                        } else if ( foundGamma ) {
+                            if ( foundTheta )
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellTTI_SH<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                   xrange[0], zrange[0],
+                                                                                                                   par.nn[0], par.nn[2],
+                                                                                                                   par.tt_from_rp,
+                                                                                                                   nt);
+                            else
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellVTI_SH<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                   xrange[0], zrange[0],
+                                                                                                                   par.nn[0], par.nn[2],
+                                                                                                                   par.tt_from_rp,
+                                                                                                                   nt);
+                        } else if ( foundS2 ) {
+                        g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellWeaklyAnelliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                           xrange[0], zrange[0],
+                                                                                                                           par.nn[0], par.nn[2],
+                                                                                                                           par.tt_from_rp,
+                                                                                                                           nt);
                         } else if ( foundXi ) {
+                            if ( foundTheta )
+                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellTiltedElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                                             xrange[0], zrange[0],
+                                                                                                                             par.nn[0], par.nn[2],
+                                                                                                                             par.tt_from_rp,
+                                                                                                                             nt);
+                            else
                             g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellElliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
                                                                                                                        xrange[0], zrange[0],
                                                                                                                        par.nn[0], par.nn[2],
                                                                                                                        par.tt_from_rp,
                                                                                                                        nt);
-                            
-                        } else if ( foundS2 || foundS4) {
-                            if ( !foundS2 ) {
-                                std::cout << "Error: energy-velocity parameter s2 not found" << std::endl;
-                                return nullptr;
-                            }
-                            if ( !foundS4 ) {
-                                std::cout << "Error: energy-velocity parameter s4 not found" << std::endl;
-                                return nullptr;
-                            }
-                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, CellWeaklyAnelliptical<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
-                                                                                                                       xrange[0], zrange[0],
-                                                                                                                       par.nn[0], par.nn[2],
-                                                                                                                       par.tt_from_rp,
-                                                                                                                       nt);
-                            
+                        } else if ( foundTheta ) {
+                            std::cerr << "Error: Model should contain anisotropy ratio" << std::endl;
+                            return nullptr;
                         } else {
-                            g = new Grid2Drcsp<T, uint32_t, sxz<T>, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
-                                                                                                             xrange[0], zrange[0],
-                                                                                                             par.nn[0], par.nn[2],
-                                                                                                             par.tt_from_rp,
-                                                                                                             nt);
+                        g = new Grid2Drcsp<T, uint32_t, sxz<T>, Cell<T, Node2Dcsp<T, uint32_t>, sxz<T>>>(ncells[0], ncells[2], d[0], d[2],
+                                                                                                         xrange[0], zrange[0],
+                                                                                                         par.nn[0], par.nn[2],
+                                                                                                         par.tt_from_rp,
+                                                                                                         nt);
                         }
                         if ( par.time ) { end = std::chrono::high_resolution_clock::now(); }
                         if ( verbose ) {
@@ -2345,41 +2384,21 @@ namespace ttcr {
                             << "\nAssigning slowness at grid cells ... ";
                         }
                         try {
-                            g->setSlowness(slowness);
+                            if ( !velocityModel )
+                                g->setSlowness(slowness);
+                            if ( foundVp0 ) g->setVp0( Vp0 );
+                            if ( foundVs0 ) g->setVs0( Vs0 );
+                            if ( foundEpsilon ) g->setEpsilon( epsilon );
+                            if ( foundDelta ) g->setDelta( delta );
+                            if ( foundGamma ) g->setGamma( gamma );
+                            if ( foundTheta ) g->setTiltAngle( theta );
+                            if ( foundXi ) g->setXi( xi );
+                            if ( foundS2 ) { g->setS2( s2 ); g->setS4( s4 ); }
                         } catch (std::exception& e) {
                             std::cerr << e.what() << std::endl;
                             delete g;
                             return nullptr;
                         }
-                        if ( foundTheta ) {
-                            try {
-                                g->setTiltAngle( theta );
-                            } catch (std::exception& e) {
-                                std::cerr << e.what() << std::endl;
-                                std::cerr << "aborting";
-                                std::abort();
-                            }
-                        }
-                        if ( foundXi ) {
-                            try {
-                                g->setXi( xi );
-                            } catch (std::exception& e) {
-                                std::cerr << e.what() << std::endl;
-                                std::cerr << "aborting";
-                                std::abort();
-                            }
-                        }
-                        if ( foundS2 ) {
-                            try {
-                                g->setS2( s2 );
-                                g->setS4( s4 );
-                            } catch (std::exception& e) {
-                                std::cerr << e.what() << std::endl;
-                                std::cerr << "aborting";
-                                std::abort();
-                            }
-                        }
-                            
                         if ( verbose ) std::cout << "done.\n";
                         if ( par.time ) {
                             std::cout.precision(12);
@@ -2535,10 +2554,42 @@ namespace ttcr {
         std::vector<sxz<T>> nodes(reader.getNumberOfNodes());
         std::vector<triangleElem<uint32_t>> triangles(reader.getNumberOfElements());
         bool constCells = reader.isConstCell();
-        bool foundXi = reader.hasVariable<T>("xi", constCells);
-        bool foundTheta = reader.hasVariable<T>("theta", constCells);
-        bool foundS2 = reader.hasVariable<T>("s2", constCells);
-        bool foundS4 = reader.hasVariable<T>("s4", constCells);
+        // A medium is anisotropic cell by cell, so these are looked for in the
+        // cell data only: the same names given at the nodes are ignored, and
+        // such a mesh is read as isotropic.
+        bool foundXi = constCells && reader.hasVariable<T>("xi", true);
+        bool foundTheta = constCells && reader.hasVariable<T>("theta", true);
+        bool foundS2 = constCells && reader.hasVariable<T>("s2", true);
+        bool foundS4 = constCells && reader.hasVariable<T>("s4", true);
+        bool foundVp0 = constCells && reader.hasVariable<T>("Vp0", true);
+        bool foundVs0 = constCells && reader.hasVariable<T>("Vs0", true);
+        bool foundEpsilon = constCells && reader.hasVariable<T>("epsilon", true);
+        bool foundDelta = constCells && reader.hasVariable<T>("delta", true);
+        bool foundGamma = constCells && reader.hasVariable<T>("gamma", true);
+
+        if ( (foundEpsilon || foundDelta) && !(foundEpsilon && foundDelta) ) {
+            std::cerr << "Error: Model should contain both epsilon and delta" << std::endl;
+            return nullptr;
+        }
+        if ( (foundEpsilon || foundGamma) && !foundVs0 ) {
+            std::cerr << "Error: Model should contain Vs0" << std::endl;
+            return nullptr;
+        }
+        if ( foundEpsilon && !foundVp0 ) {
+            std::cerr << "Error: Model should contain Vp0" << std::endl;
+            return nullptr;
+        }
+        if ( (foundS2 || foundS4) && !(foundS2 && foundS4) ) {
+            std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl;
+            return nullptr;
+        }
+        // the coupled and SH media are described by velocities, not a slowness
+        bool velocityModel = foundEpsilon || foundGamma;
+        if ( velocityModel && par.method != SHORTEST_PATH ) {
+            std::cerr << "Error: transversely isotropic media are implemented "
+                      << "for the shortest-path method only" << std::endl;
+            return nullptr;
+        }
 
         std::vector<T> slowness;
         if ( constCells )
@@ -2556,7 +2607,8 @@ namespace ttcr {
         }
         reader.readNodes2D(nodes, d);
         reader.readTriangleElements(triangles);
-        reader.readSlowness(slowness, constCells);
+        if ( !velocityModel )
+            reader.readSlowness(slowness, constCells);
 
         if ( verbose ) {
             std::cout << "done.\n  Unstructured mesh in file has"
@@ -2579,38 +2631,64 @@ namespace ttcr {
                     std::cout.flush();
                 }
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
-                if ( constCells )
-                    if ( foundTheta ) {
-                        if ( !foundXi ) {
-                            std::cerr << "Error: Model should contain anisotropy ratio" << std::endl; abort();
-                        }
-                        g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellTiltedElliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
-                                                                                                                                              triangles,
-                                                                                                                                              par.nn[0],
-                                                                                                                                              par.tt_from_rp,
-                                                                                                                                              nt);
-                    } else if ( foundXi ) {
-                        g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellElliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                if ( constCells ) {
+                    // a tilt angle turns each medium into its tilted counterpart
+                    if ( foundEpsilon ) {
+                        if ( foundTheta )
+                            g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellTTI_PSV<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                                         triangles,
+                                                                                                                                         par.nn[0],
+                                                                                                                                         par.tt_from_rp,
+                                                                                                                                         nt);
+                        else
+                            g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellVTI_PSV<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                                         triangles,
+                                                                                                                                         par.nn[0],
+                                                                                                                                         par.tt_from_rp,
+                                                                                                                                         nt);
+                    } else if ( foundGamma ) {
+                        if ( foundTheta )
+                            g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellTTI_SH<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
                                                                                                                                         triangles,
                                                                                                                                         par.nn[0],
                                                                                                                                         par.tt_from_rp,
                                                                                                                                         nt);
-                    } else if ( foundS2 || foundS4 ) {
-                        if ( ! (foundS2 && foundS4 ) ) {
-                            std::cerr << "Error: Model should contain both s2 and s4 parameters" << std::endl; abort();
-                        }
+                        else
+                            g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellVTI_SH<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                                        triangles,
+                                                                                                                                        par.nn[0],
+                                                                                                                                        par.tt_from_rp,
+                                                                                                                                        nt);
+                    } else if ( foundS2 ) {
                         g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellWeaklyAnelliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
-                                                                                                                                        triangles,
-                                                                                                                                        par.nn[0],
-                                                                                                                                        par.tt_from_rp,
-                                                                                                                                        nt);
+                                                                                                                                                triangles,
+                                                                                                                                                par.nn[0],
+                                                                                                                                                par.tt_from_rp,
+                                                                                                                                                nt);
+                    } else if ( foundXi ) {
+                        if ( foundTheta )
+                            g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellTiltedElliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                                                  triangles,
+                                                                                                                                                  par.nn[0],
+                                                                                                                                                  par.tt_from_rp,
+                                                                                                                                                  nt);
+                        else
+                            g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, CellElliptical<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                                            triangles,
+                                                                                                                                            par.nn[0],
+                                                                                                                                            par.tt_from_rp,
+                                                                                                                                            nt);
+                    } else if ( foundTheta ) {
+                        std::cerr << "Error: Model should contain anisotropy ratio" << std::endl;
+                        return nullptr;
                     } else {
-                        g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, Cell<T, Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
-                                                                                                                               triangles,
-                                                                                                                               par.nn[0],
-                                                                                                                               par.tt_from_rp,
-                                                                                                                               nt);
+                        g = new Grid2Ducsp<T, uint32_t, sxz<T>, Node2Dcsp<T,uint32_t>, Cell<T,Node2Dcsp<T,uint32_t>, sxz<T>>>(nodes,
+                                                                                                                              triangles,
+                                                                                                                              par.nn[0],
+                                                                                                                              par.tt_from_rp,
+                                                                                                                              nt);
                     }
+                }
                 else
                     g = new Grid2Dunsp<T, uint32_t, sxz<T>, Node2Dnsp<T,uint32_t>>(nodes,
                                                                                    triangles,
@@ -2749,7 +2827,14 @@ namespace ttcr {
         }
         std::cout.flush();
         try {
-            g->setSlowness(slowness);
+            if ( !velocityModel )
+                g->setSlowness(slowness);
+            std::vector<T> v;
+            if ( foundVp0 ) { reader.readVariable("Vp0", v, true); g->setVp0(v); }
+            if ( foundVs0 ) { reader.readVariable("Vs0", v, true); g->setVs0(v); }
+            if ( foundEpsilon ) { reader.readVariable("epsilon", v, true); g->setEpsilon(v); }
+            if ( foundDelta ) { reader.readVariable("delta", v, true); g->setDelta(v); }
+            if ( foundGamma ) { reader.readVariable("gamma", v, true); g->setGamma(v); }
             if ( foundXi ) {
                 std::vector<T> xi;
                 reader.readVariable("xi", xi, constCells);
@@ -2847,8 +2932,8 @@ namespace ttcr {
                     constCells = false;
                 } else {
                     std::cerr << "Error: slowness file should contain " << slowness.size()
-                    << " values.\nAborting." << std::endl;
-                    abort();
+                    << " values." << std::endl;
+                    return nullptr;
                 }
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {
@@ -3281,8 +3366,8 @@ namespace ttcr {
                     constCells = false;
                 } else {
                     std::cerr << "Error: slowness file should contain " << slowness.size()
-                    << " values.\nAborting." << std::endl;
-                    abort();
+                    << " values." << std::endl;
+                    return nullptr;
                 }
             }
             for ( size_t n=0; n<slowness.size(); ++n ) {

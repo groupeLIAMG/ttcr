@@ -205,18 +205,27 @@ file carries: no keyword in the parameter file selects it.
 
 Anisotropy is a property of a cell, so it requires a model of constant-slowness
 cells — arrays given as point data are ignored — and it is used by the
-**shortest-path method** only.  A file carrying anisotropy arrays raytraced with
-the fast sweeping, fast marching or dynamic shortest-path method is read as
-isotropic.
+**shortest-path method** only.  Asking for another method has one of two
+outcomes.  A model that still carries a `Slowness` array is simply read as
+isotropic and the anisotropy arrays are ignored.  A model described by axial
+velocities carries no slowness to fall back on, so the program stops with a
+message rather than raytrace a medium it has not been given.
 
 | arrays in the file | model | 2D `.vtr` | 2D `.vtu` | 3D `.vtr` | 3D `.vtu` |
 | --- | --- | :-: | :-: | :-: | :-: |
 | `xi` | elliptical | yes | yes | — | — |
-| `xi`, `theta` | tilted elliptical | yes | yes | — | — |
-| `s2`, `s4` | weakly anelliptical | yes | yes | — | yes |
 | `chi`, `psi` | ellipsoidal | — | — | yes | yes |
-| `Vs0`, `gamma` | transversely isotropic, SH wave | — | — | — | yes |
-| `Vp0`, `Vs0`, `epsilon`, `delta` | transversely isotropic, qP and qSV waves | — | — | — | yes |
+| `s2`, `s4` | weakly anelliptical | yes | yes | yes | yes |
+| `Vs0`, `gamma` | transversely isotropic, SH wave | yes | yes | yes | yes |
+| `Vp0`, `Vs0`, `epsilon`, `delta` | transversely isotropic, qP and qSV waves | yes | yes | yes | yes |
+
+**In 2D, `theta` tilts whichever model was chosen.**  Adding it to `xi` gives a
+tilted ellipse, to `Vs0`/`gamma` a tilted SH medium, and to
+`Vp0`/`Vs0`/`epsilon`/`delta` a tilted qP/qSV one; the angle is in radians and
+`theta` of zero reproduces the untilted model exactly.  On its own, with no
+model to tilt, it is an error.  There is no tilted model in 3D yet: a tilted
+axis there needs a dip *and* an azimuth, which is a different model rather than
+the same one with an extra parameter.
 
 These are the same models the Python classes take through their `aniso`
 argument; the anisotropy page of the documentation describes each of them, and
@@ -233,18 +242,18 @@ is still required, but it is not always the same slowness:
 - *ellipsoidal* (3D): the **vertical** slowness `sz`, with `chi` = sx/sz and
   `psi` = sy/sz.  The axes of the ellipsoid are aligned with the axes of the
   model;
-- *transversely isotropic* (`Vs0`/`gamma`, or `Vp0`/`Vs0`/`epsilon`/`delta`):
-  **no `Slowness` array is needed**, and any present is ignored.  These media are
-  described by their axial velocities and Thomsen's parameters, so the file may
-  carry no slowness at all.
+- *transversely isotropic* (`Vs0`/`gamma`, or `Vp0`/`Vs0`/`epsilon`/`delta`),
+  in 2D and 3D alike: **no `Slowness` array is needed**, and any present is
+  ignored.  These media are described by their axial velocities and Thomsen's
+  parameters, so the file may carry no slowness at all.
 
 **Incomplete sets are refused.**  Giving `epsilon` without `delta`, `s2` without
 `s4`, `chi` without `psi`, or `epsilon`/`gamma` without the velocity they need,
 stops the program with a message rather than falling back to an isotropic run.
 
-**When several models could be read** the first match wins, in the order the
-table lists them: `theta` before `xi` before `s2`/`s4` in 2D, and
-`epsilon` before `gamma` before `s2`/`s4` before `chi`/`psi` in 3D.
+**When several models could be read** the first match wins, in this order:
+`epsilon`, then `gamma`, then `s2`/`s4`, then `xi` in 2D or `chi`/`psi` in 3D.
+The order is the same on a rectilinear grid and on a mesh.
 
 **The qP wave is the one modelled** for a `Vp0`/`Vs0`/`epsilon`/`delta` medium.
 The stand-alone programs offer no way to ask for qSV; use the Python classes and
