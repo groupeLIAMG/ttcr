@@ -34,13 +34,16 @@ A second example illustrating how to run jobs in parallel is given at
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example_tmesh_parallel.ipynb
 
 An example illutrating how to use gmsh to build models with specific geometries is
-https://github.com/groupeLIAMG/ttcr/blob/master/examples/example4.ipynb
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example4_circular_shapes.ipynb
 
-Raytracing in anisotorpic media is shown in
-https://github.com/groupeLIAMG/ttcr/blob/master/examples/example5.ipynb
+Raytracing in anisotropic media is shown in
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example5_anisotropy_elliptical.ipynb
+
+What a first-arrival solver returns for a triplicated qSV wavefront is discussed in
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example6_vti_triplication.ipynb
 
 Examples with a layered model, showing GPU and float/double usage
-https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1.ipynb
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_3d_layered_model.ipynb
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_float32.ipynb
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_opencl.ipynb
 
