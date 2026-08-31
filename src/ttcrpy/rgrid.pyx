@@ -4,17 +4,20 @@ Raytracing on rectilinear grids
 
 This module contains two classes to perform traveltime computation and
 raytracing on rectilinear grids:
-    - `Grid2d` for 2D media
-    - `Grid3d` for 3D media
 
-Three algorithms are implemented
-    - the Shortest-Path Method
-    - the Fast-Sweeping Method
-    - the Dynamic Shortest-Path Method
+- `Grid2d` for 2D media
+- `Grid3d` for 3D media
+
+Three algorithms are implemented:
+
+- the Shortest-Path Method
+- the Fast-Sweeping Method
+- the Dynamic Shortest-Path Method
 
 Slowness model can be defined in two ways:
-    1) slowness constant within the voxels of the grid (the default)
-    2) slowness defined at nodes of the grid
+
+1) slowness constant within the voxels of the grid (the default)
+2) slowness defined at nodes of the grid
 
 This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 """
@@ -2348,16 +2351,16 @@ cdef class Grid3d_f:
 
     Grid3d_f(x, y, z, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', tt_from_rp=1, interp_vel=0, eps=1.e-5, maxit=50, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_f
 
-        Parameters
-        ----------
-        x : np.ndarray (float32)
-            node coordinates along x
-        y : np.ndarray (float32)
-            node coordinates along y
-        z : np.ndarray (float32)
-            node coordinates along z
+    Parameters
+    ----------
+    x : np.ndarray (float32)
+        node coordinates along x
+    y : np.ndarray (float32)
+        node coordinates along y
+    z : np.ndarray (float32)
+        node coordinates along z
 
-        All other parameters are identical to Grid3d_d.
+    All other parameters are identical to Grid3d_d.
     """
     cdef vector[float] _x
     cdef vector[float] _y
@@ -5637,14 +5640,14 @@ cdef class Grid2d_f:
 
     Grid2d_f(x, z, n_threads=1, cell_slowness=1, method='SPM', aniso='iso', eps=1.e-5, maxit=50, weno=1, rotated_template=0, nsnx=10, nsnz=10, n_secondary=3, n_tertiary=3, radius_factor_tertiary=3.0, tt_from_rp=0, fsm_gpu=False) -> Grid2d_f
 
-        Parameters
-        ----------
-        x : np.ndarray (float32)
-            node coordinates along x
-        z : np.ndarray (float32)
-            node coordinates along z
+    Parameters
+    ----------
+    x : np.ndarray (float32)
+        node coordinates along x
+    z : np.ndarray (float32)
+        node coordinates along z
 
-        All other parameters are identical to Grid2d_d.
+    All other parameters are identical to Grid2d_d.
     """
     cdef vector[float] _x
     cdef vector[float] _z

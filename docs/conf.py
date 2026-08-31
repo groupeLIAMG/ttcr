@@ -6,20 +6,12 @@
 
 # -- Path setup --------------------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
+# autodoc imports the *installed* ttcrpy: rgrid and tmesh are compiled
+# extensions, so the in-tree src/ directory holds only .pyx sources and must not
+# be put on sys.path -- doing so shadows the installed package and every
+# automodule directive then silently produces an empty page.
 import sphinx_rtd_theme
 from importlib.metadata import version as get_version
-
-# Put the in-tree package on the path so autodoc can import ttcrpy without it
-# having been installed.  Resolved against this file rather than the working
-# directory, so it holds however sphinx-build is invoked.
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                os.pardir, 'src'))
 
 
 # -- Project information -----------------------------------------------------
@@ -75,6 +67,6 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
+napoleon_use_ivar = True
 napoleon_use_param = True
 napoleon_use_rtype = True

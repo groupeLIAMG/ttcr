@@ -4,17 +4,20 @@ Raytracing on unstructured triangular and tetrahedral meshes
 
 This module contains two classes to perform traveltime computation and
 raytracing on unstructured meshes:
-    - `Mesh2d` for 2D media
-    - `Mesh3d` for 3D media
 
-Three algorithms are implemented
-    - the Shortest-Path Method
-    - the Fast-Sweeping Method
-    - the Dynamic Shortest-Path Method
+- `Mesh2d` for 2D media
+- `Mesh3d` for 3D media
+
+Three algorithms are implemented:
+
+- the Shortest-Path Method
+- the Fast-Sweeping Method
+- the Dynamic Shortest-Path Method
 
 Slowness model can be defined in two ways:
-    1) slowness constant within the voxels of the mesh (the default)
-    2) slowness defined at nodes of the mesh
+
+1) slowness constant within the voxels of the mesh (the default)
+2) slowness defined at nodes of the mesh
 
 This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 """
