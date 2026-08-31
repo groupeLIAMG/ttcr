@@ -217,7 +217,7 @@ namespace ttcr {
             if ( this->dx != this->dz || this->dx != this->dy ) {
                 throw std::logic_error("Error: WENO stencil needs dx equal to dz");
             }
-            while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
+            while ( niter<nitermax && ( niter<2 || change >= tol || change > prev ) ) {
                 this->sweep(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
