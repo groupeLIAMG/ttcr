@@ -23,6 +23,13 @@ author = 'Bernard Giroux'
 # The full version, including alpha/beta/rc tags
 release = get_version('ttcrpy')
 
+# The short X.Y version.  The epub3 builder refuses an empty `version`, and
+# .readthedocs.yaml builds epub with fail_on_warning, so leaving this unset
+# fails the build even though the HTML is fine.  Taking the first two
+# components keeps the dev suffix setuptools_scm appends out of it:
+# "1.4.3.dev50+g533efaf14" -> "1.4".
+version = '.'.join(release.split('.')[:2])
+
 
 # -- General configuration ---------------------------------------------------
 
