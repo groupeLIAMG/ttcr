@@ -497,7 +497,7 @@ namespace ttcr {
                 };
 
                 // Iterative refinement on GPU
-                while (niter < nitermax && (niter < 2 || change >= tol || change >= prev)) {
+                while (niter < nitermax && (niter < 2 || change >= tol || change > prev)) {
                     // Perform one sweep cycle on GPU (8 directional sweeps)
                     gpu_solvers[threadNo]->runSweeps(tt, slowness, frozen, 1);
                     
