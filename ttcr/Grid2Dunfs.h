@@ -192,7 +192,6 @@ namespace ttcr {
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
                 if ( change < tol ) {
-                    niter++;
                     break;
                 }
 
