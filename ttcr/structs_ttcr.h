@@ -128,7 +128,7 @@ namespace ttcr {
         std::vector<std::string> srcfiles;  ///< Source files; the @c "srcfile" key may appear repeatedly and each occurrence appends. @sa Src, Src2D
 
         /// Construct with the documented defaults: shortest path, double
-        /// precision, second-order least-squares raypaths, 50 sweep iterations.
+        /// precision, second-order least-squares raypaths, 200 sweep iterations.
         input_parameters() : nn(), nt(0), order(2), nitermax(200),
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         gpu_max_threads(4),
