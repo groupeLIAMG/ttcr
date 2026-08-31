@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Tests for verifying python wrappers, module rgrid in 2D"""
 
+import contextlib
+import os
+import tempfile
 import unittest
 
 import numpy as np
@@ -855,6 +858,148 @@ class TestPhase(unittest.TestCase):
                         g2.set_tilt_angle(np.full(self.ncells, 0.3))
                     self.assertTrue(np.allclose(
                         tt, g2.raytrace(self.src, self.rcv)))
+
+
+class TestFSMconvergence(unittest.TestCase):
+    """Convergence of the fast sweeping method with the WENO3 stencil.
+
+    The medium is a constant velocity gradient, v(z) = v0 + a z, whose
+    traveltime from a point source is known in closed form, so the comparison
+    is against truth rather than against another discretisation.
+
+    Regression test for issue #92, where refining the grid made the answer
+    *worse*: the sweeps stopped before converging and said nothing about it.
+    The 401 x 401 grid is what caught it -- the sequence was still monotone at
+    201 x 201 -- so do not drop that resolution to save time.
+    """
+
+    v0, a = 2.0, 0.8
+    src = np.array([[0.5, 0.2]])
+    sizes = (51, 101, 201, 401)
+    # the shipped nitermax; a solve that reaches it has been capped, not
+    # converged, whatever the traveltimes look like
+    default_maxit = 200
+
+    @classmethod
+    def _analytic(cls, x, z, vscale):
+        """Traveltime from `src` through a constant velocity gradient."""
+        v1 = cls.v0 + cls.a*cls.src[0, 1]
+        v2 = cls.v0 + cls.a*z
+        r2 = (x - cls.src[0, 0])**2 + (z - cls.src[0, 1])**2
+        return np.arccosh(1. + cls.a*cls.a*r2/(2.*v1*v2))/cls.a/vscale
+
+    @classmethod
+    def _solve(cls, n, vscale=1., **kwargs):
+        """Raytrace to every node of an n x n grid.
+
+        `vscale` multiplies the velocities, which divides every traveltime by
+        the same factor: the same physics written in different units.
+
+        Returns the grid, so the iteration counts can be inspected, and the
+        mean relative error.  The error is measured away from the source,
+        since close in the field is set by the initialisation rather than by
+        the sweeps under test.
+        """
+        x = np.linspace(0., 2., n)
+        xx, zz = np.meshgrid(x, x, indexing='ij')
+        te = cls._analytic(xx, zz, vscale)
+        g = rg.Grid2d(x, x, method='FSM', cell_slowness=0, weno=1,
+                      n_threads=1, **kwargs)
+        g.set_slowness((1./((cls.v0 + cls.a*zz)*vscale)).ravel())
+        tt = g.raytrace(cls.src,
+                        np.c_[xx.ravel(), zz.ravel()]).reshape(xx.shape)
+        far = te > 0.05/vscale
+        return g, np.mean(np.abs(tt[far] - te[far])/te[far])
+
+    @classmethod
+    def setUpClass(cls):
+        # solve each resolution once; three of the tests read these
+        cls.solved = {n: cls._solve(n) for n in cls.sizes}
+
+    def test_error_decreases_under_refinement(self):
+        errors = [self.solved[n][1] for n in self.sizes]
+        for (nc, ec), (nf, ef) in zip(zip(self.sizes, errors),
+                                      zip(self.sizes[1:], errors[1:])):
+            with self.subTest(coarse=nc, fine=nf):
+                self.assertLess(ef, ec,
+                                'error grew when the grid was refined')
+                # first order in the limit; well clear of the 0.5 floor at
+                # every step, and negative before the fix
+                self.assertGreater(np.log2(ec/ef), 0.5,
+                                   'convergence slower than half an order')
+
+    def test_sweeps_converge_at_the_default_settings(self):
+        for n in self.sizes:
+            with self.subTest(n=n):
+                g = self.solved[n][0]
+                self.assertLess(g.get_niterw(), self.default_maxit,
+                                'WENO pass hit the iteration cap')
+                self.assertLess(g.get_niter(), self.default_maxit,
+                                'first-order pass hit the iteration cap')
+
+    @staticmethod
+    @contextlib.contextmanager
+    def _captured_stderr():
+        """Collect what the solver writes to stderr, as a one-element list.
+
+        The non-convergence warning comes from C++ and goes straight to file
+        descriptor 2, so redirecting sys.stderr does not see it.
+        """
+        collected = []
+        with tempfile.TemporaryFile(mode='w+') as tmp:
+            saved = os.dup(2)
+            try:
+                os.dup2(tmp.fileno(), 2)
+                yield collected
+            finally:
+                os.dup2(saved, 2)
+                os.close(saved)
+                tmp.seek(0)
+                collected.append(tmp.read())
+
+    def test_a_capped_solve_reports_the_cap(self):
+        # a capped solve is not a converged solve, and it used to be silent:
+        # the warning and get_niterw() are the only two signals a caller has
+        maxit = 5
+        with self._captured_stderr() as stderr:
+            g, _ = self._solve(101, maxit=maxit)
+        self.assertEqual(g.get_niterw(), maxit)
+        # the first-order pass converges in a couple of sweeps either way
+        self.assertLess(g.get_niter(), maxit)
+        self.assertIn('WENO3', stderr[0])
+        self.assertIn('nitermax', stderr[0])
+
+    def test_a_converged_solve_is_silent(self):
+        with self._captured_stderr() as stderr:
+            self._solve(101)
+        self.assertEqual(stderr[0], '', 'converged solve warned anyway')
+
+    def test_tolerance_does_not_depend_on_the_model_units(self):
+        # epsilon is relative to the traveltime range, so writing the same
+        # model in different units must not change where the sweeps stop.
+        # Against an absolute tolerance the x1000 case stopped after a single
+        # WENO sweep with 8.6 times the error.
+        reference = self.solved[201][1]
+        for vscale in (1.e3, 1.e-3):
+            with self.subTest(vscale=vscale):
+                g, err = self._solve(201, vscale=vscale)
+                self.assertGreater(g.get_niterw(), 2)
+                # exact agreement is out of reach while the WENO smoothness
+                # ratio is regularised with the machine epsilon, which a
+                # model scaled far enough down runs into; 25% is wide of that
+                # and still an order of magnitude tighter than the old failure
+                self.assertLess(abs(err - reference)/reference, 0.25,
+                                'accuracy changed with the units of the model')
+
+    def test_weno_pass_is_carried_past_the_rising_change(self):
+        # The WENO3 change per sweep rises before it falls.  With a tolerance
+        # loose enough to sit above the first sweep's change, a loop that only
+        # tested the tolerance stopped after one sweep; the guard has to carry
+        # it over the peak, which here takes four.  Two would mean only the
+        # minimum-iteration floor is left.
+        g, _ = self._solve(101, eps=1.e-3)
+        self.assertGreater(g.get_niterw(), 2,
+                           'WENO pass stopped while the change was rising')
 
 
 if __name__ == '__main__':
