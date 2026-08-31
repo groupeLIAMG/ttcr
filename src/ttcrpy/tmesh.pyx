@@ -68,9 +68,9 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        nodes : np.ndarray, shape (nnodes, 3)
+        nodes : np.ndarray with shape (nnodes, 3)
             node coordinates
-        tetra : np.ndarray of int, shape (ntetra, 4)
+        tetra : np.ndarray of int with shape (ntetra, 4)
             indices of nodes forming the tetrahedra
         n_threads : int
             number of threads for raytracing (default is 1)
@@ -444,7 +444,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        pts : np ndarray, shape(npts, 3)
+        pts : np ndarray with shape (npts, 3)
             coordinates of points to check
 
         Returns
@@ -493,7 +493,7 @@ cdef class Mesh3d:
 
         Returns
         -------
-        tt: np ndarray, shape (nnodes,)
+        tt: np ndarray with shape (nnodes,)
             traveltimes
         """
         if thread_no >= self._n_threads:
@@ -514,7 +514,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        slowness : np ndarray, shape (nparams, )
+        slowness : np ndarray with shape (nparams, )
         """
         if slowness.size != self.nparams:
             raise ValueError('Slowness vector has wrong size')
@@ -536,7 +536,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        chi : np ndarray, shape (nparams, )
+        chi : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if chi.size != self.nparams:
@@ -559,7 +559,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        psi : np ndarray, shape (nparams, )
+        psi : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if psi.size != self.nparams:
@@ -582,7 +582,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nparams, )
+        v : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if v.size != self.nparams:
@@ -605,7 +605,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nparams, )
+        v : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if v.size != self.nparams:
@@ -628,7 +628,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        epsilon : np ndarray, shape (nparams, )
+        epsilon : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if epsilon.size != self.nparams:
@@ -651,7 +651,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        delta : np ndarray, shape (nparams, )
+        delta : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if delta.size != self.nparams:
@@ -674,7 +674,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        gamma : np ndarray, shape (nparams, )
+        gamma : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if gamma.size != self.nparams:
@@ -697,7 +697,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        s2 : np ndarray, shape (nparams, )
+        s2 : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if s2.size != self.nparams:
@@ -720,7 +720,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        s4 : np ndarray, shape (nparams, )
+        s4 : np ndarray with shape (nparams, )
             one value per tetrahedron
         """
         if s4.size != self.nparams:
@@ -775,7 +775,7 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        velocity : np ndarray, shape (nparams, )
+        velocity : np ndarray with shape (nparams, )
         """
         if velocity.size != self.nparams:
             raise ValueError('velocity vector has wrong size')
@@ -798,12 +798,12 @@ cdef class Mesh3d:
 
         Parameters
         ----------
-        coord : np.ndarray, shape (npts, 3)
+        coord : np.ndarray with shape (npts, 3)
             coordinates of data points
 
         Returns
         -------
-        D : scipy csr_matrix, shape (npts, nparams)
+        D : scipy csr_matrix with shape (npts, nparams)
             Matrix of interpolation weights
         """
         if self.is_outside(coord):
@@ -907,7 +907,7 @@ cdef class Mesh3d:
                 - 3rd column is source easting
                 - 4th column is source northing
                 - 5th column is source elevation
-        slowness : np ndarray, shape (nparams, ) (optional)
+        slowness : np ndarray with shape (nparams, ) (optional)
             slowness at grid nodes or cells (depending on cell_slowness)
 
         Returns
@@ -1616,9 +1616,9 @@ cdef class Mesh2d:
 
     Parameters
     ----------
-    nodes : np.ndarray, shape (nnodes, 2)
+    nodes : np.ndarray with shape (nnodes, 2)
         node coordinates
-    triangles : np.ndarray of int, shape (ntriangles, 3)
+    triangles : np.ndarray of int with shape (ntriangles, 3)
         indices of nodes forming the triangles
     n_threads : int
         number of threads for raytracing (default is 1)
@@ -2000,7 +2000,7 @@ cdef class Mesh2d:
 
         Returns
         -------
-        tt: np ndarray, shape (nnodes,)
+        tt: np ndarray with shape (nnodes,)
             traveltimes
         """
         if thread_no >= self._n_threads:
@@ -2021,7 +2021,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        slowness : np ndarray, shape (nparams, )
+        slowness : np ndarray with shape (nparams, )
         """
         if slowness.size != self.nparams:
             raise ValueError('Slowness vector has wrong size')
@@ -2043,7 +2043,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        velocity : np ndarray, shape (nparams, )
+        velocity : np ndarray with shape (nparams, )
         """
         if velocity.size != self.nparams:
             raise ValueError('velocity vector has wrong size')
@@ -2065,7 +2065,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        xi : np ndarray, shape (nparams, )
+        xi : np ndarray with shape (nparams, )
         """
         if xi.size != self.nparams:
             raise ValueError('xi vector has wrong size')
@@ -2119,7 +2119,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        theta : np ndarray, shape (nparams, )
+        theta : np ndarray with shape (nparams, )
         """
         if theta.size != self.nparams:
             raise ValueError('theta vector has wrong size')
@@ -2141,7 +2141,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        s2 : np ndarray, shape (nparams, )
+        s2 : np ndarray with shape (nparams, )
         """
         if s2.size != self.nparams:
             raise ValueError('s2 vector has wrong size')
@@ -2163,7 +2163,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        s4 : np ndarray, shape (nparams, )
+        s4 : np ndarray with shape (nparams, )
         """
         if s4.size != self.nparams:
             raise ValueError('s4 vector has wrong size')
@@ -2185,7 +2185,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nparams, )
+        v : np ndarray with shape (nparams, )
         """
         if v.size != self.nparams:
             raise ValueError('v vector has wrong size')
@@ -2207,7 +2207,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nparams, )
+        v : np ndarray with shape (nparams, )
         """
         if v.size != self.nparams:
             raise ValueError('v vector has wrong size')
@@ -2229,7 +2229,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        e : np ndarray, shape (nparams, )
+        e : np ndarray with shape (nparams, )
         """
         if e.size != self.nparams:
             raise ValueError('e vector has wrong size')
@@ -2251,7 +2251,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        d : np ndarray, shape (nparams, )
+        d : np ndarray with shape (nparams, )
         """
         if d.size != self.nparams:
             raise ValueError('d vector has wrong size')
@@ -2273,7 +2273,7 @@ cdef class Mesh2d:
 
         Parameters
         ----------
-        g : np ndarray, shape (nparams, )
+        g : np ndarray with shape (nparams, )
         """
         if g.size != self.nparams:
             raise ValueError('g vector has wrong size')

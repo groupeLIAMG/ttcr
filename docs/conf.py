@@ -59,6 +59,15 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
 
 # Napoleon settings
+#
+# Write array shapes in a parameter's type as "np.ndarray with shape (n, 3)",
+# never "of shape" or ", shape".  Sphinx splits a type field on the delimiters
+# in PyXrefMixin._delimiters_re -- brackets, commas, "|", and (since Sphinx 9)
+# both "or" and "of" -- and cross-references every token in between.  The other
+# two spellings therefore leave a bare "shape" token, which resolves against
+# the four Grid*.shape properties: ambiguous when referenced from tmesh, which
+# is an error under the fail_on_warning setting in .readthedocs.yaml, and
+# silently wrong from rgrid, where it linked an array shape to the property.
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
