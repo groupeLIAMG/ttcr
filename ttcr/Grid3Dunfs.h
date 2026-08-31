@@ -117,7 +117,6 @@ namespace ttcr {
         {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
-            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
         /**
          * @brief Build the mesh and its sweep orderings.
@@ -153,7 +152,6 @@ namespace ttcr {
             this->buildGridNodes(no, nt);
             this->buildGridNeighbors(this->nodes);
             initOrdering(refPts, order);
-            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         ~Grid3Dunfs() {
@@ -179,7 +177,7 @@ namespace ttcr {
         const int get_niter() const { return niter_final; }
 
     private:
-        T1 epsilon;    ///< Convergence threshold on the @f$L_1@f$ change, already scaled by the node count.
+        T1 epsilon;    ///< Convergence tolerance, dimensionless: the fraction of the traveltime range the mean per-node change must fall below.
         int nitermax;  ///< Iteration cap.
         std::vector<std::vector<Node3Dn<T1,T2>*>> S; ///< One node ordering per reference point.
         mutable int niter_final; ///< Iterations taken; @c mutable so the @c const solver can record it.
@@ -282,7 +280,9 @@ namespace ttcr {
 
         int niter = 0;
         T1 change = std::numeric_limits<T1>::max();
-        while ( change >= epsilon && niter<nitermax ) {
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
+        while ( change >= tol && niter<nitermax ) {
 
             for ( size_t i=0; i<S.size(); ++i ) {
 
@@ -292,14 +292,9 @@ namespace ttcr {
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     break;
                 }
 
@@ -309,18 +304,17 @@ namespace ttcr {
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     break;
                 }
             }
             niter++;
+        }
+        if ( niter == nitermax && change >= tol ) {
+            warnFSMnotConverged("first-order", niter, change, epsilon,
+                                tref, this->nodes.size());
         }
         niter_final = niter;
     }
@@ -350,7 +344,9 @@ namespace ttcr {
 
         int niter = 0;
         T1 change = std::numeric_limits<T1>::max();
-        while ( change >= epsilon && niter<nitermax ) {
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
+        while ( change >= tol && niter<nitermax ) {
 
             for ( size_t i=0; i<S.size(); ++i ) {
 
@@ -360,14 +356,9 @@ namespace ttcr {
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     break;
                 }
 
@@ -377,19 +368,18 @@ namespace ttcr {
                         this->localUpdate3D(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     break;
                 }
 
             }
             niter++;
+        }
+        if ( niter == nitermax && change >= tol ) {
+            warnFSMnotConverged("first-order", niter, change, epsilon,
+                                tref, this->nodes.size());
         }
         niter_final = niter;
     }

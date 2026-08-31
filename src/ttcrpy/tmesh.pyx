@@ -118,9 +118,12 @@ cdef class Mesh3d:
             parameters (interpolation: for cell_slowness == False or FSM)
             (defauls is False)
         eps : double
-            convergence criterion (FSM) (default is 1e-5)
+            relative convergence criterion (FSM): the sweeps stop once the mean
+            change in traveltime per node falls below this fraction of the
+            traveltime range of the solution, so the same value behaves the same
+            whatever units the model is expressed in (default is 1e-6)
         maxit : int
-            max number of sweeping iterations (FSM) (default is 50)
+            max number of sweeping iterations (FSM) (default is 200)
         min_dist : double
             tolerance for backward raytracing (default is 1e-5)
         n_secondary : int
@@ -162,7 +165,7 @@ cdef class Mesh3d:
                   size_t n_threads=1, bool cell_slowness=1,
                   str method='FSM', str aniso='iso', int gradient_method=1,
                   bool tt_from_rp=1, bool process_vel=0,
-                  double eps=1.e-5, int maxit=50, double min_dist=1.e-5,
+                  double eps=1.e-6, int maxit=200, double min_dist=1.e-5,
                   uint32_t n_secondary=2, uint32_t n_tertiary=2,
                   double radius_factor_tertiary=3.0,
                   bool translate_grid=0):
@@ -368,6 +371,44 @@ cdef class Mesh3d:
             return self.tet.size()
         else:
             return self.no.size()
+
+    def get_niter(self):
+        """
+        Returns
+        -------
+        int:
+            number of sweeping iterations performed by the last call to
+            `raytrace` (FSM only, 0 for the other methods).  When the WENO
+            operator is used, this counts the first-order pass that precedes
+            it, see `get_niterw`.
+
+        Notes
+        -----
+        A value equal to `maxit` means the sweeps ran out of iterations rather
+        than reaching the convergence criterion, i.e. the traveltimes are not
+        converged.  A warning is then written to stderr by the solver.
+
+        When several sources are raytraced, the count is that of the source
+        solved last, and with more than one thread it is whichever source
+        finished last.
+        """
+        return self.grid.get_niter()
+
+    def get_niterw(self):
+        """
+        Returns
+        -------
+        int:
+            number of WENO sweeping iterations performed by the last call to
+            `raytrace` (FSM with `weno=1` only, 0 otherwise)
+
+        Notes
+        -----
+        The same caveats as for `get_niter` apply: a value equal to `maxit`
+        means the WENO pass did not converge, and the count refers to the
+        source solved last.
+        """
+        return self.grid.get_niterw()
 
     def set_use_thread_pool(self, use_thread_pool):
         """
@@ -1494,7 +1535,7 @@ cdef class Mesh3d:
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
                 str method='FSM', int gradient_method=1,
                 bool tt_from_rp=1, bool process_vel=0,
-                double eps=1.e-5, int maxit=50, double min_dist=1.e-5,
+                double eps=1.e-6, int maxit=200, double min_dist=1.e-5,
                 uint32_t n_secondary=2, uint32_t n_tertiary=2,
                 double radius_factor_tertiary=3.0, bool translate_grid=0):
         """
@@ -1571,7 +1612,7 @@ cdef class Mesh2d:
 
     Constructor:
 
-    Mesh2d(nodes, triangles, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', eps=1e-5, maxit=50, process_obtuse=1, n_secondary=5, n_tertiary=2, radius_factor_tertiary=2, tt_from_rp=0) -> Mesh2d
+    Mesh2d(nodes, triangles, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', eps=1e-6, maxit=200, process_obtuse=1, n_secondary=5, n_tertiary=2, radius_factor_tertiary=2, tt_from_rp=0) -> Mesh2d
 
     Parameters
     ----------
@@ -1599,9 +1640,12 @@ cdef class Mesh2d:
             - 'tti_sh' : tilted transverse isotropy, SH waves
             - 'weakly_anelliptical' : Weakly-Anelliptical formulation of B. Rommel
     eps : double
-        convergence criterion (FSM) (default is 1e-5)
+        relative convergence criterion (FSM): the sweeps stop once the mean
+        change in traveltime per node falls below this fraction of the
+        traveltime range of the solution, so the same value behaves the same
+        whatever units the model is expressed in (default is 1e-6)
     maxit : int
-        max number of sweeping iterations (FSM) (default is 50)
+        max number of sweeping iterations (FSM) (default is 200)
     process_obtuse : bool
         use method of Qian et al (2007) to improve accuracy for triangles
         with obtuse angle (default is True)
@@ -1642,7 +1686,7 @@ cdef class Mesh2d:
     def __cinit__(self, np.ndarray[np.double_t, ndim=2] nodes,
                   np.ndarray[np.int64_t, ndim=2] triangles,
                   size_t n_threads=1, bool cell_slowness=1,
-                  str method='FSM', str aniso='iso', double eps=1.e-5, int maxit=50,
+                  str method='FSM', str aniso='iso', double eps=1.e-6, int maxit=200,
                   bool process_obtuse=1, uint32_t n_secondary=5,
                   uint32_t n_tertiary=2, double radius_factor_tertiary=2.0,
                   bool tt_from_rp=0):
@@ -1860,6 +1904,44 @@ cdef class Mesh2d:
             return self.tri.size()
         else:
             return self.no.size()
+
+    def get_niter(self):
+        """
+        Returns
+        -------
+        int:
+            number of sweeping iterations performed by the last call to
+            `raytrace` (FSM only, 0 for the other methods).  When the WENO
+            operator is used, this counts the first-order pass that precedes
+            it, see `get_niterw`.
+
+        Notes
+        -----
+        A value equal to `maxit` means the sweeps ran out of iterations rather
+        than reaching the convergence criterion, i.e. the traveltimes are not
+        converged.  A warning is then written to stderr by the solver.
+
+        When several sources are raytraced, the count is that of the source
+        solved last, and with more than one thread it is whichever source
+        finished last.
+        """
+        return self.grid.get_niter()
+
+    def get_niterw(self):
+        """
+        Returns
+        -------
+        int:
+            number of WENO sweeping iterations performed by the last call to
+            `raytrace` (FSM with `weno=1` only, 0 otherwise)
+
+        Notes
+        -----
+        The same caveats as for `get_niter` apply: a value equal to `maxit`
+        means the WENO pass did not converge, and the count refers to the
+        source solved last.
+        """
+        return self.grid.get_niterw()
 
     def set_use_thread_pool(self, use_thread_pool):
         """
@@ -2650,7 +2732,7 @@ cdef class Mesh2d:
 
     @staticmethod
     def builder(filename, size_t n_threads=1, bool cell_slowness=1,
-                str method='FSM',double eps=1.e-5, int maxit=50,
+                str method='FSM',double eps=1.e-6, int maxit=200,
                 bool process_obtuse=1, uint32_t n_secondary=5,
                 uint32_t n_tertiary=2, double radius_factor_tertiary=3.0,
                 bool tt_from_rp=0):

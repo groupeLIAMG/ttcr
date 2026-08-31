@@ -53,6 +53,8 @@ cdef extern from "ttcr_t.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
+        int get_niter()
+        int get_niterw()
         void setUsePool(bool up)
         void setTraveltimeFromRaypath(bool)
         void checkPts(vector[sxyz[T1]]) except +
@@ -236,6 +238,8 @@ cdef extern from "Grid3Dundsp.h" namespace "ttcr" nogil:
 
 cdef extern from "Grid2D.h" namespace "ttcr" nogil:
     cdef cppclass Grid2D[T1,T2,S]:
+        int get_niter()
+        int get_niterw()
         void setUsePool(bool up)
         void setTraveltimeFromRaypath(bool)
         size_t getNthreads()

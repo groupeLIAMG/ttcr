@@ -48,11 +48,18 @@
  * averaged nodal ones.
  *
  * @section g2drcfs_conv Convergence
- * The sweeps stop when the summed change in nodal traveltime falls below a
- * threshold. The constructor multiplies the supplied @p eps by the node count,
- * so the user-facing tolerance (ttcr::input_parameters::epsilon) is a **mean**
- * per-node change, while the loop tests an L1 sum. Iteration is also capped by
- * @p maxit.
+ * The sweeps stop when the mean change in nodal traveltime falls below
+ * @p eps times the **range** of the traveltime field, so the tolerance
+ * (ttcr::input_parameters::epsilon) is dimensionless and the same value
+ * means the same thing whatever units the model is expressed in. The loop
+ * itself tests an L1 sum, and ttcr::fsmTolerance folds in the node count
+ * and the range each sweep. @p maxit caps the iterations.
+ *
+ * The WENO3 update is non-monotone early on: the change per sweep rises
+ * before it falls, from a first value that shrinks as @f$O(h^2)@f$ under
+ * refinement. A loop that simply tested the tolerance would therefore stop
+ * on the way up on a fine enough grid, so a pass never terminates while
+ * its change is still at or above the previous sweep's.
  *
  * @sa Grid2Drn.h, Grid2Drc.h, Grid2Drcsp.h, Grid2Drcfs_OpenCL.h
  */
@@ -91,8 +98,9 @@ namespace ttcr {
          * @param ddz   cell size along z.
          * @param minx  x coordinate of the grid origin.
          * @param minz  z coordinate of the grid origin.
-         * @param eps   convergence tolerance, as a mean per-node traveltime
-         *              change; scaled internally by the node count.
+         * @param eps   convergence tolerance, **relative**: the sweeps stop
+         *              once the mean per-node change in traveltime falls
+         *              below this fraction of the traveltime range.
          *              @sa @ref g2drcfs_conv
          * @param maxit maximum number of sweep iterations.
          * @param w     use the 3rd-order WENO stencil instead of the first-order
@@ -116,7 +124,6 @@ namespace ttcr {
         {
             buildGridNodes();
             this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
-            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         /// Destructor.
@@ -357,63 +364,68 @@ namespace ttcr {
         }
 
         T1 change = std::numeric_limits<T1>::max();
+        T1 prev = 0.0;   // previous sweep's change, for the non-monotone guard
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
         if ( weno3 == true ) {
             int niter = 0;
             int niterw = 0;
             if ( this->dx != this->dz ) {
-                while ( change >= epsilon && niter<nitermax ) {
+                while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
                     this->sweep_xz(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niter++;
                 }
+                if ( niter == nitermax && change >= tol ) {
+                    warnFSMnotConverged("first-order", niter, change, epsilon,
+                                        tref, this->nodes.size());
+                }
                 change = std::numeric_limits<T1>::max();
-                while ( change >= epsilon && niterw<nitermax ) {
+                prev = 0.0;
+                while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
                     this->sweep_weno3_xz(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niterw++;
+                }
+                if ( niterw == nitermax && change >= tol ) {
+                    warnFSMnotConverged("WENO3", niterw, change, epsilon,
+                                        tref, this->nodes.size());
                 }
             } else {
-                while ( change >= epsilon && niter<nitermax ) {
+                while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
                     this->sweep(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niter++;
                 }
+                if ( niter == nitermax && change >= tol ) {
+                    warnFSMnotConverged("first-order", niter, change, epsilon,
+                                        tref, this->nodes.size());
+                }
                 change = std::numeric_limits<T1>::max();
-                while ( change >= epsilon && niterw<nitermax ) {
+                prev = 0.0;
+                while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
                     this->sweep_weno3(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niterw++;
+                }
+                if ( niterw == nitermax && change >= tol ) {
+                    warnFSMnotConverged("WENO3", niterw, change, epsilon,
+                                        tref, this->nodes.size());
                 }
             }
             niter_final = niter;
             niterw_final = niterw;
         } else {
             int niter = 0;
-            while ( change >= epsilon && niter<nitermax ) {
+            while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
                 if ( this->dx == this->dz ) {
                     this->sweep(frozen, threadNo);
                     if ( rotated_template == true ) {
@@ -423,14 +435,14 @@ namespace ttcr {
                     this->sweep_xz(frozen, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
+                prev = change;
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
                 niter++;
+            }
+            if ( niter == nitermax && change >= tol ) {
+                warnFSMnotConverged("first-order", niter, change, epsilon,
+                                    tref, this->nodes.size());
             }
             niter_final = niter;
         }
@@ -464,63 +476,68 @@ namespace ttcr {
         }
 
         T1 change = std::numeric_limits<T1>::max();
+        T1 prev = 0.0;   // previous sweep's change, for the non-monotone guard
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
         if ( weno3 == true ) {
             int niter = 0;
             int niterw = 0;
             if ( this->dx != this->dz ) {
-                while ( change >= epsilon && niter<nitermax ) {
+                while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
                     this->sweep_xz(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niter++;
                 }
+                if ( niter == nitermax && change >= tol ) {
+                    warnFSMnotConverged("first-order", niter, change, epsilon,
+                                        tref, this->nodes.size());
+                }
                 change = std::numeric_limits<T1>::max();
-                while ( change >= epsilon && niterw<nitermax ) {
+                prev = 0.0;
+                while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
                     this->sweep_weno3_xz(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niterw++;
+                }
+                if ( niterw == nitermax && change >= tol ) {
+                    warnFSMnotConverged("WENO3", niterw, change, epsilon,
+                                        tref, this->nodes.size());
                 }
             } else {
-                while ( change >= epsilon && niter<nitermax ) {
+                while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
                     this->sweep(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niter++;
                 }
+                if ( niter == nitermax && change >= tol ) {
+                    warnFSMnotConverged("first-order", niter, change, epsilon,
+                                        tref, this->nodes.size());
+                }
                 change = std::numeric_limits<T1>::max();
-                while ( change >= epsilon && niterw<nitermax ) {
+                prev = 0.0;
+                while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
                     this->sweep_weno3(frozen, threadNo);
-                    change = 0.0;
-                    for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                        T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                        change += dt;
-                        times[n] = this->nodes[n].getTT(threadNo);
-                    }
+                    prev = change;
+                    change = fsmChange(this->nodes, times, threadNo, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     niterw++;
+                }
+                if ( niterw == nitermax && change >= tol ) {
+                    warnFSMnotConverged("WENO3", niterw, change, epsilon,
+                                        tref, this->nodes.size());
                 }
             }
             niter_final = niter;
             niterw_final = niterw;
         } else {
             int niter = 0;
-            while ( change >= epsilon && niter<nitermax ) {
+            while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
                 if ( this->dx == this->dz ) {
                     this->sweep(frozen, threadNo);
                     if ( rotated_template == true ) {
@@ -530,14 +547,14 @@ namespace ttcr {
                     this->sweep_xz(frozen, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
+                prev = change;
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
                 niter++;
+            }
+            if ( niter == nitermax && change >= tol ) {
+                warnFSMnotConverged("first-order", niter, change, epsilon,
+                                    tref, this->nodes.size());
             }
             niter_final = niter;
         }
