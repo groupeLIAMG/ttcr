@@ -268,7 +268,7 @@ private:
                 change = fsmChange(tt, times, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
 
-                while (niter < nitermax && (niter < 2 || change >= tol || change >= prev)) {
+                while (niter < nitermax && (niter < 2 || change >= tol || change > prev)) {
                     gpu_solvers[threadNo]->runSweepsNoTransfer(1);
                     gpu_solvers[threadNo]->downloadTravelTimes(tt);
                     niter++;
