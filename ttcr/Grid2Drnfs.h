@@ -330,7 +330,7 @@ namespace ttcr {
             int niter = 0;
             int niterw = 0;
             if ( this->dx != this->dz ) {
-                while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
+                while ( niter<nitermax && ( niter<2 || change >= tol || change > prev ) ) {
                     this->sweep_xz(frozen, threadNo);
                     prev = change;
                     change = fsmChange(this->nodes, times, threadNo, tref);
