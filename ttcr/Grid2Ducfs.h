@@ -102,8 +102,9 @@ namespace ttcr {
          *
          * @param no    node coordinates.
          * @param tri   triangles, each naming three node indices.
-         * @param eps   convergence tolerance, as a mean per-node traveltime
-         *              change; scaled internally by the node count.
+         * @param eps   convergence tolerance, **relative**: the sweeps stop
+         *              once the mean per-node change in traveltime falls
+         *              below this fraction of the traveltime range.
          *              @sa @ref g2ducfs_conv
          * @param maxit maximum number of sweep iterations.
          * @param ttrp  recompute receiver traveltimes along the raypath.
@@ -127,7 +128,6 @@ namespace ttcr {
             this->buildGridNodes(no, nt);
             this->template buildGridNeighbors<Node2Dc<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
-            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         /**
@@ -161,7 +161,6 @@ namespace ttcr {
             this->template buildGridNeighbors<Node2Dc<T1,T2>>(this->nodes);
             if ( procObtuse ) this->processObtuse();
             initOrdering(refPts, order);
-            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
         }
 
         /// Destructor.
@@ -185,8 +184,10 @@ namespace ttcr {
         const int get_niter() const { return niter_final; }
 
     private:
-        /// Convergence threshold, holding the **scaled** value: the constructor
-        /// multiplies the supplied tolerance by the node count.
+        /// Convergence tolerance, dimensionless: the fraction of the traveltime
+        /// range the mean per-node change must fall below.  The loops compare
+        /// against an L1 sum, so ttcr::fsmTolerance folds in the node count and
+        /// the range each sweep rather than scaling this at construction.
         /// @sa @ref g2ducfs_conv
         T1 epsilon;
         int nitermax;             ///< Iteration cap for the sweeps.
@@ -272,7 +273,9 @@ namespace ttcr {
 
         int niter=0;
         T1 change = std::numeric_limits<T1>::max();
-        while ( change >= epsilon && niter<nitermax ) {
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
+        while ( change >= tol && niter<nitermax ) {
 
             for ( size_t i=0; i<sorted.size(); ++i ) {
 
@@ -282,14 +285,9 @@ namespace ttcr {
                         this->localSolver(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     niter++;
                     break;
                 }
@@ -300,19 +298,18 @@ namespace ttcr {
                         this->localSolver(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     niter++;
                     break;
                 }
             }
             niter++;
+        }
+        if ( niter == nitermax && change >= tol ) {
+            warnFSMnotConverged("first-order", niter, change, epsilon,
+                                tref, this->nodes.size());
         }
         niter_final = niter;
     }
@@ -343,7 +340,9 @@ namespace ttcr {
 
         int niter=0;
         T1 change = std::numeric_limits<T1>::max();
-        while ( change >= epsilon && niter<nitermax ) {
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
+        while ( change >= tol && niter<nitermax ) {
 
             for ( size_t i=0; i<sorted.size(); ++i ) {
 
@@ -353,14 +352,9 @@ namespace ttcr {
                         this->localSolver(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     niter++;
                     break;
                 }
@@ -371,20 +365,19 @@ namespace ttcr {
                         this->localSolver(*vertexC, threadNo);
                 }
 
-                change = 0.0;
-                for ( size_t n=0; n<this->nodes.size(); ++n ) {
-                    T1 dt = std::abs( times[n] - this->nodes[n].getTT(threadNo) );
-
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
-                if ( change < epsilon ) {
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
+                if ( change < tol ) {
                     niter++;
                     break;
                 }
 
             }
             niter++;
+        }
+        if ( niter == nitermax && change >= tol ) {
+            warnFSMnotConverged("first-order", niter, change, epsilon,
+                                tref, this->nodes.size());
         }
         niter_final = niter;
     }

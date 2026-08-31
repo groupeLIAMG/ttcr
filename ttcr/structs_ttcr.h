@@ -115,7 +115,7 @@ namespace ttcr {
         bool useEdgeLength;           ///< Interpret @ref radius_tertiary_nodes as a multiple of the mean cell edge length rather than as an absolute distance.
         bool translateOrigin;         ///< Shift the grid so its origin sits at (0,0,0) before solving, improving conditioning for grids far from the origin (@c "translate grid origin").
         bool profile;                 ///< Emit a GPU profiling breakdown (OpenCL) (@c "profile").
-        double epsilon;               ///< Fast sweeping convergence tolerance: the **mean** per-node @f$|\Delta t|@f$ between successive sweeps (@c "epsilon").
+        double epsilon;               ///< Fast sweeping convergence tolerance, dimensionless: the sweeps stop once the **mean** per-node @f$|\Delta t|@f$ between successive sweeps falls below this fraction of the traveltime range (@c "epsilon").
         double source_radius;         ///< If nonzero, treat the source as a sphere of this radius rather than a point (@c "source radius").
         double min_distance_rp;       ///< Minimum step retained when integrating a raypath; guards against stalled steps (@c "raypath minimum distance").
         double radius_tertiary_nodes; ///< Radius around the source within which tertiary nodes are inserted; scaled by edge length when @ref useEdgeLength is set (@c "radius dynamic nodes").
@@ -128,8 +128,8 @@ namespace ttcr {
         std::vector<std::string> srcfiles;  ///< Source files; the @c "srcfile" key may appear repeatedly and each occurrence appends. @sa Src, Src2D
 
         /// Construct with the documented defaults: shortest path, double
-        /// precision, second-order least-squares raypaths, 50 sweep iterations.
-        input_parameters() : nn(), nt(0), order(2), nitermax(50),
+        /// precision, second-order least-squares raypaths, 200 sweep iterations.
+        input_parameters() : nn(), nt(0), order(2), nitermax(200),
         nTertiary(3), raypath_method(LS_SO), saveGridTT(0), min_per_thread(5),
         gpu_max_threads(4),
         inverseDistance(false), singlePrecision(false), saveRaypaths(false),
@@ -137,7 +137,7 @@ namespace ttcr {
         projectTxRx(false), processVel(false), rotated_template(false),
         weno3(false), dump_secondary(false), tt_from_rp(false),
         useEdgeLength(true), translateOrigin(false), profile(false),
-        epsilon(1.e-5), source_radius(0.0), min_distance_rp(1.e-5),
+        epsilon(1.e-6), source_radius(0.0), min_distance_rp(1.e-5),
         radius_tertiary_nodes(0.0), method(SHORTEST_PATH), basename(),
         modelfile(), velfile(), slofile(), rcvfile(), srcfiles() {}
 

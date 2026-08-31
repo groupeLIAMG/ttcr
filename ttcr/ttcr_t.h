@@ -43,6 +43,9 @@
 #define ttcr_ttrc_t_h
 
 #include <cmath>
+#include <iostream>
+#include <limits>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -59,6 +62,139 @@ namespace ttcr {
      * OpenCL grids, mirroring how @ref verbose is consumed.
      */
     extern int gpu_profile;
+
+    /**
+     * @brief Accumulate the sweep-to-sweep change and measure the traveltime scale.
+     *
+     * Walks the nodes once, summing @f$|\Delta t|@f$ against the previous sweep
+     * and refreshing @p times, and at the same time measures the **range** of
+     * the traveltime field.  That range is what @ref fsmTolerance turns the
+     * dimensionless tolerance into an absolute one, so the stop test means the
+     * same thing whatever units the model is expressed in.
+     *
+     * The range is used rather than the largest traveltime because the field
+     * carries the source origin time: @c t0 may be an absolute timestamp, and
+     * @f$t_{max}@f$ alone would then be dominated by it and the tolerance
+     * loosened by orders of magnitude.  Nodes the sweeps have not reached yet
+     * still hold @c std::numeric_limits<T1>::max() and are left out of both
+     * ends; before the first sweep every node is unreached, so the range comes
+     * back as zero and the tolerance with it, which keeps the loop running.
+     *
+     * @param[in]     nodes    grid nodes, queried through @c getTT.
+     * @param[in,out] times    previous sweep's traveltimes; overwritten with
+     *                         the current ones.
+     * @param[in]     threadNo thread whose traveltimes to read.
+     * @param[out]    tref     traveltime range of the reached nodes.
+     * @return The summed absolute change over all nodes (an L1 sum, so it
+     *         grows with the node count; @ref fsmTolerance scales to match).
+     */
+    template<typename T1, typename NODES>
+    T1 fsmChange(const NODES& nodes, std::vector<T1>& times,
+                 const size_t threadNo, T1& tref) {
+        const T1 unreached = std::numeric_limits<T1>::max();
+        T1 change = 0.0;
+        T1 tmin = unreached;
+        T1 tmax = 0.0;
+        for ( size_t n=0; n<nodes.size(); ++n ) {
+            const T1 t = nodes[n].getTT(threadNo);
+            change += std::abs( times[n] - t );
+            times[n] = t;
+            if ( t < unreached ) {
+                if ( t > tmax ) tmax = t;
+                if ( t < tmin ) tmin = t;
+            }
+        }
+        tref = tmax > tmin ? tmax - tmin : static_cast<T1>(0);
+        return change;
+    }
+
+    /**
+     * @brief @ref fsmChange over a plain traveltime vector.
+     *
+     * The OpenCL grids hold the field in a buffer downloaded from the device
+     * rather than in the nodes, so they need the same reduction over a
+     * @c std::vector.
+     *
+     * @param[in]     tt    current traveltimes.
+     * @param[in,out] times previous sweep's traveltimes; overwritten with @p tt.
+     * @param[out]    tref  traveltime range of the reached entries.
+     * @return The summed absolute change.
+     */
+    template<typename T1>
+    T1 fsmChange(const std::vector<T1>& tt, std::vector<T1>& times, T1& tref) {
+        const T1 unreached = std::numeric_limits<T1>::max();
+        T1 change = 0.0;
+        T1 tmin = unreached;
+        T1 tmax = 0.0;
+        for ( size_t n=0; n<tt.size(); ++n ) {
+            change += std::abs( times[n] - tt[n] );
+            times[n] = tt[n];
+            if ( tt[n] < unreached ) {
+                if ( tt[n] > tmax ) tmax = tt[n];
+                if ( tt[n] < tmin ) tmin = tt[n];
+            }
+        }
+        tref = tmax > tmin ? tmax - tmin : static_cast<T1>(0);
+        return change;
+    }
+
+    /**
+     * @brief Absolute stop threshold for a sweep loop.
+     *
+     * @c epsilon (ttcr::input_parameters::epsilon) is a **dimensionless**
+     * tolerance: the sweeps stop once the mean change per node has fallen below
+     * that fraction of the traveltime range.  The loops compare against an L1
+     * sum, so the node count is folded in here rather than into @c epsilon at
+     * construction.
+     *
+     * @param epsilon relative tolerance, as supplied by the caller.
+     * @param tref    traveltime range, from @ref fsmChange.
+     * @param nnodes  number of grid nodes.
+     * @return The value the summed change must fall below.
+     */
+    template<typename T1>
+    inline T1 fsmTolerance(const T1 epsilon, const T1 tref, const size_t nnodes) {
+        return epsilon * tref * static_cast<T1>(nnodes);
+    }
+
+    /**
+     * @brief Report a fast-sweeping pass that stopped on its iteration cap.
+     *
+     * A sweep loop ends either because the change in nodal traveltime dropped
+     * below the tolerance, or because it ran out of iterations.  The second
+     * case is not a converged solve, and it used to be silent: the traveltimes
+     * were returned as if they were final.  Callers of the fast-sweeping grids
+     * must call this when the loop exits with @c niter equal to @c nitermax.
+     *
+     * @param pass    name of the pass, e.g. @c "WENO3", used in the message.
+     * @param niter   number of iterations run, i.e. the cap.
+     * @param change  summed absolute change over all nodes in the last sweep.
+     * @param epsilon relative tolerance, as supplied by the caller.
+     * @param tref    traveltime range, from @ref fsmChange.
+     * @param nnodes  number of grid nodes, used to turn the L1 sum back into
+     *                the per-node figures the caller reasons about.
+     *
+     * @note Written to @c std::cerr regardless of @ref verbose: a capped solve
+     *       is a wrong answer, not a diagnostic detail.
+     * @sa ttcr::input_parameters::epsilon, ttcr::input_parameters::nitermax
+     */
+    inline void warnFSMnotConverged(const std::string& pass, const int niter,
+                                    const double change, const double epsilon,
+                                    const double tref, const size_t nnodes) {
+        const double scale = nnodes > 0 ? static_cast<double>(nnodes) : 1.0;
+        const double mean = change/scale;
+        std::cerr << "Warning: " << pass << " fast sweeping stopped after "
+                  << niter << " iterations (nitermax) without converging: "
+                  << "mean change per node is " << mean;
+        if ( tref > 0.0 ) {
+            std::cerr << ", i.e. " << mean/tref << " of the traveltime range ("
+                      << tref << "), above epsilon = " << epsilon;
+        } else {
+            std::cerr << ", and the traveltime range is not yet established";
+        }
+        std::cerr << ".  The traveltimes are not converged; raise nitermax "
+                  << "and/or lower epsilon.\n";
+    }
 
     const double small = 1.e-4;              ///< Small tolerance used for geometric comparisons.
     const double small2 = small*small;       ///< @ref small squared.

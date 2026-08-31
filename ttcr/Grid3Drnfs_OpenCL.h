@@ -132,8 +132,9 @@ namespace ttcr {
          *
          * @post Nodes and neighbour lists are built and, if @p enableGPU, the
          *       GPU solvers are initialised — falling back to the CPU if that
-         *       fails. @p eps is scaled by the node count, so the value supplied
-         *       is a mean per-node tolerance. Slowness is **not** set.
+         *       fails. @p eps is a relative tolerance: the sweeps stop once the
+         *       mean per-node change falls below that fraction of the
+         *       traveltime range. Slowness is **not** set.
          */
         Grid3Drnfs_OpenCL(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
                           const T1 minx, const T1 miny, const T1 minz,
@@ -154,7 +155,6 @@ namespace ttcr {
         {
             this->buildGridNodes();
             this->template buildGridNeighbors<Node3Dn<T1,T2>>(this->nodes);
-            epsilon *= static_cast<T1>(this->nodes.size());  // per-node tol -> L1-sum threshold (nodes built)
 
             if (use_gpu) {
                 initializeGPU();
@@ -218,7 +218,7 @@ namespace ttcr {
 #endif
 
     protected:
-        T1 epsilon;              ///< Convergence criterion: L1-sum threshold (input per-node tol scaled by nNodes in ctor)
+        T1 epsilon;              ///< Convergence tolerance, dimensionless: the fraction of the traveltime range the mean per-node change must fall below.
         int nitermax;            ///< Maximum iterations
         mutable int niter_final; ///< Final iteration count (basic sweep); @c mutable so the @c const raytrace can record it
         mutable int niterw_final;///< Final iteration count (WENO3 sweep)
@@ -335,6 +335,9 @@ namespace ttcr {
         
         T1 change = std::numeric_limits<T1>::max();
         int niter = 0;
+        T1 prev = 0.0;   // previous sweep's change, for the non-monotone guard
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
         
         if (use_gpu && gpu_available) {
             // ================================================================
@@ -423,12 +426,9 @@ namespace ttcr {
                 niter++;
                 
                 // Check convergence
-                change = 0.0;
-                for (size_t n=0; n<this->nodes.size(); ++n) {
-                    T1 dt = std::abs(times[n] - tt[n]);
-                    change += dt;
-                    times[n] = tt[n];
-                }
+                prev = change;
+                change = fsmChange(tt, times, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
                 // Convergence-curve diagnostic (only when GPU profiling is on).
                 // Reports both the raw L1 sum that drives the stop test and the
                 // per-node mean (= sum / num_nodes): the mean is the grid-size-
@@ -447,7 +447,7 @@ namespace ttcr {
                 }
 
                 // Iterative refinement on GPU
-                while (change >= epsilon && niter < nitermax) {
+                while (niter < nitermax && (niter < 2 || change >= tol || change > prev)) {
                     // Always run sweeps - runSweeps modifies tt in place
                     gpu_solvers[threadNo]->runSweepsNoTransfer(1);
                     
@@ -455,12 +455,9 @@ namespace ttcr {
 
                     niter++;
                     // Check convergence
-                    change = 0.0;
-                    for (size_t n=0; n<this->nodes.size(); ++n) {
-                        T1 dt = std::abs(times[n] - tt[n]);
-                        change += dt;
-                        times[n] = tt[n];
-                    }
+                    prev = change;
+                    change = fsmChange(tt, times, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                     if (gpu_solvers[threadNo]->isProfiling()) {
                         double err = meanError(tt);
                         std::cout << "  [OpenCL converge] "
@@ -492,23 +489,24 @@ namespace ttcr {
             // CPU PATH - Original implementation
             // ================================================================
             
-            while (change >= epsilon && niter < nitermax) {
+            while (niter < nitermax && (niter < 2 || change >= tol || change >= prev)) {
                 if (use_weno) {
                     this->sweep_weno3(frozen, threadNo);
                 } else {
                     this->sweep(frozen, threadNo);
                 }
                 
-                change = 0.0;
-                for (size_t n=0; n<this->nodes.size(); ++n) {
-                    T1 dt = std::abs(times[n] - this->nodes[n].getTT(threadNo));
-                    change += dt;
-                    times[n] = this->nodes[n].getTT(threadNo);
-                }
+                prev = change;
+                change = fsmChange(this->nodes, times, threadNo, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
                 niter++;
             }
         }
         
+        if (niter == nitermax && change >= tol) {
+            warnFSMnotConverged(use_weno ? "WENO3" : "first-order",
+                                niter, change, epsilon, tref, this->nodes.size());
+        }
         return niter;
     }
 

@@ -105,8 +105,9 @@ public:
      *
      * @post Nodes and neighbour lists are built and, if @p enableGPU, the GPU
      *       solvers are initialised — silently falling back to the CPU if that
-     *       fails. @p eps is scaled by the node count, so the value supplied is
-     *       a mean per-node tolerance. Slowness is **not** set.
+     *       fails. @p eps is a relative tolerance: the sweeps stop once the
+     *       mean per-node change falls below that fraction of the traveltime
+     *       range. Slowness is **not** set.
      */
     Grid2Drcfs_OpenCL(const T2 nx, const T2 nz,
                       const T1 ddx, const T1 ddz,
@@ -123,7 +124,6 @@ public:
     {
         buildGridNodes();
         this->template buildGridNeighbors<Node2Dn<T1,T2>>(this->nodes);
-        epsilon *= static_cast<T1>(this->nodes.size());
 
         if (use_gpu) initializeGPU();
     }
@@ -208,7 +208,7 @@ public:
     }
 
 private:
-    T1  epsilon;                   ///< Convergence threshold, already scaled by the node count.
+    T1  epsilon;                   ///< Convergence tolerance, dimensionless: the fraction of the traveltime range the mean per-node change must fall below.
     int nitermax;                  ///< Iteration cap for the sweeps.
     mutable int niter_final, niterw_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record them.
     bool weno3;                    ///< Run the WENO3 refinement pass.
@@ -307,6 +307,13 @@ private:
 
         T1  change = std::numeric_limits<T1>::max();
         int niter  = 0;
+        T1 prev = 0.0;   // previous sweep's change, for the non-monotone guard
+        T1 tref = 0.0;   // traveltime range, refreshed by fsmChange
+        T1 tol = 0.0;    // absolute stop threshold, from epsilon and tref
+        // Name of this pass, for the non-convergence warning below.
+        const char *pass = (mode == SweepMode2D::WENO3 ||
+                            mode == SweepMode2D::WENO3_XZ) ? "WENO3"
+                                                           : "first-order";
 
         if (use_gpu && gpu_available) {
             try {
@@ -321,26 +328,26 @@ private:
                 gpu_solvers[threadNo]->runSweeps(tt, slowness, frozen, 1);
                 niter++;
 
-                change = 0;
-                for (size_t n = 0; n < this->nodes.size(); ++n) {
-                    change  += std::abs(times[n] - tt[n]);
-                    times[n] = tt[n];
-                }
+                prev = change;
+                change = fsmChange(tt, times, tref);
+                tol = fsmTolerance(epsilon, tref, this->nodes.size());
 
-                while (change >= epsilon && niter < nitermax) {
+                while (niter < nitermax && (niter < 2 || change >= tol || change > prev)) {
                     gpu_solvers[threadNo]->runSweepsNoTransfer(1);
                     gpu_solvers[threadNo]->downloadTravelTimes(tt);
                     niter++;
-                    change = 0;
-                    for (size_t n = 0; n < this->nodes.size(); ++n) {
-                        change  += std::abs(times[n] - tt[n]);
-                        times[n] = tt[n];
-                    }
+                    prev = change;
+                    change = fsmChange(tt, times, tref);
+                    tol = fsmTolerance(epsilon, tref, this->nodes.size());
                 }
 
                 for (size_t n = 0; n < this->nodes.size(); ++n)
                     this->nodes[n].setTT(tt[n], threadNo);
 
+                if (niter == nitermax && change >= tol) {
+                    warnFSMnotConverged(pass, niter, change, epsilon,
+                                        tref, this->nodes.size());
+                }
                 return niter;
 
             } catch (const std::exception& e) {
@@ -353,20 +360,22 @@ private:
         // CPU fallback
         change = std::numeric_limits<T1>::max();
         niter  = 0;
-        while (change >= epsilon && niter < nitermax) {
+        prev   = 0.0;
+        while (niter < nitermax && (niter < 2 || change >= tol || change >= prev)) {
             switch (mode) {
                 case SweepMode2D::BASIC:     this->sweep(frozen, threadNo);         break;
                 case SweepMode2D::BASIC_XZ:  this->sweep_xz(frozen, threadNo);      break;
                 case SweepMode2D::WENO3:     this->sweep_weno3(frozen, threadNo);    break;
                 case SweepMode2D::WENO3_XZ:  this->sweep_weno3_xz(frozen, threadNo); break;
             }
-            change = 0;
-            for (size_t n = 0; n < this->nodes.size(); ++n) {
-                T1 dt    = std::abs(times[n] - this->nodes[n].getTT(threadNo));
-                change  += dt;
-                times[n] = this->nodes[n].getTT(threadNo);
-            }
+            prev = change;
+            change = fsmChange(this->nodes, times, threadNo, tref);
+            tol = fsmTolerance(epsilon, tref, this->nodes.size());
             niter++;
+        }
+        if (niter == nitermax && change >= tol) {
+            warnFSMnotConverged(pass, niter, change, epsilon,
+                                tref, this->nodes.size());
         }
         return niter;
     }
