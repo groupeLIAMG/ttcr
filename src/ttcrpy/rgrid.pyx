@@ -540,7 +540,7 @@ cdef class Grid3d_d:
 
         Returns
         -------
-        tt: np ndarray, shape (nx, ny, nz)
+        tt: np ndarray with shape (nx, ny, nz)
             traveltimes
         """
         if thread_no >= self._n_threads:
@@ -612,7 +612,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        pts : np ndarray, shape(npts, 3)
+        pts : np ndarray with shape (npts, 3)
             coordinates of points to check
 
         Returns
@@ -629,7 +629,7 @@ cdef class Grid3d_d:
 
         Returns
         -------
-        slowness : np ndarray, shape (nx, ny, nz)
+        slowness : np ndarray with shape (nx, ny, nz)
 
         Notes
         -----
@@ -657,7 +657,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        slowness : np ndarray, shape (nx, ny, nz)
+        slowness : np ndarray with shape (nx, ny, nz)
             slowness may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -696,7 +696,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        chi : np ndarray, shape (nx, ny, nz)
+        chi : np ndarray with shape (nx, ny, nz)
             chi may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -735,7 +735,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        psi : np ndarray, shape (nx, ny, nz)
+        psi : np ndarray with shape (nx, ny, nz)
             psi may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -774,7 +774,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nx, ny, nz)
+        v : np ndarray with shape (nx, ny, nz)
             v may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -813,7 +813,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nx, ny, nz)
+        v : np ndarray with shape (nx, ny, nz)
             v may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -852,7 +852,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        epsilon : np ndarray, shape (nx, ny, nz)
+        epsilon : np ndarray with shape (nx, ny, nz)
             epsilon may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -891,7 +891,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        delta : np ndarray, shape (nx, ny, nz)
+        delta : np ndarray with shape (nx, ny, nz)
             delta may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -930,7 +930,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        gamma : np ndarray, shape (nx, ny, nz)
+        gamma : np ndarray with shape (nx, ny, nz)
             gamma may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -969,7 +969,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        s2 : np ndarray, shape (nx, ny, nz)
+        s2 : np ndarray with shape (nx, ny, nz)
             s2 may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -1008,7 +1008,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        s4 : np ndarray, shape (nx, ny, nz)
+        s4 : np ndarray with shape (nx, ny, nz)
             s4 may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -1079,7 +1079,7 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        velocity : np ndarray, shape (nx, ny, nz)
+        velocity : np ndarray with shape (nx, ny, nz)
             velocity may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -1119,12 +1119,12 @@ cdef class Grid3d_d:
 
         Parameters
         ----------
-        coord : np.ndarray, shape (npts, 3)
+        coord : np.ndarray with shape (npts, 3)
             coordinates of data points
 
         Returns
         -------
-        D : scipy csr_matrix, shape (npts, nparams)
+        D : scipy csr_matrix with shape (npts, nparams)
             Matrix of interpolation weights
 
         Note
@@ -1274,7 +1274,7 @@ cdef class Grid3d_d:
                 - 4th column is source northing
                 - 5th column is source elevation
 
-        slowness : np ndarray, shape (nx, ny, nz) (optional)
+        slowness : np ndarray with shape (nx, ny, nz) (optional)
             slowness at grid nodes or cells (depending on cell_slowness)
             slowness may also have been flattened (with default 'C' order)
 
@@ -1344,7 +1344,7 @@ cdef class Grid3d_d:
             see notes below
         rcv : 2D np.ndarray with 3 columns
             Columns correspond to x, y and z coordinates
-        slowness : np ndarray, shape (nx, ny, nz) (None by default)
+        slowness : np ndarray with shape (nx, ny, nz) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             slowness may also have been flattened (with default 'C' order)
             if None, slowness must have been assigned previously
@@ -2808,7 +2808,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        chi : np ndarray, shape (nx, ny, nz)
+        chi : np ndarray with shape (nx, ny, nz)
             chi may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -2847,7 +2847,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        psi : np ndarray, shape (nx, ny, nz)
+        psi : np ndarray with shape (nx, ny, nz)
             psi may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -2886,7 +2886,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        v : np ndarray, shape (nx, ny, nz)
+        v : np ndarray with shape (nx, ny, nz)
             v may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -2925,7 +2925,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        v : np ndarray, shape (nx, ny, nz)
+        v : np ndarray with shape (nx, ny, nz)
             v may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -2964,7 +2964,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        epsilon : np ndarray, shape (nx, ny, nz)
+        epsilon : np ndarray with shape (nx, ny, nz)
             epsilon may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -3003,7 +3003,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        delta : np ndarray, shape (nx, ny, nz)
+        delta : np ndarray with shape (nx, ny, nz)
             delta may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -3042,7 +3042,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        gamma : np ndarray, shape (nx, ny, nz)
+        gamma : np ndarray with shape (nx, ny, nz)
             gamma may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -3081,7 +3081,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        s2 : np ndarray, shape (nx, ny, nz)
+        s2 : np ndarray with shape (nx, ny, nz)
             s2 may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -3120,7 +3120,7 @@ cdef class Grid3d_f:
 
         Parameters
         ----------
-        s4 : np ndarray, shape (nx, ny, nz)
+        s4 : np ndarray with shape (nx, ny, nz)
             s4 may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4282,7 +4282,7 @@ cdef class Grid2d_d:
 
         Returns
         -------
-        tt: np ndarray, shape (nx, nz)
+        tt: np ndarray with shape (nx, nz)
         """
         if thread_no >= self._n_threads:
             raise ValueError('Thread number is larger than number of threads')
@@ -4303,7 +4303,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        pts : np ndarray, shape(npts, 3)
+        pts : np ndarray with shape (npts, 3)
             coordinates of points to check
 
         Returns
@@ -4319,7 +4319,7 @@ cdef class Grid2d_d:
 
         Returns
         -------
-        slowness : np ndarray, shape (nx, nz)
+        slowness : np ndarray with shape (nx, nz)
         
         Notes
         -----
@@ -4346,7 +4346,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        slowness : np ndarray, shape (nx, nz)
+        slowness : np ndarray with shape (nx, nz)
             slowness may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4381,7 +4381,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        velocity : np ndarray, shape (nx, nz)
+        velocity : np ndarray with shape (nx, nz)
             velocity may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4416,7 +4416,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        xi : np ndarray, shape (nx, nz)
+        xi : np ndarray with shape (nx, nz)
             xi may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4488,7 +4488,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        theta : np ndarray, shape (nx, nz)
+        theta : np ndarray with shape (nx, nz)
             theta may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4524,7 +4524,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nx, nz)
+        v : np ndarray with shape (nx, nz)
             v may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4560,7 +4560,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        v : np ndarray, shape (nx, nz)
+        v : np ndarray with shape (nx, nz)
             v may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4596,7 +4596,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        d : np ndarray, shape (nx, nz)
+        d : np ndarray with shape (nx, nz)
             d may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4632,7 +4632,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        e : np ndarray, shape (nx, nz)
+        e : np ndarray with shape (nx, nz)
             e may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4668,7 +4668,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        g : np ndarray, shape (nx, nz)
+        g : np ndarray with shape (nx, nz)
             g may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4704,7 +4704,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        g : np ndarray, shape (nx, nz)
+        g : np ndarray with shape (nx, nz)
             g may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4740,7 +4740,7 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        g : np ndarray, shape (nx, nz)
+        g : np ndarray with shape (nx, nz)
             g may also have been flattened (with default 'C' order)
         """
         if self.cell_slowness:
@@ -4777,12 +4777,12 @@ cdef class Grid2d_d:
 
         Parameters
         ----------
-        coord : np.ndarray, shape (npts, 2)
+        coord : np.ndarray with shape (npts, 2)
             coordinates of data points
 
         Returns
         -------
-        D : scipy csr_matrix, shape (npts, nparams)
+        D : scipy csr_matrix with shape (npts, nparams)
             Matrix of interpolation weights
             
         Note
@@ -4952,7 +4952,7 @@ cdef class Grid2d_d:
                 - 3rd column is source easting (X)
                 - 4th column is source elevation (Z)
 
-        slowness : np ndarray, shape (nx, nz) (optional)
+        slowness : np ndarray with shape (nx, nz) (optional)
             slowness at grid nodes or cells (depending on cell_slowness)
             slowness may also have been flattened (with default 'C' order)
 
@@ -5022,35 +5022,35 @@ cdef class Grid2d_d:
             see notes below
         rcv : 2D np.ndarray with 2 columns
             Columns correspond to x, y and z coordinates
-        slowness : np ndarray, shape (nx, nz) (None by default)
+        slowness : np ndarray with shape (nx, nz) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             slowness may also have been flattened (with default 'C' order)
             if None, slowness must have been assigned previously
-        xi : np ndarray, shape (nx, nz) (None by default)
+        xi : np ndarray with shape (nx, nz) (None by default)
             xi at grid cells (only for SPM & cell_slowness=True)
             xi may also have been flattened (with default 'C' order)
             if None, xi must have been assigned previously
-        theta : np ndarray, shape (nx, nz) (None by default)
+        theta : np ndarray with shape (nx, nz) (None by default)
             theta at grid cells (only for SPM & cell_slowness=True)
             theta may also have been flattened (with default 'C' order)
             if None, theta must have been assigned previously
-        Vp0 : np ndarray, shape (nx, nz) (None by default)
+        Vp0 : np ndarray with shape (nx, nz) (None by default)
             Vp0 at grid cells (only for SPM & cell_slowness=True)
             Vp0 may also have been flattened (with default 'C' order)
             if None, Vp0 must have been assigned previously
-        Vs0 : np ndarray, shape (nx, nz) (None by default)
+        Vs0 : np ndarray with shape (nx, nz) (None by default)
             Vs0 at grid cells (only for SPM & cell_slowness=True)
             Vs0 may also have been flattened (with default 'C' order)
             if None, Vs0 must have been assigned previously
-        delta : np ndarray, shape (nx, nz) (None by default)
+        delta : np ndarray with shape (nx, nz) (None by default)
             delta at grid cells (only for SPM & cell_slowness=True)
             delta may also have been flattened (with default 'C' order)
             if None, delta must have been assigned previously
-        epsilon : np ndarray, shape (nx, nz) (None by default)
+        epsilon : np ndarray with shape (nx, nz) (None by default)
             epsilon at grid cells (only for SPM & cell_slowness=True)
             epsilon may also have been flattened (with default 'C' order)
             if None, epsilon must have been assigned previously
-        gamma : np ndarray, shape (nx, nz) (None by default)
+        gamma : np ndarray with shape (nx, nz) (None by default)
             gamma at grid cells (only for SPM & cell_slowness=True)
             gamma may also have been flattened (with default 'C' order)
             if None, gamma must have been assigned previously
