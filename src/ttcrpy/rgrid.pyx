@@ -2765,7 +2765,7 @@ cdef class Grid3d_f:
         Parameters
         ----------
         thread_no : int
-            thread used to computed traveltimes (default is 0)
+            thread used to compute traveltimes (default is 0)
 
         Returns
         -------
