@@ -3971,7 +3971,7 @@ cdef class Grid3d_f:
         ----------
         fields: dict
             dict of variables to save to file. Variables should be np.ndarray of
-            size equal to either the number of nodes of the number of cells of
+            size equal to either the number of nodes or the number of cells of
             the grid, or a list of raypath coordinates.
         filename: str
             Name of file without extension for saving (extension vtr will be
