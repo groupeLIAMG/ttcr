@@ -2713,18 +2713,65 @@ cdef class Grid3d_f:
         return self.grid.get_niterw()
 
     def set_use_thread_pool(self, use_thread_pool):
+        """
+        set_use_thread_pool(use_thread_pool)
+
+        Set option to use thread pool instead of parallel loop
+
+        Parameters
+        ----------
+        use_thread_pool : bool
+            option value
+        """
         self.grid.setUsePool(use_thread_pool)
 
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
+        """
+        set_traveltime_from_raypath(ttrp)
+
+        Set option to compute traveltime using raypath
+
+        Parameters
+        ----------
+        ttrp : bool
+            option value
+        """
         self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def get_number_of_nodes(self):
+        """
+        Returns
+        -------
+        int:
+            number of nodes in grid
+        """
         return self._x.size() * self._y.size() * self._z.size()
 
     def get_number_of_cells(self):
+        """
+        Returns
+        -------
+        int:
+            number of cells in grid
+        """
         return (self._x.size()-1) * (self._y.size()-1) * (self._z.size()-1)
 
     def get_grid_traveltimes(self, thread_no=0):
+        """
+        get_grid_traveltimes(thread_no=0)
+
+        Obtain traveltimes computed at primary grid nodes
+
+        Parameters
+        ----------
+        thread_no : int
+            thread used to compute traveltimes (default is 0)
+
+        Returns
+        -------
+        tt: np ndarray with shape (nx, ny, nz)
+            traveltimes
+        """
         if thread_no >= self._n_threads:
             raise ValueError('Thread number is larger than number of threads')
         cdef vector[float] tmp
@@ -2737,9 +2784,45 @@ cdef class Grid3d_f:
         return tt.reshape(shape, order='F')
 
     def ind(self, int i, int j, int k):
+        """
+        ind(i, j, k)
+
+        Return node index
+
+        Parameters
+        ----------
+        i : int
+            index of node along x
+        j : int
+            index of node along y
+        k : int
+            index of node along z
+
+        Returns
+        -------
+        int:
+            node index for a "flattened" grid
+        """
         return (i*self._y.size() + j)*self._z.size() + k
 
     def indc(self, int i, int j, int k):
+        """
+        return cell index
+
+        Parameters
+        ----------
+        i : int
+            index of cell along x
+        j : int
+            index of cell along y
+        k : int
+            index of cell along z
+
+        Returns
+        -------
+        int:
+            cell index for a "flattened" grid
+        """
         return (i*(self._y.size()-1) + j)*(self._z.size()-1) + k
 
     cdef uint32_t _f2c_ind(self, uint32_t ind):
@@ -2751,6 +2834,21 @@ cdef class Grid3d_f:
         return (i * (self._y.size()-1) + j) * (self._z.size()-1) + k
 
     def is_outside(self, pts):
+        """
+        is_outside(pts)
+
+        Check if points are outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray with shape (npts, 3)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool:
+            True if at least one point outside grid
+        """
         # accept double (or any) input; coordinates are cast to the grid dtype
         pts = np.asarray(pts, dtype=np.float32)
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
@@ -2758,6 +2856,16 @@ cdef class Grid3d_f:
                 np.min(pts[:,2]) < self._z.front() or np.max(pts[:,2]) > self._z.back() )
 
     def get_slowness(self):
+        """Returns slowness of grid
+
+        Returns
+        -------
+        slowness : np ndarray with shape (nx, ny, nz)
+
+        Notes
+        -----
+        Shape size will vary depending on slowness attribution to cells or nodes
+        """
         cdef int i
         cdef vector[float] slown
         self.grid.getSlowness(slown)
@@ -2773,6 +2881,16 @@ cdef class Grid3d_f:
         return slowness.reshape((nx, ny, nz))
 
     def set_slowness(self, slowness):
+        """
+        set_slowness(slowness)
+
+        Assign slowness to grid
+
+        Parameters
+        ----------
+        slowness : np ndarray with shape (nx, ny, nz)
+            slowness may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             ny = self._y.size()-1
@@ -3184,6 +3302,16 @@ cdef class Grid3d_f:
         self.phase = b'P' if p == 1 else b'S'
 
     def set_velocity(self, velocity):
+        """
+        set_velocity(velocity)
+
+        Assign velocity to grid
+
+        Parameters
+        ----------
+        velocity : np ndarray with shape (nx, ny, nz)
+            velocity may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             ny = self._y.size()-1
@@ -3212,6 +3340,27 @@ cdef class Grid3d_f:
         self.grid.setSlowness(slown)
 
     def compute_D(self, pts):
+        """
+        compute_D(pts)
+
+        Return matrix of interpolation weights for velocity data points
+        constraint
+
+        Parameters
+        ----------
+        pts : np.ndarray with shape (npts, 3)
+            coordinates of data points
+
+        Returns
+        -------
+        D : scipy csr_matrix with shape (npts, nparams)
+            Matrix of interpolation weights
+
+        Note
+        ----
+        In the current implementation, no check is made to see if the points
+        are on a node, edge, or corner.
+        """
         # accept double (or any) input; coordinates are cast to the grid dtype
         cdef np.ndarray[np.float32_t, ndim=2] coord = np.ascontiguousarray(pts, dtype=np.float32)
         if self.is_outside(coord):
@@ -3258,6 +3407,14 @@ cdef class Grid3d_f:
                                  shape=(coord.shape[0], self.get_number_of_nodes()))
 
     def compute_K(self):
+        """
+        Compute smoothing matrices (2nd order derivative)
+
+        Returns
+        -------
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+            matrices for derivatives along x, y, & z
+        """
         cdef Py_ssize_t i, j, k
 
         nx, ny, nz = self.shape
@@ -3317,6 +3474,30 @@ cdef class Grid3d_f:
         return Kx, Ky, Kz
 
     def get_s0(self, hypo, slowness=None):
+        """
+        get_s0(hypo, slowness=None)
+
+        Return slowness at source points
+
+        Parameters
+        ----------
+        hypo : np.ndarray with 5 columns
+            hypo holds source information, i.e.
+                - 1st column is event ID number
+                - 2nd column is origin time
+                - 3rd column is source easting
+                - 4th column is source northing
+                - 5th column is source elevation
+
+        slowness : np ndarray with shape (nx, ny, nz) (optional)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+
+        Returns
+        -------
+        s0 : np.ndarray
+            slowness at source points
+        """
         cdef Py_ssize_t n, nn
 
         if hypo.shape[1] != 5:
@@ -3364,6 +3545,73 @@ cdef class Grid3d_f:
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, compute_M=False,
                  return_rays=False):
+        """
+        raytrace(source, rcv, slowness=None, thread_no=None,
+                 aggregate_src=False, compute_L=False, compute_M=False,
+                 return_rays=False) -> tt, rays, M, L
+
+        Perform raytracing
+
+        Parameters
+        ----------
+        source : 2D np.ndarray with 3, 4 or 5 columns
+            see notes below
+        rcv : 2D np.ndarray with 3 columns
+            Columns correspond to x, y and z coordinates
+        slowness : np ndarray with shape (nx, ny, nz) (None by default)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+            if None, slowness must have been assigned previously
+        thread_no : int (None by default)
+            Perform calculations in thread number "thread_no"
+            if None, attempt to run in parallel if warranted by number of
+            sources and value of n_threads in constructor
+        aggregate_src : bool (False by default)
+            if True, all source coordinates belong to a single event
+        compute_L : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to slowness (implemented for the SPM & DSPM with slowness
+                defined at cells).
+        compute_M : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to velocity
+            Note : compute_M and compute_L are mutually exclusive
+        return_rays : bool (False by default)
+            Return raypaths
+
+        Returns
+        -------
+        tt : np.ndarray
+            travel times for the appropriate source-rcv  (see Notes below)
+        rays : :obj:`list` of :obj:`np.ndarray`
+            Coordinates of segments forming raypaths (if return_rays is True)
+        M : :obj:`list` of :obj:`csr_matrix`
+            matrices of partial derivative of travel time w/r to velocity.
+            the number of matrices is equal to the number of sources
+        L : scipy csr_matrix
+            Matrix of partial derivative of travel time w/r to slowness.
+            if input argument source has 5 columns, L is a list of matrices and
+            the number of matrices is equal to the number of sources
+            otherwise, L is a single csr_matrix
+
+        Notes
+        -----
+        If source has 3 columns:
+            - Columns correspond to x, y and z coordinates
+            - Origin time (t0) is 0 for all points
+        If source has 4 columns:
+            - 1st column corresponds to origin times
+            - 2nd, 3rd & 4th columns correspond to x, y and z coordinates
+        If source has 5 columns:
+            - 1st column corresponds to event ID
+            - 2nd column corresponds to origin times
+            - 3rd, 4th & 5th columns correspond to x, y and z coordinates
+
+        For the latter case (5 columns), source and rcv should contain the same
+        number of rows, each row corresponding to a source-receiver pair.
+        For the 2 other cases, source and rcv can contain the same number of
+        rows, each row corresponding to a source-receiver pair, or the number
+        of rows may differ if aggregate_src is True or if all rows in source
+        are identical.
+        """
         if source.ndim != 2 or rcv.ndim != 2:
             raise ValueError('source and rcv should be 2D arrays')
 
@@ -3714,6 +3962,26 @@ cdef class Grid3d_f:
             return tt, rays
 
     def to_vtk(self, fields, filename):
+        """
+        to_vtk(fields, filename)
+
+        Save grid variables and/or raypaths to VTK format
+
+        Parameters
+        ----------
+        fields: dict
+            dict of variables to save to file. Variables should be np.ndarray of
+            size equal to either the number of nodes or the number of cells of
+            the grid, or a list of raypath coordinates.
+        filename: str
+            Name of file without extension for saving (extension vtr will be
+            added).  Raypaths are saved in separate files, and filename will
+            be appended by the dict key and have a vtp extension.
+
+        Notes
+        -----
+        VTK files can be visualized with Paraview (https://www.paraview.org)
+        """
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(self.y)
         zCoords = numpy_support.numpy_to_vtk(self.z)
@@ -6048,18 +6316,64 @@ cdef class Grid2d_f:
         return self.grid.get_niterw()
 
     def set_use_thread_pool(self, use_thread_pool):
+        """
+        set_use_thread_pool(use_thread_pool)
+
+        Set option to use thread pool instead of parallel loop
+
+        Parameters
+        ----------
+        use_thread_pool : bool
+            option value
+        """
         self.grid.setUsePool(use_thread_pool)
 
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
+        """
+        set_traveltime_from_raypath(ttrp)
+
+        Set option to compute traveltime using raypath
+
+        Parameters
+        ----------
+        ttrp : bool
+            option value
+        """
         self.grid.setTraveltimeFromRaypath(traveltime_from_raypath)
 
     def get_number_of_nodes(self):
+        """
+        Returns
+        -------
+        int:
+            number of nodes in grid
+        """
         return self._x.size() * self._z.size()
 
     def get_number_of_cells(self):
+        """
+        Returns
+        -------
+        int:
+            number of cells in grid
+        """
         return (self._x.size()-1) * (self._z.size()-1)
 
     def get_grid_traveltimes(self, thread_no=0):
+        """
+        get_grid_traveltimes(thread_no=0)
+
+        Obtain traveltimes computed at primary grid nodes
+
+        Parameters
+        ----------
+        thread_no : int
+            thread used to computed traveltimes (default is 0)
+
+        Returns
+        -------
+        tt: np ndarray with shape (nx, nz)
+        """
         if thread_no >= self._n_threads:
             raise ValueError('Thread number is larger than number of threads')
         cdef vector[float] tmp
@@ -6072,12 +6386,37 @@ cdef class Grid2d_f:
         return tt.reshape(shape)
 
     def is_outside(self, pts):
+        """
+        is_outside(pts)
+
+        Check if points are outside grid
+
+        Parameters
+        ----------
+        pts : np ndarray with shape (npts, 2)
+            coordinates of points to check
+
+        Returns
+        -------
+        bool:
+            True if at least one point outside grid
+        """
         # accept double (or any) input; coordinates are cast to the grid dtype
         pts = np.asarray(pts, dtype=np.float32)
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
 
     def get_slowness(self):
+        """Returns slowness of grid
+
+        Returns
+        -------
+        slowness : np ndarray with shape (nx, nz)
+        
+        Notes
+        -----
+        Shape size will vary depending on slowness attribution to cells or nodes
+        """
         cdef int i
         cdef vector[float] slown
         self.grid.getSlowness(slown)
@@ -6092,6 +6431,16 @@ cdef class Grid2d_f:
         return slowness.reshape((nx, nz))
 
     def set_slowness(self, slowness):
+        """
+        set_slowness(slowness)
+
+        Assign slowness to grid
+
+        Parameters
+        ----------
+        slowness : np ndarray with shape (nx, nz)
+            slowness may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6117,6 +6466,16 @@ cdef class Grid2d_f:
         self.grid.setSlowness(data)
 
     def set_velocity(self, velocity):
+        """
+        set_velocity(velocity)
+
+        Assign velocity to grid
+
+        Parameters
+        ----------
+        velocity : np ndarray with shape (nx, nz)
+            velocity may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6142,6 +6501,16 @@ cdef class Grid2d_f:
         self.grid.setSlowness(data)
 
     def set_xi(self, xi):
+        """
+        set_xi(xi)
+
+        Assign elliptical anisotropy ratio to grid
+
+        Parameters
+        ----------
+        xi : np ndarray with shape (nx, nz)
+            xi may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6200,6 +6569,20 @@ cdef class Grid2d_f:
         self.phase = b'P' if p == 1 else b'S'
 
     def set_tilt_angle(self, theta):
+        """
+        set_tilt_angle(theta)
+
+        Assign anisotropy tilt angle to grid
+
+        Applies to the 'tilted_elliptical', 'tti_psv' and 'tti_sh' media.  The
+        angle is measured in radians; the symmetry axis lies at -theta from the
+        vertical.
+
+        Parameters
+        ----------
+        theta : np ndarray with shape (nx, nz)
+            theta may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6226,6 +6609,16 @@ cdef class Grid2d_f:
         self.grid.setTiltAngle(data)
 
     def set_Vp0(self, v):
+        """
+        set_Vp0(v)
+
+        Assign vertical Vp to grid (VTI medium)
+
+        Parameters
+        ----------
+        v : np ndarray with shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6252,6 +6645,16 @@ cdef class Grid2d_f:
         self.grid.setVp0(data)
 
     def set_Vs0(self, v):
+        """
+        set_Vs0(v)
+
+        Assign vertical Vs to grid (VTI medium)
+
+        Parameters
+        ----------
+        v : np ndarray with shape (nx, nz)
+            v may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6278,6 +6681,16 @@ cdef class Grid2d_f:
         self.grid.setVs0(data)
 
     def set_delta(self, v):
+        """
+        set_delta(d)
+
+        Assign Thomsen delta parameter to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        d : np ndarray with shape (nx, nz)
+            d may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6304,6 +6717,16 @@ cdef class Grid2d_f:
         self.grid.setDelta(data)
 
     def set_epsilon(self, v):
+        """
+        set_epsilon(e)
+
+        Assign Thomsen epsilon parameter to grid (VTI medium, P-SV waves)
+
+        Parameters
+        ----------
+        e : np ndarray with shape (nx, nz)
+            e may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6330,6 +6753,16 @@ cdef class Grid2d_f:
         self.grid.setEpsilon(data)
 
     def set_gamma(self, v):
+        """
+        set_gamma(g)
+
+        Assign Thomsen gamma parameter to grid (VTI medium, SH waves)
+
+        Parameters
+        ----------
+        g : np ndarray with shape (nx, nz)
+            g may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6356,6 +6789,16 @@ cdef class Grid2d_f:
         self.grid.setGamma(data)
 
     def set_s2(self, v):
+        """
+        set_s2(g)
+
+        Assign weakly anelliptical parameter s2
+
+        Parameters
+        ----------
+        g : np ndarray with shape (nx, nz)
+            g may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6382,6 +6825,16 @@ cdef class Grid2d_f:
         self.grid.setS2(data)
 
     def set_s4(self, v):
+        """
+        set_s4(g)
+
+        Assign weakly anelliptical parameter s4
+
+        Parameters
+        ----------
+        g : np ndarray with shape (nx, nz)
+            g may also have been flattened (with default 'C' order)
+        """
         if self.cell_slowness:
             nx = self._x.size()-1
             nz = self._z.size()-1
@@ -6408,6 +6861,27 @@ cdef class Grid2d_f:
         self.grid.setS4(data)
 
     def compute_D(self, pts):
+        """
+        compute_D(pts)
+
+        Return matrix of interpolation weights for velocity data points
+        constraint
+
+        Parameters
+        ----------
+        pts : np.ndarray with shape (npts, 2)
+            coordinates of data points
+
+        Returns
+        -------
+        D : scipy csr_matrix with shape (npts, nparams)
+            Matrix of interpolation weights
+
+        Note
+        ----
+        In the current implementation, no check is made to see if the points
+        are on a node, edge, or corner.
+        """
         # accept double (or any) input; coordinates are cast to the grid dtype
         cdef np.ndarray[np.float32_t, ndim=2] coord = np.ascontiguousarray(pts, dtype=np.float32)
         if self.is_outside(coord):
@@ -6449,6 +6923,19 @@ cdef class Grid2d_f:
                                  shape=(coord.shape[0], self.get_number_of_nodes()))
 
     def compute_K(self, order=1):
+        """
+        Compute smoothing matrices
+
+        Parameters
+        ----------
+        order : int
+            order of smoothing operator, accept 1 or 2 (1 by default)
+
+        Returns
+        -------
+        Kx, Kz : :obj:`tuple` of :obj:`csr_matrix`
+            matrices for derivatives along x & z
+        """
         nx, nz = self.shape
         if order == 1:
             idx = 1 / self.dx
@@ -6531,6 +7018,29 @@ cdef class Grid2d_f:
         return Kx, Kz
 
     def get_s0(self, hypo, slowness=None):
+        """
+        get_s0(hypo, slowness=None)
+
+        Return slowness at source points
+
+        Parameters
+        ----------
+        hypo : np.ndarray with 5 columns
+            hypo holds source information, i.e.
+                - 1st column is event ID number
+                - 2nd column is origin time
+                - 3rd column is source easting (X)
+                - 4th column is source elevation (Z)
+
+        slowness : np ndarray with shape (nx, nz) (optional)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+
+        Returns
+        -------
+        s0 : np.ndarray
+            slowness at source points
+        """
         cdef Py_ssize_t n, nn
 
         if hypo.shape[1] != 4:
@@ -6579,6 +7089,98 @@ cdef class Grid2d_f:
                  Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
                  thread_no=None, aggregate_src=False, compute_L=False,
                  return_rays=False):
+        """
+        raytrace(source, rcv, slowness=None, xi=None, theta=None, Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None, thread_no=None, aggregate_src=False, compute_L=False, return_rays=False) -> tt, rays, L
+
+        Perform raytracing
+
+        Parameters
+        ----------
+        source : 2D np.ndarray with 2 or 3 columns
+            see notes below
+        rcv : 2D np.ndarray with 2 columns
+            Columns correspond to x and z coordinates
+        slowness : np ndarray with shape (nx, nz) (None by default)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            slowness may also have been flattened (with default 'C' order)
+            if None, slowness must have been assigned previously
+        xi : np ndarray with shape (nx, nz) (None by default)
+            xi at grid cells (only for SPM & cell_slowness=True)
+            xi may also have been flattened (with default 'C' order)
+            if None, xi must have been assigned previously
+        theta : np ndarray with shape (nx, nz) (None by default)
+            theta at grid cells (only for SPM & cell_slowness=True)
+            theta may also have been flattened (with default 'C' order)
+            if None, theta must have been assigned previously
+        Vp0 : np ndarray with shape (nx, nz) (None by default)
+            Vp0 at grid cells (only for SPM & cell_slowness=True)
+            Vp0 may also have been flattened (with default 'C' order)
+            if None, Vp0 must have been assigned previously
+        Vs0 : np ndarray with shape (nx, nz) (None by default)
+            Vs0 at grid cells (only for SPM & cell_slowness=True)
+            Vs0 may also have been flattened (with default 'C' order)
+            if None, Vs0 must have been assigned previously
+        delta : np ndarray with shape (nx, nz) (None by default)
+            delta at grid cells (only for SPM & cell_slowness=True)
+            delta may also have been flattened (with default 'C' order)
+            if None, delta must have been assigned previously
+        epsilon : np ndarray with shape (nx, nz) (None by default)
+            epsilon at grid cells (only for SPM & cell_slowness=True)
+            epsilon may also have been flattened (with default 'C' order)
+            if None, epsilon must have been assigned previously
+        gamma : np ndarray with shape (nx, nz) (None by default)
+            gamma at grid cells (only for SPM & cell_slowness=True)
+            gamma may also have been flattened (with default 'C' order)
+            if None, gamma must have been assigned previously
+        thread_no : int (None by default)
+            Perform calculations in thread number "thread_no"
+            if None, attempt to run in parallel if warranted by number of
+            sources and value of n_threads in constructor
+        aggregate_src : bool (False by default)
+            if True, all source coordinates belong to a single event
+        compute_L : bool (False by default)
+            Compute matrices of partial derivative of travel time w/r to the
+            medium parameters.  L holds one block of ncells columns per
+            parameter, in the order the setters take them:
+
+            ==================== ==========================================
+            aniso                blocks of columns
+            ==================== ==========================================
+            iso                  slowness
+            elliptical           slowness, xi
+            vti_sh               Vs0, gamma
+            tilted_elliptical    slowness, xi, tilt angle
+            tti_sh               Vs0, gamma, tilt angle
+            weakly_anelliptical  slowness, s2, s4
+            vti_psv              Vp0, Vs0, epsilon, delta
+            tti_psv              Vp0, Vs0, epsilon, delta, tilt angle
+            ==================== ==========================================
+
+        return_rays : bool (False by default)
+            Return raypaths
+
+        Returns
+        -------
+        tt : np.ndarray
+            travel times for the appropriate source-rcv  (see Notes below)
+        rays : :obj:`list` of :obj:`np.ndarray`
+            Coordinates of segments forming raypaths (if return_rays is True)
+        L : scipy csr_matrix
+            Matrix of partial derivative of travel time w/r to slowness
+
+        Notes
+        -----
+        If source has 2 columns:
+            - Columns correspond to x and z coordinates
+            - Origin time (t0) is 0 for all points
+        If source has 3 columns:
+            - 1st column corresponds to origin times
+            - 2nd & 3rd columns correspond to x and z coordinates
+
+        source and rcv can contain the same number of rows, each row
+        corresponding to a source-receiver pair, or the number of rows may
+        differ if aggregate_src is True or if all rows in source are identical.
+        """
         if source.ndim != 2 or rcv.ndim != 2:
             raise ValueError('source and rcv should be 2D arrays')
 
@@ -6898,6 +7500,26 @@ cdef class Grid2d_f:
             return tt, rays
 
     def to_vtk(self, fields, filename):
+        """
+        to_vtk(fields, filename)
+
+        Save grid variables and/or raypaths to VTK format
+
+        Parameters
+        ----------
+        fields: dict
+            dict of variables to save to file. Variables should be np.ndarray of
+            size equal to either the number of nodes of the number of cells of
+            the grid, or a list of raypath coordinates.
+        filename: str
+            Name of file without extension for saving (extension vtr will be
+            added).  Raypaths are saved in separate files, and filename will
+            be appended by the dict key and have a vtp extension.
+
+        Notes
+        -----
+        VTK files can be visualized with Paraview (https://www.paraview.org)
+        """
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(np.array([0.0]))
         zCoords = numpy_support.numpy_to_vtk(self.z)
