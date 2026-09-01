@@ -7099,7 +7099,7 @@ cdef class Grid2d_f:
         source : 2D np.ndarray with 2 or 3 columns
             see notes below
         rcv : 2D np.ndarray with 2 columns
-            Columns correspond to x, y and z coordinates
+            Columns correspond to x and z coordinates
         slowness : np ndarray with shape (nx, nz) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             slowness may also have been flattened (with default 'C' order)
