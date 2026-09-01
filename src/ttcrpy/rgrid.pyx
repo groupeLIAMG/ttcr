@@ -3569,7 +3569,7 @@ cdef class Grid3d_f:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to slowness (implemeted for the SPM & DSPM with slowness
+            Compute matrices of partial derivative of travel time w/r to slowness (implemented for the SPM & DSPM with slowness
                 defined at cells).
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
