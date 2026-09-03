@@ -1329,9 +1329,9 @@ cdef class Grid3d_d:
         return s0
 
     def compute_H(self, source, rcv, slowness=None, full=True,
-                  radius_factor=3.0, thread_no=None):
+                  radius_factor=4.0, thread_no=None):
         """
-        compute_H(source, rcv, slowness=None, full=True, radius_factor=3.0, thread_no=None) -> tt, H
+        compute_H(source, rcv, slowness=None, full=True, radius_factor=4.0, thread_no=None) -> tt, H
 
         Traveltimes and the hypocentre-location Jacobian
 
@@ -1356,11 +1356,13 @@ cdef class Grid3d_d:
 
             the leading 1 being the derivative with respect to origin time.
             If False, H has the two columns [dT/dx, dT/dy].
-        radius_factor : double (3.0 by default)
+        radius_factor : double (4.0 by default)
             the take-off direction is measured where the walk back from the
             receiver first comes within radius_factor average edge lengths of
             the source.  Closer than that, the traveltime field is radially
-            degenerate about the source.
+            degenerate about the source; much further out, the chord departs
+            from the ray tangent.  The error has a minimum in between, shallow
+            on rectilinear grids and more pronounced on coarse meshes.
         thread_no : int (None by default)
             thread number to use (a single source is then expected)
 
@@ -3679,9 +3681,9 @@ cdef class Grid3d_f:
         return s0
 
     def compute_H(self, source, rcv, slowness=None, full=True,
-                  radius_factor=3.0, thread_no=None):
+                  radius_factor=4.0, thread_no=None):
         """
-        compute_H(source, rcv, slowness=None, full=True, radius_factor=3.0, thread_no=None) -> tt, H
+        compute_H(source, rcv, slowness=None, full=True, radius_factor=4.0, thread_no=None) -> tt, H
 
         Traveltimes and the hypocentre-location Jacobian
 
@@ -3706,11 +3708,13 @@ cdef class Grid3d_f:
 
             the leading 1 being the derivative with respect to origin time.
             If False, H has the two columns [dT/dx, dT/dy].
-        radius_factor : double (3.0 by default)
+        radius_factor : double (4.0 by default)
             the take-off direction is measured where the walk back from the
             receiver first comes within radius_factor average edge lengths of
             the source.  Closer than that, the traveltime field is radially
-            degenerate about the source.
+            degenerate about the source; much further out, the chord departs
+            from the ray tangent.  The error has a minimum in between, shallow
+            on rectilinear grids and more pronounced on coarse meshes.
         thread_no : int (None by default)
             thread number to use (a single source is then expected)
 
