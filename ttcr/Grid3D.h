@@ -969,6 +969,12 @@ namespace ttcr {
         if ( Tx.empty() ) {
             throw std::runtime_error("computeH: no source");
         }
+        if ( t0.size() != Tx.size() ) {
+            throw std::runtime_error("computeH: Tx and t0 must have the same size");
+        }
+        if ( radius_factor <= static_cast<T1>(0.0) ) {
+            throw std::runtime_error("computeH: radius_factor must be positive");
+        }
 
         // this also leaves the traveltime field that the walk below descends
         this->raytrace(Tx, t0, Rx, traveltimes, threadNo);
