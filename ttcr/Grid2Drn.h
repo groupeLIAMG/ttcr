@@ -1000,6 +1000,9 @@ namespace ttcr {
             }
 
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename S, typename NODE>
@@ -2114,24 +2117,27 @@ namespace ttcr {
                         tt += slown * r_data.back().getDistance( Tx[ns] );
                         r_data.push_back( Tx[ns] );
                     } else {
+                        // to intersection
                         if ( this->hasCellSlowness() ) {
                             sxz<T1> mid_pt = static_cast<T1>(0.5) * (r_data.back() + curr_pt);
                             slown = this->getCellSlowness(getCellNo(mid_pt));
-                            tt += slown * r_data.back().getDistance( curr_pt );
-                            mid_pt = static_cast<T1>(0.5) * (curr_pt + Tx[ns]);
-                            slown = this->getCellSlowness(getCellNo(mid_pt));
-                            tt += slown * curr_pt.getDistance( Tx[ns] );
                         } else {
-                            // to intersection
                             s2 = getSlowness( curr_pt );
-                            tt += 0.5*(s1 + s2) * r_data.back().getDistance( curr_pt );
-                            r_data.push_back( curr_pt );
+                            slown = 0.5*(s1 + s2);
                             s1 = s2;
-                            // to Tx
-                            s2 = getSlowness( Tx[ns] );
-                            tt += 0.5*(s1 + s2) * curr_pt.getDistance( Tx[ns] );
-                            r_data.push_back( Tx[ns] );
                         }
+                        tt += slown * r_data.back().getDistance( curr_pt );
+                        r_data.push_back( curr_pt );
+                        // to Tx
+                        if ( this->hasCellSlowness() ) {
+                            sxz<T1> mid_pt = static_cast<T1>(0.5) * (curr_pt + Tx[ns]);
+                            slown = this->getCellSlowness(getCellNo(mid_pt));
+                        } else {
+                            s2 = getSlowness( Tx[ns] );
+                            slown = 0.5*(s1 + s2);
+                        }
+                        tt += slown * curr_pt.getDistance( Tx[ns] );
+                        r_data.push_back( Tx[ns] );
                     }
 
                     tt += t0[ns];
@@ -2139,6 +2145,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename S, typename NODE>
@@ -2310,6 +2319,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename S, typename NODE>

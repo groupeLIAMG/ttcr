@@ -521,3 +521,42 @@ class TestWeakly(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
+
+
+class TestRaypathOrder(unittest.TestCase):
+    """Raypath coordinates run from source to receiver, whatever the solver.
+
+    Grid2Dun and Grid2Duc both returned the steepest-descent raypath as built,
+    from the receiver down, where the shortest-path solvers reorder.
+    """
+
+    def setUp(self):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName('./files/layers_fine2d.vtu')
+        reader.Update()
+        data = reader.GetOutput()
+        self.nodes = np.array([[data.GetPoint(n)[0], data.GetPoint(n)[2]]
+                               for n in range(data.GetNumberOfPoints())])
+        self.tri = np.empty((data.GetNumberOfCells(), 3), dtype=int)
+        ind = vtk.vtkIdList()
+        for n in range(data.GetNumberOfCells()):
+            data.GetCellPoints(n, ind)
+            self.tri[n] = [ind.GetId(i) for i in range(3)]
+        self.slowness = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+        self.src = np.array([[0.5, 0.5]])
+        self.rcv = np.array([[8.0, 8.0]])
+
+    def test_source_first(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(n_secondary=5)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            with self.subTest(method=method):
+                g = tm.Mesh2d(self.nodes, self.tri, n_threads=1,
+                              method=method, cell_slowness=1, **kwargs)
+                g.set_slowness(self.slowness)
+                r = np.asarray(g.raytrace(self.src, self.rcv,
+                                          return_rays=True)[1][0])
+                self.assertGreater(r.shape[0], 2)
+                np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-6)
+                self.assertLess(np.linalg.norm(r[0] - self.src[0]),
+                                np.linalg.norm(r[0] - self.rcv[0]))

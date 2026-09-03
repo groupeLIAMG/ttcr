@@ -436,3 +436,220 @@ class TestSensitivity3d(unittest.TestCase):
         got = (L[:, :self.ncells] @ np.full(self.ncells, 3.094) +
                L[:, self.ncells:2*self.ncells] @ np.full(self.ncells, 1.51))
         self.assertLess(np.max(np.abs(got + tt)/tt), 1.e-4)
+
+
+class TestComputeH(unittest.TestCase):
+    """The Jacobian returned by compute_H.
+
+    H holds the derivatives of the arrival time with respect to the hypocentre
+    parameters.  The spatial columns are -s(x_s) times the unit take-off
+    direction, so they are checked against a model whose take-off is known
+    exactly: a constant velocity gradient, for which
+
+        T = arccosh[1 + a^2 r^2 / (2 v(z_s) v(z))] / a
+
+    and dT/dx_s follows by differentiating that closed form.
+    """
+
+    V0 = 2.0
+    A = 1.5
+    h = 0.05
+    n = 41
+
+    def setUp(self):
+        self.x = np.arange(self.n) * self.h
+        self.y = self.x.copy()
+        self.z = self.x.copy()
+        X, Y, Z = np.meshgrid(self.x, self.y, self.z, indexing='ij')
+        self.V = self.V0 + self.A * Z
+        self.Vc = self.V0 + self.A * (Z[:-1, :-1, :-1] + 0.5 * self.h)
+        self.xs = np.array([1.0, 1.0, 1.5])
+        self.rcv = np.array([[0.30, 0.55, 0.10],
+                             [1.70, 0.40, 0.15],
+                             [0.60, 1.75, 0.05],
+                             [1.80, 1.80, 0.20]])
+        self.src = np.repeat(self.xs.reshape(1, 3), self.rcv.shape[0], axis=0)
+
+    def _T_analytic(self, p, s):
+        v1 = self.V0 + self.A * s[2]
+        v2 = self.V0 + self.A * p[..., 2]
+        r2 = np.sum((p - s) ** 2, axis=-1)
+        return np.arccosh(1.0 + self.A * self.A * r2 / (2 * v1 * v2)) / self.A
+
+    def _dT_analytic(self):
+        """dT/dx_s by central differences of the closed form."""
+        d = 1.e-6
+        out = np.zeros((self.rcv.shape[0], 3))
+        for k in range(self.rcv.shape[0]):
+            for j in range(3):
+                a = self.xs.copy()
+                b = self.xs.copy()
+                a[j] += d
+                b[j] -= d
+                out[k, j] = (self._T_analytic(self.rcv[k], a) -
+                             self._T_analytic(self.rcv[k], b)) / (2 * d)
+        return out
+
+    def _grid(self, cell_slowness, **kwargs):
+        g = rg.Grid3d(self.x, self.y, self.z, n_threads=1,
+                      cell_slowness=cell_slowness, **kwargs)
+        g.set_slowness((1.0 / (self.Vc if cell_slowness else self.V)).ravel())
+        return g
+
+    def _configs(self):
+        return (('node FSM', 0, dict(method='FSM')),
+                ('node SPM', 0, dict(method='SPM', nsnx=3, nsny=3, nsnz=3)),
+                ('node DSPM', 0, dict(method='DSPM', n_secondary=3,
+                                      n_tertiary=3)),
+                ('cell FSM', 1, dict(method='FSM')),
+                ('cell SPM', 1, dict(method='SPM', nsnx=3, nsny=3, nsnz=3)))
+
+    def test_against_analytic(self):
+        """Direction and magnitude of the spatial columns."""
+        dT = self._dT_analytic()
+        for label, cs, kwargs in self._configs():
+            with self.subTest(config=label):
+                tt, H = self._grid(cs, **kwargs).compute_H(self.src, self.rcv)
+                for k in range(self.rcv.shape[0]):
+                    hk = H[k, 1:]
+                    ang = np.degrees(np.arccos(np.clip(
+                        hk @ dT[k] / (np.linalg.norm(hk) *
+                                      np.linalg.norm(dT[k])), -1, 1)))
+                    self.assertLess(ang, 2.5,
+                                    '%s rcv %d: take-off off by %.2f deg'
+                                    % (label, k, ang))
+                    rel = abs(np.linalg.norm(hk) - np.linalg.norm(dT[k])) / \
+                        np.linalg.norm(dT[k])
+                    self.assertLess(rel, 0.02,
+                                    '%s rcv %d: |H| off by %.1f%%'
+                                    % (label, k, 100 * rel))
+
+    def test_against_finite_difference(self):
+        """H against a finite difference of the solver itself.
+
+        Independent of the analytic solution, so it catches sign and
+        column-order errors that the analytic test could absorb.
+        """
+        g = self._grid(0, method='FSM')
+        delta = 4 * self.h
+        _, H = g.compute_H(self.src, self.rcv)
+        for j in range(3):
+            sp = self.xs.copy()
+            sm = self.xs.copy()
+            sp[j] += delta
+            sm[j] -= delta
+            tp = g.raytrace(np.repeat(sp.reshape(1, 3), 4, axis=0), self.rcv)
+            tm = g.raytrace(np.repeat(sm.reshape(1, 3), 4, axis=0), self.rcv)
+            fd = (tp - tm) / (2 * delta)
+            for k in range(self.rcv.shape[0]):
+                self.assertAlmostEqual(H[k, 1 + j], fd[k], places=2,
+                                       msg='column %d, rcv %d' % (1 + j, k))
+
+    def test_columns(self):
+        """Shape and column convention of both forms."""
+        g = self._grid(0, method='FSM')
+        tt, H = g.compute_H(self.src, self.rcv)
+        self.assertEqual(H.shape, (self.rcv.shape[0], 4))
+        np.testing.assert_allclose(H[:, 0], 1.0)
+
+        tt2, H2 = g.compute_H(self.src, self.rcv, full=False)
+        self.assertEqual(H2.shape, (self.rcv.shape[0], 2))
+        np.testing.assert_allclose(H2, H[:, 1:3])
+        np.testing.assert_allclose(tt2, tt)
+
+    def test_traveltimes_match_raytrace(self):
+        """compute_H raytraces itself; those traveltimes must be the usual ones."""
+        for label, cs, kwargs in self._configs():
+            with self.subTest(config=label):
+                g = self._grid(cs, **kwargs)
+                tt, H = g.compute_H(self.src, self.rcv)
+                np.testing.assert_allclose(tt, g.raytrace(self.src, self.rcv))
+
+    def test_method_independence(self):
+        """H must not depend on which solver produced the field.
+
+        Regression test for the raypath endpoint convention, which differs
+        between SPM and FSM/DSPM: building H from rays[1] instead of the source
+        end fails here by tens of degrees.
+        """
+        ref = None
+        for label, cs, kwargs in self._configs():
+            _, H = self._grid(cs, **kwargs).compute_H(self.src, self.rcv)
+            if ref is None:
+                ref = H
+                continue
+            for k in range(self.rcv.shape[0]):
+                ang = np.degrees(np.arccos(np.clip(
+                    H[k, 1:] @ ref[k, 1:] / (np.linalg.norm(H[k, 1:]) *
+                                             np.linalg.norm(ref[k, 1:])),
+                    -1, 1)))
+                self.assertLess(ang, 3.0,
+                                '%s rcv %d differs from reference by %.2f deg'
+                                % (label, k, ang))
+
+    def test_translated_grid(self):
+        """translate_grid must not change H.
+
+        raytrace() shifts coordinates by the grid origin internally, so the
+        traveltime field lives in translated space; compute_H has to walk it in
+        the same frame.  Checked at UTM-like offsets, where getting this wrong
+        moves the evaluation point by hundreds of kilometres.
+        """
+        off = np.array([500000.0, 4800000.0, 0.0])
+        xo = self.x + off[0]
+        yo = self.y + off[1]
+        zo = self.z + off[2]
+        src = self.src + off
+        rcv = self.rcv + off
+
+        out = {}
+        for tg in (False, True):
+            g = rg.Grid3d(xo, yo, zo, n_threads=1, method='FSM',
+                          cell_slowness=0, translate_grid=tg)
+            g.set_slowness((1.0 / self.V).ravel())
+            out[tg] = g.compute_H(src, rcv)
+
+        np.testing.assert_allclose(out[True][0], out[False][0])
+        np.testing.assert_allclose(out[True][1], out[False][1], atol=1e-6)
+
+
+class TestRaypathOrder(unittest.TestCase):
+    """Raypath coordinates run from source to receiver, whatever the solver.
+
+    The shortest-path solvers have always returned that order (they reorder
+    explicitly, "the order should be from Tx to Rx").  The steepest-descent
+    raypath builders used by FSM and DSPM walked from the receiver down to the
+    source and returned the result as built, so the convention depended on the
+    method.  Code indexing one end silently got the other.
+    """
+
+    h = 0.05
+
+    def setUp(self):
+        self.x = np.arange(21) * self.h
+        self.y = self.x.copy()
+        self.z = self.x.copy()
+        X, Y, Z = np.meshgrid(self.x, self.y, self.z, indexing='ij')
+        self.V = 2.0 + 3.0 * Z
+        self.Vc = 2.0 + 3.0 * (Z[:-1, :-1, :-1] + 0.5 * self.h)
+        self.src = np.array([[0.5, 0.5, 0.8]])
+        self.rcv = np.array([[0.9, 0.5, 0.0]])
+
+    def test_source_first(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=3, nsny=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g = rg.Grid3d(self.x, self.y, self.z, n_threads=1,
+                                  method=method, cell_slowness=cell_slowness,
+                                  **kwargs)
+                    g.set_slowness((1.0 / (self.Vc if cell_slowness
+                                           else self.V)).ravel())
+                    r = np.asarray(g.raytrace(self.src, self.rcv,
+                                              return_rays=True)[1][0])
+                    self.assertGreater(r.shape[0], 2)
+                    # the path runs from the source to the receiver, and both
+                    # endpoints are present exactly
+                    np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
+                    np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-9)

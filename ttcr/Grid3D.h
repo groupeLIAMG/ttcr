@@ -580,6 +580,71 @@ namespace ttcr {
             throw std::runtime_error("Method computeSlowness should be implemented in subclass");
         }
 
+        /**
+         * gradient of the traveltime field at an arbitrary point
+         *
+         * The field must already have been computed, i.e. this is only valid
+         * after a call to raytrace() for the same thread.  The raypath tracers
+         * step down this gradient; @ref computeH walks it back from a receiver
+         * to recover the take-off direction at the source.
+         *
+         * @param[out] g gradient of the traveltime field at @p pt
+         * @param pt point to consider
+         * @param threadNo thread whose traveltime field to differentiate
+         */
+        virtual void getTraveltimeGradient(sxyz<T1>& g, const sxyz<T1>& pt,
+                                           const size_t threadNo) const {
+            throw std::runtime_error("Method getTraveltimeGradient should be implemented in subclass");
+        }
+
+        /**
+         * traveltimes and the hypocentre-location Jacobian H
+         *
+         * This calls raytrace() itself: it returns the traveltimes it computed
+         * along with H, so the caller needs a single call rather than a
+         * raytrace() followed by a separate assembly of the derivatives.
+         *
+         * H holds the partial derivatives of the arrival time with respect to
+         * the hypocentre parameters, one row per receiver.  With @p full,
+         * the columns are
+         *
+         *     [ 1, dT/dx, dT/dy, dT/dz ]
+         *
+         * the leading 1 being the derivative with respect to the origin time;
+         * otherwise the two columns are [ dT/dx, dT/dy ].
+         *
+         * The spatial derivatives follow from reciprocity: the traveltime
+         * gradient at a point is the slowness vector of the ray through it, so
+         *
+         *     dT/dx_s = -s(x_s) * e
+         *
+         * with @c e the unit take-off direction at the source.  @c e is
+         * obtained by walking down the traveltime field from the receiver
+         * until the source is approached, rather than from the stored raypath:
+         * the raypath endpoint convention differs between solvers, and its
+         * last segment is a noisy estimate of the tangent.
+         *
+         * @param Tx source positions
+         * @param t0 source times
+         * @param Rx receiver positions
+         * @param[out] traveltimes traveltimes computed by the internal raytrace()
+         * @param[out] H Jacobian, Rx.size() rows of 4 (or 2) values
+         * @param full build the four-column form rather than the two-column one
+         * @param radius_factor take-off is measured where the backward walk
+         *        first comes within radius_factor average edge lengths of the
+         *        source
+         * @param threadNo thread to use
+         * @throws runtime_error if the grid cannot supply traveltime gradients
+         */
+        void computeH(const std::vector<sxyz<T1>>& Tx,
+                      const std::vector<T1>& t0,
+                      const std::vector<sxyz<T1>>& Rx,
+                      std::vector<T1>& traveltimes,
+                      std::vector<std::vector<T1>>& H,
+                      const bool full=true,
+                      const T1 radius_factor=3.0,
+                      const size_t threadNo=0) const;
+
         /// Enables/disables the persistent thread pool, resizing it if needed.
         void setUsePool(const bool up) {
             usePool = up;
@@ -890,6 +955,119 @@ namespace ttcr {
         }
     };
 
+
+    template<typename T1, typename T2>
+    void Grid3D<T1,T2>::computeH(const std::vector<sxyz<T1>>& Tx,
+                                 const std::vector<T1>& t0,
+                                 const std::vector<sxyz<T1>>& Rx,
+                                 std::vector<T1>& traveltimes,
+                                 std::vector<std::vector<T1>>& H,
+                                 const bool full,
+                                 const T1 radius_factor,
+                                 const size_t threadNo) const {
+
+        if ( Tx.empty() ) {
+            throw std::runtime_error("computeH: no source");
+        }
+        if ( t0.size() != Tx.size() ) {
+            throw std::runtime_error("computeH: Tx and t0 must have the same size");
+        }
+        if ( radius_factor <= static_cast<T1>(0.0) ) {
+            throw std::runtime_error("computeH: radius_factor must be positive");
+        }
+
+        // this also leaves the traveltime field that the walk below descends
+        this->raytrace(Tx, t0, Rx, traveltimes, threadNo);
+
+        // raytrace() shifts its arguments internally, so that field lives in
+        // translated coordinates; the walk has to work in the same frame.
+        std::vector<sxyz<T1>> sTx = Tx;
+        std::vector<sxyz<T1>> sRx = Rx;
+        if ( translateOrigin ) {
+            for ( size_t n=0; n<sTx.size(); ++n ) {
+                sTx[n] -= origin;
+            }
+            for ( size_t n=0; n<sRx.size(); ++n ) {
+                sRx[n] -= origin;
+            }
+        }
+
+        const size_t ncol = full ? 4 : 2;
+        const T1 h = getAverageEdgeLength();
+        const T1 r_stop = radius_factor * h;
+        const T1 step = static_cast<T1>(0.5) * h;
+        const T1 small = static_cast<T1>(1.e-30);
+
+        H.resize( Rx.size() );
+
+        for ( size_t n=0; n<Rx.size(); ++n ) {
+
+            H[n].assign(ncol, static_cast<T1>(0.0));
+            if ( full ) {
+                H[n][0] = static_cast<T1>(1.0);  // d(arrival)/d(t0)
+            }
+
+            // source this receiver is closest to, used both as the walk's
+            // target and as the point the take-off is measured from
+            size_t iTx = 0;
+            T1 d_src = sRx[n].getDistance(sTx[0]);
+            for ( size_t k=1; k<sTx.size(); ++k ) {
+                T1 d = sRx[n].getDistance(sTx[k]);
+                if ( d < d_src ) {
+                    d_src = d;
+                    iTx = k;
+                }
+            }
+
+            // walk down the traveltime field, receiver towards source, and
+            // take the direction where we first come within r_stop.  Closer
+            // than that the field is radially degenerate about the source and
+            // carries no information about which ray reaches this receiver.
+            sxyz<T1> p = sRx[n];
+            sxyz<T1> e = sRx[n] - sTx[iTx];      // straight-line fallback
+            const size_t max_steps = static_cast<size_t>(20.0 * d_src / step) + 100;
+
+            for ( size_t it=0; it<max_steps; ++it ) {
+
+                T1 d = p.getDistance(sTx[iTx]);
+                for ( size_t k=0; k<sTx.size(); ++k ) {
+                    T1 dk = p.getDistance(sTx[k]);
+                    if ( dk < d ) {
+                        d = dk;
+                        iTx = k;
+                    }
+                }
+                if ( d <= r_stop ) {
+                    e = p - sTx[iTx];
+                    break;
+                }
+
+                sxyz<T1> g;
+                getTraveltimeGradient(g, p, threadNo);
+                T1 gn = norm(g);
+                if ( gn < small ) {
+                    break;                        // stalled: keep the fallback
+                }
+                p = p - (step/gn) * g;
+            }
+
+            T1 en = norm(e);
+            if ( en < small ) {
+                continue;                         // receiver sits on the source
+            }
+            e = e / en;
+
+            const T1 s0 = computeSlowness(sTx[iTx], translateOrigin);
+            if ( full ) {
+                H[n][1] = -s0 * e.x;
+                H[n][2] = -s0 * e.y;
+                H[n][3] = -s0 * e.z;
+            } else {
+                H[n][0] = -s0 * e.x;
+                H[n][1] = -s0 * e.y;
+            }
+        }
+    }
 
     template<typename T1, typename T2>
     void Grid3D<T1,T2>::raytrace(const std::vector<sxyz<T1>>& _Tx,

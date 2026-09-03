@@ -1005,3 +1005,40 @@ class TestFSMconvergence(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
+
+
+class TestRaypathOrder(unittest.TestCase):
+    """Raypath coordinates run from source to receiver, whatever the solver.
+
+    See the companion test in test_rgrid3d.py; the steepest-descent builders
+    used by FSM and DSPM returned the reverse of the shortest-path order.
+    """
+
+    h = 0.05
+
+    def setUp(self):
+        self.x = np.arange(41) * self.h
+        self.z = self.x.copy()
+        X, Z = np.meshgrid(self.x, self.z, indexing='ij')
+        self.V = 2.0 + 3.0 * Z
+        self.Vc = 2.0 + 3.0 * (Z[:-1, :-1] + 0.5 * self.h)
+        self.src = np.array([[0.5, 0.8]])
+        self.rcv = np.array([[1.6, 0.05]])
+
+    def test_source_first(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g = rg.Grid2d(self.x, self.z, n_threads=1, method=method,
+                                  cell_slowness=cell_slowness, **kwargs)
+                    g.set_slowness((1.0 / (self.Vc if cell_slowness
+                                           else self.V)).ravel())
+                    r = np.asarray(g.raytrace(self.src, self.rcv,
+                                              return_rays=True)[1][0])
+                    self.assertGreater(r.shape[0], 2)
+                    # both endpoints present exactly; Tx used to be dropped
+                    # from the cell-slowness FSM path
+                    np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
+                    np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-9)

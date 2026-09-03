@@ -733,6 +733,18 @@ namespace ttcr {
         void grad(sxyz<T1>& g, const sxyz<T1> &pt,
                   const size_t nt) const;
 
+    public:
+        /// @copydoc Grid3D::getTraveltimeGradient
+        void getTraveltimeGradient(sxyz<T1>& g, const sxyz<T1>& pt,
+                                   const size_t threadNo) const override {
+            grad(g, pt, threadNo);
+        }
+
+        /// Mean cell edge length, the length scale used by @ref Grid3D::computeH.
+        const T1 getAverageEdgeLength() const override {
+            return (dx + dy + dz) / static_cast<T1>(3.0);
+        }
+
     };
 
 
@@ -1664,6 +1676,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename NODE, typename CELL>
@@ -1984,6 +1999,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
 

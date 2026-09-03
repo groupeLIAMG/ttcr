@@ -1328,6 +1328,142 @@ cdef class Grid3d_d:
             s0[iTx[n]] = s/vTx[n].size()
         return s0
 
+    def compute_H(self, source, rcv, slowness=None, full=True,
+                  radius_factor=3.0, thread_no=None):
+        """
+        compute_H(source, rcv, slowness=None, full=True, radius_factor=3.0, thread_no=None) -> tt, H
+
+        Traveltimes and the hypocentre-location Jacobian
+
+        H holds the partial derivatives of the arrival time with respect to the
+        hypocentre parameters, one row per receiver.  Raytracing is performed
+        internally, so the traveltimes are returned along with H and a separate
+        call to `raytrace` is not needed.
+
+        Parameters
+        ----------
+        source : 2D np.ndarray with 3, 4 or 5 columns
+            see notes of `raytrace`
+        rcv : 2D np.ndarray with 3 columns
+            Columns correspond to x, y and z coordinates
+        slowness : np ndarray, shape (nx, ny, nz) (None by default)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            if None, slowness must have been assigned previously
+        full : bool (True by default)
+            if True, H has four columns
+
+                [1, dT/dx, dT/dy, dT/dz]
+
+            the leading 1 being the derivative with respect to origin time.
+            If False, H has the two columns [dT/dx, dT/dy].
+        radius_factor : double (3.0 by default)
+            the take-off direction is measured where the walk back from the
+            receiver first comes within radius_factor average edge lengths of
+            the source.  Closer than that, the traveltime field is radially
+            degenerate about the source.
+        thread_no : int (None by default)
+            thread number to use (a single source is then expected)
+
+        Returns
+        -------
+        tt : np.ndarray, shape (nrcv,)
+            traveltimes
+        H : np.ndarray, shape (nrcv, 4) or (nrcv, 2)
+            Jacobian
+
+        Notes
+        -----
+        The spatial derivatives follow from dT/dx_s = -s(x_s) * e, with e the
+        unit take-off direction at the source.  e is obtained by descending the
+        traveltime field from the receiver rather than from the raypath: the
+        raypath endpoint convention differs between solvers, and its final
+        segment is a noisy estimate of the tangent.
+        """
+        cdef size_t nH, iH
+
+        if rcv.ndim != 2 or rcv.shape[1] != 3:
+            raise ValueError('rcv should be nrcv x 3')
+
+        evID = None
+        if source.shape[1] == 5:
+            src = source[:, 2:5]
+            t0 = source[:, 1]
+            evID = source[:, 0]
+        elif source.shape[1] == 4:
+            src = source[:, 1:4]
+            t0 = source[:, 0]
+        elif source.shape[1] == 3:
+            src = source
+            t0 = np.zeros((source.shape[0],))
+        else:
+            raise ValueError('source should be either nsrc x 3, 4 or 5')
+
+        if src.shape[0] != rcv.shape[0]:
+            if src.shape[0] == 1:
+                src = np.repeat(src, rcv.shape[0], axis=0)
+                t0 = np.full((rcv.shape[0],), t0[0])
+                if evID is not None:
+                    evID = np.full((rcv.shape[0],), evID[0])
+            else:
+                raise ValueError('source and rcv should have the same number of rows (or source should have 1 row)')
+        if self.is_outside(src):
+            raise ValueError('Source point outside grid')
+
+        if self.is_outside(rcv):
+            raise ValueError('Receiver outside grid')
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+
+        # group receivers by source: one solve per distinct source
+        if evID is not None:
+            keys = evID
+        else:
+            keys = np.zeros((src.shape[0],))
+            tmp = np.c_[t0, src]
+            _, keys = np.unique(tmp, axis=0, return_inverse=True)
+        uniq = np.unique(keys)
+
+        cdef size_t thread_nb = 0
+        if thread_no is not None:
+            if uniq.size != 1:
+                raise ValueError('thread_no should be used with a single source')
+            thread_nb = thread_no
+
+        cdef vector[sxyz[double]] vTx
+        cdef vector[sxyz[double]] vRx
+        cdef vector[double] vt0
+        cdef vector[double] vtt
+        cdef vector[vector[double]] vH
+
+        ncol = 4 if full else 2
+        tt = np.zeros((rcv.shape[0],))
+        H = np.zeros((rcv.shape[0], ncol))
+
+        for k in uniq:
+            ii = np.nonzero(keys == k)[0]
+
+            vTx.clear()
+            vt0.clear()
+            vRx.clear()
+            vtt.clear()
+            vH.clear()
+
+            vTx.push_back(sxyz[double](src[ii[0], 0], src[ii[0], 1], src[ii[0], 2]))
+            vt0.push_back(t0[ii[0]])
+            for i in ii:
+                vRx.push_back(sxyz[double](rcv[i, 0], rcv[i, 1], rcv[i, 2]))
+
+            self.grid.computeH(vTx, vt0, vRx, vtt, vH, full, radius_factor,
+                               thread_nb)
+
+            for nH in range(ii.size):
+                tt[ii[nH]] = vtt[nH]
+                for iH in range(ncol):
+                    H[ii[nH], iH] = vH[nH][iH]
+
+        return tt, H
+
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, compute_M=False,
                  return_rays=False):
@@ -3541,6 +3677,136 @@ cdef class Grid3d_f:
                 s += self.grid.computeSlowness(vTx[n][nn])
             s0[iTx[n]] = s/vTx[n].size()
         return s0
+
+    def compute_H(self, source, rcv, slowness=None, full=True,
+                  radius_factor=3.0, thread_no=None):
+        """
+        compute_H(source, rcv, slowness=None, full=True, radius_factor=3.0, thread_no=None) -> tt, H
+
+        Traveltimes and the hypocentre-location Jacobian
+
+        H holds the partial derivatives of the arrival time with respect to the
+        hypocentre parameters, one row per receiver.  Raytracing is performed
+        internally, so the traveltimes are returned along with H and a separate
+        call to `raytrace` is not needed.
+
+        Parameters
+        ----------
+        source : 2D np.ndarray with 3, 4 or 5 columns
+            see notes of `raytrace`
+        rcv : 2D np.ndarray with 3 columns
+            Columns correspond to x, y and z coordinates
+        slowness : np ndarray, shape (nx, ny, nz) (None by default)
+            slowness at grid nodes or cells (depending on cell_slowness)
+            if None, slowness must have been assigned previously
+        full : bool (True by default)
+            if True, H has four columns
+
+                [1, dT/dx, dT/dy, dT/dz]
+
+            the leading 1 being the derivative with respect to origin time.
+            If False, H has the two columns [dT/dx, dT/dy].
+        radius_factor : double (3.0 by default)
+            the take-off direction is measured where the walk back from the
+            receiver first comes within radius_factor average edge lengths of
+            the source.  Closer than that, the traveltime field is radially
+            degenerate about the source.
+        thread_no : int (None by default)
+            thread number to use (a single source is then expected)
+
+        Returns
+        -------
+        tt : np.ndarray, shape (nrcv,)
+            traveltimes
+        H : np.ndarray, shape (nrcv, 4) or (nrcv, 2)
+            Jacobian
+
+        Notes
+        -----
+        The spatial derivatives follow from dT/dx_s = -s(x_s) * e, with e the
+        unit take-off direction at the source.  e is obtained by descending the
+        traveltime field from the receiver rather than from the raypath: the
+        raypath endpoint convention differs between solvers, and its final
+        segment is a noisy estimate of the tangent.
+        """
+        cdef size_t nH, iH
+
+        if rcv.ndim != 2 or rcv.shape[1] != 3:
+            raise ValueError('rcv should be nrcv x 3')
+
+        evID = None
+        if source.shape[1] == 5:
+            src = source[:, 2:5]
+            t0 = source[:, 1]
+            evID = source[:, 0]
+        elif source.shape[1] == 4:
+            src = source[:, 1:4]
+            t0 = source[:, 0]
+        elif source.shape[1] == 3:
+            src = source
+            t0 = np.zeros((source.shape[0],))
+        else:
+            raise ValueError('source should be either nsrc x 3, 4 or 5')
+
+        if src.shape[0] != rcv.shape[0]:
+            raise ValueError('source and rcv should have the same number of rows')
+
+        if self.is_outside(src):
+            raise ValueError('Source point outside grid')
+
+        if self.is_outside(rcv):
+            raise ValueError('Receiver outside grid')
+
+        if slowness is not None:
+            self.set_slowness(slowness)
+
+        # group receivers by source: one solve per distinct source
+        if evID is not None:
+            keys = evID
+        else:
+            tmp = np.c_[t0, src]
+            _, keys = np.unique(tmp, axis=0, return_inverse=True)
+        uniq = np.unique(keys)
+
+        cdef size_t thread_nb = 0
+        if thread_no is not None:
+            if uniq.size != 1:
+                raise ValueError('thread_no should be used with a single source')
+            thread_nb = thread_no
+
+        cdef vector[sxyz[float]] vTx
+        cdef vector[sxyz[float]] vRx
+        cdef vector[float] vt0
+        cdef vector[float] vtt
+        cdef vector[vector[float]] vH
+
+        ncol = 4 if full else 2
+        tt = np.zeros((rcv.shape[0],), dtype=np.float32)
+        H = np.zeros((rcv.shape[0], ncol), dtype=np.float32)
+
+        for k in uniq:
+            ii = np.nonzero(keys == k)[0]
+
+            vTx.clear()
+            vt0.clear()
+            vRx.clear()
+            vtt.clear()
+            vH.clear()
+
+            vTx.push_back(sxyz[float](src[ii[0], 0], src[ii[0], 1], src[ii[0], 2]))
+            vt0.push_back(t0[ii[0]])
+            for i in ii:
+                vRx.push_back(sxyz[float](rcv[i, 0], rcv[i, 1], rcv[i, 2]))
+
+            self.grid.computeH(vTx, vt0, vRx, vtt, vH, full, radius_factor,
+                               thread_nb)
+
+            for nH in range(ii.size):
+                tt[ii[nH]] = vtt[nH]
+                for iH in range(ncol):
+                    H[ii[nH], iH] = vH[nH][iH]
+
+        return tt, H
 
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, compute_M=False,
