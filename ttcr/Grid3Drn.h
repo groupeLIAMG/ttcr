@@ -738,6 +738,26 @@ namespace ttcr {
          */
         T1 weno3_upwind(const T1 v0, const T1 v1, const T1 v2, const T1 v3, const T1 v4, const T1 dx, bool forward) const;
 
+    public:
+        /**
+         * @copydoc Grid3D::getTraveltimeGradient
+         * @note Uses the second-order @ref gradO2 rather than the fourth-order
+         *       @ref grad.  The wider stencil of the latter reaches across the
+         *       strongly curved part of the field near the source, and measured
+         *       against an analytic constant-gradient solution it puts the
+         *       take-off direction out by 5--9 degrees where @ref gradO2 stays
+         *       under 2.
+         */
+        void getTraveltimeGradient(sxyz<T1>& g, const sxyz<T1>& pt,
+                                   const size_t threadNo) const override {
+            gradO2(g, pt, threadNo);
+        }
+
+        /// Mean node spacing, the length scale used by @ref Grid3D::computeH.
+        const T1 getAverageEdgeLength() const override {
+            return (dx + dy + dz) / static_cast<T1>(3.0);
+        }
+
     };
 
 
