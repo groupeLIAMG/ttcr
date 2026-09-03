@@ -450,3 +450,46 @@ class TestSensitivity3d(unittest.TestCase):
                       cell_slowness=0)
         with self.assertRaises(ValueError):
             tm.Mesh3d(self.nodes, self.tet, method='SPM', aniso='tti_psv')
+
+
+class TestRaypathOrder(unittest.TestCase):
+    """Raypath coordinates run from source to receiver, whatever the solver.
+
+    Grid3Dun already reordered explicitly; Grid3Duc returned the raypath as
+    the steepest descent built it, from the receiver down.  Both are checked
+    here, i.e. node and cell slowness.
+    """
+
+    def setUp(self):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName('./files/layers_medium.vtu')
+        reader.Update()
+        data = reader.GetOutput()
+        self.nodes = np.array([data.GetPoint(n)
+                               for n in range(data.GetNumberOfPoints())])
+        self.tet = np.empty((data.GetNumberOfCells(), 4), dtype=int)
+        ind = vtk.vtkIdList()
+        for n in range(data.GetNumberOfCells()):
+            data.GetCellPoints(n, ind)
+            self.tet[n] = [ind.GetId(i) for i in range(4)]
+        self.slow_c = vtk_to_numpy(data.GetCellData().GetArray('Slowness'))
+        self.slow_n = 1.0 / (2.0 + 0.15 * self.nodes[:, 2])
+        self.src = np.array([[1.0, 1.0, 1.0]])
+        self.rcv = np.array([[8.0, 8.0, 8.0]])
+
+    def test_source_first(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(n_secondary=3)),
+                               ('DSPM', dict(n_secondary=2, n_tertiary=2))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g = tm.Mesh3d(self.nodes, self.tet, n_threads=1,
+                                  method=method, cell_slowness=cell_slowness,
+                                  **kwargs)
+                    g.set_slowness(self.slow_c if cell_slowness else self.slow_n)
+                    r = np.asarray(g.raytrace(self.src, self.rcv,
+                                              return_rays=True)[1][0])
+                    self.assertGreater(r.shape[0], 2)
+                    np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-6)
+                    self.assertLess(np.linalg.norm(r[0] - self.src[0]),
+                                    np.linalg.norm(r[0] - self.rcv[0]))

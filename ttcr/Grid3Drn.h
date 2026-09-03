@@ -1752,6 +1752,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename NODE>
@@ -1915,6 +1918,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
 
@@ -2553,6 +2559,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename NODE>
@@ -2864,6 +2873,9 @@ namespace ttcr {
                 }
             }
         }
+        // raypaths are built by walking from Rx down to Tx; the order
+        // returned is Tx to Rx, as the shortest-path solvers do
+        std::reverse(r_data.begin(), r_data.end());
     }
 
     template<typename T1, typename T2, typename NODE>

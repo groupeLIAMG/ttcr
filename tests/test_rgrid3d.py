@@ -611,3 +611,45 @@ class TestComputeH(unittest.TestCase):
 
         np.testing.assert_allclose(out[True][0], out[False][0])
         np.testing.assert_allclose(out[True][1], out[False][1], atol=1e-6)
+
+
+class TestRaypathOrder(unittest.TestCase):
+    """Raypath coordinates run from source to receiver, whatever the solver.
+
+    The shortest-path solvers have always returned that order (they reorder
+    explicitly, "the order should be from Tx to Rx").  The steepest-descent
+    raypath builders used by FSM and DSPM walked from the receiver down to the
+    source and returned the result as built, so the convention depended on the
+    method.  Code indexing one end silently got the other.
+    """
+
+    h = 0.05
+
+    def setUp(self):
+        self.x = np.arange(21) * self.h
+        self.y = self.x.copy()
+        self.z = self.x.copy()
+        X, Y, Z = np.meshgrid(self.x, self.y, self.z, indexing='ij')
+        self.V = 2.0 + 3.0 * Z
+        self.Vc = 2.0 + 3.0 * (Z[:-1, :-1, :-1] + 0.5 * self.h)
+        self.src = np.array([[0.5, 0.5, 0.8]])
+        self.rcv = np.array([[0.9, 0.5, 0.0]])
+
+    def test_source_first(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=3, nsny=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g = rg.Grid3d(self.x, self.y, self.z, n_threads=1,
+                                  method=method, cell_slowness=cell_slowness,
+                                  **kwargs)
+                    g.set_slowness((1.0 / (self.Vc if cell_slowness
+                                           else self.V)).ravel())
+                    r = np.asarray(g.raytrace(self.src, self.rcv,
+                                              return_rays=True)[1][0])
+                    self.assertGreater(r.shape[0], 2)
+                    # the path runs from the source to the receiver, and both
+                    # endpoints are present exactly
+                    np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
+                    np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-9)
