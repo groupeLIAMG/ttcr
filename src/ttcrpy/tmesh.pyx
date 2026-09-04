@@ -1015,7 +1015,9 @@ cdef class Mesh3d:
         """
         cdef size_t nH, iH
 
-        if rcv.ndim != 2 or rcv.shape[1] != 3:
+        if source.ndim != 2 or rcv.ndim != 2:
+            raise ValueError('source and rcv should be 2D arrays')
+        if rcv.shape[1] != 3:
             raise ValueError('rcv should be nrcv x 3')
 
         evID = None
