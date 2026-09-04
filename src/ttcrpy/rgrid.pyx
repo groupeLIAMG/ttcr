@@ -3753,8 +3753,13 @@ cdef class Grid3d_f:
             raise ValueError('source should be either nsrc x 3, 4 or 5')
 
         if src.shape[0] != rcv.shape[0]:
-            raise ValueError('source and rcv should have the same number of rows')
-
+            if src.shape[0] == 1:
+                src = np.repeat(src, rcv.shape[0], axis=0)
+                t0 = np.full((rcv.shape[0],), t0[0])
+                if evID is not None:
+                    evID = np.full((rcv.shape[0],), evID[0])
+            else:
+                raise ValueError('source and rcv should have the same number of rows (or source should have 1 row)')
         if self.is_outside(src):
             raise ValueError('Source point outside grid')
 

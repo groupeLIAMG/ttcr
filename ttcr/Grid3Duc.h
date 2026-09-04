@@ -975,6 +975,18 @@ namespace ttcr {
 
     public:
         /**
+         * @copydoc Grid3D::computeSlowness
+         * @note The medium is constant per tetrahedron, so this is the
+         *       slowness of the cell containing @p pt.
+         */
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const override {
+            if ( this->translateOrigin == true && isTranslated == false ) {
+                pt -= this->origin;
+            }
+            return cells.getSlowness(getCellNo(pt));
+        }
+
+        /**
          * @copydoc Grid3D::getTraveltimeGradient
          * @note Uses the first-order least-squares estimator.  As on the
          *       rectilinear grids, the wider stencil of the second-order one
