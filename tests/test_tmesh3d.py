@@ -493,3 +493,86 @@ class TestRaypathOrder(unittest.TestCase):
                     np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-6)
                     self.assertLess(np.linalg.norm(r[0] - self.src[0]),
                                     np.linalg.norm(r[0] - self.rcv[0]))
+
+
+class TestComputeH(unittest.TestCase):
+    """The Jacobian returned by compute_H, on a tetrahedral mesh.
+
+    Same identity as the rectilinear case: the spatial columns are
+    -s(x_s) times the unit take-off direction.  Checked against a constant
+    velocity gradient imposed on the mesh, for which the take-off is known in
+    closed form.
+    """
+
+    V0 = 2.0
+    A = 0.15
+
+    def setUp(self):
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName('./files/layers_medium.vtu')
+        reader.Update()
+        data = reader.GetOutput()
+        self.nodes = np.array([data.GetPoint(n)
+                               for n in range(data.GetNumberOfPoints())])
+        self.tet = np.empty((data.GetNumberOfCells(), 4), dtype=int)
+        ind = vtk.vtkIdList()
+        for n in range(data.GetNumberOfCells()):
+            data.GetCellPoints(n, ind)
+            self.tet[n] = [ind.GetId(i) for i in range(4)]
+        self.slow = 1.0 / (self.V0 + self.A * self.nodes[:, 2])
+        self.xs = np.array([1.0, 1.0, 1.0])
+        # geometries chosen to avoid a pre-existing crash in the mesh solver
+        # for certain source/receiver pairs, unrelated to compute_H
+        self.rcv = np.array([[8.0, 8.0, 8.0], [6.0, 9.0, 7.0],
+                             [7.0, 7.0, 11.0]])
+        self.src = np.repeat(self.xs.reshape(1, 3), self.rcv.shape[0], axis=0)
+
+    def _dT_analytic(self):
+        d = 1.e-5
+        out = np.zeros((self.rcv.shape[0], 3))
+
+        def T(p, s):
+            v1 = self.V0 + self.A * s[2]
+            v2 = self.V0 + self.A * p[2]
+            r2 = np.sum((p - s) ** 2)
+            return np.arccosh(1.0 + self.A * self.A * r2 / (2 * v1 * v2)) / self.A
+
+        for k in range(self.rcv.shape[0]):
+            for j in range(3):
+                a = self.xs.copy()
+                b = self.xs.copy()
+                a[j] += d
+                b[j] -= d
+                out[k, j] = (T(self.rcv[k], a) - T(self.rcv[k], b)) / (2 * d)
+        return out
+
+    def test_against_analytic(self):
+        dT = self._dT_analytic()
+        g = tm.Mesh3d(self.nodes, self.tet, n_threads=1, cell_slowness=0,
+                      method='SPM', n_secondary=3)
+        g.set_slowness(self.slow)
+        tt, H = g.compute_H(self.src, self.rcv)
+
+        self.assertEqual(H.shape, (self.rcv.shape[0], 4))
+        np.testing.assert_allclose(H[:, 0], 1.0)
+        for k in range(self.rcv.shape[0]):
+            hk = H[k, 1:]
+            ang = np.degrees(np.arccos(np.clip(
+                hk @ dT[k] / (np.linalg.norm(hk) * np.linalg.norm(dT[k])),
+                -1, 1)))
+            self.assertLess(ang, 3.0,
+                            'rcv %d: take-off off by %.2f deg' % (k, ang))
+            # |grad T| = s is the eikonal equation itself
+            rel = abs(np.linalg.norm(hk) - np.linalg.norm(dT[k])) / \
+                np.linalg.norm(dT[k])
+            self.assertLess(rel, 0.02, 'rcv %d: |H| off by %.1f%%' % (k, 100 * rel))
+
+    def test_columns_and_traveltimes(self):
+        g = tm.Mesh3d(self.nodes, self.tet, n_threads=1, cell_slowness=0,
+                      method='SPM', n_secondary=3)
+        g.set_slowness(self.slow)
+        tt, H = g.compute_H(self.src, self.rcv)
+        tt2, H2 = g.compute_H(self.src, self.rcv, full=False)
+        self.assertEqual(H2.shape, (self.rcv.shape[0], 2))
+        np.testing.assert_allclose(H2, H[:, 1:3])
+        np.testing.assert_allclose(tt, g.raytrace(self.src, self.rcv))

@@ -972,6 +972,49 @@ namespace ttcr {
                            sxyz<T1>& g,
                            std::array<T2,2>& edgeNodes,
                            sxyz<T1>& pt_i) const;
+
+    public:
+        /**
+         * @copydoc Grid3D::computeSlowness
+         * @note The medium is constant per tetrahedron, so this is the
+         *       slowness of the cell containing @p pt.
+         */
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const override {
+            if ( this->translateOrigin == true && isTranslated == false ) {
+                pt -= this->origin;
+            }
+            return cells.getSlowness(getCellNo(pt));
+        }
+
+        /**
+         * @copydoc Grid3D::getTraveltimeGradient
+         * @note Uses the first-order least-squares estimator.  As on the
+         *       rectilinear grids, the wider stencil of the second-order one
+         *       reaches across the strongly curved part of the field near the
+         *       source, which is exactly where @ref Grid3D::computeH measures
+         *       the take-off direction.
+         */
+        void getTraveltimeGradient(sxyz<T1>& g, const sxyz<T1>& pt,
+                                   const size_t threadNo) const override {
+            // gather the same stencil the raypath tracer uses: the nodes of
+            // every cell touching the cell that contains pt.  The four nodes
+            // of that cell alone are too few for the least-squares fit.
+            std::set<NODE*> nnodes;
+            T2 cellNo = getCellNo(pt);
+            for ( size_t n=0; n<this->neighbors[cellNo].size(); ++n ) {
+                T2 nodeNo = this->neighbors[cellNo][n];
+                if ( !nodes[nodeNo].isPrimary() ) continue;
+                for ( auto nc=nodes[nodeNo].getOwners().cbegin();
+                      nc!=nodes[nodeNo].getOwners().cend(); ++nc ) {
+                    getNeighborNodes(*nc, nnodes);
+                }
+            }
+            Grad3D_ls_fo<T1,NODE> grad;
+            g = grad.compute(pt, getTraveltime(pt, threadNo), nnodes, threadNo);
+            // Grad3D returns the descent direction, the opposite sign to the
+            // rectilinear grad(); getTraveltimeGradient is defined as grad T.
+            g = static_cast<T1>(-1.0) * g;
+        }
     };
 
     template<typename T1, typename T2, typename NODE, typename CELL>

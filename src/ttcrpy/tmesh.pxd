@@ -99,6 +99,14 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
                       vector[vector[sxyz[T1]]]& r_data,
                       vector[vector[siv[T1]]]& l_data,
                       size_t thread_no) except +
+        void computeH(vector[sxyz[T1]]& Tx,
+                      vector[T1]& t0,
+                      vector[sxyz[T1]]& Rx,
+                      vector[T1]& tt,
+                      vector[vector[T1]]& H,
+                      bool full,
+                      T1 radius_factor,
+                      size_t thread_no) except +
         void raytrace(vector[sxyz[T1]]& Tx,
                       vector[T1]& t0,
                       vector[sxyz[T1]]& Rx,

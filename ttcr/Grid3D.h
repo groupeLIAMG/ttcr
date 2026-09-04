@@ -642,7 +642,7 @@ namespace ttcr {
                       std::vector<T1>& traveltimes,
                       std::vector<std::vector<T1>>& H,
                       const bool full=true,
-                      const T1 radius_factor=3.0,
+                      const T1 radius_factor=4.0,
                       const size_t threadNo=0) const;
 
         /// Enables/disables the persistent thread pool, resizing it if needed.
