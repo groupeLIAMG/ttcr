@@ -689,6 +689,16 @@ namespace ttcr {
          */
         void update_node(const size_t, const size_t, const size_t, const size_t=0) const;
         void update_node_weno3(const size_t, const size_t, const size_t, const size_t=0) const;
+        /**
+         * @brief First-order update valid for any dx, dy, dz.
+         *
+         * Same upwind stencil as @ref update_node, but each neighbour keeps the
+         * spacing of its own axis and the solve is handed to
+         * @ref solve_godunov.  @ref update_node is the cubic-cell special case
+         * of this one and is kept because it is what every existing result was
+         * computed with; see @ref Grid3Drnfs for the dispatch between them.
+         */
+        void update_node_xyz(const size_t, const size_t, const size_t, const size_t=0) const;
         /// @}
 
         /**
@@ -3455,6 +3465,54 @@ namespace ttcr {
 
             }
         }
+
+        if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
+            nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
+
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::update_node_xyz(const size_t i, const size_t j, const size_t k,
+                                               const size_t threadNo) const {
+        T1 a1, a2, a3, t;
+
+        // Upwind neighbour along z, paired below with dz.
+        if (k==0)
+            a1 = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+        else if (k==ncz)
+            a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+        else {
+            a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+            t  = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+            a1 = a1<t ? a1 : t;
+        }
+
+        // Upwind neighbour along y, paired below with dy.
+        if (j==0)
+            a2 = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
+        else if (j==ncy)
+            a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
+        else {
+            a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
+            t  = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
+            a2 = a2<t ? a2 : t;
+        }
+
+        // Upwind neighbour along x, paired below with dx.
+        if (i==0)
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
+        else if (i==ncx)
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
+        else {
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
+            t  = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
+            a3 = a3<t ? a3 : t;
+        }
+
+        // Unlike update_node, the three values are not sorted here: each has to
+        // reach the solve still paired with the spacing of its own axis.
+        t = solve_godunov(a1, dz, a2, dy, a3, dx,
+                          nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness());
 
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
