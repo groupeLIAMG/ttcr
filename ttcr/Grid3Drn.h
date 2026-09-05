@@ -3540,21 +3540,38 @@ namespace ttcr {
         if ( a1>a3 ) std::swap(a1, a3);
         if ( a2>a3 ) std::swap(a2, a3);
 
-        T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
+        const T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
 
-        t = a1 + fh;
-        if ( t > a2 ) {
+        // Solve in the increment u = T - a1, and build each discriminant from
+        // increment-sized terms rather than from the a_i themselves.  Both are
+        // exact-arithmetic identities -- this is @ref solve_godunov specialised
+        // to h1 == h2 == h3 == dx -- and both matter because the a_i are
+        // absolute traveltimes that can dwarf the increment they differ by.
+        // Written with the a_i directly, as this was, the update loses digits
+        // in proportion to the traveltime: 5e-10 relative at a traveltime of
+        // 1e6, against round-off here.  @sa solve_godunov
+        const T1 b2 = a2 - a1;
+        const T1 b3 = a3 - a1;
 
-            t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
+        T1 u = fh;
+        if ( u > b2 ) {
 
-            if ( t > a3 ) {
+            const T1 d2 = 2.*fh*fh - b2*b2;
+            if ( d2 >= 0.0 ) {
 
-                t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 - 2.*a2*a2 +
-                                                   2.*a1*a3 + 2.*a2*a3 -
-                                                   2.*a3*a3 + 3.*fh*fh));
+                u = 0.5*(b2 + sqrt(d2));
 
+                if ( u > b3 ) {
+
+                    const T1 b23 = b2 - b3;
+                    const T1 d3 = 3.*fh*fh - b2*b2 - b3*b3 - b23*b23;
+                    if ( d3 >= 0.0 ) {
+                        u = (b2 + b3 + sqrt(d3)) / 3.;
+                    }
+                }
             }
         }
+        t = a1 + u;
 
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
@@ -4165,21 +4182,38 @@ namespace ttcr {
         if ( a1>a3 ) std::swap(a1, a3);
         if ( a2>a3 ) std::swap(a2, a3);
 
-        T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
+        const T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
 
-        t = a1 + fh;
-        if ( t > a2 ) {
+        // Solve in the increment u = T - a1, and build each discriminant from
+        // increment-sized terms rather than from the a_i themselves.  Both are
+        // exact-arithmetic identities -- this is @ref solve_godunov specialised
+        // to h1 == h2 == h3 == dx -- and both matter because the a_i are
+        // absolute traveltimes that can dwarf the increment they differ by.
+        // Written with the a_i directly, as this was, the update loses digits
+        // in proportion to the traveltime: 5e-10 relative at a traveltime of
+        // 1e6, against round-off here.  @sa solve_godunov
+        const T1 b2 = a2 - a1;
+        const T1 b3 = a3 - a1;
 
-            t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
+        T1 u = fh;
+        if ( u > b2 ) {
 
-            if ( t > a3 ) {
+            const T1 d2 = 2.*fh*fh - b2*b2;
+            if ( d2 >= 0.0 ) {
 
-                t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 -
-                                                   2.*a2*a2 + 2.*a1*a3 + 2.*a2*a3 -
-                                                   2.*a3*a3 + 3.*fh*fh));
+                u = 0.5*(b2 + sqrt(d2));
 
+                if ( u > b3 ) {
+
+                    const T1 b23 = b2 - b3;
+                    const T1 d3 = 3.*fh*fh - b2*b2 - b3*b3 - b23*b23;
+                    if ( d3 >= 0.0 ) {
+                        u = (b2 + b3 + sqrt(d3)) / 3.;
+                    }
+                }
             }
         }
+        t = a1 + u;
 
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);

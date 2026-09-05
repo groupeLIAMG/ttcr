@@ -213,24 +213,36 @@ __kernel void sweep_update_basic(
     
     // Compute slowness * grid_spacing
     const real_t fh = slowness[idx] * dx;  // Assuming dx == dy == dz
-    
-    // Solve eikonal equation
-    t = a1 + fh;
-    
-    if (t > a2) {
+
+    // Solve the eikonal equation in the increment u = T - a1, building each
+    // discriminant from increment-sized terms rather than from the a_i
+    // themselves.  Both are exact-arithmetic identities, and both matter
+    // because the a_i are absolute traveltimes that can dwarf the increment
+    // they differ by; written with the a_i directly, as this was, the update
+    // loses digits in proportion to the traveltime.  Mirrors
+    // Grid3Drn::update_node, whose comment carries the detail.
+    const real_t b2 = a2 - a1;
+    const real_t b3 = a3 - a1;
+
+    real_t u = fh;
+
+    if (u > b2) {
         // 2D update
-        t = 0.5 * (a1 + a2 + sqrt(2.0 * fh * fh - (a1 - a2) * (a1 - a2)));
-        
-        if (t > a3) {
-            // 3D update
-            const real_t sum_a = a1 + a2 + a3;
-            const real_t term = -2.0 * a1 * a1 + 2.0 * a1 * a2 - 2.0 * a2 * a2 +
-                               2.0 * a1 * a3 + 2.0 * a2 * a3 - 2.0 * a3 * a3 + 
-                               3.0 * fh * fh;
-            
-            t = (sum_a + sqrt(term)) / 3.0;
+        const real_t d2 = 2.0 * fh * fh - b2 * b2;
+        if (d2 >= 0.0) {
+            u = 0.5 * (b2 + sqrt(d2));
+
+            if (u > b3) {
+                // 3D update
+                const real_t b23 = b2 - b3;
+                const real_t d3 = 3.0 * fh * fh - b2 * b2 - b3 * b3 - b23 * b23;
+                if (d3 >= 0.0) {
+                    u = (b2 + b3 + sqrt(d3)) / 3.0;
+                }
+            }
         }
     }
+    t = a1 + u;
     
     // Update only if smaller
     tt_out[idx] = fmin2(t, tt_in[idx]);
@@ -693,22 +705,38 @@ __kernel void sweep_update_weno3(
 
     sort3(&a1, &a2, &a3);
     
-    const real_t fh = slowness[idx] * dx;
-    
-    t = a1 + fh;
-    
-    if (t > a2) {
-        t = 0.5 * (a1 + a2 + sqrt(2.0 * fh * fh - (a1 - a2) * (a1 - a2)));
+    // Compute slowness * grid_spacing
+    const real_t fh = slowness[idx] * dx;  // Assuming dx == dy == dz
 
-        if (t > a3) {
-            const real_t sum_a = a1 + a2 + a3;
-            const real_t term = -2.0 * a1 * a1 + 2.0 * a1 * a2 - 2.0 * a2 * a2 +
-                               2.0 * a1 * a3 + 2.0 * a2 * a3 - 2.0 * a3 * a3 +
-                               3.0 * fh * fh;
+    // Solve the eikonal equation in the increment u = T - a1, building each
+    // discriminant from increment-sized terms rather than from the a_i
+    // themselves.  Both are exact-arithmetic identities, and both matter
+    // because the a_i are absolute traveltimes that can dwarf the increment
+    // they differ by; written with the a_i directly, as this was, the update
+    // loses digits in proportion to the traveltime.  Mirrors
+    // Grid3Drn::update_node, whose comment carries the detail.
+    const real_t b2 = a2 - a1;
+    const real_t b3 = a3 - a1;
 
-            t = (sum_a + sqrt(term)) / 3.0;
+    real_t u = fh;
+
+    if (u > b2) {
+        // 2D update
+        const real_t d2 = 2.0 * fh * fh - b2 * b2;
+        if (d2 >= 0.0) {
+            u = 0.5 * (b2 + sqrt(d2));
+
+            if (u > b3) {
+                // 3D update
+                const real_t b23 = b2 - b3;
+                const real_t d3 = 3.0 * fh * fh - b2 * b2 - b3 * b3 - b23 * b23;
+                if (d3 >= 0.0) {
+                    u = (b2 + b3 + sqrt(d3)) / 3.0;
+                }
+            }
         }
     }
+    t = a1 + u;
     
     // Update only if smaller
     tt_out[idx] = fmin2(t, tt_in[idx]);
