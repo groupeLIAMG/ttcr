@@ -677,6 +677,10 @@ namespace ttcr {
         /// Third-order WENO stencil.
         void sweep_weno3(const std::vector<bool>& frozen,
                          const size_t threadNo) const;
+        /// Axis-aligned first-order stencil, valid for any dx, dy, dz.
+        /// Same eight sweep orders as @ref sweep, over @ref update_node_xyz.
+        void sweep_xyz(const std::vector<bool>& frozen,
+                       const size_t threadNo) const;
         /// @}
 
         /**
@@ -3405,6 +3409,92 @@ namespace ttcr {
                 for ( long int i=ncx; i>=0; --i ) {
                     if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
                         update_node(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::sweep_xyz(const std::vector<bool>& frozen,
+                                         const size_t threadNo) const {
+
+        // sweep first direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep second direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep third direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep fourth direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep fifth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep sixth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep seventh direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep eighth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
                     }
                 }
             }
