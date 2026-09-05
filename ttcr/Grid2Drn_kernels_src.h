@@ -93,11 +93,15 @@ inline real_t weno3_upwind(real_t v0, real_t v1, real_t v2,
  */
 inline real_t eikonal2d_sq(real_t a, real_t b, real_t fh)
 {
+    // Solved in the increment over the smaller upwind value, to match
+    // Grid3Drn::update_node.  This form carries no cancellation either way, so
+    // the rearrangement is for uniformity rather than a fix.
     real_t diff = a - b;
     if (diff < 0.0) diff = -diff;
+    const real_t m = fmin2(a, b);
     if (diff >= fh)
-        return fmin2(a, b) + fh;
-    return 0.5 * (a + b + sqrt(2.0 * fh * fh - (a - b) * (a - b)));
+        return m + fh;
+    return m + 0.5 * (diff + sqrt(2.0 * fh * fh - diff * diff));
 }
 
 /*
@@ -112,16 +116,21 @@ inline real_t eikonal2d_xz(real_t a, real_t b, real_t s,
     if (a > b && (a - b) / dz > s)
         return b + s * dz;
 
+    // Solve in the increment over the smaller of the two upwind values.  The
+    // discriminant is s^2*(dx^2+dz^2) - (a-b)^2 scaled by dx^2*dz^2; expanded
+    // over a and b, as this was, its first three terms are each the size of
+    // T^2 while the sum is the size of (a-b)^2, so the update lost digits in
+    // proportion to the traveltime.  Mirrors Grid2Drn::update_node_xz.
     const real_t dx2   = dx * dx;
     const real_t dz2   = dz * dz;
-    const real_t s2    = s * s;
     const real_t denom = dx2 + dz2;
-    return (b * dx2 + a * dz2) / denom
-         + sqrt((2.0 * a * b * dx2 * dz2
-                 - a * a * dx2 * dz2
-                 - b * b * dx2 * dz2
-                 + dx2 * dx2 * dz2 * s2
-                 + dx2 * dz2 * dz2 * s2) / (denom * denom));
+    const real_t m     = fmin2(a, b);
+    const real_t ba    = a - m;          // one of these two is zero
+    const real_t bb    = b - m;
+    const real_t ab    = a - b;
+    real_t d = s * s * denom - ab * ab;
+    if (d < 0.0) d = 0.0;
+    return m + (ba * dz2 + bb * dx2 + dx * dz * sqrt(d)) / denom;
 }
 
 // =============================================================================
