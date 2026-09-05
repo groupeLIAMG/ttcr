@@ -681,6 +681,32 @@ namespace ttcr {
         /// Same eight sweep orders as @ref sweep, over @ref update_node_xyz.
         void sweep_xyz(const std::vector<bool>& frozen,
                        const size_t threadNo) const;
+        /**
+         * @brief One first-order sweep with the stencil this grid's spacing
+         *        calls for.
+         *
+         * Cubic cells take @ref sweep, anything else @ref sweep_xyz.  Both are
+         * correct on cubic cells and agree there to about two ulps, so this
+         * picks the cheaper one rather than a different answer: @ref update_node
+         * needs no per-axis weights, where @ref solve_godunov forms three
+         * reciprocal squares.
+         *
+         * The comparison is exact, not toleranced, and deliberately so.  Being
+         * wrong towards @ref sweep_xyz costs a little arithmetic on a grid that
+         * was nearly cubic; being wrong towards @ref sweep returns wrong
+         * traveltimes.  Grids built by the four FSM constructors pass the same
+         * value for all three spacings, so they compare equal exactly.
+         *
+         * @sa ttcr::Grid2Drnfs, which dispatches the same way in 2-D.
+         */
+        void sweep_auto(const std::vector<bool>& frozen,
+                        const size_t threadNo) const {
+            if ( dx == dy && dy == dz ) {
+                sweep(frozen, threadNo);
+            } else {
+                sweep_xyz(frozen, threadNo);
+            }
+        }
         /// @}
 
         /**

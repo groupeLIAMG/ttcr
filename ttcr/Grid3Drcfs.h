@@ -65,7 +65,15 @@ namespace ttcr {
      *
      * @section g3drcfs_cubic Cubic cells only
      * The constructor takes a **single** cell size @p ddx and passes it as all
-     * three spacings, so this solver only represents cubic cells.
+     * three spacings, so a grid built through it is always cubic.
+     *
+     * That is now the constructor's restriction, not the solver's. The
+     * first-order driver calls ttcr::Grid3Drn::sweep_auto, which takes
+     * ttcr::Grid3Drn::sweep_xyz whenever the three spacings differ, so a grid
+     * carrying genuine @f$d_x, d_y, d_z@f$ is solved correctly to first order.
+     * Widening @p ddx to three parameters is what remains to make that
+     * reachable from here. The WENO3 path is still cubic only and throws
+     * otherwise.
      *
      * @warning Nothing checks that. `grids.h` reads three independent spacings
      *          from the model file but hands only @c d[0] to this constructor,
@@ -342,7 +350,8 @@ namespace ttcr {
         } else {
             int niter = 0;
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
 
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
@@ -422,7 +431,8 @@ namespace ttcr {
         } else {
             int niter = 0;
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
 
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);

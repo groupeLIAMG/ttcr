@@ -59,15 +59,24 @@ namespace ttcr {
      * (@ref g3drn_sweeps); this class supplies the iteration driver and the
      * convergence test.
      *
-     * @warning **Cubic cells only.** The constructor takes a single cell size
-     *          @p ddx and passes it as all three spacings, and nothing validates
-     *          that: `grids.h` reads three independent spacings from the model
-     *          file but hands only @c d[0] to this constructor. A model with
-     *          @f$d_x \neq d_y@f$ or @f$d_x \neq d_z@f$ is silently solved on a
-     *          grid whose y and z spacings have been replaced by @f$d_x@f$.
-     *          All four 3-D fast sweeping classes share this restriction; the
-     *          shortest-path and dynamic shortest-path builders pass all three
-     *          spacings and are unaffected.
+     * @warning **Cubic cells only, and it is the constructor that makes them
+     *          so.** It takes a single cell size @p ddx and passes it as all
+     *          three spacings, and nothing validates that: `grids.h` reads
+     *          three independent spacings from the model file but hands only
+     *          @c d[0] to this constructor. A model with @f$d_x \neq d_y@f$ or
+     *          @f$d_x \neq d_z@f$ is silently solved on a grid whose y and z
+     *          spacings have been replaced by @f$d_x@f$. All four 3-D fast
+     *          sweeping classes share this; the shortest-path and dynamic
+     *          shortest-path builders pass all three spacings and are
+     *          unaffected.
+     *
+     * @note The restriction is now the constructor's alone, not the solver's.
+     *       The first-order driver calls ttcr::Grid3Drn::sweep_auto, which
+     *       takes ttcr::Grid3Drn::sweep_xyz whenever the three spacings differ,
+     *       so a grid carrying genuine @f$d_x, d_y, d_z@f$ is solved correctly
+     *       to first order. Widening @p ddx to three parameters is what remains
+     *       to make that reachable from here. The WENO3 path is still cubic
+     *       only and throws otherwise.
      *
      * @section g3drnfs_conv Convergence
      * The sweeps stop when the mean change in nodal traveltime falls below
@@ -246,7 +255,8 @@ namespace ttcr {
         } else {
             int niter = 0;
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
 
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
@@ -326,7 +336,8 @@ namespace ttcr {
         } else {
             int niter = 0;
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
 
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
