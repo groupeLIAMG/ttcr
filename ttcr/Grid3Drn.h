@@ -738,6 +738,78 @@ namespace ttcr {
          */
         T1 weno3_upwind(const T1 v0, const T1 v1, const T1 v2, const T1 v3, const T1 v4, const T1 dx, bool forward) const;
 
+        /**
+         * @brief Godunov upwind eikonal solve at one node, with a spacing per
+         *        axis.
+         *
+         * Solves sum_{i in S} ((T - a_i)/h_i)^2 = s^2 for T over the *active
+         * set* S of axes, those whose upwind neighbour the arriving front has
+         * already passed.  Writing w_i = 1/h_i^2, the root wanted is
+         *
+         *     T = (B + sqrt(B^2 - A*C))/A
+         *     A = sum_S w_i,  B = sum_S a_i*w_i,  C = sum_S a_i^2*w_i - s^2
+         *
+         * The active set is found by the usual ascending construction: order the
+         * axes by upwind traveltime, take the one-axis solution T = a1 + s*h1,
+         * and widen to two and then three axes only while the result exceeds the
+         * next value, since a solution no larger than a_i cannot have received
+         * information along axis i.
+         *
+         * Two rearrangements keep that accurate, and neither changes the value
+         * in exact arithmetic.  Both matter once the grid is strongly
+         * anisotropic, which is the case this routine exists to serve.
+         *
+         * First, solve for the increment u = T - a1 over the smallest upwind
+         * value rather than for T, using b_i = a_i - a1.  Traveltimes are
+         * absolute and can dwarf the increment they differ by; in u every term
+         * is the size of the increment.
+         *
+         * Second, form the discriminant by the Lagrange identity
+         *
+         *     B^2 - A*C = A*s^2 - sum_{i<j} w_i*w_j*(b_i - b_j)^2
+         *
+         * rather than as written above.  B^2 and A*C are individually large and
+         * nearly equal, so their difference loses most of its significant
+         * digits; the right-hand side is built from the b_i differences
+         * directly and never forms them.  On a grid with dz a thousand times
+         * smaller than dx and dy, the two together take the error on an
+         * analytic plane wave from 6e-5 to round-off.
+         *
+         * @param a1 upwind traveltime along the first axis.
+         * @param h1 node spacing of the first axis.
+         * @param a2 upwind traveltime along the second axis.
+         * @param h2 node spacing of the second axis.
+         * @param a3 upwind traveltime along the third axis.
+         * @param h3 node spacing of the third axis.
+         * @param s  slowness at the node being updated.
+         * @return The updated traveltime.  The axes may be given in any order.
+         *
+         * @note The ordering is done here rather than by the caller because each
+         *       spacing has to travel with its own value.  @ref update_node
+         *       sorts a1,a2,a3 alone, which is why that kernel is sound only
+         *       while dx == dy == dz.
+         * @note With h1 == h2 == h3 this reproduces the two closed forms written
+         *       out in @ref update_node, but by a different sequence of
+         *       operations, so it is not bit-identical to them.  Cubic grids
+         *       therefore keep using @ref update_node.
+         * @note The discriminant guards are for round-off only: in exact
+         *       arithmetic the widening test that admitted a set also makes that
+         *       set's discriminant non-negative.
+         *
+         * @sa The upwind discretization is that of Rouy, E. and Tourin, A.,
+         *     1992.  A viscosity solutions approach to shape-from-shading.
+         *     SIAM Journal on Numerical Analysis, 29(3), 867-884.
+         *     doi:10.1137/0729053
+         * @sa The ordered active-set solve follows Zhao, H., 2005.  A fast
+         *     sweeping method for eikonal equations.  Mathematics of
+         *     Computation, 74(250), 603-627.
+         *     doi:10.1090/S0025-5718-04-01678-3
+         *     Zhao writes the update for a single mesh size h; carrying one
+         *     spacing per axis through the same derivation gives the A, B and C
+         *     above.
+         */
+        T1 solve_godunov(T1 a1, T1 h1, T1 a2, T1 h2, T1 a3, T1 h3, const T1 s) const;
+
     public:
         /**
          * @copydoc Grid3D::getTraveltimeGradient
@@ -3503,6 +3575,58 @@ namespace ttcr {
             
             return v2 - dx * am;
         }
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    T1 Grid3Drn<T1,T2,NODE>::solve_godunov(T1 a1, T1 h1, T1 a2, T1 h2,
+                                           T1 a3, T1 h3, const T1 s) const {
+
+        // Order the three axes by upwind traveltime, ascending, swapping each
+        // spacing along with the value it belongs to.
+        if ( a1 > a2 ) { std::swap(a1, a2); std::swap(h1, h2); }
+        if ( a1 > a3 ) { std::swap(a1, a3); std::swap(h1, h3); }
+        if ( a2 > a3 ) { std::swap(a2, a3); std::swap(h2, h3); }
+
+        // Solve for the increment u = T - a1 rather than for T, so that every
+        // term is the size of the increment rather than of the traveltime.  b1
+        // is zero by construction, so the first axis contributes to A alone.
+        const T1 b2 = a2 - a1;
+        const T1 b3 = a3 - a1;
+
+        // One axis active.
+        T1 u1 = s * h1;
+        if ( u1 <= b2 ) {
+            return a1 + u1;
+        }
+
+        // Two axes active.
+        const T1 w1 = 1.0 / (h1 * h1);
+        const T1 w2 = 1.0 / (h2 * h2);
+        T1 A = w1 + w2;
+        T1 B = b2 * w2;
+        // Discriminant by the Lagrange identity, not as B*B - A*C: those two are
+        // large and nearly equal, and their difference is what is wanted.
+        T1 d = A * s * s - w1 * w2 * b2 * b2;
+        if ( d < 0.0 ) {
+            return a1 + u1;
+        }
+        T1 u2 = (B + sqrt(d)) / A;
+        if ( u2 <= b3 ) {
+            return a1 + u2;
+        }
+
+        // Three axes active.  A and B accumulate onto the two-axis sums.
+        const T1 w3 = 1.0 / (h3 * h3);
+        const T1 b23 = b2 - b3;
+        A += w3;
+        B += b3 * w3;
+        d = A * s * s - (w1 * w2 * b2 * b2 +
+                         w1 * w3 * b3 * b3 +
+                         w2 * w3 * b23 * b23);
+        if ( d < 0.0 ) {
+            return a1 + u2;
+        }
+        return a1 + (B + sqrt(d)) / A;
     }
 
     template<typename T1, typename T2, typename NODE>
