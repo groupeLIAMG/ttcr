@@ -3954,26 +3954,6 @@ namespace ttcr {
                               nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
                               dx, true);
             
-            /* OLD CODE:
-            T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-                  2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-                     nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-                  2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-                     nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-             */
             
             t = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a1 = a1<t ? a1 : t;
@@ -3988,26 +3968,6 @@ namespace ttcr {
                               0.0, // v4 not used backward
                               dx, false);
             
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             t = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a1 = a1<t ? a1 : t;
@@ -4029,41 +3989,6 @@ namespace ttcr {
                              nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
                              dx, false);
             
-            /* OLD CODE:
-            T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-                  2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-                     nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
-            num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             a1 = a1<t ? a1 : t;
 
@@ -4080,26 +4005,6 @@ namespace ttcr {
                               nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
                               dx, true);
             
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-             */
 
             t = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a2 = a2<t ? a2 : t;
@@ -4114,26 +4019,6 @@ namespace ttcr {
                               0.0, // v4 not used backward
                               dx, false);
                         
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             t = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a2 = a2<t ? a2 : t;
@@ -4155,41 +4040,6 @@ namespace ttcr {
                              nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
                              dx, false);
             
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
-            num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             a2 = a2<t ? a2 : t;
 
@@ -4206,26 +4056,6 @@ namespace ttcr {
                               nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
                               dx, true);
                         
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-             */
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo); // first order for left
             a3 = a3<t ? a3 : t;
@@ -4240,26 +4070,6 @@ namespace ttcr {
                               0.0, // v4 not used backward
                               dx, false);
                         
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
-
-            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo); // first order for right
             a3 = a3<t ? a3 : t;
@@ -4281,41 +4091,6 @@ namespace ttcr {
                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
                              dx, false);
 
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
-            num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo);
-            num *= num;
-            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
-
-            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             a3 = a3<t ? a3 : t;
         }
