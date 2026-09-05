@@ -61,10 +61,19 @@
  * any secondary nodes a solver adds.
  *
  * @section g3drn_sweeps Fast sweeping stencils
- * Two update stencils are provided, @c sweep and @c sweep_weno3, selected by
- * ttcr::input_parameters::weno3. The 2-D base additionally offers rotated and
- * mixed x-z stencils; there are no 3-D equivalents, so
- * ttcr::input_parameters::rotated_template has no effect here.
+ * Four update stencils are provided, in two pairs. @c sweep and @c sweep_weno3
+ * assume cubic cells; @c sweep_xyz and @c sweep_weno3_xyz carry a spacing per
+ * axis and work for any @c dx, @c dy, @c dz. ttcr::input_parameters::weno3
+ * chooses between the pairs; within a pair the choice is made from the grid's
+ * own spacings by @ref Grid3Drn::sweep_auto and
+ * @ref Grid3Drn::sweep_weno3_auto, which is what the solvers call. Both members
+ * of a pair are correct on cubic cells and agree there to about two ulps, so
+ * the cubic one is taken because it is cheaper, not because the general one
+ * would be wrong.
+ *
+ * The @c _xyz stencils are the 3-D counterpart of the 2-D base's mixed x-z
+ * ones. Its rotated 45-degree stencil has no 3-D equivalent, so
+ * ttcr::input_parameters::rotated_template still has no effect here.
  *
  * @sa Grid3D.h, Grid3Drc.h, Grid2Drn.h, Grid3Drnsp.h, Grid3Drnfs.h
  */
@@ -739,11 +748,13 @@ namespace ttcr {
         /**
          * @brief First-order update valid for any dx, dy, dz.
          *
-         * Same upwind stencil as @ref update_node, but each neighbour keeps the
-         * spacing of its own axis and the solve is handed to
-         * @ref solve_godunov.  @ref update_node is the cubic-cell special case
-         * of this one and is kept because it is what every existing result was
-         * computed with; see @ref Grid3Drnfs for the dispatch between them.
+         * Same upwind stencil as @ref update_node, including its one-sided
+         * boundary handling, but each neighbour keeps the spacing of its own
+         * axis and the solve is handed to @ref solve_godunov.
+         * @ref update_node is the cubic-cell special case of this one, kept
+         * because it is cheaper there -- it needs no per-axis weights -- rather
+         * than because the two disagree; they are within about two ulps on
+         * cubic cells.  @ref sweep_auto chooses between them.
          */
         void update_node_xyz(const size_t, const size_t, const size_t, const size_t=0) const;
         /**

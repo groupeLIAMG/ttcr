@@ -96,6 +96,11 @@ cdef class Grid3d_d:
                 - 'FSM' : fast sweeping method
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
+            The three node spacings need not be equal for any of the methods.
+            FSM picks a general per-axis stencil when they differ and a cheaper
+            equal-spacing one when they do not, for the WENO stencil as well as
+            the first-order one.  Note that the grid must still be *regular*:
+            the spacing along a given axis has to be constant.
         aniso : string
             type of anisotropy (SPM method and cell_slowness only)
                 - 'iso' : isotropic medium

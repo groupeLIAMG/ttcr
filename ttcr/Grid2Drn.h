@@ -65,12 +65,15 @@
  * piecewise-constant model.
  *
  * @section g2drn_sweeps Fast sweeping stencils
- * Several update stencils are provided and selected by the solver's options:
- * axis-aligned (@c sweep), 45-degree rotated (@c sweep45, and @c sweep_xz for
- * the mixed case) and their third-order WENO variants
- * (@c sweep_weno3, @c sweep_weno3_xz). Rotated stencils are enabled by
- * ttcr::input_parameters::rotated_template and WENO by
- * ttcr::input_parameters::weno3.
+ * Several update stencils are provided. @c sweep is axis-aligned and assumes
+ * square cells; @c sweep_xz is its counterpart for @c dx != @c dz, carrying a
+ * spacing per axis. @c sweep_weno3 and @c sweep_weno3_xz are the corresponding
+ * third-order WENO variants, enabled by ttcr::input_parameters::weno3.
+ *
+ * @c sweep45 is a separate thing: a 45-degree rotated stencil enabled by
+ * ttcr::input_parameters::rotated_template, run in addition to @c sweep rather
+ * than instead of it. It is only valid for square cells, so the solvers skip it
+ * on a grid with @c dx != @c dz and take the @c _xz stencils there.
  *
  * @sa Grid2D.h, Grid2Drc.h, Grid3Drn.h, Grid2Drnsp.h, Grid2Drnfs.h
  */
