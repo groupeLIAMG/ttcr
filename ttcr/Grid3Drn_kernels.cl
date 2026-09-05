@@ -81,6 +81,68 @@ inline void sort3(real_t *a1, real_t *a2, real_t *a3) {
     if (*a2 > *a3) swap(a2, a3);
 }
 
+/*
+ * Godunov upwind eikonal solve at one node, with a spacing per axis.
+ *
+ * Solves sum_S ((T - a_i)/h_i)^2 = s^2 over the active set S of axes, those
+ * whose upwind neighbour the front has already passed.  With w_i = 1/h_i^2 the
+ * root is T = (B + sqrt(B^2 - A*C))/A for A = sum w_i, B = sum a_i*w_i,
+ * C = sum a_i^2*w_i - s^2, and the active set is found by ordering the axes and
+ * widening from one to three while the result exceeds the next value.
+ *
+ * Two exact-arithmetic rearrangements keep it accurate: the solve is done in
+ * the increment u = T - a1, and the discriminant is formed by the Lagrange
+ * identity  B^2 - A*C = A*s^2 - sum_{i<j} w_i*w_j*(b_i - b_j)^2  rather than
+ * literally, B^2 and A*C being large and nearly equal.  Mirrors
+ * Grid3Drn::solve_godunov, whose comment carries the detail.
+ *
+ * The axes may be given in any order; each spacing must travel with its own
+ * value, which is why this sorts internally rather than taking sorted input.
+ */
+inline real_t solve_godunov(real_t a1, real_t h1, real_t a2, real_t h2,
+                            real_t a3, real_t h3, real_t s)
+{
+    if (a1 > a2) { swap(&a1, &a2); swap(&h1, &h2); }
+    if (a1 > a3) { swap(&a1, &a3); swap(&h1, &h3); }
+    if (a2 > a3) { swap(&a2, &a3); swap(&h2, &h3); }
+
+    const real_t b2 = a2 - a1;
+    const real_t b3 = a3 - a1;
+
+    // one axis active
+    const real_t u1 = s * h1;
+    if (u1 <= b2) {
+        return a1 + u1;
+    }
+
+    // two axes active
+    const real_t w1 = 1.0 / (h1 * h1);
+    const real_t w2 = 1.0 / (h2 * h2);
+    real_t A = w1 + w2;
+    real_t B = b2 * w2;
+    real_t d = A * s * s - w1 * w2 * b2 * b2;
+    if (d < 0.0) {
+        return a1 + u1;
+    }
+    const real_t u2 = (B + sqrt(d)) / A;
+    if (u2 <= b3) {
+        return a1 + u2;
+    }
+
+    // three axes active
+    const real_t w3 = 1.0 / (h3 * h3);
+    const real_t b23 = b2 - b3;
+    A += w3;
+    B += b3 * w3;
+    d = A * s * s - (w1 * w2 * b2 * b2 +
+                     w1 * w3 * b3 * b3 +
+                     w2 * w3 * b23 * b23);
+    if (d < 0.0) {
+        return a1 + u2;
+    }
+    return a1 + (B + sqrt(d)) / A;
+}
+
 // =============================================================================
 // KERNEL 1: BASIC SWEEP (First-Order)
 // =============================================================================
@@ -208,11 +270,24 @@ __kernel void sweep_update_basic(
         a3 = fmin2(a3, t);
     }
     
+    // Cubic cells take the cheaper closed forms below; anything else goes to
+    // the general per-axis solve, which needs the values UNSORTED so each one
+    // keeps the spacing of its own axis.  The test is exact rather than
+    // toleranced: being wrong towards solve_godunov costs a little arithmetic,
+    // being wrong towards the cubic form returns wrong traveltimes.  dx, dy and
+    // dz are kernel arguments uniform across the work-group, so this branch
+    // does not diverge.  Mirrors Grid3Drn::sweep_auto.
+    const real_t s = slowness[idx];
+    if (!(dx == dy && dy == dz)) {
+        tt_out[idx] = fmin2(solve_godunov(a1, dz, a2, dy, a3, dx, s), tt_in[idx]);
+        return;
+    }
+
     // Sort values
     sort3(&a1, &a2, &a3);
-    
+
     // Compute slowness * grid_spacing
-    const real_t fh = slowness[idx] * dx;  // Assuming dx == dy == dz
+    const real_t fh = s * dx;
 
     // Solve the eikonal equation in the increment u = T - a1, building each
     // discriminant from increment-sized terms rather than from the a_i
@@ -367,7 +442,7 @@ __kernel void sweep_update_weno3(
         const real_t v3 = tt_in[get_index_3d(i, j, k+1, ncx, ncy)];
         const real_t v4 = tt_in[get_index_3d(i, j, k+2, ncx, ncy)];
         
-        a1 = weno3_upwind(v0, v1, v2, v3, v4, dx, true);
+        a1 = weno3_upwind(v0, v1, v2, v3, v4, dz, true);
         a1 = fmin2(a1, v1);
 //        real_t num = tt_in[get_index_3d(i, j, k+2, ncx, ncy)] -
 //                  2.*tt_in[get_index_3d(i, j, k+1, ncx, ncy)] +
@@ -398,7 +473,7 @@ __kernel void sweep_update_weno3(
         const real_t v3 = tt_in[get_index_3d(i, j, k+1, ncx, ncy)];
         const real_t v4 = 0.0;
         
-        a1 = weno3_upwind(v0, v1, v2, v3, v4, dx, false);
+        a1 = weno3_upwind(v0, v1, v2, v3, v4, dz, false);
         a1 = fmin2(a1, v3);
 //        real_t num = tt_in[get_index_3d(i, j, k  , ncx, ncy)] -
 //                  2.*tt_in[get_index_3d(i, j, k-1, ncx, ncy)] +
@@ -429,8 +504,8 @@ __kernel void sweep_update_weno3(
                 const real_t v3 = tt_in[get_index_3d(i, j, k+1, ncx, ncy)];
                 const real_t v4 = tt_in[get_index_3d(i, j, k+2, ncx, ncy)];
         
-                a1 = weno3_upwind(v0, v1, v2, v3, v4, dx, true);
-                t = weno3_upwind(v0, v1, v2, v3, v4, dx, false);
+                a1 = weno3_upwind(v0, v1, v2, v3, v4, dz, true);
+                t = weno3_upwind(v0, v1, v2, v3, v4, dz, false);
                 a1 = fmin2(a1, t);
 //        real_t num = tt_in[get_index_3d(i, j, k+2, ncx, ncy)] -
 //                  2.*tt_in[get_index_3d(i, j, k+1, ncx, ncy)] +
@@ -484,7 +559,7 @@ __kernel void sweep_update_weno3(
         const real_t v3 = tt_in[get_index_3d(i, j+1, k, ncx, ncy)];
         const real_t v4 = tt_in[get_index_3d(i, j+2, k, ncx, ncy)];
         
-        a2 = weno3_upwind(v0, v1, v2, v3, v4, dx, true);
+        a2 = weno3_upwind(v0, v1, v2, v3, v4, dy, true);
         a2 = fmin2(a2, v1);
 //        real_t num = tt_in[get_index_3d(i, j+2, k, ncx, ncy)] -
 //                  2.*tt_in[get_index_3d(i, j+1, k, ncx, ncy)] +
@@ -514,7 +589,7 @@ __kernel void sweep_update_weno3(
         const real_t v3 = tt_in[get_index_3d(i, j+1, k, ncx, ncy)];
         const real_t v4 = 0.0;
         
-        a2 = weno3_upwind(v0, v1, v2, v3, v4, dx, false);
+        a2 = weno3_upwind(v0, v1, v2, v3, v4, dy, false);
         a2 = fmin2(a2, v3);
 //        real_t num = tt_in[get_index_3d(i, j  , k, ncx, ncy)] -
 //                  2.*tt_in[get_index_3d(i, j-1, k, ncx, ncy)] +
@@ -544,8 +619,8 @@ __kernel void sweep_update_weno3(
         const real_t v3 = tt_in[get_index_3d(i, j+1, k, ncx, ncy)];
         const real_t v4 = tt_in[get_index_3d(i, j+2, k, ncx, ncy)];
         
-        a2 = weno3_upwind(v0, v1, v2, v3, v4, dx, true);
-        t = weno3_upwind(v0, v1, v2, v3, v4, dx, false);
+        a2 = weno3_upwind(v0, v1, v2, v3, v4, dy, true);
+        t = weno3_upwind(v0, v1, v2, v3, v4, dy, false);
         a2 = fmin2(a2, t);
 //        real_t num = tt_in[get_index_3d(i, j+2, k, ncx, ncy)] -
 //                  2.*tt_in[get_index_3d(i, j+1, k, ncx, ncy)] +
@@ -703,10 +778,24 @@ __kernel void sweep_update_weno3(
     // EIKONAL SOLVER (same as basic version)
     // =========================================================================
 
+    // Cubic cells take the cheaper closed forms below; anything else goes to
+    // the general per-axis solve, which needs the values UNSORTED so each one
+    // keeps the spacing of its own axis.  The test is exact rather than
+    // toleranced: being wrong towards solve_godunov costs a little arithmetic,
+    // being wrong towards the cubic form returns wrong traveltimes.  dx, dy and
+    // dz are kernel arguments uniform across the work-group, so this branch
+    // does not diverge.  Mirrors Grid3Drn::sweep_auto.
+    const real_t s = slowness[idx];
+    if (!(dx == dy && dy == dz)) {
+        tt_out[idx] = fmin2(solve_godunov(a1, dz, a2, dy, a3, dx, s), tt_in[idx]);
+        return;
+    }
+
+    // Sort values
     sort3(&a1, &a2, &a3);
-    
+
     // Compute slowness * grid_spacing
-    const real_t fh = slowness[idx] * dx;  // Assuming dx == dy == dz
+    const real_t fh = s * dx;
 
     // Solve the eikonal equation in the increment u = T - a1, building each
     // discriminant from increment-sized terms rather than from the a_i
