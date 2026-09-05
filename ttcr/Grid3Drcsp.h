@@ -102,8 +102,8 @@ namespace ttcr {
          * @param nt  number of threads.
          * @param _translateOrigin shift the grid origin to (0,0,0).
          *
-         * @note Unlike ttcr::Grid3Drcfs, all three cell sizes are honoured, so
-         *       non-cubic cells are supported here.
+         * @note All three cell sizes are honoured, so non-cubic cells are
+         *       supported here.
          */
         /* Constructor Format:
          Grid3Drc<T1,T2>::Grid3Drc(nb cells in x, nb cells in y, nb cells in z,

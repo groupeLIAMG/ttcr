@@ -33,7 +33,7 @@
  * ttcr::Grid3Drnfs. Slowness is taken at the nodes directly, with none of the
  * cell-to-node averaging ttcr::Grid3Drcfs_OpenCL performs.
  *
- * @warning Cubic cells only, unvalidated — as for every 3-D fast sweeping class.
+ * @note All three cell sizes are honoured, as for every 3-D fast sweeping class.
  *
  * @sa Grid3Drnfs.h, Grid3Drn_OpenCL.h, Grid3Drcfs_OpenCL.h
  */
@@ -74,10 +74,9 @@ namespace ttcr {
      * through the inherited ttcr::Grid3Drn::setSlowness — no cell-to-node
      * averaging, unlike ttcr::Grid3Drcfs_OpenCL.
      *
-     * @warning Inherits the **cubic-cell-only** restriction of the 3-D fast
-     *          sweeping classes: the constructor takes one cell size for all
-     *          three axes and nothing validates that the model's three spacings
-     *          agree.
+     * @note All three cell sizes are honoured, as in ttcr::Grid3Drnfs. The
+     *       device kernels pick their stencil from the spacings the same way
+     *       the serial sweeps do.
      * @note GPU use is requested, not guaranteed — @ref isUsingGPU reports what
      *       is actually in use, and the class falls back to the CPU otherwise,
      *       so results are unaffected and only performance changes. One solver
@@ -115,7 +114,9 @@ namespace ttcr {
          * @param nx        Number of cells in x
          * @param ny        Number of cells in y
          * @param nz        Number of cells in z
-         * @param ddx       Cell size (assumes cubic cells: dx=dy=dz)
+         * @param ddx       Cell size along x.
+         * @param ddy       Cell size along y.
+         * @param ddz       Cell size along z.
          * @param minx      X origin
          * @param miny      Y origin
          * @param minz      Z origin
@@ -136,13 +137,14 @@ namespace ttcr {
          *       mean per-node change falls below that fraction of the
          *       traveltime range. Slowness is **not** set.
          */
-        Grid3Drnfs_OpenCL(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
+        Grid3Drnfs_OpenCL(const T2 nx, const T2 ny, const T2 nz,
+                          const T1 ddx, const T1 ddy, const T1 ddz,
                           const T1 minx, const T1 miny, const T1 minz,
                           const T1 eps, const int maxit, const bool w,
                           const bool ttrp=true, const bool intVel=false,
                           const size_t nt=1, const bool _translateOrigin=false,
                           const bool enableGPU=true) :
-        Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, 
+        Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, 
                                         ttrp, intVel, nt, _translateOrigin),
         epsilon(eps), 
         nitermax(maxit), 

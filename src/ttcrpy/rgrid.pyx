@@ -226,10 +226,6 @@ cdef class Grid3d_d:
 
         cdef use_edge_length = True
 
-        if method == 'FSM':
-            if np.abs(self._dx - self._dy)>0.000001 or np.abs(self._dx - self._dz)>0.000001:
-                raise ValueError('FSM: Grid cells must be cubic')
-
         for val in x:
             self._x.push_back(val)
         for val in y:
@@ -245,7 +241,7 @@ cdef class Grid3d_d:
                 raise ValueError('Anisotropy is implemented for the SPM method only')
             if method == 'FSM' and fsm_gpu:
                 self.method = b'f'
-                self.grid = new Grid3Drcfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx,
+                self.grid = new Grid3Drcfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                                    xmin, ymin, zmin,
                                                                    eps, maxit, weno,
                                                                    tt_from_rp, interp_vel,
@@ -253,7 +249,7 @@ cdef class Grid3d_d:
                                                                    translate_grid)
             elif method == 'FSM':
                 self.method = b'f'
-                self.grid = new Grid3Drcfs[double,uint32_t](nx, ny, nz, self._dx,
+                self.grid = new Grid3Drcfs[double,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                             xmin, ymin, zmin,
                                                             eps, maxit, weno,
                                                             tt_from_rp, interp_vel,
@@ -313,7 +309,7 @@ cdef class Grid3d_d:
                 raise ValueError('Anisotropy requires slowness defined for cells')
             if method == 'FSM' and fsm_gpu:
                 self.method = b'f'
-                self.grid = new Grid3Drnfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx,
+                self.grid = new Grid3Drnfs_OpenCL[double,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                                    xmin, ymin, zmin,
                                                                    eps, maxit, weno,
                                                                    tt_from_rp, interp_vel,
@@ -321,7 +317,7 @@ cdef class Grid3d_d:
                                                                    translate_grid)
             elif method == 'FSM':
                 self.method = b'f'
-                self.grid = new Grid3Drnfs[double,uint32_t](nx, ny, nz, self._dx,
+                self.grid = new Grid3Drnfs[double,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                             xmin, ymin, zmin,
                                                             eps, maxit, weno,
                                                             tt_from_rp, interp_vel,
@@ -2609,10 +2605,6 @@ cdef class Grid3d_f:
 
         cdef use_edge_length = True
 
-        if method == 'FSM':
-            if np.abs(self._dx - self._dy)>0.000001 or np.abs(self._dx - self._dz)>0.000001:
-                raise ValueError('FSM: Grid cells must be cubic')
-
         for val in x:
             self._x.push_back(val)
         for val in y:
@@ -2628,7 +2620,7 @@ cdef class Grid3d_f:
                 raise ValueError('Anisotropy is implemented for the SPM method only')
             if method == 'FSM':
                 self.method = b'f'
-                self.grid = new Grid3Drcfs[float,uint32_t](nx, ny, nz, self._dx,
+                self.grid = new Grid3Drcfs[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
                                                            eps, maxit, weno,
                                                            tt_from_rp, interp_vel,
@@ -2688,7 +2680,7 @@ cdef class Grid3d_f:
                 raise ValueError('Anisotropy requires slowness defined for cells')
             if method == 'FSM':
                 self.method = b'f'
-                self.grid = new Grid3Drnfs[float,uint32_t](nx, ny, nz, self._dx,
+                self.grid = new Grid3Drnfs[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
                                                            eps, maxit, weno,
                                                            tt_from_rp, interp_vel,

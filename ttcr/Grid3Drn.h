@@ -760,6 +760,22 @@ namespace ttcr {
          * @ref weno3_upwind, so those twelve arguments only move the result by
          * rounding.  They are written per-axis anyway so the code says what it
          * means and stays correct if that function ever stops cancelling.
+         *
+         * @note On a strongly anisotropic grid this can activate an axis the
+         *       front has not really reached.  @ref update_node compares the
+         *       actual upwind neighbour against the node, and a neighbour
+         *       cannot undershoot; the WENO3 value is an extrapolation, and
+         *       along an axis whose spacing is fine compared with the
+         *       curvature of the traveltime field the true increment can be
+         *       smaller than the reconstruction error, so the estimate dips
+         *       below the node value and the axis joins the active set.  The
+         *       effect is bounded by the reconstruction error and is well
+         *       inside the scheme's own accuracy -- on a constant-gradient
+         *       model with @f$d_y/d_z = 4@f$ this kernel still beats the
+         *       first-order one by four to six times at every resolution
+         *       tested -- but it does mean WENO3 is not exact on fields where
+         *       the first-order kernel happens to be, such as the traveltime
+         *       along a grid axis from a point source in a constant medium.
          */
         void update_node_weno3_xyz(const size_t, const size_t, const size_t, const size_t=0) const;
         /// @}

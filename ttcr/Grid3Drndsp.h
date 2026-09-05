@@ -60,7 +60,7 @@ namespace ttcr {
      * @ref tempNodes rather than in the shared node vector, letting different
      * workers solve different sources concurrently.
      *
-     * @note All three cell sizes are honoured, unlike ttcr::Grid3Drnfs.
+     * @note All three cell sizes are honoured.
      *
      * @sa Grid3Drn.h, Grid3Drcdsp.h, Grid2Drndsp.h, Node3Dnd.h
      */
