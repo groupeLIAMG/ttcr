@@ -712,6 +712,18 @@ namespace ttcr {
                 sweep_xyz(frozen, threadNo);
             }
         }
+        /**
+         * @brief One WENO3 sweep with the stencil this grid's spacing calls for.
+         * @copydetails sweep_auto
+         */
+        void sweep_weno3_auto(const std::vector<bool>& frozen,
+                              const size_t threadNo) const {
+            if ( dx == dy && dy == dz ) {
+                sweep_weno3(frozen, threadNo);
+            } else {
+                sweep_weno3_xyz(frozen, threadNo);
+            }
+        }
         /// @}
 
         /**

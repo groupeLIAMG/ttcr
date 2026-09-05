@@ -530,11 +530,6 @@ namespace ttcr {
         int npts = weno3 ? 2 : 1;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
 
-        // Validation for WENO3
-        if (weno3 && (this->dx != this->dz || this->dx != this->dy)) {
-            throw std::logic_error("Error: WENO stencil needs dx equal to dy and dz");
-        }
-
         if (weno3) {
             // Two-stage refinement: basic sweep then WENO3
             
@@ -572,11 +567,6 @@ namespace ttcr {
         std::vector<bool> frozen(this->nodes.size(), false);
         int npts = weno3 ? 2 : 1;
         this->initFSM(Tx, t0, frozen, npts, threadNo);
-
-        // Validation for WENO3
-        if (weno3 && (this->dx != this->dz || this->dx != this->dy)) {
-            throw std::logic_error("Error: WENO stencil needs dx equal to dy and dz");
-        }
 
         if (weno3) {
             // Two-stage refinement: basic sweep then WENO3

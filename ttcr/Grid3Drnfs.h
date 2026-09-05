@@ -223,11 +223,9 @@ namespace ttcr {
         if ( weno3 == true ) {
             int niter = 0;
             int niterw = 0;
-            if ( this->dx != this->dz || this->dx != this->dy ) {
-                throw std::logic_error("Error: WENO stencil needs dx equal to dz");
-            }
             while ( niter<nitermax && ( niter<2 || change >= tol || change > prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -240,7 +238,7 @@ namespace ttcr {
             change = std::numeric_limits<T1>::max();
             prev = 0.0;
             while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
-                this->sweep_weno3(frozen, threadNo);
+                this->sweep_weno3_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -304,11 +302,9 @@ namespace ttcr {
         if ( weno3 == true ) {
             int niter = 0;
             int niterw = 0;
-            if ( this->dx != this->dz || this->dx != this->dy ) {
-                throw std::logic_error("Error: WENO stencil needs dx equal to dz");
-            }
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -321,7 +317,7 @@ namespace ttcr {
             change = std::numeric_limits<T1>::max();
             prev = 0.0;
             while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
-                this->sweep_weno3(frozen, threadNo);
+                this->sweep_weno3_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
