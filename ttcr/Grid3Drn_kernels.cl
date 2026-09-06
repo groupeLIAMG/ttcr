@@ -120,14 +120,12 @@ inline real_t solve_godunov(real_t a1, real_t h1, real_t a2, real_t h2,
     const real_t w2 = 1.0 / (h2 * h2);
     real_t A = w1 + w2;
     real_t B = b2 * w2;
-    real_t d = A * s * s - w1 * w2 * b2 * b2;
-    if (d < 0.0) {
-        return a1 + u1;
-    }
-    const real_t u2 = (B + sqrt(d)) / A;
-    if (u2 <= b3) {
-        return a1 + u2;
-    }
+real_t d = A * s * s - w1 * w2 * b2 * b2;
+if (d < 0.0) d = 0.0;
+const real_t u2 = (B + sqrt(d)) / A;
+if (u2 <= b3) {
+    return a1 + u2;
+}
 
     // three axes active
     const real_t w3 = 1.0 / (h3 * h3);
