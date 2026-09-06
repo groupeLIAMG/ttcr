@@ -3952,11 +3952,9 @@ namespace ttcr {
         T1 B = b2 * w2;
         // Discriminant by the Lagrange identity, not as B*B - A*C: those two are
         // large and nearly equal, and their difference is what is wanted.
-        T1 d = A * s * s - w1 * w2 * b2 * b2;
-        if ( d < 0.0 ) {
-            return a1 + u1;
-        }
-        T1 u2 = (B + sqrt(d)) / A;
+T1 d = A * s * s - w1 * w2 * b2 * b2;
+if ( d < 0.0 ) d = 0.0;
+T1 u2 = (B + sqrt(d)) / A;
         if ( u2 <= b3 ) {
             return a1 + u2;
         }
