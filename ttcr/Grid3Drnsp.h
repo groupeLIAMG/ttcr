@@ -72,7 +72,7 @@ namespace ttcr {
      * @note Isotropic only. ttcr::Grid3Drcsp stays templated on a @c CELL policy
      *       and so supports the anisotropic models; this one cannot, since a
      *       node carries a single scalar slowness.
-     * @note All three cell sizes are honoured, unlike ttcr::Grid3Drnfs.
+     * @note All three cell sizes are honoured.
      *
      * @sa Grid3Drn.h, Grid3Drcsp.h, Grid2Drnsp.h, Node3Dnsp.h
      */

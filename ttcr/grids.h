@@ -315,7 +315,7 @@ namespace ttcr {
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells ) {
                     g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                    d[0], min[0], min[1],  min[2],
+                                                    d[0], d[1], d[2], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, par.tt_from_rp,
                                                     par.processVel, nt,
@@ -323,7 +323,7 @@ namespace ttcr {
                 }
                 else
                     g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                    d[0], min[0], min[1],  min[2],
+                                                    d[0], d[1], d[2], min[0], min[1],  min[2],
                                                     par.epsilon, par.nitermax,
                                                     par.weno3, par.tt_from_rp,
                                                     par.processVel, nt,
@@ -346,7 +346,7 @@ namespace ttcr {
                 if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                 if ( constCells ) {
                     g = new Grid3Drcfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                           d[0], min[0], min[1],  min[2],
+                                                           d[0], d[1], d[2], min[0], min[1],  min[2],
                                                            par.epsilon, par.nitermax,
                                                            par.weno3, par.tt_from_rp,
                                                            par.processVel, nt,
@@ -354,7 +354,7 @@ namespace ttcr {
                 }
                 else
                     g = new Grid3Drnfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                           d[0], min[0], min[1],  min[2],
+                                                           d[0], d[1], d[2], min[0], min[1],  min[2],
                                                            par.epsilon, par.nitermax,
                                                            par.weno3, par.tt_from_rp,
                                                            par.processVel, nt,
@@ -580,7 +580,7 @@ namespace ttcr {
                         if ( verbose ) { std::cout << "Building grid (Grid3Drnfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drnfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                        d[0], xrange[0], yrange[0], zrange[0],
+                                                        d[0], d[1], d[2], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp,
                                                         par.processVel, nt,
@@ -606,7 +606,7 @@ namespace ttcr {
                         if ( verbose ) { std::cout << "Building grid (Grid3Drnfs_OpenCL) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drnfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                               d[0], xrange[0], yrange[0], zrange[0],
+                                                               d[0], d[1], d[2], xrange[0], yrange[0], zrange[0],
                                                                par.epsilon, par.nitermax,
                                                                par.weno3, par.tt_from_rp,
                                                                par.processVel, nt,
@@ -841,7 +841,7 @@ namespace ttcr {
                         if ( verbose ) { std::cout << "Building grid (Grid3Drcfs) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drcfs<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                        d[0], xrange[0], yrange[0], zrange[0],
+                                                        d[0], d[1], d[2], xrange[0], yrange[0], zrange[0],
                                                         par.epsilon, par.nitermax,
                                                         par.weno3, par.tt_from_rp,
                                                         par.processVel, nt,
@@ -866,7 +866,7 @@ namespace ttcr {
                         if ( verbose ) { std::cout << "Building grid (Grid3Drcfs_OpenCL) ... "; std::cout.flush(); }
                         if ( par.time ) { begin = std::chrono::high_resolution_clock::now(); }
                         g = new Grid3Drcfs_OpenCL<T, uint32_t>(ncells[0], ncells[1], ncells[2],
-                                                               d[0], xrange[0], yrange[0], zrange[0],
+                                                               d[0], d[1], d[2], xrange[0], yrange[0], zrange[0],
                                                                par.epsilon, par.nitermax,
                                                                par.weno3, par.tt_from_rp,
                                                                par.processVel, nt,

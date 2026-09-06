@@ -132,7 +132,9 @@ etc
 
 ###### Note regarding the fast sweeping method on rectilinear grids
 
-The 3D implementations require that the cells must be cubic.  Only the first value for the size of cell is used when building the grids.
+The 3D implementations honour all three cell sizes.  Grids with dx, dy and dz all different are solved with a general per-axis stencil, and cubic grids take a cheaper equal-spacing one; the choice is made from the spacings themselves and needs no option.  This applies to the third-order WENO stencil as well as the first-order one.
+
+Earlier versions used only the first cell size for all three axes, so a model with dx, dy and dz not all equal was silently solved on a grid whose y and z spacings had been replaced by dx.
 
 OpenCL accelerated implementations of the sweeping method are provided for 3D rectilinear grids.  Depending on hardware, the OpenCL implementation might not run if double precision is requested, in which case the code falls back to the CPU version.  In the current version, multi-threading is disabled when using OpenCL implementations to avoid saturating the GPU.
 

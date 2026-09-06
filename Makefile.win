@@ -6,6 +6,9 @@
 # Toolchain selection: msvc (default) or mingw
 TOOLCHAIN ?= msvc
 
+# Used to embed the OpenCL kernels (see the rules at the end of this file).
+PYTHON ?= python
+
 # Configuration (Release by default)
 CONFIG ?= Release
 
@@ -41,7 +44,9 @@ HEADERS = ttcr/Cell.h ttcr/Grad.h ttcr/Grid2D.h ttcr/Grid2Drcfs.h ttcr/Grid2Drc.
           ttcr/Node2Dc.h ttcr/Node2Dcsp.h ttcr/Node2Dn.h ttcr/Node2Dnsp.h ttcr/Node3Dc.h ttcr/Node3Dcsp.h ttcr/Node3Dn.h \
           ttcr/Node3Dnsp.h ttcr/Node.h ttcr/Rcv2D.h ttcr/Rcv.h ttcr/Src2D.h ttcr/Src.h ttcr/structs_msh2vtk.h \
           ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h ttcr/Grid3Drcfs_OpenCL.h \
-          ttcr/Grid3Drnfs_OpenCL.h ttcr/Grid3Drn_OpenCL.h
+          ttcr/Grid3Drnfs_OpenCL.h ttcr/Grid3Drn_OpenCL.h ttcr/Grid3Drn_kernels_src.h \
+          ttcr/Grid2Drcfs_OpenCL.h ttcr/Grid2Drnfs_OpenCL.h ttcr/Grid2Drn_OpenCL.h \
+          ttcr/Grid2Drn_kernels_src.h
 
 # Third-party paths (edit these to match your Windows installation)
 # Example VTK install on Windows with prebuilt binaries or vcpkg.
@@ -174,3 +179,18 @@ else
 	-@rm -rf $(BUILD_DIR)/*.o
 	-@rm -f $(TTCR3D) $(TTCR2D) $(TTCR2DS)
 endif
+
+# Embed the OpenCL kernel sources into headers so Grid3Drn_OpenCL.h and
+# Grid2Drn_OpenCL.h can build their kernels without locating the .cl files at
+# runtime.  Both headers are gitignored, so a fresh checkout has neither and
+# the build has to make them.
+#
+# The Unix makefiles do this with printf and cat.  Neither exists in a Visual
+# Studio Developer Command Prompt, and cmd's echo will not pass the quotes and
+# '#' in the header text through intact, so this goes through a helper script.
+# Its output is byte-identical to the Unix recipes and to setup.py's.
+ttcr/Grid3Drn_kernels_src.h : ttcr/Grid3Drn_kernels.cl tools/embed_kernel.py
+	$(PYTHON) tools/embed_kernel.py $< $@ Grid3Drn_kernels_src TTCR_CL_KERNEL
+
+ttcr/Grid2Drn_kernels_src.h : ttcr/Grid2Drn_kernels.cl tools/embed_kernel.py
+	$(PYTHON) tools/embed_kernel.py $< $@ Grid2Drn_kernels_src TTCR_CL_2D

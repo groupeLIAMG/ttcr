@@ -65,12 +65,15 @@
  * piecewise-constant model.
  *
  * @section g2drn_sweeps Fast sweeping stencils
- * Several update stencils are provided and selected by the solver's options:
- * axis-aligned (@c sweep), 45-degree rotated (@c sweep45, and @c sweep_xz for
- * the mixed case) and their third-order WENO variants
- * (@c sweep_weno3, @c sweep_weno3_xz). Rotated stencils are enabled by
- * ttcr::input_parameters::rotated_template and WENO by
- * ttcr::input_parameters::weno3.
+ * Several update stencils are provided. @c sweep is axis-aligned and assumes
+ * square cells; @c sweep_xz is its counterpart for @c dx != @c dz, carrying a
+ * spacing per axis. @c sweep_weno3 and @c sweep_weno3_xz are the corresponding
+ * third-order WENO variants, enabled by ttcr::input_parameters::weno3.
+ *
+ * @c sweep45 is a separate thing: a 45-degree rotated stencil enabled by
+ * ttcr::input_parameters::rotated_template, run in addition to @c sweep rather
+ * than instead of it. It is only valid for square cells, so the solvers skip it
+ * on a grid with @c dx != @c dz and take the @c _xz stencils there.
  *
  * @sa Grid2D.h, Grid2Drc.h, Grid3Drn.h, Grid2Drnsp.h, Grid2Drnfs.h
  */
@@ -1239,10 +1242,16 @@ namespace ttcr {
 
         T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
 
-        if ( std::abs(a-b) >= fh )
-            t = (a<b ? a : b) + fh;
+        // Solved in the increment over the smaller upwind value, to match
+        // Grid3Drn::update_node.  Unlike the three-axis form there, this one
+        // carries no cancellation either way -- measured flat at round-off out
+        // to a traveltime of 1e6 -- so this is for uniformity, not a fix.
+        const T1 m = a<b ? a : b;
+        const T1 d = std::abs(a-b);
+        if ( d >= fh )
+            t = m + fh;
         else
-            t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+            t = m + 0.5*( d + sqrt(2.*fh*fh - d*d) );
 
         if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
             nodes[i*(ncz+1)+j].setTT(t,threadNo);
@@ -1301,10 +1310,16 @@ namespace ttcr {
 
         T1 fh = 1.414213562373095 * nodes[i*(ncz+1)+j].getNodeSlowness() *
         dx;
-        if ( std::abs(a-b) >= fh )
-            t = (a<b ? a : b) + fh;
+        // Solved in the increment over the smaller upwind value, to match
+        // Grid3Drn::update_node.  Unlike the three-axis form there, this one
+        // carries no cancellation either way -- measured flat at round-off out
+        // to a traveltime of 1e6 -- so this is for uniformity, not a fix.
+        const T1 m = a<b ? a : b;
+        const T1 d = std::abs(a-b);
+        if ( d >= fh )
+            t = m + fh;
         else
-            t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+            t = m + 0.5*( d + sqrt(2.*fh*fh - d*d) );
 
         if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
             nodes[i*(ncz+1)+j].setTT(t,threadNo);
@@ -1341,12 +1356,23 @@ namespace ttcr {
         } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
             t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
         } else {
-            T1 dx2 = dx*dx;
-            T1 dz2 = dz*dz;
-            T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
-            t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
-                                                    b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
-                                                    dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+            // Solve in the increment over the smaller of the two upwind values.
+            // The discriminant is s^2*(dx^2+dz^2) - (a-b)^2 scaled by dx^2*dz^2;
+            // expanded over a and b, as this was, its first three terms are each
+            // the size of T^2 while the sum is the size of (a-b)^2, so the
+            // update lost digits in proportion to the traveltime -- 2e-11
+            // relative at a traveltime of 1e6.  Same rearrangement as
+            // Grid3Drn::solve_godunov, in two dimensions.
+            const T1 dx2 = dx*dx;
+            const T1 dz2 = dz*dz;
+            const T1 s = nodes[i*(ncz+1)+j].getNodeSlowness();
+            const T1 m = a<b ? a : b;
+            const T1 ba = a - m;          // one of these two is zero
+            const T1 bb = b - m;
+            const T1 ab = a - b;
+            T1 d = s*s*(dx2 + dz2) - ab*ab;
+            if ( d < 0.0 ) d = 0.0;
+            t = m + (ba*dz2 + bb*dx2 + dx*dz*sqrt(d))/(dx2 + dz2);
         }
 
         if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
@@ -1495,10 +1521,16 @@ namespace ttcr {
 
         T1 fh = nodes[i*(ncz+1)+j].getNodeSlowness() * dx;
 
-        if ( std::abs(a-b) >= fh )
-            t = (a<b ? a : b) + fh;
+        // Solved in the increment over the smaller upwind value, to match
+        // Grid3Drn::update_node.  Unlike the three-axis form there, this one
+        // carries no cancellation either way -- measured flat at round-off out
+        // to a traveltime of 1e6 -- so this is for uniformity, not a fix.
+        const T1 m = a<b ? a : b;
+        const T1 d = std::abs(a-b);
+        if ( d >= fh )
+            t = m + fh;
         else
-            t = 0.5*( a+b + sqrt(2.*fh*fh - (a-b)*(a-b) ) );
+            t = m + 0.5*( d + sqrt(2.*fh*fh - d*d) );
 
         if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )
             nodes[i*(ncz+1)+j].setTT(t,threadNo);
@@ -1639,12 +1671,23 @@ namespace ttcr {
         } else if ( a>b && ((a-b)/dz)>nodes[i*(ncz+1)+j].getNodeSlowness() ) {
             t = b + nodes[i*(ncz+1)+j].getNodeSlowness()*dz;
         } else {
-            T1 dx2 = dx*dx;
-            T1 dz2 = dz*dz;
-            T1 s2 = nodes[i*(ncz+1)+j].getNodeSlowness()*nodes[i*(ncz+1)+j].getNodeSlowness();
-            t = (b*dx2 + a*dz2)/(dx2 + dz2) + sqrt((2.0*a*b*dx2*dz2 - a*a*dx2*dz2 -
-                                                    b*b*dx2*dz2 + dx2*dx2*dz2*s2 +
-                                                    dx2*dz2*dz2*s2)/((dx2 + dz2)*(dx2 + dz2)));
+            // Solve in the increment over the smaller of the two upwind values.
+            // The discriminant is s^2*(dx^2+dz^2) - (a-b)^2 scaled by dx^2*dz^2;
+            // expanded over a and b, as this was, its first three terms are each
+            // the size of T^2 while the sum is the size of (a-b)^2, so the
+            // update lost digits in proportion to the traveltime -- 2e-11
+            // relative at a traveltime of 1e6.  Same rearrangement as
+            // Grid3Drn::solve_godunov, in two dimensions.
+            const T1 dx2 = dx*dx;
+            const T1 dz2 = dz*dz;
+            const T1 s = nodes[i*(ncz+1)+j].getNodeSlowness();
+            const T1 m = a<b ? a : b;
+            const T1 ba = a - m;          // one of these two is zero
+            const T1 bb = b - m;
+            const T1 ab = a - b;
+            T1 d = s*s*(dx2 + dz2) - ab*ab;
+            if ( d < 0.0 ) d = 0.0;
+            t = m + (ba*dz2 + bb*dx2 + dx*dz*sqrt(d))/(dx2 + dz2);
         }
 
         if ( t<nodes[i*(ncz+1)+j].getTT(threadNo) )

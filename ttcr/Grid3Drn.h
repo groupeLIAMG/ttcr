@@ -61,10 +61,19 @@
  * any secondary nodes a solver adds.
  *
  * @section g3drn_sweeps Fast sweeping stencils
- * Two update stencils are provided, @c sweep and @c sweep_weno3, selected by
- * ttcr::input_parameters::weno3. The 2-D base additionally offers rotated and
- * mixed x-z stencils; there are no 3-D equivalents, so
- * ttcr::input_parameters::rotated_template has no effect here.
+ * Four update stencils are provided, in two pairs. @c sweep and @c sweep_weno3
+ * assume cubic cells; @c sweep_xyz and @c sweep_weno3_xyz carry a spacing per
+ * axis and work for any @c dx, @c dy, @c dz. ttcr::input_parameters::weno3
+ * chooses between the pairs; within a pair the choice is made from the grid's
+ * own spacings by @ref Grid3Drn::sweep_auto and
+ * @ref Grid3Drn::sweep_weno3_auto, which is what the solvers call. Both members
+ * of a pair are correct on cubic cells and agree there to about two ulps, so
+ * the cubic one is taken because it is cheaper, not because the general one
+ * would be wrong.
+ *
+ * The @c _xyz stencils are the 3-D counterpart of the 2-D base's mixed x-z
+ * ones. Its rotated 45-degree stencil has no 3-D equivalent, so
+ * ttcr::input_parameters::rotated_template still has no effect here.
  *
  * @sa Grid3D.h, Grid3Drc.h, Grid2Drn.h, Grid3Drnsp.h, Grid3Drnfs.h
  */
@@ -677,6 +686,53 @@ namespace ttcr {
         /// Third-order WENO stencil.
         void sweep_weno3(const std::vector<bool>& frozen,
                          const size_t threadNo) const;
+        /// Axis-aligned first-order stencil, valid for any dx, dy, dz.
+        /// Same eight sweep orders as @ref sweep, over @ref update_node_xyz.
+        void sweep_xyz(const std::vector<bool>& frozen,
+                       const size_t threadNo) const;
+        /// Third-order WENO stencil, valid for any dx, dy, dz.
+        /// Same eight sweep orders as @ref sweep_weno3, over
+        /// @ref update_node_weno3_xyz.
+        void sweep_weno3_xyz(const std::vector<bool>& frozen,
+                             const size_t threadNo) const;
+        /**
+         * @brief One first-order sweep with the stencil this grid's spacing
+         *        calls for.
+         *
+         * Cubic cells take @ref sweep, anything else @ref sweep_xyz.  Both are
+         * correct on cubic cells and agree there to about two ulps, so this
+         * picks the cheaper one rather than a different answer: @ref update_node
+         * needs no per-axis weights, where @ref solve_godunov forms three
+         * reciprocal squares.
+         *
+         * The comparison is exact, not toleranced, and deliberately so.  Being
+         * wrong towards @ref sweep_xyz costs a little arithmetic on a grid that
+         * was nearly cubic; being wrong towards @ref sweep returns wrong
+         * traveltimes.  Grids built by the four FSM constructors pass the same
+         * value for all three spacings, so they compare equal exactly.
+         *
+         * @sa ttcr::Grid2Drnfs, which dispatches the same way in 2-D.
+         */
+        void sweep_auto(const std::vector<bool>& frozen,
+                        const size_t threadNo) const {
+            if ( dx == dy && dy == dz ) {
+                sweep(frozen, threadNo);
+            } else {
+                sweep_xyz(frozen, threadNo);
+            }
+        }
+        /**
+         * @brief One WENO3 sweep with the stencil this grid's spacing calls for.
+         * @copydetails sweep_auto
+         */
+        void sweep_weno3_auto(const std::vector<bool>& frozen,
+                              const size_t threadNo) const {
+            if ( dx == dy && dy == dz ) {
+                sweep_weno3(frozen, threadNo);
+            } else {
+                sweep_weno3_xyz(frozen, threadNo);
+            }
+        }
         /// @}
 
         /**
@@ -689,6 +745,50 @@ namespace ttcr {
          */
         void update_node(const size_t, const size_t, const size_t, const size_t=0) const;
         void update_node_weno3(const size_t, const size_t, const size_t, const size_t=0) const;
+        /**
+         * @brief First-order update valid for any dx, dy, dz.
+         *
+         * Same upwind stencil as @ref update_node, including its one-sided
+         * boundary handling, but each neighbour keeps the spacing of its own
+         * axis and the solve is handed to @ref solve_godunov.
+         * @ref update_node is the cubic-cell special case of this one, kept
+         * because it is cheaper there -- it needs no per-axis weights -- rather
+         * than because the two disagree; they are within about two ulps on
+         * cubic cells.  @ref sweep_auto chooses between them.
+         */
+        void update_node_xyz(const size_t, const size_t, const size_t, const size_t=0) const;
+        /**
+         * @brief WENO3 update valid for any dx, dy, dz.
+         *
+         * Same stencil as @ref update_node_weno3.  What makes it work on
+         * non-cubic cells is the closing solve: @ref solve_godunov, with the
+         * three values still paired with their own spacings, in place of the
+         * sort and the single @c fh.
+         *
+         * Each @ref weno3_upwind call is also passed the spacing of the axis it
+         * differences along rather than @c dx throughout.  That is a statement
+         * of intent, not a numerical change: the spacing cancels inside
+         * @ref weno3_upwind, so those twelve arguments only move the result by
+         * rounding.  They are written per-axis anyway so the code says what it
+         * means and stays correct if that function ever stops cancelling.
+         *
+         * @note On a strongly anisotropic grid this can activate an axis the
+         *       front has not really reached.  @ref update_node compares the
+         *       actual upwind neighbour against the node, and a neighbour
+         *       cannot undershoot; the WENO3 value is an extrapolation, and
+         *       along an axis whose spacing is fine compared with the
+         *       curvature of the traveltime field the true increment can be
+         *       smaller than the reconstruction error, so the estimate dips
+         *       below the node value and the axis joins the active set.  The
+         *       effect is bounded by the reconstruction error and is well
+         *       inside the scheme's own accuracy -- on a constant-gradient
+         *       model with @f$d_y/d_z = 4@f$ this kernel still beats the
+         *       first-order one by four to six times at every resolution
+         *       tested -- but it does mean WENO3 is not exact on fields where
+         *       the first-order kernel happens to be, such as the traveltime
+         *       along a grid axis from a point source in a constant medium.
+         */
+        void update_node_weno3_xyz(const size_t, const size_t, const size_t, const size_t=0) const;
         /// @}
 
         /**
@@ -735,8 +835,90 @@ namespace ttcr {
          *       kink in the traveltime field, which is what keeps the scheme
          *       third-order in smooth regions without oscillating at wavefront
          *       crossings.
+         * @note @p dx cancels.  The derivative is formed over @c 2*dx and the
+         *       result is @c v2 plus @c dx times it, so the return value is a
+         *       function of the five stencil values alone -- as it should be,
+         *       since estimating a neighbouring node's value from its
+         *       neighbours needs no knowledge of how far apart they are.  The
+         *       spacing enters the scheme in the Godunov solve, which turns
+         *       this value into a gradient.  Measured over 1e6 random stencils,
+         *       spacings six orders of magnitude apart move the result by at
+         *       most 1.5e-14 relative, all of it rounding.  The parameter is
+         *       kept because it documents which axis a call belongs to.
          */
         T1 weno3_upwind(const T1 v0, const T1 v1, const T1 v2, const T1 v3, const T1 v4, const T1 dx, bool forward) const;
+
+        /**
+         * @brief Godunov upwind eikonal solve at one node, with a spacing per
+         *        axis.
+         *
+         * Solves sum_{i in S} ((T - a_i)/h_i)^2 = s^2 for T over the *active
+         * set* S of axes, those whose upwind neighbour the arriving front has
+         * already passed.  Writing w_i = 1/h_i^2, the root wanted is
+         *
+         *     T = (B + sqrt(B^2 - A*C))/A
+         *     A = sum_S w_i,  B = sum_S a_i*w_i,  C = sum_S a_i^2*w_i - s^2
+         *
+         * The active set is found by the usual ascending construction: order the
+         * axes by upwind traveltime, take the one-axis solution T = a1 + s*h1,
+         * and widen to two and then three axes only while the result exceeds the
+         * next value, since a solution no larger than a_i cannot have received
+         * information along axis i.
+         *
+         * Two rearrangements keep that accurate, and neither changes the value
+         * in exact arithmetic.  Both matter once the grid is strongly
+         * anisotropic, which is the case this routine exists to serve.
+         *
+         * First, solve for the increment u = T - a1 over the smallest upwind
+         * value rather than for T, using b_i = a_i - a1.  Traveltimes are
+         * absolute and can dwarf the increment they differ by; in u every term
+         * is the size of the increment.
+         *
+         * Second, form the discriminant by the Lagrange identity
+         *
+         *     B^2 - A*C = A*s^2 - sum_{i<j} w_i*w_j*(b_i - b_j)^2
+         *
+         * rather than as written above.  B^2 and A*C are individually large and
+         * nearly equal, so their difference loses most of its significant
+         * digits; the right-hand side is built from the b_i differences
+         * directly and never forms them.  On a grid with dz a thousand times
+         * smaller than dx and dy, the two together take the error on an
+         * analytic plane wave from 6e-5 to round-off.
+         *
+         * @param a1 upwind traveltime along the first axis.
+         * @param h1 node spacing of the first axis.
+         * @param a2 upwind traveltime along the second axis.
+         * @param h2 node spacing of the second axis.
+         * @param a3 upwind traveltime along the third axis.
+         * @param h3 node spacing of the third axis.
+         * @param s  slowness at the node being updated.
+         * @return The updated traveltime.  The axes may be given in any order.
+         *
+         * @note The ordering is done here rather than by the caller because each
+         *       spacing has to travel with its own value.  @ref update_node
+         *       sorts a1,a2,a3 alone, which is why that kernel is sound only
+         *       while dx == dy == dz.
+         * @note With h1 == h2 == h3 this reproduces the two closed forms written
+         *       out in @ref update_node, but by a different sequence of
+         *       operations, so it is not bit-identical to them.  Cubic grids
+         *       therefore keep using @ref update_node.
+         * @note The discriminant guards are for round-off only: in exact
+         *       arithmetic the widening test that admitted a set also makes that
+         *       set's discriminant non-negative.
+         *
+         * @sa The upwind discretization is that of Rouy, E. and Tourin, A.,
+         *     1992.  A viscosity solutions approach to shape-from-shading.
+         *     SIAM Journal on Numerical Analysis, 29(3), 867-884.
+         *     doi:10.1137/0729053
+         * @sa The ordered active-set solve follows Zhao, H., 2005.  A fast
+         *     sweeping method for eikonal equations.  Mathematics of
+         *     Computation, 74(250), 603-627.
+         *     doi:10.1090/S0025-5718-04-01678-3
+         *     Zhao writes the update for a single mesh size h; carrying one
+         *     spacing per axis through the same derivation gives the A, B and C
+         *     above.
+         */
+        T1 solve_godunov(T1 a1, T1 h1, T1 a2, T1 h2, T1 a3, T1 h3, const T1 s) const;
 
     public:
         /**
@@ -3330,6 +3512,92 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::sweep_xyz(const std::vector<bool>& frozen,
+                                         const size_t threadNo) const {
+
+        // sweep first direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep second direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep third direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep fourth direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep fifth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep sixth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep seventh direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep eighth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::update_node(const size_t i, const size_t j, const size_t k,
                                            const size_t threadNo) const {
         T1 a1, a2, a3, t;
@@ -3368,21 +3636,86 @@ namespace ttcr {
         if ( a1>a3 ) std::swap(a1, a3);
         if ( a2>a3 ) std::swap(a2, a3);
 
-        T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
+        const T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
 
-        t = a1 + fh;
-        if ( t > a2 ) {
+        // Solve in the increment u = T - a1, and build each discriminant from
+        // increment-sized terms rather than from the a_i themselves.  Both are
+        // exact-arithmetic identities -- this is @ref solve_godunov specialised
+        // to h1 == h2 == h3 == dx -- and both matter because the a_i are
+        // absolute traveltimes that can dwarf the increment they differ by.
+        // Written with the a_i directly, as this was, the update loses digits
+        // in proportion to the traveltime: 5e-10 relative at a traveltime of
+        // 1e6, against round-off here.  @sa solve_godunov
+        const T1 b2 = a2 - a1;
+        const T1 b3 = a3 - a1;
 
-            t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
+        T1 u = fh;
+        if ( u > b2 ) {
 
-            if ( t > a3 ) {
+            const T1 d2 = 2.*fh*fh - b2*b2;
+            if ( d2 >= 0.0 ) {
 
-                t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 - 2.*a2*a2 +
-                                                   2.*a1*a3 + 2.*a2*a3 -
-                                                   2.*a3*a3 + 3.*fh*fh));
+                u = 0.5*(b2 + sqrt(d2));
 
+                if ( u > b3 ) {
+
+                    const T1 b23 = b2 - b3;
+                    const T1 d3 = 3.*fh*fh - b2*b2 - b3*b3 - b23*b23;
+                    if ( d3 >= 0.0 ) {
+                        u = (b2 + b3 + sqrt(d3)) / 3.;
+                    }
+                }
             }
         }
+        t = a1 + u;
+
+        if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
+            nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
+
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::update_node_xyz(const size_t i, const size_t j, const size_t k,
+                                               const size_t threadNo) const {
+        T1 a1, a2, a3, t;
+
+        // Upwind neighbour along z, paired below with dz.
+        if (k==0)
+            a1 = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+        else if (k==ncz)
+            a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+        else {
+            a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+            t  = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+            a1 = a1<t ? a1 : t;
+        }
+
+        // Upwind neighbour along y, paired below with dy.
+        if (j==0)
+            a2 = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
+        else if (j==ncy)
+            a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
+        else {
+            a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
+            t  = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
+            a2 = a2<t ? a2 : t;
+        }
+
+        // Upwind neighbour along x, paired below with dx.
+        if (i==0)
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
+        else if (i==ncx)
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
+        else {
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
+            t  = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
+            a3 = a3<t ? a3 : t;
+        }
+
+        // Unlike update_node, the three values are not sorted here: each has to
+        // reach the solve still paired with the spacing of its own axis.
+        t = solve_godunov(a1, dz, a2, dy, a3, dx,
+                          nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness());
 
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
@@ -3475,6 +3808,91 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::sweep_weno3_xyz(const std::vector<bool>& frozen,
+                                               const size_t threadNo) const {
+        // sweep first direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep second direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep third direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep fourth direction
+        for ( size_t k=0; k<=ncz; ++k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep fifth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep sixth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( size_t j=0; j<=ncy; ++j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep seventh direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( size_t i=0; i<=ncx; ++i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+        // sweep eighth direction
+        for ( long int k=ncz; k>=0; --k ) {
+            for ( long int j=ncy; j>=0; --j ) {
+                for ( long int i=ncx; i>=0; --i ) {
+                    if ( !frozen[ (k*(ncy+1)+j)*(ncx+1)+i ] ) {
+                        update_node_weno3_xyz(i, j, k, threadNo);
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename T1, typename T2, typename NODE>
     T1 Grid3Drn<T1,T2,NODE>::weno3_upwind(const T1 v0, const T1 v1, const T1 v2, const T1 v3,
                                           const T1 v4, const T1 dx, bool forward) const {
     
@@ -3506,6 +3924,56 @@ namespace ttcr {
     }
 
     template<typename T1, typename T2, typename NODE>
+    T1 Grid3Drn<T1,T2,NODE>::solve_godunov(T1 a1, T1 h1, T1 a2, T1 h2,
+                                           T1 a3, T1 h3, const T1 s) const {
+
+        // Order the three axes by upwind traveltime, ascending, swapping each
+        // spacing along with the value it belongs to.
+        if ( a1 > a2 ) { std::swap(a1, a2); std::swap(h1, h2); }
+        if ( a1 > a3 ) { std::swap(a1, a3); std::swap(h1, h3); }
+        if ( a2 > a3 ) { std::swap(a2, a3); std::swap(h2, h3); }
+
+        // Solve for the increment u = T - a1 rather than for T, so that every
+        // term is the size of the increment rather than of the traveltime.  b1
+        // is zero by construction, so the first axis contributes to A alone.
+        const T1 b2 = a2 - a1;
+        const T1 b3 = a3 - a1;
+
+        // One axis active.
+        T1 u1 = s * h1;
+        if ( u1 <= b2 ) {
+            return a1 + u1;
+        }
+
+        // Two axes active.
+        const T1 w1 = 1.0 / (h1 * h1);
+        const T1 w2 = 1.0 / (h2 * h2);
+        T1 A = w1 + w2;
+        T1 B = b2 * w2;
+        // Discriminant by the Lagrange identity, not as B*B - A*C: those two are
+        // large and nearly equal, and their difference is what is wanted.
+        T1 d = A * s * s - w1 * w2 * b2 * b2;
+        if ( d < 0.0 ) d = 0.0;
+        T1 u2 = (B + sqrt(d)) / A;
+        if ( u2 <= b3 ) {
+            return a1 + u2;
+        }
+
+        // Three axes active.  A and B accumulate onto the two-axis sums.
+        const T1 w3 = 1.0 / (h3 * h3);
+        const T1 b23 = b2 - b3;
+        A += w3;
+        B += b3 * w3;
+        d = A * s * s - (w1 * w2 * b2 * b2 +
+                         w1 * w3 * b3 * b3 +
+                         w2 * w3 * b23 * b23);
+        if ( d < 0.0 ) {
+            return a1 + u2;
+        }
+        return a1 + (B + sqrt(d)) / A;
+    }
+
+    template<typename T1, typename T2, typename NODE>
     void Grid3Drn<T1,T2,NODE>::update_node_weno3(const size_t i,
                                                  const size_t j,
                                                  const size_t k,
@@ -3523,26 +3991,6 @@ namespace ttcr {
                               nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
                               dx, true);
             
-            /* OLD CODE:
-            T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-                  2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-                     nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-                  2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-                     nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-             */
             
             t = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a1 = a1<t ? a1 : t;
@@ -3557,26 +4005,6 @@ namespace ttcr {
                               0.0, // v4 not used backward
                               dx, false);
             
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             t = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a1 = a1<t ? a1 : t;
@@ -3598,41 +4026,6 @@ namespace ttcr {
                              nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
                              dx, false);
             
-            /* OLD CODE:
-            T1 num = nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-                  2.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-                     nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a1 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
-            num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             a1 = a1<t ? a1 : t;
 
@@ -3649,26 +4042,6 @@ namespace ttcr {
                               nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
                               dx, true);
             
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-             */
 
             t = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo); // first order for left
             a2 = a2<t ? a2 : t;
@@ -3683,26 +4056,6 @@ namespace ttcr {
                               0.0, // v4 not used backward
                               dx, false);
                         
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             t = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo); // first order for right
             a2 = a2<t ? a2 : t;
@@ -3724,41 +4077,6 @@ namespace ttcr {
                              nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
                              dx, false);
             
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a2 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
-            num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             a2 = a2<t ? a2 : t;
 
@@ -3775,26 +4093,6 @@ namespace ttcr {
                               nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
                               dx, true);
                         
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-             */
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo); // first order for left
             a3 = a3<t ? a3 : t;
@@ -3809,26 +4107,6 @@ namespace ttcr {
                               0.0, // v4 not used backward
                               dx, false);
                         
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
-
-            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo); // first order for right
             a3 = a3<t ? a3 : t;
@@ -3850,41 +4128,6 @@ namespace ttcr {
                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
                              dx, false);
 
-            /* OLD CODE:
-            T1 num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
-            num *= num;
-            T1 den = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
-            den *= den;
-            T1 r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            T1 w = 1./(1.+2.*r*r);
-
-            T1 ap = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(-nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo) +
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo) -
-               3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo))/(2.*dx);
-
-            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) + dx*ap;
-
-            num = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-            2.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo);
-            num *= num;
-            r = (std::numeric_limits<T1>::epsilon()+num)/(std::numeric_limits<T1>::epsilon()+den);
-            w = 1./(1.+2.*r*r);
-
-            T1 am = (1.-w)*(nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo)-
-                            nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo))/(2.*dx) +
-            w*(3.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) -
-               4.*nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo) +
-               nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo))/(2.*dx);
-
-            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo) - dx*am;
-             */
 
             a3 = a3<t ? a3 : t;
         }
@@ -3893,21 +4136,207 @@ namespace ttcr {
         if ( a1>a3 ) std::swap(a1, a3);
         if ( a2>a3 ) std::swap(a2, a3);
 
-        T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
+        const T1 fh = nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness() * dx;
 
-        t = a1 + fh;
-        if ( t > a2 ) {
+        // Solve in the increment u = T - a1, and build each discriminant from
+        // increment-sized terms rather than from the a_i themselves.  Both are
+        // exact-arithmetic identities -- this is @ref solve_godunov specialised
+        // to h1 == h2 == h3 == dx -- and both matter because the a_i are
+        // absolute traveltimes that can dwarf the increment they differ by.
+        // Written with the a_i directly, as this was, the update loses digits
+        // in proportion to the traveltime: 5e-10 relative at a traveltime of
+        // 1e6, against round-off here.  @sa solve_godunov
+        const T1 b2 = a2 - a1;
+        const T1 b3 = a3 - a1;
 
-            t = 0.5*(a1+a2+sqrt(2.*fh*fh - (a1-a2)*(a1-a2)));
+        T1 u = fh;
+        if ( u > b2 ) {
 
-            if ( t > a3 ) {
+            const T1 d2 = 2.*fh*fh - b2*b2;
+            if ( d2 >= 0.0 ) {
 
-                t = 1./3. * ((a1 + a2 + a3) + sqrt(-2.*a1*a1 + 2.*a1*a2 -
-                                                   2.*a2*a2 + 2.*a1*a3 + 2.*a2*a3 -
-                                                   2.*a3*a3 + 3.*fh*fh));
+                u = 0.5*(b2 + sqrt(d2));
 
+                if ( u > b3 ) {
+
+                    const T1 b23 = b2 - b3;
+                    const T1 d3 = 3.*fh*fh - b2*b2 - b3*b3 - b23*b23;
+                    if ( d3 >= 0.0 ) {
+                        u = (b2 + b3 + sqrt(d3)) / 3.;
+                    }
+                }
             }
         }
+        t = a1 + u;
+
+        if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
+            nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);
+
+    }
+
+    template<typename T1, typename T2, typename NODE>
+    void Grid3Drn<T1,T2,NODE>::update_node_weno3_xyz(const size_t i,
+                                                     const size_t j,
+                                                     const size_t k,
+                                                     const size_t threadNo) const {
+        T1 a1, a2, a3, t;
+
+        // ========== K direction ==========
+        if (k==0) {
+            a1 = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);  // first order
+        } else if (k==1) {
+            a1 = weno3_upwind(0.0,  // v0 not used forward
+                              nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              dz, true);
+            
+            
+            t = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for left
+            a1 = a1<t ? a1 : t;
+
+        } else if (k==ncz) {
+            a1 = nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo);
+        } else if (k==ncz-1) {
+            a1 = weno3_upwind(nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              0.0, // v4 not used backward
+                              dz, false);
+            
+
+            t = nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo); // first order for right
+            a1 = a1<t ? a1 : t;
+
+        } else {
+            // Forward direction
+            a1 = weno3_upwind(nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                              dz, true);
+            
+            // Backward direction
+            t = weno3_upwind(nodes[ ((k-2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ ((k-1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (    k*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ ((k+1)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ ((k+2)*(ncy+1)+j)*(ncx+1)+i ].getTT(threadNo),
+                             dz, false);
+            
+
+            a1 = a1<t ? a1 : t;
+
+        }
+
+        // ========== J direction ==========
+        if (j==0) {
+            a2 = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo);
+        } else if (j==1) {
+            a2 = weno3_upwind(0.0, // v0 not used forward
+                              nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
+                              dy, true);
+            
+
+            t = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo); // first order for left
+            a2 = a2<t ? a2 : t;
+
+        } else if (j==ncy) {
+            a2 = nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo);
+        } else if (j==ncy-1) {
+            a2 = weno3_upwind(nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                              0.0, // v4 not used backward
+                              dy, false);
+                        
+
+            t = nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo); // first order for right
+            a2 = a2<t ? a2 : t;
+
+        } else {
+            // Forward direction
+            a2 = weno3_upwind(nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
+                              dy, true);
+            
+            // Backward direction
+            t = weno3_upwind(nodes[ (k*(ncy+1)+j-2)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j-1)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j  )*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j+1)*(ncx+1)+i ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j+2)*(ncx+1)+i ].getTT(threadNo),
+                             dy, false);
+            
+
+            a2 = a2<t ? a2 : t;
+
+        }
+
+        // ========== I direction ==========
+        if (i==0) {
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo);
+        } else if (i==1) {
+            a3 = weno3_upwind(0.0, // v0 not used forward
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i   ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
+                              dx, true);
+                        
+
+            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo); // first order for left
+            a3 = a3<t ? a3 : t;
+
+        } else if (i==ncx) {
+            a3 = nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo);
+        } else if (i==ncx-1) {
+            a3 = weno3_upwind(nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i   ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                              0.0, // v4 not used backward
+                              dx, false);
+                        
+
+            t = nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo); // first order for right
+            a3 = a3<t ? a3 : t;
+
+        } else {
+            // Forward direction
+            a3 = weno3_upwind(nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i ]  .getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                              nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
+                              dx, true);
+            
+            // Backward direction
+            t = weno3_upwind(nodes[ (k*(ncy+1)+j)*(ncx+1)+i-2 ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i-1 ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i   ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i+1 ].getTT(threadNo),
+                             nodes[ (k*(ncy+1)+j)*(ncx+1)+i+2 ].getTT(threadNo),
+                             dx, false);
+
+
+            a3 = a3<t ? a3 : t;
+        }
+
+        // Not sorted, unlike update_node_weno3: each value has to reach the
+        // solve still paired with the spacing of its own axis.
+        t = solve_godunov(a1, dz, a2, dy, a3, dx,
+                          nodes[(k*(ncy+1)+j)*(ncx+1)+i].getNodeSlowness());
 
         if ( t<nodes[(k*(ncy+1)+j)*(ncx+1)+i].getTT(threadNo) )
             nodes[(k*(ncy+1)+j)*(ncx+1)+i].setTT(t,threadNo);

@@ -24,7 +24,9 @@ ttcr/Grid3Ducfs.h ttcr/Grid3Duc.h ttcr/Grid3Ducsp.h ttcr/Grid3Dunfm.h ttcr/Grid3
 ttcr/Grid3Dunsp.h ttcr/Interface.h ttcr/Interpolator.h ttcr/Metric.h ttcr/msh2vtk_io.h ttcr/MSHReader.h \
 ttcr/Node2Dc.h ttcr/Node2Dcsp.h ttcr/Node2Dn.h ttcr/Node2Dnsp.h ttcr/Node3Dc.h ttcr/Node3Dcsp.h ttcr/Node3Dn.h \
 ttcr/Node3Dnsp.h ttcr/Node.h ttcr/Rcv2D.h ttcr/Rcv.h ttcr/Src2D.h ttcr/Src.h ttcr/structs_msh2vtk.h \
-ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h ttcr/Grid3Drcfs_OpenCL.h	\
+ttcr/structs_ttcr.h ttcr/ttcr_io.h ttcr/ttcr_t.h ttcr/utils.h ttcr/VTUReader.h \
+ttcr/Grid3Drcfs_OpenCL.h ttcr/Grid3Drnfs_OpenCL.h ttcr/Grid3Drn_OpenCL.h ttcr/Grid3Drn_kernels_src.h \
+ttcr/Grid2Drcfs_OpenCL.h ttcr/Grid2Drnfs_OpenCL.h ttcr/Grid2Drn_OpenCL.h ttcr/Grid2Drn_kernels_src.h ttcr/Grid3Drcfs_OpenCL.h	\
 ttcr/Grid3Drnfs_OpenCL.h ttcr/Grid3Drn_OpenCL.h
 
 ttcr3d : ttcr3d.o ttcr_io.o
@@ -47,3 +49,18 @@ ttcr2ds : ttcr2ds.o ttcr_io.o
 
 ttcr2ds.o : ttcr/ttcr2ds.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c ttcr/ttcr2ds.cpp
+
+# Embed the OpenCL kernel sources into headers so Grid3Drn_OpenCL.h and
+# Grid2Drn_OpenCL.h can build their kernels without locating the .cl files at
+# runtime.  Both headers are gitignored, so a fresh checkout has neither and the
+# build has to make them.  Delimiters and symbol names must match setup.py's
+# _embed_kernel.  Kept at the end of the file so the default goal stays ttcr3d.
+ttcr/Grid3Drn_kernels_src.h : ttcr/Grid3Drn_kernels.cl
+	printf '// Auto-generated from Grid3Drn_kernels.cl. Do not edit.\n#ifndef ttcr_Grid3Drn_kernels_src_h\n#define ttcr_Grid3Drn_kernels_src_h\nnamespace ttcr {\nstatic const char* const Grid3Drn_kernels_src = R"TTCR_CL_KERNEL(\n' > $@
+	cat $< >> $@
+	printf ')TTCR_CL_KERNEL";\n}\n#endif\n' >> $@
+
+ttcr/Grid2Drn_kernels_src.h : ttcr/Grid2Drn_kernels.cl
+	printf '// Auto-generated from Grid2Drn_kernels.cl. Do not edit.\n#ifndef ttcr_Grid2Drn_kernels_src_h\n#define ttcr_Grid2Drn_kernels_src_h\nnamespace ttcr {\nstatic const char* const Grid2Drn_kernels_src = R"TTCR_CL_2D(\n' > $@
+	cat $< >> $@
+	printf ')TTCR_CL_2D";\n}\n#endif\n' >> $@

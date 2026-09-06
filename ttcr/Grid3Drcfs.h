@@ -31,8 +31,7 @@
  * the class accepts a cell slowness model but derives from the node-slowness
  * base and averages the values onto the nodes; see @ref g3drcfs_hybrid.
  *
- * @warning This solver supports **cubic cells only**, and that is not
- *          validated anywhere. @sa @ref g3drcfs_cubic
+ * @note All three cell sizes are honoured. @sa @ref g3drcfs_spacing
  *
  * @sa Grid3Drn.h, Grid3Drc.h, Grid2Drcfs.h, Grid3Drcfs_OpenCL.h
  */
@@ -63,17 +62,19 @@ namespace ttcr {
      * ttcr::Grid3Drn. A side effect is that sharp contrasts are smoothed over
      * one cell before the solve begins.
      *
-     * @section g3drcfs_cubic Cubic cells only
-     * The constructor takes a **single** cell size @p ddx and passes it as all
-     * three spacings, so this solver only represents cubic cells.
+     * @section g3drcfs_spacing Cell spacing
+     * The constructor takes @p ddx, @p ddy and @p ddz, and the drivers relax
+     * through ttcr::Grid3Drn::sweep_auto and
+     * ttcr::Grid3Drn::sweep_weno3_auto, which take the general per-axis
+     * stencils whenever the spacings differ and the cheaper cubic ones when
+     * they do not. This holds for the WENO3 path as well as the first-order
+     * one.
      *
-     * @warning Nothing checks that. `grids.h` reads three independent spacings
-     *          from the model file but hands only @c d[0] to this constructor,
-     *          so a model with @f$d_x \neq d_y@f$ or @f$d_x \neq d_z@f$ is
-     *          silently solved on a grid whose y and z spacings have been
-     *          replaced by @f$d_x@f$ — wrong traveltimes, no diagnostic. The
-     *          shortest-path and dynamic shortest-path builders pass all three
-     *          spacings and are unaffected.
+     * Until recently this class took a single @p ddx and used it for all three
+     * axes, so a model with @f$d_x \neq d_y@f$ or @f$d_x \neq d_z@f$ was
+     * silently solved on a grid whose y and z spacings had been replaced by
+     * @f$d_x@f$ — wrong traveltimes, no diagnostic. `grids.h` now passes all
+     * three, as it always did for the shortest-path builders.
      *
      * @note Not templated on a @c CELL policy, so isotropic only.
      *
@@ -88,8 +89,9 @@ namespace ttcr {
          * @param nx    number of cells along x.
          * @param ny    number of cells along y.
          * @param nz    number of cells along z.
-         * @param ddx   cell size, used for **all three** axes.
-         *              @sa @ref g3drcfs_cubic
+         * @param ddx   cell size along x.
+         * @param ddy   cell size along y.
+         * @param ddz   cell size along z.
          * @param minx  x coordinate of the grid origin.
          * @param miny  y coordinate of the grid origin.
          * @param minz  z coordinate of the grid origin.
@@ -107,13 +109,14 @@ namespace ttcr {
          * @post Nodes and neighbour lists are built. Slowness is **not** set —
          *       call @ref setSlowness before raytracing.
          */
-        Grid3Drcfs(const T2 nx, const T2 ny, const T2 nz, const T1 ddx,
+        Grid3Drcfs(const T2 nx, const T2 ny, const T2 nz,
+                   const T1 ddx, const T1 ddy, const T1 ddz,
                    const T1 minx, const T1 miny, const T1 minz,
                    const T1 eps, const int maxit, const bool w,
                    const bool ttrp=true, const bool intVel=false,
                    const size_t nt=1,
                    const bool _translateOrigin=false) :
-        Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddx, ddx, minx, miny, minz, ttrp, intVel, nt, _translateOrigin),
+        Grid3Drn<T1,T2,Node3Dn<T1,T2>>(nx, ny, nz, ddx, ddy, ddz, minx, miny, minz, ttrp, intVel, nt, _translateOrigin),
         epsilon(eps), nitermax(maxit), niter_final(0), niterw_final(0), weno3(w)
         {
             this->buildGridNodes();
@@ -310,11 +313,9 @@ namespace ttcr {
         if ( weno3 == true ) {
             int niter = 0;
             int niterw = 0;
-            if ( this->dx != this->dz || this->dx != this->dy ) {
-                throw std::logic_error("Error: WENO stencil needs dx equal to dz");
-            }
             while ( niter<nitermax && ( niter<2 || change >= tol || change > prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -327,7 +328,7 @@ namespace ttcr {
             change = std::numeric_limits<T1>::max();
             prev = 0.0;
             while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
-                this->sweep_weno3(frozen, threadNo);
+                this->sweep_weno3_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -342,7 +343,8 @@ namespace ttcr {
         } else {
             int niter = 0;
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
 
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
@@ -390,11 +392,9 @@ namespace ttcr {
         if ( weno3 == true ) {
             int niter = 0;
             int niterw = 0;
-            if ( this->dx != this->dz || this->dx != this->dy ) {
-                throw std::logic_error("Error: WENO stencil needs dx equal to dz");
-            }
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -407,7 +407,7 @@ namespace ttcr {
             change = std::numeric_limits<T1>::max();
             prev = 0.0;
             while ( niterw<nitermax && ( niterw<2 || change >= tol || change >= prev ) ) {
-                this->sweep_weno3(frozen, threadNo);
+                this->sweep_weno3_auto(frozen, threadNo);
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
                 tol = fsmTolerance(epsilon, tref, this->nodes.size());
@@ -422,7 +422,8 @@ namespace ttcr {
         } else {
             int niter = 0;
             while ( niter<nitermax && ( niter<2 || change >= tol || change >= prev ) ) {
-                this->sweep(frozen, threadNo);
+                // cubic cells -> sweep, anything else -> sweep_xyz
+                this->sweep_auto(frozen, threadNo);
 
                 prev = change;
                 change = fsmChange(this->nodes, times, threadNo, tref);
