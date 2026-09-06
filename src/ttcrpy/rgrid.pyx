@@ -267,12 +267,15 @@ cdef class Grid3d_d:
                   double radius_factor_tertiary=3.0,
                   bool translate_grid=0, bool fsm_gpu=0):
 
-        cdef uint32_t nx = x.size-1
-        cdef uint32_t ny = y.size-1
-        cdef uint32_t nz = z.size-1
+        cdef uint32_t nx
+        cdef uint32_t ny
+        cdef uint32_t nz
         _check_uniform_spacing(x, 'x')
         _check_uniform_spacing(y, 'y')
         _check_uniform_spacing(z, 'z')
+        nx = x.size - 1
+        ny = y.size - 1
+        nz = z.size - 1
         self._dx = x[1] - x[0]
         self._dy = y[1] - y[0]
         self._dz = z[1] - z[0]
