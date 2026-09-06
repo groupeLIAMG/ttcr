@@ -653,3 +653,141 @@ class TestRaypathOrder(unittest.TestCase):
                     # endpoints are present exactly
                     np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
                     np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-9)
+
+
+class TestUniformSpacing3d(unittest.TestCase):
+    """Node spacing must be constant along each axis, but may differ between
+    axes.  Every method takes the spacing as ``x[1] - x[0]`` and assumes it
+    holds throughout, so an unevenly spaced axis would be solved on a grid
+    other than the one asked for.
+    """
+
+    methods = ('FSM', 'SPM', 'DSPM')
+    dtypes = (np.float64, np.float32)
+
+    def _uniform(self, dtype):
+        """dx, dy and dz all different, each axis evenly spaced."""
+        return (np.arange(0.0, 11.0, 1.00, dtype=dtype),
+                np.arange(0.0, 22.0, 2.00, dtype=dtype),
+                np.arange(0.0, 5.50, 0.50, dtype=dtype))
+
+    def test_unequal_but_uniform_accepted(self):
+        """dx != dy != dz is fine for every method, in either precision."""
+        for dtype in self.dtypes:
+            x, y, z = self._uniform(dtype)
+            for method in self.methods:
+                with self.subTest(method=method, dtype=np.dtype(dtype).name):
+                    g = rg.Grid3d(x, y, z, method=method, n_threads=1,
+                                  dtype=dtype)
+                    # each axis keeps its own spacing
+                    self.assertAlmostEqual(g.dx, 1.0, places=5)
+                    self.assertAlmostEqual(g.dy, 2.0, places=5)
+                    self.assertAlmostEqual(g.dz, 0.5, places=5)
+
+    def test_non_uniform_rejected(self):
+        """Each axis is checked, and the message names the offending one."""
+        for dtype in self.dtypes:
+            x, y, z = self._uniform(dtype)
+            uneven = np.array([0.0, 1.0, 2.0, 4.0, 5.0, 6.0], dtype=dtype)
+            for axis, args in (('x', (uneven, y, z)),
+                               ('y', (x, uneven, z)),
+                               ('z', (x, y, uneven))):
+                for method in self.methods:
+                    with self.subTest(axis=axis, method=method,
+                                      dtype=np.dtype(dtype).name):
+                        with self.assertRaises(ValueError) as cm:
+                            rg.Grid3d(*args, method=method, n_threads=1,
+                                      dtype=dtype)
+                        self.assertIn('uniformly spaced', str(cm.exception))
+                        self.assertIn('along ' + axis, str(cm.exception))
+
+    def test_small_departure_from_uniform_rejected(self):
+        """A single displaced node is caught, not just an obvious gap."""
+        x, y, z = self._uniform(np.float64)
+        nudged = np.arange(0.0, 11.0)
+        nudged[5] += 0.05
+        with self.assertRaises(ValueError):
+            rg.Grid3d(nudged, y, z, method='FSM', n_threads=1)
+
+    def test_float32_uniform_not_rejected(self):
+        """The tolerance must follow the dtype, not be a fixed absolute value.
+
+        A float32 axis cannot be exactly uniform: with a step of 0.05 its
+        node-to-node deviation reaches 3e-6, so a fixed tolerance of 1e-6
+        would reject a perfectly even axis.
+        """
+        fine = np.arange(0.0, 50.0, 0.05, dtype=np.float32)
+        coarse = np.arange(0.0, 11.0, 1.0, dtype=np.float32)
+        rg.Grid3d(fine, coarse, coarse, method='FSM', n_threads=1,
+                  dtype=np.float32)
+
+    def test_single_cell_axis_accepted(self):
+        """Two nodes are one interval, uniform by construction."""
+        two = np.array([0.0, 1.0])
+        rest = np.arange(0.0, 11.0)
+        rg.Grid3d(two, rest, rest, method='FSM', n_threads=1)
+
+    def test_single_precision_values_in_double_array(self):
+        """Coordinates that came from a single-precision source.
+
+        Reading a float32 VTK file gives a float64 array whose values still
+        carry only float32 precision, so its steps wobble at the 1e-6 level.
+        Judging those by float64 epsilon would reject an axis that is as
+        uniform as its source allows -- one of this project's own fixtures,
+        Grid2Drcfs_OpenCL_tt_grid.vtr, has steps from 0.1999988 to 0.2000008.
+        The tolerance therefore follows the precision of the values, not the
+        dtype of the array holding them.
+        """
+        x = (np.arange(0.0, 20.2, 0.2, dtype=np.float32)).astype(np.float64)
+        self.assertEqual(x.dtype, np.float64)
+        self.assertGreater(np.ptp(np.diff(x)), 1e-7)   # genuinely wobbly
+        rest = np.arange(0.0, 11.0)
+        rg.Grid3d(x, rest, rest, method='FSM', n_threads=1)
+
+    def test_all_bundled_grid_fixtures_accepted(self):
+        """No .vtr shipped with the tests may trip the check."""
+        import glob
+        import vtk
+        from vtk.util.numpy_support import vtk_to_numpy
+        checked = 0
+        for fname in sorted(glob.glob('files/*.vtr')):
+            reader = vtk.vtkXMLRectilinearGridReader()
+            reader.SetFileName(fname)
+            reader.Update()
+            data = reader.GetOutput()
+            if data is None or data.GetXCoordinates() is None:
+                continue
+            for name, arr in (('x', data.GetXCoordinates()),
+                              ('y', data.GetYCoordinates()),
+                              ('z', data.GetZCoordinates())):
+                a = vtk_to_numpy(arr)
+                if a.size < 3:
+                    continue
+                with self.subTest(file=fname, axis=name):
+                    rg._check_uniform_spacing(a, name)
+                checked += 1
+        self.assertGreater(checked, 20)
+
+    def test_traveltimes_correct_on_unequal_spacing(self):
+        """Guards the spacing being honoured, not merely accepted.
+
+        Constant slowness, receivers along each axis, so the exact answer is
+        s*r.  A grid that quietly used dx for all three axes would miss on the
+        y and z receivers.
+        """
+        s = 0.4
+        x = np.arange(0.0, 31.0, 1.0)
+        y = np.arange(0.0, 62.0, 2.0)
+        z = np.arange(0.0, 15.5, 0.5)
+        src = np.array([[15.0, 30.0, 7.5]])
+        rcv = np.array([[15.0 + 4.0, 30.0, 7.5],
+                        [15.0, 30.0 + 8.0, 7.5],
+                        [15.0, 30.0, 7.5 + 2.0]])
+        exact = s * np.linalg.norm(rcv - src[0], axis=1)
+        for weno in (0, 1):
+            with self.subTest(weno=weno):
+                g = rg.Grid3d(x, y, z, method='FSM', cell_slowness=0,
+                              tt_from_rp=0, weno=weno, n_threads=1)
+                tt = g.raytrace(src, rcv,
+                                slowness=np.full(x.size * y.size * z.size, s))
+                np.testing.assert_allclose(tt, exact, rtol=1e-6)

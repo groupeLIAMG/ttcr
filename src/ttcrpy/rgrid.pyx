@@ -50,6 +50,71 @@ def set_verbose(v):
     setVerbose(v)
 
 
+def _check_uniform_spacing(coords, str name):
+    """Check that node coordinates are uniformly spaced along one axis.
+
+    Every method in this module takes the node spacing to be
+    ``coords[1] - coords[0]`` and assumes it holds for the whole axis.  A grid
+    whose nodes are not evenly spaced is therefore solved on a different grid
+    from the one asked for, giving wrong traveltimes with no diagnostic, so it
+    is rejected here instead.
+
+    Parameters
+    ----------
+    coords : array-like
+        node coordinates along one axis
+    name : str
+        axis name, used in the error message
+
+    Raises
+    ------
+    ValueError
+        if the spacing is not constant to within the tolerance below
+
+    Notes
+    -----
+    The tolerance scales with the precision the coordinates actually carry and
+    with the largest of them, because a single-precision axis cannot be exactly
+    uniform: the nodes themselves are only representable to ``eps*max|x|``.
+    Measured over uniform grids the deviation reaches ``0.5*eps*max|x|``, so
+    ``8*eps*max(max|x|, |step|)`` is allowed -- generous enough never to reject
+    an evenly spaced axis, tight enough to catch unevenness the data could
+    represent.  A fixed absolute tolerance would not do: a float32 axis with a
+    step of 0.05 varies by 3e-6 from node to node, which a tolerance of 1e-6
+    would reject.
+
+    The precision is taken from the values rather than from ``coords.dtype``,
+    which can overstate it.  Coordinates read from a single-precision VTK file
+    arrive in a float64 array but still carry only float32 precision -- one of
+    this project's own fixtures has steps ranging from 0.1999988 to 0.2000008 --
+    and judging those by float64 epsilon would reject an axis that is as uniform
+    as its source allows.
+    """
+    a = np.asarray(coords)
+    if a.size < 3:          # a single interval is uniform by construction
+        return
+    d = np.diff(a.astype(np.float64))
+    step = float(d[0])
+    if a.dtype.kind != 'f':
+        eps = float(np.finfo(np.float64).eps)
+    elif a.dtype == np.float64 and np.array_equal(
+            a, a.astype(np.float32).astype(np.float64)):
+        # every value survives a round trip through float32, so that is the
+        # precision the data was produced at whatever the array says
+        eps = float(np.finfo(np.float32).eps)
+    else:
+        eps = float(np.finfo(a.dtype).eps)
+    tol = 8.0 * eps * max(float(np.max(np.abs(a))), abs(step))
+    dev = float(np.max(np.abs(d - step)))
+    if dev > tol:
+        raise ValueError(
+            "node coordinates along {0} are not uniformly spaced: step varies "
+            "from {1:g} to {2:g} (deviation {3:g} exceeds tolerance {4:g}). "
+            "All methods on rectilinear grids need a constant spacing along "
+            "each axis; the spacings may differ between axes."
+            .format(name, float(np.min(d)), float(np.max(d)), dev, tol))
+
+
 cdef class Grid3d_d:
     """
     class to perform raytracing with 3D rectilinear grids (double precision)
@@ -82,11 +147,11 @@ cdef class Grid3d_d:
         Parameters
         ----------
         x : np.ndarray
-            node coordinates along x
+            node coordinates along x, evenly spaced
         y : np.ndarray
-            node coordinates along y
+            node coordinates along y, evenly spaced
         z : np.ndarray
-            node coordinates along z
+            node coordinates along z, evenly spaced
         n_threads : int
             number of threads for raytracing (default is 1)
         cell_slowness : bool
@@ -99,8 +164,8 @@ cdef class Grid3d_d:
             The three node spacings need not be equal for any of the methods.
             FSM picks a general per-axis stencil when they differ and a cheaper
             equal-spacing one when they do not, for the WENO stencil as well as
-            the first-order one.  Note that the grid must still be *regular*:
-            the spacing along a given axis has to be constant.
+            the first-order one.  The spacing along a given axis must be
+            constant, however; a ValueError is raised otherwise.
         aniso : string
             type of anisotropy (SPM method and cell_slowness only)
                 - 'iso' : isotropic medium
@@ -205,6 +270,9 @@ cdef class Grid3d_d:
         cdef uint32_t nx = x.size-1
         cdef uint32_t ny = y.size-1
         cdef uint32_t nz = z.size-1
+        _check_uniform_spacing(x, 'x')
+        _check_uniform_spacing(y, 'y')
+        _check_uniform_spacing(z, 'z')
         self._dx = x[1] - x[0]
         self._dy = y[1] - y[0]
         self._dz = z[1] - z[0]
@@ -2584,6 +2652,9 @@ cdef class Grid3d_f:
         cdef uint32_t nx = x.size-1
         cdef uint32_t ny = y.size-1
         cdef uint32_t nz = z.size-1
+        _check_uniform_spacing(x, 'x')
+        _check_uniform_spacing(y, 'y')
+        _check_uniform_spacing(z, 'z')
         self._dx = x[1] - x[0]
         self._dy = y[1] - y[0]
         self._dz = z[1] - z[0]
@@ -4427,9 +4498,9 @@ cdef class Grid2d_d:
     Parameters
     ----------
     x : np.ndarray
-        node coordinates along x
+        node coordinates along x, evenly spaced
     z : np.ndarray
-        node coordinates along z
+        node coordinates along z, evenly spaced
     n_threads : int
         number of threads for raytracing (default is 1)
     cell_slowness : bool
@@ -4439,6 +4510,8 @@ cdef class Grid2d_d:
             - 'FSM' : fast sweeping method
             - 'SPM' : shortest path method
             - 'DSPM' : dynamic shortest path method
+        dx and dz need not be equal, but the spacing along a given axis must
+        be constant; a ValueError is raised otherwise.
     aniso : string
         type of anisotropy (implemented only for the SPM method)
             - 'iso' : isotropic medium
@@ -4521,6 +4594,8 @@ cdef class Grid2d_d:
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
+        _check_uniform_spacing(x, 'x')
+        _check_uniform_spacing(z, 'z')
         self._dx = x[1] - x[0]
         self._dz = z[1] - z[0]
         cdef double xmin = x[0]
@@ -6343,6 +6418,8 @@ cdef class Grid2d_f:
 
         cdef uint32_t nx = x.size-1
         cdef uint32_t nz = z.size-1
+        _check_uniform_spacing(x, 'x')
+        _check_uniform_spacing(z, 'z')
         self._dx = x[1] - x[0]
         self._dz = z[1] - z[0]
         cdef float xmin = x[0]
