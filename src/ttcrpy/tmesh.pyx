@@ -978,7 +978,7 @@ cdef class Mesh3d:
             see notes of `raytrace`
         rcv : 2D np.ndarray with 3 columns
             Columns correspond to x, y and z coordinates
-        slowness : np ndarray, shape (nparams,) (None by default)
+        slowness : np ndarray with shape (nparams,) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             if None, slowness must have been assigned previously
         full : bool (True by default)
@@ -1000,9 +1000,9 @@ cdef class Mesh3d:
 
         Returns
         -------
-        tt : np.ndarray, shape (nrcv,)
+        tt : np.ndarray with shape (nrcv,)
             traveltimes
-        H : np.ndarray, shape (nrcv, 4) or (nrcv, 2)
+        H : np.ndarray with shape (nrcv, 4) or (nrcv, 2)
             Jacobian
 
         Notes

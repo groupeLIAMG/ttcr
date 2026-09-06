@@ -158,9 +158,11 @@ cdef class Grid3d_d:
             slowness defined for cells (True) or nodes (False) (default is 1)
         method : string
             raytracing method (default is FSM)
+
                 - 'FSM' : fast sweeping method
                 - 'SPM' : shortest path method
                 - 'DSPM' : dynamic shortest path
+
             The three node spacings need not be equal for any of the methods.
             FSM picks a general per-axis stencil when they differ and a cheaper
             equal-spacing one when they do not, for the WENO stencil as well as
@@ -1418,7 +1420,7 @@ cdef class Grid3d_d:
             see notes of `raytrace`
         rcv : 2D np.ndarray with 3 columns
             Columns correspond to x, y and z coordinates
-        slowness : np ndarray, shape (nx, ny, nz) (None by default)
+        slowness : np ndarray with shape (nx, ny, nz) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             if None, slowness must have been assigned previously
         full : bool (True by default)
@@ -1440,9 +1442,9 @@ cdef class Grid3d_d:
 
         Returns
         -------
-        tt : np.ndarray, shape (nrcv,)
+        tt : np.ndarray with shape (nrcv,)
             traveltimes
-        H : np.ndarray, shape (nrcv, 4) or (nrcv, 2)
+        H : np.ndarray with shape (nrcv, 4) or (nrcv, 2)
             Jacobian
 
         Notes
@@ -3769,7 +3771,7 @@ cdef class Grid3d_f:
             see notes of `raytrace`
         rcv : 2D np.ndarray with 3 columns
             Columns correspond to x, y and z coordinates
-        slowness : np ndarray, shape (nx, ny, nz) (None by default)
+        slowness : np ndarray with shape (nx, ny, nz) (None by default)
             slowness at grid nodes or cells (depending on cell_slowness)
             if None, slowness must have been assigned previously
         full : bool (True by default)
@@ -3791,9 +3793,9 @@ cdef class Grid3d_f:
 
         Returns
         -------
-        tt : np.ndarray, shape (nrcv,)
+        tt : np.ndarray with shape (nrcv,)
             traveltimes
-        H : np.ndarray, shape (nrcv, 4) or (nrcv, 2)
+        H : np.ndarray with shape (nrcv, 4) or (nrcv, 2)
             Jacobian
 
         Notes
@@ -4510,9 +4512,11 @@ cdef class Grid2d_d:
         slowness defined for cells (True) or nodes (False) (default is 1)
     method : string
         raytracing method (default is SPM)
+
             - 'FSM' : fast sweeping method
             - 'SPM' : shortest path method
             - 'DSPM' : dynamic shortest path method
+
         dx and dz need not be equal, but the spacing along a given axis must
         be constant; a ValueError is raised otherwise.
     aniso : string
