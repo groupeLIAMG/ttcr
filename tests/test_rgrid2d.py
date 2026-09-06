@@ -1042,3 +1042,55 @@ class TestRaypathOrder(unittest.TestCase):
                     # from the cell-slowness FSM path
                     np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
                     np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-9)
+
+
+class TestUniformSpacing2d(unittest.TestCase):
+    """As in 3D: constant spacing along each axis, but dx and dz may differ.
+
+    See TestUniformSpacing3d in test_rgrid3d.py; the check is the same one,
+    applied by Grid2d_d and Grid2d_f.
+    """
+
+    methods = ('FSM', 'SPM', 'DSPM')
+    dtypes = (np.float64, np.float32)
+
+    def _uniform(self, dtype):
+        return (np.arange(0.0, 11.0, 1.0, dtype=dtype),
+                np.arange(0.0, 5.5, 0.5, dtype=dtype))
+
+    def test_unequal_but_uniform_accepted(self):
+        """dx != dz is fine for every method, in either precision."""
+        for dtype in self.dtypes:
+            x, z = self._uniform(dtype)
+            for method in self.methods:
+                with self.subTest(method=method, dtype=np.dtype(dtype).name):
+                    g = rg.Grid2d(x, z, method=method, n_threads=1,
+                                  dtype=dtype)
+                    self.assertAlmostEqual(g.dx, 1.0, places=5)
+                    self.assertAlmostEqual(g.dz, 0.5, places=5)
+
+    def test_non_uniform_rejected(self):
+        """Each axis is checked, and the message names the offending one."""
+        for dtype in self.dtypes:
+            x, z = self._uniform(dtype)
+            uneven = np.array([0.0, 1.0, 2.0, 4.0, 5.0, 6.0], dtype=dtype)
+            for axis, args in (('x', (uneven, z)), ('z', (x, uneven))):
+                for method in self.methods:
+                    with self.subTest(axis=axis, method=method,
+                                      dtype=np.dtype(dtype).name):
+                        with self.assertRaises(ValueError) as cm:
+                            rg.Grid2d(*args, method=method, n_threads=1,
+                                      dtype=dtype)
+                        self.assertIn('uniformly spaced', str(cm.exception))
+                        self.assertIn('along ' + axis, str(cm.exception))
+
+    def test_float32_uniform_not_rejected(self):
+        """The tolerance follows the dtype rather than being absolute."""
+        fine = np.arange(0.0, 50.0, 0.05, dtype=np.float32)
+        coarse = np.arange(0.0, 11.0, 1.0, dtype=np.float32)
+        rg.Grid2d(fine, coarse, method='FSM', n_threads=1, dtype=np.float32)
+
+    def test_single_cell_axis_accepted(self):
+        """Two nodes are one interval, uniform by construction."""
+        rg.Grid2d(np.array([0.0, 1.0]), np.arange(0.0, 11.0), method='FSM',
+                  n_threads=1)
