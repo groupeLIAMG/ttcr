@@ -655,6 +655,82 @@ class TestRaypathOrder(unittest.TestCase):
                     np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-9)
 
 
+class TestSourceOffNode(unittest.TestCase):
+    """A source that does not coincide with a grid node.
+
+    The shortest-path solvers add an extra node for such a source and number it
+    nodes.size()+txNodes.size(); the walk back from the receiver recognises it
+    by that number being >= nodes.size(), which is what ends the walk.
+    Grid3Drcsp numbered it one too low, so the walk read the source as an
+    ordinary grid node, never reached the end of the parent chain and cycled,
+    growing l_data and the raypath on every turn until the process ran out of
+    memory.
+
+    A source landing exactly on a node takes the other branch of initQueue and
+    creates no extra node, which is why TestRaypathOrder -- whose source sits
+    on a node -- stayed green throughout.  Every coordinate below is chosen to
+    miss the primary nodes and the secondary ones between them.
+
+    The two checks are deliberately named so that unittest, which runs the
+    methods of a class in alphabetical order, reaches compute_L first: should
+    the cycle return, l_data stays bounded (accumulate() merges entries by cell
+    index) and the run hangs, whereas the raypath grows without limit and takes
+    the machine down with it -- measured at 4 GB within three seconds.  Keep
+    test_compute_L_off_node sorting ahead of test_raypath_off_node.
+    """
+
+    h = 0.05
+    src = np.array([[0.517, 0.483, 0.762]])
+    rcv = np.array([[0.913, 0.526, 0.038],
+                    [0.237, 0.688, 0.114]])
+
+    def setUp(self):
+        self.x = np.arange(21) * self.h
+        self.y = self.x.copy()
+        self.z = self.x.copy()
+        _, _, Z = np.meshgrid(self.x, self.y, self.z, indexing='ij')
+        self.V = 2.0 + 3.0 * Z
+        self.Vc = 2.0 + 3.0 * (Z[:-1, :-1, :-1] + 0.5 * self.h)
+
+    def _grid(self, method, cell_slowness, **kwargs):
+        g = rg.Grid3d(self.x, self.y, self.z, n_threads=1, method=method,
+                      cell_slowness=cell_slowness, **kwargs)
+        s = (1.0 / (self.Vc if cell_slowness else self.V)).ravel()
+        g.set_slowness(s)
+        return g, s
+
+    def test_compute_L_off_node(self):
+        # L holds the length the ray spends in each cell, so L @ s is the
+        # traveltime; a truncated or looping walk cannot satisfy that.
+        for method, kwargs in (('SPM', dict(nsnx=3, nsny=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            with self.subTest(method=method):
+                g, s = self._grid(method, 1, **kwargs)
+                src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+                tt, L = g.raytrace(src, self.rcv, compute_L=True)
+                self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+                self.assertGreater(L.nnz, 0)
+                np.testing.assert_allclose(L @ s, tt, rtol=1e-9)
+
+    def test_raypath_off_node(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=3, nsny=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g, _ = self._grid(method, cell_slowness, **kwargs)
+                    src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+                    _, rays = g.raytrace(src, self.rcv, return_rays=True)
+                    self.assertEqual(len(rays), self.rcv.shape[0])
+                    for n, ray in enumerate(rays):
+                        r = np.asarray(ray)
+                        self.assertGreater(r.shape[0], 2)
+                        # a finite walk that starts at the source it was given
+                        # and stops at the receiver
+                        np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
+                        np.testing.assert_allclose(r[-1], self.rcv[n], atol=1e-9)
+
+
 class TestUniformSpacing3d(unittest.TestCase):
     """Node spacing must be constant along each axis, but may differ between
     axes.  Every method takes the spacing as ``x[1] - x[0]`` and assumes it
