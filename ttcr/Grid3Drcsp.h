@@ -371,7 +371,7 @@ namespace ttcr {
             if ( found==false ) {
                 // If Tx[n] is not on a node, we create a new node and initialize the queue:
                 txNodes.push_back( Node3Dcsp<T1,T2>(Tx[n].x, Tx[n].y, Tx[n].z,
-                                                    static_cast<T2>(this->nodes.size()+txNodes.size()-1),
+                                                    static_cast<T2>(this->nodes.size()+txNodes.size()),
                                                     this->nThreads));
                 txNodes.back().setTT(t0[n], threadNo);
                 txNodes.back().pushOwner( this->getCellNo(Tx[n]) );
