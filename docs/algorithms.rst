@@ -119,3 +119,25 @@ raypaths are always computed with values at grid nodes.
 We have also observed that convergence issues arise when sources or receivers
 are in the cells at the edges of the modeling domain.  For that reason, special
 care should be put when defining input models and parameters.
+
+.. warning::
+
+   Keep sources at least one cell away from the edges of the model.
+
+   The descent stops once it comes within one voxel diagonal of the source.
+   A raypath that reaches a face of the model before that happens has no
+   admissible step left, and raytracing raises ``Error while computing
+   raypaths: going outside grid`` rather than returning a path.  This is not
+   a rare geometry: where the velocity increases towards a boundary, the
+   fastest path rides that boundary, so a source close to it is approached
+   along the face.
+
+   How close is too close depends on the model.  In a 3D grid of 5 m cells
+   whose velocity increases with depth, sources nearer than half a cell to
+   the fast boundary fail with the FSM, and nearer than a tenth of a cell
+   with the DSPM; one cell of clearance was enough in every case tested.
+
+   Only the methods that rebuild raypaths by following the traveltime
+   gradient are affected, that is the FSM and the DSPM.  The SPM walks the
+   node parents recorded during the sweep, which end at the source by
+   construction, and raytraces such sources without complaint.
