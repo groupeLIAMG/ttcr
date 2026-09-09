@@ -255,6 +255,7 @@ cdef class Grid3d_d:
     cdef uint32_t n_tertiary
     cdef double radius_factor_tertiary
     cdef Grid3D[double, uint32_t]* grid
+    cdef readonly bool _has_slowness
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
                   np.ndarray[np.double_t, ndim=1] y,
@@ -301,6 +302,7 @@ cdef class Grid3d_d:
         self.radius_factor_tertiary = radius_factor_tertiary
         self.translate_grid = translate_grid
         self.fsm_gpu = fsm_gpu
+        self._has_slowness = False
 
         cdef use_edge_length = True
 
@@ -454,7 +456,21 @@ cdef class Grid3d_d:
         if self.iso == b'p':
             constructor_params = constructor_params + (
                 'qP' if self.phase == b'P' else 'qSV',)
-        return (_rebuild3d_d, (self.x, self.y, self.z, constructor_params))
+        # The model itself lives in the C++ grid; only whether one was ever
+        # set is kept here, because getSlowness does not report it uniformly.
+        #
+        # An anisotropic medium carries none of it.  chi, psi, Vp0, Vs0, s2 and
+        # s4 have setters but no getters on any class, so the copy could be
+        # given the slowness and nothing else -- a grid that raytraces without
+        # complaint and answers differently from this one.  Geometry and phase
+        # travel, and the caller reapplies the medium, which is what the media
+        # that take no slowness at all (vti_psv, vti_sh) have always required.
+        if self.iso == b'i' and self._has_slowness:
+            slowness = self.get_slowness()
+        else:
+            slowness = None
+        return (_rebuild3d_d, (self.x, self.y, self.z, constructor_params,
+                     slowness))
 
     @property
     def x(self):
@@ -775,6 +791,7 @@ cdef class Grid3d_d:
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def set_chi(self, chi):
         """
@@ -1197,6 +1214,7 @@ cdef class Grid3d_d:
         else:
             raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def compute_D(self, np.ndarray[np.double_t, ndim=2] coord):
         """
@@ -2660,6 +2678,7 @@ cdef class Grid3d_f:
     cdef uint32_t n_tertiary
     cdef float radius_factor_tertiary
     cdef Grid3D[float, uint32_t]* grid
+    cdef readonly bool _has_slowness
 
     def __cinit__(self, np.ndarray[np.float32_t, ndim=1] x,
                   np.ndarray[np.float32_t, ndim=1] y,
@@ -2703,6 +2722,7 @@ cdef class Grid3d_f:
         self.radius_factor_tertiary = radius_factor_tertiary
         self.translate_grid = translate_grid
         self.fsm_gpu = fsm_gpu
+        self._has_slowness = False
 
         cdef use_edge_length = True
 
@@ -2856,7 +2876,21 @@ cdef class Grid3d_f:
         if self.iso == b'p':
             constructor_params = constructor_params + (
                 'qP' if self.phase == b'P' else 'qSV',)
-        return (_rebuild3d_f, (self.x, self.y, self.z, constructor_params))
+        # The model itself lives in the C++ grid; only whether one was ever
+        # set is kept here, because getSlowness does not report it uniformly.
+        #
+        # An anisotropic medium carries none of it.  chi, psi, Vp0, Vs0, s2 and
+        # s4 have setters but no getters on any class, so the copy could be
+        # given the slowness and nothing else -- a grid that raytraces without
+        # complaint and answers differently from this one.  Geometry and phase
+        # travel, and the caller reapplies the medium, which is what the media
+        # that take no slowness at all (vti_psv, vti_sh) have always required.
+        if self.iso == b'i' and self._has_slowness:
+            slowness = self.get_slowness()
+        else:
+            slowness = None
+        return (_rebuild3d_f, (self.x, self.y, self.z, constructor_params,
+                     slowness))
 
     @property
     def x(self):
@@ -3178,6 +3212,7 @@ cdef class Grid3d_f:
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def set_chi(self, chi):
         """
@@ -3599,6 +3634,7 @@ cdef class Grid3d_f:
         else:
             raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def compute_D(self, pts):
         """
@@ -8020,7 +8056,7 @@ cdef class Grid2d_f:
         writer.Update()
 
 
-def _rebuild3d_d(x, y, z, constructor_params):
+def _rebuild3d_d(x, y, z, constructor_params, slowness=None):
     # a phase is appended only by the media that describe one, so a grid
     # pickled before it was carried still loads
     phase = None
@@ -8037,10 +8073,14 @@ def _rebuild3d_d(x, y, z, constructor_params):
                  n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
     if phase is not None:
         g.set_phase(phase)
+    # a grid pickled before the model was carried arrives without one, and is
+    # rebuilt unset exactly as before
+    if slowness is not None:
+        g.set_slowness(slowness)
     return g
 
 
-def _rebuild3d_f(x, y, z, constructor_params):
+def _rebuild3d_f(x, y, z, constructor_params, slowness=None):
     # a phase is appended only by the media that describe one, so a grid
     # pickled before it was carried still loads
     phase = None
@@ -8057,6 +8097,10 @@ def _rebuild3d_f(x, y, z, constructor_params):
                  n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
     if phase is not None:
         g.set_phase(phase)
+    # a grid pickled before the model was carried arrives without one, and is
+    # rebuilt unset exactly as before
+    if slowness is not None:
+        g.set_slowness(slowness)
     return g
 
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests for verifying python wrappers, module rgrid in 3D"""
 
+import multiprocessing as mp
+import pickle
 import unittest
 import numpy as np
 import vtk
@@ -892,6 +894,143 @@ class TestFSMOpenCL(unittest.TestCase):
         r = np.asarray(rays[0])
         np.testing.assert_allclose(r[0], self.src[0], atol=1e-5)
         np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-5)
+
+
+class TestPickledModel(unittest.TestCase):
+    """A pickled grid carries its slowness.
+
+    __reduce__ rebuilt the grid from its constructor arguments alone, so the
+    copy came back with no model at all.  multiprocessing on macOS and Windows
+    starts workers by pickling, which is how hypopy's parallel event relocation
+    handed every worker a grid whose slowness was zero: the shortest-path
+    solvers returned nonsense and the FSM failed to converge and then walked
+    its raypath out of the grid.
+
+    The model cannot be read back out of the C++ grid to rebuild it -- for the
+    FSM with cell slowness, Grid3Drcfs averages the cell values onto its nodes
+    and keeps no copy -- so the wrapper remembers what set_slowness was given.
+    """
+
+    def _grid(self, method, cell_slowness, dtype=np.float64, **kwargs):
+        n = 8
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        pts = x[:-1] + h/2 if cell_slowness else x
+        _, _, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Z)).ravel().astype(dtype)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method=method,
+                      cell_slowness=cell_slowness, dtype=dtype, **kwargs)
+        g.set_slowness(s)
+        return g, s
+
+    def test_traveltimes_survive_a_round_trip(self):
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=2, nsny=2, nsnz=2)),
+                               ('DSPM', dict(n_secondary=2, n_tertiary=2))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g, _ = self._grid(method, cell_slowness, **kwargs)
+                    before = g.raytrace(src, rcv)
+                    after = pickle.loads(pickle.dumps(g)).raytrace(src, rcv)
+                    np.testing.assert_allclose(after, before, rtol=1e-12)
+
+    def test_model_itself_survives(self):
+        for cell_slowness in (0, 1):
+            with self.subTest(cell_slowness=cell_slowness):
+                g, s = self._grid('FSM', cell_slowness)
+                clone = pickle.loads(pickle.dumps(g))
+                np.testing.assert_allclose(np.ravel(clone.get_slowness()), s)
+
+    def test_single_precision_too(self):
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        g, _ = self._grid('FSM', 1, dtype=np.float32)
+        before = g.raytrace(src, rcv)
+        after = pickle.loads(pickle.dumps(g)).raytrace(src, rcv)
+        np.testing.assert_allclose(after, before, rtol=1e-6)
+
+    def test_velocity_set_that_way_survives_too(self):
+        # set_velocity does not call set_slowness, it repeats the body, so it
+        # is a second place the model has to be remembered
+        n = 8
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        pts = x[:-1] + h/2
+        _, _, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        v = (2.0 + 3.0 * Z).ravel()
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='FSM',
+                      cell_slowness=1)
+        g.set_velocity(v)
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        before = g.raytrace(src, rcv)
+        after = pickle.loads(pickle.dumps(g)).raytrace(src, rcv)
+        np.testing.assert_allclose(after, before, rtol=1e-12)
+
+    def test_grid_with_no_model_still_pickles(self):
+        # nothing set yet: the copy has to come back unset, not blow up
+        n = 8
+        x = np.arange(n + 1) / n
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='FSM',
+                      cell_slowness=1)
+        clone = pickle.loads(pickle.dumps(g))
+        self.assertFalse(clone._has_slowness)
+        with self.assertRaises(RuntimeError):
+            clone.get_slowness()
+
+    def test_anisotropic_grid_carries_no_medium(self):
+        # chi, psi, Vp0, Vs0, s2 and s4 have setters but no getters anywhere,
+        # so the copy cannot be given the medium and the caller reapplies it --
+        # what TestSensitivity3d.test_phase_and_pickle has always done, and
+        # what vti_psv and vti_sh, which take no slowness at all, require.
+        n = 8
+        x = np.arange(n + 1) / n
+        h = 1.0 / n
+        pts = x[:-1] + h/2
+        _, _, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Z)).ravel()
+        chi = np.full(s.size, 1.1)
+        psi = np.full(s.size, 0.9)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='SPM',
+                      cell_slowness=1, aniso='elliptical',
+                      nsnx=2, nsny=2, nsnz=2)
+        g.set_slowness(s)
+        g.set_chi(chi)
+        g.set_psi(psi)
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        before = g.raytrace(src, rcv)
+
+        clone = pickle.loads(pickle.dumps(g))     # no medium comes with it
+        self.assertFalse(clone._has_slowness)
+        clone.set_slowness(s)
+        clone.set_chi(chi)
+        clone.set_psi(psi)
+        np.testing.assert_allclose(clone.raytrace(src, rcv), before,
+                                   rtol=1e-12)
+
+    def test_worker_process_sees_the_model(self):
+        # the failure this fixes only appeared under a spawned process
+        ctx = mp.get_context('spawn')
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        g, _ = self._grid('FSM', 1)
+        q = ctx.Queue()
+        p = ctx.Process(target=_raytrace_in_worker, args=(g, src, rcv, q))
+        p.start()
+        got = q.get(timeout=120)
+        p.join(timeout=60)
+        self.assertNotIsInstance(got, str, msg='worker raised: %s' % got)
+        np.testing.assert_allclose(got, g.raytrace(src, rcv), rtol=1e-12)
+
+
+def _raytrace_in_worker(g, src, rcv, q):
+    try:
+        q.put(g.raytrace(src, rcv))
+    except Exception as e:                       # pragma: no cover
+        q.put('%s: %s' % (type(e).__name__, e))
 
 
 class TestSlownessRoundTrip(unittest.TestCase):
