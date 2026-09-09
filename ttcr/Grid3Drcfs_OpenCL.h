@@ -189,7 +189,7 @@ namespace ttcr {
          * @return True only if GPU use was requested **and** a device was
          *         successfully initialised.
          */
-        bool isUsingGPU() const { return use_gpu && gpu_available; }
+        bool isUsingGPU() const override { return use_gpu && gpu_available; }
         /**
          * @brief Turn GPU acceleration on or off after construction.
          * @param enable true to use the GPU, false to force the CPU path.

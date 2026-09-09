@@ -563,6 +563,13 @@ namespace ttcr {
         /// Returns the number of iterations performed within water (iterative solvers).
         virtual const int get_niterw() const { return 0; }
 
+        /// @brief Whether the solve will actually run on the GPU.
+        /// @return False here; the OpenCL subclasses report what they managed
+        ///         to initialise.  GPU use is requested, never guaranteed, so
+        ///         a caller that asked for it has no other way to find out
+        ///         whether it was granted.
+        virtual bool isUsingGPU() const { return false; }
+
         /// Returns the number of worker threads.
         const size_t getNthreads() const { return nThreads; }
 

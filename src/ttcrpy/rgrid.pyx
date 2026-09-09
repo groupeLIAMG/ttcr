@@ -512,6 +512,19 @@ cdef class Grid3d_d:
         return self._n_threads
 
     @property
+    def is_using_gpu(self):
+        """bool: whether the solve actually runs on the GPU
+
+        fsm_gpu asks for the OpenCL solvers; it does not guarantee them.  The
+        request is refused when no device is available, when initialisation
+        fails, or when the grid is double precision and the device reports no
+        cl_khr_fp64 -- which is every Apple GPU, so np.float32 is what reaches
+        the GPU there.  A refusal falls back to the CPU and leaves the results
+        correct, so this property is the only way to tell the two apart.
+        """
+        return self.grid.isUsingGPU()
+
+    @property
     def nparams(self):
         """int: total number of parameters for grid"""
         if self.cell_slowness:
@@ -2705,7 +2718,15 @@ cdef class Grid3d_f:
         if cell_slowness:
             if aniso != 'iso' and method != 'SPM':
                 raise ValueError('Anisotropy is implemented for the SPM method only')
-            if method == 'FSM':
+            if method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid3Drcfs_OpenCL[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
+                                                                  xmin, ymin, zmin,
+                                                                  eps, maxit, weno,
+                                                                  tt_from_rp, interp_vel,
+                                                                  n_threads,
+                                                                  translate_grid)
+            elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drcfs[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
@@ -2765,7 +2786,15 @@ cdef class Grid3d_f:
         else:
             if aniso != 'iso':
                 raise ValueError('Anisotropy requires slowness defined for cells')
-            if method == 'FSM':
+            if method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid3Drnfs_OpenCL[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
+                                                                  xmin, ymin, zmin,
+                                                                  eps, maxit, weno,
+                                                                  tt_from_rp, interp_vel,
+                                                                  n_threads,
+                                                                  translate_grid)
+            elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drnfs[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
@@ -2882,6 +2911,19 @@ cdef class Grid3d_f:
     def n_threads(self):
         """int: number of threads for raytracing"""
         return self._n_threads
+
+    @property
+    def is_using_gpu(self):
+        """bool: whether the solve actually runs on the GPU
+
+        fsm_gpu asks for the OpenCL solvers; it does not guarantee them.  The
+        request is refused when no device is available, when initialisation
+        fails, or when the grid is double precision and the device reports no
+        cl_khr_fp64 -- which is every Apple GPU, so np.float32 is what reaches
+        the GPU there.  A refusal falls back to the CPU and leaves the results
+        correct, so this property is the only way to tell the two apart.
+        """
+        return self.grid.isUsingGPU()
 
     @property
     def nparams(self):

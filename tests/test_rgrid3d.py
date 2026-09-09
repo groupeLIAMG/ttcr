@@ -813,6 +813,87 @@ class TestFSMSensitivity(unittest.TestCase):
                 np.testing.assert_allclose(L @ s, tt, rtol=1e-12)
 
 
+class TestFSMOpenCL(unittest.TestCase):
+    """Selecting the OpenCL solvers.
+
+    fsm_gpu asks for them; whether the request is granted depends on the
+    machine, so the tests assert what must hold either way and use
+    is_using_gpu -- which reaches the C++ isUsingGPU through the Grid3D base --
+    to tell which path ran.
+
+    Single precision is the interesting case: a device without cl_khr_fp64
+    (every Apple GPU) refuses a double-precision grid, so np.float32 is the
+    only precision that reaches the GPU there.  Grid3d_f used to store fsm_gpu
+    and ignore it, which left the OpenCL solvers unreachable in exactly that
+    configuration.
+    """
+
+    src = np.array([[0.517, 0.483, 0.762]])
+    rcv = np.array([[0.913, 0.526, 0.038]])
+
+    def _grid(self, dtype, fsm_gpu, cell_slowness):
+        n = 20
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        if cell_slowness:
+            _, _, Z = np.meshgrid(x[:-1] + h/2, x[:-1] + h/2, x[:-1] + h/2,
+                                  indexing='ij')
+        else:
+            _, _, Z = np.meshgrid(x, x, x, indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Z)).ravel().astype(dtype)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='FSM',
+                      cell_slowness=cell_slowness, fsm_gpu=fsm_gpu,
+                      dtype=dtype)
+        g.set_slowness(s)
+        return g, s
+
+    def test_property_present_and_false_without_request(self):
+        for dtype in (np.float64, np.float32):
+            for cell_slowness in (0, 1):
+                with self.subTest(dtype=np.dtype(dtype).name,
+                                  cell_slowness=cell_slowness):
+                    g, _ = self._grid(dtype, False, cell_slowness)
+                    self.assertFalse(g.is_using_gpu)
+
+    def test_double_precision_never_claims_a_device_without_fp64(self):
+        # asking is always safe: refused or not, the answer is a bool and the
+        # traveltimes match the CPU solve
+        for cell_slowness in (0, 1):
+            with self.subTest(cell_slowness=cell_slowness):
+                ref, _ = self._grid(np.float64, False, cell_slowness)
+                gpu, _ = self._grid(np.float64, True, cell_slowness)
+                self.assertIsInstance(gpu.is_using_gpu, bool)
+                np.testing.assert_allclose(gpu.raytrace(self.src, self.rcv),
+                                           ref.raytrace(self.src, self.rcv),
+                                           rtol=1e-9)
+
+    def test_single_precision_reaches_the_opencl_solvers(self):
+        for cell_slowness in (0, 1):
+            with self.subTest(cell_slowness=cell_slowness):
+                ref, _ = self._grid(np.float32, False, cell_slowness)
+                gpu, _ = self._grid(np.float32, True, cell_slowness)
+                tt_ref = ref.raytrace(self.src, self.rcv)
+                tt_gpu = gpu.raytrace(self.src, self.rcv)
+                # single precision, two implementations: agreement to the
+                # solver tolerance, not to the bit
+                np.testing.assert_allclose(tt_gpu, tt_ref, rtol=1e-4)
+                if not gpu.is_using_gpu:
+                    self.skipTest('no OpenCL device able to run this grid')
+
+    def test_gpu_path_returns_L_and_rays(self):
+        g, s = self._grid(np.float32, True, 1)
+        if not g.is_using_gpu:
+            self.skipTest('no OpenCL device able to run this grid')
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        tt, rays, L = g.raytrace(src, self.rcv, return_rays=True,
+                                 compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+        self.assertGreater(L.nnz, 0)
+        r = np.asarray(rays[0])
+        np.testing.assert_allclose(r[0], self.src[0], atol=1e-5)
+        np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-5)
+
+
 class TestUniformSpacing3d(unittest.TestCase):
     """Node spacing must be constant along each axis, but may differ between
     axes.  Every method takes the spacing as ``x[1] - x[0]`` and assumes it

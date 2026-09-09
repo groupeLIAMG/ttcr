@@ -57,6 +57,7 @@ cdef extern from "Grid3D.h" namespace "ttcr" nogil:
     cdef cppclass Grid3D[T1,T2]:
         int get_niter()
         int get_niterw()
+        bool isUsingGPU()
         void setUsePool(bool up)
         void setTraveltimeFromRaypath(bool)
         size_t getNthreads()
