@@ -1567,8 +1567,17 @@ cdef class Grid3d_d:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to slowness (implemeted for the SPM & DSPM with slowness
-                defined at cells).
+            Compute matrices of partial derivative of travel time w/r to
+            slowness.  Requires slowness defined at cells; available for the
+            FSM, SPM and DSPM.
+
+            L holds the length the ray spends in each cell, so L @ s is the
+            traveltime the raypath integrates.  For the SPM and DSPM that is
+            the traveltime returned in tt, to machine precision.  The FSM
+            solves on the nodes, over the cell slownesses averaged onto them
+            (see Grid3Drcfs), and integrates that interpolated field along the
+            path, so its tt and L @ s differ by a discretization term -- a few
+            parts in 1e3 on a coarse grid, falling with the cell size.
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
             Note : compute_M and compute_L are mutually exclusive
@@ -1628,9 +1637,6 @@ cdef class Grid3d_d:
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
             
-        if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L not defined for the FSM')
-
         evID = None
         if source.shape[1] == 5:
             src = source[:,2:5]
@@ -3917,8 +3923,17 @@ cdef class Grid3d_f:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to slowness (implemented for the SPM & DSPM with slowness
-                defined at cells).
+            Compute matrices of partial derivative of travel time w/r to
+            slowness.  Requires slowness defined at cells; available for the
+            FSM, SPM and DSPM.
+
+            L holds the length the ray spends in each cell, so L @ s is the
+            traveltime the raypath integrates.  For the SPM and DSPM that is
+            the traveltime returned in tt, to machine precision.  The FSM
+            solves on the nodes, over the cell slownesses averaged onto them
+            (see Grid3Drcfs), and integrates that interpolated field along the
+            path, so its tt and L @ s differ by a discretization term -- a few
+            parts in 1e3 on a coarse grid, falling with the cell size.
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
             Note : compute_M and compute_L are mutually exclusive
@@ -3978,9 +3993,6 @@ cdef class Grid3d_f:
 
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
-
-        if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L not defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:

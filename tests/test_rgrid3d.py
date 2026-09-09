@@ -731,6 +731,88 @@ class TestSourceOffNode(unittest.TestCase):
                         np.testing.assert_allclose(r[-1], self.rcv[n], atol=1e-9)
 
 
+class TestFSMSensitivity(unittest.TestCase):
+    """compute_L for the fast sweeping method.
+
+    Nothing in C++ was missing: Grid3D::raytrace runs the solver's sweep and
+    then asks getRaypath for each receiver, and Grid3Drn::getRaypath already
+    records the length spent in every cell.  Only the wrapper refused, and the
+    2-D classes never did, so the joint hypocentre-velocity inversion -- which
+    asks for L and the raypaths in one call -- was limited to the SPM and DSPM.
+
+    L is the geometry of the path, so L @ s is the traveltime the path
+    integrates.  The FSM averages the cell slownesses onto the nodes and solves
+    there (Grid3Drcfs), then integrates that interpolated field, so its tt sits
+    a discretization term away from L @ s; the gap closes as the cells shrink.
+    That is checked here rather than papered over with a loose tolerance.
+    """
+
+    src = np.array([[0.517, 0.483, 0.762]])
+    rcv = np.array([[0.913, 0.526, 0.038],
+                    [0.237, 0.688, 0.114]])
+
+    def _grid(self, n, method, **kwargs):
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        _, _, Zc = np.meshgrid(x[:-1] + h/2, x[:-1] + h/2, x[:-1] + h/2,
+                               indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Zc)).ravel()
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, cell_slowness=1,
+                      method=method, **kwargs)
+        g.set_slowness(s)
+        return g, s
+
+    def test_L_and_rays_returned(self):
+        g, s = self._grid(20, 'FSM')
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        tt, rays, L = g.raytrace(src, self.rcv, return_rays=True,
+                                 compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+        self.assertGreater(L.nnz, 0)
+        self.assertEqual(len(rays), self.rcv.shape[0])
+        for n, ray in enumerate(rays):
+            r = np.asarray(ray)
+            self.assertGreater(r.shape[0], 2)
+            np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
+            np.testing.assert_allclose(r[-1], self.rcv[n], atol=1e-9)
+        # every entry is a length inside one cell of the traversed column
+        self.assertTrue(np.all(L.data > 0.0))
+        self.assertLessEqual(L.data.max(), np.sqrt(3.0) / 20 + 1e-9)
+
+    def test_L_without_rays(self):
+        # the inversion asks for L alone for the calibration shots
+        g, s = self._grid(20, 'FSM')
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        tt, L = g.raytrace(src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+        np.testing.assert_allclose(L @ s, tt, rtol=5e-3)
+
+    def test_L_times_s_converges_to_tt(self):
+        # the node averaging is a discretization effect, so refining the grid
+        # has to close the gap; a real defect in L would not care about h
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        errors = []
+        for n in (10, 20, 40):
+            g, s = self._grid(n, 'FSM')
+            tt, L = g.raytrace(src, self.rcv, compute_L=True)
+            errors.append(np.max(np.abs(L @ s - tt) / tt))
+        for coarse, fine in zip(errors, errors[1:]):
+            self.assertLess(fine, coarse)
+        self.assertLess(errors[-1], 1e-3)
+
+    def test_shortest_path_solvers_are_exact(self):
+        # the SPM and DSPM carry the cell slownesses themselves, so for them
+        # L @ s is the traveltime outright -- the contrast that explains the
+        # tolerance the FSM needs above
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        for method, kwargs in (('SPM', dict(nsnx=3, nsny=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            with self.subTest(method=method):
+                g, s = self._grid(20, method, **kwargs)
+                tt, L = g.raytrace(src, self.rcv, compute_L=True)
+                np.testing.assert_allclose(L @ s, tt, rtol=1e-12)
+
+
 class TestUniformSpacing3d(unittest.TestCase):
     """Node spacing must be constant along each axis, but may differ between
     axes.  Every method takes the spacing as ``x[1] - x[0]`` and assumes it
