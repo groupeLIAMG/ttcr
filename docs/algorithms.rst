@@ -116,8 +116,9 @@ suggest to use the SPM method in the latter case.  By design, SPM
 implementations do not include that option, and traveltimes and
 raypaths are always computed with values at grid nodes.
 
-We have also observed that convergence issues arise when sources or receivers
-are in the cells at the edges of the modeling domain.  For that reason, special
+We have also observed that issues arise when sources or receivers are in the
+cells at the edges of the modeling domain; depending on the method, raytracing
+may fail to return a raypath (see warning below).  For that reason, special
 care should be put when defining input models and parameters.
 
 .. warning::
