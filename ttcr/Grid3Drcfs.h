@@ -135,8 +135,6 @@ namespace ttcr {
          * @note A corner node takes its single adjacent cell, an edge node the
          *       mean of two, a face node of four and an interior node of eight.
          *       @sa @ref g3drcfs_hybrid
-         * @note Unlike ttcr::Grid2Drcfs this class keeps no copy of the cell
-         *       values, so there is no @c getCellSlowness here.
          */
         void setSlowness(const std::vector<T1>& s);
 
