@@ -894,6 +894,94 @@ class TestFSMOpenCL(unittest.TestCase):
         np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-5)
 
 
+class TestSlownessRoundTrip(unittest.TestCase):
+    """get_slowness returns what set_slowness was given.
+
+    This is the property pickling would rest on if __reduce__ were to carry the
+    model by get/set rather than by remembering it, so it is checked for every
+    combination separately rather than on one representative grid.
+
+    Two things had to be true before it held.  get_slowness reduced the shape
+    for cell grids a second time -- self.shape has already done it -- and so
+    returned an array smaller than the model, filled from its leading corner;
+    and it reshaped the values in C order although the grid stores them x
+    fastest, which set_slowness flattens to.  Separately, Grid3Drcfs averages
+    the cell slownesses onto its nodes and used to keep no copy, so for the FSM
+    with cell slowness there was nothing to return: it now keeps one, as
+    Grid2Drcfs always has.
+    """
+
+    n = 6
+
+    def _axes(self):
+        h = 1.0 / self.n
+        x = np.arange(self.n + 1) * h
+        return x, x.copy(), x.copy(), h
+
+    def _model(self, cell_slowness, h, x, dtype):
+        pts = x[:-1] + h/2 if cell_slowness else x
+        X, Y, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        # varies along all three axes, so any axis mix-up shows up
+        return (1.0 / (2.0 + X + 2.0*Y + 3.0*Z)).astype(dtype)
+
+    def _cases(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=2, nsny=2, nsnz=2)),
+                               ('DSPM', dict(n_secondary=2, n_tertiary=2))):
+            for cell_slowness in (0, 1):
+                for dtype in (np.float64, np.float32):
+                    yield method, kwargs, cell_slowness, dtype
+
+    def test_round_trip_is_the_identity(self):
+        x, y, z, h = self._axes()
+        for method, kwargs, cell_slowness, dtype in self._cases():
+            with self.subTest(method=method, cell_slowness=cell_slowness,
+                              dtype=np.dtype(dtype).name):
+                s3 = self._model(cell_slowness, h, x, dtype)
+                g = rg.Grid3d(x, y, z, n_threads=1, method=method,
+                              cell_slowness=cell_slowness, dtype=dtype,
+                              **kwargs)
+                g.set_slowness(s3.ravel())
+                got = g.get_slowness()
+                self.assertEqual(got.shape, s3.shape)
+                np.testing.assert_allclose(got, s3, rtol=1e-6)
+
+    def test_round_trip_survives_being_fed_back(self):
+        # set(get(x)) == set(x): what a get/set based __reduce__ would do
+        x, y, z, h = self._axes()
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        for method, kwargs, cell_slowness, dtype in self._cases():
+            with self.subTest(method=method, cell_slowness=cell_slowness,
+                              dtype=np.dtype(dtype).name):
+                s3 = self._model(cell_slowness, h, x, dtype)
+                g = rg.Grid3d(x, y, z, n_threads=1, method=method,
+                              cell_slowness=cell_slowness, dtype=dtype,
+                              **kwargs)
+                g.set_slowness(s3.ravel())
+                before = g.raytrace(src, rcv)
+                g.set_slowness(g.get_slowness())
+                np.testing.assert_allclose(g.raytrace(src, rcv), before,
+                                           rtol=1e-12)
+
+    def test_cell_model_is_not_the_nodal_average(self):
+        # the FSM solves on the nodal averages; get_slowness has to give back
+        # the cell values it was handed, not those
+        x, y, z, h = self._axes()
+        s3 = self._model(1, h, x, np.float64)
+        g = rg.Grid3d(x, y, z, n_threads=1, method='FSM', cell_slowness=1)
+        g.set_slowness(s3.ravel())
+        got = g.get_slowness()
+        self.assertEqual(got.shape, (self.n, self.n, self.n))
+        np.testing.assert_allclose(got, s3, rtol=1e-12)
+
+    def test_unset_cell_fsm_grid_reports_rather_than_inventing(self):
+        x, y, z, _ = self._axes()
+        g = rg.Grid3d(x, y, z, n_threads=1, method='FSM', cell_slowness=1)
+        with self.assertRaises(RuntimeError):
+            g.get_slowness()
+
+
 class TestUniformSpacing3d(unittest.TestCase):
     """Node spacing must be constant along each axis, but may differ between
     axes.  Every method takes the spacing as ``x[1] - x[0]`` and assumes it

@@ -725,16 +725,17 @@ cdef class Grid3d_d:
         cdef int i
         cdef vector[double] slown
         self.grid.getSlowness(slown)
+        # shape is already the number of parameters along each axis, cells or
+        # nodes as the grid is built; subtracting one here as well returned an
+        # array short of the model and read only its leading corner
         nx, ny, nz = self.shape
-        if self.cell_slowness:
-            nx = nx - 1
-            ny = ny - 1
-            nz = nz - 1
         slown_size = nx * ny * nz
-        slowness = np.ndarray((slown_size,), order='F')
+        slowness = np.empty((slown_size,))
         for i in range(slown_size):
             slowness[i] = slown[i]
-        return slowness.reshape((nx, ny, nz))
+        # the grid holds the values x fastest, which is what set_slowness
+        # flattens to, so read them back the same way round
+        return slowness.reshape((nx, ny, nz), order='F')
 
     def set_slowness(self, slowness):
         """
@@ -3128,16 +3129,17 @@ cdef class Grid3d_f:
         cdef int i
         cdef vector[float] slown
         self.grid.getSlowness(slown)
+        # shape is already the number of parameters along each axis, cells or
+        # nodes as the grid is built; subtracting one here as well returned an
+        # array short of the model and read only its leading corner
         nx, ny, nz = self.shape
-        if self.cell_slowness:
-            nx = nx - 1
-            ny = ny - 1
-            nz = nz - 1
         slown_size = nx * ny * nz
-        slowness = np.ndarray((slown_size,), dtype=np.float32, order='F')
+        slowness = np.empty((slown_size,), dtype=np.float32)
         for i in range(slown_size):
             slowness[i] = slown[i]
-        return slowness.reshape((nx, ny, nz))
+        # the grid holds the values x fastest, which is what set_slowness
+        # flattens to, so read them back the same way round
+        return slowness.reshape((nx, ny, nz), order='F')
 
     def set_slowness(self, slowness):
         """

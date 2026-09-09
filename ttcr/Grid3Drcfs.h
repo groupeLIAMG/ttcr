@@ -140,6 +140,39 @@ namespace ttcr {
          */
         void setSlowness(const std::vector<T1>& s);
 
+        /**
+         * @brief Retrieve the cell slowness model.
+         * @param[out] s the values passed to @ref setSlowness.
+         * @note Returns the original **cell** values, not the averaged nodal
+         *       ones the solver actually used, and so overrides the nodal
+         *       ttcr::Grid3Drn::getSlowness this class would otherwise
+         *       inherit.  ttcr::Grid2Drcfs does the same in 2-D.
+         * @throws std::runtime_error if no slowness model has been set.
+         */
+        void getSlowness(std::vector<T1>& s) const {
+            if ( !hasCellSlown ) {
+                throw std::runtime_error("slowness data not assigned");
+            }
+            s = slowness;
+        }
+
+        /// @return True once @ref setSlowness has been called.
+        const bool hasCellSlowness() const { return hasCellSlown; }
+
+        /**
+         * @brief Slowness of one cell.
+         * @param cell_no cell number, per @ref g3drc_numbering.
+         * @return That cell's slowness.
+         * @throws std::runtime_error if no slowness model has been set.
+         * @warning @p cell_no is not range-checked.
+         */
+        const T1 getCellSlowness(const size_t cell_no) const {
+            if ( !hasCellSlown ) {
+                throw std::runtime_error("slowness data not assigned");
+            }
+            return slowness[cell_no];
+        }
+
         /// @return Number of sweep iterations the last solve took.
         const int get_niter() const { return niter_final; }
         /// @return Number of WENO sweep iterations the last solve took.
@@ -155,6 +188,11 @@ namespace ttcr {
         mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
         mutable int niterw_final; ///< WENO iterations used by the last solve.
         bool weno3;               ///< Use the 3rd-order WENO stencil.
+        /// Copy of the cell slowness model as supplied.  The solver runs on the
+        /// nodal averages and cannot reproduce these, so without the copy the
+        /// model is unrecoverable once set.  @sa ttcr::Grid2Drcfs
+        std::vector<T1> slowness;
+        bool hasCellSlown = false;  ///< setSlowness has been called.
 
     private:
         /// @name Non-copyable
@@ -200,6 +238,9 @@ namespace ttcr {
         if ( static_cast<size_t>(this->ncx)*this->ncy*this->ncz != s.size() ) {
             throw std::length_error("Error: slowness vectors of incompatible size.");
         }
+        // keep the cell values; the nodal averages below cannot be inverted
+        slowness = s;
+        hasCellSlown = true;
 
         // interpolate slowness at grid nodes
 
