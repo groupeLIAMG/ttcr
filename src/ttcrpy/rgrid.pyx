@@ -1616,6 +1616,16 @@ cdef class Grid3d_d:
         return_rays : bool (False by default)
             Return raypaths
 
+            Keep sources at least one cell away from the edges of the model.
+            The FSM and DSPM rebuild raypaths by descending the traveltime
+            gradient and stop once within one voxel diagonal of the source; a
+            path that reaches a face of the model before then has no step left
+            and raises 'Error while computing raypaths: going outside grid'.
+            Where the velocity increases towards a boundary the fastest path
+            rides it, so a source near that boundary is approached along the
+            face.  The SPM follows the node parents recorded during the sweep
+            and is not affected.
+
         Returns
         -------
         tt : np.ndarray
@@ -4019,6 +4029,16 @@ cdef class Grid3d_f:
             Note : compute_M and compute_L are mutually exclusive
         return_rays : bool (False by default)
             Return raypaths
+
+            Keep sources at least one cell away from the edges of the model.
+            The FSM and DSPM rebuild raypaths by descending the traveltime
+            gradient and stop once within one voxel diagonal of the source; a
+            path that reaches a face of the model before then has no step left
+            and raises 'Error while computing raypaths: going outside grid'.
+            Where the velocity increases towards a boundary the fastest path
+            rides it, so a source near that boundary is approached along the
+            face.  The SPM follows the node parents recorded during the sweep
+            and is not affected.
 
         Returns
         -------
