@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests for verifying python wrappers, module rgrid in 3D"""
 
+import multiprocessing as mp
+import pickle
 import unittest
 import numpy as np
 import vtk
@@ -729,6 +731,394 @@ class TestSourceOffNode(unittest.TestCase):
                         # and stops at the receiver
                         np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
                         np.testing.assert_allclose(r[-1], self.rcv[n], atol=1e-9)
+
+
+class TestFSMSensitivity(unittest.TestCase):
+    """compute_L for the fast sweeping method.
+
+    Nothing in C++ was missing: Grid3D::raytrace runs the solver's sweep and
+    then asks getRaypath for each receiver, and Grid3Drn::getRaypath already
+    records the length spent in every cell.  Only the wrapper refused, and the
+    2-D classes never did, so the joint hypocentre-velocity inversion -- which
+    asks for L and the raypaths in one call -- was limited to the SPM and DSPM.
+
+    L is the geometry of the path, so L @ s is the traveltime the path
+    integrates.  The FSM averages the cell slownesses onto the nodes and solves
+    there (Grid3Drcfs), then integrates that interpolated field, so its tt sits
+    a discretization term away from L @ s; the gap closes as the cells shrink.
+    That is checked here rather than papered over with a loose tolerance.
+    """
+
+    src = np.array([[0.517, 0.483, 0.762]])
+    rcv = np.array([[0.913, 0.526, 0.038],
+                    [0.237, 0.688, 0.114]])
+
+    def _grid(self, n, method, **kwargs):
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        _, _, Zc = np.meshgrid(x[:-1] + h/2, x[:-1] + h/2, x[:-1] + h/2,
+                               indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Zc)).ravel()
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, cell_slowness=1,
+                      method=method, **kwargs)
+        g.set_slowness(s)
+        return g, s
+
+    def test_L_and_rays_returned(self):
+        g, s = self._grid(20, 'FSM')
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        tt, rays, L = g.raytrace(src, self.rcv, return_rays=True,
+                                 compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+        self.assertGreater(L.nnz, 0)
+        self.assertEqual(len(rays), self.rcv.shape[0])
+        for n, ray in enumerate(rays):
+            r = np.asarray(ray)
+            self.assertGreater(r.shape[0], 2)
+            np.testing.assert_allclose(r[0], self.src[0], atol=1e-9)
+            np.testing.assert_allclose(r[-1], self.rcv[n], atol=1e-9)
+        # every entry is a length inside one cell of the traversed column
+        self.assertTrue(np.all(L.data > 0.0))
+        self.assertLessEqual(L.data.max(), np.sqrt(3.0) / 20 + 1e-9)
+
+    def test_L_without_rays(self):
+        # the inversion asks for L alone for the calibration shots
+        g, s = self._grid(20, 'FSM')
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        tt, L = g.raytrace(src, self.rcv, compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+        np.testing.assert_allclose(L @ s, tt, rtol=5e-3)
+
+    def test_L_times_s_converges_to_tt(self):
+        # the node averaging is a discretization effect, so refining the grid
+        # has to close the gap; a real defect in L would not care about h
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        errors = []
+        for n in (10, 20, 40):
+            g, s = self._grid(n, 'FSM')
+            tt, L = g.raytrace(src, self.rcv, compute_L=True)
+            errors.append(np.max(np.abs(L @ s - tt) / tt))
+        for coarse, fine in zip(errors, errors[1:]):
+            self.assertLess(fine, coarse)
+        self.assertLess(errors[-1], 1e-3)
+
+    def test_shortest_path_solvers_are_exact(self):
+        # the SPM and DSPM carry the cell slownesses themselves, so for them
+        # L @ s is the traveltime outright -- the contrast that explains the
+        # tolerance the FSM needs above
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        for method, kwargs in (('SPM', dict(nsnx=3, nsny=3, nsnz=3)),
+                               ('DSPM', dict(n_secondary=3, n_tertiary=3))):
+            with self.subTest(method=method):
+                g, s = self._grid(20, method, **kwargs)
+                tt, L = g.raytrace(src, self.rcv, compute_L=True)
+                np.testing.assert_allclose(L @ s, tt, rtol=1e-12)
+
+
+class TestFSMOpenCL(unittest.TestCase):
+    """Selecting the OpenCL solvers.
+
+    fsm_gpu asks for them; whether the request is granted depends on the
+    machine, so the tests assert what must hold either way and use
+    is_using_gpu -- which reaches the C++ isUsingGPU through the Grid3D base --
+    to tell which path ran.
+
+    Single precision is the interesting case: a device without cl_khr_fp64
+    (every Apple GPU) refuses a double-precision grid, so np.float32 is the
+    only precision that reaches the GPU there.  Grid3d_f used to store fsm_gpu
+    and ignore it, which left the OpenCL solvers unreachable in exactly that
+    configuration.
+    """
+
+    src = np.array([[0.517, 0.483, 0.762]])
+    rcv = np.array([[0.913, 0.526, 0.038]])
+
+    def _grid(self, dtype, fsm_gpu, cell_slowness):
+        n = 20
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        if cell_slowness:
+            _, _, Z = np.meshgrid(x[:-1] + h/2, x[:-1] + h/2, x[:-1] + h/2,
+                                  indexing='ij')
+        else:
+            _, _, Z = np.meshgrid(x, x, x, indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Z)).ravel().astype(dtype)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='FSM',
+                      cell_slowness=cell_slowness, fsm_gpu=fsm_gpu,
+                      dtype=dtype)
+        g.set_slowness(s)
+        return g, s
+
+    def test_property_present_and_false_without_request(self):
+        for dtype in (np.float64, np.float32):
+            for cell_slowness in (0, 1):
+                with self.subTest(dtype=np.dtype(dtype).name,
+                                  cell_slowness=cell_slowness):
+                    g, _ = self._grid(dtype, False, cell_slowness)
+                    self.assertFalse(g.is_using_gpu)
+
+    def test_double_precision_never_claims_a_device_without_fp64(self):
+        # asking is always safe: refused or not, the answer is a bool and the
+        # traveltimes match the CPU solve
+        for cell_slowness in (0, 1):
+            with self.subTest(cell_slowness=cell_slowness):
+                ref, _ = self._grid(np.float64, False, cell_slowness)
+                gpu, _ = self._grid(np.float64, True, cell_slowness)
+                self.assertIsInstance(gpu.is_using_gpu, bool)
+                np.testing.assert_allclose(gpu.raytrace(self.src, self.rcv),
+                                           ref.raytrace(self.src, self.rcv),
+                                           rtol=1e-9)
+
+    def test_single_precision_reaches_the_opencl_solvers(self):
+        for cell_slowness in (0, 1):
+            with self.subTest(cell_slowness=cell_slowness):
+                ref, _ = self._grid(np.float32, False, cell_slowness)
+                gpu, _ = self._grid(np.float32, True, cell_slowness)
+                tt_ref = ref.raytrace(self.src, self.rcv)
+                tt_gpu = gpu.raytrace(self.src, self.rcv)
+                # single precision, two implementations: agreement to the
+                # solver tolerance, not to the bit
+                np.testing.assert_allclose(tt_gpu, tt_ref, rtol=1e-4)
+                if not gpu.is_using_gpu:
+                    self.skipTest('no OpenCL device able to run this grid')
+
+    def test_gpu_path_returns_L_and_rays(self):
+        g, s = self._grid(np.float32, True, 1)
+        if not g.is_using_gpu:
+            self.skipTest('no OpenCL device able to run this grid')
+        src = np.repeat(self.src, self.rcv.shape[0], axis=0)
+        tt, rays, L = g.raytrace(src, self.rcv, return_rays=True,
+                                 compute_L=True)
+        self.assertEqual(L.shape, (self.rcv.shape[0], s.size))
+        self.assertGreater(L.nnz, 0)
+        r = np.asarray(rays[0])
+        np.testing.assert_allclose(r[0], self.src[0], atol=1e-5)
+        np.testing.assert_allclose(r[-1], self.rcv[0], atol=1e-5)
+
+
+class TestPickledModel(unittest.TestCase):
+    """A pickled grid carries its slowness.
+
+    __reduce__ rebuilt the grid from its constructor arguments alone, so the
+    copy came back with no model at all.  multiprocessing on macOS and Windows
+    starts workers by pickling, which is how hypopy's parallel event relocation
+    handed every worker a grid whose slowness was zero: the shortest-path
+    solvers returned nonsense and the FSM failed to converge and then walked
+    its raypath out of the grid.
+
+    The model cannot be read back out of the C++ grid to rebuild it -- for the
+    FSM with cell slowness, Grid3Drcfs averages the cell values onto its nodes
+    and keeps no copy -- so the wrapper remembers what set_slowness was given.
+    """
+
+    def _grid(self, method, cell_slowness, dtype=np.float64, **kwargs):
+        n = 8
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        pts = x[:-1] + h/2 if cell_slowness else x
+        _, _, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Z)).ravel().astype(dtype)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method=method,
+                      cell_slowness=cell_slowness, dtype=dtype, **kwargs)
+        g.set_slowness(s)
+        return g, s
+
+    def test_traveltimes_survive_a_round_trip(self):
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=2, nsny=2, nsnz=2)),
+                               ('DSPM', dict(n_secondary=2, n_tertiary=2))):
+            for cell_slowness in (0, 1):
+                with self.subTest(method=method, cell_slowness=cell_slowness):
+                    g, _ = self._grid(method, cell_slowness, **kwargs)
+                    before = g.raytrace(src, rcv)
+                    after = pickle.loads(pickle.dumps(g)).raytrace(src, rcv)
+                    np.testing.assert_allclose(after, before, rtol=1e-12)
+
+    def test_model_itself_survives(self):
+        for cell_slowness in (0, 1):
+            with self.subTest(cell_slowness=cell_slowness):
+                g, s = self._grid('FSM', cell_slowness)
+                clone = pickle.loads(pickle.dumps(g))
+                np.testing.assert_allclose(np.ravel(clone.get_slowness()), s)
+
+    def test_single_precision_too(self):
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        g, _ = self._grid('FSM', 1, dtype=np.float32)
+        before = g.raytrace(src, rcv)
+        after = pickle.loads(pickle.dumps(g)).raytrace(src, rcv)
+        np.testing.assert_allclose(after, before, rtol=1e-6)
+
+    def test_velocity_set_that_way_survives_too(self):
+        # set_velocity does not call set_slowness, it repeats the body, so it
+        # is a second place the model has to be remembered
+        n = 8
+        h = 1.0 / n
+        x = np.arange(n + 1) * h
+        pts = x[:-1] + h/2
+        _, _, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        v = (2.0 + 3.0 * Z).ravel()
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='FSM',
+                      cell_slowness=1)
+        g.set_velocity(v)
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        before = g.raytrace(src, rcv)
+        after = pickle.loads(pickle.dumps(g)).raytrace(src, rcv)
+        np.testing.assert_allclose(after, before, rtol=1e-12)
+
+    def test_grid_with_no_model_still_pickles(self):
+        # nothing set yet: the copy has to come back unset, not blow up
+        n = 8
+        x = np.arange(n + 1) / n
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='FSM',
+                      cell_slowness=1)
+        clone = pickle.loads(pickle.dumps(g))
+        self.assertFalse(clone._has_slowness)
+        with self.assertRaises(RuntimeError):
+            clone.get_slowness()
+
+    def test_anisotropic_grid_carries_no_medium(self):
+        # chi, psi, Vp0, Vs0, s2 and s4 have setters but no getters anywhere,
+        # so the copy cannot be given the medium and the caller reapplies it --
+        # what TestSensitivity3d.test_phase_and_pickle has always done, and
+        # what vti_psv and vti_sh, which take no slowness at all, require.
+        n = 8
+        x = np.arange(n + 1) / n
+        h = 1.0 / n
+        pts = x[:-1] + h/2
+        _, _, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        s = (1.0 / (2.0 + 3.0 * Z)).ravel()
+        chi = np.full(s.size, 1.1)
+        psi = np.full(s.size, 0.9)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads=1, method='SPM',
+                      cell_slowness=1, aniso='elliptical',
+                      nsnx=2, nsny=2, nsnz=2)
+        g.set_slowness(s)
+        g.set_chi(chi)
+        g.set_psi(psi)
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        before = g.raytrace(src, rcv)
+
+        clone = pickle.loads(pickle.dumps(g))     # no medium comes with it
+        self.assertFalse(clone._has_slowness)
+        clone.set_slowness(s)
+        clone.set_chi(chi)
+        clone.set_psi(psi)
+        np.testing.assert_allclose(clone.raytrace(src, rcv), before,
+                                   rtol=1e-12)
+
+    def test_worker_process_sees_the_model(self):
+        # the failure this fixes only appeared under a spawned process
+        ctx = mp.get_context('spawn')
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        g, _ = self._grid('FSM', 1)
+        q = ctx.Queue()
+        p = ctx.Process(target=_raytrace_in_worker, args=(g, src, rcv, q))
+        p.start()
+        got = q.get(timeout=120)
+        p.join(timeout=60)
+        self.assertNotIsInstance(got, str, msg='worker raised: %s' % got)
+        np.testing.assert_allclose(got, g.raytrace(src, rcv), rtol=1e-12)
+
+
+def _raytrace_in_worker(g, src, rcv, q):
+    try:
+        q.put(g.raytrace(src, rcv))
+    except Exception as e:                       # pragma: no cover
+        q.put('%s: %s' % (type(e).__name__, e))
+
+
+class TestSlownessRoundTrip(unittest.TestCase):
+    """get_slowness returns what set_slowness was given.
+
+    This is the property pickling would rest on if __reduce__ were to carry the
+    model by get/set rather than by remembering it, so it is checked for every
+    combination separately rather than on one representative grid.
+
+    Two things had to be true before it held.  get_slowness reduced the shape
+    for cell grids a second time -- self.shape has already done it -- and so
+    returned an array smaller than the model, filled from its leading corner;
+    and it reshaped the values in C order although the grid stores them x
+    fastest, which set_slowness flattens to.  Separately, Grid3Drcfs averages
+    the cell slownesses onto its nodes and used to keep no copy, so for the FSM
+    with cell slowness there was nothing to return: it now keeps one, as
+    Grid2Drcfs always has.
+    """
+
+    n = 6
+
+    def _axes(self):
+        h = 1.0 / self.n
+        x = np.arange(self.n + 1) * h
+        return x, x.copy(), x.copy(), h
+
+    def _model(self, cell_slowness, h, x, dtype):
+        pts = x[:-1] + h/2 if cell_slowness else x
+        X, Y, Z = np.meshgrid(pts, pts, pts, indexing='ij')
+        # varies along all three axes, so any axis mix-up shows up
+        return (1.0 / (2.0 + X + 2.0*Y + 3.0*Z)).astype(dtype)
+
+    def _cases(self):
+        for method, kwargs in (('FSM', {}),
+                               ('SPM', dict(nsnx=2, nsny=2, nsnz=2)),
+                               ('DSPM', dict(n_secondary=2, n_tertiary=2))):
+            for cell_slowness in (0, 1):
+                for dtype in (np.float64, np.float32):
+                    yield method, kwargs, cell_slowness, dtype
+
+    def test_round_trip_is_the_identity(self):
+        x, y, z, h = self._axes()
+        for method, kwargs, cell_slowness, dtype in self._cases():
+            with self.subTest(method=method, cell_slowness=cell_slowness,
+                              dtype=np.dtype(dtype).name):
+                s3 = self._model(cell_slowness, h, x, dtype)
+                g = rg.Grid3d(x, y, z, n_threads=1, method=method,
+                              cell_slowness=cell_slowness, dtype=dtype,
+                              **kwargs)
+                g.set_slowness(s3.ravel())
+                got = g.get_slowness()
+                self.assertEqual(got.shape, s3.shape)
+                np.testing.assert_allclose(got, s3, rtol=1e-6)
+
+    def test_round_trip_survives_being_fed_back(self):
+        # set(get(x)) == set(x): what a get/set based __reduce__ would do
+        x, y, z, h = self._axes()
+        src = np.array([[0.31, 0.27, 0.71]])
+        rcv = np.array([[0.83, 0.62, 0.14]])
+        for method, kwargs, cell_slowness, dtype in self._cases():
+            with self.subTest(method=method, cell_slowness=cell_slowness,
+                              dtype=np.dtype(dtype).name):
+                s3 = self._model(cell_slowness, h, x, dtype)
+                g = rg.Grid3d(x, y, z, n_threads=1, method=method,
+                              cell_slowness=cell_slowness, dtype=dtype,
+                              **kwargs)
+                g.set_slowness(s3.ravel())
+                before = g.raytrace(src, rcv)
+                g.set_slowness(g.get_slowness())
+                np.testing.assert_allclose(g.raytrace(src, rcv), before,
+                                           rtol=1e-12)
+
+    def test_cell_model_is_not_the_nodal_average(self):
+        # the FSM solves on the nodal averages; get_slowness has to give back
+        # the cell values it was handed, not those
+        x, y, z, h = self._axes()
+        s3 = self._model(1, h, x, np.float64)
+        g = rg.Grid3d(x, y, z, n_threads=1, method='FSM', cell_slowness=1)
+        g.set_slowness(s3.ravel())
+        got = g.get_slowness()
+        self.assertEqual(got.shape, (self.n, self.n, self.n))
+        np.testing.assert_allclose(got, s3, rtol=1e-12)
+
+    def test_unset_cell_fsm_grid_reports_rather_than_inventing(self):
+        x, y, z, _ = self._axes()
+        g = rg.Grid3d(x, y, z, n_threads=1, method='FSM', cell_slowness=1)
+        with self.assertRaises(RuntimeError):
+            g.get_slowness()
 
 
 class TestUniformSpacing3d(unittest.TestCase):

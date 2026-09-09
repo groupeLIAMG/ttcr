@@ -255,6 +255,7 @@ cdef class Grid3d_d:
     cdef uint32_t n_tertiary
     cdef double radius_factor_tertiary
     cdef Grid3D[double, uint32_t]* grid
+    cdef readonly bool _has_slowness
 
     def __cinit__(self, np.ndarray[np.double_t, ndim=1] x,
                   np.ndarray[np.double_t, ndim=1] y,
@@ -301,6 +302,7 @@ cdef class Grid3d_d:
         self.radius_factor_tertiary = radius_factor_tertiary
         self.translate_grid = translate_grid
         self.fsm_gpu = fsm_gpu
+        self._has_slowness = False
 
         cdef use_edge_length = True
 
@@ -454,7 +456,21 @@ cdef class Grid3d_d:
         if self.iso == b'p':
             constructor_params = constructor_params + (
                 'qP' if self.phase == b'P' else 'qSV',)
-        return (_rebuild3d_d, (self.x, self.y, self.z, constructor_params))
+        # The model itself lives in the C++ grid; only whether one was ever
+        # set is kept here, because getSlowness does not report it uniformly.
+        #
+        # An anisotropic medium carries none of it.  chi, psi, Vp0, Vs0, s2 and
+        # s4 have setters but no getters on any class, so the copy could be
+        # given the slowness and nothing else -- a grid that raytraces without
+        # complaint and answers differently from this one.  Geometry and phase
+        # travel, and the caller reapplies the medium, which is what the media
+        # that take no slowness at all (vti_psv, vti_sh) have always required.
+        if self.iso == b'i' and self._has_slowness:
+            slowness = self.get_slowness()
+        else:
+            slowness = None
+        return (_rebuild3d_d, (self.x, self.y, self.z, constructor_params,
+                     slowness))
 
     @property
     def x(self):
@@ -510,6 +526,19 @@ cdef class Grid3d_d:
     def n_threads(self):
         """int: number of threads for raytracing"""
         return self._n_threads
+
+    @property
+    def is_using_gpu(self):
+        """bool: whether the solve actually runs on the GPU
+
+        fsm_gpu asks for the OpenCL solvers; it does not guarantee them.  The
+        request is refused when no device is available, when initialisation
+        fails, or when the grid is double precision and the device reports no
+        cl_khr_fp64 -- which is every Apple GPU, so np.float32 is what reaches
+        the GPU there.  A refusal falls back to the CPU and leaves the results
+        correct, so this property is the only way to tell the two apart.
+        """
+        return self.grid.isUsingGPU()
 
     @property
     def nparams(self):
@@ -712,16 +741,17 @@ cdef class Grid3d_d:
         cdef int i
         cdef vector[double] slown
         self.grid.getSlowness(slown)
+        # shape is already the number of parameters along each axis, cells or
+        # nodes as the grid is built; subtracting one here as well returned an
+        # array short of the model and read only its leading corner
         nx, ny, nz = self.shape
-        if self.cell_slowness:
-            nx = nx - 1
-            ny = ny - 1
-            nz = nz - 1
         slown_size = nx * ny * nz
-        slowness = np.ndarray((slown_size,), order='F')
+        slowness = np.empty((slown_size,))
         for i in range(slown_size):
             slowness[i] = slown[i]
-        return slowness.reshape((nx, ny, nz))
+        # the grid holds the values x fastest, which is what set_slowness
+        # flattens to, so read them back the same way round
+        return slowness.reshape((nx, ny, nz), order='F')
 
     def set_slowness(self, slowness):
         """
@@ -761,6 +791,7 @@ cdef class Grid3d_d:
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def set_chi(self, chi):
         """
@@ -1183,6 +1214,7 @@ cdef class Grid3d_d:
         else:
             raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def compute_D(self, np.ndarray[np.double_t, ndim=2] coord):
         """
@@ -1567,8 +1599,17 @@ cdef class Grid3d_d:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to slowness (implemeted for the SPM & DSPM with slowness
-                defined at cells).
+            Compute matrices of partial derivative of travel time w/r to
+            slowness.  Requires slowness defined at cells; available for the
+            FSM, SPM and DSPM.
+
+            L holds the length the ray spends in each cell, so L @ s is the
+            traveltime the raypath integrates.  For the SPM and DSPM that is
+            the traveltime returned in tt, to machine precision.  The FSM
+            solves on the nodes, over the cell slownesses averaged onto them
+            (see Grid3Drcfs), and integrates that interpolated field along the
+            path, so its tt and L @ s differ by a discretization term -- a few
+            parts in 1e3 on a coarse grid, falling with the cell size.
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
             Note : compute_M and compute_L are mutually exclusive
@@ -1628,9 +1669,6 @@ cdef class Grid3d_d:
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
             
-        if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L not defined for the FSM')
-
         evID = None
         if source.shape[1] == 5:
             src = source[:,2:5]
@@ -2640,6 +2678,7 @@ cdef class Grid3d_f:
     cdef uint32_t n_tertiary
     cdef float radius_factor_tertiary
     cdef Grid3D[float, uint32_t]* grid
+    cdef readonly bool _has_slowness
 
     def __cinit__(self, np.ndarray[np.float32_t, ndim=1] x,
                   np.ndarray[np.float32_t, ndim=1] y,
@@ -2683,6 +2722,7 @@ cdef class Grid3d_f:
         self.radius_factor_tertiary = radius_factor_tertiary
         self.translate_grid = translate_grid
         self.fsm_gpu = fsm_gpu
+        self._has_slowness = False
 
         cdef use_edge_length = True
 
@@ -2699,7 +2739,15 @@ cdef class Grid3d_f:
         if cell_slowness:
             if aniso != 'iso' and method != 'SPM':
                 raise ValueError('Anisotropy is implemented for the SPM method only')
-            if method == 'FSM':
+            if method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid3Drcfs_OpenCL[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
+                                                                  xmin, ymin, zmin,
+                                                                  eps, maxit, weno,
+                                                                  tt_from_rp, interp_vel,
+                                                                  n_threads,
+                                                                  translate_grid)
+            elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drcfs[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
@@ -2759,7 +2807,15 @@ cdef class Grid3d_f:
         else:
             if aniso != 'iso':
                 raise ValueError('Anisotropy requires slowness defined for cells')
-            if method == 'FSM':
+            if method == 'FSM' and fsm_gpu:
+                self.method = b'f'
+                self.grid = new Grid3Drnfs_OpenCL[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
+                                                                  xmin, ymin, zmin,
+                                                                  eps, maxit, weno,
+                                                                  tt_from_rp, interp_vel,
+                                                                  n_threads,
+                                                                  translate_grid)
+            elif method == 'FSM':
                 self.method = b'f'
                 self.grid = new Grid3Drnfs[float,uint32_t](nx, ny, nz, self._dx, self._dy, self._dz,
                                                            xmin, ymin, zmin,
@@ -2820,7 +2876,21 @@ cdef class Grid3d_f:
         if self.iso == b'p':
             constructor_params = constructor_params + (
                 'qP' if self.phase == b'P' else 'qSV',)
-        return (_rebuild3d_f, (self.x, self.y, self.z, constructor_params))
+        # The model itself lives in the C++ grid; only whether one was ever
+        # set is kept here, because getSlowness does not report it uniformly.
+        #
+        # An anisotropic medium carries none of it.  chi, psi, Vp0, Vs0, s2 and
+        # s4 have setters but no getters on any class, so the copy could be
+        # given the slowness and nothing else -- a grid that raytraces without
+        # complaint and answers differently from this one.  Geometry and phase
+        # travel, and the caller reapplies the medium, which is what the media
+        # that take no slowness at all (vti_psv, vti_sh) have always required.
+        if self.iso == b'i' and self._has_slowness:
+            slowness = self.get_slowness()
+        else:
+            slowness = None
+        return (_rebuild3d_f, (self.x, self.y, self.z, constructor_params,
+                     slowness))
 
     @property
     def x(self):
@@ -2876,6 +2946,19 @@ cdef class Grid3d_f:
     def n_threads(self):
         """int: number of threads for raytracing"""
         return self._n_threads
+
+    @property
+    def is_using_gpu(self):
+        """bool: whether the solve actually runs on the GPU
+
+        fsm_gpu asks for the OpenCL solvers; it does not guarantee them.  The
+        request is refused when no device is available, when initialisation
+        fails, or when the grid is double precision and the device reports no
+        cl_khr_fp64 -- which is every Apple GPU, so np.float32 is what reaches
+        the GPU there.  A refusal falls back to the CPU and leaves the results
+        correct, so this property is the only way to tell the two apart.
+        """
+        return self.grid.isUsingGPU()
 
     @property
     def nparams(self):
@@ -3080,16 +3163,17 @@ cdef class Grid3d_f:
         cdef int i
         cdef vector[float] slown
         self.grid.getSlowness(slown)
+        # shape is already the number of parameters along each axis, cells or
+        # nodes as the grid is built; subtracting one here as well returned an
+        # array short of the model and read only its leading corner
         nx, ny, nz = self.shape
-        if self.cell_slowness:
-            nx = nx - 1
-            ny = ny - 1
-            nz = nz - 1
         slown_size = nx * ny * nz
-        slowness = np.ndarray((slown_size,), dtype=np.float32, order='F')
+        slowness = np.empty((slown_size,), dtype=np.float32)
         for i in range(slown_size):
             slowness[i] = slown[i]
-        return slowness.reshape((nx, ny, nz))
+        # the grid holds the values x fastest, which is what set_slowness
+        # flattens to, so read them back the same way round
+        return slowness.reshape((nx, ny, nz), order='F')
 
     def set_slowness(self, slowness):
         """
@@ -3128,6 +3212,7 @@ cdef class Grid3d_f:
         else:
             raise ValueError('Slowness must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def set_chi(self, chi):
         """
@@ -3549,6 +3634,7 @@ cdef class Grid3d_f:
         else:
             raise ValueError('velocity must be 1D or 3D ndarray')
         self.grid.setSlowness(slown)
+        self._has_slowness = True
 
     def compute_D(self, pts):
         """
@@ -3917,8 +4003,17 @@ cdef class Grid3d_f:
         aggregate_src : bool (False by default)
             if True, all source coordinates belong to a single event
         compute_L : bool (False by default)
-            Compute matrices of partial derivative of travel time w/r to slowness (implemented for the SPM & DSPM with slowness
-                defined at cells).
+            Compute matrices of partial derivative of travel time w/r to
+            slowness.  Requires slowness defined at cells; available for the
+            FSM, SPM and DSPM.
+
+            L holds the length the ray spends in each cell, so L @ s is the
+            traveltime the raypath integrates.  For the SPM and DSPM that is
+            the traveltime returned in tt, to machine precision.  The FSM
+            solves on the nodes, over the cell slownesses averaged onto them
+            (see Grid3Drcfs), and integrates that interpolated field along the
+            path, so its tt and L @ s differ by a discretization term -- a few
+            parts in 1e3 on a coarse grid, falling with the cell size.
         compute_M : bool (False by default)
             Compute matrices of partial derivative of travel time w/r to velocity
             Note : compute_M and compute_L are mutually exclusive
@@ -3978,9 +4073,6 @@ cdef class Grid3d_f:
 
         if compute_L and not self.cell_slowness:
             raise NotImplementedError('compute_L defined only for grids with slowness defined for cells')
-
-        if compute_L and self.method == b'f':
-            raise NotImplementedError('compute_L not defined for the FSM')
 
         evID = None
         if source.shape[1] == 5:
@@ -7964,7 +8056,7 @@ cdef class Grid2d_f:
         writer.Update()
 
 
-def _rebuild3d_d(x, y, z, constructor_params):
+def _rebuild3d_d(x, y, z, constructor_params, slowness=None):
     # a phase is appended only by the media that describe one, so a grid
     # pickled before it was carried still loads
     phase = None
@@ -7981,10 +8073,14 @@ def _rebuild3d_d(x, y, z, constructor_params):
                  n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
     if phase is not None:
         g.set_phase(phase)
+    # a grid pickled before the model was carried arrives without one, and is
+    # rebuilt unset exactly as before
+    if slowness is not None:
+        g.set_slowness(slowness)
     return g
 
 
-def _rebuild3d_f(x, y, z, constructor_params):
+def _rebuild3d_f(x, y, z, constructor_params, slowness=None):
     # a phase is appended only by the media that describe one, so a grid
     # pickled before it was carried still loads
     phase = None
@@ -8001,6 +8097,10 @@ def _rebuild3d_f(x, y, z, constructor_params):
                  n_tertiary, radius_factor_tertiary, translate_grid, fsm_gpu)
     if phase is not None:
         g.set_phase(phase)
+    # a grid pickled before the model was carried arrives without one, and is
+    # rebuilt unset exactly as before
+    if slowness is not None:
+        g.set_slowness(slowness)
     return g
 
 
