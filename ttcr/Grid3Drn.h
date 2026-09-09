@@ -580,6 +580,29 @@ namespace ttcr {
                                     const sxyz<T1> &Rx,
                                     const size_t threadNo) const;
 
+        /**
+         * @name Raypath reconstruction
+         *
+         * These builders walk from the receiver towards the source, stepping
+         * cell face to cell face along the traveltime gradient, and stop once
+         * within one voxel diagonal of a source.
+         *
+         * @warning Keep sources at least one cell away from the edges of the
+         *          model.  A walk that reaches a face of the grid while still
+         *          further than that diagonal from the source has no admissible
+         *          step left and throws @c std::runtime_error, "going outside
+         *          grid", rather than returning a path.  The geometry is not
+         *          exotic: where the velocity increases towards a boundary the
+         *          fastest path rides it, so a source near that boundary is
+         *          approached along the face.  Measured on a 5 m grid whose
+         *          velocity increases with depth, the fast sweeping solvers
+         *          fail below half a cell of clearance and the dynamic
+         *          shortest-path ones below a tenth; one cell sufficed in every
+         *          case tested.  ttcr::Grid3Drcsp and ttcr::Grid3Drnsp walk the
+         *          node parents instead and are unaffected.
+         * @{
+         */
+
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
@@ -667,6 +690,7 @@ namespace ttcr {
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
                         const size_t threadNo) const;
+        /// @}
 
         /**
          * @name Fast sweeping passes
