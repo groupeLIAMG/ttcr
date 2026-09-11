@@ -888,7 +888,7 @@ cdef class Mesh3d:
             build_matrix_siv(MM, NN, k_data[nk], m_tuple)
             K.append( sp.csr_array(m_tuple, shape=(MM,NN)) )
             if order == 2 and squared:
-                K[-1] = K[-1] * K[-1]
+                K[-1] = K[-1] @ K[-1]
 
         return tuple(K)
 
