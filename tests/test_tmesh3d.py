@@ -84,6 +84,31 @@ class TestMesh3Dc(unittest.TestCase):
                         'DSPM accuracy failed (slowness in cells)')
 
 
+class TestComputeKSquared(unittest.TestCase):
+    """compute_K(order=2, squared=True) is the matrix square of order 1.
+
+    The squaring used to read K * K.  That was a matrix product while ttcrpy
+    returned sparse matrices; on the sparse arrays it returns now, * is
+    elementwise, and the second-derivative operator came back as the
+    elementwise square without any error.  Nothing exercised this path, so
+    139 tests passed across the change.
+    """
+
+    def setUp(self):
+        TestMesh3Dc.setUp(self)          # the same mesh, without its tests
+
+    def test_squared_is_the_matrix_square(self):
+        g = tm.Mesh3d(self.nodes, self.tet, method='FSM', tt_from_rp=0)
+        first = g.compute_K(order=1)
+        squared = g.compute_K(order=2, squared=True)
+        for name, a, b in zip('xyz', first, squared):
+            with self.subTest(axis=name):
+                scale = abs(b).max()
+                self.assertLessEqual(abs(a @ a - b).max(), 1e-12 * scale)
+                # and the check can tell the two apart
+                self.assertGreater(abs(a.multiply(a) - b).max(), 1e-6 * scale)
+
+
 class TestMesh3Dc_L(unittest.TestCase):
 
     def setUp(self):

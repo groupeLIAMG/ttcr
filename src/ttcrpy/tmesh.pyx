@@ -1526,7 +1526,7 @@ cdef class Mesh3d:
         Returns
         -------
         L : scipy csr_array
-            data kernel matrix (tt = L*slowness)
+            data kernel matrix (tt = L @ slowness)
 
         Note
         ----

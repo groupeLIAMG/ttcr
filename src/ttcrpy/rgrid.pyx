@@ -6302,7 +6302,7 @@ cdef class Grid2d_d:
         Returns
         -------
         L : scipy csr_array
-            data kernel matrix (tt = L*slowness)
+            data kernel matrix (tt = L @ slowness)
 
         Note
         ----
