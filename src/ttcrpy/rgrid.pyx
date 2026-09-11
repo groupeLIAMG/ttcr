@@ -2239,7 +2239,7 @@ cdef class Grid3d_d:
         Returns
         -------
         L : scipy csr_array
-            data kernel matrix (tt = L*slowness)
+            data kernel matrix (tt = L @ slowness)
         (xc, yc, zc) : :obj:`tuple` of `np.ndarray`
             vectors of coordinates of center of cells
 
