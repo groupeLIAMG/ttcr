@@ -1230,7 +1230,7 @@ cdef class Grid3d_d:
 
         Returns
         -------
-        D : scipy csr_matrix with shape (npts, nparams)
+        D : scipy csr_array with shape (npts, nparams)
             Matrix of interpolation weights
 
         Note
@@ -1257,7 +1257,7 @@ cdef class Grid3d_d:
 
                 jvec[n] = self.indc(i,j,k)
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_cells()))
         else:
             # for each point in coord, we have 8 values in D
@@ -1282,7 +1282,7 @@ cdef class Grid3d_d:
                                            (1. - np.abs(coord[n,2]-self._z[k])/self._dz))
                             ii += 1
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_nodes()))
 
     def compute_K(self):
@@ -1291,7 +1291,7 @@ cdef class Grid3d_d:
 
         Returns
         -------
-        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_array`
             matrices for derivatives along x, y, & z
         """
         # central operator f"(x) = (f(x+h)-2f(x)+f(x-h))/h^2
@@ -1320,7 +1320,7 @@ cdef class Grid3d_d:
                                    np.arange((nx-2)*ny*nz, (nx-1)*ny*nz,dtype=np.int64),
                                    np.arange((nx-1)*ny*nz, nx*ny*nz,dtype=np.int64))).T.flatten()))
 
-        Kx = sp.csr_matrix((val,(iK,jK)))
+        Kx = sp.csr_array((val,(iK,jK)))
 
         # j=0 -> forward op
 
@@ -1342,7 +1342,7 @@ cdef class Grid3d_d:
         for i in np.arange(1,nx):
             jK = np.hstack((jK, i*ny*nz+tmp))
 
-        Ky = sp.csr_matrix((val,(iK,jK)))
+        Ky = sp.csr_array((val,(iK,jK)))
 
         # k=0
         val = np.tile(np.array([1., -2., 1.]), nx*ny*nz) / (self._dz*self._dz)
@@ -1360,7 +1360,7 @@ cdef class Grid3d_d:
         for i in np.arange(1,nx):
             jK = np.hstack((jK, i*ny*nz+tmp))
 
-        Kz = sp.csr_matrix((val,(iK,jK)))
+        Kz = sp.csr_array((val,(iK,jK)))
 
         return Kx, Ky, Kz
 
@@ -1632,14 +1632,14 @@ cdef class Grid3d_d:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
-        M : :obj:`list` of :obj:`csr_matrix`
+        M : :obj:`list` of :obj:`csr_array`
             matrices of partial derivative of travel time w/r to velocity.
             the number of matrices is equal to the number of sources
-        L : scipy csr_matrix
+        L : scipy csr_array
             Matrix of partial derivative of travel time w/r to slowness.
             if input argument source has 5 columns, L is a list of matrices and
             the number of matrices is equal to the number of sources
-            otherwise, L is a single csr_matrix
+            otherwise, L is a single csr_array
 
         Notes
         -----
@@ -1974,7 +1974,7 @@ cdef class Grid3d_d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
 
             if evID is None:
                 # we want a single matrix
@@ -2009,7 +2009,7 @@ cdef class Grid3d_d:
                                 k += 1
 
                 indptr[MM] = k
-                M.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                M.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
 
         if compute_L==False and compute_M==False and return_rays==False:
             return tt
@@ -2238,7 +2238,7 @@ cdef class Grid3d_d:
 
         Returns
         -------
-        L : scipy csr_matrix
+        L : scipy csr_array
             data kernel matrix (tt = L*slowness)
         (xc, yc, zc) : :obj:`tuple` of `np.ndarray`
             vectors of coordinates of center of cells
@@ -2629,7 +2629,7 @@ cdef class Grid3d_d:
                         x = grx[ix]
 
         indptr_p.append(k)
-        L = sp.csr_matrix((data_p, indices_p, indptr_p),
+        L = sp.csr_array((data_p, indices_p, indptr_p),
                           shape=(nTx, (n_grx-1)*(n_gry-1)*(n_grz-1)))
 
         if centers:
@@ -3660,7 +3660,7 @@ cdef class Grid3d_f:
 
         Returns
         -------
-        D : scipy csr_matrix with shape (npts, nparams)
+        D : scipy csr_array with shape (npts, nparams)
             Matrix of interpolation weights
 
         Note
@@ -3686,7 +3686,7 @@ cdef class Grid3d_f:
 
                 jvec[n] = self.indc(i,j,k)
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_cells()))
         else:
             ivec = np.kron(np.arange(coord.shape[0], dtype=np.int64),np.ones(8, dtype=np.int64))
@@ -3710,7 +3710,7 @@ cdef class Grid3d_f:
                                            (1. - np.abs(coord[n,2]-self._z[k])/self._dz))
                             ii += 1
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_nodes()))
 
     def compute_K(self):
@@ -3719,7 +3719,7 @@ cdef class Grid3d_f:
 
         Returns
         -------
-        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_array`
             matrices for derivatives along x, y, & z
         """
         cdef Py_ssize_t i, j, k
@@ -3741,7 +3741,7 @@ cdef class Grid3d_f:
                                    np.arange((nx-2)*ny*nz, (nx-1)*ny*nz,dtype=np.int64),
                                    np.arange((nx-1)*ny*nz, nx*ny*nz,dtype=np.int64))).T.flatten()))
 
-        Kx = sp.csr_matrix((val,(iK,jK)))
+        Kx = sp.csr_array((val,(iK,jK)))
 
         jK = np.vstack((np.arange(nz,dtype=np.int64),
                         np.arange(nz,2*nz,dtype=np.int64),
@@ -3760,7 +3760,7 @@ cdef class Grid3d_f:
         for i in np.arange(1,nx):
             jK = np.hstack((jK, i*ny*nz+tmp))
 
-        Ky = sp.csr_matrix((val,(iK,jK)))
+        Ky = sp.csr_array((val,(iK,jK)))
 
         val = np.tile(np.array([1., -2., 1.]), nx*ny*nz) / (self._dz*self._dz)
         jK = np.arange(3,dtype=np.int64)
@@ -3776,7 +3776,7 @@ cdef class Grid3d_f:
         for i in np.arange(1,nx):
             jK = np.hstack((jK, i*ny*nz+tmp))
 
-        Kz = sp.csr_matrix((val,(iK,jK)))
+        Kz = sp.csr_array((val,(iK,jK)))
 
         return Kx, Ky, Kz
 
@@ -4046,14 +4046,14 @@ cdef class Grid3d_f:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
-        M : :obj:`list` of :obj:`csr_matrix`
+        M : :obj:`list` of :obj:`csr_array`
             matrices of partial derivative of travel time w/r to velocity.
             the number of matrices is equal to the number of sources
-        L : scipy csr_matrix
+        L : scipy csr_array
             Matrix of partial derivative of travel time w/r to slowness.
             if input argument source has 5 columns, L is a list of matrices and
             the number of matrices is equal to the number of sources
-            otherwise, L is a single csr_matrix
+            otherwise, L is a single csr_array
 
         Notes
         -----
@@ -4373,7 +4373,7 @@ cdef class Grid3d_f:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
 
             if evID is None:
                 tmp = sp.vstack(L)
@@ -4406,7 +4406,7 @@ cdef class Grid3d_f:
                                 k += 1
 
                 indptr[MM] = k
-                M.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                M.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
 
         if compute_L==False and compute_M==False and return_rays==False:
             return tt
@@ -5516,7 +5516,7 @@ cdef class Grid2d_d:
 
         Returns
         -------
-        D : scipy csr_matrix with shape (npts, nparams)
+        D : scipy csr_array with shape (npts, nparams)
             Matrix of interpolation weights
             
         Note
@@ -5542,7 +5542,7 @@ cdef class Grid2d_d:
 
                 jvec[n] = i * (self._z.size()-1) + k
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_cells()))
         else:
             # for each point in coord, we have 4 values in D
@@ -5563,7 +5563,7 @@ cdef class Grid2d_d:
                                        (1. - np.abs(coord[n,1]-self._z[k])/self._dz))
                         ii += 1
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_nodes()))
             
 
@@ -5578,7 +5578,7 @@ cdef class Grid2d_d:
 
         Returns
         -------
-        Kx, Kz : :obj:`tuple` of :obj:`csr_matrix`
+        Kx, Kz : :obj:`tuple` of :obj:`csr_array`
             matrices for derivatives along x & z
         """
 
@@ -5612,7 +5612,7 @@ cdef class Grid2d_d:
             j[(nx - 1) * 2 * nz:nx * 2 * nz] = (nx - 1) * nz + jj
             v[(nx - 1) * 2 * nz:nx * 2 * nz] = vd
 
-            Kx = sp.csr_matrix((v, (i, j)))
+            Kx = sp.csr_array((v, (i, j)))
 
             jj = np.vstack((np.hstack((0, np.arange(nz - 1))),
                             np.hstack((np.arange(1, nz), nz - 1)))).T
@@ -5625,7 +5625,7 @@ cdef class Grid2d_d:
                 j[n * 2 * nz:(n + 1) * 2 * nz] = n * nz + jj
                 v[n * 2 * nz:(n + 1) * 2 * nz] = vd
 
-            Kz = sp.csr_matrix((v, (i, j)))
+            Kz = sp.csr_array((v, (i, j)))
         elif order == 2:
             # forward operator is (u_i - 2u_{i+1} + u_{i+2})/dx^2
             # centered operator is (u_{i-1} - 2u_i + u_{i+1})/dx^2
@@ -5652,7 +5652,7 @@ cdef class Grid2d_d:
             j[(nx - 1) * 3 * nz:nx * 3 * nz] = (nx - 3) * nz + jj
             v[(nx - 1) * 3 * nz:nx * 3 * nz] = vd
 
-            Kx = sp.csr_matrix((v, (i, j)))
+            Kx = sp.csr_array((v, (i, j)))
 
             jj = np.vstack((np.hstack((0, np.arange(nz - 2), nz - 3)),
                             np.hstack((1, np.arange(1, nz - 1), nz - 2)),
@@ -5664,7 +5664,7 @@ cdef class Grid2d_d:
                 j[n * 3 * nz:(n + 1) * 3 * nz] = n * nz + jj
                 v[n * 3 * nz:(n + 1) * 3 * nz] = vd
 
-            Kz = sp.csr_matrix((v, (i, j)))
+            Kz = sp.csr_array((v, (i, j)))
 
         else:
             raise ValueError('order value not valid (1 or 2 accepted)')
@@ -5821,7 +5821,7 @@ cdef class Grid2d_d:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
-        L : scipy csr_matrix
+        L : scipy csr_array
             Matrix of partial derivative of travel time w/r to slowness
 
         Notes
@@ -6139,7 +6139,7 @@ cdef class Grid2d_d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
             # we want a single matrix
             tmp = sp.vstack(L)
             itmp = []
@@ -6301,7 +6301,7 @@ cdef class Grid2d_d:
 
         Returns
         -------
-        L : scipy csr_matrix
+        L : scipy csr_array
             data kernel matrix (tt = L*slowness)
 
         Note
@@ -6475,10 +6475,10 @@ cdef class Grid2d_d:
 
         indptr_p.append(k)
         if not aniso:
-            L = sp.csr_matrix((data_p, indices_p, indptr_p),
+            L = sp.csr_array((data_p, indices_p, indptr_p),
                               shape=(nTx, nCells))
         else:
-            L = sp.csr_matrix((data_p, indices_p, indptr_p),
+            L = sp.csr_array((data_p, indices_p, indptr_p),
                               shape=(nTx, 2*nCells))
         return L
 
@@ -7342,7 +7342,7 @@ cdef class Grid2d_f:
 
         Returns
         -------
-        D : scipy csr_matrix with shape (npts, nparams)
+        D : scipy csr_array with shape (npts, nparams)
             Matrix of interpolation weights
 
         Note
@@ -7367,7 +7367,7 @@ cdef class Grid2d_f:
 
                 jvec[n] = i * (self._z.size()-1) + k
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_cells()))
         else:
             ivec = np.kron(np.arange(coord.shape[0], dtype=np.int64),np.ones(4, dtype=np.int64))
@@ -7387,7 +7387,7 @@ cdef class Grid2d_f:
                                        (1. - np.abs(coord[n,1]-self._z[k])/self._dz))
                         ii += 1
 
-            return sp.csr_matrix((vec, (ivec,jvec)),
+            return sp.csr_array((vec, (ivec,jvec)),
                                  shape=(coord.shape[0], self.get_number_of_nodes()))
 
     def compute_K(self, order=1):
@@ -7401,7 +7401,7 @@ cdef class Grid2d_f:
 
         Returns
         -------
-        Kx, Kz : :obj:`tuple` of :obj:`csr_matrix`
+        Kx, Kz : :obj:`tuple` of :obj:`csr_array`
             matrices for derivatives along x & z
         """
         nx, nz = self.shape
@@ -7430,7 +7430,7 @@ cdef class Grid2d_f:
             j[(nx - 1) * 2 * nz:nx * 2 * nz] = (nx - 1) * nz + jj
             v[(nx - 1) * 2 * nz:nx * 2 * nz] = vd
 
-            Kx = sp.csr_matrix((v, (i, j)))
+            Kx = sp.csr_array((v, (i, j)))
 
             jj = np.vstack((np.hstack((0, np.arange(nz - 1))),
                             np.hstack((np.arange(1, nz), nz - 1)))).T
@@ -7443,7 +7443,7 @@ cdef class Grid2d_f:
                 j[n * 2 * nz:(n + 1) * 2 * nz] = n * nz + jj
                 v[n * 2 * nz:(n + 1) * 2 * nz] = vd
 
-            Kz = sp.csr_matrix((v, (i, j)))
+            Kz = sp.csr_array((v, (i, j)))
         elif order == 2:
             idx2 = 1 / (self.dx * self.dx)
             idz2 = 1 / (self.dz * self.dz)
@@ -7466,7 +7466,7 @@ cdef class Grid2d_f:
             j[(nx - 1) * 3 * nz:nx * 3 * nz] = (nx - 3) * nz + jj
             v[(nx - 1) * 3 * nz:nx * 3 * nz] = vd
 
-            Kx = sp.csr_matrix((v, (i, j)))
+            Kx = sp.csr_array((v, (i, j)))
 
             jj = np.vstack((np.hstack((0, np.arange(nz - 2), nz - 3)),
                             np.hstack((1, np.arange(1, nz - 1), nz - 2)),
@@ -7478,7 +7478,7 @@ cdef class Grid2d_f:
                 j[n * 3 * nz:(n + 1) * 3 * nz] = n * nz + jj
                 v[n * 3 * nz:(n + 1) * 3 * nz] = vd
 
-            Kz = sp.csr_matrix((v, (i, j)))
+            Kz = sp.csr_array((v, (i, j)))
 
         else:
             raise ValueError('order value not valid (1 or 2 accepted)')
@@ -7633,7 +7633,7 @@ cdef class Grid2d_f:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
-        L : scipy csr_matrix
+        L : scipy csr_array
             Matrix of partial derivative of travel time w/r to slowness
 
         Notes
@@ -7950,7 +7950,7 @@ cdef class Grid2d_f:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
             tmp = sp.vstack(L)
             itmp = []
             for n in range(nTx):

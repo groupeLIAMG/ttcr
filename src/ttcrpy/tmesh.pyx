@@ -803,7 +803,7 @@ cdef class Mesh3d:
 
         Returns
         -------
-        D : scipy csr_matrix with shape (npts, nparams)
+        D : scipy csr_array with shape (npts, nparams)
             Matrix of interpolation weights
         """
         if self.is_outside(coord):
@@ -837,7 +837,7 @@ cdef class Mesh3d:
                         k += 1
 
         indptr[MM] = k
-        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+        return sp.csr_array((val, indices, indptr), shape=(MM,NN))
 
     def compute_K(self, order=2, taylor_order=2, weighting=True, squared=True,
                   s0inside=False, additional_points=0):
@@ -865,7 +865,7 @@ cdef class Mesh3d:
 
         Returns
         -------
-        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_array`
             matrices for derivatives along x, y, & z
         """
 
@@ -886,7 +886,7 @@ cdef class Mesh3d:
         for nk in range(3):
             m_tuple = ([0.0], [0.0], [0.0])
             build_matrix_siv(MM, NN, k_data[nk], m_tuple)
-            K.append( sp.csr_matrix(m_tuple, shape=(MM,NN)) )
+            K.append( sp.csr_array(m_tuple, shape=(MM,NN)) )
             if order == 2 and squared:
                 K[-1] = K[-1] * K[-1]
 
@@ -1133,11 +1133,11 @@ cdef class Mesh3d:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
-        L :  :obj:`list` of :obj:`csr_matrix`  or  scipy csr_matrix
+        L :  :obj:`list` of :obj:`csr_array`  or  scipy csr_array
             Matrix of partial derivative of travel time w/r to slowness.
             if input argument source has 5 columns or if slowness is defined at
             nodes, L is a list of matrices and the number of matrices is equal
-            to the number of sources otherwise, L is a single csr_matrix
+            to the number of sources otherwise, L is a single csr_array
 
         Notes
         -----
@@ -1420,7 +1420,7 @@ cdef class Mesh3d:
                         k += 1
 
                 indptr[index] = k
-                L.append(sp.csr_matrix((val, indices, indptr),
+                L.append(sp.csr_array((val, indices, indptr),
                          shape=(indptr.size - 1, NN)))
         
         if compute_L and self.cell_slowness:
@@ -1484,7 +1484,7 @@ cdef class Mesh3d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
 
             if evID is None:
                 # we want a single matrix
@@ -1525,7 +1525,7 @@ cdef class Mesh3d:
                 - 3rd contains Z coordinates
         Returns
         -------
-        L : scipy csr_matrix
+        L : scipy csr_array
             data kernel matrix (tt = L*slowness)
 
         Note
@@ -1574,7 +1574,7 @@ cdef class Mesh3d:
                         val[k] = l_data[i][nn].v
                         k += 1
         indptr[MM] = k
-        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+        return sp.csr_array((val, indices, indptr), shape=(MM,NN))
 
     def to_vtk(self, fields, filename):
         """
@@ -2758,7 +2758,7 @@ cdef class Mesh2d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
             # we want a single matrix
             tmp = sp.vstack(L)
             itmp = []
