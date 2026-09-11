@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm[toml]", "cython", "numpy", "scipy", "vtk"]
+requires = ["setuptools", "setuptools-scm[toml]", "cython", "numpy", "scipy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -31,6 +31,10 @@ classifiers = [
     "Topic :: Scientific/Engineering"
 ]
 dynamic = ["version"]
+
+[project.optional-dependencies]
+# reading and writing VTK files: to_vtk, saved raypaths, builder
+vtk = ["vtk"]
 
 [project.urls]
 homepage = "https://github.com/groupeLIAMG/ttcr"

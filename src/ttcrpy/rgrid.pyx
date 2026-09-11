@@ -28,8 +28,6 @@ import numpy as np
 cimport numpy as np
 import scipy.sparse as sp
 
-import vtk
-from vtk.util import numpy_support
 
 from ttcrpy.rgrid cimport Grid3D, Grid3Drcfs, Grid3Drcsp, Grid3Drcdsp, \
     Grid3Drnfs, Grid3Drnsp, Grid3Drndsp, Grid2D, Grid2Drc, Grid2Drn, \
@@ -113,6 +111,26 @@ def _check_uniform_spacing(coords, str name):
             "All methods on rectilinear grids need a constant spacing along "
             "each axis; the spacings may differ between axes."
             .format(name, float(np.min(d)), float(np.max(d)), dev, tol))
+
+
+def _vtk(what):
+    """Import VTK on first use.
+
+    VTK serves only reading and writing files -- to_vtk, the raypaths it
+    saves, and builder -- so it is an optional dependency and raytracing does
+    not need it installed.  Importing it here rather than at the top of the
+    module is what makes that true: installing without it succeeds, and so
+    does importing ttcrpy, until one of those methods is called.
+    """
+    try:
+        import vtk
+        from vtk.util import numpy_support
+    except ImportError as e:
+        raise ImportError(
+            "{0} needs VTK, an optional dependency of ttcrpy; install it "
+            "with pip install 'ttcrpy[vtk]'".format(what)) from e
+    return vtk, numpy_support
+
 
 
 cdef class Grid3d_d:
@@ -2045,6 +2063,7 @@ cdef class Grid3d_d:
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
         """
+        vtk, numpy_support = _vtk('Grid3d_d.to_vtk')
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(self.y)
         zCoords = numpy_support.numpy_to_vtk(self.z)
@@ -2108,6 +2127,7 @@ cdef class Grid3d_d:
             writer.Update()
 
     def _save_raypaths(self, rays, filename):
+        vtk, numpy_support = _vtk('Grid3d_d._save_raypaths')
         polydata = vtk.vtkPolyData()
         cellarray = vtk.vtkCellArray()
         pts = vtk.vtkPoints()
@@ -2165,6 +2185,7 @@ cdef class Grid3d_d:
         grid: :obj:`Grid3d`
             grid instance
         """
+        vtk, numpy_support = _vtk('Grid3d_d.builder')
 
         reader = vtk.vtkXMLRectilinearGridReader()
         reader.SetFileName(filename)
@@ -4442,6 +4463,7 @@ cdef class Grid3d_f:
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
         """
+        vtk, numpy_support = _vtk('Grid3d_f.to_vtk')
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(self.y)
         zCoords = numpy_support.numpy_to_vtk(self.z)
@@ -4501,6 +4523,7 @@ cdef class Grid3d_f:
             writer.Update()
 
     def _save_raypaths(self, rays, filename):
+        vtk, numpy_support = _vtk('Grid3d_f._save_raypaths')
         polydata = vtk.vtkPolyData()
         cellarray = vtk.vtkCellArray()
         pts = vtk.vtkPoints()
@@ -4549,6 +4572,7 @@ cdef class Grid3d_f:
 
         Other parameters are defined in the Constructor.
         """
+        vtk, numpy_support = _vtk('Grid3d_f.builder')
         reader = vtk.vtkXMLRectilinearGridReader()
         reader.SetFileName(filename)
         reader.Update()
@@ -6178,6 +6202,7 @@ cdef class Grid2d_d:
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
         """
+        vtk, numpy_support = _vtk('Grid2d_d.to_vtk')
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(np.array([0.0]))
         zCoords = numpy_support.numpy_to_vtk(self.z)
@@ -6241,6 +6266,7 @@ cdef class Grid2d_d:
             writer.Update()
 
     def _save_raypaths(self, rays, filename):
+        vtk, numpy_support = _vtk('Grid2d_d._save_raypaths')
         polydata = vtk.vtkPolyData()
         cellarray = vtk.vtkCellArray()
         pts = vtk.vtkPoints()
@@ -7988,6 +8014,7 @@ cdef class Grid2d_f:
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
         """
+        vtk, numpy_support = _vtk('Grid2d_f.to_vtk')
         xCoords = numpy_support.numpy_to_vtk(self.x)
         yCoords = numpy_support.numpy_to_vtk(np.array([0.0]))
         zCoords = numpy_support.numpy_to_vtk(self.z)
@@ -8047,6 +8074,7 @@ cdef class Grid2d_f:
             writer.Update()
 
     def _save_raypaths(self, rays, filename):
+        vtk, numpy_support = _vtk('Grid2d_f._save_raypaths')
         polydata = vtk.vtkPolyData()
         cellarray = vtk.vtkCellArray()
         pts = vtk.vtkPoints()

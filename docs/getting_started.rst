@@ -18,10 +18,18 @@ You can use pip to install the package by doing::
 Requirements
 ============
 
-ttcrpy needs the following packages:
+ttcrpy needs the following packages, installed along with it by ``pip install ttcrpy``:
   - numpy (https://numpy.org), 2.0 or later
   - scipy (https://www.scipy.org), 1.14 or later
-  - vtk (https://www.vtk.org)
+
+VTK (https://www.vtk.org) is optional.  It is needed only to read and write
+VTK files -- ``to_vtk``, the raypaths it can save, and ``builder`` -- and not
+for raytracing.  Install it with ttcrpy by doing::
+
+  pip install 'ttcrpy[vtk]'
+
+Without it, those methods raise an ImportError saying so, and everything else
+works as usual.
 
 Sparse arrays returned by ttcrpy
 ==================================
