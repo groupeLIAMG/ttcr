@@ -7,6 +7,7 @@ import numpy as np
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 from scipy.io import mmread
+from scipy.spatial import Delaunay
 
 import ttcrpy.tmesh as tm
 
@@ -95,10 +96,22 @@ class TestComputeKSquared(unittest.TestCase):
     """
 
     def setUp(self):
-        TestMesh3Dc.setUp(self)          # the same mesh, without its tests
+        # a small mesh: compute_K takes minutes on layers_medium.vtu.  The
+        # interior nodes are jittered, as compute_K rejects a regular lattice
+        # as poorly conditioned.
+        rng = np.random.default_rng(0)
+        x = np.linspace(0., 10., 6)
+        h = x[1] - x[0]
+        nodes = np.array(np.meshgrid(x, x, x, indexing='ij')).reshape(3, -1).T
+        inner = np.all((nodes > 0.) & (nodes < 10.), axis=1)
+        nodes[inner] += rng.uniform(-0.3*h, 0.3*h, (inner.sum(), 3))
+        self.nodes = nodes
+        self.tet = Delaunay(nodes).simplices.astype(np.int64)
 
     def test_squared_is_the_matrix_square(self):
-        g = tm.Mesh3d(self.nodes, self.tet, method='FSM', tt_from_rp=0)
+        # compute_K exists for slowness at nodes only
+        g = tm.Mesh3d(self.nodes, self.tet, cell_slowness=False,
+                      method='FSM', tt_from_rp=0)
         first = g.compute_K(order=1)
         squared = g.compute_K(order=2, squared=True)
         for name, a, b in zip('xyz', first, squared):
