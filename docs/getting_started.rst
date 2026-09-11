@@ -23,7 +23,7 @@ ttcrpy needs the following packages:
   - scipy (https://www.scipy.org), 1.14 or later
   - vtk (https://www.vtk.org)
 
-Sparse matrices returned by ttcrpy
+Sparse arrays returned by ttcrpy
 ==================================
 
 The methods that return sensitivity or derivative matrices -- ``raytrace``
