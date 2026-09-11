@@ -28,8 +28,6 @@ import numpy as np
 cimport numpy as np
 import scipy.sparse as sp
 
-import vtk
-from vtk.util import numpy_support
 
 from ttcrpy.tmesh cimport Grid3D, Grid3Ducfs, Grid3Ducsp, Grid3Ducdsp, \
     Grid3Dunfs, Grid3Dunsp, Grid3Dundsp, Grid2D, Grid2Duc, Grid2Dun, \
@@ -50,6 +48,26 @@ def set_verbose(v):
         verbosity level
     """
     setVerbose(v)
+
+
+def _vtk(what):
+    """Import VTK on first use.
+
+    VTK serves only reading and writing files -- to_vtk, the raypaths it
+    saves, and builder -- so it is an optional dependency and raytracing does
+    not need it installed.  Importing it here rather than at the top of the
+    module is what makes that true: installing without it succeeds, and so
+    does importing ttcrpy, until one of those methods is called.
+    """
+    try:
+        import vtk
+        from vtk.util import numpy_support
+    except ImportError as e:
+        raise ImportError(
+            "{0} needs VTK, an optional dependency of ttcrpy; install it "
+            "with pip install 'ttcrpy[vtk]'".format(what)) from e
+    return vtk, numpy_support
+
 
 
 cdef class Mesh3d:
@@ -803,7 +821,7 @@ cdef class Mesh3d:
 
         Returns
         -------
-        D : scipy csr_matrix with shape (npts, nparams)
+        D : scipy csr_array with shape (npts, nparams)
             Matrix of interpolation weights
         """
         if self.is_outside(coord):
@@ -837,7 +855,7 @@ cdef class Mesh3d:
                         k += 1
 
         indptr[MM] = k
-        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+        return sp.csr_array((val, indices, indptr), shape=(MM,NN))
 
     def compute_K(self, order=2, taylor_order=2, weighting=True, squared=True,
                   s0inside=False, additional_points=0):
@@ -865,7 +883,7 @@ cdef class Mesh3d:
 
         Returns
         -------
-        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_matrix`
+        Kx, Ky, Kz : :obj:`tuple` of :obj:`csr_array`
             matrices for derivatives along x, y, & z
         """
 
@@ -886,9 +904,9 @@ cdef class Mesh3d:
         for nk in range(3):
             m_tuple = ([0.0], [0.0], [0.0])
             build_matrix_siv(MM, NN, k_data[nk], m_tuple)
-            K.append( sp.csr_matrix(m_tuple, shape=(MM,NN)) )
+            K.append( sp.csr_array(m_tuple, shape=(MM,NN)) )
             if order == 2 and squared:
-                K[-1] = K[-1] * K[-1]
+                K[-1] = K[-1] @ K[-1]
 
         return tuple(K)
 
@@ -1133,11 +1151,11 @@ cdef class Mesh3d:
             travel times for the appropriate source-rcv  (see Notes below)
         rays : :obj:`list` of :obj:`np.ndarray`
             Coordinates of segments forming raypaths (if return_rays is True)
-        L :  :obj:`list` of :obj:`csr_matrix`  or  scipy csr_matrix
+        L :  :obj:`list` of :obj:`csr_array`  or  scipy csr_array
             Matrix of partial derivative of travel time w/r to slowness.
             if input argument source has 5 columns or if slowness is defined at
             nodes, L is a list of matrices and the number of matrices is equal
-            to the number of sources otherwise, L is a single csr_matrix
+            to the number of sources otherwise, L is a single csr_array
 
         Notes
         -----
@@ -1420,7 +1438,7 @@ cdef class Mesh3d:
                         k += 1
 
                 indptr[index] = k
-                L.append(sp.csr_matrix((val, indices, indptr),
+                L.append(sp.csr_array((val, indices, indptr),
                          shape=(indptr.size - 1, NN)))
         
         if compute_L and self.cell_slowness:
@@ -1484,7 +1502,7 @@ cdef class Mesh3d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
 
             if evID is None:
                 # we want a single matrix
@@ -1525,8 +1543,8 @@ cdef class Mesh3d:
                 - 3rd contains Z coordinates
         Returns
         -------
-        L : scipy csr_matrix
-            data kernel matrix (tt = L*slowness)
+        L : scipy csr_array
+            data kernel matrix (tt = L @ slowness)
 
         Note
         ----
@@ -1574,7 +1592,7 @@ cdef class Mesh3d:
                         val[k] = l_data[i][nn].v
                         k += 1
         indptr[MM] = k
-        return sp.csr_matrix((val, indices, indptr), shape=(MM,NN))
+        return sp.csr_array((val, indices, indptr), shape=(MM,NN))
 
     def to_vtk(self, fields, filename):
         """
@@ -1597,6 +1615,7 @@ cdef class Mesh3d:
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
         """
+        vtk, numpy_support = _vtk('Mesh3d.to_vtk')
         cdef int n, nn
         ugrid = vtk.vtkUnstructuredGrid()
         tPts = vtk.vtkPoints()
@@ -1641,6 +1660,7 @@ cdef class Mesh3d:
             writer.Update()
 
     def  _save_raypaths(self, rays, filename):
+        vtk, numpy_support = _vtk('Mesh3d._save_raypaths')
         polydata = vtk.vtkPolyData()
         cellarray = vtk.vtkCellArray()
         pts = vtk.vtkPoints()
@@ -1697,6 +1717,7 @@ cdef class Mesh3d:
         mesh: :obj:`Mesh3d`
             mesh instance
         """
+        vtk, numpy_support = _vtk('Mesh3d.builder')
 
         cdef int n, nn
         reader = vtk.vtkXMLUnstructuredGridReader()
@@ -2758,7 +2779,7 @@ cdef class Mesh2d:
                                 k += 1
 
                 indptr[MM] = k
-                L.append( sp.csr_matrix((val, indices, indptr), shape=(MM,NN)) )
+                L.append( sp.csr_array((val, indices, indptr), shape=(MM,NN)) )
             # we want a single matrix
             tmp = sp.vstack(L)
             itmp = []
@@ -2797,6 +2818,7 @@ cdef class Mesh2d:
         -----
         VTK files can be visualized with Paraview (https://www.paraview.org)
         """
+        vtk, numpy_support = _vtk('Mesh2d.to_vtk')
         cdef int n, nn
         ugrid = vtk.vtkUnstructuredGrid()
         tPts = vtk.vtkPoints()
@@ -2841,6 +2863,7 @@ cdef class Mesh2d:
             writer.Update()
 
     def  _save_raypaths(self, rays, filename):
+        vtk, numpy_support = _vtk('Mesh2d._save_raypaths')
         polydata = vtk.vtkPolyData()
         cellarray = vtk.vtkCellArray()
         pts = vtk.vtkPoints()
@@ -2895,6 +2918,7 @@ cdef class Mesh2d:
         mesh: :obj:`Mesh2d`
             mesh instance
         """
+        vtk, numpy_support = _vtk('Mesh2d.builder')
 
         cdef int n, nn
         reader = vtk.vtkXMLUnstructuredGridReader()

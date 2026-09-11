@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm[toml]", "cython", "numpy", "scipy", "vtk"]
+requires = ["setuptools", "setuptools-scm[toml]", "cython", "numpy", "scipy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,6 +11,10 @@ description = "Code to perform raytracing for geophysical applications"
 license = {file = "01_LICENSE.txt"}
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.0.0",
+    "scipy>=1.14",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -27,6 +31,10 @@ classifiers = [
     "Topic :: Scientific/Engineering"
 ]
 dynamic = ["version"]
+
+[project.optional-dependencies]
+# reading and writing VTK files: to_vtk, saved raypaths, builder
+vtk = ["vtk"]
 
 [project.urls]
 homepage = "https://github.com/groupeLIAMG/ttcr"

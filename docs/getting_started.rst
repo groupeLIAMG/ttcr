@@ -18,10 +18,39 @@ You can use pip to install the package by doing::
 Requirements
 ============
 
-ttcrpy needs the following packages:
-  - numpy (https://numpy.org)
-  - scipy (https://www.scipy.org)
-  - vtk (https://www.vtk.org)
+ttcrpy needs the following packages, installed along with it by ``pip install ttcrpy``:
+  - numpy (https://numpy.org), 2.0 or later
+  - scipy (https://www.scipy.org), 1.14 or later
+
+VTK (https://www.vtk.org) is optional.  It is needed only to read and write
+VTK files -- ``to_vtk``, the raypaths it can save, and ``builder`` -- and not
+for raytracing.  Install it with ttcrpy by doing::
+
+  pip install 'ttcrpy[vtk]'
+
+Without it, those methods raise an ImportError saying so, and everything else
+works as usual.
+
+Sparse arrays returned by ttcrpy
+==================================
+
+The methods that return sensitivity or derivative matrices -- ``raytrace``
+with ``compute_L`` or ``compute_M``, ``compute_D``, ``compute_K`` and
+``data_kernel_straight_rays`` -- hand back scipy **sparse arrays**
+(``csr_array``), and no longer sparse matrices (``csr_matrix``).
+
+The difference that matters is what the operators mean.  On a sparse array
+``*`` multiplies elementwise and ``@`` is the matrix product, where on a
+sparse matrix ``*`` was itself the matrix product.  Code written against the
+older releases keeps running and quietly computes something else::
+
+    tt = L * s      # a matrix product before, elementwise now
+    tt = L @ s      # the matrix product, on either
+
+Nothing else about the returned objects changes: they are indexed, stacked
+and converted with ``toarray()`` as before.  scipy's own guide to the
+difference is at
+https://docs.scipy.org/doc/scipy/reference/sparse.migration_to_sparray.html
 
 ***************
 Simple examples

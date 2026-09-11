@@ -7,6 +7,7 @@ import numpy as np
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 from scipy.io import mmread
+from scipy.spatial import Delaunay
 
 import ttcrpy.tmesh as tm
 
@@ -82,6 +83,43 @@ class TestMesh3Dc(unittest.TestCase):
         tt_ref = get_tt('./files/Grid3Ducdsp_tt_grid.vtu')
         self.assertLess(np.sum(np.abs(tt-tt_ref))/tt.size, 0.01,
                         'DSPM accuracy failed (slowness in cells)')
+
+
+class TestComputeKSquared(unittest.TestCase):
+    """compute_K(order=2, squared=True) is the matrix square of order 1.
+
+    The squaring used to read K * K.  That was a matrix product while ttcrpy
+    returned sparse matrices; on the sparse arrays it returns now, * is
+    elementwise, and the second-derivative operator came back as the
+    elementwise square without any error.  Nothing exercised this path, so
+    139 tests passed across the change.
+    """
+
+    def setUp(self):
+        # a small mesh: compute_K takes minutes on layers_medium.vtu.  The
+        # interior nodes are jittered, as compute_K rejects a regular lattice
+        # as poorly conditioned.
+        rng = np.random.default_rng(0)
+        x = np.linspace(0., 10., 6)
+        h = x[1] - x[0]
+        nodes = np.array(np.meshgrid(x, x, x, indexing='ij')).reshape(3, -1).T
+        inner = np.all((nodes > 0.) & (nodes < 10.), axis=1)
+        nodes[inner] += rng.uniform(-0.3*h, 0.3*h, (inner.sum(), 3))
+        self.nodes = nodes
+        self.tet = Delaunay(nodes).simplices.astype(np.int64)
+
+    def test_squared_is_the_matrix_square(self):
+        # compute_K exists for slowness at nodes only
+        g = tm.Mesh3d(self.nodes, self.tet, cell_slowness=False,
+                      method='FSM', tt_from_rp=0)
+        first = g.compute_K(order=1)
+        squared = g.compute_K(order=2, squared=True)
+        for name, a, b in zip('xyz', first, squared):
+            with self.subTest(axis=name):
+                scale = abs(b).max()
+                self.assertLessEqual(abs(a @ a - b).max(), 1e-12 * scale)
+                # and the check can tell the two apart
+                self.assertGreater(abs(a.multiply(a) - b).max(), 1e-6 * scale)
 
 
 class TestMesh3Dc_L(unittest.TestCase):
