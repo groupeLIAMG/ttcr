@@ -170,9 +170,9 @@ namespace ttcr {
 
         // Accessors (same as Grid3Drnfs)
         /// @return Number of basic sweep iterations the last solve took.
-        const int get_niter() const { return niter_final; }
+        const int get_niter() const override { return niter_final; }
         /// @return Number of WENO3 sweep iterations the last solve took.
-        const int get_niterw() const { return niterw_final; }
+        const int get_niterw() const override { return niterw_final; }
 
         // GPU-specific methods
         /**
@@ -299,12 +299,12 @@ namespace ttcr {
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
-                     const size_t threadNo=0) const;
+                     const size_t threadNo=0) const override;
         
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<std::vector<sxyz<T1>>>& Rx,
-                     const size_t threadNo=0) const;
+                     const size_t threadNo=0) const override;
 
         /**
          * Perform sweep iterations with convergence checking

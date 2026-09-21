@@ -529,13 +529,13 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
 
-                    if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
+                    if ( slo->GetCapacity() != dataSet->GetNumberOfPoints() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return nullptr;
                     }
 
-                    slowness.resize( slo->GetSize() );
-                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    slowness.resize( slo->GetCapacity() );
+                    for ( size_t n=0; n<slo->GetCapacity(); ++n ) {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                     foundSlowness = true;
@@ -763,13 +763,13 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
 
-                    if ( slo->GetSize() != dataSet->GetNumberOfCells() ) {
+                    if ( slo->GetCapacity() != dataSet->GetNumberOfCells() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return nullptr;
                     }
 
-                    slowness.resize( slo->GetSize() );
-                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    slowness.resize( slo->GetCapacity() );
+                    for ( size_t n=0; n<slo->GetCapacity(); ++n ) {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                     foundSlowness = true;
@@ -2051,12 +2051,12 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
 
-                    if ( slo->GetSize() != dataSet->GetNumberOfPoints() ) {
+                    if ( slo->GetCapacity() != dataSet->GetNumberOfPoints() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return nullptr;
                     }
 
-                    slowness.resize( slo->GetSize() );
+                    slowness.resize( slo->GetCapacity() );
                     for ( size_t i=0, n=0; i<nnodes[0]; ++i ) {
                         for ( size_t k=0; k<nnodes[2]; ++k,++n ) {
                             // VTK: x is fast axis, we want z as fast axis
@@ -2298,12 +2298,12 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
 
-                    if ( slo->GetSize() != dataSet->GetNumberOfCells() ) {
+                    if ( slo->GetCapacity() != dataSet->GetNumberOfCells() ) {
                         std::cout << "Problem with Slowness data (wrong size)" << std::endl;
                         return nullptr;
                     }
 
-                    slowness.resize( slo->GetSize() );
+                    slowness.resize( slo->GetCapacity() );
                     for ( size_t i=0, n=0; i<ncells[0]; ++i ) {
                         for ( size_t k=0; k<ncells[2]; ++k,++n ) {
                             // VTK: x is fast axis, we want z as fast axis

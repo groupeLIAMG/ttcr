@@ -266,7 +266,7 @@ namespace ttcr {
          *       this is not the overload a caller working in terms of the
          *       primary nodes wants; the derived classes provide that.
          */
-        void setSlowness(const T1 *s, const size_t ns) {
+        void setSlowness(const T1 *s, const size_t ns) override {
             if ( nodes.size() != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
@@ -280,7 +280,7 @@ namespace ttcr {
          * @param s one value per node, secondary nodes included.
          * @throws std::length_error if @p s does not match the node count.
          */
-        void setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) override {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
@@ -296,7 +296,7 @@ namespace ttcr {
          * @note Asymmetric with the setters: this returns only the primary
          *       values, being the model parameters, while they take all nodes.
          */
-        void getSlowness(std::vector<T1>& slowness) const {
+        void getSlowness(std::vector<T1>& slowness) const override {
             if (slowness.size() != nPrimary) {
                 slowness.resize(nPrimary);
             }
@@ -327,7 +327,7 @@ namespace ttcr {
          *       solvers ignore it, and ttcr::Grid3Dundsp instead sets it to its
          *       own tertiary-node radius.
          */
-        void setSourceRadius(const double r) { source_radius = r; }
+        void setSourceRadius(const double r) override { source_radius = r; }
 
         /**
          * @brief Set the traveltime at one node.
@@ -344,7 +344,7 @@ namespace ttcr {
          * @return the number of nodes.
          * @note Compare @c nPrimary, the count of mesh vertices alone.
          */
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes() const override { return nodes.size(); }
 
         /**
          * @brief Retrieve the traveltimes at the primary nodes.
@@ -366,7 +366,7 @@ namespace ttcr {
          * @{
          */
         /** @brief Smallest node x coordinate. */
-        const T1 getXmin() const {
+        const T1 getXmin() const override {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 xmin = xmin<it->getX() ? xmin : it->getX();
@@ -374,7 +374,7 @@ namespace ttcr {
             return xmin;
         }
         /** @brief Largest node x coordinate. */
-        const T1 getXmax() const {
+        const T1 getXmax() const override {
             T1 xmax = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 xmax = xmax>it->getX() ? xmax : it->getX();
@@ -382,7 +382,7 @@ namespace ttcr {
             return xmax;
         }
         /** @brief Smallest node y coordinate. */
-        const T1 getYmin() const {
+        const T1 getYmin() const override {
             T1 ymin = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 ymin = ymin<it->getY() ? ymin : it->getY();
@@ -390,7 +390,7 @@ namespace ttcr {
             return ymin;
         }
         /** @brief Largest node y coordinate. */
-        const T1 getYmax() const {
+        const T1 getYmax() const override {
             T1 ymax = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 ymax = ymax>it->getY() ? ymax : it->getY();
@@ -398,7 +398,7 @@ namespace ttcr {
             return ymax;
         }
         /** @brief Smallest node z coordinate. */
-        const T1 getZmin() const {
+        const T1 getZmin() const override {
             T1 zmin = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 zmin = zmin<it->getZ() ? zmin : it->getZ();
@@ -406,7 +406,7 @@ namespace ttcr {
             return zmin;
         }
         /** @brief Largest node z coordinate. */
-        const T1 getZmax() const {
+        const T1 getZmax() const override {
             T1 zmax = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 zmax = zmax>it->getZ() ? zmax : it->getZ();
@@ -433,7 +433,7 @@ namespace ttcr {
          *       are not vertices of any cell.
          */
         void saveTT(const std::string &fname, const int all, const size_t nt=0,
-                    const int format=1) const;
+                    const int format=1) const override;
         /**
          * @brief Read back a traveltime field written by @ref saveTT.
          * @param fname  base filename.
@@ -445,7 +445,7 @@ namespace ttcr {
          *       because @c nodes is @c mutable.
          */
         void loadTT(const std::string &fname, const int all, const size_t nt=0,
-                    const int format=1) const;
+                    const int format=1) const override;
 
 #ifdef VTK
         /**
@@ -456,14 +456,14 @@ namespace ttcr {
          *        tags, as carried over from the Gmsh mesh.
          */
         void saveModelVTU(const std::string &fname, const bool saveSlowness=true,
-                          const bool savePhysicalEntity=false) const;
+                          const bool savePhysicalEntity=false) const override;
 #endif
 
         /**
          * @brief Write the coordinates of the secondary nodes, for debugging.
          * @param os open output stream; one @c "x y z" line per node.
          */
-        void dump_secondary(std::ofstream& os) const {
+        void dump_secondary(std::ofstream& os) const override {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
@@ -488,7 +488,7 @@ namespace ttcr {
          */
         void computeD(std::vector<sxyz<T1>> pts,
                       std::vector<std::vector<sijv<T1>>> &d_data,
-                      const bool translated=false) const;
+                      const bool translated=false) const override;
 
         /**
          * @brief Build spatial derivative operators at every primary node.
@@ -517,7 +517,7 @@ namespace ttcr {
         void computeK(std::vector<std::vector<std::vector<siv<T1>>>>& k_data,
                       const int order=2, const int taylorSeriesOrder=2,
                       const bool weighting=1, const bool s0inside=0,
-                      const int additionnalPoints=0) const;
+                      const int additionnalPoints=0) const override;
 
         /**
          * @brief Mean length of the tetrahedron edges.
@@ -527,7 +527,7 @@ namespace ttcr {
          * express its tertiary-node radius as a multiple of the local element
          * size rather than as an absolute distance.
          */
-        const T1 getAverageEdgeLength() const;
+        const T1 getAverageEdgeLength() const override;
 
     protected:
         int rp_method;   ///< Raypath gradient estimator; see @ref g3dun_raypath.
@@ -643,7 +643,7 @@ namespace ttcr {
          *         otherwise interpolated over its tetrahedron.
          */
         T1 getTraveltime(const sxyz<T1>& Rx,
-                         const size_t threadNo) const;
+                         const size_t threadNo) const override;
 
         /**
          * @brief Traveltime at a point, using a caller-supplied node set.
@@ -669,7 +669,7 @@ namespace ttcr {
          * @throws std::runtime_error naming the offending point if one falls
          *         outside every tetrahedron.
          */
-        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const override;
 
         /**
          * @brief Whether a point lies inside a tetrahedron, by determinants.
@@ -827,7 +827,7 @@ namespace ttcr {
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const sxyz<T1>& Rx,
-                                    const size_t threadNo) const;
+                                    const size_t threadNo) const override;
 
         // keep the base-class getRaypath overloads visible; the helper
         // overloads below would otherwise hide them (-Woverloaded-virtual)
@@ -868,7 +868,7 @@ namespace ttcr {
                         const sxyz<T1>& Rx,
                         std::vector<sxyz<T1>>& r_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Accumulate a tomography matrix row and the traveltime,
@@ -888,7 +888,7 @@ namespace ttcr {
                         std::vector<sijv<T1>>& m_data,
                         const size_t RxNo,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Trace a raypath and accumulate a tomography matrix row.
@@ -925,7 +925,7 @@ namespace ttcr {
                         std::vector<sijv<T1>>& m_data,
                         const size_t RxNo,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
         /** @} */
 
         /**
@@ -1322,7 +1322,7 @@ namespace ttcr {
          * Locates the containing tetrahedron and interpolates over its four
          * primary nodes, honouring @c processVel.
          */
-        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const;
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const override;
         /**
          * @brief Slowness at a point whose position is already classified.
          * @param curr_pt   the point.

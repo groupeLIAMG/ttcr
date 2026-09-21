@@ -198,7 +198,7 @@ namespace ttcr {
          * @note The overload the Cython bindings use, to avoid copying a NumPy
          *       array into a @c std::vector first.
          */
-        void setSlowness(const T1 *s, const size_t ns) {
+        void setSlowness(const T1 *s, const size_t ns) override {
             if ( tetrahedra.size() != ns ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
@@ -211,7 +211,7 @@ namespace ttcr {
          *          to the constructor.
          * @throws std::length_error if @p s has the wrong size.
          */
-        void setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) override {
             try {
                 cells.setSlowness( s );
             } catch (std::exception& e) {
@@ -223,7 +223,7 @@ namespace ttcr {
          * @brief Copy the tetrahedron slowness values out of the mesh.
          * @param[out] s resized to the tetrahedron count and filled.
          */
-        void getSlowness(std::vector<T1>& s) const {
+        void getSlowness(std::vector<T1>& s) const override {
             if (s.size() != tetrahedra.size()) {
                 s.resize(tetrahedra.size());
             }
@@ -238,7 +238,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setChi(const std::vector<T1>& s) {
+        void setChi(const std::vector<T1>& s) override {
             try {
                 cells.setChi( s );
             } catch (std::exception& e) {
@@ -252,7 +252,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setPsi(const std::vector<T1>& s) {
+        void setPsi(const std::vector<T1>& s) override {
             try {
                 cells.setPsi( s );
             } catch (std::exception& e) {
@@ -266,7 +266,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setTiltAngle(const std::vector<T1>& s) {
+        void setTiltAngle(const std::vector<T1>& s) override {
             try {
                 cells.setTiltAngle( s );
             } catch (std::exception& e) {
@@ -279,7 +279,7 @@ namespace ttcr {
          * @param p 1 for qP, anything else for qSV.
          * @throws std::exception if the @c CELL policy models a single phase.
          */
-        void setPhase(const int p) {
+        void setPhase(const int p) override {
             try {
                 cells.setPhase( p );
             } catch (std::exception& e) {
@@ -293,7 +293,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setVp0(const std::vector<T1>& s) {
+        void setVp0(const std::vector<T1>& s) override {
             try {
                 cells.setVp0( s );
             } catch (std::exception& e) {
@@ -307,7 +307,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setVs0(const std::vector<T1>& s) {
+        void setVs0(const std::vector<T1>& s) override {
             try {
                 cells.setVs0( s );
             } catch (std::exception& e) {
@@ -321,7 +321,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setDelta(const std::vector<T1>& s) {
+        void setDelta(const std::vector<T1>& s) override {
             try {
                 cells.setDelta( s );
             } catch (std::exception& e) {
@@ -335,7 +335,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setEpsilon(const std::vector<T1>& s) {
+        void setEpsilon(const std::vector<T1>& s) override {
             try {
                 cells.setEpsilon( s );
             } catch (std::exception& e) {
@@ -349,7 +349,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setGamma(const std::vector<T1>& s) {
+        void setGamma(const std::vector<T1>& s) override {
             try {
                 cells.setGamma( s );
             } catch (std::exception& e) {
@@ -363,7 +363,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setS2(const std::vector<T1>& s) {
+        void setS2(const std::vector<T1>& s) override {
             try {
                 cells.setS2( s );
             } catch (std::exception& e) {
@@ -377,7 +377,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setS4(const std::vector<T1>& s) {
+        void setS4(const std::vector<T1>& s) override {
             try {
                 cells.setS4( s );
             } catch (std::exception& e) {
@@ -392,7 +392,7 @@ namespace ttcr {
          *       spreads the source over the nodes within it, which avoids the
          *       singularity of a true point source on a coarse mesh.
          */
-        void setSourceRadius(const double r) { source_radius = r; }
+        void setSourceRadius(const double r) override { source_radius = r; }
 
         /**
          * @brief Write a traveltime directly into one node.
@@ -412,7 +412,7 @@ namespace ttcr {
          * @note Takes no "primary only" flag, unlike
          *       ttcr::Grid2Duc::getNumberOfNodes; use @ref nPrimary for that.
          */
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes() const override { return nodes.size(); }
 
         /**
          * @brief Collect the traveltimes computed at the primary nodes.
@@ -434,42 +434,42 @@ namespace ttcr {
          * plain members. Cache the result if you need it in a loop.
          * @{
          */
-        const T1 getXmin() const {
+        const T1 getXmin() const override {
             T1 xmin = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 xmin = xmin<it->getX() ? xmin : it->getX();
             }
             return xmin;
         }
-        const T1 getXmax() const {
+        const T1 getXmax() const override {
             T1 xmax = nodes[0].getX();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 xmax = xmax>it->getX() ? xmax : it->getX();
             }
             return xmax;
         }
-        const T1 getYmin() const {
+        const T1 getYmin() const override {
             T1 ymin = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 ymin = ymin<it->getY() ? ymin : it->getY();
             }
             return ymin;
         }
-        const T1 getYmax() const {
+        const T1 getYmax() const override {
             T1 ymax = nodes[0].getY();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 ymax = ymax>it->getY() ? ymax : it->getY();
             }
             return ymax;
         }
-        const T1 getZmin() const {
+        const T1 getZmin() const override {
             T1 zmin = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 zmin = zmin<it->getZ() ? zmin : it->getZ();
             }
             return zmin;
         }
-        const T1 getZmax() const {
+        const T1 getZmax() const override {
             T1 zmax = nodes[0].getZ();
             for ( auto it=nodes.begin(); it!=nodes.end(); ++it ) {
                 zmax = zmax>it->getZ() ? zmax : it->getZ();
@@ -486,7 +486,7 @@ namespace ttcr {
          * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
          */
         void saveTT(const std::string &fname, const int all, const size_t nt=0,
-                    const int format=1) const;
+                    const int format=1) const override;
 
 #ifdef VTK
         /**
@@ -499,7 +499,7 @@ namespace ttcr {
          *       structure. Requires a build with @c VTK defined.
          */
         void saveModelVTU(const std::string &fname, const bool saveSlowness=true,
-                          const bool savePhysicalEntity=false) const;
+                          const bool savePhysicalEntity=false) const override;
         /**
          * @brief Resample the model onto a rectilinear grid and write it as VTK.
          * @param fname        output filename.
@@ -509,7 +509,7 @@ namespace ttcr {
          *       interfaces are stair-stepped. For viewing only.
          */
         void saveModelVTR(const std::string &fname, const double* d,
-                          const bool saveSlowness=true) const;
+                          const bool saveSlowness=true) const override;
 #endif
         /**
          * @brief Write the model in CRT format.
@@ -532,7 +532,7 @@ namespace ttcr {
          * @param os destination stream, one @c "x y z" triple per line.
          * @note Writes nothing when the solver adds none.
          */
-        void dump_secondary(std::ofstream& os) const {
+        void dump_secondary(std::ofstream& os) const override {
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
             }
@@ -544,7 +544,7 @@ namespace ttcr {
          *         cell size — used to turn relative radii into absolute
          *         distances, as in ttcr::Grid3Ducdsp.
          */
-        const T1 getAverageEdgeLength() const;
+        const T1 getAverageEdgeLength() const override;
 
     protected:
         /// Raypath method, values of ttcr::gradient_method. Selects how the
@@ -665,7 +665,7 @@ namespace ttcr {
         }
 
         T1 getTraveltime(const sxyz<T1>& Rx,
-                         const size_t threadNo) const;
+                         const size_t threadNo) const override;
 
         /**
          * @brief Traveltime at a receiver.
@@ -702,7 +702,7 @@ namespace ttcr {
          * @param translated true if @p pts are already in the translated frame.
          * @throws std::runtime_error naming the offending point.
          */
-        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const override;
 
         /**
          * @brief Test whether a point lies inside a given tetrahedron.
@@ -816,7 +816,7 @@ namespace ttcr {
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const sxyz<T1> &Rx,
-                                    const size_t threadNo) const;
+                                    const size_t threadNo) const override;
 
         // keep the base-class getRaypath overloads visible; the helper
         // overload below would otherwise hide them (-Woverloaded-virtual)
@@ -832,18 +832,18 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         void getRaypath(const std::vector<sxyz<T1>>& Tx,
                         const std::vector<T1>& t0,
                         const sxyz<T1> &Rx,
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         void getStraightRays(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<sxyz<T1>>& Rx,
-                             std::vector<std::vector<siv<T1>>>& l_data) const;
+                             std::vector<std::vector<siv<T1>>>& l_data) const override;
 
         void getStraightRays(const std::vector<sxyz<T1>>& Tx,
                              const std::vector<sxyz<T1>>& Rx,

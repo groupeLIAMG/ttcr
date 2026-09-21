@@ -187,7 +187,7 @@ namespace ttcr {
          * @warning Not symmetric with @ref getSlowness, which returns
          *          primary-node values only.
          */
-        virtual void setSlowness(const std::vector<T1>& s) {
+        virtual void setSlowness(const std::vector<T1>& s) override {
             if ( nodes.size() != s.size() ) {
                 throw std::length_error("Error: slowness vectors of incompatible size.");
             }
@@ -200,7 +200,7 @@ namespace ttcr {
          * @param[out] slowness resized to @f$(n_{cx}+1)(n_{cy}+1)(n_{cz}+1)@f$
          *                      and filled from the leading primary nodes.
          */
-        void getSlowness(std::vector<T1>& slowness) const {
+        void getSlowness(std::vector<T1>& slowness) const override {
             if (slowness.size() != static_cast<size_t>(ncx+1) * (ncy+1) * (ncz+1)) {
                 slowness.resize(static_cast<size_t>(ncx+1) * (ncy+1) * (ncz+1));
             }
@@ -210,13 +210,13 @@ namespace ttcr {
         }
 
         /// @return Total number of nodes, primary and secondary.
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes() const override { return nodes.size(); }
         /**
          * @brief Number of cells the grid geometry defines.
          * @return The product @f$n_{cx}n_{cy}n_{cz}@f$.
          * @note Geometric only — no per-cell data is stored by this family.
          */
-        size_t getNumberOfCells() const { return static_cast<size_t>(ncx)*ncy*ncz; }
+        size_t getNumberOfCells() const override { return static_cast<size_t>(ncx)*ncy*ncz; }
 
         /**
          * @brief Collect the traveltimes computed at the primary nodes.
@@ -268,7 +268,7 @@ namespace ttcr {
          * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
          */
         void saveTT(const std::string &fname, const int all, const size_t nt=0,
-                    const int format=1) const;
+                    const int format=1) const override;
         /**
          * @brief Read a traveltime field back from a file.
          * @param fname  input filename.
@@ -279,24 +279,24 @@ namespace ttcr {
          *       without recomputing it. No 2-D equivalent exists.
          */
         void loadTT(const std::string &fname, const int all, const size_t nt=0,
-                    const int format=1) const;
+                    const int format=1) const override;
 
-        const T1 getXmin() const { return xmin; }  ///< @return x coordinate of the grid origin.
-        const T1 getYmin() const { return ymin; }  ///< @return y coordinate of the grid origin.
-        const T1 getZmin() const { return zmin; }  ///< @return z coordinate of the grid origin.
-        const T1 getDx() const { return dx; }      ///< @return Cell size along x.
-        const T1 getDy() const { return dy; }      ///< @return Cell size along y.
-        const T1 getDz() const { return dz; }      ///< @return Cell size along z.
-        const T2 getNcx() const { return ncx; }    ///< @return Number of cells along x.
-        const T2 getNcy() const { return ncy; }    ///< @return Number of cells along y.
-        const T2 getNcz() const { return ncz; }    ///< @return Number of cells along z.
+        const T1 getXmin() const override { return xmin; }  ///< @return x coordinate of the grid origin.
+        const T1 getYmin() const override { return ymin; }  ///< @return y coordinate of the grid origin.
+        const T1 getZmin() const override { return zmin; }  ///< @return z coordinate of the grid origin.
+        const T1 getDx() const override { return dx; }      ///< @return Cell size along x.
+        const T1 getDy() const override { return dy; }      ///< @return Cell size along y.
+        const T1 getDz() const override { return dz; }      ///< @return Cell size along z.
+        const T2 getNcx() const override { return ncx; }    ///< @return Number of cells along x.
+        const T2 getNcy() const override { return ncy; }    ///< @return Number of cells along y.
+        const T2 getNcz() const override { return ncz; }    ///< @return Number of cells along z.
 
         /**
          * @brief Write the coordinates of the secondary nodes to a stream.
          * @param os destination stream, one @c "x y z" triple per line.
          * @note Writes nothing when the solver adds no secondary nodes.
          */
-        void dump_secondary(std::ofstream& os) const {
+        void dump_secondary(std::ofstream& os) const override {
             size_t nPrimary = static_cast<size_t>(ncx+1) * (ncy+1) * (ncz+1);
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
@@ -314,7 +314,7 @@ namespace ttcr {
          *       interpolated quantity depends on @ref processVel —
          *       @sa @ref g3drn_procvel
          */
-        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const;
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const override;
 
 #ifdef VTK
         /**
@@ -324,7 +324,7 @@ namespace ttcr {
          * @note Available only when the library is built with @c VTK defined.
          */
         void saveModelVTR(const std::string &fname,
-                          const bool saveSlowness=true) const;
+                          const bool saveSlowness=true) const override;
 #endif
 
     protected:
@@ -468,7 +468,7 @@ namespace ttcr {
          * @param translated true if @p pts are already in the translated frame.
          * @throws std::runtime_error naming the offending point.
          */
-        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const override;
 
         /**
          * @brief Traveltime increment between two nodes.
@@ -515,7 +515,7 @@ namespace ttcr {
          * @param nt thread whose solution to read.
          * @return Traveltime, interpolated if @p pt does not sit on a node.
          */
-        T1 getTraveltime(const sxyz<T1> &pt, const size_t nt) const;
+        T1 getTraveltime(const sxyz<T1> &pt, const size_t nt) const override;
 
 
         /**
@@ -578,7 +578,7 @@ namespace ttcr {
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const sxyz<T1> &Rx,
-                                    const size_t threadNo) const;
+                                    const size_t threadNo) const override;
 
         /**
          * @name Raypath reconstruction
@@ -613,7 +613,7 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Trace the raypath, recording node-level sensitivities.
@@ -635,7 +635,7 @@ namespace ttcr {
                         std::vector<sijv<T1>>& m_data,
                         const size_t RxNo,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Trace the raypath, returning geometry and node sensitivities.
@@ -655,7 +655,7 @@ namespace ttcr {
                         std::vector<sijv<T1>>& m_data,
                         const size_t RxNo,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Record the per-cell path lengths without returning the geometry.
@@ -671,7 +671,7 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Trace the raypath and record the length travelled in each cell.
@@ -689,7 +689,7 @@ namespace ttcr {
                         std::vector<sxyz<T1>> &r_data,
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
         /// @}
 
         /**

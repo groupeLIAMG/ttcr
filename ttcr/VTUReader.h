@@ -335,13 +335,13 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( cd->GetArray("Slowness") );
 
-                    if ( slo->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                    if ( slo->GetCapacity() != reader->GetOutput()->GetNumberOfCells() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return 0;
                     }
 
-                    slowness.resize( slo->GetSize() );
-                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    slowness.resize( slo->GetCapacity() );
+                    for ( size_t n=0; n<slo->GetCapacity(); ++n ) {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                 } else {
@@ -350,13 +350,13 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> vel = vtkSmartPointer<vtkDoubleArray>::New();
                     vel = vtkDoubleArray::SafeDownCast( cd->GetArray("Velocity") );
 
-                    if ( vel->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                    if ( vel->GetCapacity() != reader->GetOutput()->GetNumberOfCells() ) {
                         std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                         return 0;
                     }
 
-                    slowness.resize( vel->GetSize() );
-                    for ( size_t n=0; n<vel->GetSize(); ++n ) {
+                    slowness.resize( vel->GetCapacity() );
+                    for ( size_t n=0; n<vel->GetCapacity(); ++n ) {
                         slowness[n] = 1./vel->GetComponent(n, 0);
                     }
                 }
@@ -373,8 +373,8 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                     slo = vtkDoubleArray::SafeDownCast( pd->GetArray("Slowness") );
 
-                    slowness.resize( slo->GetSize() );
-                    for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                    slowness.resize( slo->GetCapacity() );
+                    for ( size_t n=0; n<slo->GetCapacity(); ++n ) {
                         slowness[n] = slo->GetComponent(n, 0);
                     }
                 } else {
@@ -383,8 +383,8 @@ namespace ttcr {
                     vtkSmartPointer<vtkDoubleArray> vel = vtkSmartPointer<vtkDoubleArray>::New();
                     vel = vtkDoubleArray::SafeDownCast( pd->GetArray("Velocity") );
 
-                    slowness.resize( vel->GetSize() );
-                    for ( size_t n=0; n<vel->GetSize(); ++n ) {
+                    slowness.resize( vel->GetCapacity() );
+                    for ( size_t n=0; n<vel->GetCapacity(); ++n ) {
                         slowness[n] = 1./vel->GetComponent(n, 0);
                     }
                 }
@@ -427,13 +427,13 @@ namespace ttcr {
                 vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                 slo = vtkDoubleArray::SafeDownCast( cd->GetArray(name.c_str()) );
                 
-                if ( slo->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                if ( slo->GetCapacity() != reader->GetOutput()->GetNumberOfCells() ) {
                     std::cerr << "Problem with data (wrong size)" << std::endl;
                     return 0;
                 }
                 
-                var.resize( slo->GetSize() );
-                for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                var.resize( slo->GetCapacity() );
+                for ( size_t n=0; n<slo->GetCapacity(); ++n ) {
                     var[n] = slo->GetComponent(n, 0);
                 }
 
@@ -448,8 +448,8 @@ namespace ttcr {
                 vtkSmartPointer<vtkDoubleArray> slo = vtkSmartPointer<vtkDoubleArray>::New();
                 slo = vtkDoubleArray::SafeDownCast( pd->GetArray(name.c_str()) );
                 
-                var.resize( slo->GetSize() );
-                for ( size_t n=0; n<slo->GetSize(); ++n ) {
+                var.resize( slo->GetCapacity() );
+                for ( size_t n=0; n<slo->GetCapacity(); ++n ) {
                     var[n] = slo->GetComponent(n, 0);
                 }
             }
@@ -520,12 +520,12 @@ namespace ttcr {
                     }
 
                     if ( reader->GetOutput()->GetCellData()->HasArray("Slowness") == 1 ) {
-                        if ( reader->GetOutput()->GetCellData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                        if ( reader->GetOutput()->GetCellData()->GetArray("Slowness")->GetCapacity() != reader->GetOutput()->GetNumberOfCells() ) {
                             std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                             return false;
                         }
                     } else {
-                        if ( reader->GetOutput()->GetCellData()->GetArray("Velocity")->GetSize() != reader->GetOutput()->GetNumberOfCells() ) {
+                        if ( reader->GetOutput()->GetCellData()->GetArray("Velocity")->GetCapacity() != reader->GetOutput()->GetNumberOfCells() ) {
                             std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                             return false;
                         }
@@ -542,12 +542,12 @@ namespace ttcr {
                     }
 
                     if ( reader->GetOutput()->GetPointData()->HasArray("Slowness") == 1 ) {
-                        if ( reader->GetOutput()->GetPointData()->GetArray("Slowness")->GetSize() != reader->GetOutput()->GetNumberOfPoints() ) {
+                        if ( reader->GetOutput()->GetPointData()->GetArray("Slowness")->GetCapacity() != reader->GetOutput()->GetNumberOfPoints() ) {
                             std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                             return false;
                         }
                     } else {
-                        if ( reader->GetOutput()->GetPointData()->GetArray("Velocity")->GetSize() != reader->GetOutput()->GetNumberOfPoints() ) {
+                        if ( reader->GetOutput()->GetPointData()->GetArray("Velocity")->GetCapacity() != reader->GetOutput()->GetNumberOfPoints() ) {
                             std::cerr << "Problem with Slowness data (wrong size)" << std::endl;
                             return false;
                         }

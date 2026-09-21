@@ -175,7 +175,7 @@ namespace ttcr {
          * Slowness values are defined at cell centers and interpolated to grid nodes.
          * This maintains the same interpolation scheme as Grid3Drcfs.
          */
-        void setSlowness(const std::vector<T1>& s);
+        void setSlowness(const std::vector<T1>& s) override;
 
         /**
          * @brief Retrieve the cell slowness model.
@@ -186,7 +186,7 @@ namespace ttcr {
          *       inherit.  ttcr::Grid2Drcfs does the same in 2-D.
          * @throws std::runtime_error if no slowness model has been set.
          */
-        void getSlowness(std::vector<T1>& s) const {
+        void getSlowness(std::vector<T1>& s) const override {
             if ( !hasCellSlown ) {
                 throw std::runtime_error("slowness data not assigned");
             }
@@ -212,9 +212,9 @@ namespace ttcr {
 
         // Accessors (same as Grid3Drcfs)
         /// @return Number of basic sweep iterations the last solve took.
-        const int get_niter() const { return niter_final; }
+        const int get_niter() const override { return niter_final; }
         /// @return Number of WENO3 sweep iterations the last solve took.
-        const int get_niterw() const { return niterw_final; }
+        const int get_niterw() const override { return niterw_final; }
 
         // GPU-specific methods
         /**
@@ -332,12 +332,12 @@ namespace ttcr {
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<sxyz<T1>>& Rx,
-                     const size_t threadNo=0) const;
+                     const size_t threadNo=0) const override;
         
         void raytrace(const std::vector<sxyz<T1>>& Tx,
                      const std::vector<T1>& t0,
                      const std::vector<std::vector<sxyz<T1>>>& Rx,
-                     const size_t threadNo=0) const;
+                     const size_t threadNo=0) const override;
 
         /**
          * Perform sweep iterations with convergence checking

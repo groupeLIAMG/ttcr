@@ -506,7 +506,10 @@ namespace ttcr {
          *
          * Solves the exact 3&times;3 linear system built from the edges emanating
          * from @p n0 and the corresponding traveltime differences.
-         * @param n0,n1,n2,n3 The four tetrahedron nodes (@p n0 is the reference).
+         * @param n0          The first tetrahedron node (reference node).
+         * @param n1          The second tetrahedron node.
+         * @param n2          The third tetrahedron node.
+         * @param n3          The fourth tetrahedron node.
          * @param nt          Thread number.
          * @returns Gradient over that tetrahedron.
          */
@@ -629,3 +632,4 @@ namespace ttcr {
 }
 
 #endif
+

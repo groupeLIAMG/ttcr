@@ -172,7 +172,7 @@ namespace ttcr {
          * @param[out] slowness resized to @f$n_{cx}n_{cy}n_{cz}@f$ and filled,
          *                      in the numbering of @ref g3drc_numbering.
          */
-        void getSlowness(std::vector<T1>& slowness) const {
+        void getSlowness(std::vector<T1>& slowness) const override {
             if (slowness.size() != static_cast<size_t>(ncx)*ncy*ncz) {
                 slowness.resize(static_cast<size_t>(ncx)*ncy*ncz);
             }
@@ -188,7 +188,7 @@ namespace ttcr {
          *         the @c CELL policy raises.
          * @note The @c try / @c catch rethrows unchanged and so has no effect.
          */
-        void setSlowness(const std::vector<T1>& s) {
+        void setSlowness(const std::vector<T1>& s) override {
             try {
                 cells.setSlowness( s );
             } catch (std::exception& e) {
@@ -201,7 +201,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model
          *         @f$\chi@f$ — see Cell.h.
          */
-        void setChi(const std::vector<T1>& x) {
+        void setChi(const std::vector<T1>& x) override {
             cells.setChi( x );
         }
         /**
@@ -210,7 +210,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model
          *         @f$\psi@f$.
          */
-        void setPsi(const std::vector<T1>& x) {
+        void setPsi(const std::vector<T1>& x) override {
             cells.setPsi( x );
         }
 
@@ -220,7 +220,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setTiltAngle(const std::vector<T1>& s) {
+        void setTiltAngle(const std::vector<T1>& s) override {
             try {
                 cells.setTiltAngle( s );
             } catch (std::exception& e) {
@@ -234,7 +234,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy models a single phase —
          *         see Cell.h.
          */
-        void setPhase(const int p) {
+        void setPhase(const int p) override {
             try {
                 cells.setPhase( p );
             } catch (std::exception& e) {
@@ -248,7 +248,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setVp0(const std::vector<T1>& s) {
+        void setVp0(const std::vector<T1>& s) override {
             try {
                 cells.setVp0( s );
             } catch (std::exception& e) {
@@ -262,7 +262,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setVs0(const std::vector<T1>& s) {
+        void setVs0(const std::vector<T1>& s) override {
             try {
                 cells.setVs0( s );
             } catch (std::exception& e) {
@@ -276,7 +276,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setDelta(const std::vector<T1>& s) {
+        void setDelta(const std::vector<T1>& s) override {
             try {
                 cells.setDelta( s );
             } catch (std::exception& e) {
@@ -290,7 +290,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setEpsilon(const std::vector<T1>& s) {
+        void setEpsilon(const std::vector<T1>& s) override {
             try {
                 cells.setEpsilon( s );
             } catch (std::exception& e) {
@@ -304,7 +304,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setGamma(const std::vector<T1>& s) {
+        void setGamma(const std::vector<T1>& s) override {
             try {
                 cells.setGamma( s );
             } catch (std::exception& e) {
@@ -318,7 +318,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setS2(const std::vector<T1>& s) {
+        void setS2(const std::vector<T1>& s) override {
             try {
                 cells.setS2( s );
             } catch (std::exception& e) {
@@ -332,7 +332,7 @@ namespace ttcr {
          * @throws std::exception if the @c CELL policy does not model it —
          *         see Cell.h.
          */
-        void setS4(const std::vector<T1>& s) {
+        void setS4(const std::vector<T1>& s) override {
             try {
                 cells.setS4( s );
             } catch (std::exception& e) {
@@ -346,9 +346,9 @@ namespace ttcr {
          * @note Takes no "primary only" flag, unlike
          *       ttcr::Grid2Drc::getNumberOfNodes.
          */
-        size_t getNumberOfNodes() const { return nodes.size(); }
+        size_t getNumberOfNodes() const override { return nodes.size(); }
         /// @return Number of cells, @f$n_{cx}n_{cy}n_{cz}@f$.
-        size_t getNumberOfCells() const { return static_cast<size_t>(ncx)*ncy*ncz; }
+        size_t getNumberOfCells() const override { return static_cast<size_t>(ncx)*ncy*ncz; }
 
         /**
          * @brief Collect the traveltimes computed at the primary nodes.
@@ -383,7 +383,7 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<sxyz<T1>> &r_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Write the traveltime field to a file.
@@ -393,7 +393,7 @@ namespace ttcr {
          * @param format 1 for plain text, 2 for VTK, 3 for a raw binary dump.
          */
         void saveTT(const std::string &fname, const int all, const size_t nt=0,
-                    const int format=1) const;
+                    const int format=1) const override;
 
         /**
          * @brief Memory occupied by the neighbour lists, in bytes.
@@ -423,15 +423,15 @@ namespace ttcr {
             return size;
         }
 
-        const T1 getXmin() const { return xmin; }  ///< @return x coordinate of the grid origin.
-        const T1 getYmin() const { return ymin; }  ///< @return y coordinate of the grid origin.
-        const T1 getZmin() const { return zmin; }  ///< @return z coordinate of the grid origin.
-        const T1 getDx() const { return dx; }      ///< @return Cell size along x.
-        const T1 getDy() const { return dy; }      ///< @return Cell size along y.
-        const T1 getDz() const { return dz; }      ///< @return Cell size along z.
-        const T2 getNcx() const { return ncx; }    ///< @return Number of cells along x.
-        const T2 getNcy() const { return ncy; }    ///< @return Number of cells along y.
-        const T2 getNcz() const { return ncz; }    ///< @return Number of cells along z.
+        const T1 getXmin() const override { return xmin; }  ///< @return x coordinate of the grid origin.
+        const T1 getYmin() const override { return ymin; }  ///< @return y coordinate of the grid origin.
+        const T1 getZmin() const override { return zmin; }  ///< @return z coordinate of the grid origin.
+        const T1 getDx() const override { return dx; }      ///< @return Cell size along x.
+        const T1 getDy() const override { return dy; }      ///< @return Cell size along y.
+        const T1 getDz() const override { return dz; }      ///< @return Cell size along z.
+        const T2 getNcx() const override { return ncx; }    ///< @return Number of cells along x.
+        const T2 getNcy() const override { return ncy; }    ///< @return Number of cells along y.
+        const T2 getNcz() const override { return ncz; }    ///< @return Number of cells along z.
 
         /**
          * @brief Write the coordinates of the secondary nodes to a stream.
@@ -440,7 +440,7 @@ namespace ttcr {
          *       writes nothing when the solver adds none. Backs the @c -s
          *       command-line switch.
          */
-        void dump_secondary(std::ofstream& os) const {
+        void dump_secondary(std::ofstream& os) const override {
             size_t nPrimary = static_cast<size_t>(ncx+1) * (ncy+1) * (ncz+1);
             for ( size_t n=nPrimary; n<nodes.size(); ++n ) {
                 os << nodes[n].getX() << ' ' << nodes[n].getY() << ' ' << nodes[n].getZ() << '\n';
@@ -458,7 +458,7 @@ namespace ttcr {
          * @note Piecewise constant — every point inside a cell gives the same
          *       value. @sa @ref g3drc_translate for the flag's meaning.
          */
-        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const {
+        T1 computeSlowness(sxyz<T1> pt, const bool isTranslated=false) const override {
             if (this->translateOrigin == true && isTranslated == false) {
                 pt -= this->origin;
             }
@@ -629,7 +629,7 @@ namespace ttcr {
          *         outside the grid bounds.
          * @sa @ref g3drc_translate
          */
-        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const;
+        void checkPts(std::vector<sxyz<T1>> pts, const bool translated=false) const override;
 
         /**
          * @brief Traveltime at a receiver.
@@ -675,7 +675,7 @@ namespace ttcr {
         T1 getTraveltimeFromRaypath(const std::vector<sxyz<T1>>& Tx,
                                     const std::vector<T1>& t0,
                                     const sxyz<T1>& Rx,
-                                    const size_t threadNo) const;
+                                    const size_t threadNo) const override;
 
         /**
          * @brief Record the per-cell path lengths without returning the geometry.
@@ -692,7 +692,7 @@ namespace ttcr {
                         const sxyz<T1> &Rx,
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
         /**
          * @brief Trace the raypath and record the length travelled in each cell.
@@ -711,7 +711,7 @@ namespace ttcr {
                         std::vector<sxyz<T1>> &r_data,
                         std::vector<siv<T1>> &l_data,
                         T1 &tt,
-                        const size_t threadNo) const;
+                        const size_t threadNo) const override;
 
     private:
         /// @name Non-copyable
