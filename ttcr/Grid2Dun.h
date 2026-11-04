@@ -127,7 +127,7 @@ namespace ttcr {
         nThreads(nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
-        triangles(), virtualNodes()
+        triangles(), virtualNodes(), txInfoCache(nt)
         {
             for (auto it=tri.begin(); it!=tri.end(); ++it) {
                 triangles.push_back( *it );

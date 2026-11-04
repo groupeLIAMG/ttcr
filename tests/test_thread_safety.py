@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Calls sharing a grid from many Python threads must not corrupt each other.
 
-These tests only exercise real overlap in C++ on a free-threaded interpreter
-with the GIL off (PYTHON_GIL=0), since the wrappers hold the GIL otherwise.  With
-the GIL on they still catch deadlocks and errors in which locks are taken.
+The wrappers release the GIL around the solvers, so calls overlap in C++ on any
+interpreter.  On a free-threaded one, run with PYTHON_GIL=0: importing the
+modules would otherwise turn the GIL back on, and the Python code in between
+would then be serialized.
 """
 import threading
+import time
 import unittest
 
 import numpy as np
@@ -216,10 +218,26 @@ CASES = {
     'Grid3d_f SPM': (grid3d, dict(method='SPM', nsnx=2, nsny=2, nsnz=2,
                                   dtype=np.float32), 3),
     'Grid3d_d FSM': (grid3d, dict(method='FSM'), 3),
+    'Grid3d_f FSM': (grid3d, dict(method='FSM', dtype=np.float32), 3),
+    'Grid3d_d DSPM': (grid3d, dict(method='DSPM', n_secondary=2,
+                                   n_tertiary=2), 3),
+    'Grid3d_f FSM GPU': (grid3d, dict(method='FSM', fsm_gpu=True,
+                                      dtype=np.float32), 3),
     'Grid2d_d SPM': (grid2d, dict(method='SPM', nsnx=3, nsnz=3), 2),
     'Grid2d_d FSM': (grid2d, dict(method='FSM'), 2),
+    'Grid2d_f SPM': (grid2d, dict(method='SPM', nsnx=3, nsnz=3,
+                                  dtype=np.float32), 2),
+    'Grid2d_f FSM': (grid2d, dict(method='FSM', dtype=np.float32), 2),
     'Mesh3d SPM': (mesh3d, dict(method='SPM', n_secondary=2), 3),
+    # tt_from_rp: on this coarse mesh these two did not return from
+    # getTraveltimeFromRaypath within a minute, even from a single thread
+    'Mesh3d FSM': (mesh3d, dict(method='FSM', tt_from_rp=False), 3),
+    'Mesh3d DSPM': (mesh3d, dict(method='DSPM', n_secondary=2, n_tertiary=2,
+                                 tt_from_rp=False), 3),
     'Mesh2d SPM': (mesh2d, dict(method='SPM', n_secondary=2), 2),
+    'Mesh2d FSM': (mesh2d, dict(method='FSM'), 2),
+    'Mesh2d DSPM': (mesh2d, dict(method='DSPM', n_secondary=2,
+                                 n_tertiary=2), 2),
 }
 
 
@@ -400,6 +418,149 @@ class TestDecoratedMethods(unittest.TestCase):
         g2 = pickle.loads(pickle.dumps(g))
         self.assertIsNot(g2._lock, g._lock)
         self.assertEqual(g2._lock.n_threads, 2)
+
+
+def longest_stall(call):
+    """Run call() and time it, with another Python thread ticking meanwhile.
+
+    Returns the duration of the call, and the longest time the other thread went
+    without running.  A call holding the GIL stops it for as long as it lasts.
+    """
+    stop = threading.Event()
+    stalls = [0.0]
+
+    def ticker():
+        last = time.perf_counter()
+        while not stop.is_set():
+            now = time.perf_counter()
+            stalls[0] = max(stalls[0], now - last)
+            last = now
+
+    t = threading.Thread(target=ticker, daemon=True)
+    t.start()
+    start = time.perf_counter()
+    try:
+        call()
+        duration = time.perf_counter() - start
+    finally:
+        stop.set()
+        t.join(TIMEOUT)
+    return duration, stalls[0]
+
+
+class TestGilReleased(unittest.TestCase):
+    """Other Python threads keep running while a solver is at work."""
+
+    MIN_DURATION = 0.1  # seconds, shorter calls would prove nothing
+
+    def check(self, call):
+        duration, stall = longest_stall(call)
+        self.assertGreater(duration, self.MIN_DURATION,
+                           'call too short for this test to mean anything')
+        self.assertLess(stall, 0.5 * duration,
+                        'the GIL looks held: stalled %.3f s in a %.3f s call'
+                        % (stall, duration))
+
+    def big_grid3d(self, n_threads, **kwargs):
+        x = np.arange(0.0, 60.5, 1.0)
+        g = rg.Grid3d(x, x.copy(), x.copy(), n_threads, cell_slowness=True,
+                      method='SPM', nsnx=2, nsny=2, nsnz=2, **kwargs)
+        g.set_slowness(np.ones(g.get_number_of_cells()))
+        return g
+
+    def big_grid2d(self, n_threads, **kwargs):
+        x = np.arange(0.0, 500.5, 1.0)
+        g = rg.Grid2d(x, x.copy(), n_threads, cell_slowness=True,
+                      method='SPM', nsnx=5, nsnz=5, **kwargs)
+        g.set_slowness(np.ones(g.get_number_of_cells()))
+        return g
+
+    def big_mesh(self, ndim, n_threads):
+        n = {3: 26, 2: 201}[ndim]
+        axes = [np.linspace(0.0, 60.0, n)] * ndim
+        nodes = np.stack(np.meshgrid(*axes, indexing='ij'),
+                         axis=-1).reshape(-1, ndim)
+        simplices = Delaunay(nodes).simplices.astype(np.int64)
+        make = tm.Mesh3d if ndim == 3 else tm.Mesh2d
+        g = make(nodes, simplices, n_threads, cell_slowness=True, method='SPM',
+                 n_secondary=3)
+        g.set_slowness(np.ones(g.get_number_of_cells()))
+        return g
+
+    def points(self, ndim):
+        src = np.array([[5.0] * ndim])
+        rcv = np.array([[55.0] * ndim, [55.0] + [5.0] * (ndim - 1)])
+        return src, rcv
+
+    def test_raytrace_single_thread(self):
+        src, rcv = self.points(3)
+        for dtype in (np.float64, np.float32):
+            with self.subTest(dtype=dtype.__name__):
+                g = self.big_grid3d(1, dtype=dtype)
+                self.check(lambda: g.raytrace(src, rcv))
+
+    def test_raytrace_in_one_thread_number(self):
+        src, rcv = self.points(3)
+        g = self.big_grid3d(2)
+        self.check(lambda: g.raytrace(src, rcv, thread_no=1))
+        self.check(lambda: g.raytrace(src, rcv, thread_no=1, return_rays=True))
+
+    def test_raytrace_in_all_threads(self):
+        src, rcv = self.points(3)
+        g = self.big_grid3d(2)
+        src2 = np.vstack((src, src + 1.0))
+        rcv2 = rcv + 0.0
+        self.check(lambda: g.raytrace(src2, rcv2))
+
+    def test_raytrace_computing_l(self):
+        src, rcv = self.points(3)
+        g = self.big_grid3d(1)
+        self.check(lambda: g.raytrace(src, rcv, compute_L=True))
+
+    def test_compute_h(self):
+        src, rcv = self.points(3)
+        g = self.big_grid3d(1)
+        self.check(lambda: g.compute_H(src, rcv))
+
+    def test_grid2d(self):
+        src, rcv = self.points(2)
+        for dtype in (np.float64, np.float32):
+            with self.subTest(dtype=dtype.__name__):
+                g = self.big_grid2d(1, dtype=dtype)
+                self.check(lambda: g.raytrace(src, rcv))
+
+    def test_meshes(self):
+        for ndim in (3, 2):
+            with self.subTest(ndim=ndim):
+                src, rcv = self.points(ndim)
+                g = self.big_mesh(ndim, 1)
+                self.check(lambda: g.raytrace(src, rcv))
+
+    def test_mesh_compute_h(self):
+        src, rcv = self.points(3)
+        g = self.big_mesh(3, 1)
+        self.check(lambda: g.compute_H(src, rcv))
+
+
+class TestErrorsWithoutTheGil(unittest.TestCase):
+    """A C++ exception gets back to Python and leaves no lock behind."""
+
+    def check(self, g, ndim):
+        g.set_slowness(as_float(1.0, g))
+        src, rcv = sources_and_receivers(ndim)
+        with self.assertRaises(RuntimeError):
+            g.compute_H(src[0], rcv, radius_factor=-1.0)
+        self.assertEqual(held(g._lock), [])
+        g.compute_H(src[0], rcv)
+
+    def test_grid3d(self):
+        for dtype in (np.float64, np.float32):
+            with self.subTest(dtype=dtype.__name__):
+                self.check(grid3d(2, method='SPM', nsnx=2, nsny=2, nsnz=2,
+                                  dtype=dtype), 3)
+
+    def test_mesh3d(self):
+        self.check(mesh3d(2, method='SPM', n_secondary=2), 3)
 
 
 if __name__ == '__main__':
