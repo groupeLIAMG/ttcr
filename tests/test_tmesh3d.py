@@ -614,3 +614,21 @@ class TestComputeH(unittest.TestCase):
         self.assertEqual(H2.shape, (self.rcv.shape[0], 2))
         np.testing.assert_allclose(H2, H[:, 1:3])
         np.testing.assert_allclose(tt, g.raytrace(self.src, self.rcv))
+
+    def test_thread_no_range(self):
+        """A thread number the mesh does not have is refused, not used."""
+        for n_threads in (1, 2):
+            g = tm.Mesh3d(self.nodes, self.tet, n_threads=n_threads,
+                          cell_slowness=0, method='SPM', n_secondary=3)
+            g.set_slowness(self.slow)
+            tt, H = g.compute_H(self.src, self.rcv)
+            for thread_no in (-1, n_threads, 1000):
+                with self.subTest(n_threads=n_threads, thread_no=thread_no):
+                    with self.assertRaises(ValueError):
+                        g.compute_H(self.src, self.rcv, slowness=2 * self.slow,
+                                    thread_no=thread_no)
+            # the last valid thread gives the same answer, so the calls
+            # refused above did not change the slowness either
+            tt2, H2 = g.compute_H(self.src, self.rcv, thread_no=n_threads - 1)
+            np.testing.assert_allclose(tt2, tt)
+            np.testing.assert_allclose(H2, H)

@@ -1509,7 +1509,8 @@ cdef class Grid3d_d:
             from the ray tangent.  The error has a minimum in between, shallow
             on rectilinear grids and more pronounced on coarse meshes.
         thread_no : int (None by default)
-            thread number to use (a single source is then expected)
+            thread number to use, from 0 to n_threads-1 (a single source is
+            then expected)
 
         Returns
         -------
@@ -1527,6 +1528,9 @@ cdef class Grid3d_d:
         segment is a noisy estimate of the tangent.
         """
         cdef size_t nH, iH
+
+        if thread_no is not None and not 0 <= thread_no < self._n_threads:
+            raise ValueError('thread_no should be between 0 and n_threads-1')
 
         if rcv.ndim != 2 or rcv.shape[1] != 3:
             raise ValueError('rcv should be nrcv x 3')
@@ -3973,7 +3977,8 @@ cdef class Grid3d_f:
             from the ray tangent.  The error has a minimum in between, shallow
             on rectilinear grids and more pronounced on coarse meshes.
         thread_no : int (None by default)
-            thread number to use (a single source is then expected)
+            thread number to use, from 0 to n_threads-1 (a single source is
+            then expected)
 
         Returns
         -------
@@ -3991,6 +3996,9 @@ cdef class Grid3d_f:
         segment is a noisy estimate of the tangent.
         """
         cdef size_t nH, iH
+
+        if thread_no is not None and not 0 <= thread_no < self._n_threads:
+            raise ValueError('thread_no should be between 0 and n_threads-1')
 
         if rcv.ndim != 2 or rcv.shape[1] != 3:
             raise ValueError('rcv should be nrcv x 3')

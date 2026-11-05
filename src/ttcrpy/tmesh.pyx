@@ -1038,7 +1038,8 @@ cdef class Mesh3d:
             from the ray tangent.  The error has a minimum in between, shallow
             on rectilinear grids and more pronounced on coarse meshes.
         thread_no : int (None by default)
-            thread number to use (a single source is then expected)
+            thread number to use, from 0 to n_threads-1 (a single source is
+            then expected)
 
         Returns
         -------
@@ -1056,6 +1057,9 @@ cdef class Mesh3d:
         segment is a noisy estimate of the tangent.
         """
         cdef size_t nH, iH
+
+        if thread_no is not None and not 0 <= thread_no < self._n_threads:
+            raise ValueError('thread_no should be between 0 and n_threads-1')
 
         if source.ndim != 2 or rcv.ndim != 2:
             raise ValueError('source and rcv should be 2D arrays')

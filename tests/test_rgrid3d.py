@@ -614,6 +614,33 @@ class TestComputeH(unittest.TestCase):
         np.testing.assert_allclose(out[True][0], out[False][0])
         np.testing.assert_allclose(out[True][1], out[False][1], atol=1e-6)
 
+    def test_thread_no_range(self):
+        """A thread number the grid does not have is refused, not used."""
+        for dtype in (np.float64, np.float32):
+            s = (1.0 / self.V).ravel().astype(dtype)
+            # the last receiver is left out: in single precision, FSM never
+            # returns from raytrace for it, with or without thread_no
+            src = self.src[:3].astype(dtype)
+            rcv = self.rcv[:3].astype(dtype)
+            for n_threads in (1, 2):
+                g = rg.Grid3d(self.x.astype(dtype), self.y.astype(dtype),
+                              self.z.astype(dtype), n_threads=n_threads,
+                              method='FSM', cell_slowness=0, dtype=dtype)
+                g.set_slowness(s)
+                tt, H = g.compute_H(src, rcv)
+                for thread_no in (-1, n_threads, 1000):
+                    with self.subTest(dtype=dtype.__name__,
+                                      n_threads=n_threads,
+                                      thread_no=thread_no):
+                        with self.assertRaises(ValueError):
+                            g.compute_H(src, rcv, slowness=2 * s,
+                                        thread_no=thread_no)
+                # the last valid thread gives the same answer, so the calls
+                # refused above did not change the slowness either
+                tt2, H2 = g.compute_H(src, rcv, thread_no=n_threads - 1)
+                np.testing.assert_allclose(tt2, tt)
+                np.testing.assert_allclose(H2, H)
+
 
 class TestRaypathOrder(unittest.TestCase):
     """Raypath coordinates run from source to receiver, whatever the solver.
