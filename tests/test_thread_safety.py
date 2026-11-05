@@ -186,13 +186,14 @@ class TestDecorators(unittest.TestCase):
 
 def grid3d(n_threads, **kwargs):
     x = np.arange(0.0, 8.5, 1.0)
-    return rg.Grid3d(x, x.copy(), x.copy(), n_threads, cell_slowness=True,
-                     **kwargs)
+    kwargs.setdefault('cell_slowness', True)
+    return rg.Grid3d(x, x.copy(), x.copy(), n_threads, **kwargs)
 
 
 def grid2d(n_threads, **kwargs):
     x = np.arange(0.0, 8.5, 0.5)
-    return rg.Grid2d(x, x.copy(), n_threads, cell_slowness=True, **kwargs)
+    kwargs.setdefault('cell_slowness', True)
+    return rg.Grid2d(x, x.copy(), n_threads, **kwargs)
 
 
 def mesh_points(ndim):
@@ -203,13 +204,15 @@ def mesh_points(ndim):
 def mesh3d(n_threads, **kwargs):
     nodes = mesh_points(3)
     simplices = Delaunay(nodes).simplices.astype(np.int64)
-    return tm.Mesh3d(nodes, simplices, n_threads, cell_slowness=True, **kwargs)
+    kwargs.setdefault('cell_slowness', True)
+    return tm.Mesh3d(nodes, simplices, n_threads, **kwargs)
 
 
 def mesh2d(n_threads, **kwargs):
     nodes = mesh_points(2)
     simplices = Delaunay(nodes).simplices.astype(np.int64)
-    return tm.Mesh2d(nodes, simplices, n_threads, cell_slowness=True, **kwargs)
+    kwargs.setdefault('cell_slowness', True)
+    return tm.Mesh2d(nodes, simplices, n_threads, **kwargs)
 
 
 # name -> (constructor, keywords, dimension)
@@ -238,6 +241,33 @@ CASES = {
     'Mesh2d FSM': (mesh2d, dict(method='FSM'), 2),
     'Mesh2d DSPM': (mesh2d, dict(method='DSPM', n_secondary=2,
                                  n_tertiary=2), 2),
+    # slowness at the nodes: these are other classes on the C++ side
+    'Grid3d_d node SPM': (grid3d, dict(method='SPM', cell_slowness=False,
+                                       nsnx=2, nsny=2, nsnz=2), 3),
+    'Grid3d_d node FSM': (grid3d, dict(method='FSM', cell_slowness=False), 3),
+    'Grid3d_f node FSM': (grid3d, dict(method='FSM', cell_slowness=False,
+                                       dtype=np.float32), 3),
+    'Grid3d_d node DSPM': (grid3d, dict(method='DSPM', cell_slowness=False,
+                                        n_secondary=2, n_tertiary=2), 3),
+    'Grid3d_f node FSM GPU': (grid3d, dict(method='FSM', cell_slowness=False,
+                                           fsm_gpu=True, dtype=np.float32), 3),
+    'Grid2d_d node SPM': (grid2d, dict(method='SPM', cell_slowness=False,
+                                       nsnx=3, nsnz=3), 2),
+    'Grid2d_d node FSM': (grid2d, dict(method='FSM', cell_slowness=False), 2),
+    'Grid2d_f node FSM': (grid2d, dict(method='FSM', cell_slowness=False,
+                                       dtype=np.float32), 2),
+    'Mesh3d node SPM': (mesh3d, dict(method='SPM', cell_slowness=False,
+                                     n_secondary=2), 3),
+    'Mesh3d node FSM': (mesh3d, dict(method='FSM', cell_slowness=False,
+                                     tt_from_rp=False), 3),
+    'Mesh3d node DSPM': (mesh3d, dict(method='DSPM', cell_slowness=False,
+                                      n_secondary=2, n_tertiary=2,
+                                      tt_from_rp=False), 3),
+    'Mesh2d node SPM': (mesh2d, dict(method='SPM', cell_slowness=False,
+                                     n_secondary=2), 2),
+    'Mesh2d node FSM': (mesh2d, dict(method='FSM', cell_slowness=False), 2),
+    'Mesh2d node DSPM': (mesh2d, dict(method='DSPM', cell_slowness=False,
+                                      n_secondary=2, n_tertiary=2), 2),
 }
 
 
@@ -251,7 +281,7 @@ def sources_and_receivers(ndim):
 
 def as_float(value, grid):
     """Slowness array of the type the grid expects."""
-    return value * np.ones(grid.get_number_of_cells())
+    return value * np.ones(grid.nparams)
 
 
 class TestSharedGrid(unittest.TestCase):
@@ -351,8 +381,10 @@ class TestSharedGrid(unittest.TestCase):
                         g.set_slowness(models[n % 2])
                         continue
                     tt = np.ravel(g.raytrace(src[0], rcv, thread_no=i))
-                    if not any(np.allclose(tt, np.ravel(r), rtol=1e-5)
-                               for r in ref):
+                    # equal_nan: with slowness at its nodes, Mesh3d returns nan
+                    # for a receiver on an edge, even from a single thread
+                    if not any(np.allclose(tt, np.ravel(r), rtol=1e-5,
+                                           equal_nan=True) for r in ref):
                         raise AssertionError(f'mixed slowness models: {tt}')
             run_threads(work)
         self.for_each_case(check)
@@ -369,6 +401,29 @@ class TestSharedGrid(unittest.TestCase):
                 else:
                     self.assertEqual(np.unique(g.get_slowness()).size, 1)
         run_threads(work)
+
+    def test_counters_and_verbose_during_solves(self):
+        # both are shared by all thread numbers.  Checking they are safe takes
+        # ThreadSanitizer: this only shows the calls go through
+        for name in ('Grid3d_d FSM', 'Mesh3d FSM'):
+            make, kwargs, ndim = CASES[name]
+            module = rg if name.startswith('Grid') else tm
+            with self.subTest(name):
+                g = make(N_THREADS, **kwargs)
+                g.set_slowness(as_float(1.0, g))
+                src, rcv = sources_and_receivers(ndim)
+                ref = g.raytrace(src[0], rcv)
+
+                def work(i):
+                    for _ in range(N_REPEATS):
+                        if i == 0:
+                            module.set_verbose(0)
+                            g.get_niter()
+                        else:
+                            tt = g.raytrace(src[0], rcv, thread_no=i)
+                            self.assert_tt_equal(tt, ref)
+                run_threads(work)
+                self.assertGreater(g.get_niter(), 0)
 
     def test_methods_keep_their_documentation(self):
         for cls in (rg.Grid3d_d, rg.Grid3d_f, rg.Grid2d_d, rg.Grid2d_f,

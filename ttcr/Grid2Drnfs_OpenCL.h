@@ -42,6 +42,7 @@
 #ifndef ttcr_Grid2Drnfs_OpenCL_h
 #define ttcr_Grid2Drnfs_OpenCL_h
 
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -147,10 +148,10 @@ public:
 private:
     T1  epsilon;                   ///< Convergence tolerance, dimensionless: the fraction of the traveltime range the mean per-node change must fall below.
     int nitermax;                  ///< Iteration cap for the sweeps.
-    mutable int niter_final, niterw_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record them.
+    mutable std::atomic<int> niter_final, niterw_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record them.
     bool weno3;                    ///< Run the WENO3 refinement pass.
 
-    mutable bool use_gpu;          ///< GPU acceleration was requested.
+    mutable std::atomic<bool> use_gpu;          ///< GPU acceleration was requested.
     mutable bool gpu_initialized;  ///< Initialisation has been attempted.
     mutable bool gpu_available;    ///< A device was successfully initialised.
     /// One solver per thread, so concurrent sources can each drive the device.

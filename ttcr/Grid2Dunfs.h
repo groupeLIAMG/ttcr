@@ -36,6 +36,7 @@
 #ifndef ttcr_Grid2Dunfs_h
 #define ttcr_Grid2Dunfs_h
 
+#include <atomic>
 #include <cmath>
 #include <fstream>
 #include <queue>
@@ -107,7 +108,7 @@ namespace ttcr {
     private:
         T1 epsilon;
         int nitermax;
-        mutable int niter_final;
+        mutable std::atomic<int> niter_final;
         std::vector<std::vector<Node2Dn<T1,T2>*>> sorted;
 
         void initTx(const std::vector<S>& Tx, const std::vector<T1>& t0,

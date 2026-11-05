@@ -53,6 +53,7 @@
 #ifndef ttcr_Grid2Ducfs_h
 #define ttcr_Grid2Ducfs_h
 
+#include <atomic>
 #include <cmath>
 #include <fstream>
 #include <queue>
@@ -191,7 +192,7 @@ namespace ttcr {
         /// @sa @ref g2ducfs_conv
         T1 epsilon;
         int nitermax;             ///< Iteration cap for the sweeps.
-        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable std::atomic<int> niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
         /// One node ordering per reference point, each sorted by distance to
         /// that point. Empty until @ref initOrdering runs.
         /// @sa @ref g2ducfs_ordering

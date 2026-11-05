@@ -22,6 +22,7 @@
  *
  */
 
+#include <atomic>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -36,7 +37,7 @@ using namespace std;
 
 namespace ttcr {
 
-    int verbose = 0;
+    std::atomic<int> verbose{0};
     int gpu_profile = 0;
 
     void print_usage (std::ostream& stream, char *progname, int exit_code)

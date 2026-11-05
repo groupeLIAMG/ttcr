@@ -58,6 +58,7 @@
 #ifndef ttcr_Grid3Dunfs_h
 #define ttcr_Grid3Dunfs_h
 
+#include <atomic>
 #include <cmath>
 #include <fstream>
 #include <queue>
@@ -180,7 +181,7 @@ namespace ttcr {
         T1 epsilon;    ///< Convergence tolerance, dimensionless: the fraction of the traveltime range the mean per-node change must fall below.
         int nitermax;  ///< Iteration cap.
         std::vector<std::vector<Node3Dn<T1,T2>*>> S; ///< One node ordering per reference point.
-        mutable int niter_final; ///< Iterations taken; @c mutable so the @c const solver can record it.
+        mutable std::atomic<int> niter_final; ///< Iterations taken; @c mutable so the @c const solver can record it.
 
         /**
          * @brief Set the traveltimes at the source nodes and freeze them.
