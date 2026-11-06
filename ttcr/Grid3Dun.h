@@ -1417,6 +1417,21 @@ namespace ttcr {
          * @{
          */
         /**
+         * @brief A cell containing a node.
+         *
+         * For a point on a node, any of the node's cells contains it.  Comparing
+         * with cell 0 instead would match unrelated cells, and stop a raypath
+         * in the wrong place.
+         *
+         * @param nodeNo the node.
+         * @return one of the cells owning the node, 0 if it belongs to no cell.
+         */
+        T2 ownerCell(const T2 nodeNo) const {
+            const auto& owners = nodes[nodeNo].getOwners();
+            return owners.empty() ? 0 : owners.front();
+        }
+
+        /**
          * @brief Aim the gradient at a source, if the current cell touches one.
          * @param curr_pt   current point.
          * @param[in,out] g the gradient; overwritten with @c Tx-curr_pt on a hit.
@@ -1676,6 +1691,7 @@ namespace ttcr {
                     if ( nodes[nn] == Tx[nt] ) {
                         ti.txOnNode[nt] = true;
                         ti.txNode[nt] = nn;
+                        ti.txCell[nt] = ownerCell(nn);
                         break;
                     }
                 }
@@ -2963,6 +2979,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} };
         std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -2974,9 +2991,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
+            if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 s1 = nodes[nodeNo].getNodeSlowness();
                 break;
             }
@@ -3037,6 +3055,7 @@ namespace ttcr {
                                                                     nodes[faceNodes[0]],
                                                                     nodes[faceNodes[1]],
                                                                     nodes[faceNodes[2]]);
+                        faceNodesStart = ind[n];
                         //  faceNodes shoud not be assigned, face was not intersected
                         faceNodes = {0, 0, 0};
                         break;
@@ -3143,7 +3162,7 @@ namespace ttcr {
                                                                          nodes[itmp[2]],
                                                                          nodes[itmp[3]]);
 
-                            tt += t0[nt] + 0.5*(s1 + s2) * curr_pt.getDistance( Tx[nt] );
+                            tt += t0[nt] + 0.5*(s1 + s2) * prev_pt.getDistance( Tx[nt] );
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
 #endif
@@ -3520,6 +3539,10 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        faceNodes = faceNodesStart;
+                    }
                     // we must be on an face with gradient pointing slightly outward tetrahedron
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
@@ -3993,6 +4016,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} };
         std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -4004,9 +4028,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
+            if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 break;
             }
         }
@@ -4045,6 +4070,7 @@ namespace ttcr {
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                         onFace = true;
+                        faceNodesStart = ind[n];
                         //  faceNodes shoud not be assigned, face was not intersected
                         break;
                     }
@@ -4408,6 +4434,10 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        faceNodes = faceNodesStart;
+                    }
                     // we must be on an face with gradient pointing slightly outward tetrahedron
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
@@ -4748,6 +4778,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} };
         std::array<T2,3> faceNodes{ {0, 0, 0} };
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -4759,9 +4790,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
+            if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 s1 = nodes[nodeNo].getNodeSlowness();
                 break;
             }
@@ -4824,6 +4856,7 @@ namespace ttcr {
                                                                     nodes[faceNodes[0]],
                                                                     nodes[faceNodes[1]],
                                                                     nodes[faceNodes[2]]);
+                        faceNodesStart = ind[n];
                         //  faceNodes shoud not be assigned, face was not intersected
                         faceNodes = {0, 0, 0};
                         break;
@@ -5301,6 +5334,10 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        faceNodes = faceNodesStart;
+                    }
                     // we must be on an face with gradient pointing slightly outward tetrahedron
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
@@ -5730,6 +5767,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} }, edgeNodesPrev;
         std::array<T2,3> faceNodes{ {0, 0, 0} }, faceNodesPrev;
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -5741,9 +5779,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
+            if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 s1 = nodes[nodeNo].getNodeSlowness();
                 break;
             }
@@ -5807,6 +5846,7 @@ namespace ttcr {
                                                                     nodes[faceNodes[1]],
                                                                     nodes[faceNodes[2]]);
                         }
+                        faceNodesStart = ind[n];
                         //  faceNodes shoud not be assigned, face was not intersected
                         faceNodes = {0, 0, 0};
                         break;
@@ -6435,6 +6475,10 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        faceNodes = faceNodesStart;
+                    }
                     // we must be on an face with gradient pointing slightly outward tetrahedron
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
@@ -7040,8 +7084,9 @@ namespace ttcr {
         bool onNode = false;
         bool onEdge = false;
         bool onFace = false;
-        std::array<T2,2> edgeNodes, edgeNodesPrev;
-        std::array<T2,3> faceNodes, faceNodesPrev;
+        std::array<T2,2> edgeNodes{ {0, 0} }, edgeNodesPrev;
+        std::array<T2,3> faceNodes{ {0, 0, 0} }, faceNodesPrev;
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -7053,9 +7098,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
+            if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 break;
             }
         }
@@ -7093,6 +7139,7 @@ namespace ttcr {
                 for ( size_t n=0; n<4; ++n ) {
                     if ( areCoplanar(curr_pt, nodes[ind[n][0]], nodes[ind[n][1]], nodes[ind[n][2]]) ) {
                         onFace = true;
+                        faceNodesStart = ind[n];
                         //  faceNodes shoud not be assigned, face was not intersected
                         break;
                     }
@@ -7875,6 +7922,10 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        faceNodes = faceNodesStart;
+                    }
                     // we must be on an face with gradient pointing slightly outward tetrahedron
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
@@ -8453,6 +8504,7 @@ namespace ttcr {
         bool onFace = false;
         std::array<T2,2> edgeNodes{ {0, 0} }, edgeNodesPrev;
         std::array<T2,3> faceNodes{ {0, 0, 0} }, faceNodesPrev;
+        std::array<T2,3> faceNodesStart{ {0, 0, 0} };
         Grad3D<T1,NODE>* grad3d = nullptr;
         if ( rp_method == 0 ) {
             grad3d = new Grad3D_ls_fo<T1,NODE>();
@@ -8464,9 +8516,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn] == curr_pt ) {
+            if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 s1 = nodes[nodeNo].getNodeSlowness();
                 break;
             }
@@ -8529,6 +8582,7 @@ namespace ttcr {
                                                                     nodes[faceNodes[0]],
                                                                     nodes[faceNodes[1]],
                                                                     nodes[faceNodes[2]]);
+                        faceNodesStart = ind[n];
                         //  faceNodes shoud not be assigned, face was not intersected
                         faceNodes = {0, 0, 0};
                         break;
@@ -9188,6 +9242,10 @@ namespace ttcr {
 
                 if ( foundIntersection == false ) {
 
+                    if ( (faceNodes[0] == faceNodes[1]) && (faceNodes[0] == faceNodes[2]) ) {
+                        // we have started on a face and cellNo was incorrectly picked
+                        faceNodes = faceNodesStart;
+                    }
                     // we must be on an face with gradient pointing slightly outward tetrahedron
                     // return in other cell but keep gradient
                     cellNo = findAdjacentCell2(faceNodes, cellNo);
@@ -12287,9 +12345,18 @@ namespace ttcr {
                     }
                 }
                 if ( found == false ) {
-                    edgeNodes2[ne++] = primary[nc][np];
+                    if ( ne < 2 ) edgeNodes2[ne] = primary[nc][np];
+                    ++ne;
                 }
             }
+        }
+        if ( ne != 2 ) {
+            // the edge is inside the mesh, so there is no external face to
+            // project on: g must be running along the edge, follow it
+            const sxyz<T1> end0 = nodes[edgeNodes[0]];
+            const sxyz<T1> end1 = nodes[edgeNodes[1]];
+            pt_i = dot(g, end0 - curr_pt) > dot(g, end1 - curr_pt) ? end0 : end1;
+            return pt_i - curr_pt;
         }
         sxyz<T1> g_proj;
         T2 thirdnode;//the third node of the face on which g is to be projected
@@ -12468,9 +12535,18 @@ namespace ttcr {
                     }
                 }
                 if ( found == false ) {
-                    edgeNodes2[ne++] = primary[nc][np];
+                    if ( ne < 2 ) edgeNodes2[ne] = primary[nc][np];
+                    ++ne;
                 }
             }
+        }
+        if ( ne != 2 ) {
+            // the edge is inside the mesh, so there is no external face to
+            // project on: g must be running along the edge, follow it
+            const sxyz<T1> end0 = nodes[edgeNodes[0]];
+            const sxyz<T1> end1 = nodes[edgeNodes[1]];
+            pt_i = dot(g, end0 - curr_pt) > dot(g, end1 - curr_pt) ? end0 : end1;
+            return pt_i - curr_pt;
         }
 
         sxyz<T1> g_proj;

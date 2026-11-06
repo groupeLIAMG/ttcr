@@ -911,6 +911,21 @@ namespace ttcr {
             return tmp;
         }
 
+        /**
+         * @brief A cell containing a node.
+         *
+         * For a point on a node, any of the node's cells contains it.  Comparing
+         * with cell 0 instead would match unrelated cells, and stop a raypath
+         * in the wrong place.
+         *
+         * @param nodeNo the node.
+         * @return one of the cells owning the node, 0 if it belongs to no cell.
+         */
+        T2 ownerCell(const T2 nodeNo) const {
+            const auto& owners = nodes[nodeNo].getOwners();
+            return owners.empty() ? 0 : owners.front();
+        }
+
         void checkCloseToTx(const sxyz<T1>& curr_pt,
                             sxyz<T1>& g,
                             const T2 cellNo,
@@ -1082,6 +1097,7 @@ namespace ttcr {
                     if ( nodes[nn] == Tx[nt] ) {
                         ti.txOnNode[nt] = true;
                         ti.txNode[nt] = nn;
+                        ti.txCell[nt] = ownerCell(nn);
                         break;
                     }
                 }
@@ -2501,9 +2517,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn].getDistance( curr_pt ) < small ) {
+            if ( nodes[nn].isPrimary() && nodes[nn].getDistance( curr_pt ) < small ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 break;
             }
         }
@@ -2714,7 +2731,7 @@ namespace ttcr {
                                 break;
                             }
                         }
-                        dt = cells.computeDt( prev_pt, curr_pt, traversedCell );
+                        dt = cells.computeDt( prev_pt, pt_i, traversedCell );
                     }
 
                     curr_pt = pt_i;
@@ -2867,7 +2884,7 @@ namespace ttcr {
                                 break;
                             }
                         }
-                        dt = cells.computeDt( prev_pt, curr_pt, traversedCell );
+                        dt = cells.computeDt( prev_pt, pt_i, traversedCell );
                     } else {
                         T2 traversedCell = 0;
                         std::array<T2,3> fn;
@@ -2885,7 +2902,7 @@ namespace ttcr {
                                 break;
                             }
                         }
-                        dt = cells.computeDt( prev_pt, curr_pt, traversedCell );
+                        dt = cells.computeDt( prev_pt, pt_i, traversedCell );
                     }
 
                     curr_pt = pt_i;
@@ -3402,9 +3419,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn].getDistance( curr_pt ) < small ) {
+            if ( nodes[nn].isPrimary() && nodes[nn].getDistance( curr_pt ) < small ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 break;
             }
         }
@@ -4128,9 +4146,10 @@ namespace ttcr {
         bool reachedTx = false;
 
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn].getDistance( curr_pt ) < small ) {
+            if ( nodes[nn].isPrimary() && nodes[nn].getDistance( curr_pt ) < small ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 break;
             }
         }
@@ -4333,7 +4352,7 @@ namespace ttcr {
                                 break;
                             }
                         }
-                        dt = cells.computeDt( r_data.back(), curr_pt, traversedCell );
+                        dt = cells.computeDt( r_data.back(), pt_i, traversedCell );
                     }
 
                     curr_pt = pt_i;
@@ -4478,7 +4497,7 @@ namespace ttcr {
                                 break;
                             }
                         }
-                        dt = cells.computeDt( r_data.back(), curr_pt, traversedCell );
+                        dt = cells.computeDt( r_data.back(), pt_i, traversedCell );
                     } else {
                         T2 traversedCell = 0;
                         std::array<T2,3> fn;
@@ -4496,7 +4515,7 @@ namespace ttcr {
                                 break;
                             }
                         }
-                        dt = cells.computeDt( r_data.back(), curr_pt, traversedCell );
+                        dt = cells.computeDt( r_data.back(), pt_i, traversedCell );
                     }
 
                     curr_pt = pt_i;
@@ -4943,9 +4962,10 @@ namespace ttcr {
         bool reachedTx = false;
         
         for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-            if ( nodes[nn].getDistance( curr_pt ) < small ) {
+            if ( nodes[nn].isPrimary() && nodes[nn].getDistance( curr_pt ) < small ) {
                 nodeNo = nn;
                 onNode = true;
+                cellNo = ownerCell(nodeNo);
                 break;
             }
         }
@@ -5173,7 +5193,7 @@ namespace ttcr {
                             }
                         }
                         cell.i = traversedCell;
-                        cell.v = prev_pt.getDistance( curr_pt );
+                        cell.v = prev_pt.getDistance( pt_i );
                         l_data.push_back(cell);
                         dt = cells.getSlowness(traversedCell) * cell.v;
                     }
@@ -5322,7 +5342,7 @@ namespace ttcr {
                             }
                         }
                         cell.i = traversedCell;
-                        cell.v = prev_pt.getDistance( curr_pt );
+                        cell.v = prev_pt.getDistance( pt_i );
                         l_data.push_back(cell);
                         dt = cells.getSlowness(traversedCell) * cell.v;
                     } else {
@@ -5343,7 +5363,7 @@ namespace ttcr {
                             }
                         }
                         cell.i = traversedCell;
-                        cell.v = prev_pt.getDistance( curr_pt );
+                        cell.v = prev_pt.getDistance( pt_i );
                         l_data.push_back(cell);
                         dt = cells.getSlowness(traversedCell) * cell.v;
                     }
@@ -5855,9 +5875,10 @@ namespace ttcr {
             bool reachedTx = false;
 
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == curr_pt ) {
+                if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                     nodeNo = nn;
                     onNode = true;
+                    cellNo = ownerCell(nodeNo);
                     break;
                 }
             }
@@ -6550,9 +6571,10 @@ namespace ttcr {
             bool reachedTx = false;
 
             for ( T2 nn=0; nn<nodes.size(); ++nn ) {
-                if ( nodes[nn] == curr_pt ) {
+                if ( nodes[nn].isPrimary() && nodes[nn] == curr_pt ) {
                     nodeNo = nn;
                     onNode = true;
+                    cellNo = ownerCell(nodeNo);
                     break;
                 }
             }
@@ -7579,9 +7601,18 @@ namespace ttcr {
                     }
                 }
                 if ( found == false ) {
-                    edgeNodes2[ne++] = primary[nc][np];
+                    if ( ne < 2 ) edgeNodes2[ne] = primary[nc][np];
+                    ++ne;
                 }
             }
+        }
+        if ( ne != 2 ) {
+            // the edge is inside the mesh, so there is no external face to
+            // project on: g must be running along the edge, follow it
+            const sxyz<T1> end0 = nodes[edgeNodes[0]];
+            const sxyz<T1> end1 = nodes[edgeNodes[1]];
+            pt_i = dot(g, end0 - curr_pt) > dot(g, end1 - curr_pt) ? end0 : end1;
+            return pt_i - curr_pt;
         }
 
         sxyz<T1> g_proj;
