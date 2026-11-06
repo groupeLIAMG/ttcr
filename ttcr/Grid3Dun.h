@@ -6407,6 +6407,11 @@ namespace ttcr {
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
+                if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                    // no face crossed yet: the raypath starts on faceNodesStart, if
+                    // on a face, and node 0 has nothing to do with this segment
+                    faceNodesPrev = faceNodesStart;
+                }
 
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
@@ -6560,6 +6565,11 @@ namespace ttcr {
                     // we must be going outside the mesh
                     // hack: project gradient on face and continue
                     faceNodesPrev = faceNodes;
+                    if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                        // no face crossed yet: the raypath starts on faceNodesStart, if
+                        // on a face, and node 0 has nothing to do with this segment
+                        faceNodesPrev = faceNodesStart;
+                    }
 
                     g = projectOnFace(g, faceNodes);
 
@@ -7319,6 +7329,11 @@ namespace ttcr {
                     onFace = true;
 
                     faceNodesPrev = faceNodes;
+                    if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                        // no face crossed yet: the raypath starts on faceNodesStart, if
+                        // on a face, and node 0 has nothing to do with this segment
+                        faceNodesPrev = faceNodesStart;
+                    }
                     faceNodes = nb;
 
                     if ( r_tmp.size() > 1) {
@@ -7644,6 +7659,11 @@ namespace ttcr {
                     onFace = true;
 
                     faceNodesPrev = faceNodes;
+                    if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                        // no face crossed yet: the raypath starts on faceNodesStart, if
+                        // on a face, and node 0 has nothing to do with this segment
+                        faceNodesPrev = faceNodesStart;
+                    }
                     faceNodes[0] = itmpNode;
                     faceNodes[1] = edgeNodes2[0];
                     faceNodes[2] = edgeNodes2[1];
@@ -7794,6 +7814,11 @@ namespace ttcr {
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
+                if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                    // no face crossed yet: the raypath starts on faceNodesStart, if
+                    // on a face, and node 0 has nothing to do with this segment
+                    faceNodesPrev = faceNodesStart;
+                }
 
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
@@ -8066,6 +8091,11 @@ namespace ttcr {
                 }
                 if ( foundIntersection == false ) {
                     faceNodesPrev = faceNodes;
+                    if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                        // no face crossed yet: the raypath starts on faceNodesStart, if
+                        // on a face, and node 0 has nothing to do with this segment
+                        faceNodesPrev = faceNodesStart;
+                    }
 
                     g = projectOnFace(g, faceNodes);
 
@@ -9169,6 +9199,11 @@ namespace ttcr {
                 // there are 3 faces that might be intersected
 
                 faceNodesPrev = faceNodes;
+                if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                    // no face crossed yet: the raypath starts on faceNodesStart, if
+                    // on a face, and node 0 has nothing to do with this segment
+                    faceNodesPrev = faceNodesStart;
+                }
 
                 bool foundIntersection = false;
                 for ( size_t n=0; n<4; ++n ) {
@@ -9332,6 +9367,11 @@ namespace ttcr {
                     // we must be going outside the mesh
                     // hack: project gradient on face and continue
                     faceNodesPrev = faceNodes;
+                    if ( (faceNodesPrev[0] == faceNodesPrev[1]) && (faceNodesPrev[0] == faceNodesPrev[2]) ) {
+                        // no face crossed yet: the raypath starts on faceNodesStart, if
+                        // on a face, and node 0 has nothing to do with this segment
+                        faceNodesPrev = faceNodesStart;
+                    }
 
                     g = projectOnFace(g, faceNodes);
 

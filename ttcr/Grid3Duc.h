@@ -926,6 +926,38 @@ namespace ttcr {
             return owners.empty() ? 0 : owners.front();
         }
 
+        /**
+         * @brief The cell in which to time the last segment of a raypath.
+         *
+         * A segment lying on a face or an edge belongs to all the cells sharing
+         * it, and is travelled at the speed of the fastest one.  Using the cell
+         * that happened to be found first would make the traveltime depend on
+         * the order of the cells.
+         *
+         * @param cellNo a cell containing the segment.
+         * @param a start of the segment.
+         * @param b end of the segment.
+         * @return the cell containing the segment in which it takes the least time.
+         */
+        T2 fastestCell(const T2 cellNo, const sxyz<T1>& a, const sxyz<T1>& b) const {
+            T2 best = cellNo;
+            T1 dt = cells.computeDt(a, b, cellNo);
+            for ( size_t n=0; n<4; ++n ) {
+                for ( const T2 nc : nodes[ tetrahedra[cellNo].i[n] ].getOwners() ) {
+                    if ( nc == best ) continue;
+                    // a cell holding both ends holds the whole segment
+                    if ( insideTetrahedron(a, nc) && insideTetrahedron(b, nc) ) {
+                        const T1 dt2 = cells.computeDt(a, b, nc);
+                        if ( dt2 < dt ) {
+                            dt = dt2;
+                            best = nc;
+                        }
+                    }
+                }
+            }
+            return best;
+        }
+
         void checkCloseToTx(const sxyz<T1>& curr_pt,
                             sxyz<T1>& g,
                             const T2 cellNo,
@@ -2567,7 +2599,7 @@ namespace ttcr {
 
         for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
-                tt += t0[nt] + cells.computeDt( curr_pt, Tx[nt], cellNo );
+                tt += t0[nt] + cells.computeDt( curr_pt, Tx[nt], fastestCell( cellNo, curr_pt, Tx[nt] ) );
                 reachedTx = true;
                 break;
             }
@@ -2619,7 +2651,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            tt += t0[nt] + cells.computeDt( nodes[nodeNo], Tx[nt], *nc );
+                            tt += t0[nt] + cells.computeDt( nodes[nodeNo], Tx[nt], fastestCell( *nc, nodes[nodeNo], Tx[nt] ) );
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
 #endif
@@ -2688,7 +2720,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( cellNo == txCell[nt] ) {
-                            tt += t0[nt] + cells.computeDt( nodes[nodeNo], Tx[nt], cellNo );
+                            tt += t0[nt] + cells.computeDt( nodes[nodeNo], Tx[nt], fastestCell( cellNo, nodes[nodeNo], Tx[nt] ) );
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
 #endif
@@ -3214,7 +3246,7 @@ namespace ttcr {
                         if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
 
-                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], txCell[nt] );
+                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( txCell[nt], prev_pt, Tx[nt] ) );
                             reachedTx = true;
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
@@ -3226,7 +3258,7 @@ namespace ttcr {
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
 
-                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], txCell[nt] );
+                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( txCell[nt], prev_pt, Tx[nt] ) );
                             reachedTx = true;
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
@@ -3239,7 +3271,7 @@ namespace ttcr {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
                         if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
-                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], txCell[nt] );
+                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( txCell[nt], prev_pt, Tx[nt] ) );
                             reachedTx = true;
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
@@ -3260,7 +3292,7 @@ namespace ttcr {
                             if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
                                 (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
 
-                                tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], txCell[nt] );
+                                tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( txCell[nt], prev_pt, Tx[nt] ) );
                                 reachedTx = true;
 #ifdef DEBUG_RP
                                 r_data[0].push_back(Tx[nt]);
@@ -3275,7 +3307,7 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], cellNo );
+                                tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( cellNo, prev_pt, Tx[nt] ) );
                                 reachedTx = true;
 #ifdef DEBUG_RP
                                 r_data[0].push_back(Tx[nt]);
@@ -3285,7 +3317,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], cellNo );
+                            tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( cellNo, prev_pt, Tx[nt] ) );
 #ifdef DEBUG_RP
                             r_data[0].push_back(Tx[nt]);
 #endif
@@ -3310,7 +3342,7 @@ namespace ttcr {
                                         }
                                     }
                                     if ( found ) {
-                                        tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], cellNo );
+                                        tt += t0[nt] + cells.computeDt( prev_pt, Tx[nt], fastestCell( cellNo, prev_pt, Tx[nt] ) );
 #ifdef DEBUG_RP
                                         r_data[0].push_back(Tx[nt]);
 #endif
@@ -4196,7 +4228,7 @@ namespace ttcr {
 
         for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
-                tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], cellNo );
+                tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( cellNo, r_data.back(), Tx[nt] ) );
                 r_data.push_back( Tx[nt] );
                 reachedTx = true;
                 break;
@@ -4247,7 +4279,7 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], *nc );
+                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( *nc, r_data.back(), Tx[nt] ) );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                             break;
@@ -4311,7 +4343,7 @@ namespace ttcr {
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( cellNo == txCell[nt] ) {
 
-                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], cellNo );
+                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( cellNo, r_data.back(), Tx[nt] ) );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                             break;
@@ -4807,7 +4839,7 @@ namespace ttcr {
                         if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
 
-                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], txCell[nt] );
+                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( txCell[nt], r_data.back(), Tx[nt] ) );
                             reachedTx = true;
                             r_data.push_back(Tx[nt]);
                             break;
@@ -4817,7 +4849,7 @@ namespace ttcr {
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
 
-                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], txCell[nt] );
+                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( txCell[nt], r_data.back(), Tx[nt] ) );
                             reachedTx = true;
                             r_data.push_back(Tx[nt]);
                             break;
@@ -4828,7 +4860,7 @@ namespace ttcr {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
                         if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
-                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], cellNo );
+                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( cellNo, r_data.back(), Tx[nt] ) );
                             r_data.push_back(Tx[nt]);
                             reachedTx = true;
                             break;
@@ -4847,7 +4879,7 @@ namespace ttcr {
                             if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
                                 (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
 
-                                tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], txCell[nt] );
+                                tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( txCell[nt], r_data.back(), Tx[nt] ) );
                                 r_data.push_back(Tx[nt]);
                                 reachedTx = true;
                                 break;
@@ -4860,7 +4892,7 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], cellNo );
+                                tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( cellNo, r_data.back(), Tx[nt] ) );
                                 r_data.push_back( Tx[nt] );
                                 reachedTx = true;
                                 break;
@@ -4868,7 +4900,7 @@ namespace ttcr {
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], cellNo );
+                            tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( cellNo, r_data.back(), Tx[nt] ) );
                             r_data.push_back( Tx[nt] );
                             reachedTx = true;
                         } else {
@@ -4891,7 +4923,7 @@ namespace ttcr {
                                         }
                                     }
                                     if ( found ) {
-                                        tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], cellNo );
+                                        tt += t0[nt] + cells.computeDt( r_data.back(), Tx[nt], fastestCell( cellNo, r_data.back(), Tx[nt] ) );
                                         r_data.push_back( Tx[nt] );
                                         reachedTx = true;
                                         break;
@@ -5013,10 +5045,10 @@ namespace ttcr {
         siv<T1> cell;
         for ( size_t nt=0; nt<txCell.size(); ++nt ) {
             if ( cellNo == txCell[nt] ) {
-                cell.i = cellNo;
+                cell.i = fastestCell( cellNo, prev_pt, Tx[nt] );
                 cell.v = prev_pt.getDistance( Tx[nt] );
                 l_data.push_back( cell );
-                tt += t0[nt] + cells.getSlowness(cellNo) * cell.v;
+                tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                 reachedTx = true;
                 break;
             }
@@ -5066,10 +5098,10 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( *nc == txCell[nt] ) {
-                            cell.i = *nc;
+                            cell.i = fastestCell( *nc, prev_pt, Tx[nt] );
                             cell.v = prev_pt.getDistance( Tx[nt] );
-                            l_data.push_back(cell);
-                            tt += t0[nt] + cells.getSlowness(*nc) * cell.v;
+                            l_data.push_back( cell );
+                            tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                             reachedTx = true;
                             break;
                         }
@@ -5132,10 +5164,10 @@ namespace ttcr {
                     //  check if cell is (one of) TxCell(s)
                     for (size_t nt=0; nt<Tx.size(); ++nt) {
                         if ( cellNo == txCell[nt] ) {
-                            cell.i = cellNo;
+                            cell.i = fastestCell( cellNo, prev_pt, Tx[nt] );
                             cell.v = prev_pt.getDistance( Tx[nt] );
-                            l_data.push_back(cell);
-                            tt += t0[nt] + cells.getSlowness(cellNo) * cell.v;
+                            l_data.push_back( cell );
+                            tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                             reachedTx = true;
                             break;
                         }
@@ -5664,10 +5696,10 @@ namespace ttcr {
                         if ( curr_pt.getDistance(nodes[txEdges[nt][0]]) < minDist ||
                             curr_pt.getDistance(nodes[txEdges[nt][1]]) < minDist ) {
                             
-                            cell.i = txCell[nt];
+                            cell.i = fastestCell( txCell[nt], prev_pt, Tx[nt] );
                             cell.v = prev_pt.getDistance( Tx[nt] );
-                            l_data.push_back(cell);
-                            tt += t0[nt] + cells.getSlowness(txCell[nt]) * cell.v;
+                            l_data.push_back( cell );
+                            tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                             reachedTx = true;
                             break;
                         }
@@ -5676,10 +5708,10 @@ namespace ttcr {
                             curr_pt.getDistance(nodes[txFaces[nt][1]]) < minDist ||
                             curr_pt.getDistance(nodes[txFaces[nt][2]]) < minDist ) {
                             
-                            cell.i = txCell[nt];
+                            cell.i = fastestCell( txCell[nt], prev_pt, Tx[nt] );
                             cell.v = prev_pt.getDistance( Tx[nt] );
-                            l_data.push_back(cell);
-                            tt += t0[nt] + cells.getSlowness(txCell[nt]) * cell.v;
+                            l_data.push_back( cell );
+                            tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                             reachedTx = true;
                             break;
                         }
@@ -5689,10 +5721,10 @@ namespace ttcr {
                 for ( size_t nt=0; nt<Tx.size(); ++nt ) {
                     if ( txOnNode[nt] ) {
                         if ( txNode[nt] == edgeNodes[0] || txNode[nt] == edgeNodes[1] ) {
-                            cell.i = cellNo;
+                            cell.i = fastestCell( cellNo, prev_pt, Tx[nt] );
                             cell.v = prev_pt.getDistance( Tx[nt] );
-                            l_data.push_back(cell);
-                            tt += t0[nt] + cells.getSlowness(cellNo) * cell.v;
+                            l_data.push_back( cell );
+                            tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                             reachedTx = true;
                             break;
                         }
@@ -5710,10 +5742,10 @@ namespace ttcr {
                             if ( (ind[ne][0] == edgeNodes[0] && ind[ne][1] == edgeNodes[1]) ||
                                 (ind[ne][0] == edgeNodes[1] && ind[ne][1] == edgeNodes[0]) ) {
                                 
-                                cell.i = txCell[nt];
+                                cell.i = fastestCell( txCell[nt], prev_pt, Tx[nt] );
                                 cell.v = prev_pt.getDistance( Tx[nt] );
-                                l_data.push_back(cell);
-                                tt += t0[nt] + cells.getSlowness(txCell[nt]) * cell.v;
+                                l_data.push_back( cell );
+                                tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                                 reachedTx = true;
                                 break;
                             }
@@ -5725,20 +5757,20 @@ namespace ttcr {
                     if ( txOnNode[nt] ) {
                         for ( auto nc=nodes[txNode[nt]].getOwners().begin(); nc!=nodes[txNode[nt]].getOwners().end(); ++nc ) {
                             if ( cellNo == *nc ) {
-                                cell.i = cellNo;
+                                cell.i = fastestCell( cellNo, prev_pt, Tx[nt] );
                                 cell.v = prev_pt.getDistance( Tx[nt] );
-                                l_data.push_back(cell);
-                                tt += t0[nt] + cells.getSlowness(cellNo) * cell.v;
+                                l_data.push_back( cell );
+                                tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                                 reachedTx = true;
                                 break;
                             }
                         }
                     } else {
                         if ( cellNo == txCell[nt] ) {
-                            cell.i = txCell[nt];
+                            cell.i = fastestCell( txCell[nt], prev_pt, Tx[nt] );
                             cell.v = prev_pt.getDistance( Tx[nt] );
-                            l_data.push_back(cell);
-                            tt += t0[nt] + cells.getSlowness(cellNo) * cell.v;
+                            l_data.push_back( cell );
+                            tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                             reachedTx = true;
                         } else {
                             for ( size_t nn=0; nn<txNeighborCells[nt].size(); ++nn ) {
@@ -5760,10 +5792,10 @@ namespace ttcr {
                                         }
                                     }
                                     if ( found ) {
-                                        cell.i = cellNo;
+                                        cell.i = fastestCell( cellNo, prev_pt, Tx[nt] );
                                         cell.v = prev_pt.getDistance( Tx[nt] );
-                                        l_data.push_back(cell);
-                                        tt += t0[nt] + cells.getSlowness(cellNo) * cell.v;
+                                        l_data.push_back( cell );
+                                        tt += t0[nt] + cells.getSlowness(cell.i) * cell.v;
                                         reachedTx = true;
                                         break;
                                     }

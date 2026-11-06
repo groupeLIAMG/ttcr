@@ -262,6 +262,41 @@ class TestPointsOnMeshFeatures(unittest.TestCase):
                 tt = g.raytrace(src[np.newaxis], rcv)
                 np.testing.assert_allclose(tt, exact, rtol=0.06)
 
+    def test_last_segment_on_an_interface(self):
+        # the last segment runs along an edge shared by cells of slowness 10
+        # and 1: it was timed in whichever of them came first, 10 or 1 times
+        # the distance depending on the order of the cells
+        src = np.array([[4., 4., 4.]])
+        rcv = np.array([[4., 5., 5.]])
+        orders = (np.arange(self.tet.shape[0]),
+                  np.random.default_rng(0).permutation(self.tet.shape[0]))
+        for order, (method, kwargs) in itertools.product(orders, METHODS[::2]):
+            with self.subTest(method=method):
+                tet = self.tet[order]
+                slowness = np.where(self.nodes[tet].mean(axis=1)[:, 0] < 4., 10., 1.)
+                g = tm.Mesh3d(self.nodes, tet, cell_slowness=True, method=method,
+                              tt_from_rp=True, **kwargs)
+                g.set_slowness(slowness)
+                tt, L = g.raytrace(src, rcv, compute_L=True)
+                # the walk along the interface still picks up some slowness 10
+                self.assertLess(tt[0], 2. * np.sqrt(2.))
+                np.testing.assert_allclose(L @ slowness, tt, rtol=1.e-6)
+
+    def test_nodal_kernel_from_a_face(self):
+        # starting on a face, the first segment was weighted on node 0, far away,
+        # instead of the nodes of that face
+        src = np.array([[6.2, 6.3, 6.1]])
+        rcv = self.nodes[self.tet[3000, :3]].mean(axis=0)[np.newaxis]
+        g = tm.Mesh3d(self.nodes, self.tet, cell_slowness=False, method='FSM',
+                      tt_from_rp=True)
+        g.set_slowness(np.ones(g.nparams))
+        tt, L = g.raytrace(src, rcv, compute_L=True)
+        L = L[0].toarray()
+        np.testing.assert_allclose(L.sum(axis=1), tt, rtol=1.e-6)
+        far = np.linalg.norm(self.nodes - rcv, axis=1) > 2.
+        far &= np.linalg.norm(self.nodes - src, axis=1) > 2.
+        self.assertEqual(np.abs(L[0, far]).max(), 0.)
+
     def test_receiver_on_a_secondary_node(self):
         # it was taken for a primary node, and part of the raypath was left out
         nodes, tet = jittered_mesh(9)
