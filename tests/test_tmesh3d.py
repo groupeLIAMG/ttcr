@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for verifying python wrappers, module tmesh in 3D"""
 
+import itertools
 import unittest
 
 import numpy as np
@@ -85,6 +86,234 @@ class TestMesh3Dc(unittest.TestCase):
                         'DSPM accuracy failed (slowness in cells)')
 
 
+def tet_volumes(nodes, tet):
+    """Volumes of tetrahedra."""
+    edges = nodes[tet[:, 1:]] - nodes[tet[:, :1]]
+    return np.abs(np.linalg.det(edges)) / 6.
+
+
+def without_flat_cells(nodes, tet):
+    """Drop the flat cells that Delaunay leaves on the boundary of a box."""
+    return tet[tet_volumes(nodes, tet) > 1.e-9].astype(np.int64)
+
+
+def cube_mesh(n):
+    """Unit cubes split in 6 tetrahedra along their main diagonal, none flat."""
+    x = np.arange(float(n))
+    nodes = np.array(np.meshgrid(x, x, x, indexing='ij')).reshape(3, -1).T
+    index = lambda c: c[0]*n*n + c[1]*n + c[2]
+    tet = []
+    for corner in itertools.product(range(n-1), repeat=3):
+        for axes in itertools.permutations(range(3)):
+            c = list(corner)
+            cell = [index(c)]
+            for ax in axes:
+                c[ax] += 1
+                cell.append(index(c))
+            tet.append(cell)
+    return nodes, np.array(tet, dtype=np.int64)
+
+
+def jittered_mesh(n):
+    """Irregular interior nodes of a box of unit cells, without flat cells."""
+    x = np.arange(float(n))
+    nodes = np.array(np.meshgrid(x, x, x, indexing='ij')).reshape(3, -1).T
+    inner = np.all((nodes > 0.) & (nodes < n - 1.), axis=1)
+    nodes[inner] += np.random.default_rng(1).uniform(-.2, .2, (inner.sum(), 3))
+    return nodes, without_flat_cells(nodes, Delaunay(nodes).simplices)
+
+
+METHODS = (('FSM', {}),
+           ('SPM', {'n_secondary': 3}),
+           ('DSPM', {'n_secondary': 2, 'n_tertiary': 2}))
+
+
+class TestFlatTetrahedra(unittest.TestCase):
+    """Solvers return nan, crash or never return on flat cells: refuse them."""
+
+    def lattice(self):
+        x = np.arange(4.)
+        return np.array(np.meshgrid(x, x, x, indexing='ij')).reshape(3, -1).T
+
+    def test_regular_lattice_refused(self):
+        nodes = self.lattice()
+        tet = Delaunay(nodes).simplices.astype(np.int64)
+        self.assertLess(tet_volumes(nodes, tet).min(), 1.e-9)
+        for cell_slowness in (True, False):
+            with self.subTest(cell_slowness=cell_slowness):
+                with self.assertRaisesRegex(ValueError, 'no volume'):
+                    tm.Mesh3d(nodes, tet, cell_slowness=cell_slowness)
+
+    def test_flat_boundary_cells_refused(self):
+        # interior nodes are irregular, but the faces of the box are coplanar
+        nodes = jittered_mesh(5)[0]
+        with self.assertRaisesRegex(ValueError, 'no volume'):
+            tm.Mesh3d(nodes, Delaunay(nodes).simplices.astype(np.int64))
+
+    def test_scale_does_not_matter(self):
+        nodes, tet = cube_mesh(3)
+        for scale in (1.e-4, 1.e4):
+            with self.subTest(scale=scale):
+                tm.Mesh3d(nodes * scale, tet)
+                flat = tet.copy()
+                flat[0, 3] = flat[0, 2]
+                with self.assertRaisesRegex(ValueError, 'no volume'):
+                    tm.Mesh3d(nodes * scale, flat)
+
+
+class TestPointsOnMeshFeatures(unittest.TestCase):
+    """Raypaths starting or ending exactly on a node, a face or an edge."""
+
+    def setUp(self):
+        self.nodes, self.tet = cube_mesh(9)
+        # for V = a + b z, the traveltime is known exactly
+        self.a, self.b = 2., .5
+
+    def exact(self, src, rcv):
+        v1 = self.a + self.b * src[2]
+        v2 = self.a + self.b * rcv[:, 2]
+        d2 = np.sum((rcv - src)**2, axis=1)
+        return np.arccosh(1. + self.b**2 * d2 / (2. * v1 * v2)) / self.b
+
+    def mesh(self, nodes, tet, cell_slowness, method, kwargs):
+        g = tm.Mesh3d(nodes, tet, cell_slowness=cell_slowness, method=method,
+                      tt_from_rp=True, **kwargs)
+        z = nodes[tet].mean(axis=1)[:, 2] if cell_slowness else nodes[:, 2]
+        g.set_slowness(1. / (self.a + self.b * z))
+        return g
+
+    def test_source_and_receivers_on_nodes(self):
+        # such a source had no cell, and a receiver on a node was taken to be
+        # in it: the raypath stopped at once, with a wrong slowness.  The source
+        # stays away from cell 0, where this could go unnoticed.
+        src = np.array([4., 4., 4.])
+        rcv = np.array([[7., 7., 7.], [7., 1., 7.], [1., 6., 1.], [4., 4., 7.]])
+        exact = self.exact(src, rcv)
+        for cell_slowness, (method, kwargs) in itertools.product((True, False),
+                                                                 METHODS):
+            with self.subTest(cell_slowness=cell_slowness, method=method):
+                g = self.mesh(self.nodes, self.tet, cell_slowness, method, kwargs)
+                tt = g.raytrace(src[np.newaxis], rcv)
+                np.testing.assert_allclose(tt, exact, rtol=0.1)
+
+    def test_source_on_node_in_a_uniform_model(self):
+        src = np.array([[4., 4., 4.]])
+        rcv = np.array([[7., 7., 7.], [4., 4., 7.], [8., 4., 4.]])
+        for cell_slowness, (method, kwargs) in itertools.product((True, False),
+                                                                 METHODS):
+            with self.subTest(cell_slowness=cell_slowness, method=method):
+                g = tm.Mesh3d(self.nodes, self.tet, cell_slowness=cell_slowness,
+                              method=method, tt_from_rp=True, **kwargs)
+                g.set_slowness(np.ones(g.nparams))
+                tt, rays = g.raytrace(src, rcv, return_rays=True)
+                length = [np.linalg.norm(np.diff(r, axis=0), axis=1).sum()
+                          for r in rays]
+                np.testing.assert_allclose(tt, length, rtol=1.e-6)
+                np.testing.assert_allclose(tt, np.linalg.norm(rcv - src, axis=1),
+                                           rtol=0.07)
+
+    def test_raypath_along_an_inner_edge(self):
+        # from the surface, the raypath runs exactly along edges inside the mesh:
+        # looking for an external face to project on then crashed
+        src = np.array([[4., 4., 4.]])
+        rcv = np.array([[4., 4., 8.]])
+        for cell_slowness, (method, kwargs) in itertools.product((True, False),
+                                                                 METHODS):
+            with self.subTest(cell_slowness=cell_slowness, method=method):
+                g = tm.Mesh3d(self.nodes, self.tet, cell_slowness=cell_slowness,
+                              method=method, tt_from_rp=True, **kwargs)
+                g.set_slowness(np.ones(g.nparams))
+                tt = g.raytrace(src, rcv)
+                np.testing.assert_allclose(tt, 4., rtol=0.1)
+
+    def test_receivers_on_the_surface(self):
+        # with slowness in cells, raypath segments along the surface took no time
+        nodes, tet = jittered_mesh(7)
+        src = np.array([[3., 3., 3.]])
+        rcv = nodes[np.any((nodes == 0.) | (nodes == 6.), axis=1)][::5]
+        for cell_slowness, (method, kwargs) in itertools.product((True, False),
+                                                                 METHODS):
+            with self.subTest(cell_slowness=cell_slowness, method=method):
+                g = tm.Mesh3d(nodes, tet, cell_slowness=cell_slowness,
+                              method=method, tt_from_rp=True, **kwargs)
+                g.set_slowness(np.ones(g.nparams))
+                tt, rays = g.raytrace(src, rcv, return_rays=True)
+                length = np.array([np.linalg.norm(np.diff(r, axis=0), axis=1).sum()
+                                   for r in rays])
+                # a raypath may give up, with a warning and no points
+                traced = length > 0.
+                self.assertGreaterEqual(traced.sum(), rcv.shape[0] - 1)
+                np.testing.assert_allclose(tt[traced], length[traced], rtol=1.e-6)
+                if cell_slowness and method != 'SPM':
+                    # the same segments were missing from L
+                    tt, L = g.raytrace(src, rcv, compute_L=True)
+                    np.testing.assert_allclose((L @ np.ones(g.nparams))[traced],
+                                               tt[traced], rtol=1.e-6)
+
+    def test_receiver_on_a_face(self):
+        # the cell first picked may be the wrong one of the two sharing the face:
+        # with slowness at nodes, moving to the other one then crashed
+        src = np.array([1., 1., 1.])
+        rcv = self.nodes[self.tet[2000:2040, :3]].mean(axis=1)
+        exact = self.exact(src, rcv)
+        for cell_slowness in (True, False):
+            with self.subTest(cell_slowness=cell_slowness):
+                g = self.mesh(self.nodes, self.tet, cell_slowness, 'FSM', {})
+                tt = g.raytrace(src[np.newaxis], rcv)
+                np.testing.assert_allclose(tt, exact, rtol=0.06)
+
+    def test_last_segment_on_an_interface(self):
+        # the last segment runs along an edge shared by cells of slowness 10
+        # and 1: it was timed in whichever of them came first, 10 or 1 times
+        # the distance depending on the order of the cells
+        src = np.array([[4., 4., 4.]])
+        rcv = np.array([[4., 5., 5.]])
+        orders = (np.arange(self.tet.shape[0]),
+                  np.random.default_rng(0).permutation(self.tet.shape[0]))
+        for order, (method, kwargs) in itertools.product(orders, METHODS[::2]):
+            with self.subTest(method=method):
+                tet = self.tet[order]
+                slowness = np.where(self.nodes[tet].mean(axis=1)[:, 0] < 4., 10., 1.)
+                g = tm.Mesh3d(self.nodes, tet, cell_slowness=True, method=method,
+                              tt_from_rp=True, **kwargs)
+                g.set_slowness(slowness)
+                tt, L = g.raytrace(src, rcv, compute_L=True)
+                # the walk along the interface still picks up some slowness 10
+                self.assertLess(tt[0], 2. * np.sqrt(2.))
+                np.testing.assert_allclose(L @ slowness, tt, rtol=1.e-6)
+
+    def test_nodal_kernel_from_a_face(self):
+        # starting on a face, the first segment was weighted on node 0, far away,
+        # instead of the nodes of that face
+        src = np.array([[6.2, 6.3, 6.1]])
+        rcv = self.nodes[self.tet[3000, :3]].mean(axis=0)[np.newaxis]
+        g = tm.Mesh3d(self.nodes, self.tet, cell_slowness=False, method='FSM',
+                      tt_from_rp=True)
+        g.set_slowness(np.ones(g.nparams))
+        tt, L = g.raytrace(src, rcv, compute_L=True)
+        L = L[0].toarray()
+        np.testing.assert_allclose(L.sum(axis=1), tt, rtol=1.e-6)
+        far = np.linalg.norm(self.nodes - rcv, axis=1) > 2.
+        far &= np.linalg.norm(self.nodes - src, axis=1) > 2.
+        self.assertEqual(np.abs(L[0, far]).max(), 0.)
+
+    def test_receiver_on_a_secondary_node(self):
+        # it was taken for a primary node, and part of the raypath was left out
+        nodes, tet = jittered_mesh(9)
+        src = nodes[tet[1000]].mean(axis=0)[np.newaxis]
+        # with 2 secondary nodes per edge, one lies at the centroid of each face
+        rcv = nodes[tet[2000, :3]].mean(axis=0)[np.newaxis]
+        for cell_slowness in (True, False):
+            with self.subTest(cell_slowness=cell_slowness):
+                g = tm.Mesh3d(nodes, tet, cell_slowness=cell_slowness, method='DSPM',
+                              tt_from_rp=True, n_secondary=2, n_tertiary=2)
+                g.set_slowness(np.ones(g.nparams))
+                tt, rays = g.raytrace(src, rcv, return_rays=True)
+                length = np.linalg.norm(np.diff(rays[0], axis=0), axis=1).sum()
+                self.assertAlmostEqual(tt[0], length, places=6)
+                self.assertGreaterEqual(tt[0], np.linalg.norm(rcv - src) - 1.e-9)
+
+
 class TestComputeKSquared(unittest.TestCase):
     """compute_K(order=2, squared=True) is the matrix square of order 1.
 
@@ -106,7 +335,7 @@ class TestComputeKSquared(unittest.TestCase):
         inner = np.all((nodes > 0.) & (nodes < 10.), axis=1)
         nodes[inner] += rng.uniform(-0.3*h, 0.3*h, (inner.sum(), 3))
         self.nodes = nodes
-        self.tet = Delaunay(nodes).simplices.astype(np.int64)
+        self.tet = without_flat_cells(nodes, Delaunay(nodes).simplices)
 
     def test_squared_is_the_matrix_square(self):
         # compute_K exists for slowness at nodes only
