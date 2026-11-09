@@ -71,6 +71,40 @@ def _vtk(what):
 
 
 
+def _check_flat_tetrahedra(nodes, tetra):
+    """
+    Refuse a mesh holding tetrahedra without volume.
+
+    Interpolating in such a cell divides by zero, and raypaths cannot cross it:
+    solvers then return nan or wrong traveltimes, crash or never return.
+
+    Parameters
+    ----------
+    nodes : 2D np.ndarray, shape (nnodes, 3)
+    tetra : 2D np.ndarray, shape (ntet, 4)
+
+    Raises
+    ------
+    ValueError
+        if the volume of a tetrahedron is negligible next to its longest edge
+        from its first node
+    """
+    points = np.asarray(nodes)
+    cells = np.asarray(tetra)
+    edges = points[cells[:, 1:]] - points[cells[:, :1]]
+    volume = np.abs(np.linalg.det(edges)) / 6.0
+    longest = np.max(np.linalg.norm(edges, axis=2), axis=1)
+    flat = np.flatnonzero(volume <= 1.e-10 * longest**3)
+    if flat.size > 0:
+        raise ValueError(f'{flat.size} of {cells.shape[0]} tetrahedra have no '
+                         f'volume, the first is number {flat[0]}.  Solvers '
+                         'cannot cross such cells.  scipy.spatial.Delaunay '
+                         'produces them for coplanar nodes, on a regular '
+                         'lattice or on the flat boundary of a model.  Those '
+                         'on the boundary can be removed; inside the mesh, '
+                         'move the nodes or use a mesh generator.')
+
+
 cdef class Mesh3d:
     """class to perform raytracing with tetrahedral meshes
 
@@ -90,7 +124,8 @@ cdef class Mesh3d:
         nodes : np.ndarray with shape (nnodes, 3)
             node coordinates
         tetra : np.ndarray of int with shape (ntetra, 4)
-            indices of nodes forming the tetrahedra
+            indices of nodes forming the tetrahedra.  A tetrahedron without
+            volume raises a ValueError
         n_threads : int
             number of threads for raytracing (default is 1)
         cell_slowness : bool
@@ -210,6 +245,8 @@ cdef class Mesh3d:
         cdef vector[sxyz[double]] pts_ref
         cdef int n
         cdef use_edge_length = True
+
+        _check_flat_tetrahedra(nodes, tetra)
 
         if not nodes.flags['C_CONTIGUOUS']:
             nodes = np.ascontiguousarray(nodes)
