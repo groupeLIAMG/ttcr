@@ -6,6 +6,7 @@ interpreter.  On a free-threaded one, run with PYTHON_GIL=0: importing the
 modules would otherwise turn the GIL back on, and the Python code in between
 would then be serialized.
 """
+import itertools
 import threading
 import time
 import unittest
@@ -201,9 +202,29 @@ def mesh_points(ndim):
     return np.stack(np.meshgrid(*axes, indexing='ij'), axis=-1).reshape(-1, ndim)
 
 
+def lattice_tetrahedra(nodes):
+    """
+    Split each cube of a 3-D lattice in 6 tetrahedra along its main diagonal.
+
+    nodes are ordered as mesh_points orders them.  scipy.spatial.Delaunay
+    leaves tetrahedra without volume on a regular lattice, and Mesh3d refuses
+    them.
+    """
+    n = [np.unique(nodes[:, i]).size for i in range(3)]
+    corners = np.arange(nodes.shape[0]).reshape(n)[:-1, :-1, :-1].ravel()
+    step = (n[1] * n[2], n[2], 1)
+    tet = []
+    for axes in itertools.permutations(range(3)):
+        cell = [corners]
+        for ax in axes:
+            cell.append(cell[-1] + step[ax])
+        tet.append(np.stack(cell, axis=1))
+    return np.concatenate(tet).astype(np.int64)
+
+
 def mesh3d(n_threads, **kwargs):
     nodes = mesh_points(3)
-    simplices = Delaunay(nodes).simplices.astype(np.int64)
+    simplices = lattice_tetrahedra(nodes)
     kwargs.setdefault('cell_slowness', True)
     return tm.Mesh3d(nodes, simplices, n_threads, **kwargs)
 
@@ -232,11 +253,9 @@ CASES = {
                                   dtype=np.float32), 2),
     'Grid2d_f FSM': (grid2d, dict(method='FSM', dtype=np.float32), 2),
     'Mesh3d SPM': (mesh3d, dict(method='SPM', n_secondary=2), 3),
-    # tt_from_rp: on this coarse mesh these two did not return from
-    # getTraveltimeFromRaypath within a minute, even from a single thread
-    'Mesh3d FSM': (mesh3d, dict(method='FSM', tt_from_rp=False), 3),
-    'Mesh3d DSPM': (mesh3d, dict(method='DSPM', n_secondary=2, n_tertiary=2,
-                                 tt_from_rp=False), 3),
+    'Mesh3d FSM': (mesh3d, dict(method='FSM'), 3),
+    'Mesh3d DSPM': (mesh3d, dict(method='DSPM', n_secondary=2, n_tertiary=2),
+                    3),
     'Mesh2d SPM': (mesh2d, dict(method='SPM', n_secondary=2), 2),
     'Mesh2d FSM': (mesh2d, dict(method='FSM'), 2),
     'Mesh2d DSPM': (mesh2d, dict(method='DSPM', n_secondary=2,
@@ -258,11 +277,9 @@ CASES = {
                                        dtype=np.float32), 2),
     'Mesh3d node SPM': (mesh3d, dict(method='SPM', cell_slowness=False,
                                      n_secondary=2), 3),
-    'Mesh3d node FSM': (mesh3d, dict(method='FSM', cell_slowness=False,
-                                     tt_from_rp=False), 3),
+    'Mesh3d node FSM': (mesh3d, dict(method='FSM', cell_slowness=False), 3),
     'Mesh3d node DSPM': (mesh3d, dict(method='DSPM', cell_slowness=False,
-                                      n_secondary=2, n_tertiary=2,
-                                      tt_from_rp=False), 3),
+                                      n_secondary=2, n_tertiary=2), 3),
     'Mesh2d node SPM': (mesh2d, dict(method='SPM', cell_slowness=False,
                                      n_secondary=2), 2),
     'Mesh2d node FSM': (mesh2d, dict(method='FSM', cell_slowness=False), 2),
@@ -381,10 +398,8 @@ class TestSharedGrid(unittest.TestCase):
                         g.set_slowness(models[n % 2])
                         continue
                     tt = np.ravel(g.raytrace(src[0], rcv, thread_no=i))
-                    # equal_nan: with slowness at its nodes, Mesh3d returns nan
-                    # for a receiver on an edge, even from a single thread
-                    if not any(np.allclose(tt, np.ravel(r), rtol=1e-5,
-                                           equal_nan=True) for r in ref):
+                    if not any(np.allclose(tt, np.ravel(r), rtol=1e-5)
+                               for r in ref):
                         raise AssertionError(f'mixed slowness models: {tt}')
             run_threads(work)
         self.for_each_case(check)
@@ -535,7 +550,10 @@ class TestGilReleased(unittest.TestCase):
         axes = [np.linspace(0.0, 60.0, n)] * ndim
         nodes = np.stack(np.meshgrid(*axes, indexing='ij'),
                          axis=-1).reshape(-1, ndim)
-        simplices = Delaunay(nodes).simplices.astype(np.int64)
+        if ndim == 3:
+            simplices = lattice_tetrahedra(nodes)
+        else:
+            simplices = Delaunay(nodes).simplices.astype(np.int64)
         make = tm.Mesh3d if ndim == 3 else tm.Mesh2d
         g = make(nodes, simplices, n_threads, cell_slowness=True, method='SPM',
                  n_secondary=3)
