@@ -129,6 +129,14 @@ def by_thread_no(*writes):
         def wrapper(self, *args, **kwargs):
             lock = self._lock
             thread_no = get('thread_no', args, kwargs, default)
+            # checked even when all locks are taken: the method still
+            # passes thread_no to C++
+            if thread_no is not None and lock.n_threads > 1:
+                index = operator.index(thread_no)
+                if not 0 <= index < lock.n_threads:
+                    raise ValueError(
+                        f'thread_no should be between 0 and '
+                        f'{lock.n_threads - 1}, got {thread_no}')
             if (thread_no is None
                     or any(get(w, args, kwargs, None) is not None
                            for w in writes)):
@@ -136,11 +144,6 @@ def by_thread_no(*writes):
             elif lock.n_threads == 1:
                 held = lock.one()
             else:
-                index = operator.index(thread_no)
-                if not 0 <= index < lock.n_threads:
-                    raise ValueError(
-                        f'thread_no should be between 0 and '
-                        f'{lock.n_threads - 1}, got {thread_no}')
                 held = lock.one(index)
             with held:
                 return method(self, *args, **kwargs)

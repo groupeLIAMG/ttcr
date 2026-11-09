@@ -176,6 +176,9 @@ class TestDecorators(unittest.TestCase):
         for thread_no in (3, -1):
             with self.assertRaises(ValueError):
                 r.trace('src', thread_no=thread_no)
+            # also when the call takes every lock
+            with self.assertRaises(ValueError):
+                r.trace('src', slowness=1.0, thread_no=thread_no)
 
     def test_single_thread_ignores_thread_no(self):
         self.assertEqual(Recorder(1).trace('src', thread_no=5), [0])
@@ -458,6 +461,10 @@ class TestDecoratedMethods(unittest.TestCase):
         src, rcv = sources_and_receivers(3)
         with self.assertRaises(ValueError):
             g.raytrace(src[0], rcv, thread_no=2)
+        # changing the model takes every lock, and used to send thread_no
+        # to C++ unchecked
+        with self.assertRaises(ValueError):
+            g.raytrace(src[0], rcv, slowness=as_float(1.0, g), thread_no=2)
 
     def test_single_thread_still_ignores_thread_no(self):
         g = grid3d(1, method='SPM', nsnx=2, nsny=2, nsnz=2)
