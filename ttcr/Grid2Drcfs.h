@@ -67,6 +67,7 @@
 #ifndef ttcr_Grid2Drcfs_h
 #define ttcr_Grid2Drcfs_h
 
+#include <atomic>
 #include <cmath>
 #include <stdexcept>
 
@@ -176,8 +177,8 @@ namespace ttcr {
         /// @sa @ref g2drcfs_conv
         T1 epsilon;
         int nitermax;             ///< Iteration cap for the sweeps.
-        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
-        mutable int niterw_final; ///< WENO iterations used by the last solve.
+        mutable std::atomic<int> niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable std::atomic<int> niterw_final; ///< WENO iterations used by the last solve.
         bool weno3;               ///< Use the 3rd-order WENO stencil.
         bool rotated_template;    ///< Use rotated stencils in addition to axis-aligned ones.
         bool hasCellSlown;        ///< Whether @ref slowness has been populated.

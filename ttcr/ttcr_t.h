@@ -42,6 +42,7 @@
 #ifndef ttcr_ttrc_t_h
 #define ttcr_ttrc_t_h
 
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -53,7 +54,7 @@
 namespace ttcr {
 
     /// Global verbosity level; higher values emit more diagnostic output.
-    extern int verbose;
+    extern std::atomic<int> verbose;
 
     /**
      * @brief Non-zero enables the OpenCL GPU profiling breakdown.

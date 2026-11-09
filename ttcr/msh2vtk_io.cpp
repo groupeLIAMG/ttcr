@@ -24,6 +24,7 @@
 
 #include "msh2vtk_io.h"
 
+#include <atomic>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -37,7 +38,7 @@ extern "C" {
 using namespace std;
 
 namespace ttcr {
-    int verbose = 0;
+    std::atomic<int> verbose{0};
 }
 
 void print_usage (std::ostream& stream, int exit_code)

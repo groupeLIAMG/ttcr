@@ -44,6 +44,7 @@
 #ifndef ttcr_Grid3Drcfs_OpenCL_h
 #define ttcr_Grid3Drcfs_OpenCL_h
 
+#include <atomic>
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -252,8 +253,8 @@ namespace ttcr {
     protected:
         T1 epsilon;              ///< Convergence tolerance, dimensionless: the fraction of the traveltime range the mean per-node change must fall below.
         int nitermax;            ///< Maximum iterations
-        mutable int niter_final; ///< Final iteration count (basic sweep); @c mutable so the @c const raytrace can record it
-        mutable int niterw_final;///< Final iteration count (WENO3 sweep)
+        mutable std::atomic<int> niter_final; ///< Final iteration count (basic sweep); @c mutable so the @c const raytrace can record it
+        mutable std::atomic<int> niterw_final;///< Final iteration count (WENO3 sweep)
         bool weno3;              ///< Use WENO3 sweep
         /// Copy of the cell slowness model as supplied.  The solver runs on the
         /// nodal averages and cannot reproduce these, so without the copy the
@@ -262,7 +263,7 @@ namespace ttcr {
         bool hasCellSlown = false;  ///< setSlowness has been called.
 
         // GPU-specific members
-        mutable bool use_gpu;         ///< GPU acceleration is requested.
+        mutable std::atomic<bool> use_gpu;         ///< GPU acceleration is requested.
         mutable bool gpu_initialized; ///< Initialisation has been attempted.
         mutable bool gpu_available;   ///< A device was successfully initialised.
         // one independent solver per thread slot (own context/queue/

@@ -155,7 +155,7 @@ namespace ttcr {
         Grid2D<T1,T2,S>(tri.size(), ttrp, nt),
         nPrimary(static_cast<T2>(no.size())),
         nodes(std::vector<NODE>(no.size(), NODE(nt))),
-        triangles(), virtualNodes(), cells(tri.size())
+        triangles(), virtualNodes(), cells(tri.size()), txInfoCache(nt)
         {
             for (auto it=tri.begin(); it!=tri.end(); ++it) {
                 triangles.push_back( *it );

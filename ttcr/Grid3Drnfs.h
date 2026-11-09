@@ -37,6 +37,7 @@
 #ifndef ttcr_Grid3Drnfs_h
 #define ttcr_Grid3Drnfs_h
 
+#include <atomic>
 #include <cmath>
 #include <utility>
 
@@ -148,8 +149,8 @@ namespace ttcr {
         /// @sa @ref g3drnfs_conv
         T1 epsilon;
         int nitermax;             ///< Iteration cap for the sweeps.
-        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
-        mutable int niterw_final; ///< WENO iterations used by the last solve.
+        mutable std::atomic<int> niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable std::atomic<int> niterw_final; ///< WENO iterations used by the last solve.
         bool weno3;               ///< Use the 3rd-order WENO stencil.
 
     private:

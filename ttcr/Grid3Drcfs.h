@@ -39,6 +39,7 @@
 #ifndef ttcr_Grid3Drcfs_h
 #define ttcr_Grid3Drcfs_h
 
+#include <atomic>
 #include <cmath>
 #include <stdexcept>
 
@@ -183,8 +184,8 @@ namespace ttcr {
         /// the range each sweep rather than scaling this at construction.
         T1 epsilon;
         int nitermax;             ///< Iteration cap for the sweeps.
-        mutable int niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
-        mutable int niterw_final; ///< WENO iterations used by the last solve.
+        mutable std::atomic<int> niter_final;  ///< Iterations used by the last solve; @c mutable so the @c const raytrace can record it.
+        mutable std::atomic<int> niterw_final; ///< WENO iterations used by the last solve.
         bool weno3;               ///< Use the 3rd-order WENO stencil.
         /// Copy of the cell slowness model as supplied.  The solver runs on the
         /// nodal averages and cannot reproduce these, so without the copy the

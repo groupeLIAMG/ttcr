@@ -27,6 +27,7 @@ This code is part of ttcr ( https://github.com/groupeLIAMG/ttcr )
 import numpy as np
 cimport numpy as np
 import scipy.sparse as sp
+from ttcrpy._locks import GridLock, by_thread_no, exclusive, reader
 
 
 from ttcrpy.rgrid cimport Grid3D, Grid3Drcfs, Grid3Drcsp, Grid3Drcdsp, \
@@ -256,6 +257,7 @@ cdef class Grid3d_d:
     cdef double _dz
     cdef bool cell_slowness
     cdef size_t _n_threads
+    cdef readonly object _lock
     cdef char method
     cdef char iso
     cdef char phase
@@ -305,6 +307,7 @@ cdef class Grid3d_d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self._lock = GridLock(n_threads)
         self.iso = b'i'
         self.phase = b'P'
         self.tt_from_rp = tt_from_rp
@@ -604,6 +607,7 @@ cdef class Grid3d_d:
         """
         return self.grid.get_niterw()
 
+    @exclusive
     def set_use_thread_pool(self, use_thread_pool):
         """
         set_use_thread_pool(use_thread_pool)
@@ -617,6 +621,7 @@ cdef class Grid3d_d:
         """
         self.grid.setUsePool(use_thread_pool)
 
+    @exclusive
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
         """
         set_traveltime_from_raypath(ttrp)
@@ -648,6 +653,7 @@ cdef class Grid3d_d:
         """
         return (self._x.size()-1) * (self._y.size()-1) * (self._z.size()-1)
 
+    @by_thread_no()
     def get_grid_traveltimes(self, thread_no=0):
         """
         get_grid_traveltimes(thread_no=0)
@@ -745,6 +751,7 @@ cdef class Grid3d_d:
                 np.min(pts[:,1]) < self._y.front() or np.max(pts[:,1]) > self._y.back() or
                 np.min(pts[:,2]) < self._z.front() or np.max(pts[:,2]) > self._z.back() )
 
+    @reader
     def get_slowness(self):
         """Returns slowness of grid
 
@@ -771,6 +778,7 @@ cdef class Grid3d_d:
         # flattens to, so read them back the same way round
         return slowness.reshape((nx, ny, nz), order='F')
 
+    @exclusive
     def set_slowness(self, slowness):
         """
         set_slowness(slowness)
@@ -811,6 +819,7 @@ cdef class Grid3d_d:
         self.grid.setSlowness(slown)
         self._has_slowness = True
 
+    @exclusive
     def set_chi(self, chi):
         """
         set_chi(chi)
@@ -850,6 +859,7 @@ cdef class Grid3d_d:
             raise ValueError('chi must be 1D or 3D ndarray')
         self.grid.setChi(data)
 
+    @exclusive
     def set_psi(self, psi):
         """
         set_psi(psi)
@@ -889,6 +899,7 @@ cdef class Grid3d_d:
             raise ValueError('psi must be 1D or 3D ndarray')
         self.grid.setPsi(data)
 
+    @exclusive
     def set_Vp0(self, v):
         """
         set_Vp0(v)
@@ -928,6 +939,7 @@ cdef class Grid3d_d:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setVp0(data)
 
+    @exclusive
     def set_Vs0(self, v):
         """
         set_Vs0(v)
@@ -967,6 +979,7 @@ cdef class Grid3d_d:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setVs0(data)
 
+    @exclusive
     def set_epsilon(self, epsilon):
         """
         set_epsilon(epsilon)
@@ -1006,6 +1019,7 @@ cdef class Grid3d_d:
             raise ValueError('epsilon must be 1D or 3D ndarray')
         self.grid.setEpsilon(data)
 
+    @exclusive
     def set_delta(self, delta):
         """
         set_delta(delta)
@@ -1045,6 +1059,7 @@ cdef class Grid3d_d:
             raise ValueError('delta must be 1D or 3D ndarray')
         self.grid.setDelta(data)
 
+    @exclusive
     def set_gamma(self, gamma):
         """
         set_gamma(gamma)
@@ -1084,6 +1099,7 @@ cdef class Grid3d_d:
             raise ValueError('gamma must be 1D or 3D ndarray')
         self.grid.setGamma(data)
 
+    @exclusive
     def set_s2(self, s2):
         """
         set_s2(s2)
@@ -1123,6 +1139,7 @@ cdef class Grid3d_d:
             raise ValueError('s2 must be 1D or 3D ndarray')
         self.grid.setS2(data)
 
+    @exclusive
     def set_s4(self, s4):
         """
         set_s4(s4)
@@ -1162,6 +1179,7 @@ cdef class Grid3d_d:
             raise ValueError('s4 must be 1D or 3D ndarray')
         self.grid.setS4(data)
 
+    @exclusive
     def set_phase(self, phase):
         """
         set_phase(phase)
@@ -1194,6 +1212,7 @@ cdef class Grid3d_d:
         self.grid.setPhase(p)
         self.phase = b'P' if p == 1 else b'S'
 
+    @exclusive
     def set_velocity(self, velocity):
         """
         set_velocity(velocity)
@@ -1382,6 +1401,7 @@ cdef class Grid3d_d:
 
         return Kx, Ky, Kz
 
+    @exclusive
     def get_s0(self, hypo, slowness=None):
         """
         get_s0(hypo, slowness=None)
@@ -1452,6 +1472,7 @@ cdef class Grid3d_d:
             s0[iTx[n]] = s/vTx[n].size()
         return s0
 
+    @by_thread_no('slowness')
     def compute_H(self, source, rcv, slowness=None, full=True,
                   radius_factor=4.0, thread_no=None):
         """
@@ -1565,6 +1586,8 @@ cdef class Grid3d_d:
         cdef vector[double] vt0
         cdef vector[double] vtt
         cdef vector[vector[double]] vH
+        cdef bool c_full = full
+        cdef double c_radius = radius_factor
 
         ncol = 4 if full else 2
         tt = np.zeros((rcv.shape[0],))
@@ -1584,8 +1607,9 @@ cdef class Grid3d_d:
             for i in ii:
                 vRx.push_back(sxyz[double](rcv[i, 0], rcv[i, 1], rcv[i, 2]))
 
-            self.grid.computeH(vTx, vt0, vRx, vtt, vH, full, radius_factor,
-                               thread_nb)
+            with nogil:
+                self.grid.computeH(vTx, vt0, vRx, vtt, vH, c_full, c_radius,
+                                   thread_nb)
 
             for nH in range(ii.size):
                 tt[ii[nH]] = vtt[nH]
@@ -1594,6 +1618,7 @@ cdef class Grid3d_d:
 
         return tt, H
 
+    @by_thread_no('slowness')
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, compute_M=False,
                  return_rays=False):
@@ -1837,32 +1862,42 @@ cdef class Grid3d_d:
         if self._n_threads == 1:
             if compute_L==False and compute_M==False and return_rays==False:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_M and return_rays:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
             elif compute_L and return_rays:
                 for n in range(nTx):
                     if nparams == 1:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
                     elif nparams == 2:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
                     else:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
             elif compute_L:
                 for n in range(nTx):
                     if nparams == 1:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
                     elif nparams == 2:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
                     else:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             elif compute_M:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
             else:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
 
         elif thread_no is not None:
             # we should be here for just one event
@@ -1873,7 +1908,8 @@ cdef class Grid3d_d:
             thread_nb = thread_no
 
             if return_rays:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 rays = []
@@ -1887,34 +1923,45 @@ cdef class Grid3d_d:
                 return tt, rays
 
             else:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 return tt
 
         else:
             if compute_L==False and compute_M==False and return_rays==False:
-                self.grid.raytrace(vTx, vt0, vRx, vtt)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_M and return_rays:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
             elif compute_L and return_rays:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
             elif compute_L:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             elif compute_M:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
             else:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
         for n in range(nTx):
             for nt in range(vtt[n].size()):
@@ -2696,6 +2743,7 @@ cdef class Grid3d_f:
     cdef float _dz
     cdef bool cell_slowness
     cdef size_t _n_threads
+    cdef readonly object _lock
     cdef char method
     cdef char iso
     cdef char phase
@@ -2742,6 +2790,7 @@ cdef class Grid3d_f:
         cdef float zmin = z[0]
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self._lock = GridLock(n_threads)
         self.iso = b'i'
         self.phase = b'P'
         self.tt_from_rp = tt_from_rp
@@ -3041,6 +3090,7 @@ cdef class Grid3d_f:
         """
         return self.grid.get_niterw()
 
+    @exclusive
     def set_use_thread_pool(self, use_thread_pool):
         """
         set_use_thread_pool(use_thread_pool)
@@ -3054,6 +3104,7 @@ cdef class Grid3d_f:
         """
         self.grid.setUsePool(use_thread_pool)
 
+    @exclusive
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
         """
         set_traveltime_from_raypath(ttrp)
@@ -3085,6 +3136,7 @@ cdef class Grid3d_f:
         """
         return (self._x.size()-1) * (self._y.size()-1) * (self._z.size()-1)
 
+    @by_thread_no()
     def get_grid_traveltimes(self, thread_no=0):
         """
         get_grid_traveltimes(thread_no=0)
@@ -3184,6 +3236,7 @@ cdef class Grid3d_f:
                 np.min(pts[:,1]) < self._y.front() or np.max(pts[:,1]) > self._y.back() or
                 np.min(pts[:,2]) < self._z.front() or np.max(pts[:,2]) > self._z.back() )
 
+    @reader
     def get_slowness(self):
         """Returns slowness of grid
 
@@ -3210,6 +3263,7 @@ cdef class Grid3d_f:
         # flattens to, so read them back the same way round
         return slowness.reshape((nx, ny, nz), order='F')
 
+    @exclusive
     def set_slowness(self, slowness):
         """
         set_slowness(slowness)
@@ -3249,6 +3303,7 @@ cdef class Grid3d_f:
         self.grid.setSlowness(slown)
         self._has_slowness = True
 
+    @exclusive
     def set_chi(self, chi):
         """
         set_chi(chi)
@@ -3288,6 +3343,7 @@ cdef class Grid3d_f:
             raise ValueError('chi must be 1D or 3D ndarray')
         self.grid.setChi(data)
 
+    @exclusive
     def set_psi(self, psi):
         """
         set_psi(psi)
@@ -3327,6 +3383,7 @@ cdef class Grid3d_f:
             raise ValueError('psi must be 1D or 3D ndarray')
         self.grid.setPsi(data)
 
+    @exclusive
     def set_Vp0(self, v):
         """
         set_Vp0(v)
@@ -3366,6 +3423,7 @@ cdef class Grid3d_f:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setVp0(data)
 
+    @exclusive
     def set_Vs0(self, v):
         """
         set_Vs0(v)
@@ -3405,6 +3463,7 @@ cdef class Grid3d_f:
             raise ValueError('v must be 1D or 3D ndarray')
         self.grid.setVs0(data)
 
+    @exclusive
     def set_epsilon(self, epsilon):
         """
         set_epsilon(epsilon)
@@ -3444,6 +3503,7 @@ cdef class Grid3d_f:
             raise ValueError('epsilon must be 1D or 3D ndarray')
         self.grid.setEpsilon(data)
 
+    @exclusive
     def set_delta(self, delta):
         """
         set_delta(delta)
@@ -3483,6 +3543,7 @@ cdef class Grid3d_f:
             raise ValueError('delta must be 1D or 3D ndarray')
         self.grid.setDelta(data)
 
+    @exclusive
     def set_gamma(self, gamma):
         """
         set_gamma(gamma)
@@ -3522,6 +3583,7 @@ cdef class Grid3d_f:
             raise ValueError('gamma must be 1D or 3D ndarray')
         self.grid.setGamma(data)
 
+    @exclusive
     def set_s2(self, s2):
         """
         set_s2(s2)
@@ -3561,6 +3623,7 @@ cdef class Grid3d_f:
             raise ValueError('s2 must be 1D or 3D ndarray')
         self.grid.setS2(data)
 
+    @exclusive
     def set_s4(self, s4):
         """
         set_s4(s4)
@@ -3600,6 +3663,7 @@ cdef class Grid3d_f:
             raise ValueError('s4 must be 1D or 3D ndarray')
         self.grid.setS4(data)
 
+    @exclusive
     def set_phase(self, phase):
         """
         set_phase(phase)
@@ -3632,6 +3696,7 @@ cdef class Grid3d_f:
         self.grid.setPhase(p)
         self.phase = b'P' if p == 1 else b'S'
 
+    @exclusive
     def set_velocity(self, velocity):
         """
         set_velocity(velocity)
@@ -3805,6 +3870,7 @@ cdef class Grid3d_f:
 
         return Kx, Ky, Kz
 
+    @exclusive
     def get_s0(self, hypo, slowness=None):
         """
         get_s0(hypo, slowness=None)
@@ -3874,6 +3940,7 @@ cdef class Grid3d_f:
             s0[iTx[n]] = s/vTx[n].size()
         return s0
 
+    @by_thread_no('slowness')
     def compute_H(self, source, rcv, slowness=None, full=True,
                   radius_factor=4.0, thread_no=None):
         """
@@ -3986,6 +4053,8 @@ cdef class Grid3d_f:
         cdef vector[float] vt0
         cdef vector[float] vtt
         cdef vector[vector[float]] vH
+        cdef bool c_full = full
+        cdef float c_radius = radius_factor
 
         ncol = 4 if full else 2
         tt = np.zeros((rcv.shape[0],), dtype=np.float32)
@@ -4005,8 +4074,9 @@ cdef class Grid3d_f:
             for i in ii:
                 vRx.push_back(sxyz[float](rcv[i, 0], rcv[i, 1], rcv[i, 2]))
 
-            self.grid.computeH(vTx, vt0, vRx, vtt, vH, full, radius_factor,
-                               thread_nb)
+            with nogil:
+                self.grid.computeH(vTx, vt0, vRx, vtt, vH, c_full, c_radius,
+                                   thread_nb)
 
             for nH in range(ii.size):
                 tt[ii[nH]] = vtt[nH]
@@ -4015,6 +4085,7 @@ cdef class Grid3d_f:
 
         return tt, H
 
+    @by_thread_no('slowness')
     def raytrace(self, source, rcv, slowness=None, thread_no=None,
                  aggregate_src=False, compute_L=False, compute_M=False,
                  return_rays=False):
@@ -4246,32 +4317,42 @@ cdef class Grid3d_f:
         if self._n_threads == 1:
             if compute_L==False and compute_M==False and return_rays==False:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_M and return_rays:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], m_data[n], 0)
             elif compute_L and return_rays:
                 for n in range(nTx):
                     if nparams == 1:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
                     elif nparams == 2:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
                     else:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
             elif compute_L:
                 for n in range(nTx):
                     if nparams == 1:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
                     elif nparams == 2:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
                     else:
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             elif compute_M:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], m_data[n], 0)
             else:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
 
         elif thread_no is not None:
             assert nTx == 1
@@ -4280,7 +4361,8 @@ cdef class Grid3d_f:
             thread_nb = thread_no
 
             if return_rays:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 rays = []
@@ -4294,34 +4376,45 @@ cdef class Grid3d_f:
                 return tt, rays
 
             else:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 return tt
 
         else:
             if compute_L==False and compute_M==False and return_rays==False:
-                self.grid.raytrace(vTx, vt0, vRx, vtt)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_M and return_rays:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, m_data)
             elif compute_L and return_rays:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
             elif compute_L:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             elif compute_M:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, m_data)
             else:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
         for n in range(nTx):
             for nt in range(vtt[n].size()):
@@ -4717,6 +4810,7 @@ cdef class Grid2d_d:
     cdef double _dz
     cdef bool cell_slowness
     cdef size_t _n_threads
+    cdef readonly object _lock
     cdef char method
     cdef char iso
     cdef char phase
@@ -4753,6 +4847,7 @@ cdef class Grid2d_d:
         cdef double zmin = z[0]
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self._lock = GridLock(n_threads)
         self.eps = eps
         self.maxit = maxit
         self.weno = weno
@@ -4991,6 +5086,7 @@ cdef class Grid2d_d:
         """
         return self.grid.get_niterw()
 
+    @exclusive
     def set_use_thread_pool(self, use_thread_pool):
         """
         set_use_thread_pool(use_thread_pool)
@@ -5004,6 +5100,7 @@ cdef class Grid2d_d:
         """
         self.grid.setUsePool(use_thread_pool)
 
+    @exclusive
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
         """
         set_traveltime_from_raypath(ttrp)
@@ -5035,6 +5132,7 @@ cdef class Grid2d_d:
         """
         return (self._x.size()-1) * (self._z.size()-1)
 
+    @by_thread_no()
     def get_grid_traveltimes(self, thread_no=0):
         """
         get_grid_traveltimes(thread_no=0)
@@ -5080,6 +5178,7 @@ cdef class Grid2d_d:
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
 
+    @reader
     def get_slowness(self):
         """Returns slowness of grid
 
@@ -5104,6 +5203,7 @@ cdef class Grid2d_d:
             slowness[i] = slown[i]
         return slowness.reshape((nx, nz))
 
+    @exclusive
     def set_slowness(self, slowness):
         """
         set_slowness(slowness)
@@ -5139,6 +5239,7 @@ cdef class Grid2d_d:
             raise ValueError('Slowness must be 1D or 2D ndarray')
         self.grid.setSlowness(data)
 
+    @exclusive
     def set_velocity(self, velocity):
         """
         set_velocity(velocity)
@@ -5174,6 +5275,7 @@ cdef class Grid2d_d:
             raise ValueError('velocity must be 1D or 2D ndarray')
         self.grid.setSlowness(data)
 
+    @exclusive
     def set_xi(self, xi):
         """
         set_xi(xi)
@@ -5210,6 +5312,7 @@ cdef class Grid2d_d:
             raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
 
+    @exclusive
     def set_phase(self, phase):
         """
         set_phase(phase)
@@ -5242,6 +5345,7 @@ cdef class Grid2d_d:
         self.grid.setPhase(p)
         self.phase = b'P' if p == 1 else b'S'
 
+    @exclusive
     def set_tilt_angle(self, theta):
         """
         set_tilt_angle(theta)
@@ -5282,6 +5386,7 @@ cdef class Grid2d_d:
             raise ValueError('theta must be 1D or 2D ndarray')
         self.grid.setTiltAngle(data)
 
+    @exclusive
     def set_Vp0(self, v):
         """
         set_Vp0(v)
@@ -5318,6 +5423,7 @@ cdef class Grid2d_d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setVp0(data)
 
+    @exclusive
     def set_Vs0(self, v):
         """
         set_Vs0(v)
@@ -5354,6 +5460,7 @@ cdef class Grid2d_d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setVs0(data)
 
+    @exclusive
     def set_delta(self, v):
         """
         set_delta(d)
@@ -5390,6 +5497,7 @@ cdef class Grid2d_d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setDelta(data)
 
+    @exclusive
     def set_epsilon(self, v):
         """
         set_epsilon(e)
@@ -5426,6 +5534,7 @@ cdef class Grid2d_d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setEpsilon(data)
 
+    @exclusive
     def set_gamma(self, v):
         """
         set_gamma(g)
@@ -5462,6 +5571,7 @@ cdef class Grid2d_d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setGamma(data)
 
+    @exclusive
     def set_s2(self, v):
         """
         set_s2(g)
@@ -5498,6 +5608,7 @@ cdef class Grid2d_d:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setS2(data)
 
+    @exclusive
     def set_s4(self, v):
         """
         set_s4(g)
@@ -5703,6 +5814,7 @@ cdef class Grid2d_d:
 
         return Kx, Kz
         
+    @exclusive
     def get_s0(self, hypo, slowness=None):
         """
         get_s0(hypo, slowness=None)
@@ -5773,6 +5885,8 @@ cdef class Grid2d_d:
         return s0
 
 
+    @by_thread_no('slowness', 'xi', 'theta', 'Vp0', 'Vs0', 'delta',
+                  'epsilon', 'gamma')
     def raytrace(self, source, rcv, slowness=None, xi=None, theta=None,
                  Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
                  thread_no=None, aggregate_src=False, compute_L=False,
@@ -5988,36 +6102,46 @@ cdef class Grid2d_d:
         if self._n_threads == 1:
             if compute_L==False and return_rays==False:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_L and return_rays:
                 if nparams == 1:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
                 elif nparams == 2:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
                 elif nparams == 5:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
                 else:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
             elif compute_L:
                 if nparams == 1:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
                 elif nparams == 2:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
                 elif nparams == 5:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
                 else:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             else:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
 
         elif thread_no is not None:
             # we should be here for just one event
@@ -6027,7 +6151,8 @@ cdef class Grid2d_d:
             thread_nb = thread_no
 
             if return_rays:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 rays = []
@@ -6040,34 +6165,45 @@ cdef class Grid2d_d:
                 return tt, rays
 
             else:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 return tt
 
         else:
             if compute_L==False and return_rays==False:
-                self.grid.raytrace(vTx, vt0, vRx, vtt)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_L and return_rays:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
                 elif nparams == 5:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
             elif compute_L:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
                 elif nparams == 5:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             else:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
         for n in range(nTx):
             for nt in range(vtt[n].size()):
@@ -6543,6 +6679,7 @@ cdef class Grid2d_f:
     cdef float _dz
     cdef bool cell_slowness
     cdef size_t _n_threads
+    cdef readonly object _lock
     cdef char method
     cdef char iso
     cdef char phase
@@ -6579,6 +6716,7 @@ cdef class Grid2d_f:
         cdef float zmin = z[0]
         self.cell_slowness = cell_slowness
         self._n_threads = n_threads
+        self._lock = GridLock(n_threads)
         self.eps = eps
         self.maxit = maxit
         self.weno = weno
@@ -6817,6 +6955,7 @@ cdef class Grid2d_f:
         """
         return self.grid.get_niterw()
 
+    @exclusive
     def set_use_thread_pool(self, use_thread_pool):
         """
         set_use_thread_pool(use_thread_pool)
@@ -6830,6 +6969,7 @@ cdef class Grid2d_f:
         """
         self.grid.setUsePool(use_thread_pool)
 
+    @exclusive
     def set_traveltime_from_raypath(self, traveltime_from_raypath):
         """
         set_traveltime_from_raypath(ttrp)
@@ -6861,6 +7001,7 @@ cdef class Grid2d_f:
         """
         return (self._x.size()-1) * (self._z.size()-1)
 
+    @by_thread_no()
     def get_grid_traveltimes(self, thread_no=0):
         """
         get_grid_traveltimes(thread_no=0)
@@ -6908,6 +7049,7 @@ cdef class Grid2d_f:
         return ( np.min(pts[:,0]) < self._x.front() or np.max(pts[:,0]) > self._x.back() or
                 np.min(pts[:,1]) < self._z.front() or np.max(pts[:,1]) > self._z.back() )
 
+    @reader
     def get_slowness(self):
         """Returns slowness of grid
 
@@ -6932,6 +7074,7 @@ cdef class Grid2d_f:
             slowness[i] = slown[i]
         return slowness.reshape((nx, nz))
 
+    @exclusive
     def set_slowness(self, slowness):
         """
         set_slowness(slowness)
@@ -6967,6 +7110,7 @@ cdef class Grid2d_f:
             raise ValueError('Slowness must be 1D or 2D ndarray')
         self.grid.setSlowness(data)
 
+    @exclusive
     def set_velocity(self, velocity):
         """
         set_velocity(velocity)
@@ -7002,6 +7146,7 @@ cdef class Grid2d_f:
             raise ValueError('velocity must be 1D or 2D ndarray')
         self.grid.setSlowness(data)
 
+    @exclusive
     def set_xi(self, xi):
         """
         set_xi(xi)
@@ -7038,6 +7183,7 @@ cdef class Grid2d_f:
             raise ValueError('xi must be 1D or 2D ndarray')
         self.grid.setXi(data)
 
+    @exclusive
     def set_phase(self, phase):
         """
         set_phase(phase)
@@ -7070,6 +7216,7 @@ cdef class Grid2d_f:
         self.grid.setPhase(p)
         self.phase = b'P' if p == 1 else b'S'
 
+    @exclusive
     def set_tilt_angle(self, theta):
         """
         set_tilt_angle(theta)
@@ -7110,6 +7257,7 @@ cdef class Grid2d_f:
             raise ValueError('theta must be 1D or 2D ndarray')
         self.grid.setTiltAngle(data)
 
+    @exclusive
     def set_Vp0(self, v):
         """
         set_Vp0(v)
@@ -7146,6 +7294,7 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setVp0(data)
 
+    @exclusive
     def set_Vs0(self, v):
         """
         set_Vs0(v)
@@ -7182,6 +7331,7 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setVs0(data)
 
+    @exclusive
     def set_delta(self, v):
         """
         set_delta(d)
@@ -7218,6 +7368,7 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setDelta(data)
 
+    @exclusive
     def set_epsilon(self, v):
         """
         set_epsilon(e)
@@ -7254,6 +7405,7 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setEpsilon(data)
 
+    @exclusive
     def set_gamma(self, v):
         """
         set_gamma(g)
@@ -7290,6 +7442,7 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setGamma(data)
 
+    @exclusive
     def set_s2(self, v):
         """
         set_s2(g)
@@ -7326,6 +7479,7 @@ cdef class Grid2d_f:
             raise ValueError('v must be 1D or 2D ndarray')
         self.grid.setS2(data)
 
+    @exclusive
     def set_s4(self, v):
         """
         set_s4(g)
@@ -7519,6 +7673,7 @@ cdef class Grid2d_f:
 
         return Kx, Kz
 
+    @exclusive
     def get_s0(self, hypo, slowness=None):
         """
         get_s0(hypo, slowness=None)
@@ -7587,6 +7742,8 @@ cdef class Grid2d_f:
             s0[iTx[n]] = s/vTx[n].size()
         return s0
 
+    @by_thread_no('slowness', 'xi', 'theta', 'Vp0', 'Vs0', 'delta',
+                  'epsilon', 'gamma')
     def raytrace(self, source, rcv, slowness=None, xi=None, theta=None,
                  Vp0=None, Vs0=None, delta=None, epsilon=None, gamma=None,
                  thread_no=None, aggregate_src=False, compute_L=False,
@@ -7804,36 +7961,46 @@ cdef class Grid2d_f:
         if self._n_threads == 1:
             if compute_L==False and return_rays==False:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], 0)
             elif compute_L and return_rays:
                 if nparams == 1:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data[n], 0)
                 elif nparams == 2:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data2[n], 0)
                 elif nparams == 5:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data5[n], 0)
                 else:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], l_data4[n], 0)
             elif compute_L:
                 if nparams == 1:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data[n], 0)
                 elif nparams == 2:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data2[n], 0)
                 elif nparams == 5:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data5[n], 0)
                 else:
                     for n in range(nTx):
-                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
+                        with nogil:
+                            self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], l_data4[n], 0)
             else:
                 for n in range(nTx):
-                    self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
+                    with nogil:
+                        self.grid.raytrace(vTx[n], vt0[n], vRx[n], vtt[n], r_data[n], 0)
 
         elif thread_no is not None:
             assert nTx == 1
@@ -7841,7 +8008,8 @@ cdef class Grid2d_f:
             thread_nb = thread_no
 
             if return_rays:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], r_data[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 rays = []
@@ -7854,34 +8022,45 @@ cdef class Grid2d_f:
                 return tt, rays
 
             else:
-                self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
+                with nogil:
+                    self.grid.raytrace(vTx[0], vt0[0], vRx[0], vtt[0], thread_nb)
                 for nt in range(vtt[0].size()):
                     tt[nt] = vtt[0][nt]
                 return tt
 
         else:
             if compute_L==False and return_rays==False:
-                self.grid.raytrace(vTx, vt0, vRx, vtt)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt)
             elif compute_L and return_rays:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data2)
                 elif nparams == 5:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data5)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, r_data, l_data4)
             elif compute_L:
                 if nparams == 1:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data)
                 elif nparams == 2:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data2)
                 elif nparams == 5:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data5)
                 else:
-                    self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
+                    with nogil:
+                        self.grid.raytrace(vTx, vt0, vRx, vtt, l_data4)
             else:
-                self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
+                with nogil:
+                    self.grid.raytrace(vTx, vt0, vRx, vtt, r_data)
 
         for n in range(nTx):
             for nt in range(vtt[n].size()):
