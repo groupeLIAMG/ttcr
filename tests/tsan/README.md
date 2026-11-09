@@ -41,7 +41,8 @@ python3.14 tests/tsan/run.py /path/to/tsan-build /path/to/out-control \
 
 ## What this does not cover
 
-TSan only sees the paths that run.  There are no anisotropic models and no 2-D
-GPU grids, and mesh `compute_D`, `compute_K` and `data_kernel_straight_rays` are
-not called.  A GPU failure is not triggered, so the fallback that clears `use_gpu`
+TSan only sees the paths that run.  Anisotropic media are covered by cases added
+in `driver.py` (SPM only, mostly double precision), not by the thread tests.
+There are no 2-D GPU grids, and mesh `compute_D`, `compute_K` and
+`data_kernel_straight_rays` are not called.  A GPU failure is not triggered, so the fallback that clears `use_gpu`
 does not run.
