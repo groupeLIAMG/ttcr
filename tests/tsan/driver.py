@@ -19,13 +19,42 @@ sys.path.insert(0, str(TESTS_DIR))
 os.chdir(TESTS_DIR)
 import test_thread_safety as t
 
+# Anisotropic media (SPM only), which the thread tests leave out.  Each model
+# has its own parameters, set in this order; the values only need to give
+# finite traveltimes.
+VALUES = dict(slowness=1.0, chi=1.2, psi=1.1, xi=1.2, tilt_angle=0.3, Vp0=2.0,
+              Vs0=1.0, epsilon=0.1, delta=0.05, gamma=0.1, s2=0.1, s4=0.05)
+PARAMETERS = {
+    'iso': ('slowness',),
+    'elliptical': {3: ('slowness', 'chi', 'psi'), 2: ('slowness', 'xi')},
+    'tilted_elliptical': ('slowness', 'xi', 'tilt_angle'),
+    'vti_psv': ('Vp0', 'Vs0', 'epsilon', 'delta'),
+    'vti_sh': ('Vs0', 'gamma'),
+    'tti_psv': ('tilt_angle', 'Vp0', 'Vs0', 'epsilon', 'delta'),
+    'tti_sh': ('tilt_angle', 'Vs0', 'gamma'),
+    'weakly_anelliptical': ('slowness', 's2', 's4'),
+}
+ANISO_3D = ['elliptical', 'vti_psv', 'vti_sh', 'weakly_anelliptical']
+ANISO_2D = ANISO_3D + ['tilted_elliptical', 'tti_psv', 'tti_sh']
+CASES = dict(t.CASES)
+for base, models in [('Grid3d_d SPM', ANISO_3D), ('Mesh3d SPM', ANISO_3D),
+                     ('Grid2d_d SPM', ANISO_2D), ('Mesh2d SPM', ANISO_2D),
+                     ('Grid3d_f SPM', ['elliptical']), ('Grid2d_f SPM', ['tti_psv'])]:
+    make, kwargs, ndim = t.CASES[base]
+    for aniso in models:
+        CASES['%s %s' % (base, aniso)] = make, dict(kwargs, aniso=aniso), ndim
+
 if sys.argv[1] == '--list':
-    print('\n'.join(t.CASES))
+    print('\n'.join(CASES))
     sys.exit()
 
 case = sys.argv[1]
 N = 4
-make, kwargs, ndim = t.CASES[case]
+make, kwargs, ndim = CASES[case]
+aniso = kwargs.get('aniso', 'iso')
+parameters = PARAMETERS[aniso]
+if isinstance(parameters, dict):
+    parameters = parameters[ndim]
 errors = []
 gil_on = not hasattr(sys, '_is_gil_enabled') or sys._is_gil_enabled()
 
@@ -40,7 +69,9 @@ if os.environ.get('TSAN_NO_LOCKS'):
 # solves must last long enough to overlap: where they do not, the GIL orders
 # them and hides a race from TSan.  Same extent as the tests, finer sampling.
 def big3d(n_threads, **kw):
-    x = np.arange(0.0, 8.05, 0.25)
+    # anisotropic cells are up to 3 times slower, and the isotropic case
+    # already takes 10 minutes under TSan
+    x = np.arange(0.0, 8.05, 0.25 if kw.get('aniso', 'iso') == 'iso' else 0.4)
     return t.rg.Grid3d(x, x.copy(), x.copy(), n_threads, **kw)
 
 
@@ -78,9 +109,17 @@ def threads(work, n=N):
         th.join()
 
 
+def set_model(g):
+    # Each setter takes the locks on its own, so solves can run between them:
+    # this is the interleaving changing_slowness is after.  The values never
+    # change, so a solve never sees a mix of old and new parameters.
+    for name in parameters:
+        getattr(g, 'set_' + name)(t.as_float(VALUES[name], g))
+
+
 def new_grid(n_threads=N):
     g = make(n_threads, **kwargs)
-    g.set_slowness(t.as_float(1.0, g))
+    set_model(g)
     return g
 
 
@@ -99,7 +138,8 @@ def distinct_with_rays(i):
 
 
 def distinct_compute_h(i):
-    if ndim == 3:
+    # compute_H needs a slowness, which the VTI media do not have
+    if ndim == 3 and 'slowness' in parameters:
         for _ in range(2):
             g.compute_H(src[i], rcv, thread_no=i)
 
@@ -129,7 +169,7 @@ def default_thread_no(i):
 def changing_slowness(i):
     for _ in range(2):
         if i == 0:
-            g.set_slowness(t.as_float(1.0, g))
+            set_model(g)
         else:
             g.raytrace(src[i], rcv, thread_no=i)
 
