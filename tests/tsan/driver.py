@@ -110,6 +110,9 @@ def threads(work, n=N):
 
 
 def set_model(g):
+    # Each setter takes the locks on its own, so solves can run between them:
+    # this is the interleaving changing_slowness is after.  The values never
+    # change, so a solve never sees a mix of old and new parameters.
     for name in parameters:
         getattr(g, 'set_' + name)(t.as_float(VALUES[name], g))
 
