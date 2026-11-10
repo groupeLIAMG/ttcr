@@ -116,5 +116,8 @@ setup(
               extra_compile_args=extra_compile_args,
               extra_link_args=extra_link_args,
               ),
-    ], language_level=3)
+    ], language_level=3,
+       # the grids lock themselves against concurrent use (see _locks.py), so
+       # importing them on a free-threaded interpreter keeps the GIL disabled
+       compiler_directives={'freethreading_compatible': True})
 )
