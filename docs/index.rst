@@ -14,8 +14,9 @@ The package contains code to perform computation on 2D and 3D rectilinear grids,
 as well as 2D triangular and 3D tetrahedral meshes. Three different algorithms
 have been implemented: the Fast-Sweeping Method, the Shortest-Path Method, and
 the Dynamic Shortest-Path Method. Calculations can be run in parallel on a
-multi-core machine.  The core computing code is written in C++, and has been
-wrapped with cython.
+multi-core machine.  The Fast-Sweeping Method on 2D and 3D rectilinear grids can
+also run on GPUs using OpenCL.  The core computing code is written in C++, and
+has been wrapped with cython.
 
 The source code of this project is hosted on `GitHub <https://github.com/groupeLIAMG/ttcr>`_.
 

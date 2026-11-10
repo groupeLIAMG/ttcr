@@ -11,12 +11,10 @@
 This repo contains C++ and python codes for raytracing on regular and unstructured meshes.
 Matlab wrappers are provided as well.
 
-- [Python package](#heading)
-- [Stand alone command-line programs](#heading)
-- [Matlab mex files](#heading)
-- [References](#heading)
-
-<!-- toc -->
+- [Python package](#python-package)
+- [Stand-alone command-line programs](#stand-alone-command-line-programs)
+- [Matlab wrappers](#matlab-wrappers)
+- [References](#references)
 
 ## Python package
 
@@ -111,9 +109,10 @@ Please report bugs to https://github.com/groupeLIAMG/ttcr/issues
   author = {Nasr, Maher and Giroux, Bernard and Dupuis, J. Christian},
   title = {A hybrid approach to compute seismic travel times in three-dimensional tetrahedral meshes},
   journal = {Geophysical Prospecting},
-  volume = {n/a},
-  number = {n/a},
-  pages = {},
+  volume = {68},
+  number = {4},
+  pages = {1291--1313},
+  year = {2020},
   keywords = {Travel time, Seismic modelling, Ray tracing, Seismics, Computing aspects},
   doi = {10.1111/1365-2478.12930},
   url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/1365-2478.12930},
