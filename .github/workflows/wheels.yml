@@ -11,6 +11,11 @@ on:
       - "v*"
   pull_request:
     branches: [ master ]
+    # changes to these cannot break the build
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'examples/**'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -42,6 +47,17 @@ jobs:
       #   uses: docker/setup-qemu-action@v4
       #   with:
       #     platforms: all
+
+      # A full build takes over an hour per runner.  Pull requests build the
+      # oldest and newest Python, and the newest free-threaded one, for the
+      # runner's own architecture; pushes to master, tags and manual runs
+      # build every wheel.
+      - name: Build fewer wheels on pull requests
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          echo "CIBW_BUILD=cp311-* cp315-* cp315t-*" >> "$GITHUB_ENV"
+          echo "CIBW_ARCHS_MACOS=native" >> "$GITHUB_ENV"
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.5
