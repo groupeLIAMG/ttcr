@@ -2,8 +2,10 @@
 Documentation for the python code
 *********************************
 
-The original modules of ttcrpy are cgrid2d, cgrid3d, cmesh2d and cmesh3d.  These
-modules are deprecated in favor of rgrid and an upcoming tmesh modules.
+ttcrpy has two modules: ``rgrid``, for 2D and 3D rectilinear grids
+(``Grid2d`` and ``Grid3d``), and ``tmesh``, for 2D triangular and 3D
+tetrahedral meshes (``Mesh2d`` and ``Mesh3d``).  The original modules,
+cgrid2d, cgrid3d, cmesh2d and cmesh3d, were removed in version 1.0.0.
 
 .. toctree::
    :maxdepth: 2

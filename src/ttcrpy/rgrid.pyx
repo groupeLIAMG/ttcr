@@ -161,7 +161,7 @@ cdef class Grid3d_d:
 
     Constructor:
 
-    Grid3d_d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', tt_from_rp=1, interp_vel=0, eps=1.e-6, maxit=200, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False) -> Grid3d_d
+    Grid3d_d(x, y, z, n_threads=1, cell_slowness=1, method='FSM', aniso='iso', tt_from_rp=1, interp_vel=0, eps=1.e-6, maxit=200, weno=1, nsnx=5, nsny=5, nsnz=5, n_secondary=2, n_tertiary=2, radius_factor_tertiary=3.0, translate_grid=False, fsm_gpu=False) -> Grid3d_d
 
         Parameters
         ----------
