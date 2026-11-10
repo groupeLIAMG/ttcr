@@ -102,6 +102,8 @@ the DSPM often appears to offer a good compromise.
 .. image:: images/accuracy_vs_cpu_gf.*
    :width: 800
 
+.. _gpu-2d:
+
 2D Rectilinear Grids – OpenCL GPU Speed-up
 ===========================================
 

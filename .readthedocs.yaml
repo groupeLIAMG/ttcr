@@ -19,6 +19,11 @@ build:
     # nodejs: "19"
     # rust: "1.64"
     # golang: "1.19"
+  # Read the Docs clones without tags, and setuptools-scm then versions the
+  # latest build 0.1.devN.  Fetch the tags so it finds the release.
+  jobs:
+    post_checkout:
+      - git fetch --unshallow --tags || git fetch --tags
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

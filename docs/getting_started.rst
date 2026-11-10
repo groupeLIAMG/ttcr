@@ -141,6 +141,13 @@ https://github.com/groupeLIAMG/ttcr/blob/master/examples/example_Grid3d.ipynb
 A second example illustrating how to run jobs in parallel is given at
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example_tmesh_parallel.ipynb
 
+Building a 2D model with topography with gmsh, and computing reflected as well
+as direct arrivals, is shown in
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example2_topography.ipynb
+
+Raytracing in a random velocity medium is shown in
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example3_random_medium.ipynb
+
 An example illustrating how to use gmsh to build models with specific geometries is
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example4_circular_shapes.ipynb
 
@@ -154,4 +161,9 @@ Examples with a layered model, showing GPU and float/double usage
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_3d_layered_model.ipynb
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_float32.ipynb
 https://github.com/groupeLIAMG/ttcr/blob/master/examples/example1_opencl.ipynb
+
+The FSM on the GPU and on the CPU is compared for 2D grids in
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example_Grid2d_opencl.ipynb
+and the benchmark behind :ref:`the 2D GPU speed-up figure <gpu-2d>` is
+https://github.com/groupeLIAMG/ttcr/blob/master/examples/example_Grid2d_opencl_scaling.ipynb
 
