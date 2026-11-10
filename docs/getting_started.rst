@@ -15,6 +15,13 @@ You can use pip to install the package by doing::
 
   pip install ttcrpy
 
+Python versions
+===============
+
+Wheels are built for Python 3.11 to 3.15 on Linux, macOS and Windows,
+including the free-threaded builds of Python 3.14 and 3.15 (3.14t and 3.15t),
+for which ttcrpy runs without the GIL (see :ref:`threads`).
+
 Requirements
 ============
 
@@ -30,6 +37,24 @@ for raytracing.  Install it with ttcrpy by doing::
 
 Without it, those methods raise an ImportError saying so, and everything else
 works as usual.
+
+VTK does not yet publish wheels for every free-threaded build: as of VTK
+9.7.2, there are none for macOS on Apple silicon (3.14t and 3.15t) nor for
+Windows (3.15t).  There, ``pip install 'ttcrpy[vtk]'`` fails to find VTK, but
+``pip install ttcrpy`` works, and so does raytracing.
+
+Upgrading to ttcrpy 1.6
+=======================
+
+- Python 3.10 is no longer supported.
+- ``Mesh3d`` raises a ValueError for a mesh holding tetrahedra without volume.
+  Solvers cannot cross such cells: they used to hang, or to return wrong
+  traveltimes.  ``scipy.spatial.Delaunay`` produces them for coplanar nodes,
+  on a regular lattice or on the flat boundary of a model.  Those on the
+  boundary can be removed; inside the mesh, move the nodes or use a mesh
+  generator.
+- ``raytrace`` and ``compute_H`` raise a ValueError for a ``thread_no`` outside
+  0 to ``n_threads``-1, where they could crash or return wrong results.
 
 Sparse arrays returned by ttcrpy
 ==================================
@@ -51,6 +76,57 @@ Nothing else about the returned objects changes: they are indexed, stacked
 and converted with ``toarray()`` as before.  scipy's own guide to the
 difference is at
 https://docs.scipy.org/doc/scipy/reference/sparse.migration_to_sparray.html
+
+.. _threads:
+
+********************************
+Running calculations in parallel
+********************************
+
+A grid or a mesh can compute in parallel in two ways.
+
+- Give it several threads with ``n_threads`` when creating it, and pass many
+  sources to one call: ``raytrace`` spreads them over the threads.
+- Share it between Python threads, each calling it with its own
+  ``thread_no``, from 0 to ``n_threads``-1, and one source per call.  Each
+  thread number has its own traveltimes, so calls with different thread
+  numbers run at the same time.
+
+The second way needs no care beyond choosing the thread numbers::
+
+  from concurrent.futures import ThreadPoolExecutor
+
+  g = Grid3d(x, y, z, n_threads=4)
+  g.set_slowness(slowness)
+
+  def trace(k):
+      # thread k computes sources k, k+4, k+8, ...
+      return [g.raytrace(src[i:i+1], rcv, thread_no=k)
+              for i in range(k, len(src), 4)]
+
+  with ThreadPoolExecutor(4) as pool:
+      results = list(pool.map(trace, range(4)))
+
+The grid takes care of the rest:
+
+- calls using the same thread number wait for each other, and a call with
+  ``thread_no=None`` uses all the threads, so it waits for the other calls;
+- calls that change the model -- the ``set_*`` methods, or ``raytrace`` given
+  ``slowness`` or another parameter of the model -- wait until no other call
+  is running, and hold the others back meanwhile;
+- an out-of-range ``thread_no`` raises a ValueError.  With ``n_threads=1``,
+  ``thread_no`` is ignored.
+
+The solvers run without the GIL, so Python threads compute in parallel on any
+build of Python.  On a free-threaded build (3.14t, 3.15t), the Python code
+between the calls runs in parallel as well.
+
+Changing several parameters of an anisotropic model takes one call per
+parameter, and a calculation in another thread can run between two of them.
+Avoid changing the model while other threads are computing.  On a 2D
+rectilinear grid, ``raytrace`` also accepts ``slowness``, ``xi``, ``theta``,
+``Vp0``, ``Vs0``, ``delta``, ``epsilon`` and ``gamma``, and sets them and
+computes in a single call.
 
 ***************
 Simple examples
