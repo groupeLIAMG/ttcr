@@ -3,9 +3,18 @@
 
 import platform
 import os
+import re
 import numpy as np
 from setuptools import Extension, setup
+import Cython
 from Cython.Build import cythonize
+
+# freethreading_compatible, below, appeared in Cython 3.1; older versions stop
+# with "unknown compiler directive".  pip reads the minimum from pyproject.toml,
+# but running this file directly (e.g. tests/tsan/build.py) does not.
+if tuple(map(int, re.match(r'(\d+)\.(\d+)', Cython.__version__).groups())) < (3, 1):
+    raise SystemExit('ttcrpy needs Cython 3.1 or later, found '
+                     + Cython.__version__ + ": pip install 'cython>=3.1'")
 
 
 def _embed_kernel(cl_name, hdr_name, sym_name, delim):
@@ -116,5 +125,8 @@ setup(
               extra_compile_args=extra_compile_args,
               extra_link_args=extra_link_args,
               ),
-    ], language_level=3)
+    ], language_level=3,
+       # the grids lock themselves against concurrent use (see _locks.py), so
+       # importing them on a free-threaded interpreter keeps the GIL disabled
+       compiler_directives={'freethreading_compatible': True})
 )

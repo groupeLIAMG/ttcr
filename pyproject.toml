@@ -1,5 +1,6 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm[toml]", "cython", "numpy", "scipy"]
+# Cython 3.1 introduced the freethreading_compatible directive
+requires = ["setuptools", "setuptools-scm[toml]", "cython>=3.1", "numpy", "scipy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -28,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
+    "Programming Language :: Python :: Free Threading :: 2 - Beta",
     "Topic :: Scientific/Engineering"
 ]
 dynamic = ["version"]
@@ -51,8 +53,7 @@ write_to = "src/ttcrpy/_version.py"
 
 [tool.cibuildwheel]
 # Skip 32-bit builds & building PyPy wheels on all platforms
-# Free-threaded 3.15 (cp315t) is not built yet.
-skip = ["*-win32", "*-manylinux_i686", "*-musllinux*", "cp315t-*", ]
+skip = ["*-win32", "*-manylinux_i686", "*-musllinux*", ]
 
 # The OpenCL grids are compiled on every platform, so each wheel links against
 # the OpenCL ICD loader.  The loader itself is treated as a system dependency

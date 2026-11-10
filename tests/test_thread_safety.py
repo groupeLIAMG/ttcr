@@ -2,11 +2,14 @@
 """Calls sharing a grid from many Python threads must not corrupt each other.
 
 The wrappers release the GIL around the solvers, so calls overlap in C++ on any
-interpreter.  On a free-threaded one, run with PYTHON_GIL=0: importing the
-modules would otherwise turn the GIL back on, and the Python code in between
-would then be serialized.
+interpreter.  On a free-threaded one, the modules declare themselves compatible,
+so the GIL stays disabled after importing them.
 """
 import itertools
+import os
+import subprocess
+import sys
+import sysconfig
 import threading
 import time
 import unittest
@@ -450,6 +453,24 @@ class TestSharedGrid(unittest.TestCase):
                 self.assertIn('raytrace(', cls.raytrace.__doc__)
                 self.assertIn('set_slowness(', cls.set_slowness.__doc__)
                 self.assertEqual(cls.raytrace.__name__, 'raytrace')
+
+
+@unittest.skipUnless(sysconfig.get_config_var('Py_GIL_DISABLED'),
+                     'needs a free-threaded interpreter')
+class TestFreeThreaded(unittest.TestCase):
+
+    def test_import_keeps_the_gil_disabled(self):
+        # in a new process, since this one may have turned the GIL on already,
+        # and without PYTHON_GIL, which would force the answer
+        env = {k: v for k, v in os.environ.items() if k != 'PYTHON_GIL'}
+        code = ('import sys, warnings\n'
+                'warnings.simplefilter("error", RuntimeWarning)\n'
+                'import ttcrpy.rgrid, ttcrpy.tmesh\n'
+                'print(sys._is_gil_enabled())\n')
+        result = subprocess.run([sys.executable, '-c', code], env=env,
+                                capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), 'False', result.stderr)
 
 
 class TestDecoratedMethods(unittest.TestCase):
