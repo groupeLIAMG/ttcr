@@ -54,7 +54,8 @@ Upgrading to ttcrpy 1.6
   boundary can be removed; inside the mesh, move the nodes or use a mesh
   generator.
 - ``raytrace`` and ``compute_H`` raise a ValueError for a ``thread_no`` outside
-  0 to ``n_threads``-1, where they could crash or return wrong results.
+  0 to ``n_threads``-1, where they could crash or return wrong results
+  (``raytrace`` still ignores ``thread_no`` when ``n_threads=1``).
 
 Sparse arrays returned by ttcrpy
 ==================================
@@ -95,6 +96,7 @@ A grid or a mesh can compute in parallel in two ways.
 The second way needs no care beyond choosing the thread numbers::
 
   from concurrent.futures import ThreadPoolExecutor
+  from ttcrpy.rgrid import Grid3d
 
   g = Grid3d(x, y, z, n_threads=4)
   g.set_slowness(slowness)
@@ -115,7 +117,8 @@ The grid takes care of the rest:
   ``slowness`` or another parameter of the model -- wait until no other call
   is running, and hold the others back meanwhile;
 - an out-of-range ``thread_no`` raises a ValueError.  With ``n_threads=1``,
-  ``thread_no`` is ignored.
+  ``raytrace`` ignores ``thread_no``, but ``compute_H`` still requires 0 or
+  None.
 
 The solvers run without the GIL, so Python threads compute in parallel on any
 build of Python.  On a free-threaded build (3.14t, 3.15t), the Python code
